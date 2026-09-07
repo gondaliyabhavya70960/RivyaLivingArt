@@ -25,7 +25,9 @@ describe('Heading', () => {
         A Table That Holds Light
       </Heading>,
     )
-    expect(screen.getByRole('heading', { level: 3, name: 'A Table That Holds Light' })).toBeInTheDocument()
+    expect(
+      screen.getByRole('heading', { level: 3, name: 'A Table That Holds Light' }),
+    ).toBeInTheDocument()
     expect(screen.queryByRole('heading', { level: 1 })).not.toBeInTheDocument()
   })
 
