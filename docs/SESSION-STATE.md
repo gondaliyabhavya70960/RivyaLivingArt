@@ -1,185 +1,130 @@
 # SESSION-STATE
 
 > Updated at the end of every phase, per requirement FEAT §40. Read this second, after
-> `CLAUDE.md`, before doing anything. **Verify the claims below against the repository** — never
-> assume a phase completed because this file says so.
+> `CLAUDE.md`, before doing anything. **Verify the claims below against the repository** —
+> never assume a phase completed because this file says so.
 
 ---
 
 ## Current Phase
 
-**Phase 01 — PRD, Architecture & Documentation** (complete), with Phase 00 complete and the audit
-half of Phase 07 complete. Next up: **Phase 02 — Reference UI Audit + Design System**.
+**Phase 02 — Reference UI Audit + Design System.**
 
 ## Status
 
-**COMPLETE** for phases 00 and 01. **PARTIAL** for phase 07 (audit done, Cloudinary migration and
-Studio tracker outstanding — both blocked on credentials).
+**PARTIAL.** The token layer, all 32 primitives, both motion helpers, the dev gallery, the
+five gates and the eight-width visual/accessibility harness are built and verified. The
+seven behavioural patterns are the only Phase 02 scope not yet written.
 
 ## Completed
 
-- Audited the repository: a single commit and a one-line README. Fully greenfield; no legacy code
-  constrains the architecture.
-- Captured both governing specifications into `docs/requirements/` so later phases read from
-  source of truth rather than conversation history.
-- Pulled the complete Higgsfield generation history from the workspace — 224 images, 26 videos,
-  163 distinct prompt families — and built a deterministic classifier that turns it into the Rivya
-  asset manifest.
-- Fixed two real defects found while verifying the documentation against that manifest (see
-  *Known Issues → resolved*).
-- Wrote the binding architecture contract, then the full 47-phase implementation approach and the
-  supporting architecture, design, Studio, media, content, product and operations documentation —
-  each authored against the contract and put through an adversarial review pass.
-- Established the session-recovery file set.
+- Toolchain scaffolded per CANONICAL D1/D2: Next.js 16 App Router, React 19, TypeScript
+  strict with `noUncheckedIndexedAccess`, Tailwind 4 CSS-first, Vitest, Playwright, ESLint,
+  Prettier, and `.github/workflows/ci.yml` running every gate as its own step.
+- **Token layer.** `app/styles/tokens.css` is the only file permitted a colour literal;
+  `scheme.css` redeclares an identical 28-token semantic set for DEEP, INK and BONE;
+  `globals.css` carries the Tailwind `@theme` bridge and no values of its own.
+- **Every derived value re-verified before use.** The palette quartet re-counted against the
+  Higgsfield manifest (114 assets each). The ten-step neutral ramp reproduces exactly from
+  the OKLab rule in DESIGN_SYSTEM §2.2 — all ten hexes and luminances to four decimals.
+  Every contrast claim recomputed, including champagne on bone at 2.52:1 (fails AA at every
+  size) and its replacement champagne-deep at 5.05:1.
+- **32 primitives** in `components/primitives/**`, each with behaviour-level tests.
+- **Motion helpers** implementing the §4.3 contract: reduced motion renders the final state,
+  not a shortened animation; content is never gated on motion; the static branch is used on
+  both the server and the first client render so hydration agrees.
+- **Dev gallery** at `/design-system`, verified 200 under `next dev` and 404 in a production
+  build — and since the route is in the production manifest, the 404 provably comes from the
+  `notFound()` guard rather than an absent route.
+- **Licence audit of all eleven FEAT §7 sources.** 5 NOT_ADOPTED, 6 REJECTED, none adopted.
+- **Five gates**, each proved to bite by provoking the failure it exists for.
 
 ## Files Created
 
 ```
-CLAUDE.md · CONTEXT.md · PROJECT_STATE.md · CHANGELOG.md · .gitignore
-README.md (rewritten)
-
-docs/SESSION-STATE.md
-docs/requirements/01-ADVANCED-FEATURE-EXPANSION.md
-docs/requirements/02-INITIAL-CONTENT-SEED-SYSTEM.md
-docs/architecture/{CANONICAL-DECISIONS,ARCHITECTURE,DATA_MODEL,SCRAPER}.md
-docs/project/{ROADMAP,PRD,BUSINESS_RULES}.md
-docs/project/phases/PHASE-{00-04,05-09,10-15,16-22,23-30,31-38,39-46}.md
-docs/design/{DESIGN_SYSTEM,COMPONENT_REGISTRY}.md
-docs/studio/STUDIO_GUIDE.md
-docs/media/{HIGGSFIELD_MASTER_ASSET_PLAN,HIGGSFIELD_ASSET_STATUS,HIGGSFIELD_GUIDE,MEDIA_GUIDE,CLOUDINARY}.md
-docs/content/{INITIAL_CONTENT_INVENTORY,CONTENT_GUIDE}.md
-docs/ops/{DEPLOYMENT,ENVIRONMENT,SECURITY,ACCESSIBILITY,PERFORMANCE,TESTING}.md
-
-data/higgsfield/asset-manifest.json
-data/higgsfield/raw/{images,videos}.json
-scripts/media/build-higgsfield-manifest.py
-scripts/media/check-asset-ids.py
+package.json · tsconfig.json · next.config.ts · postcss.config.mjs · eslint.config.mjs
+playwright.config.ts · vitest.config.ts · .prettierrc.json · .github/workflows/ci.yml
+app/layout.tsx · app/globals.css · app/styles/{tokens,scheme,base}.css
+app/(site)/design-system/page.tsx
+components/primitives/**  (32 components + motion/{Reveal,useReducedMotion})
+components/devtools/Specimen.tsx
+lib/ui/{cn.ts,polymorphic.ts}
+scripts/design/{check-tokens,check-registry,check-utilities}.mjs
+tests/setup/vitest.setup.ts · tests/e2e/design-system.spec.ts
+tests/e2e/design-system.spec.ts-snapshots/  (8 baselines)
 ```
-
-## Files Changed
-
-`README.md` (replaced the one-line placeholder). `data/higgsfield/asset-manifest.json` regenerated
-after the asset-ID fix. `docs/architecture/CANONICAL-DECISIONS.md` amended (A1).
-`docs/media/HIGGSFIELD_MASTER_ASSET_PLAN.md` and `HIGGSFIELD_ASSET_STATUS.md` — five planned asset
-IDs renamed. `docs/project/phases/PHASE-05-09.md` — PHASE 09 exit criteria added, stale open
-question marked resolved.
 
 ## Database Changes
 
-**None.** No Supabase project is connected and no migration has been written. The schema is
-specified in `docs/architecture/DATA_MODEL.md` and lands in Phase 03.
-
-## Components Added
-
-**None.** No application code exists yet — no `package.json`, no `app/`, no `components/`,
-no `lib/`.
-
-## External References
-
-Component research list recorded in `docs/design/COMPONENT_REGISTRY.md`; **nothing adopted yet**,
-and every license field reads `VERIFY_BEFORE_USE` rather than a guess. No third-party component
-has been vendored.
-
-## Media Assets Added
-
-**None generated.** The audit deliberately adds no new media.
-
-## Higgsfield Assets
-
-250 pre-existing assets catalogued: **224 images, 26 videos**, across 24 subject families, in
-`data/higgsfield/asset-manifest.json`. Aspect coverage: 16:9 (121), 4:5 (50), 3:4 (21), 9:16 (16),
-3:2 (16), 1:1 (13), 21:9 (9), 4:3 (4).
-
-All are AI **concept** media (`is_ai_generated`, `is_concept`) and carry
-`OWNER_VERIFICATION_REQUIRED`. They may never be presented as photographs of completed, delivered
-Rivya work. They remain on the Higgsfield CDN — the Cloudinary migration is Phase 06/07 work.
+**None.** Phase 02 touches no data. The schema lands in Phase 03.
 
 ## Tests Run
 
-No test framework exists yet (Phase 42). What was actually run:
-
 ```
-python3 scripts/media/build-higgsfield-manifest.py     # regenerate + uniqueness assertions
-python3 scripts/media/check-asset-ids.py               # gap-ID collision guard
+npx tsc --noEmit · npx eslint . · npx prettier --check .
+npx vitest run
+npx playwright test            (8 projects = the FEAT §45 widths)
+node scripts/design/check-tokens.mjs · check-utilities.mjs · check-registry.mjs
+npm run manifest:verify · npm run media:check-ids
+NODE_ENV=production npm run build && npm start   (route guard)
 ```
-
-plus repository-wide checks: structural conformance of all 47 phase documents, cross-checking every
-family count and asset ID cited in the documentation against the manifest, and link resolution in
-`ROADMAP.md`.
 
 ## Test Results
 
-- Manifest regenerates **byte-identically** from the raw history — the classifier is deterministic.
-- All **250** asset IDs and Cloudinary public IDs unique; assertions pass.
-- Gap-ID collision guard: **0 collisions** across 29 documents.
-- All **47** phases (00–46) present, each carrying all 12 required headings.
-- No fabricated asset family, count or ID anywhere in the documentation; every unrecognised ID
-  chased down proved to be a correctly labelled `GAP`.
-- `ROADMAP.md` links all resolve.
+- Unit: **209 tests across 34 files**, all passing.
+- E2E: **32 tests across 8 widths**, all passing — specimens, visual baseline, axe scan,
+  keyboard reachability at each width.
+- Zero critical or serious axe violations.
+- All five gates clean; manifest still regenerates byte-identically.
 
 ## Known Issues
 
-**Resolved during this phase** (recorded because both were real bugs, not cosmetic):
+**BLOCKING, and outside this session's reach: GitHub Actions cannot provision a runner.**
+Every CI run since the workflow was added — 12 and counting — fails in 2-5 seconds with
+`runner_id: 0`, no runner name and **zero steps executed**, including the first. A job that
+dies before a runner picks it up has not run any of this PR's code. This is an account-level
+condition (typically exhausted minutes, a spending limit on a private repository, or Actions
+disabled), not a defect in the diff. The full CI sequence passes locally from a clean
+`npm ci` with `CI=true`. Recorded with evidence on PR #2.
 
-1. `build-higgsfield-manifest.py` numbered images and videos with separate counters, minting the
-   same `rivya_asset_id` for 26 image/video pairs. Since the ID is the authoritative key this was
-   a collision. Counter namespace now shared; uniqueness asserted before write.
-2. That fix exposed a second allocator — the media plan names assets that do not exist yet, and
-   five planned IDs had borrowed a manifest family prefix, three colliding with real videos
-   immediately. Planned IDs now use the `<PAGE>-<SECTION>[-<KIND>]-<NNN>` form;
-   `check-asset-ids.py` enforces it; CANONICAL-DECISIONS D6 + amendment A1 record the rule.
+**Resolved during this phase**, recorded because each was a real defect:
 
-3. `audit_log` was spelled singular in fifteen documents (89 occurrences) against D5's plural rule.
-   Renamed to `audit_logs` everywhere outside `docs/requirements/`; the exit criterion asserting
-   `grep -rn 'audit_log\b' docs` returns nothing now passes.
-4. Two paths the build needs were absent from the fixed canonical maps — the token layer had no
-   home under D2, and the Studio sign-in surface had none under D4. Adopted as amendment **A2**
-   (`app/styles/`, `/studio/login`).
-
-**Open** — raised by the phase documents, awaiting an owner or architect decision:
-
-| # | Question | Raised in |
-|---|---|---|
-| 1 | SEED §7 puts the CTA library at `Website → Global Content → CTA Library`, which has no leaf in the D4 route map. Phase 08 mounts it at `/studio/content/pages/global` as a reserved page id. Bless the reserved id, or add the route leaf? | PHASE-05-09 |
-| 2 | SEED §31 seeds a `Place Order` action label while D1 forbids checkout. Phase 09 seeds it disabled, routed to the inquiry flow. Confirm, or drop the label? | PHASE-05-09 |
-| 3 | SEED §25 makes the newsletter conditional. Phase 09 seeds the copy `DRAFT` and disabled, with no capture endpoint. Is a newsletter in scope at all? | PHASE-05-09 |
-| 4 | D4 lists `analytics` under `/studio` as an overview concern, not a route segment. Phase 05 renders it as a tab. Confirm? | PHASE-05-09 |
+1. `Switch` rendered a button with **no accessible name** — a critical axe violation. The
+   unit tests had hidden it by passing `aria-label` themselves. Now optional `label` with a
+   dev-time assertion covering all three name sources, plus a test that the name does not
+   change when toggled.
+2. Four component groups independently hit the **polymorphic ref** error. Fixed in
+   `lib/ui/polymorphic.ts` and documented as DESIGN_SYSTEM §6.3 so a fifth does not.
+3. **Three false positives in my own gates** — unescaped variant selectors, bare utility
+   roots matching prose, unstripped block comments, and CSS leading-digit escaping.
+4. Playwright polled `/` for readiness, which legitimately 404s until Phase 10.
 
 ## Remaining Work
 
-Phases 02–46. Phase 07's Cloudinary migration and Studio Higgsfield tracker remain outstanding
-within the otherwise-complete audit.
+The seven behavioural patterns — `Dialog`, `Drawer`, `Tooltip`, `Tabs`, `Accordion`,
+`Disclosure`, `DropdownMenu` — then `/design-system/patterns`, a baseline regeneration, and
+the D9 sweep.
 
 ## Next Exact Action
 
-**Begin Phase 02 — Reference UI Audit + Design System.** Read
-`docs/project/phases/PHASE-00-04.md` § PHASE 02 and `docs/design/DESIGN_SYSTEM.md`, then:
-
-1. `npm init` and scaffold Next.js (App Router) + TypeScript strict + Tailwind, per
-   CANONICAL-DECISIONS D1/D2.
-2. Implement the token layer — CSS custom properties plus the Tailwind theme mapping — from
-   `DESIGN_SYSTEM.md`, including the light/dark contract and reduced-motion tokens.
-3. Build the primitives in `components/primitives/` before any page or route.
-4. Record every adopted external component in `COMPONENT_REGISTRY.md` with a **verified** license
-   before it is vendored.
-
-Phase 02 needs no Supabase or Cloudinary credentials, so it is not blocked.
+Finish the seven patterns in `components/patterns/**` against `DESIGN_SYSTEM.md` §11 and the
+WAI-ARIA Authoring Practices, each with behaviour-level tests. `FocusTrap` (RC-031) is built
+and is what `Dialog` and `Drawer` compose; its contract is documented in its own header.
+Then extend the gallery with a `/design-system/patterns` route, regenerate the eight
+baselines, and tick the Phase 02 exit criteria.
 
 ## Relevant Documentation
 
-`docs/project/ROADMAP.md` · `docs/project/phases/PHASE-00-04.md` ·
-`docs/design/DESIGN_SYSTEM.md` · `docs/design/COMPONENT_REGISTRY.md` ·
-`docs/architecture/CANONICAL-DECISIONS.md` (D1, D2, D6) · `docs/ops/ACCESSIBILITY.md` ·
-`docs/ops/PERFORMANCE.md`
+`docs/project/phases/PHASE-00-04.md` §PHASE 02 · `docs/design/DESIGN_SYSTEM.md` ·
+`docs/design/COMPONENT_REGISTRY.md` · `docs/architecture/CANONICAL-DECISIONS.md` D1/D2/D6
 
 ## Environment Requirements
 
-Node 22.22.2 / npm 10.9.7 present; npm registry reachable. **No** environment variable from
-CANONICAL-DECISIONS D8 is currently set — no Supabase project and no Cloudinary account is
-connected. Phase 02 does not need them; Phases 03 and 06 cannot start until the owner provisions
-both and the variables are set.
+Node 22, npm 10. **TypeScript is pinned to 6.0.3 and ESLint to 9.x** — the reasons are in
+`eslint.config.mjs`; do not bump either without reading them. Playwright uses the image's
+pre-installed Chromium via `PLAYWRIGHT_CHROMIUM_PATH`; do not run `playwright install`.
+No Supabase or Cloudinary credentials are set; Phase 02 needs none.
 
 ## Migration Requirements
 
-**None yet.** `supabase/migrations/` does not exist. The first migration is written in Phase 03
-from `docs/architecture/DATA_MODEL.md`.
+**None.** `supabase/migrations/` does not exist until Phase 03.
