@@ -12,9 +12,9 @@
 
 ## Status
 
-**PARTIAL.** The token layer, all 32 primitives, both motion helpers, the dev gallery, the
-five gates and the eight-width visual/accessibility harness are built and verified. The
-seven behavioural patterns are the only Phase 02 scope not yet written.
+**COMPLETE.** Every exit criterion in `docs/project/phases/PHASE-00-04.md` §PHASE 02 is met
+and was verified rather than assumed. The full local CI sequence passes from a clean
+`npm ci`; only GitHub Actions itself cannot run (see Known Issues).
 
 ## Completed
 
@@ -71,11 +71,13 @@ NODE_ENV=production npm run build && npm start   (route guard)
 
 ## Test Results
 
-- Unit: **209 tests across 34 files**, all passing.
-- E2E: **32 tests across 8 widths**, all passing — specimens, visual baseline, axe scan,
-  keyboard reachability at each width.
-- Zero critical or serious axe violations.
-- All five gates clean; manifest still regenerates byte-identically.
+- Unit: **282 tests across 41 files**, all passing.
+- E2E: **104 tests across the 8 QA widths**, all passing — rendering, 16 visual baselines,
+  axe, keyboard reachability, the reduced-motion contract, and the pattern keyboard
+  walkthrough (Dialog trap and restore, Tabs roving tabindex, Accordion aria-expanded,
+  DropdownMenu Escape).
+- Zero critical or serious axe violations on either gallery page.
+- All five gates clean; manifest still regenerates byte-identically; `npm run build` succeeds.
 
 ## Known Issues
 
@@ -89,29 +91,41 @@ disabled), not a defect in the diff. The full CI sequence passes locally from a 
 
 **Resolved during this phase**, recorded because each was a real defect:
 
-1. `Switch` rendered a button with **no accessible name** — a critical axe violation. The
+1. `Dialog` and `Drawer` **did not restore focus to their trigger**. `useModalSurface`
+   applies `inert` in a layout effect; `FocusTrap` captured `document.activeElement` in a
+   passive effect, which runs later, so it captured `<body>` after the browser had blurred
+   the inert trigger. **jsdom does not implement `inert`'s focus behaviour**, so the unit
+   test asserting restoration passed throughout — the Chromium test caught it. Recorded above
+   that test so it is not trusted alone.
+2. `Switch` rendered a button with **no accessible name** — a critical axe violation. The
    unit tests had hidden it by passing `aria-label` themselves. Now optional `label` with a
    dev-time assertion covering all three name sources, plus a test that the name does not
    change when toggled.
-2. Four component groups independently hit the **polymorphic ref** error. Fixed in
+3. Four component groups independently hit the **polymorphic ref** error. Fixed in
    `lib/ui/polymorphic.ts` and documented as DESIGN_SYSTEM §6.3 so a fifth does not.
-3. **Three false positives in my own gates** — unescaped variant selectors, bare utility
+4. **False positives in my own gates** — unescaped variant selectors, bare utility
    roots matching prose, unstripped block comments, and CSS leading-digit escaping.
-4. Playwright polled `/` for readiness, which legitimately 404s until Phase 10.
+5. Playwright polled `/` for readiness, which legitimately 404s until Phase 10.
 
 ## Remaining Work
 
-The seven behavioural patterns — `Dialog`, `Drawer`, `Tooltip`, `Tabs`, `Accordion`,
-`Disclosure`, `DropdownMenu` — then `/design-system/patterns`, a baseline regeneration, and
-the D9 sweep.
+**None for Phase 02.** Two owner decisions raised in Phase 01 are still open and shape Phase
+09, not this phase: whether the `Place Order` label survives given the no-checkout rule
+(currently seeded disabled and routed to the inquiry flow), and whether a newsletter is in
+scope at all.
 
 ## Next Exact Action
 
-Finish the seven patterns in `components/patterns/**` against `DESIGN_SYSTEM.md` §11 and the
-WAI-ARIA Authoring Practices, each with behaviour-level tests. `FocusTrap` (RC-031) is built
-and is what `Dialog` and `Drawer` compose; its contract is documented in its own header.
-Then extend the gallery with a `/design-system/patterns` route, regenerate the eight
-baselines, and tick the Phase 02 exit criteria.
+**Begin Phase 03 — Supabase Database + Data Layer.** Read
+`docs/project/phases/PHASE-00-04.md` §PHASE 03 and `docs/architecture/DATA_MODEL.md`, then
+write the first migrations under `supabase/migrations/`, the typed client in
+`lib/supabase/`, and the idempotent content-seed harness
+(`content_seed_version = "rivya-v1"`, which must never overwrite an owner edit).
+
+**Phase 03 is blocked until a Supabase project exists and the D8 variables are set.** The
+migrations and data layer can be written against `DATA_MODEL.md` without credentials, but
+nothing can be applied or tested end to end until the owner provisions the project. Phase 04
+(Auth/RBAC/RLS) depends on the same credentials; Phase 06 (Cloudinary) on its own.
 
 ## Relevant Documentation
 

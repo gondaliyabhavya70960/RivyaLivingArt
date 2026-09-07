@@ -1,14 +1,15 @@
 # PROJECT_STATE — what is actually built
 
 > Verified against the repository, not against intent. Update at the end of every phase.
-> Last verified: Phase 01.
+> Last verified: Phase 02.
 
 ## Summary
 
-The repository is at **planning baseline**. There is no application code yet: no `package.json`,
-no Next.js app, no Supabase project wired, no Cloudinary migration. What exists is the
-specification-of-record, the binding architecture contract, the complete phase plan, and a
-real, machine-readable inventory of the 250 Higgsfield assets the build will consume.
+The design system is built and the application scaffold runs. What exists: the toolchain, the
+token layer, 32 primitives, 2 motion helpers, 7 behavioural patterns, a dev-only gallery, and
+five gates that fail the build on the mistakes they were written for. What does not: any
+product page, any database, any media delivery. Phases 03 and 06 remain blocked on Supabase
+and Cloudinary credentials.
 
 ## Phase status
 
@@ -16,7 +17,7 @@ real, machine-readable inventory of the 250 Higgsfield assets the build will con
 |---|---|---|---|
 | 00 | Repository Audit & Baseline | **COMPLETE** | Audit performed on an empty repo (single initial commit, README only). Requirements captured to `docs/requirements/`. `.gitignore` added. |
 | 01 | PRD, Architecture & Documentation | **COMPLETE** | `docs/architecture/CANONICAL-DECISIONS.md`, `ARCHITECTURE.md`, `DATA_MODEL.md`, `SCRAPER.md`; `docs/project/PRD.md`, `BUSINESS_RULES.md`, `ROADMAP.md`, `phases/`; `docs/ops/*`; session-recovery file set. |
-| 02 | Reference UI Audit + Design System | **PLANNED** | `docs/design/DESIGN_SYSTEM.md` + `COMPONENT_REGISTRY.md` specify it; no tokens or components implemented. |
+| 02 | Reference UI Audit + Design System | **COMPLETE** | Toolchain, token layer, 32 primitives, 2 motion helpers, 7 behavioural patterns, dev gallery, 5 gates. 282 unit tests, 104 e2e across the 8 QA widths, 16 visual baselines. |
 | 03 | Supabase Database + Data Layer | **PLANNED** | `docs/architecture/DATA_MODEL.md` specifies the schema; no migrations written. |
 | 04 | Supabase Auth + RBAC + RLS | **PLANNED** | Specified in `docs/project/phases/PHASE-00-04.md`. |
 | 05 | Studio Foundation | **PLANNED** | — |
@@ -42,9 +43,14 @@ docs/SESSION-STATE.md
 
 ## What does NOT exist yet
 
-No `package.json`, no `app/`, no `components/`, no `lib/`, no `supabase/migrations/`, no tests,
-no CI, no deployment. No Supabase project or Cloudinary account is connected — none of the
-environment variables in CANONICAL-DECISIONS.md D8 are set in this environment.
+No product page under `app/(site)` or `app/(studio)` beyond the dev-only gallery, no CMS block
+renderer, no `supabase/migrations/`, no media delivery. No Supabase project or Cloudinary
+account is connected — none of the environment variables in CANONICAL-DECISIONS.md D8 are set
+in this environment.
+
+**CI cannot run.** GitHub Actions has not provisioned a runner for any workflow run: each fails
+in 2-5 seconds with `runner_id: 0` and zero steps executed. The full sequence passes locally
+from a clean `npm ci`. This is an account-level condition and needs the owner.
 
 ## Verified facts
 

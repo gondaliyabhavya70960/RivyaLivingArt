@@ -6,7 +6,7 @@ Every phase adds an entry; see `docs/architecture/CANONICAL-DECISIONS.md` D9 for
 
 ## [Unreleased]
 
-### Phase 02 — Reference UI Audit + Design System — IN PROGRESS
+### Phase 02 — Reference UI Audit + Design System — COMPLETE
 
 **Added**
 
@@ -17,7 +17,10 @@ Every phase adds an entry; see `docs/architecture/CANONICAL-DECISIONS.md` D9 for
   `scheme.css` redeclares an identical 28-token semantic set for DEEP, INK and BONE, so a
   component reads `--rv-ink-secondary` and never asks which ground it is on; `globals.css`
   carries the Tailwind `@theme` bridge and no values of its own.
-- **32 primitives** and **both motion helpers**, each with behaviour-level tests.
+- **32 primitives**, **both motion helpers** and the **seven behavioural patterns**
+  (Dialog, Drawer, Tooltip, Tabs, Accordion, Disclosure, DropdownMenu), each with
+  behaviour-level tests. 282 unit tests across 41 files; 104 e2e tests across the eight QA
+  widths; 16 visual baselines.
 - **Dev-only gallery** at `/design-system`, plus an eight-width Playwright harness covering
   visual baselines, axe, keyboard reachability and the reduced-motion contract.
 - **Five gates**, each proved to bite by provoking the failure it exists for:
@@ -41,6 +44,12 @@ Every phase adds an entry; see `docs/architecture/CANONICAL-DECISIONS.md` D9 for
 
 **Fixed**
 
+- **`Dialog` and `Drawer` did not restore focus to their trigger**, though both promise it in
+  their registry contracts. `useModalSurface` applies `inert` in a layout effect; `FocusTrap`
+  captured `document.activeElement` in a passive effect, which runs later — so it captured
+  `<body>` after the browser had blurred the inert trigger, and correctly refused to restore
+  to that. jsdom does not implement `inert`'s focus behaviour, so the unit test asserting
+  restoration passed throughout; the Chromium test caught it.
 - **`Switch` had no accessible name** — a critical axe violation. Its unit tests had hidden
   it by passing `aria-label` themselves, so the tests were compensating for the gap they
   existed to expose.
