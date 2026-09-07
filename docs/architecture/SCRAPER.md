@@ -74,10 +74,14 @@ node scripts/search/check-search-scope.mjs
 npm run test:unit -- research-isolation search-scope research-no-autoimport
 ```
 
-**Competitor imagery and text are never re-hosted.** Extracted image URLs are stored as text.
-Nothing from a research row is uploaded to Cloudinary, written to `media_assets`, or served from a
-Rivya origin. Studio renders a source image only through an authenticated, non-caching proxy, at
-thumbnail scale, and only where the source's `image_extraction_mode` permits it.
+**Competitor imagery and text are never re-hosted, and never proxied.** Extracted image URLs are
+stored as text. Nothing from a research row is uploaded to Cloudinary, written to `media_assets`,
+cached, thumbnailed, transformed, or served from — or fetched by — a Rivya origin. Where the
+source's `image_extraction_mode` permits an image to be shown at all, Studio renders it as a plain
+external `<img>` whose `src` is the stored URL, sized in CSS, with
+`referrerpolicy="no-referrer"` and `loading="lazy"`: the staff member's own browser fetches the
+bytes from the source, Rivya's servers see none of them, and no Rivya route exists that would.
+The full statement is §13.3; §8.2 forbids the alternatives.
 
 ---
 
@@ -367,10 +371,20 @@ the newest successful run is older than twice the configured schedule interval; 
 A view cannot go stale the way a cached column can, and the rule is legible in SQL rather than
 buried in a worker.
 
-**The URL-pattern tester makes no network request.** An operator pastes candidate URLs and gets,
-per URL, the matched pattern, its kind and the robots decision — answered from
-`research_robots_cache`. A separate *probe one URL* action performs a single real fetch, is
-rate-limited like any other, refuses a disallowed path, and is audited.
+**The URL-pattern tester makes no network request.** `testPatterns`, in
+`app/(studio)/studio/research/sources/[id]/actions.ts`, takes pasted candidate URLs and returns, per
+URL, the matched pattern, its kind and the robots decision — answered entirely from
+`research_robots_cache`. A fixture-server assertion proves it logs zero requests.
+
+**The single-URL probe is the second — and last — outbound path.** `probeUrl`, in the same file,
+performs one real fetch of one URL. It is the only request-scoped code in the repository permitted to
+contact a third-party host, and it is not a general fetcher: it calls the same
+`lib/scraper/core/fetch.ts` entry point as the cron drain and therefore applies the identical gate —
+`policy_status = 'APPROVED'` and `is_enabled`, the robots decision (a `Disallow` match refuses before
+any request is made), `rate_limit_rpm` / `request_delay_ms` / `concurrency`, the `Crawl-delay` floor,
+`circuit_open_until`, the `research.enabled` flag, `SCRAPER_USER_AGENT`, the 2 MB body cap and the
+15-second timeout. It requires `research.write`, writes one `audit_log` row naming actor, source and
+URL, and stores no snapshot. `ARCHITECTURE.md` §1 fixes it as one of exactly two outbound paths.
 
 **A category mapping never guesses.** An unmapped source category is `null`, counted on the
 dashboard, and leaves the row at `VALIDATED`. It is never defaulted to `furniture` or to the first
@@ -383,7 +397,7 @@ category.
 | Control | Implementation |
 |---|---|
 | Trigger | Vercel cron → `app/api/cron/research/route.ts` every five minutes, `maxDuration = 60`, 50-second wall-clock work budget. There is no long-running process |
-| Authorisation | The route returns `404` to any request lacking Vercel's cron header. See *Open questions* on the absence of a cron secret in D8 |
+| Authorisation | **Vercel's `x-vercel-cron` header alone.** The route returns `404` — not `401` — to any request without it, so an unauthenticated prober cannot confirm the route exists. It does **not** reuse `REVALIDATE_SECRET`, deliberately and unlike the other six cron routes (`content-schedule`, `research-analytics`, `research-score`, `sheets-sync`, `analytics-snapshot`, `log-retention`), because that secret guards cache invalidation and this is the one route that contacts third-party hosts. The cost is that the route cannot be exercised outside Vercel; §16 item 4 and `ARCHITECTURE.md` *Open questions* item 3 raise the same `CRON_SECRET` amendment and must be resolved together |
 | Per-source schedule | `research_source_schedules` cron expressions, minimum interval **6 hours**, enforced by a check constraint |
 | Overlap | `schedule.ts` refuses a second run for a job whose previous run is still `RUNNING` |
 | Rate limit | `rate_limit_rpm` (1–60), `request_delay_ms` (≥ 1000), `concurrency` (1–4) — all enforced **in the lease query** through `next_fetch_not_before` and `in_flight_count`, never by hopeful `sleep()` calls in application code |
@@ -423,7 +437,8 @@ Never, under any flag, for any source, for any reason:
 - any page whose robots rules disallow it;
 - a headless browser, JavaScript execution, or DOM emulation beyond an HTML parser;
 - proxy rotation, IP cycling, or cookie-jar session forgery;
-- re-hosting, caching, thumbnailing or transforming a competitor image (§13.3);
+- re-hosting, caching, proxying, thumbnailing or transforming a competitor image, and any Rivya
+  route that fetches or re-serves one (§13.3);
 - republishing any competitor text, price or image on any Rivya surface.
 
 If a source requires any prohibited technique to be read, the answer is that Rivya does not read it.
@@ -780,15 +795,28 @@ and is raised for confirmation in *Open questions*.
 ### 13.3 Images
 
 `imageUrls` are **strings**. No mode of `image_extraction_mode` downloads an image; the most
-permissive value, `URL_AND_DIMENSIONS`, stores a URL and two integers. Nothing from a source is
-uploaded to Cloudinary, written to `media_assets`, thumbnailed, cached or served from a Rivya origin.
-Studio renders a source image only through an authenticated, non-caching proxy at thumbnail scale.
+permissive value, `URL_AND_DIMENSIONS`, stores a URL and two integers taken from the page's own
+markup. Nothing from a source is downloaded, uploaded to Cloudinary, written to `media_assets`,
+cached, proxied, thumbnailed, transformed or served from a Rivya origin. Constraining the rendered
+size in CSS is not thumbnailing: no derived image is produced, stored or served by anything Rivya
+runs. Studio shows a source image, where `image_extraction_mode` permits it at all, as a plain external
+`<img src="<stored url>" referrerpolicy="no-referrer" loading="lazy">` sized in CSS to at most
+240 px on its longest side. **There is no image proxy route, and adding one is a defect** — the
+bytes travel from the source directly to the staff member's browser, Rivya's servers never hold
+them, and `ARCHITECTURE.md` §1 lists the only two server-side paths that may contact a third-party
+host at all (neither is an image path). Consequences, accepted deliberately: an image that the
+source removes or hotlink-blocks renders as a broken thumbnail, and the source's server sees the
+request without a referrer. Both are preferable to holding someone else's photograph.
 An image *change* is detected as a change to the URL **set**, never by comparing pixels.
 
 The reverse direction is guarded too: `lib/media/duplicate-guard.ts` runs
 `checkMediaAgainstResearch()` on every user upload and **blocks** the upload when it near-duplicates
 an image seen in research. It is the subsystem's only automatic consequence, and it only ever
-prevents something.
+prevents something. Note what it needs: comparing an upload against a research image requires a
+stored perceptual hash of that research image, which is exactly the Phase 33 capability *Open
+questions* item 3 has not yet settled. Until that is settled the guard has nothing to compare
+against, and it must fail **open with a logged `WARNING`** — never silently, and never by inventing
+a comparison it cannot make.
 
 Perceptual similarity (Phase 33) needs pixels, which this posture does not supply. That tension is
 unresolved and is raised as *Open questions* item 3 rather than settled here.
@@ -800,6 +828,61 @@ references a research table (I3). `research_search_documents` is Studio-only and
 `anon`. Scale bands, analytics leagues, opportunity scores and similarity bands exist only inside
 `research_*` columns and `components/studio/research/**`; the isolation guard fails on any of those
 tokens appearing under `app/(site)/**` or `content/**`.
+
+**One authorised egress exists and it is not public**: the Google Sheets export of §13.5. It leaves
+the system to a spreadsheet the owner controls, never to a visitor, and it is enumerated here so
+that "nothing is public" is not read as "nothing ever leaves".
+
+### 13.5 Export to Google Sheets — the one authorised egress
+
+Phase 36 (`PHASE-31-38.md`) owns the integration; this section fixes only what it may carry out of
+the research subsystem. D4 fixes the surface at `/studio/research/sheets`, D8 names the credentials
+(`GOOGLE_SERVICE_ACCOUNT_JSON`, `GOOGLE_SHEETS_SPREADSHEET_ID`), FEAT §2 item 19 and FEAT §51 require
+the capability, and FEAT §32 names the flag.
+
+| Property | Rule |
+|---|---|
+| Direction | **One-way. Rivya writes, the Sheet reads.** `lib/sheets/` contains no read method, and a CI grep for a Sheets read call inside it fails the build. Nothing typed into a cell can change a stage, a disposition, a product, a price or any content. Changing this needs an amendment, not a ticket |
+| Where the code lives | `lib/sheets/` — `client.ts` (service-account JWT, `import 'server-only'` first line, `spreadsheets` scope only, no Drive scope), `definitions.ts` (entity → column allowlist → row builder), `write.ts`, `retry.ts`, `errors.ts`. A pending D2 amendment covers the domain (`ARCHITECTURE.md` §3) |
+| Who may run it | A Studio action on `/studio/research/sheets` requiring `integrations.sheets.run` **plus** `research.read`. Creating or editing a definition requires `integrations.sheets.manage`. The scheduled path is `app/api/cron/sheets-sync` (`REVALIDATE_SECRET`), which skips paused definitions |
+| Flag | `google_sheets`, default `false` in every environment. With it off the page is read-only and every run action is refused with a stated reason and no network call |
+| What is written | Values and a header row into a staging tab, swapped atomically into place. No formulas, charts or formatting |
+| Audit | Every run writes a `sheets_sync_runs` row (status, row count, cell count, attempts, duration, sanitised `error_code` — **never** the upstream response body) **and** an `audit_log` row naming the actor, the definition, the row count and the destination spreadsheet id |
+| Where it goes | A spreadsheet an admin has shared with the service-account email. **It is a staff artefact.** Publishing it to the web, or sharing it with "anyone with the link", defeats I3 by hand; `STUDIO_GUIDE.md` says so beside the destination banner, and the destination id is displayed so the owner can check it |
+
+**The column allowlist.** A definition's `columns` may only be chosen from the per-entity allowlist in
+`lib/sheets/definitions.ts`; a column not on the list is unrepresentable rather than merely refused,
+and `tests/unit/sheets-definitions.test.ts` asserts it. Six of Phase 36's seven entities are
+research-side; these four carry the columns most worth pinning here:
+
+| Entity | Columns that may be exported |
+|---|---|
+| `RESEARCH_PRODUCTS` | source, `title_normalized`, mapped category, `price_state`, `price_min_minor`, `price_max_minor`, currency, `dimensions_mm`, `dimension_parse_state`, `stage`, `disposition`, `first_seen_at`, `last_seen_at`, `source_url` |
+| `OPPORTUNITY_SCORES` | research product, score, confidence, state, model version, one column per signal contribution |
+| `SHORTLIST` | research product, reason, tags, score at entry, opened, opened by |
+| `CONFIRMED` | research product, decision note, confirmed by, confirmed at, product started |
+
+`COMPARISON_SET` (member, source, category, price band, longest axis, coverage) and
+`DIRECTION_BRIEFS` (title, status, `target_category_slug`, evidence count, approver, updated) are the
+remaining two and follow the same rule. The seventh, `INQUIRIES`, is first-party, sits outside this
+subsystem, and additionally requires `inquiries.export`.
+
+**What may never be exported, by any definition, at any permission level.** These are absent from
+every allowlist, so no column picker can offer them:
+
+- competitor `description` or `description_html`, in raw or normalised form, and any other
+  free-text body captured from a source page;
+- `image_urls`, any image URL, any perceptual hash, and any image bytes;
+- raw HTML, any snapshot `storage_key`, any `research_fetches` row, or anything else in the evidence
+  store (§9.2);
+- `research_notes` bodies, `policy_notes`, and `research_sources.notes` — staff commentary about a
+  third party is the material most likely to be read out of context;
+- any credential, environment value, media asset id or Cloudinary URL;
+- anything from `audit_log`, `system_logs` or `staff_profiles`.
+
+`source_url` **is** exportable — it is the public address of a public page and the only way an owner
+can check a row against its source — and it is the single most important reason the sheet must not be
+made public: a list of competitor URLs curated by Rivya reads as Rivya's research, because it is.
 
 ---
 
@@ -850,7 +933,11 @@ estimated, interpolated or filled (FEAT §28).
 
 ## 16. Open questions for the canonical decisions
 
-Raised, not acted on. Nothing above knowingly diverges from `CANONICAL-DECISIONS.md`.
+Raised, not acted on. **One known divergence is inherited rather than introduced here**: §10.3,
+§12.3 and §13.5 name `lib/catalog/`, `lib/bulk/` and `lib/sheets/`, three of the eight `lib/` domains
+D2 does not enumerate. `ARCHITECTURE.md` §3 records that divergence and the amendment (A3) that would
+settle it; this document does not add a ninth. Nothing else above diverges from
+`CANONICAL-DECISIONS.md`.
 
 1. **Stage naming across the phase documents.** `PHASE-23-30.md` — authoritative for these table and
    column names — models the pipeline as `research_products.stage` (the seven FEAT §23 values) plus a
@@ -862,19 +949,38 @@ Raised, not acted on. Nothing above knowingly diverges from `CANONICAL-DECISIONS
    `PHASE-31-38.md` assumes `research_product_snapshots`. They are the same concept. The former name
    is used throughout this document; the latter should be corrected by amendment, not by creating a
    second table.
-3. **Images and perceptual similarity.** §13.3 forbids downloading, caching or re-hosting any
-   competitor image, and `PHASE-23-30.md` states `imageUrls` remain strings permanently. Phase 33
+3. **Images and perceptual similarity.** §13.3 forbids downloading, caching, proxying or re-hosting
+   any competitor image, and `PHASE-23-30.md` states `imageUrls` remain strings permanently. No Rivya
+   server fetches an image byte today: display is browser-direct, and the two outbound server paths
+   (`ARCHITECTURE.md` §1) fetch HTML for a research work item or a probe, never an image. Phase 33
    nevertheless requires pixels to compute a perceptual hash and assumes a
    `research_product_images.stored_object_key`. These cannot both be true. The narrowest
-   reconciliation — **fetch the image transiently under the same robots and rate-limit controls, hash
-   it in memory, persist only the 64-bit hash and a checksum, and never write the bytes anywhere** —
-   is proposed here but **not adopted**, because it changes the "no image is ever fetched" posture
-   that Phases 25–30 state absolutely. This needs an owner and an amendment before Phase 33 begins.
-4. **No cron secret in D8.** D8 lists `REVALIDATE_SECRET` but nothing for scheduled invocation, so
-   `app/api/cron/research` authenticates on Vercel's `x-vercel-cron` header and returns 404
-   otherwise — weaker than a shared secret and untestable outside Vercel. Suggested amendment: add
-   `CRON_SECRET` to D8's server-only list. Reusing `REVALIDATE_SECRET` was rejected as widening one
-   secret's blast radius across two unrelated systems.
+   reconciliation — **fetch the image transiently under the same robots, rate-limit and
+   circuit-breaker controls as any other fetch, hash it in memory, persist only the 64-bit hash and a
+   checksum, and never write the bytes anywhere** — is proposed here but **not adopted**, because it
+   opens a third outbound path and changes the "no image byte is ever fetched by a Rivya server"
+   posture that Phases 25–30 state absolutely. This needs an owner and an amendment before Phase 33
+   begins; `stored_object_key` should be dropped from the Phase 33 table in the same change, since
+   the proposal persists no bytes to key.
+
+   **A phase-document correction belongs with it.** `PHASE-23-30.md` (its isolation preamble, and
+   again in the Phase 30 media note) refers to "the authenticated, non-caching proxy defined in
+   Phase 27". Phase 27 defines no such route — its own out-of-scope list forbids "downloading,
+   caching, re-hosting or transforming any competitor image" — and `PHASE-31-38.md` states the
+   opposite and correct posture for Phase 33: thumbnails "rendered by the browser straight from the
+   source URL at ≤ 240 px with `referrerpolicy="no-referrer"`; Rivya's servers proxy nothing and
+   persist nothing." This document follows the latter (§2, §13.3). The two dangling references in
+   `PHASE-23-30.md` are wrong and should be struck by that document's owner; they are the origin of
+   the contradiction, not a second design.
+4. **No cron secret in D8, and two schemes in one deployment.** D8 lists `REVALIDATE_SECRET` but
+   nothing for scheduled invocation. Six of the seven cron routes reuse `REVALIDATE_SECRET`;
+   `app/api/cron/research` does not, and authenticates on Vercel's `x-vercel-cron` header alone,
+   returning 404 otherwise (§7). Reusing `REVALIDATE_SECRET` here was rejected as widening one
+   secret's blast radius across two unrelated systems — but the consequence is that the one route
+   which contacts third-party hosts is on the weaker, untestable-outside-Vercel scheme. Suggested
+   amendment: add `CRON_SECRET` to D8's server-only list and move all seven onto it.
+   `ARCHITECTURE.md` *Open questions* item 3 states the same thing from the other side; the two are
+   one decision and must be answered once.
 5. **`research.confirm` versus `research.write`.** FEAT §25 assigns the nine review actions to the
    merchandiser, who holds `research.confirm` but not `research.write`. Gating all nine on
    `research.confirm` therefore means **a researcher can run the pipeline but cannot shortlist or

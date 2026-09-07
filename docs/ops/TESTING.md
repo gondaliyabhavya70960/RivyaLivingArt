@@ -133,7 +133,7 @@ the rules in executable form.
 | Rule | Spec | Asserts |
 |---|---|---|
 | BR-A1/A2/A3 | `tests/integration/forbidden-tables.test.ts` | No cart, order, payment, customer, review, shipment or quote relation exists |
-| **BR-B1** | `tests/e2e/inquiry-conversion.spec.ts` | Success: row persisted, then a WhatsApp URL carrying the persisted reference. **Failure: the SEED §49 copy and no navigation to `wa.me` at all.** Run in both directions on **every** PR |
+| **BR-B1** | `tests/e2e/inquiry-conversion.spec.ts` | Success: row persisted, then a WhatsApp URL carrying the persisted reference — reached **only** by activating `Continue to WhatsApp` (by click and by `Enter`), with focus on the success heading, the reference code inside the live region, and **no navigation within 10 seconds of idle** (WCAG 2.2.1 — `ACCESSIBILITY.md` §1.2). **Failure: the SEED §49 copy and no navigation to `wa.me` at all.** Run in both directions on **every** PR |
 | BR-B2 | `tests/unit/whatsapp-render.test.ts` | Unknown token throws; internal fields cannot enter the message; the five-rung shorten ladder stays under 1800 decoded characters |
 | BR-B3 | `tests/unit/rls/inquiries.test.ts` | `anon` inserts; `anon` cannot select; a crafted `pipeline_status`/`assigned_to` is refused |
 | BR-B5 | `tests/unit/rate-limit-window.test.ts` + an e2e | Five persist, the sixth is 429 with `Retry-After`; the fixed window resets correctly at the boundary |
@@ -146,7 +146,7 @@ the rules in executable form.
 | BR-D7 | `tests/unit/alt-text-coverage.test.ts` | Every bound asset has non-empty alt text or `is_decorative = true`; the constraint refuses an empty string |
 | BR-E2/E3/E6 | `manifest:verify`, `tests/integration/publish-gates.test.ts` | Manifest byte-identical; a concept asset cannot be attached to a product; a used asset cannot be deleted |
 | BR-E4 | `scripts/media/check-asset-ids.py` | No gap ID reuses a manifest family prefix |
-| **BR-F1/F2/F3/F4** | `tests/unit/rls/research.test.ts`, `check-research-isolation.mjs`, `check-data-layer.mjs` | No `anon` policy on any `research_*` table; no FK to `products`; no research term in a public search result; no image is downloaded |
+| **BR-F1/F2/F3/F4** | `tests/unit/rls/research.test.ts`, `check-research-isolation.mjs`, `check-data-layer.mjs`, `tests/integration/rls-policies.test.ts` | No `anon` policy on any `research_*` table; no FK to `products`; the research→public FK inventory **equals** the guard's constraint-name allowlist, so a missing entry fails as loudly as an extra one (`BUSINESS_RULES.md` BR-F2 names the entries; §M open question 7 records that `DATA_MODEL.md` disagrees on how many there are, which this assertion will surface as a red test rather than a review comment); no research term in a public search result; no image is downloaded |
 | BR-G1/G2 | `tests/unit/rls/*.test.ts`, `tests/e2e/studio-authz.spec.ts` | One client per role, allow/deny per table; forbidden POSTs return 403 **and** write `DENIED` audit rows |
 | BR-G4 | `tests/e2e/bulk.spec.ts` | Typed confirmation, exact preview count, undo within 24 h restores byte-identically |
 | BR-I1 | `tests/unit/pii-scope.test.ts` | No inquiry personal field reaches `search_documents`, `web_vitals_samples` or an `audit_log` blob |
@@ -170,8 +170,11 @@ Run as a separate required CI job. Standard and per-component detail: `docs/ops/
 | `a11y/zoom-reflow.spec.ts` | 200 % zoom and 320 px reflow: no horizontal scroll, no lost content |
 | `navigation-a11y.spec.ts` | Skip links, mega-menu keyboard model, mobile drawer focus trap, `aria-current` |
 
-Plus two pre-browser guards in `npm run check`: `scripts/a11y/check-contrast.mjs` (token matrix) and
-`scripts/a11y/check-focus-styles.mjs` (no unreplaced `outline: none`).
+Plus three pre-browser guards in `npm run check`: `scripts/a11y/check-contrast.mjs` (token matrix),
+`scripts/a11y/check-focus-styles.mjs` (no unreplaced `outline: none`) and
+`scripts/a11y/check-no-timed-navigation.mjs` (no `router.push`/`replace`, `location.assign` or
+`window.open` inside a `setTimeout`/`setInterval` under `app/(site)/**` or `components/patterns/**` —
+WCAG 2.2.1, `ACCESSIBILITY.md` §1.2).
 
 `tests/e2e/a11y/exceptions.json` ships with **zero rows**, prints in full on every run, and requires
 a reason, an owner and a dated review per row. Its row count is an exit criterion.
@@ -211,6 +214,13 @@ lib/media/validate-upload.ts   lib/relations/rules.ts         lib/scraper/normal
 
 The list lives in `vitest.config.ts`. **Adding a file to it is easier than removing one**: removal
 requires a reviewer note explaining why the branch no longer matters.
+
+Three of those nine paths — `lib/catalog/`, `lib/security/` and `lib/relations/` — sit in `lib/`
+subdomains D2 does not enumerate, so their **paths** are provisional pending amendment A3
+(`ARCHITECTURE.md` open question 2; `BUSINESS_RULES.md` §M open question 6, which notes that
+`lib/security/` is missing from A3's own eight-domain draft and should make it nine). If A3 is refused
+the modules move and this list moves with them; the coverage requirement itself does not change, and no
+file leaves the list because it was relocated.
 
 ---
 

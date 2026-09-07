@@ -14,7 +14,8 @@ owner_verification: OWNER_VERIFICATION_REQUIRED
 > `docs/ops/SECURITY.md` (headers, secrets, rotation blast radius),
 > `docs/ops/TESTING.md` (what must be green before a release),
 > `docs/media/CLOUDINARY.md` (the media migration this document sequences).
-> Owned by Phase 44; extended by Phase 38 (Environment page) and Phase 25 (cron entries).
+> Owned by Phase 44; extended by Phase 38 (Environment page) and by every phase that adds a cron
+> route — 09, 25, 31, 32, 36, 37, 38 (§3.1).
 
 **Implementation status.** Nothing is deployed. No Vercel project, no Supabase project, no domain.
 This document is the procedure Phase 44 implements and the drills it must execute; the rows marked
@@ -78,17 +79,43 @@ feature/<phase>-<slug>   →  PR  →  main  →  (manual promote)  →  product
 | Install command | `npm ci` | The lockfile is the only accepted resolution source |
 | Build command | `npm run build` | Which **never** contacts a database (§4) |
 | Region | `bom1` (default) | Chosen for the expected audience. **The audience geography is OWNER_VERIFICATION_REQUIRED**; the region is a reversible setting recorded here, never a claim rendered anywhere |
-| Function config | Raised memory/duration for `app/api/cron/research` and `app/api/uploads/sign` | Bounded work still needs headroom |
-| Cron entries | Registered for **production only** | A preview must never start a scrape |
+| Function config | Raised memory/duration for `app/api/cron/research` (`maxDuration = 60`, a 50-second work budget) and for `app/api/media/sign` | Bounded work still needs headroom |
+| Cron entries | **All seven**, registered for **production only** | A preview must never start a scrape, publish a scheduled window, or write to the owner's spreadsheet |
 
-Cron routes and their schedules (owned by Phases 25 and 38; the route 404s without the platform cron
-header):
+### 3.1 The cron registry — all seven routes
 
-| Route | Cadence | Purpose |
-|---|---|---|
-| `app/api/cron/research` | Per the enabled source schedules | Drains research work items in bounded, resumable slices |
-| `app/api/cron/log-retention` | Daily | Purges `system_logs`, `web_vitals_samples`, `search_queries`, `rate_limit_buckets` per the retention table |
-| `app/api/cron/schedule` | Every 15 minutes | Opens and closes `publish_at` / `unpublish_at` windows and revalidates the affected tags |
+`ARCHITECTURE.md` §3 fixes the set at seven. Every one of them must have a `vercel.json` entry: a
+route with no entry is a scheduled job that silently never runs, which is the failure mode this table
+exists to prevent. Vercel evaluates cron expressions in **UTC**.
+
+| Route | `vercel.json` schedule | Cadence | Auth | Owning phase | Purpose |
+|---|---|---|---|---|---|
+| `app/api/cron/content-schedule` | `*/5 * * * *` | Every 5 minutes | `REVALIDATE_SECRET` | 09 (extended by 22) | Opens and closes `publish_at` / `unpublish_at` windows through the same `publishSection()` a manual publish uses, runs the merchandising pass, and revalidates the affected tags and paths |
+| `app/api/cron/research` | `*/5 * * * *` | Every 5 minutes | **`x-vercel-cron` header only**; 404 without it | 25 | Drains research work items in bounded, resumable slices; per-source `research_source_schedules` (minimum 6-hour interval) decide which sources are due. Also prunes snapshots at 180 days |
+| `app/api/cron/research-analytics` | `30 18 * * *` | Nightly | `REVALIDATE_SECRET` | 31 | Writes the dated `research_analytics_snapshots` and `research_metric_coverage` rows |
+| `app/api/cron/research-score` | `30 19 * * *` | Nightly, **after** research-analytics | `REVALIDATE_SECRET` | 32 | Recomputes opportunity scores and components against the active scoring model |
+| `app/api/cron/sheets-sync` | `0 * * * *` | Hourly | `REVALIDATE_SECRET` | 36 | Runs the `sheets_export_definitions` whose own `schedule` is due (minimum interval hourly; `MANUAL` is the default and is skipped), and skips paused definitions |
+| `app/api/cron/analytics-snapshot` | `30 20 * * *` | Daily | `REVALIDATE_SECRET` | 37 | One first-party metric row per metric per day, idempotent per date |
+| `app/api/cron/log-retention` | `30 21 * * *` | Daily | `REVALIDATE_SECRET` | 38 | Purges `system_logs`, `web_vitals_samples`, `search_queries`, `rate_limit_buckets` and orphaned `inquiry_attachments` per the `BUSINESS_RULES.md` §I retention table |
+
+**The only ordering constraint is `research-score` after `research-analytics`** — a score computed
+before the night's snapshot exists is a score against yesterday's coverage. The rest of the wall-clock
+placement is a preference, not a requirement: the four nightly and daily jobs are spaced an hour apart
+so a slow one cannot overlap the next, and 18:30–21:30 UTC (00:00–03:00 local to the `bom1` region) is
+off-peak there. That region choice rests on the audience assumption already recorded as
+**OWNER_VERIFICATION_REQUIRED** in §3; if the assumption changes, these four times move and nothing
+else does.
+
+**Two authentication schemes, deliberately.** Six routes carry `REVALIDATE_SECRET`. `research` carries
+Vercel's `x-vercel-cron` header **alone** and returns `404` — not `401` — to anything else, so a prober
+cannot confirm the route exists; it does not reuse `REVALIDATE_SECRET` because that secret guards cache
+invalidation and this is the one route that contacts third-party hosts (`SCRAPER.md` §7). The cost is
+that `research` cannot be exercised outside Vercel. §13 item 1 proposes normalising all seven onto a
+`CRON_SECRET`; both schemes must move in one change, not one route at a time.
+
+**Verification that the registry is complete**, run as part of §7.1 step 8: `scripts/ops/check-env.ts`
+compares the route directories present under `app/api/cron/**` against the `crons` array in
+`vercel.json` and fails the build on either a route with no entry or an entry with no route.
 
 `next.config.ts` additionally holds the `www` → apex 308 redirect, the image configuration and the
 `ANALYZE=1` analyzer wiring.
@@ -232,6 +259,7 @@ rest are human acts.
 - [ ] 19. `curl -sI https://<apex>/` — HSTS with `preload`, the full Phase 41 header set, **no** `noindex`.
 - [ ] 20. `curl -sI https://www.<apex>/` — 308 to apex.
 - [ ] 21. `/studio/system/environment` — commit SHA matches `git rev-parse HEAD`; every integration reachable; migration state current; **no value, prefix or length anywhere**.
+- [ ] 21a. The Vercel project's Cron Jobs view lists **all seven** §3.1 routes at the schedules in that table, and lists none that is not in it. A route missing here never runs and never errors.
 
 ### 7.5 Post-deploy verification
 
@@ -271,7 +299,7 @@ revoke first. `docs/ops/ENVIRONMENT.md` §5 holds the per-variable detail; the b
 | `DATABASE_URL` | **Owner** | 90 days | Contains credentials. Rotate the database password, update the pooled URL, redeploy |
 | `CLOUDINARY_API_KEY` / `_API_SECRET` | **Owner** | 180 days | Rotate as a pair. Signed uploads fail until the redeploy completes |
 | `GOOGLE_SERVICE_ACCOUNT_JSON` | **Owner** | 180 days | Create the new key, set it, redeploy, verify a Sheets sync, then delete the old key in Google Cloud |
-| `REVALIDATE_SECRET` | Engineer | 90 days | The publish service and the cron routes read it. Rotate in one window; a mismatch means stale pages, not an outage |
+| `REVALIDATE_SECRET` | Engineer | 90 days | Read by `app/api/revalidate` and by **six of the seven** cron routes (`app/api/cron/research` uses the platform header instead — §3.1). Rotate in one window; a mismatch means stale pages and skipped scheduled jobs, not an outage. Confirm afterwards that a `content-schedule` tick has run |
 | `SCRAPER_USER_AGENT` | Engineer | On change | Not a secret. Must remain identifying and contactable |
 
 After any rotation: redeploy, open `/studio/system/environment`, confirm every integration reports
@@ -322,10 +350,14 @@ migration on merge (a production schema change requires a human) · a staging co
 
 ## 13. Open questions for the canonical decisions
 
-1. **No cron secret in D8.** D8 lists `REVALIDATE_SECRET` but nothing for scheduled invocation, so
-   the cron routes reuse it (with Vercel's `x-vercel-cron` header as a second factor for the research
-   route). One secret currently guards both cache invalidation and every scheduled job. Suggested
-   amendment: add `CRON_SECRET` to D8's server-only list.
+1. **No cron secret in D8, and two schemes in one deployment.** D8 lists `REVALIDATE_SECRET` but
+   nothing for scheduled invocation, so six of the seven §3.1 routes reuse it and one secret guards
+   both cache invalidation and every scheduled job. The seventh, `app/api/cron/research`, authenticates
+   on Vercel's `x-vercel-cron` header **alone** — it does not reuse `REVALIDATE_SECRET` at all — which
+   leaves the route with the widest reach on the only scheme that cannot be exercised outside Vercel.
+   Suggested amendment: add `CRON_SECRET` to D8's server-only list and normalise all seven onto it.
+   `SCRAPER.md` §16 item 4, `ARCHITECTURE.md` open question 3 and `SECURITY.md` §16 item 2 point at
+   this same amendment and must be resolved together.
 2. **Vercel system variables are not in D8.** `VERCEL_ENV`, `VERCEL_URL`, `VERCEL_GIT_COMMIT_SHA` and
    `VERCEL_GIT_COMMIT_REF` are platform-injected, are not secrets and are not configured by anyone,
    but they are read by the Environment page and by `check-env.ts`. Suggested amendment: note in D8

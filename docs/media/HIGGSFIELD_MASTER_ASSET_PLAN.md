@@ -105,10 +105,29 @@ below. Only four "no" answers permit a generation brief.
 
 Q4 has two failure modes and both must be checked:
 
-- **Resolution fit** — the crop must still meet the preset's target width
-  (`hero` 1600 px, `hero-xl` 2560 px, `grid` 768 px, `card` 480 px; see `CLOUDINARY.md` §5).
+- **Resolution fit** — the asset, after any crop, must still meet the target width of the preset
+  the slot actually delivers through. The measure is the source's **width**, which is what
+  `CLOUDINARY.md` §5.2 and `HIGGSFIELD_ASSET_STATUS.md` §5.1 count.
 - **Subject survival** — a crop that removes the thing the picture is about is not a crop.
   An ultra-wide monumental lobby cropped to 4:5 keeps pixels and loses the subject.
+
+**Target width by slot role**, so no row in §4 has to argue the point:
+
+| Slot role | Preset | Target width | Note |
+|---|---|---|---|
+| Full-bleed page hero — desktop 21:9 | `hero-xl` | **2560 px** | 6336 px is the library's own master width for this role |
+| Full-bleed page hero — mobile 9:16 | `hero` | **1440 px** (min 1440 × 2560) | A 9:16 slot renders at viewport width and the `srcSet` ladder never asks it for more than its 1536 step. This is the figure brief G6 already carries; a 9:16 asset is never delivered through a landscape `hero-xl` chain |
+| Section hero, band, category hero — desktop and mobile | `hero` | **1600 px** | |
+| Gallery grid | `grid` | **768 px** | |
+| Card — product, collection, category, journal | `card` | **480 px** | |
+| Video hero — desktop 16:9 | — | **1920 × 1080** | |
+
+Fourteen of the 224 images are below 1600 px wide and seven are below 1600 px on their long edge
+(`CLOUDINARY.md` §5.2). The seven are the five 896 × 1152 assets `DECOR-009`, `-010`,
+`MATERIAL-MACRO-024`, `-025`, `PRESERVATION-VARMALA-009`, plus `PROCESS-STUDIO-009`
+(1216 × 896) and `PRESERVATION-VARMALA-008` (1280 × 832). **They are `card`- and `grid`-eligible
+only.** Where §4 binds one, the row names the ceiling preset in the verdict; none of them is bound
+to a hero, a category hero or a band.
 
 ### 2.2 Four things that are never generated, in any phase
 
@@ -180,20 +199,39 @@ property of one particular manifest build.
 
 ### 3.3 Filename — the human key, not the identity
 
+**One grammar covers both allocators**: the asset ID, lower-cased, then the ratio with `x` for
+the colon. The filename is therefore always derivable from the ID and never has to be looked up.
+
 ```
-<family-lowercase>-<nnn>-<ratio-with-x>.<ext>      process-studio-001-4x3.webp
-                                                   largeformat-dining-004-9x16.mp4
+<rivya_asset_id lower-cased>-<ratio-with-x>.<ext>
+
+MATERIAL-MACRO-009        →  material-macro-009-21x9.webp
+LARGEFORMAT-DINING-004    →  largeformat-dining-004-9x16.mp4
+LARGE-DINING-CARD-001     →  large-dining-card-001-4x5.webp     (planned, §6 G3)
+HOME-HERO-VIDEO-001       →  home-hero-video-001-16x9.mp4       (planned, §6 G1)
 ```
 
-All 250 filenames are unique. `filename` is the useful human key in a table or a `git` diff;
-`rivya_asset_id` is what CMS bindings and the ledger refer to. D6: *"the Rivya asset ID is
-authoritative, not the filename."*
+All 250 existing filenames are produced by this rule and every §6 brief follows it. All 250 are
+unique. `CLOUDINARY.md` §3 states the same rule. `filename` is the useful human key in a table or
+a `git` diff; `rivya_asset_id` is what CMS bindings and the ledger refer to. D6: *"the Rivya asset
+ID is authoritative, not the filename."*
 
-FEAT §35's shape — `<page>-<section>-<variant>.<ext>` — is the same grammar with the family
-expanded. New assets for a route with no family (`home-hero-main-video.mp4`) take the FEAT §35
-form; assets extending an existing family keep the family form.
+> **This diverges from D6's literal wording, and the divergence is recorded rather than silent.**
+> D6 fixes the filename form as `<page>-<section>-<variant>.<ext>`, and FEAT §35's examples are
+> `home-hero-main-video.mp4`, `home-hero-main-poster.webp`, `furniture-signature-hero.webp`.
+> Neither describes the 250 filenames that already exist; neither carries the ordinal or the
+> ratio; and applying either would mean renaming assets D6 forbids regenerating or renumbering.
+> The grammar above is what the library, the manifest generator and `CLOUDINARY.md` §3 all
+> actually use.
+>
+> **Required action, and it is not this document's to take:** append a dated amendment to
+> `CANONICAL-DECISIONS.md` §D6 recording `<rivya_asset_id lower-cased>-<ratio-with-x>.<ext>` as the
+> filename grammar and stating that it supersedes `<page>-<section>-<variant>.<ext>`. Until that
+> amendment lands, D6 wins on paper and this section is the open item; §8 carries it as a change-
+> control row.
 
-Reserved forms not yet in use, for later phases:
+Reserved forms for **owner-supplied** media in later phases, where no manifest asset ID exists and
+FEAT §35's page-section shape is the right one:
 
 ```
 product-<slug>-hero.webp · product-<slug>-detail-<nn>.webp · product-<slug>-lifestyle-<nn>.webp
@@ -247,10 +285,10 @@ Slot keys are `media_usages.slot_key` values, scoped to the `page_sections` row;
 | Section | Slot | Desktop (ratio · asset) | Mobile (ratio · asset) | Verdict |
 |---|---|---|---|---|
 | 01 Hero | `video` | 16:9 · **GAP → `HOME-HERO-VIDEO-001`** | none — `HeroMotion` does not mount below 768 px | `GAP` |
-| 01 Hero | `media` (poster) | 21:9 · **GAP → `HOME-HERO-POSTER-001`**; interim `LARGEFORMAT-DINING-002` (image, 6336×2688) | 9:16 · `LARGEFORMAT-DINING-001` (image, 1536×2752) | `GAP` desktop · `COVERED` mobile |
+| 01 Hero | `media` (poster) | 21:9 · **GAP → `HOME-HERO-POSTER-001`**; interim `LARGEFORMAT-DINING-002` (image, 6336×2688) | 9:16 · `LARGEFORMAT-DINING-001` (image, 1536×2752) | `GAP` desktop · `COVERED` mobile (9:16 mobile-hero preset, min 1440 × 2560 — §2.1; its 1536 px width is one of the 14 below `hero`'s 1600 px, so it is never delivered through a landscape `hero`/`hero-xl` chain) |
 | 02 Manifesto | `media` | 16:9 · `MATERIAL-MACRO-012` (5504×3072) | 4:5 · `MATERIAL-MACRO-013` (3712×4608) | `COVERED` |
 | 03 Signature Collections · Tables | `card.1` | 4:5 · **GAP → `LARGE-DINING-CARD-001`** | same | `GAP` |
-| 03 · Sculptural Furniture | `card.2` | 4:5 · `LARGEFORMAT-SEATING-001` (3712×4608) | same | `COVERED` |
+| 03 · Sculptural Furniture | `card.2` | 4:5 · **GAP → `LARGE-SEATING-CARD-001`** | same | `GAP` (§6 G11). `LARGEFORMAT-SEATING-001` is 4:5 and the right subject family, but it is a workshop blank (§1.1a) and may not stand in a finished-object card. No interim — the slot renders its empty state |
 | 03 · 3D + Resin | `card.3` | 4:5 · `THREE-D-RESIN-005` (1856×2304) | same | `COVERED` |
 | 03 · Statement Art | `card.4` | 4:5 · `WALL-ART-001` (3712×4608) | same | `COVERED` |
 | 03 · Architectural Pieces | `card.5` | 4:5 · **GAP → `LARGE-ARCHITECTURAL-CARD-001`**, held | same | `GAP` (held — §6 G5) |
@@ -283,36 +321,37 @@ Slot keys are `media_usages.slot_key` values, scoped to the `page_sections` row;
 |---|---|---|---|---|
 | Hero | `media` | 21:9 · `MATERIAL-MACRO-009` (6336×2688) | 9:16 · `MATERIAL-MACRO-002` (3072×5504) | `COVERED` |
 | Philosophy | `media` | 16:9 · `MATERIAL-MACRO-014` (5504×3072) | 4:5 · `MATERIAL-MACRO-023` (3712×4608) | `COVERED` |
-| Scale | `media` | 21:9 · `LARGEFORMAT-MONUMENTAL-001` (6336×2688) | 4:5 · `LARGEFORMAT-SEATING-002` (3712×4608) | `COVERED` |
+| Scale | `media` | 21:9 · `LARGEFORMAT-MONUMENTAL-001` (6336×2688) | 4:5 · `LARGEFORMAT-SEATING-002` (3712×4608) | `COVERED`. The mobile asset is a §1.1a workshop blank and is bound **deliberately**: this band is a making-and-material context on an About page, not a finished-object card, which is the one placement §1.1a permits |
 | Bespoke | `media` | 16:9 · `PROCESS-STUDIO-005` (5504×3072) | 4:5 · `PROCESS-STUDIO-006` (3712×4608) | `COVERED` |
 | Closing | `video` | 16:9 · `MATERIAL-MACRO-038` (video, 1344×768, 8 s) | — | `COVERED` |
 | Closing | `media` (poster) | 16:9 · `MATERIAL-MACRO-026` (2752×1536) | 4:5 · `MATERIAL-MACRO-013` (3712×4608) | `COVERED` |
 
 `about` is the best-supplied page in the library: 39 `material-macro` assets across six ratios,
-including four 21:9 at 6336 px and four 9:16 at 3072 px.
+including three 21:9 at 6336 px (`MATERIAL-MACRO-009`, `-011`, `-015`), a fourth 21:9 at 3168 px
+(`MATERIAL-MACRO-027`), and four 9:16 at 3072 px.
 
 ### 4.3 `/large-format` (SEED §12)
 
 | Section | Slot | Desktop | Mobile | Verdict |
 |---|---|---|---|---|
 | Hero | `video` | 16:9 · `LARGEFORMAT-DINING-005` (video, 1344×768, 8 s) | — | `COVERED` |
-| Hero | `media` (poster) | 21:9 · `LARGEFORMAT-MONUMENTAL-001` (6336×2688) | 9:16 · `LARGEFORMAT-DINING-001` (image, 1536×2752) | `COVERED` |
+| Hero | `media` (poster) | 21:9 · `LARGEFORMAT-MONUMENTAL-001` (6336×2688) | 9:16 · `LARGEFORMAT-DINING-001` (image, 1536×2752) | `COVERED` (mobile clears the 9:16 mobile-hero minimum 1440 × 2560 — §2.1; at 1536 px wide it is below `hero`'s 1600 px and is never delivered through a landscape chain) |
 | Category intro | `media` | 16:9 · `LARGEFORMAT-DINING-003` (2048×1152) | 3:2 · `LARGEFORMAT-CONSOLE-003` (2528×1696) | `COVERED` |
 | Dining & Statement Tables | `card.1` | 4:5 · **GAP → `LARGE-DINING-CARD-001`** | same | `GAP` (§6 G3) |
 | Coffee & Centre Tables | `card.2` | 4:5 · **GAP → `LARGE-COFFEE-CARD-001`** | same | `GAP` (§6 G4) |
-| Consoles & Side Pieces | `card.3` | 4:5 · `LARGEFORMAT-SIDE-001` (3712×4608) | same | `COVERED` |
+| Consoles & Side Pieces | `card.3` | 4:5 · **GAP → `LARGE-CONSOLE-CARD-001`** | same | `GAP` (§6 G12). Every 4:5 asset in `largeformat-side` and `largeformat-console` is a workshop blank (§1.1a). No interim — the slot renders its empty state |
 | Conference & Commercial Tables | `card.4` | — | — | `EMPTY` — copy is `OWNER_VERIFICATION_REQUIRED` (SEED §12); no image may assert an unverified capability |
-| Sculptural Seating | `card.5` | 4:5 · `LARGEFORMAT-SEATING-003` (3712×4608) | same | `COVERED` |
+| Sculptural Seating | `card.5` | 4:5 · **GAP → `LARGE-SEATING-CARD-001`** | same | `GAP` (§6 G11) — the same brief as the homepage `card.2`. All four `largeformat-seating` assets are workshop blanks (§1.1a). No interim |
 | Architectural & Statement | `card.6` | 4:5 · **GAP → `LARGE-ARCHITECTURAL-CARD-001`**, held | same | `GAP`, held (§6 G5) |
 | Customization | `media` | 16:9 · `PROCESS-MOULD-002` (5504×3072) | 4:5 · `PROCESS-MOULD-004` (3712×4608) | `COVERED` |
-| CTA | `media` | 21:9 · `MATERIAL-MACRO-027` (3168×1344) | 4:5 · `MATERIAL-MACRO-024` (896×1152) | `COVERED` |
+| CTA | `media` | 21:9 · `MATERIAL-MACRO-027` (3168×1344) | 4:5 · `MATERIAL-MACRO-023` (3712×4608) | `COVERED`. `MATERIAL-MACRO-024` reads as the obvious mobile match but is 896 × 1152 — `card`/`grid` ceiling, below the band's `hero` 1600 px (§2.1) |
 
 ### 4.4 `/collection` — landing (SEED §13)
 
 | Section | Slot | Desktop | Mobile | Verdict |
 |---|---|---|---|---|
 | Hero | `media` | 21:9 · `MATERIAL-MACRO-011` (6336×2688) | 9:16 · `MATERIAL-MACRO-005` (3072×5504) | `COVERED` |
-| Card · Furniture | `card.1` | 4:5 · `LARGEFORMAT-SEATING-004` (3712×4608) | same | `COVERED` |
+| Card · Furniture | `card.1` | 4:5 · **GAP → `FURNITURE-HERO-002`** | same | `GAP` (§6 G10). `LARGEFORMAT-SEATING-004` is 4:5 but is a workshop blank (§1.1a); G10's 4:5 variant is the category's own finished-furniture portrait and serves this card and the `/collection/furniture` mobile hero. No interim |
 | Card · Collectible Design | `card.2` | 4:5 · `GALLERY-SCENE-001` (1856×2304) | same | `COVERED` |
 | Card · 3D + Resin | `card.3` | 3:4 · `THREE-D-RESIN-001` (3584×4800) | same | `COVERED` |
 | Card · Wall & Statement Art | `card.4` | 4:5 · `WALL-ART-011` (3712×4608) | same | `COVERED` |
@@ -328,17 +367,20 @@ including four 21:9 at 6336 px and four 9:16 at 3072 px.
 
 | Category | Hero desktop (16:9) | Hero mobile (4:5) | Gallery supply | Verdict |
 |---|---|---|---|---|
-| `furniture` | `LARGEFORMAT-CONSOLE-001` (5504×3072) | `LARGEFORMAT-SEATING-001` (3712×4608) | 18 `largeformat-*` — 8 of them are workshop blanks (§1.1a) | `COVERED`; dedicated hero is optional brief G10 |
+| `furniture` | recrop `LARGEFORMAT-COFFEE-001` 3:2→16:9 (→2528×1422) | **GAP → `FURNITURE-HERO-002`** | 18 `largeformat-*`, but 8 are workshop blanks (§1.1a) and 5 of the remaining 10 are already bound on `/large-format` | `RECROP` desktop · `GAP` mobile (§6 G10, now Tier 1). `LARGEFORMAT-CONSOLE-001` and `-SEATING-001` are the two assets the family offers at these ratios and both are workshop blanks — a category hero is a finished-object surface |
 | `collectible-design` | `GALLERY-SCENE-003` (2688×1536) | `GALLERY-SCENE-001` (1856×2304) | 5 `gallery-scene` | `COVERED` |
 | `3d-resin` | `THREE-D-RESIN-002` (5504×3072) | `THREE-D-RESIN-005` (1856×2304) | 13 `three-d-resin` (10×16:9, 2×3:4, 1×4:5) | `COVERED` |
 | `wall-statement-art` | `WALL-ART-008` (21:9, 6336×2688 — full-bleed) | `WALL-ART-012` (3712×4608) | 20 `wall-art` (10×16:9, 2×21:9, 2×3:2, 1×3:4, 5×4:5) | `COVERED` |
-| `preservation` | `PRESERVATION-VARMALA-007` (2688×1536) | `PRESERVATION-VARMALA-009` (896×1152) | 19 (`preservation-varmala` 15 + `preservation-keepsake` 4) | `COVERED` |
+| `preservation` | `PRESERVATION-VARMALA-007` (2688×1536) | `PRESERVATION-VARMALA-004` (1856×2304) | 19 (`preservation-varmala` 15 + `preservation-keepsake` 4) | `COVERED`. `PRESERVATION-VARMALA-009` is the family's other 4:5 candidate but is 896 × 1152 — `card`/`grid` ceiling, below the category hero's `hero` 1600 px (§2.1) |
 | `decor` | `DECOR-013` (2048×1152) | `DECOR-002` (3:4, 3584×4800) | 18 `decor` (6×16:9, 6×3:4, 2×4:5, 2×9:16, 1×3:2, 1 video) | `COVERED` |
 | `gifts` | `GIFTS-005` (2048×1152) | `GIFTS-003` (3712×4608) | 10 `gifts` (7×16:9, 1×3:2, 1×3:4, 1×4:5) | `COVERED` |
 
 `furniture` and `collectible-design` have no family of their own. They are filled from
 `largeformat-*` and `gallery-scene` respectively — those are *their own* subject matter, not
-another category's image, which is the distinction Phase 43's exit criterion draws.
+another category's image, which is the distinction Phase 43's exit criterion draws. `furniture`
+is the one category where that supply does not reach: of its 18 `largeformat-*` assets, eight are
+workshop blanks that §1.1a bars from a finished-object surface, and every 4:5 asset in the group
+is one of the eight. That is why G10 is blocking rather than optional.
 
 ### 4.6 `/custom-commissions` (SEED §15)
 
@@ -349,7 +391,7 @@ another category's image, which is the distinction Phase 43's exit criterion dra
 | Starting points | — | no media — a nine-option list | — | n/a |
 | What to share | `media` | 4:3 · `PROCESS-STUDIO-001` (4800×3584) | 4:5 · `PROCESS-STUDIO-008` (3712×4608) | `COVERED` |
 | How it works (4 steps) | — | no media — numbered steps | — | n/a |
-| CTA | `media` | 21:9 · `MATERIAL-MACRO-009` (6336×2688) | 4:5 · `MATERIAL-MACRO-025` (896×1152) | `COVERED` |
+| CTA | `media` | 21:9 · `MATERIAL-MACRO-009` (6336×2688) | 4:5 · recrop `MATERIAL-MACRO-014` 16:9→4:5 (→2458×3072) | `COVERED` desktop · `RECROP` mobile. `MATERIAL-MACRO-025` is the family's other 4:5 candidate but is 896 × 1152 — `card`/`grid` ceiling (§2.1). An abstract resin macro is the one subject class a crop cannot destroy, so Q4 passes on both tests |
 
 The hero is deliberately a **re-crop, not a generation**: Q4 passes on both tests
 (2528 px ≥ the `hero` preset's 1600 px, and a serene resin-and-oak interior survives a 3:2→16:9
@@ -362,7 +404,7 @@ site's primary conversion page — that is an editorial call, not a coverage fai
 |---|---|---|---|---|
 | Hero | `video` | 16:9 · `PROCESS-STUDIO-019` (video, 1920×1080, 6 s) | 9:16 · `PROCESS-PIGMENT-013` (video, 768×1344, 6 s) | `COVERED` |
 | Hero | `media` (poster) | 21:9 · recrop `PROCESS-STUDIO-005` 16:9→21:9 (→5504×2359) | 9:16 · `PROCESS-POUR-001` (3072×5504) | `RECROP` |
-| 01 Brief | `media` | 4:3 · `PROCESS-STUDIO-009` (1216×896) | 4:5 · `PROCESS-STUDIO-006` (3712×4608) | `COVERED` |
+| 01 Brief | `media` | 16:9 · `PROCESS-STUDIO-013` (2048×1152) | 4:5 · `PROCESS-STUDIO-006` (3712×4608) | `COVERED`. `PROCESS-STUDIO-009` is the closer subject but is 1216 × 896 — below the band's `hero` 1600 px (§2.1) and `card`/`grid`-eligible only |
 | 02 Material direction | `media` | 16:9 · `PROCESS-PIGMENT-008` (2048×1152) | 4:5 · `PROCESS-PIGMENT-003` (1856×2304) | `COVERED` |
 | 03 Form development | `media` | 16:9 · `PROCESS-MOULD-005` (5504×3072) | 3:4 · `PROCESS-MOULD-009` (3584×4800) | `COVERED` |
 | 04 Fabrication | `media` | 16:9 · `THREE-D-RESIN-003` (5504×3072) | 3:4 · `THREE-D-RESIN-004` (3584×4800) | `COVERED` |
@@ -425,7 +467,7 @@ Category-to-family mapping, so no editor has to guess:
 | Surface | Decision | Verdict |
 |---|---|---|
 | Product hero, gallery, detail, lifestyle, video, 3D model | Owner-supplied. The `product_media` trigger **rejects any asset with `is_concept = true`** outright | `OWNER` |
-| `/collections/[slug]` — the ten `DRAFT_COLLECTION_CONCEPT` names (SEED §9) | Only `Ocean`, `Midnight`, `Clear` and `Geode` have a truthful match in a library built on deep ocean, obsidian, sapphire and champagne. `Aurora`, `Earth`, `Monsoon`, `Forest`, `Botanical` and `Bespoke` have no matching asset and must not borrow a blue one — the concept name would then describe a picture that contradicts it | 4 `COVERED`, 6 `EMPTY` |
+| `/collections/[slug]` — the ten `DRAFT_COLLECTION_CONCEPT` names (FEAT §9) | Only `Ocean`, `Midnight`, `Clear` and `Geode` have a truthful match in a library built on deep ocean, obsidian, sapphire and champagne. `Aurora`, `Earth`, `Monsoon`, `Forest`, `Botanical` and `Bespoke` have no matching asset and must not borrow a blue one — the concept name would then describe a picture that contradicts it | 4 `COVERED`, 6 `EMPTY` |
 
 Collection-concept bindings where they are truthful:
 
@@ -443,7 +485,7 @@ Collection-concept bindings where they are truthful:
 | Surface | Slot | Decision | Verdict |
 |---|---|---|---|
 | Announcement bar (SEED §9) | — | Copy and CTA only | n/a |
-| Main navigation, mega menu (SEED §8) | `card.1…7` | The seven category cards from §4.4 | `COVERED` |
+| Main navigation, mega menu (SEED §8) | `card.1…7` | The seven category cards from §4.4 | `COVERED` for six. `card.1` Furniture follows §4.4 and stays a `GAP` until G10's 4:5 variant exists; the mega-menu tile renders its empty state, it does not borrow a blank |
 | Footer (SEED §24) | — | Copy, columns and links only | n/a |
 | Global brand content (SEED §6) | `logo`, `wordmark`, `favicon` | **Never generated** (§2.2). Interim: typographic wordmark from design tokens, no image request | `OWNER` |
 | SEO defaults (SEED §41, §44) | `og` | Interim `MATERIAL-MACRO-012` through the `og` preset. Final branded card is owner-supplied | `COVERED` interim · `OWNER` final |
@@ -473,16 +515,20 @@ enough, and record that decision.
 | G3 | `LARGE-DINING-CARD-001` | 1 | Homepage Signature Collections · Tables; `/large-format` Dining card | 4:5 / 4:5 | `rivya/large-format/dining` | No portrait table asset exists. All three dining stills are landscape (16:9, 21:9) or a 9:16 interior. A portrait crop of a long table removes its length, which is the subject. The 4:5 assets that do exist in `largeformat-*` are workshop blanks (§1.1a) and cannot sit in a finished-object card |
 | G4 | `LARGE-COFFEE-CARD-001` | 1 | `/large-format` Coffee & Centre Tables card | 4:5 / 4:5 | `rivya/large-format/coffee` | The family has exactly one asset, `LARGEFORMAT-COFFEE-001` at 3:2. Cropping 3:2→4:5 yields 1357×1696 — enough pixels, but it removes the low horizontal proportion that is what makes a coffee table read as one |
 | G5 | `LARGE-ARCHITECTURAL-CARD-001` | 1 · **HELD** | Homepage Architectural card; `/large-format` Architectural card | 4:5 / 4:5 | `rivya/large-format/architectural` | The family has exactly one asset, at 21:9. The subject *is* the ultra-wide space and its negative space; a 4:5 crop keeps 2150×2688 px and destroys the picture. **Do not generate until the owner verifies architectural/spatial capability** — SEED §12 marks the copy `OWNER_VERIFICATION_REQUIRED`, and an image would assert the capability faster than the words |
-| G6 | `HOME-HERO-POSTER-002` | 2 | `/` hero poster, mobile | 9:16 / — | `rivya/home/hero` | `LARGEFORMAT-DINING-001` (1536×2752) fits and was prompted "for a mobile hero". Generate only for scene continuity with G1/G2 |
+| G6 | `HOME-HERO-POSTER-002` | 2 | `/` hero poster, mobile | 9:16 / — | `rivya/home/hero` | `LARGEFORMAT-DINING-001` (1536×2752) was prompted "for a mobile hero" and clears the 9:16 mobile-hero minimum of 1440 × 2560 (§2.1). Its 1536 px width is below `hero`'s 1600 px, so it serves this 9:16 slot and no landscape one. Generate only for scene continuity with G1/G2, or to lift the mobile hero above every preset width |
 | G7 | `HOME-MATERIAL-FABRICATED-001` | 2 | Homepage Material Palette · Fabricated Form | 1:1 / 1:1 | `rivya/material` | A 16:9→1:1 recrop of `THREE-D-RESIN-002` fits. Generate only to keep the four-tile set shot in one session, as `MATERIAL-MACRO-016…022` were |
 | G8 | `HOME-MATERIAL-FINISH-001` | 2 | Homepage Material Palette · Finish | 1:1 / 1:1 | `rivya/material` | A 4:5→1:1 recrop of `PROCESS-FINISH-001` fits. Same continuity argument as G7 |
 | G9 | `COMMISSION-HERO-001` | 2 | `/custom-commissions` hero | 16:9 / 4:5 | `rivya/commission` | A 3:2→16:9 recrop of `INTERIOR-LIFESTYLE-002` fits at 2528×1422. Generate only if an editor judges a borrowed Japandi interior too generic for the primary conversion page |
-| G10 | `FURNITURE-HERO-001` | 2 | `/collection/furniture` hero | 21:9 / 4:5 | `rivya/collection/furniture` | `LARGEFORMAT-CONSOLE-001` and `LARGEFORMAT-SEATING-001` fit. Generate only to stop `/collection/furniture` and `/large-format` showing the same photograph |
+| G10 | `FURNITURE-HERO-001` · `FURNITURE-HERO-002` | 1 | `/collection/furniture` hero; `/collection` landing Furniture card; mega-menu Furniture tile | 16:9 / 4:5 | `rivya/collection/furniture` | The category's only 4:5 supply is the eight workshop blanks §1.1a bars from a finished-object surface, so the 4:5 role (`-002`) has nothing to bind. The 21:9 role (`-001`) is Tier 2 on its own — a 3:2→16:9 recrop of `LARGEFORMAT-COFFEE-001` serves the desktop hero at 2528×1422 — and is generated with `-002` so the two roles are one scene |
+| G11 | `LARGE-SEATING-CARD-001` | 1 | Homepage Signature Collections · Sculptural Furniture `card.2`; `/large-format` Sculptural Seating `card.5` | 4:5 / 4:5 | `rivya/large-format/seating` | All four `largeformat-seating` assets are 4:5 and all four are workshop blanks — a seat blank in its mould, a bench plank on trestles, "no legs or frame attached, no finished chair anywhere in shot" (§1.1a, DQ-8). There is no finished seat in the library at any ratio, so Q4 has nothing to crop |
+| G12 | `LARGE-CONSOLE-CARD-001` | 1 | `/large-format` Consoles & Side Pieces `card.3` | 4:5 / 4:5 | `rivya/large-format/console` | The seven `largeformat-console` and `largeformat-side` assets split three ways: four are workshop blanks (§1.1a), `LARGEFORMAT-SIDE-003` is a desk of 3D-printed organisers and `LARGEFORMAT-CONSOLE-004` a wall panel (both subject-mismatched, DQ-7), leaving one finished console at 3:2 — `LARGEFORMAT-CONSOLE-003`, already bound to the `/large-format` category intro, and a 3:2→4:5 crop of a long console removes its length, which is the subject |
 
 **Folders that do not yet exist** and must be added to `lib/media/folders.ts` before any of these
 uploads: `rivya/home/hero` (G1, G2, G6), `rivya/commission` (G9), `rivya/collection/furniture`
-(G10). The Phase 06 folder test asserts that every manifest folder appears in the allowlist; the
-allowlist is a superset, so additions are legal without weakening the assertion.
+(G10). G11 and G12 need no new folder — `rivya/large-format/seating` and
+`rivya/large-format/console` are already manifest folders. The Phase 06 folder test asserts that
+every manifest folder appears in the allowlist; the allowlist is a superset, so additions are
+legal without weakening the assertion.
 
 ### 6.1 Full briefs
 
@@ -522,7 +568,7 @@ award or certification badges.
 | Field | Value |
 |---|---|
 | Type | video |
-| Family | `home-hero` |
+| Planned family (see §3.1) | `home-hero-video` — the full planned ID prefix, lower-cased |
 | Page · section | `home` · `hero` |
 | Slot · role | `video` · `DESKTOP` |
 | Aspect ratio | 16:9 |
@@ -559,7 +605,7 @@ proportions. Loopable.
 | Field | Value |
 |---|---|
 | Type | image |
-| Family | `home-hero` |
+| Planned family (see §3.1) | `home-hero-poster` — the full planned ID prefix, lower-cased |
 | Page · section | `home` · `hero` |
 | Slot · role | `media` · `DESKTOP` (poster for G1) |
 | Aspect ratio | 21:9 |
@@ -567,7 +613,7 @@ proportions. Loopable.
 | Cloudinary folder | `rivya/home/hero` |
 | Cloudinary public ID | `rivya/home/hero/home-hero-poster-001-21x9` |
 | Filename | `home-hero-poster-001-21x9.webp` |
-| Suggested model | `cinematic_studio_2_5` (used for all five 6336 px 21:9 masters) |
+| Suggested model | `cinematic_studio_2_5` — used for 3 of the 7 6336 × 2688 21:9 masters (`MATERIAL-MACRO-009`, `LARGEFORMAT-DINING-002`, `LARGEFORMAT-MONUMENTAL-001`); the other four (`WALL-ART-008`, `-013`, `MATERIAL-MACRO-011`, `-015`) use `nano_banana_2` |
 | Gate | Q1 no · Q2 no · Q3 no · Q4 no (must be frame-identical to G1) |
 | Interim binding until generated | `LARGEFORMAT-DINING-002` (image, 21:9, 6336 × 2688) |
 
@@ -712,9 +758,12 @@ no watermarks, no faces.
 | Field | Value |
 |---|---|
 | Type | image · 9:16 · min 1440 × 2560 |
+| Planned family (see §3.1) | `home-hero-poster` — shared with G2, which is the same ID prefix |
+| Cloudinary folder | `rivya/home/hero` |
 | Cloudinary public ID | `rivya/home/hero/home-hero-poster-002-9x16` |
-| Gate | Q1 no · Q2 no · **Q3 yes** (`LARGEFORMAT-DINING-001`, 1536 × 2752, prompted "for a mobile hero") · Q4 n/a |
-| Generate only if | An editor requires the mobile hero to be the same scene as G1/G2 |
+| Filename | `home-hero-poster-002-9x16.webp` |
+| Gate | Q1 no · Q2 no · **Q3 yes, at the mobile-hero target only** — `LARGEFORMAT-DINING-001` is 1536 × 2752 and prompted "for a mobile hero": it clears the 9:16 mobile-hero minimum of 1440 × 2560 (§2.1), and its 1536 px width is **below `hero`'s 1600 px**, which makes it one of the 14 sub-`hero` images and eligible for this 9:16 slot and no landscape one · Q4 n/a |
+| Generate only if | An editor requires the mobile hero to be the same scene as G1/G2, or wants a mobile hero that also clears the landscape presets |
 
 **Prompt**
 
@@ -737,7 +786,7 @@ daylit room.*
 | Field | Value |
 |---|---|
 | Type | image · 1:1 · min 2048 × 2048, target 4096 × 4096 |
-| Family | `home-material` |
+| Planned family (see §3.1) | `home-material-fabricated` — the full planned ID prefix, lower-cased |
 | Cloudinary folder | `rivya/material` |
 | Cloudinary public ID | `rivya/material/home-material-fabricated-001-1x1` |
 | Filename | `home-material-fabricated-001-1x1.webp` |
@@ -768,7 +817,7 @@ lattice.*
 | Field | Value |
 |---|---|
 | Type | image · 1:1 · min 2048 × 2048, target 4096 × 4096 |
-| Family | `home-material` |
+| Planned family (see §3.1) | `home-material-finish` — the full planned ID prefix, lower-cased |
 | Cloudinary folder | `rivya/material` |
 | Cloudinary public ID | `rivya/material/home-material-finish-001-1x1` |
 | Filename | `home-material-finish-001-1x1.webp` |
@@ -799,8 +848,10 @@ clear resin.*
 | Field | Value |
 |---|---|
 | Type | image · 16:9 desktop min 1600 × 900 (target 5504 × 3072); 4:5 mobile as `COMMISSION-HERO-002` |
+| Planned family (see §3.1) | `commission-hero` — the full planned ID prefix, lower-cased; `-002` shares it |
 | Cloudinary folder | `rivya/commission` |
 | Cloudinary public ID | `rivya/commission/commission-hero-001-16x9` |
+| Filename | `commission-hero-001-16x9.webp` |
 | Gate | Q1 no · Q2 no · Q3 no (no `commission` family) · **Q4 yes** (recrop `INTERIOR-LIFESTYLE-002` 3:2→16:9 at 2528 × 1422) |
 | Generate only if | An editor judges the borrowed Japandi interior too generic for the primary conversion page |
 
@@ -827,30 +878,132 @@ offcuts and cured resin swatches.*
 
 ---
 
-#### G10 · `FURNITURE-HERO-001` — Tier 2
+#### G10 · `FURNITURE-HERO-001` · `FURNITURE-HERO-002` — Tier 1
 
 | Field | Value |
 |---|---|
-| Type | image · 21:9 desktop min 2560 × 1097 (target 6336 × 2688); 4:5 mobile as `FURNITURE-HERO-002` |
+| Type | image · 16:9 desktop min 1600 × 900 (target 5504 × 3072) — a category hero, not a full-bleed page hero (§3.5); 4:5 mobile as `FURNITURE-HERO-002`, min 1600 × 2000 (target 3712 × 4608) |
+| Planned family (see §3.1) | `furniture-hero` — the full planned ID prefix, lower-cased; both variants share it |
+| Slot · role | `/collection/furniture` hero `DESKTOP` (`-001`) and `MOBILE` (`-002`); `/collection` landing `card.1` and the mega-menu Furniture tile also bind `-002` |
 | Cloudinary folder | `rivya/collection/furniture` |
-| Cloudinary public ID | `rivya/collection/furniture/furniture-hero-001-21x9` |
-| Gate | Q1 no · Q2 no · **Q3 yes** (`LARGEFORMAT-CONSOLE-001`, `LARGEFORMAT-SEATING-001`) · Q4 n/a |
-| Generate only if | `/collection/furniture` and `/large-format` must not open with the same photograph |
+| Cloudinary public ID | `rivya/collection/furniture/furniture-hero-001-16x9` · `…/furniture-hero-002-4x5` |
+| Filename | `furniture-hero-001-16x9.webp` · `furniture-hero-002-4x5.webp` |
+| Suggested model | `nano_banana_2` (all 3712 × 4608 and 5504 × 3072 masters) |
+| Gate | Q1 no · Q2 no · **Q3 no** — the only `largeformat-*` assets at these ratios are `LARGEFORMAT-CONSOLE-001` (16:9) and `LARGEFORMAT-SEATING-001` (4:5), and both are §1.1a workshop blanks that may not stand on a category hero or a category card · **Q4 no for 4:5** — no finished furniture asset survives a portrait crop (the length of a table or a console *is* the subject; §6 G3, G12) |
+| Desktop interim until generated | recrop `LARGEFORMAT-COFFEE-001` 3:2→16:9 (→2528×1422). That crop passes both Q4 tests, which is why `-001` alone would be Tier 2; it is generated with `-002` so the two roles are one scene |
+| Mobile interim | **none.** The slot renders its empty state (D10) rather than borrow a half-built blank |
 
 **Prompt**
 
 ```
-Ultra-wide editorial photograph of three finished resin-and-timber furniture pieces standing
-together in one quiet room — a low table, a console and a bench — spaced far apart across the
-frame with large calm negative space between them, soft morning side-light, mineral-neutral
-walls, no styling props, no people. Quiet luxury, mineral neutrals with natural wood,
-photorealistic materials, resin like deep glass never plastic, realistic furniture proportions.
-No people, no text, no logos, no neon, no heavy gold, no generic showroom look.
+Wide editorial photograph of three finished resin-and-timber furniture pieces standing together
+in one quiet room — a low table, a console and a bench — spaced far apart across the frame with
+large calm negative space between them, soft morning side-light, mineral-neutral walls, no
+styling props, no people. Quiet luxury, mineral neutrals with natural wood, photorealistic
+materials, resin like deep glass never plastic, realistic furniture proportions. No people, no
+text, no logos, no neon, no heavy gold, no generic showroom look.
 ```
 
 **Negative prompt** — `RIVYA-NEG-V2`.
 **Alt text (draft)** — *A low table, a console and a bench in resin and timber, standing far apart
 in one quiet daylit room.*
+
+**Prompt · `FURNITURE-HERO-002` (4:5)** — the same room, the same light, one piece instead of three:
+
+```
+Portrait editorial photograph of a single finished resin-and-timber console standing against a
+mineral-neutral wall in the same quiet room and the same morning side-light as the wide frame,
+the full height of the piece in view with calm empty wall above it, a bench just visible falling
+out of focus behind, no styling props, no people. Quiet luxury, mineral neutrals with
+natural wood, photorealistic materials, resin like deep glass never plastic, realistic furniture
+proportions. No text, no logos, no neon, no heavy gold, no generic showroom look.
+```
+
+**Negative prompt** — `RIVYA-NEG-V2`.
+**Alt text (draft)** — *A finished resin and timber console standing against a plain wall in a
+quiet daylit room.*
+
+---
+
+#### G11 · `LARGE-SEATING-CARD-001` — Tier 1
+
+| Field | Value |
+|---|---|
+| Type | image |
+| Planned family (see §3.1) | `large-seating-card` — **not** `largeformat-seating` |
+| Page · section | `large-format` · `seating` |
+| Slot · role | `/large-format` `card.5` and homepage `card.2`, `DESKTOP` and `MOBILE` |
+| Aspect ratio | 4:5 |
+| Minimum resolution | 1600 × 2000 — target 3712 × 4608 |
+| Cloudinary folder | `rivya/large-format/seating` |
+| Cloudinary public ID | `rivya/large-format/seating/large-seating-card-001-4x5` |
+| Filename | `large-seating-card-001-4x5.webp` |
+| Suggested model | `nano_banana_2` (all 3712 × 4608 masters) |
+| Gate | Q1 no · Q2 no · **Q3 no** — all four `largeformat-seating` assets are 4:5 at 3712 × 4608 and all four are workshop blanks whose prompts say "no legs or frame attached, no finished chair anywhere in shot" (§1.1a, DQ-8) · **Q4 no** — there is no finished seat in the library at any ratio to crop |
+| Interim | **none.** Both slots render their empty state until this is generated |
+
+**Prompt**
+
+```
+Portrait editorial photograph of one finished sculptural chair, complete and standing on its own
+legs on a polished stone floor: laminated walnut shell with a single thin sapphire resin seam
+following the curve of the seat, the whole piece in frame with calm empty space above it, one
+soft directional key from a tall window out of frame, the room behind reduced to shadow, no
+people — palette limited to deep ocean #08283A, obsidian #080A0E, sapphire #164E6B and muted
+champagne gold #B89B63; single soft directional key with warm rim fill; matte surfaces, no
+plastic sheen; cool shadows; editorial product-photography realism; shallow depth of field; no
+text, no logos, no watermarks, no faces.
+```
+
+> The word **finished** is load-bearing. This brief exists only because the library's four seating
+> assets are mid-build: a blank in its mould reads as a half-made product on a card that says
+> *Sculptural Seating* (DQ-8). A mould, a clamp, a trestle or a bare edge in frame fails the brief.
+
+**Negative prompt** — `RIVYA-NEG-V2`, plus the words `mould, clamp, trestle, workbench,
+unfinished edge, masking tape`.
+
+**Alt text (draft)**
+> A curved walnut chair with a thin blue resin seam along the seat, standing alone on a stone
+> floor.
+
+---
+
+#### G12 · `LARGE-CONSOLE-CARD-001` — Tier 1
+
+| Field | Value |
+|---|---|
+| Type | image |
+| Planned family (see §3.1) | `large-console-card` — **not** `largeformat-console` or `largeformat-side` |
+| Page · section | `large-format` · `consoles` |
+| Slot · role | `/large-format` `card.3`, `DESKTOP` and `MOBILE` |
+| Aspect ratio | 4:5 |
+| Minimum resolution | 1600 × 2000 — target 3712 × 4608 |
+| Cloudinary folder | `rivya/large-format/console` |
+| Cloudinary public ID | `rivya/large-format/console/large-console-card-001-4x5` |
+| Filename | `large-console-card-001-4x5.webp` |
+| Suggested model | `nano_banana_2` |
+| Gate | Q1 no · Q2 no · **Q3 no** — every 4:5 asset across `largeformat-console` and `largeformat-side` is a workshop blank (§1.1a); of the rest, `LARGEFORMAT-SIDE-003` and `LARGEFORMAT-CONSOLE-004` are subject-mismatched (DQ-7) and `LARGEFORMAT-CONSOLE-003` is the one finished console, at 3:2, already bound to the `/large-format` category intro · **Q4 no** — a 3:2→4:5 crop of a long console removes its length, which is the subject, exactly as in G3 |
+| Interim | **none.** The slot renders its empty state |
+
+**Prompt**
+
+```
+Portrait editorial photograph of a finished console table standing against a lime-plaster wall,
+seen slightly along its length so the full run of the top recedes into the frame: alternating
+bands of teak and clear sapphire resin, slim tapered legs on a stone floor, one small round side
+table of the same materials placed beside it, calm empty wall above, one soft directional key
+from the left, no styling props, no people — palette limited to deep ocean #08283A, obsidian
+#080A0E, sapphire #164E6B and muted champagne gold #B89B63; single soft directional key with warm
+rim fill; matte surfaces, no plastic sheen; cool shadows; editorial product-photography realism;
+shallow depth of field; no text, no logos, no watermarks, no faces.
+```
+
+**Negative prompt** — `RIVYA-NEG-V2`, plus the words `clamp, workbench, masking tape, resin dam,
+unfinished edge`.
+
+**Alt text (draft)**
+> A console table of teak and blue resin bands standing against a plaster wall, a small round side
+> table beside it.
 
 ---
 
@@ -867,6 +1020,7 @@ Every one of these is a decision, not an omission. Each names the condition that
 | Portfolio projects | `LEAVE_EMPTY` | The owner has a verified delivered project |
 | `/large-format` Conference & Commercial card | `LEAVE_EMPTY` | `owner_verification = VERIFIED` on that section's copy |
 | `/large-format` Architectural card | `LEAVE_EMPTY` → brief G5 | `owner_verification = VERIFIED` on that section's copy |
+| Homepage `card.2`; `/large-format` `card.3` and `card.5`; `/collection` Furniture card and its mega-menu tile; `/collection/furniture` mobile hero | `LEAVE_EMPTY` → briefs G10, G11, G12 | Those briefs are generated. Until then no §1.1a workshop blank stands in as a finished object — that is the "half-built product" failure DQ-8 names |
 | Collection concepts Aurora, Earth, Monsoon, Forest, Botanical, Bespoke | `LEAVE_EMPTY` | The owner confirms the concept, at which point a brief is written for it |
 | `/faq`, `/search`, `/privacy`, `/terms`, 404, 500 | `LEAVE_EMPTY` | Never — these pages are better without a picture |
 | Media-failure fallback (SEED §47) | `LEAVE_EMPTY` | Never — it is a token-painted surface, not an image |
@@ -884,3 +1038,4 @@ Every one of these is a decision, not an omission. Each names the condition that
 | An existing asset is judged unusable | It is archived, never regenerated. Its ID is never reused |
 | This document and the manifest disagree | The manifest wins. Correct this file |
 | This document and `CANONICAL-DECISIONS.md` disagree | D6 wins. Correct this file, or amend D6 by dated amendment |
+| **Open: the filename grammar (§3.3)** | D6's literal `<page>-<section>-<variant>.<ext>` describes none of the 250 filenames that exist. A dated amendment to D6 recording `<rivya_asset_id lower-cased>-<ratio-with-x>.<ext>` is required, and only the owner of `CANONICAL-DECISIONS.md` may append it. Until then D6 wins on paper and §3.3 is a recorded divergence, not a silent one |

@@ -30,7 +30,7 @@
 | `owner_verification` | **250 / 250** `OWNER_VERIFICATION_REQUIRED` | fixed |
 | Alt text approved by an editor | **0 of 250** — all values are `alt_text_draft` | pre-Phase-43 |
 | Products attached | **0** — and the `product_media` trigger rejects `is_concept = true` outright | permanent |
-| Collections attached | **0** — collection concepts are `DRAFT_COLLECTION_CONCEPT` (SEED §9) | pre-Phase-16 |
+| Collections attached | **0** — collection concepts are `DRAFT_COLLECTION_CONCEPT` (FEAT §9) | pre-Phase-16 |
 | 3D models · brand marks · product photographs | **0 of each** — none is in scope for AI generation | permanent |
 
 **Read the two zero rows carefully.** *Migrated 0* and *bound 0* are the true state of the ledger
@@ -199,7 +199,7 @@ and in the Studio asset drawer. **Source** is `higgsfield` and **Higgsfield?** i
 | Recipe B (quiet-luxury interior grammar) | `LARGEFORMAT-DINING-001`, `-002`, `LARGEFORMAT-MONUMENTAL-001`, `MATERIAL-MACRO-009`, `INTERIOR-LIFESTYLE-002` |
 | Recipe C (journal / blog grammar) | `LARGEFORMAT-DINING-003` |
 | Video grammar and the atelier prose | `LARGEFORMAT-DINING-004`, `-005`, `PROCESS-PIGMENT-013`, `GALLERY-SCENE-002` |
-| Highest-resolution masters in the library | the five 6336 × 2688 21:9 rows |
+| Highest-resolution masters in the library | `LARGEFORMAT-DINING-002`, `LARGEFORMAT-MONUMENTAL-001`, `MATERIAL-MACRO-009`, `WALL-ART-008` — four of the **seven** 6336 × 2688 21:9 masters. The other three are `MATERIAL-MACRO-011`, `-015` and `WALL-ART-013` |
 | Lowest-resolution video | `LARGEFORMAT-DINING-004` at 768 × 1344 |
 
 ---
@@ -214,9 +214,12 @@ of the four dispositions per slot, is in `HIGGSFIELD_MASTER_ASSET_PLAN.md` §4�
 |---|---|---|
 | `/` hero video | 0 videos carry `page = home`; the 7 videos at 1920×1080 are process, macro or gallery subjects | `GENERATE_NEW` — `HOME-HERO-VIDEO-001` |
 | `/` hero poster, desktop | `LARGEFORMAT-DINING-002` (21:9, 6336×2688) fits as an interim still | `GENERATE_NEW` — must match the video frame — `HOME-HERO-POSTER-001` |
-| `/` hero poster, mobile | `LARGEFORMAT-DINING-001` (9:16, 1536×2752), prompted "for a mobile hero" | `REUSE_FROM_FAMILY` |
-| `/collection` landing hero | no asset carries `page = collection`; four 21:9 `material-macro` masters at 6336 px fit | `REUSE_FROM_FAMILY` |
-| `/collection/furniture` | no `furniture` family; 18 `largeformat-*` assets are the category's own subject | `REUSE_FROM_FAMILY` |
+| `/` hero poster, mobile | `LARGEFORMAT-DINING-001` (9:16, 1536×2752), prompted "for a mobile hero". It clears the 9:16 mobile-hero minimum of 1440 × 2560 but is one of the 14 images below `hero`'s 1600 px width, so it is mobile-hero-eligible only | `REUSE_FROM_FAMILY` |
+| `/collection` landing hero | no asset carries `page = collection`; three 21:9 `material-macro` masters at 6336 px (`MATERIAL-MACRO-009`, `-011`, `-015`) fit. `MATERIAL-MACRO-027` is the family's fourth 21:9 but is 3168 px — it clears `hero-xl` and is not a 6336 px master | `REUSE_FROM_FAMILY` |
+| `/collection/furniture` hero, desktop | no `furniture` family; of the 18 `largeformat-*` assets, 8 are workshop blanks (DQ-8). `LARGEFORMAT-COFFEE-001` (2528×1696) crops 3:2→16:9 | `RECROP_EXISTING` |
+| `/collection/furniture` hero, mobile — and the `/collection` Furniture card | every 4:5 asset in `largeformat-*` is one of the 8 workshop blanks | `GENERATE_NEW` — `FURNITURE-HERO-002` |
+| `/large-format` seating card, 4:5, and homepage Sculptural Furniture card | all 4 `largeformat-seating` assets are 4:5 workshop blanks; no finished seat exists at any ratio | `GENERATE_NEW` — `LARGE-SEATING-CARD-001` |
+| `/large-format` consoles & side card, 4:5 | every 4:5 asset in `largeformat-console` and `largeformat-side` is a workshop blank; the one finished console is 3:2 and a portrait crop removes its length | `GENERATE_NEW` — `LARGE-CONSOLE-CARD-001` |
 | `/collection/collectible-design` | no family; 5 `gallery-scene` assets are the category's own subject | `REUSE_FROM_FAMILY` |
 | `/custom-commissions` hero | no `commission` family; `INTERIOR-LIFESTYLE-002` (2528×1696) crops 3:2→16:9 | `RECROP_EXISTING` |
 | `/process` hero, 21:9 | no `process-*` asset is 21:9; `PROCESS-STUDIO-005` (5504×3072) crops 16:9→21:9 | `RECROP_EXISTING` |
@@ -264,7 +267,7 @@ them justifies regenerating anything.
 | DQ-5 | Some draft alt text describes the *series*, not the *frame* | `THREE-D-RESIN-001` reads "A six-part collection series, all shot in a single session on the same seasoned dark teak tabletop…"; `MATERIAL-MACRO-016` reads "Material macros shot on an identical matte charcoal-neutral stone ground…" | The alt text describes a production method, not an image | Rewrite from the `Frame:` clause of the prompt, which is the part that describes the picture |
 | DQ-6 | `editorial` is a catch-all family | **14 of 19** `editorial` assets have an empty `subject_tags` array — the only 14 empty arrays in the manifest | Family filters in the tracker under-return; these assets are hard to find by subject | Add `subject_tags` in the v2 builder pass. Do **not** rename the family — the ID would change |
 | DQ-7 | Two `largeformat-*` assets are subject-mismatched | `LARGEFORMAT-SIDE-003` is a desk with 3D-printed organisers (a `three-d-resin` subject); `LARGEFORMAT-CONSOLE-004` is a resin wall panel above a console (a `wall-art` subject) | Placed by family they would land on the wrong page | Place by subject; record the correction in `subject_tags`, never by renaming the asset |
-| DQ-8 | Eight `largeformat-*` assets show unfinished blanks | `LARGEFORMAT-SEATING-001…004`, `-SIDE-001`, `-002`, `-CONSOLE-001`, `-002` — each prompt says "no finished piece in frame" or equivalent | If placed in a finished-object card they read as a half-built product | Restrict them to making, material and commission contexts. Recorded in the plan §1.1a |
+| DQ-8 | Eight `largeformat-*` assets show unfinished blanks | `LARGEFORMAT-SEATING-001…004`, `-SIDE-001`, `-002`, `-CONSOLE-001`, `-002` — each prompt says "no finished piece in frame" or equivalent | If placed in a finished-object card they read as a half-built product. The bite is that **every 4:5 asset in the `largeformat-*` group is one of these eight**, so the finished-object cards on `/`, `/large-format` and `/collection` have no portrait supply at all | Restrict them to making, material and commission contexts (plan §1.1a). The four card and category-hero slots they were covering are `GENERATE_NEW`: plan §6 G10, G11, G12 |
 | DQ-9 | Near-duplicate prompts inside families | `MATERIAL-MACRO-016`/`-010`, `-017`/`-021`, `-018`/`-019`, `-020`/`-022`, `THREE-D-RESIN-002`/`-003`, `LARGEFORMAT-CONSOLE-001`/`-002` and others share a prompt verbatim | Two near-identical images in one grid look like a mistake | Bind one of each pair; keep the other as a swap candidate. Never both in the same section |
 | DQ-10 | Five prompt recipes coexist | Recipe A 114 · C 55+6 · E 9 · B 20 · loose atelier prose 20 · video 26 | The library has three different colour temperaments; mixing them inside one section is visible | Bind within one recipe per section. `HIGGSFIELD_GUIDE.md` §2 records which family uses which |
 | DQ-11 | Source files are PNG, target filenames say `.webp` | 224 `source_url` values end `.png`; 224 `filename` values end `.webp` | The filename is a *delivery* name, not a source name | Upload the PNG master; Cloudinary derives WebP/AVIF via `f_auto`. See `CLOUDINARY.md` §10 |

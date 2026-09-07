@@ -56,6 +56,9 @@ phase must deliver; a component shipped without its proof is incomplete, not mer
 
 | Criterion | Rule here |
 |---|---|
+| **2.2.1 Timing Adjustable (Level A)** | **No timed navigation anywhere in the product, and specifically not on the conversion path.** Nothing on a public route starts a timer that moves, closes, submits or navigates on the visitor's behalf. The one place this was nearly breached is the inquiry success state — see §1.2. The only timers permitted are ones the user can outlast without loss: a toast whose auto-dismiss is never the sole notification of a result (§2.5), and the session timeouts in `SECURITY.md` §6.1, which 2.2.1 exempts as essential (an exception the criterion grants explicitly, not one this document is inventing) |
+| **2.2.2 Pause, Stop, Hide** | Nothing auto-advances by default: no carousel auto-play, no auto-rotating 3D viewer, no motion loop that runs longer than five seconds without a control. Where auto-advance exists at all it ships off and has a pause control (§2.4) |
+| **3.2.5 Change on Request** | A change of context — a navigation, a new window, a route change — happens only when the user asks for it. `Continue to WhatsApp` is a real link the user activates; the WhatsApp handoff leaves the site, and a change of context that large is never automatic |
 | 2.4.11 Focus Not Obscured (Minimum) | A sticky header, the announcement bar and the mobile filter drawer must never cover a focused element. `scroll-margin-top` on every focusable is set to the sticky-chrome height token |
 | 2.5.7 Dragging Movements | Every drag interaction has a non-drag equivalent: the Studio section reorder offers move-up / move-down buttons; the gallery swipe has previous / next controls |
 | 2.5.8 Target Size | 44 × 44 (above AA) |
@@ -65,6 +68,34 @@ phase must deliver; a component shipped without its proof is incomplete, not mer
 | 1.4.10 Reflow | 320 px with no horizontal scroll and no lost content |
 | 1.4.12 Text Spacing | The token scale survives the 1.4.12 override block without clipping |
 | 1.4.13 Content on Hover or Focus | Tooltips are dismissible with `Escape`, hoverable, and persist until dismissed |
+
+### 1.2 The WhatsApp handoff is activated, never timed
+
+This is the single accessibility decision in the product that changes a documented behaviour, so it is
+recorded here in full rather than folded into a table cell.
+
+Earlier drafts of `PRD.md` §5.1 step 7a, `ARCHITECTURE.md` §4.1 and `PHASE-16-22.md` specified that the
+inquiry success state would *"auto-forward after 1 s, cancellable"*. **That fails 2.2.1 at Level A**,
+and it fails it in the least recoverable way:
+
+| Why it fails | Detail |
+|---|---|
+| 2.2.1 Timing Adjustable | An unrequested navigation on a time limit under 20 hours must be turnable off, adjustable to 10× the default, or extendable after a warning with at least 20 seconds to respond. A one-second cancel button is none of the three |
+| 3.2.5 Change on Request | Leaving the site for WhatsApp is the largest change of context the product performs. It must be initiated by the user |
+| It contradicts §2.2 of this document | The success state must be *announced in a live region* **and** *receive focus*. A screen reader has not finished the announcement in one second; a switch or voice user has not reached the cancel control; a keyboard user reading the reference code is navigated away mid-read |
+| It loses the reference code | `RIV-<yyyy>-<6 digits>` is the visitor's only handle on their enquiry, and one second is not long enough to read it, let alone write it down |
+
+**The rule.** The success state renders, is announced politely, and moves focus to its heading.
+`Continue to WhatsApp` is a real `<a href>` that the visitor activates. **No timer runs on this
+surface** — not one second, not five, not an adjustable one. SEED §48 specifies a heading, a body line
+and a CTA; it never asked for a countdown, so nothing in the content specification is given up.
+
+| | |
+|---|---|
+| Mechanism | `components/patterns/InquirySuccess.tsx` renders the SEED §48 copy inside `role="status"` (polite), gives its `<h2>` `tabindex="-1"` and focuses it once on mount, and renders the CTA as a real `<a href>`. It mounts **no** `setTimeout`, `setInterval`, `router.push` or `location.assign`. The reference code sits inside the live region so it is announced with the confirmation, not after it |
+| Proof | `tests/e2e/inquiry-conversion.spec.ts`, extended: after a successful submit, assert (a) focus is on the success heading, (b) the reference code is inside the live region's accessible name, (c) **no navigation occurs within 10 seconds of idle**, and (d) activating the CTA — by click **and** by `Enter` on the focused link — navigates to a `wa.me` URL carrying the persisted reference |
+| Guard | `scripts/a11y/check-no-timed-navigation.mjs` (§3): no module under `app/(site)/**` or `components/patterns/**` may call `router.push`, `router.replace`, `location.assign` or `window.open` from inside a `setTimeout`/`setInterval` callback. Re-adding the one-second forward must fail the build, not a review |
+| Reconciled with | `PRD.md` §5.1 7a, which now states activation. `ARCHITECTURE.md` §4.1 and `PHASE-16-22.md` still carry the old step and must be corrected to match; neither is owned by this document, and the divergence is named rather than left to an implementer |
 
 ---
 
@@ -93,7 +124,7 @@ pass before the component is considered delivered.
 | **Switch** | `role="switch"` with `aria-checked`; the label states what it controls, not "on" | component spec |
 | **File / reference upload** | Keyboard-operable trigger (a drop zone alone is not enough); accepted types and size limits stated in text before the user acts; per-file progress and removal announced; a rejection states the reason from seeded copy | forms spec + `upload-validation` unit test |
 | **Configurator (multi-step)** | Each step is a landmark-labelled region; progress announced on step change; focus moves to the new step's heading; validation errors summarised at the top with in-page links to each field; back preserves entered values (3.3.7) | `tests/e2e/commission-configurator.spec.ts` |
-| **Inquiry success / error states** | Success is announced in a live region and receives focus; the error state never navigates and never loses typed values (BR-B1) | `tests/e2e/inquiry-conversion.spec.ts` |
+| **Inquiry success / error states** | Success is announced in a polite live region **and** receives focus, and the reference code is inside that region; `Continue to WhatsApp` is a real link requiring activation — **no timed forward, at any delay** (2.2.1, 3.2.5; §1.2); the error state never navigates and never loses typed values (BR-B1) | `tests/e2e/inquiry-conversion.spec.ts`, including the ten-second no-navigation assertion |
 
 ### 2.3 Navigation
 
@@ -161,12 +192,13 @@ operable** and passes the axe sweep at 1440 px and 390 px.
 Seven specs, each testing something axe cannot: `landmarks`, `headings`, `forms`, `touch-targets`,
 `reduced-motion`, `zoom-reflow`, `axe-sweep`.
 
-Two guards run inside `npm run check`, before any browser starts:
+Three guards run inside `npm run check`, before any browser starts:
 
 | Guard | Fails when |
 |---|---|
 | `scripts/a11y/check-contrast.mjs` | Any permitted token pairing falls below its required ratio. Darkening one body-text token by 10 % must fail, naming the pair |
 | `scripts/a11y/check-focus-styles.mjs` | Any `outline: none` appears without a replacement ring |
+| `scripts/a11y/check-no-timed-navigation.mjs` | Any module under `app/(site)/**` or `components/patterns/**` calls `router.push`, `router.replace`, `location.assign` or `window.open` from inside a `setTimeout` or `setInterval` callback (§1.2). Re-adding the one-second handoff forward must fail the build, naming the file |
 
 ---
 

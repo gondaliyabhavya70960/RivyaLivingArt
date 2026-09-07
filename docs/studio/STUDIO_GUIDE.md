@@ -170,8 +170,8 @@ for the session role. Two rules keep the sidebar honest:
    says so. A role that can reach a route by typing its URL and get a `200` must be able to see it in
    the sidebar; a hidden-but-reachable route is a worse outcome than a visible read-only one.
 2. **A group is shown when at least one of its leaves is shown.** This is what lets a merchandiser
-   see the Operations group for `imports` and `exports` (both `bulk.execute`) without seeing `audit`
-   or `logs` (both owner/admin).
+   see the Operations group for `data-quality` (`catalog.read`), `imports` and `exports` (both
+   `bulk.execute`) without seeing `audit` or `logs` (both owner/admin).
 
 **Navigation filtering is presentation only.** D4 is explicit: every page re-checks permission
 server-side. A lint rule fails any `page.tsx` under `app/(studio)/studio/**` that does not call
@@ -180,8 +180,10 @@ directly as each of the six roles.
 
 ### 2.5 Group-level access at a glance
 
-Derived from §2.3. "read" means the role sees the group but every write control is absent, not
-disabled-looking.
+Derived from §2.3 by the §2.4 rules, leaf by leaf — **this table is a summary of that derivation, never
+an override of it.** Where a cell and §3's per-leaf permissions disagree, §3 wins and this table is
+wrong. "read" means the role sees every leaf in the group but every write control is absent, not
+disabled-looking; a named list means the role sees only those leaves.
 
 | Group | owner | admin | editor | merchandiser | researcher | viewer |
 |---|---|---|---|---|---|---|
@@ -192,8 +194,23 @@ disabled-looking.
 | Media | full | full | full | full | read | read |
 | Inquiries | full | full | read | full | hidden | read |
 | Research | full | full | hidden | review + confirm | full | read |
-| Operations | full | full | hidden | imports + exports | hidden | hidden |
-| System | full | full | documentation | documentation | documentation | hidden |
+| Operations | full | full | data-quality (read) | data-quality (read) + imports + exports | data-quality (read) | data-quality (read) |
+| System | full | full | documentation + flags (read) | documentation + flags (read) | documentation + flags (read) | flags (read) |
+
+Two rows deserve the explanation, because an earlier draft of this table understated them:
+
+- **Operations is not owner/admin-only.** `/studio/operations/data-quality` reads under `catalog.read`
+  (§3), which §2.3 grants to all six roles, so every role sees the Operations group for that one leaf.
+  `workflows`, `audit` and `logs` remain owner/admin; `imports` and `exports` remain `bulk.execute`.
+- **System is not hidden from `viewer`.** `/studio/system/flags` reads under `studio.access` (§3),
+  proposed in §2.3 for every active staff role, and §13.12 states flags are readable by any active
+  staff member and writable only under `system.flags.write`. So all six roles see System → Feature
+  Flags, and `viewer` sees nothing else in the group, because `system.docs.read` is proposed for the
+  other five roles only. The alternative resolution — narrowing the flags read permission to
+  `system.flags.write` — was **rejected**: it would make the register of what is switched on invisible
+  to the roles most likely to be told "that feature is off", and it contradicts §13.12. §18 item 5
+  records that `PHASE-05-09.md` and Phase 19 describe this group differently and one of them needs
+  correcting.
 
 ---
 
@@ -812,7 +829,7 @@ Publish At / Unpublish At where scheduling applies.
 | Route | What it is for | What the operator can do | Key tables |
 |---|---|---|---|
 | `/studio/content/pages` · `/[pageId]` | Every CMS page (about 20 at seed) | List, create, open the block editor with drag reorder, per-section status pill, media picker, revision drawer, preview button, "View on site", "preview at breakpoint" (1440 · 768 · 390) | `pages` · `page_sections` · `content_revisions` |
-| `/studio/content/pages/global` | The reserved system page that edits reusable strings | Edit the CTA library, commerce and action labels, announcement bar, empty states, error copy, form copy, WhatsApp templates, SEO defaults, social, newsletter, contact and Studio helper text | `global_content` |
+| `/studio/content/pages/global` | The reserved system page that edits reusable strings | Edit the CTA library, commerce and action labels, announcement bar, empty states, error copy, form copy, SEO defaults, social, newsletter and Studio helper text. **Not** the `WHATSAPP_TEMPLATE` or `CONTACT` groups — those are configuration and are edited at `/studio/system/settings` under `system.settings.write` (§13.8; SEED §21, §36) | `global_content` |
 | `/studio/content/homepage` | The homepage, pinned into the same editor | Edit the thirteen seeded sections; reorder; hide; swap media | `pages` · `page_sections` |
 | `/studio/content/portfolio` · `/[projectId]` | Delivered projects | Identity · Client (toggle, display name, consent state, consent reference — disabled until the toggle is on) · Story · Gallery · Related · Verification | `portfolio_projects` · `portfolio_project_media` |
 | `/studio/content/testimonials` | Quotes, with the same consent discipline | Create, edit, record consent, publish | `testimonials` |
@@ -940,9 +957,18 @@ input: 250 assets, 224 images and 26 videos, across 24 families and 11 pages. Ru
 - **All 250 land `owner_verification = 'OWNER_VERIFICATION_REQUIRED'`** with `alt_text` imported from
   the manifest's `alt_text_draft`. Draft alt text reads like a prompt; an editor rewrites it before the
   slot using it is published. The Gaps tab counts unreviewed alt text.
-- **Identity is `(rivya_asset_id, type)`, and the migration key is `higgsfield_generation_id`** — 26
-  asset ids are shared by an image/video pair, and six Cloudinary public ids are shared the same way,
-  which is why the unique index is `(provider, resource_type, public_id)`.
+- **Identity is `rivya_asset_id`, unique across all 250 rows** (D6 — the Rivya asset ID is
+  authoritative, not the filename; amendment A1 exists to keep that namespace collision-free) — **and
+  the migration key is `higgsfield_generation_id`**, also unique across all 250 and stable across a
+  manifest rebuild, which an ordinal is not. Both are enforced in the schema: `unique (rivya_asset_id)`
+  and `unique (higgsfield_generation_id) where higgsfield_generation_id is not null`
+  (`DATA_MODEL.md` · `media_assets` · *Keys and indexes*). The Cloudinary delivery index is
+  `(provider, resource_type, public_id)` rather than `unique (public_id)` because Cloudinary
+  namespaces public IDs by resource type — `image/upload/<id>` and `video/upload/<id>` are different
+  objects — so the wider key describes Cloudinary's model and keeps a future poster/clip pair uploaded
+  under one name insertable without a migration. It is defence in depth, **not** a workaround for a
+  duplicate: all 250 `cloudinary_public_id` values in the current manifest are distinct, so a plain
+  unique index would hold today as well.
 - **The manifest is never rewritten by the Studio.** It is rebuilt only by
   `scripts/media/build-higgsfield-manifest.py`, and a phase that changes it byte-for-byte has broken
   its own exit criteria.
@@ -1057,7 +1083,9 @@ field, assignment, and **Open in WhatsApp**, which re-renders the same seeded te
   an `activity_events` row.
 - **Storage minimisation is a design constraint.** No raw IP (salted `ip_hash` only), no cookies beyond
   the session, no fingerprinting, no third-party captcha. Spam control is a honeypot field, a 3-second
-  minimum time-to-submit, and a per-IP cap of five submissions per hour.
+  minimum time-to-submit, and a per-IP cap of **five submissions per ten minutes** (BR-B5;
+  `SECURITY.md` §8, keyed on `ip_hash` + form fingerprint). A rate-limited request returns `429` with
+  `Retry-After` and renders seeded copy, never a raw status page.
 - **Export omits `ip_hash` and `user_agent` always**, and omits free-text message bodies unless the
   operator ticks an explicit box — and that tick is itself recorded in the audit row along with the
   exported field list.
@@ -1163,20 +1191,25 @@ record can always be reproduced from evidence.
 thresholds editable per source in `/studio/system/settings`. `NOISE` changes are recorded but hidden by
 default and never counted in the dashboard's "changed" figure.
 
-**The nine FEAT §25 actions**, each writing a `research_review_actions` row, an `audit_log` row and, if
-a stage moves, a `research_pipeline_events` row. All nine require `research.confirm`.
+**The nine FEAT §25 actions.** Eight of them mutate a disposition or a stage, and each writes a
+`research_review_actions` row, an `audit_log` row and, if a stage moves, a `research_pipeline_events`
+row; all eight require `research.confirm`. **Compare is the exception** — it is read-only, requires only
+`research.read`, and writes an `activity_events` row and nothing else. It has to be, or a `researcher`
+holding `research.read` and `research.write` could open `/studio/research/compare` directly (§3, §12.8)
+yet be refused the identical read-only view from this screen. The permission is stated per row rather
+than assumed from the group.
 
-| Action | Effect |
-|---|---|
-| Review | Acknowledges the change; stage moves `MATCHED → REVIEW` if lower |
-| Ignore | `disposition = 'IGNORED'`; future changes on the field are collapsed under the reason |
-| Shortlist | Stage → `SHORTLISTED` |
-| Reject | `disposition = 'REJECTED'`; stage retained; a reason is required |
-| Mark Duplicate | Sets `duplicate_of_id` and `disposition = 'DUPLICATE'`; requires choosing the surviving row |
-| Confirm | Stage → `CONFIRMED`. **Creates no product, no draft product, no media row, no CMS content** |
-| Add Note | Append-only; notes are never deleted, only superseded |
-| Add Tag | From the `research_tags` vocabulary; free text is rejected |
-| Compare | Opens up to four rows side by side, read-only; records nothing but an activity event |
+| Action | Permission | Effect |
+|---|---|---|
+| Review | `research.confirm` | Acknowledges the change; stage moves `MATCHED → REVIEW` if lower |
+| Ignore | `research.confirm` | `disposition = 'IGNORED'`; future changes on the field are collapsed under the reason |
+| Shortlist | `research.confirm` | Stage → `SHORTLISTED` |
+| Reject | `research.confirm` | `disposition = 'REJECTED'`; stage retained; a reason is required |
+| Mark Duplicate | `research.confirm` | Sets `duplicate_of_id` and `disposition = 'DUPLICATE'`; requires choosing the surviving row |
+| Confirm | `research.confirm` | Stage → `CONFIRMED`. **Creates no product, no draft product, no media row, no CMS content** |
+| Add Note | `research.confirm` | Append-only; notes are never deleted, only superseded |
+| Add Tag | `research.confirm` | From the `research_tags` vocabulary; free text is rejected |
+| Compare | **`research.read`** | Opens up to four rows side by side, read-only; records nothing but an activity event |
 
 **Guardrails.** Changes are **never automatically imported into Rivya products**, or into anything.
 Change detection never moves a stage on its own — only a person does. `research_changes` is written by
@@ -1562,8 +1595,12 @@ Raised, not acted on. Nothing above knowingly diverges from `CANONICAL-DECISIONS
 
 8. **`/studio/content/pages/global` is not a D4 leaf.** The global-content editor is mounted as a nested
    segment under `pages`. It is a significant, frequently used surface — the CTA library, commerce
-   labels, empty states, error copy, WhatsApp templates and all Studio helper text live there. Either
-   bless the nesting or add a `global` leaf to D4's content group.
+   labels, empty states, error copy and all Studio helper text live there. Either bless the nesting or
+   add a `global` leaf to D4's content group. (Note that the `global_content` **table** is edited from
+   two routes by design: the copy groups here under `content.write`, and the `WHATSAPP_TEMPLATE` and
+   `CONTACT` configuration groups at `/studio/system/settings` under `system.settings.write`, which is
+   where SEED §21 and §36 put them. One table, two surfaces, two permissions — deliberate, not a
+   duplicate editor.)
 
 9. **`/studio/research/opportunities/direction` is not a D4 leaf either**, for the same reason and with
    the same two options (already raised in `PHASE-31-38.md` open question 2).
@@ -1580,6 +1617,15 @@ Raised, not acted on. Nothing above knowingly diverges from `CANONICAL-DECISIONS
 12. **Cron secret reuse.** Seven scheduled jobs and the cache-revalidation endpoint are all guarded by
     `REVALIDATE_SECRET`, because D8 names no cron secret. Add `CRON_SECRET` to D8, or record that the
     reuse is intentional.
+
+13. **The enquiry rate limit is written two ways across the documentation set.** The documents of
+    record agree: `BUSINESS_RULES.md` BR-B5 and `SECURITY.md` §8 both say **five submissions per ten
+    minutes**, keyed on `ip_hash` + form fingerprint, and §11 above now states that figure. Two
+    documents still carry an hourly window and need the same correction:
+    `docs/architecture/DATA_MODEL.md` (the `inquiries` privacy note) and
+    `docs/project/phases/PHASE-16-22.md` (the Phase 20 spam-control line). This is a one-line
+    correction in each, not a decision — but the window is a server guard someone will implement from
+    whichever document they happen to open, so it should not be left divergent.
 
 ---
 

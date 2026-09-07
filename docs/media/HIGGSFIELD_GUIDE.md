@@ -173,7 +173,7 @@ Rules the existing videos observe, and every new one must:
 | 5–10 s | Durations are 5 s ×5, 6 s ×15, 8 s ×4, 10 s ×2 |
 | Loopable, stated in the prompt | 14 of 26 say `Loopable` / `Seamless loop` outright |
 | No faces, hands only where people appear | `PROCESS-STUDIO-016`: "craftsman's hands only, no face" |
-| Vertical variants declare the safe area | `PROCESS-PIGMENT-002`: "upper third calm and dark as headline safe area" |
+| Vertical variants declare the safe area | `PROCESS-PIGMENT-013` (9:16 video): "upper third calm and dark as headline safe area"; `LARGEFORMAT-DINING-004` (9:16 video): "upper third calm" |
 | No audio is briefed, ever | The site plays every inline video muted |
 
 **Six video prompts in the library are bookkeeping stubs, not briefs.** Three pairs, each a
@@ -208,13 +208,18 @@ cropped to 9:16 is not a mobile hero, it is a mistake with the right dimensions.
 
 Minimum long edge by target preset, so a brief never produces an asset that cannot fill its slot:
 
-| Slot | Preset | Minimum long edge to brief |
+| Slot | Preset | Minimum to brief |
 |---|---|---|
-| Full-bleed page hero | `hero-xl` `w_2560` | **2560 px** — target 6336 px to match the library's 21:9 masters |
-| Section hero / band | `hero` `w_1600` | **1600 px** |
-| Gallery grid | `grid` `w_768` | **768 px** |
-| Card | `card` `w_480` | **480 px** |
-| Video hero | — | **1920 × 1080** |
+| Full-bleed page hero — desktop 21:9 | `hero-xl` `w_2560` | **2560 px wide** — target 6336 px to match the library's 21:9 masters |
+| Full-bleed page hero — mobile 9:16 | `hero` `w_1600`, ladder-capped at its 1536 step | **1440 × 2560** — a 9:16 slot renders at viewport width and is never delivered through a landscape chain |
+| Section hero / band / category hero | `hero` `w_1600` | **1600 px wide** |
+| Gallery grid | `grid` `w_768` | **768 px wide** |
+| Card | `card` `w_480` | **480 px wide** |
+| Video hero — desktop 16:9 | — | **1920 × 1080** |
+
+The measure is the source's **width**, not its long edge: that is what `CLOUDINARY.md` §5.2 and
+`HIGGSFIELD_ASSET_STATUS.md` §5.1 count, and it is why a 1216 × 896 landscape still cannot fill a
+band. `HIGGSFIELD_MASTER_ASSET_PLAN.md` §2.1 carries the same table as the slot-by-slot test.
 
 ---
 

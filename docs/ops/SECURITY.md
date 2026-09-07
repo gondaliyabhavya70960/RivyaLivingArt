@@ -56,22 +56,31 @@ security or compliance statement is an assertion about an organisation and is
 
 ## 3. Trust boundaries and entry points
 
-Six runtimes (`ARCHITECTURE.md` §2) and nine Zod boundaries (B1–B9). Every externally reachable
-entry point, with its guard chain:
+Six runtimes (`ARCHITECTURE.md` §2) and nine Zod boundaries (B1–B9). Every externally reachable entry
+point, with its guard chain and the §4 threats it carries. The route names are `ARCHITECTURE.md` §3's,
+verbatim; a path that appears here and in no route map is a defect in this document, not a route.
 
-| Entry point | Auth | Guard chain |
-|---|---|---|
-| `GET app/(site)/**` | None | RLS (`status = 'PUBLISHED'`) → cached render → headers |
-| `POST submitInquiry` (server action) | None | Origin check → Zod (B1) → honeypot → 3 s floor → rate limit → transaction → typed result |
-| `POST /api/inquiries` | None | Same chain, as a route handler (B3) |
-| `GET /api/search/suggest` | None | Zod → rate limit → public index only → `s-maxage=60` |
-| `POST /api/vitals` | None | Zod (rejects any extra key) → rate limit → service-role insert |
-| `POST /api/revalidate` | `REVALIDATE_SECRET` | Secret → Zod → tag/path invalidation only |
-| `app/api/cron/**` | `REVALIDATE_SECRET` + platform cron header | 404 without the header; bounded, resumable work |
-| `GET /studio/**` | Session | Middleware redirect → session resolve → `requirePermission()` **per page** → RLS |
-| Studio server actions | Session | Origin → Zod (B2) → session → permission → work → audit |
-| `POST /api/uploads/sign` | Session | Permission → folder allowlist → MIME allowlist → size ceiling → per-user rate limit → signature |
-| `POST /api/auth/sign-out` | Session | POST only → clear → audit |
+| Entry point | Auth | Guard chain | Threats |
+|---|---|---|---|
+| `GET app/(site)/**` | None | RLS (`status = 'PUBLISHED'`) → cached render → headers | T4, T7, T8 |
+| `submitInquiry` — `app/(site)/_actions/submit-inquiry.ts` (server action) | None | Origin check → rate limit → Zod (B1) → honeypot → 3 s floor → one transaction → typed result. **There is no `/api/inquiries` route handler and one must never be added** — the limiter runs inside the action because `middleware.ts` has no path to match | T1, T7, T9 |
+| `POST app/api/inquiries/upload-sign` | **None — the most hostile authenticated-adjacent surface in the product** | Origin check → Zod (B3) → per-`ip_hash` rate limit (10/hour, 3/min) → MIME narrowing (`image/jpeg · image/png · image/webp · image/heic · application/pdf`) → 10 MB and 5-file ceiling → **server-issued** folder `rivya/inquiries/incoming/<uuid v4>`, never client-chosen → short-TTL signature. The response carries no credential; magic-byte sniffing and EXIF stripping happen on ingest (§7) | T1, T6, T7 |
+| `GET app/api/search/suggest` | None | Zod (2–64 chars, ≤ 8 results) → rate limit → **public index only**, never `research_search_documents` → `s-maxage=60` | T5, T7 |
+| `POST app/api/vitals` | None | Zod, rejecting any extra key → rate limit → service-role insert of route **pattern** only | T1, T7 |
+| `POST app/api/revalidate` | `REVALIDATE_SECRET` | Secret → Zod → tag/path invalidation only. The **only** cache-invalidation entry point | T3, T7 |
+| `GET app/api/preview` | Signed token | Token verify → `draftMode().enable()` → redirect to a real public path. Draft mode bypasses every cache layer, so an unsigned or expired token must not reach the redirect; the target is validated as a D3 path, never an open redirect | T4, T8 |
+| `app/api/cron/research` | Platform cron header **only** | `x-vercel-cron` present, else **404** (not 401 — a prober cannot confirm the route exists). Deliberately does **not** reuse `REVALIDATE_SECRET`: this is the one route that contacts third-party hosts, and widening that secret across two unrelated systems was rejected (`SCRAPER.md` §7) | T10, T11 |
+| `app/api/cron/**` (the other six) | `REVALIDATE_SECRET` | Secret → bounded, resumable, idempotent-per-period work. §16 item 2 proposes normalising all seven onto a `CRON_SECRET` | T3, T7 |
+| `GET /studio/**` | Session | Middleware redirect → session resolve → `requirePermission()` **per page** → RLS | T2, T13 |
+| Studio server actions | Session | Origin → Zod (B2) → session → permission → work → audit (success **and** denial) | T2, T9, T14 |
+| `app/api/studio/**` — `search`, `inquiries/export`, `models/inspect` | Session | Session → `requirePermission()` (`research.read`/`catalog.read`, `inquiries.export`, `media.write` respectively) → Zod → work → `private, no-store`; the export is audited and carries no raw IP; `models/inspect` parses the GLB server-side (§7). **No media or competitor-image proxy exists here or anywhere under `app/api/**`** | T1, T2, T5, T6 |
+| `POST app/api/media/sign` | Session | Session → `media.write` → folder allowlist (`lib/media/folders.ts`) → MIME allowlist per kind → byte ceiling per kind → per-user rate limit (20/hour) → signature | T4, T6 |
+| `POST app/api/auth/sign-out` | Session | POST only → clear → audit | T9, T13 |
+
+**Two unauthenticated signers, not one.** `app/api/media/sign` requires a session and `media.write`;
+`app/api/inquiries/upload-sign` requires neither, because a visitor attaching a reference photo has no
+account and never will (BR-A3). They are separate routes with separate ceilings and separate rate-limit
+keys precisely so the visitor path can be narrowed without narrowing the staff path — see §7.
 
 **Middleware redirects; it never authorises.** A page that relies on navigation not showing a link is
 unprotected. Every Studio page and every mutation re-checks server-side (D4).
@@ -121,15 +130,16 @@ mitigation works.
 | | |
 |---|---|
 | Vectors | An `anon` policy on a `research_*` table; a public route importing a research repository; a public search document with a research `entity_type`; an automated import into `products` |
-| Mitigations | RLS-RESEARCH has no `anon` policy, ever · `check-research-isolation.mjs` fails the build if one is added · `check-data-layer.mjs` fails if anything under `app/(site)/**` references a `research_` identifier · exactly two allowlisted FKs cross into public tables, both to `categories`; `research_confirmations.created_product_id` deliberately has no FK · `research.confirm` is a human permission |
+| Mitigations | RLS-RESEARCH has no `anon` policy, ever · `check-research-isolation.mjs` fails the build if one is added · `check-data-layer.mjs` fails if anything under `app/(site)/**` references a `research_` identifier · **every** research→public foreign key is allowlisted by constraint name in that guard, and the guard asserts *equality* with the allowlist, so a missing entry fails as loudly as an extra one — today the allowlist holds **two** constraints, both to `categories` (`research_source_category_map.category_id`, Phase 26; `research_products.matched_category_id`, Phase 28), and `research_confirmations.created_product_id` deliberately has no FK at all · `research.confirm` is a human permission |
 | Proof | `tests/unit/rls/research.test.ts`, both build guards with seeded counter-examples |
+| Divergence | `DATA_MODEL.md` §1.1 rule 7 and §11 state *three*, naming `research_direction_briefs.target_category_id` as the third. `PHASE-31-38.md`, which owns Phase 34 and its migrations, specifies that column as `target_category_slug text` with a check constraint and **no** foreign key, and verifies that converting it to a real reference makes the guard fail. This document, `BUSINESS_RULES.md` BR-F2 and the guard's allowlist therefore hold at two and move together. `BUSINESS_RULES.md` §M open question 7 states the two ways to close it; changing the number here without changing them all is a BR-K4 violation |
 
 ### T6 — Malicious upload (A2, A4, A7)
 
 | | |
 |---|---|
-| Vectors | SVG carrying script; a polyglot file whose extension lies; an oversized file exhausting quota; EXIF GPS in a visitor's reference photo; a malformed GLB crashing the parser |
-| Mitigations | §7 |
+| Vectors | SVG carrying script; a polyglot file whose extension or declared MIME lies; an oversized file exhausting quota; EXIF GPS in a visitor's reference photo; a malformed GLB crashing the parser; a client-chosen upload folder escaping its prefix |
+| Mitigations | §7. Both signing routes are in scope, and the unauthenticated one (`app/api/inquiries/upload-sign`) carries the narrower allowlist and the smaller ceiling because it has no session to attribute abuse to |
 | Proof | `tests/unit/upload-validation.test.ts` |
 
 ### T7 — Abuse of public endpoints (A7)
@@ -274,22 +284,70 @@ policies.
 
 ## 7. Upload safety
 
-Every upload path — visitor reference images and staff media alike — passes the same contract.
+Two signing routes, one contract. Both apply the same controls; they differ only in who may call them
+and how far the allowlist and the ceiling are narrowed.
 
 | Control | Rule |
 |---|---|
-| Signing | The browser never sees `CLOUDINARY_API_SECRET`. `/api/uploads/sign` returns a signature after session, permission, folder allowlist, MIME allowlist, byte ceiling and per-user rate limit |
-| Type detection | **Magic bytes, never the extension or the declared MIME.** A JPEG renamed `.glb` is rejected |
-| Allowlist | Images (JPEG, PNG, WebP, AVIF), video (MP4, WebM), models (GLB, GLTF), documents (PDF). Nothing else |
-| **SVG** | **Rejected outright on every path, staff included.** A sanitiser is a permanent liability and no Rivya surface needs an uploaded SVG |
-| Size ceilings | 25 MB image · 200 MB video · 50 MB model |
+| Signing | The browser never sees `CLOUDINARY_API_SECRET`. `app/api/media/sign` returns a signature after session, `media.write`, folder allowlist, MIME allowlist, byte ceiling and per-user rate limit. `app/api/inquiries/upload-sign` returns one after origin check, Zod, per-`ip_hash` rate limit and the narrowed visitor allowlist below — **no session**, because a visitor has no account (BR-A3). Signature TTL 10 minutes; `overwrite: false` on every upload |
+| Type detection | **Magic bytes, never the extension or the declared MIME.** A JPEG renamed `.glb` is rejected, and so is a JPEG whose declared MIME says `application/pdf` |
+| Folder | Server-chosen on both paths. The visitor route forces `rivya/inquiries/incoming/<uuid v4 issued by the server>`; the staff route accepts only a key from `lib/media/folders.ts` |
 | Metadata | EXIF and GPS stripped on ingest — a visitor's reference photo of their home must not carry its coordinates |
-| 3D models | Parsed with `@gltf-transform/core` before acceptance; rejected on parse failure |
+| 3D models | Parsed with `@gltf-transform/core` before acceptance; rejected on parse failure. The same parser backs `app/api/studio/models/inspect` |
 | Visitor attachments | Stored in a **private** bucket; served only through an authenticated, short-lived signed URL, always with `Content-Disposition: attachment`; orphans purged at 30 days |
-| Storage of record | `media_assets` rows carry `alt_text`, `is_ai_generated`, `is_concept`; a visitor upload is `source = 'USER_UPLOAD'`, `status = 'DRAFT'`, never returned by a public read path |
+| Storage of record | `media_assets` rows carry `alt_text`, `is_ai_generated`, `is_concept`; a visitor upload is `source = 'USER_UPLOAD'`, `status = 'DRAFT'`, `is_ai_generated = false`, `is_concept = false`, never returned by a public read path |
 
-Proof: `tests/unit/upload-validation.test.ts` — extension-lie rejection, SVG rejection, size
-rejection, EXIF stripping, GLB parse failure.
+### 7.1 Allowlist and ceiling, per path and per kind
+
+These values are `CLOUDINARY.md` §4's, not a second opinion, with **one deliberate exception**: the
+`BRAND` row, which §7.2 explains and `PHASE-39-46.md` fixes. `CLOUDINARY.md` owns the media seam, so on
+every other row a difference means this table is the one to correct.
+
+| Path | Kind | MIME allowlist | Ceiling | Count |
+|---|---|---|---|---|
+| `app/api/media/sign` (staff) | `IMAGE` | `image/jpeg`, `image/png`, `image/webp`, `image/avif` | 25 MB | — |
+| `app/api/media/sign` (staff) | `VIDEO` | `video/mp4` **only** — H.264. WebM is not accepted; delivery re-encoding is Cloudinary's job, not the uploader's | 200 MB | — |
+| `app/api/media/sign` (staff) | `MODEL_3D` | `model/gltf-binary`, `model/gltf+json` | 50 MB | — |
+| `app/api/media/sign` (staff) | `DOCUMENT` | `application/pdf` | 25 MB | — |
+| `app/api/media/sign` (staff) | `BRAND` | `image/png`, `image/jpeg`, `image/vnd.microsoft.icon` — see §7.2 | 5 MB | — |
+| `app/api/inquiries/upload-sign` (visitor) | reference attachment | `image/jpeg`, `image/png`, `image/webp`, `image/heic`, `application/pdf` | **10 MB per file** | 5 files per submission |
+
+The visitor ceiling is a quarter of the staff image ceiling and is not an oversight: an unauthenticated
+signer is rate-limited by `ip_hash` alone, so the product of ceiling × rate limit is the whole quota
+exposure, and 10 MB × 10/hour is the number this document accepts.
+
+### 7.2 SVG, and the brand marks that would otherwise have no format
+
+**SVG is rejected outright on every path, staff and owner included.** An SVG is XML the browser
+executes in the same origin; a sanitiser must be right forever, and no Rivya surface needs an uploaded
+one. The ban is unconditional and is not a validator option.
+
+That ban would otherwise block the one case where a designer normally hands over SVG — the brand
+marks Phase 43 asks the owner for at `/studio/media/brand` — so the accepted formats are fixed here,
+and `/studio/media/brand` states them **before** the owner chooses a file rather than after the
+validator rejects one:
+
+| Brand asset | Accepted upload | Minimum |
+|---|---|---|
+| Logo | PNG with alpha | ≥ 2× the largest rendered size, ≥ 1024 px long edge |
+| Wordmark | PNG with alpha | ≥ 2× the largest rendered size, ≥ 1024 px long edge |
+| Favicon | ICO **or** PNG | ICO containing 16/32/48 px, or a 512 × 512 PNG from which the ICO is derived |
+| Default OG asset | PNG or JPEG | 1200 × 630 exactly — the Phase 06 `og` preset's output size |
+
+A raster mark at 2× is indistinguishable at every D6 ratio the site uses, and it costs one upload
+validator instead of a sanitiser. If the owner holds only an SVG, the answer is a PNG export at 2×
+made by whoever supplies the mark — never a sanitiser, and never an exception in
+`lib/media/validate-upload.ts`.
+
+**Pending correction in two companion documents.** `CLOUDINARY.md` §4 and `MEDIA_GUIDE.md` §3 both
+still list `image/svg+xml` for the `BRAND` kind. `PHASE-39-46.md` (Phase 43) owns correcting those two
+rows to the table above; until it does, this section and `PHASE-39-46.md` are the pair that state what
+`lib/media/validate-upload.ts` will actually accept, and an engineer implementing the validator from
+`CLOUDINARY.md` alone would ship the one file type §4 T6 exists to keep out.
+
+Proof: `tests/unit/upload-validation.test.ts` — extension-lie rejection, declared-MIME-lie rejection,
+SVG rejection on **both** signing routes, per-path size rejection, visitor file-count rejection, EXIF
+stripping, GLB parse failure.
 
 ---
 
@@ -300,14 +358,17 @@ adding one would be an amendment.
 
 | Surface | Limit | Key |
 |---|---|---|
-| `POST /api/inquiries` (and `submitInquiry`) | 5 per 10 min | `ip_hash` + form fingerprint |
-| Inquiry file upload | 10 per hour | `ip_hash` |
-| `POST /api/uploads/sign` (Studio) | 20 per hour | staff `user_id` |
-| `GET /api/search/suggest` | 60 per min | `ip_hash` |
-| `POST /api/vitals` | 60 per min | `ip_hash` |
-| `POST /api/revalidate` | 30 per min | secret |
+| `submitInquiry` — `app/(site)/_actions/submit-inquiry.ts` (server action) | 5 per 10 min | `ip_hash` + form fingerprint |
+| `POST app/api/inquiries/upload-sign` (visitor reference images) | 10 per hour, 3 per min | `ip_hash` |
+| `POST app/api/media/sign` (Studio) | 20 per hour | staff `user_id` |
+| `GET app/api/search/suggest` | 60 per min | `ip_hash` |
+| `POST app/api/vitals` | 60 per min | `ip_hash` |
+| `POST app/api/revalidate` | 30 per min | secret |
 | Studio sign-in | 10 per 15 min | email hash + `ip_hash` |
 | Research fetches | Per-source rate limit, delay and concurrency | source |
+
+The inquiry limiter is called from **inside the server action, before the Zod parse** — there is no
+`/api/inquiries` route handler for `middleware.ts` to match, and none may be added.
 
 `ip_hash` is `hmac(ip, server_salt)`; the raw address is never stored. A limited request returns
 **429 with `Retry-After`**, renders the seeded form-error copy (SEED §49), and writes a `SECURITY`
@@ -430,7 +491,8 @@ Run before any release that touches auth, RLS, uploads, headers or the research 
 - [ ] `tests/e2e/security-headers.spec.ts` — the CSP nonce differs per request; the 3D viewer produces zero violations.
 - [ ] `tests/e2e/studio-authz.spec.ts` — every forbidden action returns 403 and writes a `DENIED` audit row.
 - [ ] Six inquiry submissions in ten minutes: five persist, the sixth is 429 with `Retry-After`.
-- [ ] SVG rejected; oversize rejected; extension-lie rejected.
+- [ ] On **both** signing routes: SVG rejected; extension-lie and declared-MIME-lie rejected; oversize rejected at each path's own ceiling (25 MB staff image, 10 MB visitor attachment); a sixth visitor file rejected.
+- [ ] `check-research-isolation.mjs` allowlist and `BUSINESS_RULES.md` BR-F2 name the same constraints, in the same number, and the equality assertion passes.
 - [ ] `node scripts/auth/check-rls.ts` — no table in `public` without RLS and at least one policy.
 - [ ] `check-research-isolation.mjs` and `check-data-layer.mjs` green, each with its counter-example.
 - [ ] `gitleaks detect --redact` and `npm audit --audit-level=high` clean.
@@ -466,3 +528,17 @@ Run before any release that touches auth, RLS, uploads, headers or the research 
    snapshots are evidence and are placed in a private Supabase Storage bucket outside that seam.
    Suggested amendment: record the snapshot store in D6 so a later phase does not route it through
    Cloudinary. (Also `ARCHITECTURE.md` open question 5.)
+5. **How many foreign keys may cross the research boundary?** D5 forbids research tables joining
+   directly to public product tables but fixes no number, so the corpus has drifted: `DATA_MODEL.md`
+   §1.1 rule 7 and §11 say three, while `PHASE-23-30.md`, `PHASE-31-38.md` (which owns the Phase 34
+   migration) and `SCRAPER.md` §13.2 say two. T5 above holds at two, with the schema-owning documents.
+   Because the isolation guard asserts *equality* with its allowlist, this is a build failure waiting
+   on whichever number is wrong — not a documentation nicety. Suggested amendment: state in D5 that
+   research→public references are permitted **only** to `categories`, are allowlisted by constraint
+   name, and that the count is whatever that allowlist holds — then correct the losing document.
+   `BUSINESS_RULES.md` §M open question 7 sets out the two ways to close it.
+6. **`lib/security/` is not a D2 domain.** §7 and §8 depend on `lib/security/rate-limit.ts` and §9 on
+   `lib/security/csp.ts`, and D2's ten `lib/` subdomains contain neither; nor does the eight-domain
+   pending-amendment table in `ARCHITECTURE.md` §3. It meets that table's own criterion — a distinct
+   trust boundary — so amendment **A3** should enumerate nine domains, not eight.
+   (`BUSINESS_RULES.md` §M open question 6; `ARCHITECTURE.md` open question 2.)

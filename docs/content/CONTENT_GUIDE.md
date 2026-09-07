@@ -7,6 +7,14 @@
 > above both is `docs/architecture/CANONICAL-DECISIONS.md`; where this document and that one
 > disagree, that one wins. The specification of record is
 > `docs/requirements/02-INITIAL-CONTENT-SEED-SYSTEM.md`, cited below as **SEED §n**.
+>
+> **Media is not this document's to decide.** `docs/media/HIGGSFIELD_MASTER_ASSET_PLAN.md` is the
+> media document of record (D7): its §4 and §5 fix the binding for every declared slot, its §6 holds
+> the only brief list, and its §7 records every deliberate empty slot.
+> `docs/media/HIGGSFIELD_ASSET_STATUS.md` carries the measured facts it reasons from — per-asset
+> dimensions, the resolution-fit table and the data-quality findings. §11 below states the editorial
+> rules that follow from those documents; it never restates a binding, and where it and the plan
+> disagree, the plan wins.
 
 ---
 
@@ -19,6 +27,7 @@
 | Writing or editing public copy in the Studio | §2, §3, §6, §7, §8, §9, §13 |
 | Deciding whether a sentence can be published | §3, §4, §7, §13 |
 | Adding a page, section or reusable string | §12 |
+| Choosing, cropping or briefing an image | §11 first, then `docs/media/HIGGSFIELD_MASTER_ASSET_PLAN.md` §4–§6, which decides it |
 
 Nine rules carry the weight. Everything else follows from them.
 
@@ -139,7 +148,30 @@ SEED marks two things with words this schema does not have. Both mappings are fi
 | SEED says | Stored as | Rows affected |
 |---|---|---|
 | `DRAFT_MARKETING_COPY` (§6, §10 §02) | `status = 'DRAFT'`, `fact_classification = 'BRAND_COPY'`, `owner_verification = 'OWNER_VERIFICATION_REQUIRED'` | `brand.introduction`, homepage 02 Manifesto |
-| `DRAFT_COLLECTION_CONCEPT` (FEAT §9) | `collections.concept_state`, a separate enum with its own publish gate | The ten concept names, if any are seeded |
+| `DRAFT_COLLECTION_CONCEPT` (FEAT §9) | `collections.concept_state`, a separate enum with its own publish gate | All ten concept names — the decision is taken below, not left open |
+
+**The seeding decision, stated so nobody has to infer it.** `rivya-v1` seeds **all ten** FEAT §9
+concept names — Ocean · Earth · Aurora · Midnight · Monsoon · Geode · Forest · Clear · Botanical ·
+Bespoke — into `collections` with `status = 'DRAFT'` and
+`concept_state = 'DRAFT_COLLECTION_CONCEPT'`. Only `name`, `slug`, `sort_order` and `concept_state`
+are written. `statement` is left null on purpose: an exhibition statement describes work that has
+been grouped and shown, and writing one for a concept nobody has confirmed would fabricate a
+collection rather than propose a name for one (D10).
+
+Three documents already assume those rows exist, which is why leaving the question open was the
+wrong answer: `DATA_MODEL.md` `collections` permits the ten names *"only as
+`concept_state = 'DRAFT_COLLECTION_CONCEPT'`"*, `HIGGSFIELD_MASTER_ASSET_PLAN.md` §4.11 assigns
+media to four of them and records the other six `EMPTY`, and D3 fixes `/collections/[slug]` as a
+public route. The full row-by-row audit is `INITIAL_CONTENT_INVENTORY.md` §9.1.
+
+Nothing publishes. `enforce_collection_publish_gate()` refuses `PUBLISHED` unless
+`concept_state = 'OWNER_CONFIRMED'`, only an `owner` or `admin` may set that value, and the enum
+does not even carry it until the Phase 16 migration — so `/collections/[slug]` resolves to
+`notFound()` for all ten at launch, and no navigation or footer link points at it. This is the
+second publish gate in the schema and it is **not** `owner_verification`: a collection concept is
+not a capability claim, it is an unconfirmed grouping, so it gets its own column, its own value in
+the Publication-status vocabulary (`DRAFT · concept`) and its own place outside the ten
+owner-verification decisions in `INITIAL_CONTENT_INVENTORY.md` §30.1.
 
 ### 2.5 Revisions
 
@@ -189,8 +221,11 @@ plus the flag. Verification promotes it. A `VERIFIED_BUSINESS_FACT` row therefor
 person decided, which is the only meaning worth having.
 
 The same applies to `PRODUCT_FACT`: `products` and `product_specs` ship with zero rows permanently
-by seed policy (SEED §32). A seed module that writes to a catalogue table fails
-`tests/unit/seed-modules.test.ts`.
+by seed policy (SEED §32). A seed module that writes to a **product** table — `products`,
+`product_specs`, `product_media`, `product_collections`, `product_materials`, `product_relations` —
+fails `tests/unit/seed-modules.test.ts`. The taxonomy tables are a different case and are on the
+allowlist: `categories`, `collections`, `journal_categories` and `customization_forms` hold names
+and descriptions, which are copy. A category name is copy; a product is a fabricated object.
 
 ### 3.4 The descriptor / claim line
 
@@ -287,8 +322,10 @@ npm run content:inventory               # regenerates docs/content/INITIAL_CONTE
 6. Every run writes a `content_seed_runs` record: counts of inserted, updated,
    skipped-owner-edited and failed, plus the per-`seed_key` outcome list.
 7. An unresolved media binding **fails the run**. `content/seed/media-bindings.ts` may only
-   reference `rivya_asset_id` values present in `data/higgsfield/asset-manifest.json`; there is no
-   placeholder fallback.
+   reference `rivya_asset_id` values present in `data/higgsfield/asset-manifest.json`, and only
+   where `HIGGSFIELD_MASTER_ASSET_PLAN.md` §4 or §5 binds that asset to that slot. A slot the plan
+   records `GAP` or `EMPTY` is seeded null. There is no placeholder fallback and no editorial
+   discretion in the seed module — the discretion was exercised in the plan and is recorded there.
 
 ### 5.3 How to change seeded copy after launch
 
@@ -560,8 +597,18 @@ that reads well for a human and names its materials accurately is already doing 
 
 ## 11. R9 — content and media are designed together (FEAT §36)
 
-Every seeded section that declares a media slot is either **bound to a real manifest asset** or
-**recorded as a named gap**. There is no third outcome, and specifically no placeholder image.
+Every seeded section that declares a media slot carries one of four verdicts, and every one of them
+is `HIGGSFIELD_MASTER_ASSET_PLAN.md`'s: bound to a manifest asset as-is (`COVERED`), bound through a
+recorded `media_crops` box (`RECROP`), recorded as a named gap against a brief that already exists
+(`GAP`), or deliberately left unbound with the condition that reopens it (`EMPTY`). There is no
+fifth outcome, and specifically no placeholder image.
+
+**Neither this document nor `INITIAL_CONTENT_INVENTORY.md` decides a binding or writes a brief.**
+The plan's §4 and §5 map every slot; its §6 holds the twelve briefs G1–G12, each with a target asset
+ID, a tier, a Cloudinary folder and all four decision-gate answers recorded in writing. A second
+brief list anywhere else would be a second allocator minting into one asset-ID namespace, which is
+the collision D6 amendment A1 exists to prevent, and `PHASE-05-09.md`'s exit criteria put the briefs
+in the plan *"for gaps **only**"*.
 
 ### 11.1 The asset priority ladder (D6)
 
@@ -574,9 +621,27 @@ Every seeded section that declares a media slot is either **bound to a real mani
 6. Technical fallback, only if unavoidable
 ```
 
-**Regenerating anything already in the manifest is a defect, not a shortcut.** Before writing a
-generation brief, read `INITIAL_CONTENT_INVENTORY.md` §29: fourteen of the twenty-one open briefs
-already have a named reuse candidate.
+**Regenerating anything already in the manifest is a defect, not a shortcut**, and so is briefing a
+generation for a slot an existing asset can fill. The plan's decision gate is four questions asked
+in order, answered in writing per slot, and only four "no" answers permit a brief:
+
+| # | Question | If yes |
+|---|---|---|
+| Q1 | Is there real Rivya media for this slot? | bind it |
+| Q2 | Is there an approved owner-supplied asset? | bind it |
+| Q3 | Is there a manifest asset whose **subject and ratio** fit? | `REUSE_FROM_FAMILY` |
+| Q4 | Can a manifest asset be re-cropped to the ratio without destroying its subject? | `RECROP_EXISTING` |
+
+Q4 fails two ways and both must be checked. **Resolution** — the source, after any crop, must still
+meet the target width of the preset the slot delivers through, and `HIGGSFIELD_ASSET_STATUS.md` §5.1
+is categorical: *"No asset is ever upscaled to close a gap … the slot is reported as a gap
+instead."* **Subject survival** — a crop that removes the thing the picture is about is not a crop;
+an ultra-wide lobby cropped to 4:5 keeps its pixels and loses its subject.
+
+Of the site's 92 declared slots, 73 are bound and 12 are gaps
+(`INITIAL_CONTENT_INVENTORY.md` §1.1). Getting that ratio right is not an optimisation — it is D6's
+priority ladder, and the difference between closing the media work in an afternoon and commissioning
+a generation run.
 
 ### 11.2 The rules that govern a binding
 
@@ -590,12 +655,31 @@ already have a named reuse candidate.
   the insert.
 - A missing image renders `MediaSlot`'s reserved aspect box with the seeded label
   *Image temporarily unavailable* (SEED §47). **The layout does not collapse.**
+- **A workshop blank may not stand in a finished-object slot.** Plan §1.1a and
+  `HIGGSFIELD_ASSET_STATUS.md` DQ-8 record, from the prompts, that eight of the eighteen
+  `largeformat-*` assets photograph an unfinished blank — a seat still clamped in its mould, a
+  console plank on a bench, *"no legs or frame attached, no finished chair anywhere in shot"*. They
+  are process photographs wearing a furniture family name, and they belong in making, material and
+  commission contexts only. In a Signature Collections card, a Selected Works slot, a category hero
+  or any product-adjacent surface they read as a half-built product. Every 4:5 asset in that group
+  is one of the eight, which is why four of the plan's Tier 1 briefs exist.
+- **No brief is executed while the section it fills is `OWNER_VERIFICATION_REQUIRED`.** A photograph
+  asserts a capability faster and more convincingly than a sentence does, so producing one before
+  the words are verified inverts the safeguard §4 exists to provide. Plan §6 marks brief G5 **HELD**
+  for this reason and leaves the `/large-format` Conference & Commercial slot `EMPTY` with no brief
+  at all. Where copy and picture are gated by the same claim, the copy clears first.
 
 ### 11.3 When there is no right asset
 
-Leave the slot null and record the gap. A section rendering strong copy without an image is honest;
-the same section carrying a photograph of something Rivya did not make is not. The gap register is
-the Phase 43 work list, and it is shorter and more useful than a page of near-misses.
+Leave the slot null and record the gap **against the brief in the plan that closes it**. A section
+rendering strong copy without an image is honest; the same section carrying a photograph of
+something Rivya did not make is not, and neither is one carrying a near-miss chosen because the
+slot looked empty.
+
+`INITIAL_CONTENT_INVENTORY.md` §29 is the join — every gap slot mapped to its plan §6 brief — and
+that is all it is. If a slot has no brief, the next step is to amend the plan, not to write one
+elsewhere. If the plan records the slot `EMPTY`, the next step is the owner decision the plan names,
+not a brief at all.
 
 ---
 
@@ -610,7 +694,9 @@ the Phase 43 work list, and it is shorter and more useful than a page of near-mi
 3. Add a `seo_entries` row with `scope = 'PATH'`, or let it inherit the `GLOBAL` row.
 4. Add the navigation and footer links if the page is meant to be reachable.
 5. Classify every field; flag every capability claim.
-6. Bind or gap every media slot.
+6. Bind or gap every media slot **by running the plan's decision gate (§11.1) and recording the
+   answer in `HIGGSFIELD_MASTER_ASSET_PLAN.md` §4** — a new page adds rows to that document's
+   coverage map before it adds bindings to a seed module.
 7. Regenerate the inventory: `npm run content:inventory`.
 
 A path outside D3's route map needs an amendment to `CANONICAL-DECISIONS.md` first. Not a silent
@@ -652,7 +738,9 @@ Ten questions. Any "no" blocks publication.
 6. Do the three greps in §7.2 return nothing?
 7. If this is `/`, `/about` or `/large-format`, does it pass the §6.4 drift test and the §6.3
    vocabulary rule?
-8. Does every media slot have a real bound asset, or a recorded gap? No placeholder, no near-miss?
+8. Does every media slot carry the verdict `HIGGSFIELD_MASTER_ASSET_PLAN.md` §4/§5 gives it — a
+   bound asset, a recorded re-crop, a gap against an existing brief, or a recorded empty? No
+   placeholder, no near-miss, and no workshop blank in a finished-object slot (§11.2)?
 9. Does every image have alt text that describes what is visible and does not present concept media
    as delivered work?
 10. Does the SEO row say something true and specific, or is it a keyword list?
@@ -693,3 +781,13 @@ Raised, not acted on.
 5. **Nothing defines who owns editorial sign-off between `REVIEW` and `APPROVED`.** The permission
    `content.review` exists; the role that holds it in practice is not stated. Suggested amendment:
    name it in D5's role list.
+6. **`/studio/content/pages/global` is not a D4 leaf**, and §1.1's resolution chain sends every
+   reusable string there — a hundred rows of this project's copy. `STUDIO_GUIDE.md` open question 8
+   and `INITIAL_CONTENT_INVENTORY.md` §31 open question 8 raise the same point. Suggested amendment:
+   bless the nesting under `pages`, or add a `global` leaf to D4's content group.
+7. **D6's filename grammar does not describe the 250 filenames that exist.** D6 fixes
+   `<page>-<section>-<variant>.<ext>`; the manifest, the manifest generator, `CLOUDINARY.md` §3 and
+   `HIGGSFIELD_MASTER_ASSET_PLAN.md` §3.3 all use `<rivya_asset_id lower-cased>-<ratio-with-x>.<ext>`.
+   This is not a content question, but §11 depends on media identity being unambiguous, so it is
+   carried here as well as in the plan's §8 change-control row. Suggested amendment: a dated D6
+   amendment recording the grammar the library actually uses.

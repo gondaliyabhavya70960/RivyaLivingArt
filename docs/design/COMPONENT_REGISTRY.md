@@ -22,19 +22,35 @@ owner_verification: NOT_REQUIRED
 
 **Nothing ships unregistered.**
 
-Every file under `components/primitives/**`, `components/patterns/**`, `components/sections/**`,
-`components/studio/**` and `components/three/**`, and every third-party file vendored into
-`public/**`, has a row in this registry before the commit that introduces it.
-`scripts/design/check-registry.mjs` walks the filesystem, walks this document, and fails the build
-on any of:
+Every file under `components/primitives/**`, `components/patterns/**`, `components/studio/**` and
+`components/three/**`, and every third-party file vendored into `public/**`, has a row in this
+registry before the commit that introduces it. `scripts/design/check-registry.mjs` walks exactly
+those four directories plus `public/**`, walks this document, and fails the build on any of:
 
 - a component file with no registry entry;
-- a registry entry pointing at a path that does not exist;
+- a registry entry **whose `State` is `BUILT`** pointing at a path that does not exist;
 - a full record missing any of the fourteen required fields;
 - an external entry whose `Licence` is not on the allowlist in §4 while its `Verdict` is anything
-  other than `PENDING_AUDIT`;
+  other than `PENDING_AUDIT` or `REJECTED` — a rejected item ships no code, so its licence is moot;
 - a `PENDING_AUDIT` entry whose path exists in the codebase — that is an unlicensed component that
   has already shipped, which is the exact failure this registry exists to prevent.
+
+**A `PLANNED` row is expected to have no file on disk.** Nearly every row in §6 and §7 is `PLANNED`
+today, because the phase that owns it has not run; a registry that only accepted rows with code
+behind them could not reserve an ID before the code exists, which is what §9 steps 1–4 require it to
+do. The path check is **armed by flipping `State` to `BUILT`** (§9 step 7) — the same step that
+fills `Reviewed on`, `Reviewer` and the final `Verdict`. What it then catches is the real failure: a
+`BUILT` row whose component has been deleted or renamed and whose record is now stale. Wiring the
+script into `npm run check` in Phase 02 therefore passes against this document as it stands.
+
+**`components/sections/**` is deliberately outside the walk**, and this is the only place that
+exclusion is stated. Block renderers are 1:1 with CMS block types (D2), so the invariant that
+matters for them is not "has a registry row" but "exists exactly once for every registered block
+type" — which `tests/unit/cms-registry.test.ts` already asserts against the block registry, together
+with that type's schema file and its Studio editor. They are catalogued for editors in
+`docs/content/CONTENT_GUIDE.md`. Listing them here as well would give one directory two checkers
+that can disagree. Every renderer is still bound by `DESIGN_SYSTEM.md`; none may introduce a value
+of its own.
 
 This is not administration. FEAT §7 makes the registry the gate on external code, and an unrecorded
 licence is a legal exposure that a `git log` cannot answer later.
@@ -55,9 +71,8 @@ Explicitly **not** registry rows:
 - npm packages fixed by D1 (`next`, `react`, `tailwindcss`, `zod`, `three`, `@react-three/fiber`).
   Their versions live in `package-lock.json` and their role in `ARCHITECTURE.md`. A package becomes
   a registry row the moment one of *its* components renders in our UI — see RC-904.
-- `components/sections/**` block renderers. They are 1:1 with CMS block types (D2) and are
-  catalogued in `docs/content/CONTENT_GUIDE.md`, which is the document an editor reads. Each one is
-  still bound by `DESIGN_SYSTEM.md`; none may introduce a value of its own.
+- `components/sections/**` block renderers, for the reason given in full in §1: they are covered
+  1:1 by `tests/unit/cms-registry.test.ts` and catalogued in `docs/content/CONTENT_GUIDE.md`.
 
 ---
 
@@ -71,17 +86,28 @@ Fourteen fields: the ten required by FEAT §7, plus four governance fields. Fiel
 | 1 | `Registry ID` | Stable identifier, never reused | `RC-###` |
 | 2 | `Source` | Where the component came from | A site name from the §5 approved list, `Rivya first-party`, or a named upstream project |
 | 3 | `Link` | Direct URL to the component, or the repository path for first-party work | URL or repo path |
-| 4 | `Licence` | SPDX identifier of the source | See §4. `VERIFY_BEFORE_USE` while unverified; `N/A — first-party` for in-house work |
+| 4 | `Licence` | SPDX identifier of the source | See §4. `VERIFY_BEFORE_USE` while unverified and `PENDING_AUDIT`; `NOT_VERIFIED — rejected before import` on a `REJECTED` row; `N/A — first-party` for in-house work |
 | 5 | `Dependencies` | npm packages the adaptation **adds** | Package names with versions, or `none` (the preferred answer) |
 | 6 | `Page` | Where it is used | D3/D4 route paths, or `system` |
 | 7 | `Purpose` | Which FEAT §5 justification it serves | `product understanding` · `material understanding` · `brand perception` · `storytelling` · `navigation` · `conversion` · `usability` |
 | 8 | `Adaptation` | What changed to fit Rivya tokens | Prose. **A verbatim copy is not accepted** |
 | 9 | `Mobile behaviour` | What happens at 360px | Prose, specific |
-| 10 | `Performance` | Bundle delta in kB gzipped, and whether it is client-only | `+n kB gz, client` / `0 kB, server` |
+| 10 | `Performance` | Bundle delta in kB gzipped, and whether it is client-only | `budget ≤ n kB gz, client (unmeasured — PLANNED)` before the build · `+n kB gz, client` after it · `0 kB, server` |
 | 11 | `Accessibility` | Keyboard model, ARIA roles, reduced-motion behaviour | Prose, specific |
 | 12 | `Reviewed on` | ISO date of the review | `YYYY-MM-DD` or `—` |
 | 13 | `Reviewer` | The human who reviewed it | A name, or `UNASSIGNED` |
 | 14 | `Verdict` | Outcome | See below |
+
+**Field 10 is a budget until it is a measurement.** While a component's §6 `State` is `PLANNED`
+nothing has been built, so no delta can have been measured, and writing one as though it had been
+would make the registry's central premise — that these are verified records — false. A `PLANNED` row
+therefore states a **ceiling the implementation must come in under**, in the form
+`budget ≤ n kB gz, client (unmeasured — PLANNED)`. §9 step 6 replaces it with the measured delta at
+the moment `State` flips to `BUILT`; a `BUILT` row still carrying a `budget ≤` figure is an
+incomplete record and `check-registry.mjs` treats it as a missing field. `0 kB, server` is neither a
+budget nor a measurement: it is the architectural claim that the component ships no client
+JavaScript at all, asserted by `scripts/site/check-client-boundary.mjs` and
+`scripts/perf/count-islands.mjs` rather than by a bundle diff.
 
 `Verdict` values:
 
@@ -119,7 +145,10 @@ Operating rules:
    of the shipped `LICENSE` file (or the repository the code actually comes from) carries
    `VERIFY_BEFORE_USE`, not a guess. A licence badge on a gallery site is not a licence.
 2. A `VERIFY_BEFORE_USE` row is only valid while `Verdict` is `PENDING_AUDIT`. The moment the code
-   is imported, `Licence` must be a concrete SPDX identifier from the accepted list.
+   is imported, `Licence` must be a concrete SPDX identifier from the accepted list. A row rejected
+   **before** its licence was read carries `NOT_VERIFIED — rejected before import` and states the
+   real reason in §8; recording a guessed SPDX identifier for something that will never ship would
+   put an unverified claim in the ledger for no benefit.
 3. Verification means: open the source repository, read the licence file, record the SPDX
    identifier and the commit or version the code was taken from, and keep any required attribution
    in the adapted file's header.
@@ -162,7 +191,9 @@ outcome replaces `NOT_YET_AUDITED` with `AUDITED — <date>` plus a one-line ver
 
 ## 6. Registry index
 
-`State`: `PLANNED` (owned by a future phase, not yet written) · `BUILT` (exists and is tested).
+`State`: `PLANNED` (owned by a future phase, not yet written — **no file on disk is expected, and
+§1's path check is not armed until this flips**) · `BUILT` (exists and is tested) · `REJECTED`
+(proposed and declined; the row stays so the same proposal does not return — §8).
 All rows are `Source: Rivya first-party`, `Licence: N/A — first-party`, `Verdict: FIRST_PARTY`,
 `Dependencies: none` unless a full record in §7 says otherwise.
 
@@ -201,6 +232,16 @@ All rows are `Source: Rivya first-party`, `Licence: N/A — first-party`, `Verdi
 | RC-029 | `AspectBox` | material understanding | 02 | PLANNED |
 | RC-030 | `MediaFrame` | material understanding | 02 | PLANNED |
 | RC-031 | `FocusTrap` | usability | 02 | PLANNED |
+| RC-032 | `SkipLink` | navigation | 05 | PLANNED |
+| RC-033 | `FileUpload` | conversion | 19 | PLANNED |
+
+Two of these carry more than an index row's worth of contract and have full records in §7 despite
+sitting in the primitives table: **RC-033 `FileUpload` (§7.41)** is a Client Component with an
+upload state machine, a live region and a per-file remove control, which §2 puts squarely in the
+full-record tier. RC-032 `SkipLink` needs no record — it is an anchor that becomes visible on focus,
+with its label from `global_content` group `UI_CHROME`. It is owned by Phase 05 rather than Phase 10
+because the Studio shell renders one first (`docs/project/phases/PHASE-05-09.md`, Phase 05 shell)
+and Phase 10's site shell then reuses it.
 
 ### 6.2 Public patterns — `components/patterns/`
 
@@ -235,6 +276,23 @@ All rows are `Source: Rivya first-party`, `Licence: N/A — first-party`, `Verdi
 | RC-227 | `InquirySuccess` | conversion | 20 | PLANNED | index only — server, SEED §48 copy |
 | RC-228 | `ModelViewerMount` | product understanding | 21 | PLANNED | §7.22 |
 | RC-229 | `charts/*` (`BarSeries`, `BandStrip`, `Scatter`, `Sparkline`) | usability | 31 | PLANNED | §7.23 |
+| RC-230 | `Breadcrumbs` | navigation | 02 | PLANNED | §7.35 |
+| RC-231 | `DropdownMenu` | navigation | 02 | PLANNED | §7.36 |
+| RC-232 | `MediaImage` | material understanding | 06 | PLANNED | §7.37 |
+| RC-233 | `MediaVideo` | material understanding | 06 | PLANNED | §7.38 |
+| RC-234 | `Pagination` | navigation | 14 | PLANNED | §7.39 |
+
+`Breadcrumbs` and `DropdownMenu` are Phase 02, not Phase 10. `docs/project/phases/PHASE-00-04.md`
+pulls both forward on purpose and requires their rows to be opened in that phase: Phase 05's
+`StudioPage` needs a breadcrumb trail and the Studio top bar needs a user menu, and Phase 05 runs
+before Phase 10 builds the public chrome — so deferring either means the Studio inventing a second
+one, which is the divergence FEAT §6 exists to prevent.
+
+`MediaImage` and `MediaVideo` are the two renderers behind `MediaSlot` (RC-213) and are built in
+Phase 06 with the `MediaProvider`. `docs/media/MEDIA_GUIDE.md` §11 routes all four —
+`MediaSlot`, `MediaImage`, `MediaVideo`, `HeroMotion` — to this registry, and
+`docs/ops/PERFORMANCE.md` §2 gates CI on properties they declare, so neither can be an unregistered
+implementation detail of RC-213.
 
 ### 6.3 Studio — `components/studio/`
 
@@ -256,6 +314,7 @@ All rows are `Source: Rivya first-party`, `Licence: N/A — first-party`, `Verdi
 | RC-314 | `CommandPalette` | navigation | 05 | PLANNED | §7.27 |
 | RC-315 | `ModelInspectorDrawer` | product understanding | 21 | PLANNED | index only — composes RC-202/RC-304 |
 | RC-316 | `CoverageBadge` | usability | 31 | PLANNED | index only |
+| RC-317 | `ToastRegion` + `Toast` | usability | 05 | PLANNED | §7.40 |
 
 ### 6.4 Three — `components/three/`
 
@@ -270,10 +329,24 @@ All rows are `Source: Rivya first-party`, `Licence: N/A — first-party`, `Verdi
 |---|---|---|---|---|---|
 | RC-901 | Newsreader (display font) | Google Fonts / Production Type | 02 | PLANNED | §7.29 |
 | RC-902 | Inter (body font) | Google Fonts / rsms | 02 | PLANNED | §7.30 |
-| RC-903 | IBM Plex Mono (technical font) | Google Fonts / IBM | 02 | PLANNED | §7.31 |
+| RC-903 | IBM Plex Mono (technical font) | Google Fonts / IBM | 02 | **REJECTED** | §7.31, §8 |
 | RC-904 | `@react-three/drei` controls | pmndrs | 21 | PLANNED | §7.32 |
 | RC-905 | Draco decoder, vendored to `public/draco/**` | google/draco via three.js | 21 | PLANNED | §7.33 |
 | RC-906 | KTX2 / Basis transcoder, vendored to `public/basis/**` | BinomialLLC via three.js | 21 | PLANNED | §7.34 |
+
+### 6.6 Rows a later phase owes
+
+Component files already named by path in another document, whose phase has not opened its row yet.
+They are listed so the omission is visible rather than silent; each row is added by the phase named,
+before its first commit, exactly as §9 requires. This list is not a reservation — the IDs are taken
+at that point, from the next free number.
+
+| Component file | Owning phase | Named in |
+|---|---|---|
+| `components/patterns/Configurator/{index,Step,Progress,ReferenceUpload,Review}.tsx` | 19 | `docs/project/phases/PHASE-16-22.md`, Phase 19 deliverables |
+| `components/patterns/SortSelect.tsx` | 14 | `docs/project/phases/PHASE-10-15.md`, Phase 14 deliverables |
+
+`ReferenceUpload.tsx` composes RC-033 `FileUpload`; it does not reimplement a file input.
 
 ---
 
@@ -295,7 +368,7 @@ time; `—` and `UNASSIGNED` mean the review has not happened, not that it passe
 | Purpose | usability |
 | Adaptation | Built against `DESIGN_SYSTEM.md` §11 tokens; elevation level 3, scheme-inherited, `--rv-radius-lg` |
 | Mobile behaviour | At 360px it becomes a bottom sheet occupying up to 90vh with the safe-area inset respected; content scrolls inside, the header stays fixed |
-| Performance | +2 kB gz, client |
+| Performance | budget ≤ 2 kB gz, client (unmeasured — PLANNED) |
 | Accessibility | `role="dialog"` `aria-modal="true"`, labelled by its heading; focus moved in on open, trapped by RC-031, restored to the trigger on close; `Escape` closes; background `inert`; scroll locked with scrollbar-width compensation; FORM motion, static under reduced motion |
 | Reviewed on | — |
 | Reviewer | UNASSIGNED |
@@ -314,7 +387,7 @@ time; `—` and `UNASSIGNED` mean the review has not happened, not that it passe
 | Purpose | usability |
 | Adaptation | Shares RC-201's focus and scroll-lock implementation; differs only in placement and transform axis |
 | Mobile behaviour | Full width below 430px, 420px above; bottom-anchored variant for filter sheets so the thumb reaches the apply button |
-| Performance | +1 kB gz over RC-201, client |
+| Performance | budget ≤ 1 kB gz over RC-201, client (unmeasured — PLANNED) |
 | Accessibility | Same contract as RC-201; `aria-label` from `global_content`; swipe-to-dismiss on touch is an addition to, never a replacement for, the close button |
 | Reviewed on | — |
 | Reviewer | UNASSIGNED |
@@ -333,7 +406,7 @@ time; `—` and `UNASSIGNED` mean the review has not happened, not that it passe
 | Purpose | usability |
 | Adaptation | Underline indicator in `--rv-ink-accent` at `--rv-border-emphasis`; panel swap at `--rv-duration-instant`, indicator slides at 180ms |
 | Mobile behaviour | The tab list scrolls horizontally with snap and edge fades; the selected tab scrolls itself into view on change |
-| Performance | +1.5 kB gz, client |
+| Performance | budget ≤ 1.5 kB gz, client (unmeasured — PLANNED) |
 | Accessibility | `role="tablist"`/`tab`/`tabpanel`, roving tabindex, `aria-selected`, `aria-controls`; arrow keys move and activate, `Home`/`End` jump; panels are `tabindex="-1"`; indicator does not slide under reduced motion |
 | Reviewed on | — |
 | Reviewer | UNASSIGNED |
@@ -352,7 +425,7 @@ time; `—` and `UNASSIGNED` mean the review has not happened, not that it passe
 | Purpose | usability |
 | Adaptation | Height animated via `grid-template-rows: 0fr → 1fr`; no JavaScript measurement, so no layout thrash and no CLS |
 | Mobile behaviour | Headers are ≥ 56px tall; the whole header row is the hit box; single-open mode is the default below 768px to keep the list scannable |
-| Performance | +1 kB gz, client |
+| Performance | budget ≤ 1 kB gz, client (unmeasured — PLANNED) |
 | Accessibility | Headers are `<button>` inside the heading level the block declares, `aria-expanded` + `aria-controls`; focus stays on the header after toggling; FAQ content renders in the DOM regardless of open state so it is findable by browser search |
 | Reviewed on | — |
 | Reviewer | UNASSIGNED |
@@ -371,7 +444,7 @@ time; `—` and `UNASSIGNED` mean the review has not happened, not that it passe
 | Purpose | usability |
 | Adaptation | Elevation 2; 400ms hover delay, 0ms on focus; 100ms grace so the pointer can travel onto it |
 | Mobile behaviour | **Not used on touch.** Below 768px the same text renders as persistent `HelpText`. A tooltip that only opens on hover is unreachable on a phone |
-| Performance | +1.5 kB gz, client |
+| Performance | budget ≤ 1.5 kB gz, client (unmeasured — PLANNED) |
 | Accessibility | `role="tooltip"` referenced by `aria-describedby`; `Escape` dismisses; never focusable; never the sole carrier of information; contains no interactive element |
 | Reviewed on | — |
 | Reviewer | UNASSIGNED |
@@ -390,7 +463,7 @@ time; `—` and `UNASSIGNED` mean the review has not happened, not that it passe
 | Purpose | usability |
 | Adaptation | The single-region form of RC-204; used by the footer, the filter rail and the mobile nav's category list |
 | Mobile behaviour | Footer columns collapse to disclosures below 768px with the contact column open by default |
-| Performance | +0.5 kB gz, client |
+| Performance | budget ≤ 0.5 kB gz, client (unmeasured — PLANNED) |
 | Accessibility | `<button aria-expanded aria-controls>` + region; focus stays on the trigger; FORM motion, instant under reduced motion |
 | Reviewed on | — |
 | Reviewer | UNASSIGNED |
@@ -409,7 +482,7 @@ time; `—` and `UNASSIGNED` mean the review has not happened, not that it passe
 | Purpose | brand perception |
 | Adaptation | Implements the WOOD class of `DESIGN_SYSTEM.md` §4.2: opacity + `--rv-motion-rise-md`, `--rv-duration-slow`, `--rv-ease-out`, 60ms stagger capped at six items |
 | Mobile behaviour | Identical; travel does not scale with viewport. Under `saveData` the static branch is used |
-| Performance | +1 kB gz, client. One shared `IntersectionObserver` per page, not one per element |
+| Performance | budget ≤ 1 kB gz, client (unmeasured — PLANNED). One shared `IntersectionObserver` per page, not one per element |
 | Accessibility | Children are server-rendered, laid out and readable before any observer attaches — motion changes opacity, it never gates content. `useReducedMotion` is the single `matchMedia` source in the repository; when it returns true no observer is attached and children render final. Asserted by `tests/e2e/a11y/reduced-motion.spec.ts` |
 | Reviewed on | — |
 | Reviewer | UNASSIGNED |
@@ -428,7 +501,7 @@ time; `—` and `UNASSIGNED` mean the review has not happened, not that it passe
 | Purpose | navigation |
 | Adaptation | Panel content comes from `navigation_items` and `categories.hero_media_id`; no label is hard-coded (SEED §1). Elevation 2, `--rv-radius-lg` |
 | Mobile behaviour | The panel does not exist below 1024px. Categories become a `Disclosure` inside RC-211, so there is no hover-only route to any category |
-| Performance | +3 kB gz, client. The trigger and the header around it stay server-rendered |
+| Performance | budget ≤ 3 kB gz, client (unmeasured — PLANNED). The trigger and the header around it stay server-rendered |
 | Accessibility | `aria-expanded` on the trigger, panel `aria-labelledby` the trigger; `ArrowDown` enters, `Tab` traverses in DOM order and exits naturally, `Escape` closes and restores focus. **No focus trap** — a menu is not a dialog. 120ms hover-intent delay on desktop pointers only; touch and keyboard open on activation |
 | Reviewed on | — |
 | Reviewer | UNASSIGNED |
@@ -447,7 +520,7 @@ time; `—` and `UNASSIGNED` mean the review has not happened, not that it passe
 | Purpose | navigation |
 | Adaptation | Composes RC-202 and RC-206; ground `--rv-surface-ground` in the section's scheme, rows ≥ 56px |
 | Mobile behaviour | Full-width below 430px, 420px above; primary CTA pinned above the safe-area inset; nested categories are a disclosure, never a second drawer |
-| Performance | +1 kB gz over RC-202, client |
+| Performance | budget ≤ 1 kB gz over RC-202, client (unmeasured — PLANNED) |
 | Accessibility | Inherits RC-202's dialog contract; the trigger is `aria-expanded` + `aria-controls`; route change closes it and moves focus to `#main` |
 | Reviewed on | — |
 | Reviewer | UNASSIGNED |
@@ -485,7 +558,7 @@ time; `—` and `UNASSIGNED` mean the review has not happened, not that it passe
 | Purpose | brand perception |
 | Adaptation | ART + SPACE classes. Mounts **after** the still has painted, so the LCP element is always the image. Parallax capped at `--rv-motion-parallax-max` (24px) |
 | Mobile behaviour | The motion layer does not mount below 768px. The still is the whole experience, and it is a complete one |
-| Performance | +2 kB gz, client, loaded after paint. The video itself is `preload="none"` with a poster |
+| Performance | budget ≤ 2 kB gz, client (unmeasured — PLANNED), loaded after paint. The video itself is `preload="none"` with a poster |
 | Accessibility | Muted, inline, loop, no controls when decorative and `aria-hidden`; under `prefers-reduced-motion: reduce`, `saveData`, or a narrow viewport **no `<video>` element mounts at all** and the poster renders with an explicit play control |
 | Reviewed on | — |
 | Reviewer | UNASSIGNED |
@@ -504,7 +577,7 @@ time; `—` and `UNASSIGNED` mean the review has not happened, not that it passe
 | Purpose | material understanding, storytelling |
 | Adaptation | Expresses WOOD → RESIN → LIGHT → FORM → SPACE → ART as scroll-observed stages. It **observes** scroll; it never captures it. No pinning, no scroll-jacking, no `preventDefault` on wheel |
 | Mobile behaviour | Below 768px the stages render as a plain vertical list with their media — no scroll effects at all |
-| Performance | +3 kB gz, client. One `IntersectionObserver`; at most one motion layer plays at a time |
+| Performance | budget ≤ 3 kB gz, client (unmeasured — PLANNED). One `IntersectionObserver`; at most one motion layer plays at a time |
 | Accessibility | Every stage's content is in the DOM and reachable by `Tab` in both branches; under reduced motion the complete static list renders and no observer attaches. Asserted by `tests/e2e/homepage-motion.spec.ts` |
 | Reviewed on | — |
 | Reviewer | UNASSIGNED |
@@ -613,7 +686,7 @@ every project record until the owner confirms it.
 | Purpose | product understanding, material understanding |
 | Adaptation | Stills are server-rendered; only the lightbox is a client component. Lightbox forces the `INK` scheme regardless of the section's scheme. RESIN crossfade between images, ART on open |
 | Mobile behaviour | Single-column scroll-snap strip with a counter; tap opens the lightbox full-screen; pinch and double-tap zoom |
-| Performance | +5 kB gz, client, and only for the lightbox. Within the `/product/[slug]` 190 kB first-load budget |
+| Performance | budget ≤ 5 kB gz, client (unmeasured — PLANNED), and only for the lightbox. Within the `/product/[slug]` 190 kB first-load budget |
 | Accessibility | Thumbnails are a roving-tabindex list of buttons, `Enter` opens; the lightbox is `role="dialog"` `aria-modal` labelled by the current alt text, focus trapped and restored to the originating thumbnail; `Escape`/arrows/`Home`/`End`; `n of m` counter is `aria-live="polite"`; instant swaps under reduced motion; **never auto-advances** |
 | Reviewed on | — |
 | Reviewer | UNASSIGNED |
@@ -632,7 +705,7 @@ every project record until the owner confirms it.
 | Purpose | navigation |
 | Adaptation | A scrollable list, not a transform track: the DOM is complete, crawlable and printable. Controls are progressive enhancement |
 | Mobile behaviour | Free scroll with snap and a one-and-a-peek offset so a second card edge shows the list continues; no arrows below 768px |
-| Performance | +1.5 kB gz, client (controls and the disabled-state observer only) |
+| Performance | budget ≤ 1.5 kB gz, client (unmeasured — PLANNED) — controls and the disabled-state observer only |
 | Accessibility | `role="group"` `aria-roledescription="carousel"`, items labelled `n of m`; the scroller is focusable with arrow-key movement; each item's own link is separately tabbable; auto-advance is off by default and, where a block enables it, pauses on hover/focus/`document.hidden`, exposes a pause control first, and never runs under reduced motion (WCAG 2.2.2) |
 | Reviewed on | — |
 | Reviewer | UNASSIGNED |
@@ -651,7 +724,7 @@ every project record until the owner confirms it.
 | Purpose | navigation, product understanding |
 | Adaptation | The URL is the state; no client filter store exists. Facets come from `lib/catalog`, never a hard-coded list |
 | Mobile behaviour | A bottom-anchored RC-202 drawer opened by a "Filters" button showing the active count; footer holds Apply and Clear all within thumb reach |
-| Performance | +2.5 kB gz, client |
+| Performance | budget ≤ 2.5 kB gz, client (unmeasured — PLANNED) |
 | Accessibility | "Skip to filters" link (Phase 41); active filters are removable chips whose accessible names say which filter they clear; zero-result options are disabled rather than hidden; the result count is `aria-live="polite"` and the grid is not a live region |
 | Reviewed on | — |
 | Reviewer | UNASSIGNED |
@@ -670,7 +743,7 @@ every project record until the owner confirms it.
 | Purpose | navigation |
 | Adaptation | Grouped suggestions by entity type (SEED §19); matched substring in `--rv-ink-accent` at weight 500 so the cue is not colour alone |
 | Mobile behaviour | Opens as a full-screen sheet with the keyboard raised; results scroll under a fixed input; 44px result rows |
-| Performance | +3 kB gz, client. 200ms debounce, in-flight requests aborted |
+| Performance | budget ≤ 3 kB gz, client (unmeasured — PLANNED). 200ms debounce, in-flight requests aborted |
 | Accessibility | `role="combobox"` with `aria-expanded`, `aria-controls`, `aria-activedescendant` over a `role="listbox"`; arrows move across groups, `Enter` opens, `Escape` clears then closes; "n results" announced once per settled query; the seeded SEED §26 empty state, never a bare "No results" |
 | Reviewed on | — |
 | Reviewer | UNASSIGNED |
@@ -692,7 +765,7 @@ appears anywhere in the public bundle; `scripts/site/check-client-boundary.mjs` 
 | Purpose | conversion |
 | Adaptation | Opens RC-202 containing the inquiry form; on success renders the SEED §48 surface with the WhatsApp continue action |
 | Mobile behaviour | Bottom sheet; the submit row is sticky above the safe-area inset; the form is single-column throughout |
-| Performance | +4 kB gz, client, loaded on interaction — not in the initial route bundle |
+| Performance | budget ≤ 4 kB gz, client (unmeasured — PLANNED), loaded on interaction — not in the initial route bundle |
 | Accessibility | Inherits RC-202's dialog contract; `aria-busy` while saving; the save error is `role="alert"`; the success heading receives focus |
 | Reviewed on | — |
 | Reviewer | UNASSIGNED |
@@ -753,7 +826,7 @@ payment field, no account creation exists in it or anywhere near it.
 | Purpose | usability |
 | Adaptation | A real `<table>` with column definitions; sort key and page are `searchParams`; BONE scheme, 52px rows, `tabular-nums` on numeric columns |
 | Mobile behaviour | Below 768px rows become stacked `<dl>` cards using a caller-declared column subset — a declared responsive view, not an automatic squeeze |
-| Performance | +4 kB gz, client (selection and sort controls). Rows themselves are server-rendered |
+| Performance | budget ≤ 4 kB gz, client (unmeasured — PLANNED) — selection and sort controls. Rows themselves are server-rendered |
 | Accessibility | `<caption>`, `<th scope="col">`, `aria-sort` on the sorted column; headers are buttons; the scroll region is focusable with an accessible name so the page body never scrolls horizontally; selection count `aria-live="polite"`; the select-all label states its page scope; `EmptyState` instead of a blank grid, and the words "Coming Soon" are forbidden (SEED §55) |
 | Reviewed on | — |
 | Reviewer | UNASSIGNED |
@@ -795,7 +868,7 @@ stated comparison window; a delta without a denominator is not rendered.
 | Purpose | usability |
 | Adaptation | RC-201 with the scrim click-to-close removed and default focus on **Cancel**; bulk destructive actions require typed confirmation (FEAT §20) |
 | Mobile behaviour | Bottom sheet; Cancel is placed under the thumb and the destructive action is not |
-| Performance | +1 kB gz over RC-201, client |
+| Performance | budget ≤ 1 kB gz over RC-201, client (unmeasured — PLANNED) |
 | Accessibility | The dialog body names the entity and the row count; the destructive button's accessible name includes the verb and the object; `Escape` cancels; the outcome is announced `role="status"` |
 | Reviewed on | — |
 | Reviewer | UNASSIGNED |
@@ -814,7 +887,7 @@ stated comparison window; a delta without a denominator is not rendered.
 | Purpose | navigation |
 | Adaptation | Provider-driven through `registerCommandProvider()`; results grouped by provider; recents per user in `studio_preferences` |
 | Mobile behaviour | Full-screen sheet; the `⌘K` hint is hidden and the palette is reached from the top bar |
-| Performance | +5 kB gz, client, imported on first invocation rather than with the shell |
+| Performance | budget ≤ 5 kB gz, client (unmeasured — PLANNED), imported on first invocation rather than with the shell |
 | Accessibility | RC-201's dialog contract plus RC-224's combobox contract; `Escape` closes and restores focus; opens instantly under reduced motion |
 | Reviewed on | — |
 | Reviewer | UNASSIGNED |
@@ -836,7 +909,7 @@ route the signed-in user may not open is an information leak, not a convenience.
 | Purpose | product understanding |
 | Adaptation | Renders in the `INK` scheme against the reserved `--rv-3d-*` token surface; controls are 44px `IconButton`s in a bottom bar |
 | Mobile behaviour | Opt-in only below 768px and fullscreen once opened; touch orbit, pinch zoom, two-finger pan |
-| Performance | ~350 kB gz measured separately and **never** in a first load. Model ceilings: reject > 15 MB, > 250k triangles, any texture > 2048px; compression required above 5 MB |
+| Performance | **Budgeted at ≤ 350 kB gz** including decoders, per `docs/ops/PERFORMANCE.md` §4.3. Unmeasured — PLANNED; measured at Phase 21 and recorded in PERFORMANCE.md §8.3. **Never** in a first load. Model ceilings are the Phase 21 upload gate, not this budget: reject > 15 MB, > 250k triangles, any texture > 2048px, compression required above 5 MB; `docs/ops/PERFORMANCE.md` §4.3 budgets ≤ 8 MB per GLB after compression, which is the warn line |
 | Accessibility | Canvas is `role="img"` with an accessible name and an `aria-describedby` summary; every camera action has a keyboard route (arrows orbit, `+`/`−` zoom, `0` resets); fullscreen traps focus and `Escape` restores it; under reduced motion there is no auto-rotate, no intro and no idle motion |
 | Reviewed on | — |
 | Reviewer | UNASSIGNED |
@@ -859,7 +932,7 @@ specification.
 | Purpose | brand perception |
 | Adaptation | Variable axes `opsz` 6–72 and weight 200–800; only weights 400 and 500 are used (`DESIGN_SYSTEM.md` §3.4); latin subset only; no italic loaded |
 | Mobile behaviour | Identical; the display scale clamps to 48px at 360px so no headline overflows |
-| Performance | Self-hosted at build time — no runtime font-CDN request. Counts against the ≤ 120 kB total font budget. Preloaded; `adjustFontFallback` on |
+| Performance | Self-hosted at build time — no runtime font-CDN request. Counts against the ≤ 120 kB total woff2 budget owned by `DESIGN_SYSTEM.md` §3.1 (`docs/ops/PERFORMANCE.md` carries no font line item today — §18 open item 1). **The only preloaded face in the product**, which is what `PERFORMANCE.md` §2.2 permits; `adjustFontFallback` on |
 | Accessibility | `display: 'swap'` with metric-matched fallback so swap costs no layout shift inside the 0.05 CLS budget |
 | Reviewed on | — |
 | Reviewer | UNASSIGNED |
@@ -876,32 +949,36 @@ specification.
 | Dependencies | `next/font/google` |
 | Page | system |
 | Purpose | usability |
-| Adaptation | Variable weight 100–900; only 400, 500 and 600 are used; latin subset; no italic; `tabular-nums` enabled per §3.6 |
+| Adaptation | Variable weight 100–900; only 400, 500 and 600 are used; latin subset; no italic; `tabular-nums` enabled per `DESIGN_SYSTEM.md` §3.6. It also carries the `eyebrow` and `technical` type roles, which reach their register through uppercase and tracking rather than through a third family |
 | Mobile behaviour | Identical. Form inputs never render below 16px, which is what stops iOS Safari zooming on focus |
-| Performance | Self-hosted, preloaded, inside the ≤ 120 kB budget |
+| Performance | Self-hosted, **not preloaded** — `docs/ops/PERFORMANCE.md` §2.2 permits one preloaded face and it belongs to the display family (RC-901). Metric-matched fallback plus `display: 'swap'` carries first paint. Inside the ≤ 120 kB budget owned by `DESIGN_SYSTEM.md` §3.1 |
 | Accessibility | Metric-matched fallback; `font-variant-numeric: tabular-nums` on every numeric column |
 | Reviewed on | — |
 | Reviewer | UNASSIGNED |
 | Verdict | PENDING_AUDIT |
 
-### 7.31 RC-903 — IBM Plex Mono (technical font)
+### 7.31 RC-903 — IBM Plex Mono (technical font) — **REJECTED**
 
 | Field | Value |
 |---|---|
 | Registry ID | RC-903 |
 | Source | Google Fonts, upstream `IBM/plex` |
 | Link | `https://fonts.google.com/specimen/IBM+Plex+Mono` |
-| Licence | **VERIFY_BEFORE_USE** — expected SIL OFL 1.1; confirm from the upstream licence file |
-| Dependencies | `next/font/google` |
-| Page | system |
-| Purpose | usability |
-| Adaptation | Weight 400 only; latin subset; used for eyebrows, asset IDs, SKUs, hex values and cron expressions. Emphasis comes from colour and tracking, never a second weight |
-| Mobile behaviour | Identical; `--rv-text-2xs` (11px) is permitted only for uppercase letter-spaced labels in this family |
-| Performance | Self-hosted, **not preloaded** (it never carries the LCP text); inside the ≤ 120 kB budget |
-| Accessibility | `display: 'swap'`; identifier text is selectable and never truncated without a full value available |
+| Licence | `NOT_VERIFIED — rejected before import`. The licence was never read because the family was declined on budget; no SPDX identifier is claimed for it |
+| Dependencies | none — nothing is installed or loaded |
+| Page | none |
+| Purpose | usability (proposed: the `technical` type role) |
+| Adaptation | None. The proposal was a third loaded family at weight 400 for eyebrows, SKUs, asset IDs, hex values and cron expressions |
+| Mobile behaviour | n/a — not shipped |
+| Performance | The reason for the rejection. A third self-hosted family exceeds `docs/ops/PERFORMANCE.md` §2.2 — at most two families, one display and one text — and the earlier draft also preloaded two faces where §2.2 permits one |
+| Accessibility | n/a — not shipped. The roles it would have served lose nothing: `DESIGN_SYSTEM.md` §3.5 gives `eyebrow` and `technical` to the body family with uppercase and tracking, and gives machine identifiers the `identifier` role on `--rv-font-mono` (the platform monospace stack, 0 kB), which preserves column alignment and glyph disambiguation |
 | Reviewed on | — |
 | Reviewer | UNASSIGNED |
-| Verdict | PENDING_AUDIT |
+| Verdict | REJECTED |
+
+**How to re-propose it.** Not with a design argument. `docs/ops/PERFORMANCE.md` §2.2 would have to
+be amended first to permit a third family, with the payload cost stated and a font line item added
+to its budget tables (`DESIGN_SYSTEM.md` §18 open item 1). Only then does this row reopen.
 
 ### 7.32 RC-904 — `@react-three/drei` controls
 
@@ -960,16 +1037,171 @@ specification.
 | Reviewer | UNASSIGNED |
 | Verdict | PENDING_AUDIT |
 
+### 7.35 RC-230 — `Breadcrumbs`
+
+| Field | Value |
+|---|---|
+| Registry ID | RC-230 |
+| Source | Rivya first-party |
+| Link | `components/patterns/Breadcrumbs.tsx` |
+| Licence | N/A — first-party |
+| Dependencies | none |
+| Page | `/collection/[category]`, `/product/[slug]`, `/collections/[slug]`, `/portfolio/[slug]`, `/journal/[slug]`, every `/studio/**` leaf |
+| Purpose | navigation |
+| Adaptation | `DESIGN_SYSTEM.md` §8.4: `--rv-text-sm`, `--rv-ink-tertiary`, separators `aria-hidden`. Built in Phase 02 rather than Phase 10 because Phase 05's `StudioPage` needs the trail before the public chrome exists — one implementation serves both surfaces |
+| Mobile behaviour | Below 430px only the parent and the current page render. The trail never wraps to a second line and never truncates the current page's own label; it drops ancestors instead |
+| Performance | 0 kB, server |
+| Accessibility | `<nav>` with an `aria-label` from `global_content` group `UI_CHROME`, containing an ordered list; the current page is `aria-current="page"` and is **not** a link; separators are decorative `aria-hidden` text and never the only structure — the list markup carries it |
+| Reviewed on | — |
+| Reviewer | UNASSIGNED |
+| Verdict | FIRST_PARTY |
+
+**Content constraint (SEED §1, D2).** The root label is a `global_content` string, not the literal
+`Home` typed into the component. `docs/content/INITIAL_CONTENT_INVENTORY.md` §1.3 row 2 records it
+as one of the thirteen strings needing a `UI_CHROME` group before the seed can hold it.
+
+### 7.36 RC-231 — `DropdownMenu`
+
+| Field | Value |
+|---|---|
+| Registry ID | RC-231 |
+| Source | Rivya first-party (APG menu button pattern) |
+| Link | `components/patterns/DropdownMenu/index.tsx` |
+| Licence | N/A — first-party |
+| Dependencies | none |
+| Page | `/studio/**` — top-bar user menu, table row actions, bulk action menus |
+| Purpose | navigation |
+| Adaptation | Elevation 2 (`DESIGN_SYSTEM.md` §6.2), `--rv-radius-md`, FORM motion. The trigger is always a real `Button` or `IconButton`. It is **not** a `Select` substitute: a menu chooses an action, a select chooses a value |
+| Mobile behaviour | Below 768px it opens as a bottom-anchored RC-202 drawer so the items sit in thumb reach; item rows are ≥ 44px either way |
+| Performance | budget ≤ 1.5 kB gz, client (unmeasured — PLANNED) |
+| Accessibility | Trigger carries `aria-haspopup="menu"`, `aria-expanded`, `aria-controls`; the panel is `role="menu"` over `role="menuitem"` children with a roving tabindex. `ArrowDown`/`ArrowUp` move, `Home`/`End` jump, `Enter`/`Space` activate, `Escape` closes and restores focus to the trigger; outside click and route change close. **No focus trap** — a menu is not a dialog. A destructive item is never first in the list and never acts without an RC-309 confirmation |
+| Reviewed on | — |
+| Reviewer | UNASSIGNED |
+| Verdict | FIRST_PARTY |
+
+### 7.37 RC-232 — `MediaImage`
+
+| Field | Value |
+|---|---|
+| Registry ID | RC-232 |
+| Source | Rivya first-party |
+| Link | `components/patterns/MediaImage.tsx` |
+| Licence | N/A — first-party |
+| Dependencies | none — delivery URLs are built by `lib/media`; no Cloudinary SDK reaches the client |
+| Page | every route rendering an image |
+| Purpose | material understanding |
+| Adaptation | The single image renderer behind RC-213. Presets and the width ladder come from `docs/media/CLOUDINARY.md`; `f_auto` is the only format directive permitted, so AVIF/WebP negotiation happens at the CDN and never as a hard-coded extension. It is one of only two components allowed to emit an `<img>` element |
+| Mobile behaviour | Renders the **mobile CMS slot's own asset** — a separate slot per D6, never a crop of the desktop source. The width ladder caps at 2560, so a phone is never sent a full-resolution original |
+| Performance | 0 kB, server. Exactly one `priority` instance per route, asserted by `scripts/perf/check-priority-images.mjs`; every other instance is lazy |
+| Accessibility | `alt` from `media_assets.alt_text`, or `alt=""` only when `is_decorative` is true — never empty by omission. **`sizes` is required**: the component throws without it in development and `scripts/perf/check-image-props.mjs` fails CI on a usage that omits it. The aspect box is reserved before load, so a failure costs no CLS and the seeded SEED §47 label renders in place |
+| Reviewed on | — |
+| Reviewer | UNASSIGNED |
+| Verdict | FIRST_PARTY |
+
+### 7.38 RC-233 — `MediaVideo`
+
+| Field | Value |
+|---|---|
+| Registry ID | RC-233 |
+| Source | Rivya first-party |
+| Link | `components/patterns/MediaVideo.tsx` |
+| Licence | N/A — first-party |
+| Dependencies | none — no video player library. The element is a native `<video>` |
+| Page | `/`, `/large-format`, `/about`, `/process`, and any route whose block binds a video slot |
+| Purpose | brand perception, material understanding |
+| Adaptation | The single video renderer behind RC-213 and RC-214. Poster first, muted inline loop. **Autoplay is a runtime decision behind the `DESIGN_SYSTEM.md` §4.3 gates and is never an `autoplay` attribute in markup** — `scripts/perf/check-video-props.mjs` fails CI on one |
+| Mobile behaviour | Below 768px the poster is the whole experience unless the visitor presses play; no video element is mounted speculatively |
+| Performance | budget ≤ 2 kB gz, client (unmeasured — PLANNED). `preload="none"`; the poster is what the route actually paints, and the poster is never the LCP element by accident — RC-213 owns that decision |
+| Accessibility | Never autoplays with sound; a poster is always present; controls are native or fully keyboard-operable. Under `prefers-reduced-motion: reduce`, `saveData`, or `deviceMemory < 4`, **no `<video>` element mounts at all** and the poster renders with a visible play control. Captions or a transcript are required for any video carrying spoken or textual information. Asserted by `tests/e2e/a11y/reduced-motion.spec.ts` and `check-video-props.mjs` |
+| Reviewed on | — |
+| Reviewer | UNASSIGNED |
+| Verdict | FIRST_PARTY |
+
+**Media constraint (D6).** The 26 videos in `data/higgsfield/asset-manifest.json` are the existing
+video inventory and are reused, never regenerated. This component renders what the CMS slot binds;
+it never selects or substitutes an asset of its own.
+
+### 7.39 RC-234 — `Pagination`
+
+| Field | Value |
+|---|---|
+| Registry ID | RC-234 |
+| Source | Rivya first-party |
+| Link | `components/patterns/Pagination.tsx` |
+| Licence | N/A — first-party |
+| Dependencies | none |
+| Page | `/collection`, `/collection/[category]`, `/journal`, `/journal/category/[slug]`, `/search`, `/studio/**` |
+| Purpose | navigation |
+| Adaptation | Page-number based on `?page=n`, with `rel="prev"`/`rel="next"` and a canonical URL for each page. 24 items per public page, 50 in Studio (`docs/ops/PERFORMANCE.md` §4.4). **Never infinite scroll** — changing that needs a documented decision, not a preference |
+| Mobile behaviour | Below 430px only previous, next and a "page n of m" indicator render; the number strip is dropped rather than horizontally scrolled |
+| Performance | 0 kB, server. The controls are real links, so the list paginates with JavaScript disabled |
+| Accessibility | `<nav>` with an `aria-label`; the current page carries `aria-current="page"`; previous and next are `aria-disabled` at the ends rather than removed, so the control set does not change shape under focus. After navigation, focus lands on the first new result, never back at the top of the document |
+| Reviewed on | — |
+| Reviewer | UNASSIGNED |
+| Verdict | FIRST_PARTY |
+
+**Content constraint (SEED §1).** Previous, next and the position string are `global_content`
+strings in group `UI_CHROME`, not literals — `docs/content/INITIAL_CONTENT_INVENTORY.md` §1.3 row 3.
+
+### 7.40 RC-317 — `ToastRegion` + `Toast`
+
+| Field | Value |
+|---|---|
+| Registry ID | RC-317 |
+| Source | Rivya first-party |
+| Link | `components/studio/{ToastRegion.tsx,Toast.tsx}` |
+| Licence | N/A — first-party |
+| Dependencies | none — no toast library |
+| Page | `/studio/**` only |
+| Purpose | usability |
+| Adaptation | `DESIGN_SYSTEM.md` §11.1. Soft state surface from §2.9 with a 1px border in the state colour, elevation 3, BONE scheme, at `--rv-z-toast` (700). Severities are `success`, `info`, `warning`; **`danger` is not a toast severity** |
+| Mobile behaviour | Bottom-right above 768px, bottom-centre and full width minus the gutter below, always above the safe-area inset. It never covers the sticky submit row of an open form |
+| Performance | budget ≤ 1.5 kB gz, client (unmeasured — PLANNED). One region per Studio shell, mounted in `app/(studio)/studio/layout.tsx`, not one per page |
+| Accessibility | `role="status"` `aria-live="polite"` `aria-atomic="true"`, **present and empty in the DOM from first paint** so the region exists before the first message — a live region created at the same moment as its content is not announced. Focus is never moved to a toast; the toast and its action are reachable by `Tab` in DOM order while present, and `Escape` dismisses the focused toast. Auto-dismiss at 6 s (`success`, `info`) / 10 s (`warning`), paused on hover, on focus-within and while `document.hidden`; a close button is always present so the timer is never the only route out. Under reduced motion the slide and fade are removed and **the timer is unchanged** (`docs/ops/ACCESSIBILITY.md` §2.5). Severity is carried by the message text, never by colour alone |
+| Reviewed on | — |
+| Reviewer | UNASSIGNED |
+| Verdict | FIRST_PARTY |
+
+**Honesty constraint (`docs/ops/ACCESSIBILITY.md` §2.5).** A toast is transient, dismissible and
+easy to miss, so it may never be the only notification of a destructive or failed result. That
+outcome is reported where the action was taken — in the RC-309 dialog, on the form, in the row — and
+a toast may accompany it, never replace it. The public site has no toast at all: a visitor's outcome
+is the SEED §48 success surface or the SEED §49 error message, rendered in place and re-readable.
+
+### 7.41 RC-033 — `FileUpload`
+
+| Field | Value |
+|---|---|
+| Registry ID | RC-033 |
+| Source | Rivya first-party |
+| Link | `components/primitives/FileUpload.tsx` |
+| Licence | N/A — first-party |
+| Dependencies | none — thumbnails are object URLs made by the browser; no image library is added |
+| Page | `/custom-commissions` (Phase 19 configurator), `/contact` and the RC-226 inquiry drawer (Phase 20) |
+| Purpose | conversion |
+| Adaptation | `DESIGN_SYSTEM.md` §7.9. A real `<input type="file">` with a real label; the drop zone is an enhancement layered over it and never the only route in. Accepted types and the byte ceiling render as `HelpText` **above** the control, read from the form schema rather than typed into the component. Uploads are signed by `app/api/inquiries/upload-sign/route.ts` — unauthenticated but rate-limited, folder-forced and MIME-limited |
+| Mobile behaviour | Full width; the selected-file list stacks; each row's remove control is a 44px `IconButton`; the picker offered is whatever the platform maps the `accept` list to, never a custom sheet |
+| Performance | budget ≤ 2 kB gz, client (unmeasured — PLANNED). Object URLs are revoked on unmount, so a long configurator session does not leak them |
+| Accessibility | The `<input>` is the labelled, keyboard-reachable control; the drop zone is `aria-hidden` decoration over it. Each selected file is a row whose remove button's accessible name includes the file name. Progress is a determinate `<progress>` announced `aria-live="polite"` at 0/50/100 only. A rejected file states why in an `ErrorText` linked by `aria-describedby`, never by border colour alone |
+| Reviewed on | — |
+| Reviewer | UNASSIGNED |
+| Verdict | FIRST_PARTY |
+
+**Business-rule constraint (D1, D10).** An upload failure never blocks the inquiry: the seeded
+SEED §49 copy renders and the flow continues without the file. No payment field, account creation or
+checkout step exists in any form containing this control, and the component never derives a
+dimension, quantity or price from an uploaded file.
+
 ---
 
 ## 8. Rejections ledger
 
-A rejected component keeps its row so the same proposal does not return. **Currently empty** — no
-external component has been proposed and rejected yet.
+A rejected component keeps its row so the same proposal does not return. One entry: a font
+declined on **budget**, not on licence. No external UI component has been proposed and rejected.
 
 | ID | Component | Source | Reason for rejection | Reviewed on | Reviewer |
 |---|---|---|---|---|---|
-| — | — | — | — | — | — |
+| RC-903 | IBM Plex Mono (technical font) | Google Fonts / IBM | **Budget, not licence.** A third loaded family exceeds `docs/ops/PERFORMANCE.md` §2.2, which permits at most two (one display, one text) and one preloaded face. `DESIGN_SYSTEM.md` §3.1 resolves the conflict in PERFORMANCE.md's favour: the `technical` and `eyebrow` type roles move to the body family with uppercase and tracking, and machine identifiers move to `--rv-font-mono`, the platform monospace stack, which loads no file. Re-proposing it needs a PERFORMANCE.md §2.2 amendment first, not a design argument | — | UNASSIGNED |
 
 Standing rejection reasons, recorded so a reviewer does not have to re-argue them:
 
@@ -1001,13 +1233,18 @@ Seven steps. Steps 1–4 happen **before** any code is written.
    If the licence is not on the §4 allowlist, set `Verdict: REJECTED`, write the reason, and stop.
 4. **Full record or index row.** Apply the §2 test. If a full record is needed, write all fourteen
    fields in §7 — including `Mobile behaviour` at 360px and a `Performance` figure. "TBD" is not a
-   value; if the number is not known yet, the component is not ready to be written.
+   value. Before the code exists the figure is a stated **budget**
+   (`budget ≤ n kB gz, client (unmeasured — PLANNED)`, §3): a ceiling you are prepared to hold. If
+   you cannot name one, the component is not ready to be written.
 5. **Build against tokens.** No hex literal, no raw `px` spacing, no copy in JSX. An external
    component is rewritten against `DESIGN_SYSTEM.md` tokens and the `Adaptation` field says what
    changed — a verbatim copy is not accepted.
-6. **Prove it.** Add it to the dev gallery at `app/(dev)/_design`, add its visual snapshot to
-   `tests/e2e/design-system.spec.ts` at the eight FEAT §45 widths, and add a keyboard test for its
-   ARIA contract. Measure the real bundle delta and correct the `Performance` field.
+6. **Prove it.** Add it to the dev-only gallery at `app/(site)/design-system/**` (served at
+   `/design-system`, `notFound()` in production — the path is fixed by the A2 amendment to
+   `CANONICAL-DECISIONS.md`), add its visual snapshot to `tests/e2e/design-system.spec.ts` at the
+   eight FEAT §45 widths, and add a keyboard test for its ARIA contract. **Measure the real bundle
+   delta and replace the step-4 budget with it** — a `BUILT` row still carrying a `budget ≤` figure
+   is an incomplete record (§3).
 7. **Close the record.** Fill `Reviewed on`, `Reviewer` and the final `Verdict`; flip `State` to
    `BUILT`; run `npm run check`. Then follow the FEAT §43 documentation update contract —
    `CHANGELOG.md`, `PROJECT_STATE.md`, `docs/SESSION-STATE.md`.
@@ -1032,11 +1269,21 @@ An audit is of the **source**, not of a single component, and is recorded in §5
 
 | Check | Command | Asserts |
 |---|---|---|
-| Registry schema | `node scripts/design/check-registry.mjs` | Every component file has a row; every full record has all fourteen fields; no `PENDING_AUDIT` row has code on disk; every `Licence` is allowlisted or `VERIFY_BEFORE_USE` under `PENDING_AUDIT` |
+| Registry schema | `node scripts/design/check-registry.mjs` | Every file under `components/{primitives,patterns,studio,three}/**` and `public/**` has a row (`components/sections/**` is out of scope by design, §1); every `BUILT` row's `Link` path exists, while a `PLANNED` row is expected to have none; every full record has all fourteen fields, with no `BUILT` row left on a `budget ≤` figure; no `PENDING_AUDIT` row has code on disk; every `Licence` is allowlisted, or `VERIFY_BEFORE_USE` under `PENDING_AUDIT`, or `NOT_VERIFIED` under `REJECTED` |
 | Token discipline | `node scripts/design/check-tokens.mjs` | No hex literal or raw `px` spacing outside `app/styles/**` |
 | Visual matrix | `npx playwright test tests/e2e/design-system.spec.ts` | Every registered component renders at 1920, 1440, 1280, 1024, 768, 430, 390, 360 |
 | Keyboard contracts | `npx playwright test tests/e2e/a11y/` | Dialog focus trap and restore, tabs roving tabindex, accordion header buttons, `Escape` behaviour, 44 × 44 hit boxes at 390px |
 | Reduced motion | `npx playwright test tests/e2e/a11y/reduced-motion.spec.ts` | No transform or opacity transition applies and no `<video>` mounts under `prefers-reduced-motion: reduce` |
 
-Delete a `Licence` cell and `check-registry.mjs` must exit non-zero. That negative test is part of
-Phase 02's exit criteria, because a checker nobody has seen fail is a checker nobody can trust.
+Three negative tests are part of Phase 02's exit criteria, because a checker nobody has seen fail is
+a checker nobody can trust:
+
+1. Delete a `Licence` cell from any full record — `check-registry.mjs` exits non-zero on the missing
+   field.
+2. Add an empty `components/patterns/Unregistered.tsx` — it exits non-zero on the unregistered file.
+3. Flip one row's `State` to `BUILT` without writing its component — it exits non-zero on the
+   missing path, proving the path check is armed by `BUILT` and not by the row's existence. Restore
+   it to `PLANNED` and the run is green again with no file added.
+
+Adding a `components/sections/<Type>.tsx` renderer must **not** fail this checker; it is
+`tests/unit/cms-registry.test.ts` that has an opinion about it (§1).

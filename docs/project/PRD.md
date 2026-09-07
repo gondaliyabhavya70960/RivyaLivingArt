@@ -217,9 +217,32 @@ redirect. Never the reverse** (SEED §49).
 | 4. Decide to ask | `Enquire`, `Customize This Piece`, `Request a Quote`, `Place Order` | All four labels resolve to the same flow. `Place Order` is a label, not a transaction (SEED §31) |
 | 5. Configure | Customization form rendered from `customization_form_fields` | Every field is data: enable, disable, require, reorder, rename — no field is hard-coded, no field computes a price |
 | 6. Submit | `submitInquiry` server action | Zod parse → honeypot → 3-second floor → rate limit → one transaction inserting `inquiries` + `inquiry_attachments` + `inquiry_events` |
-| 7a. Saved | Success state (SEED §48) | `reference_code` shown; `Continue to WhatsApp` offered; auto-forward after 1 s, cancellable |
+| 7a. Saved | Success state (SEED §48) | `reference_code` shown; the success state is announced in a polite live region and **receives focus**; `Continue to WhatsApp` is offered as a real link and **requires activation**. No timed navigation — see the note below |
 | 7b. Not saved | Save-error copy (SEED §49) | Visitor stays on the page; **no WhatsApp URL exists** — `buildHandoffUrl` requires a non-optional `inquiryId`, so the bypass does not type-check |
 | 8. Handoff | `wa.me` | Message rendered from the `WHATSAPP_TEMPLATE` `global_content` row through a token allowlist; over-long messages walk a five-rung shorten ladder; internal fields cannot enter the message |
+
+**Step 7a carried a one-second automatic redirect, and it has been removed.** Earlier drafts of this
+table, `ARCHITECTURE.md` §4 and `PHASE-16-22.md` all specified "auto-forward after 1 s, cancellable".
+That is a WCAG 2.2 **2.2.1 Timing Adjustable failure at Level A** — an unrequested navigation on a
+timer under 20 hours, with no way to turn it off, extend it, or be warned in time to act. It also
+contradicted this project's own accessibility contract, which requires the success state to be
+announced in a live region *and* to receive focus: one second is not long enough for that announcement
+to be heard, let alone for a cancel control to be found by a screen-reader or switch user, and a
+keyboard user landing on the success heading would be navigated away mid-read. The three cheap
+alternatives were considered and rejected: a longer timer still fails 2.2.1 without an adjust
+mechanism; a user-adjustable delay is a preference control nobody asked for on a page shown once; a
+"cancel" button that must be found within a second is the failure, not the fix.
+
+The rule is therefore: **the handoff requires a deliberate activation.** SEED §48 specifies a heading,
+a body line and a `Continue to WhatsApp` CTA — a call to action, not a countdown — so this costs the
+specification nothing. Nothing about the conversion invariant changes: the row is still persisted
+before any `wa.me` URL exists (BR-B1), and 7b is untouched.
+
+`ACCESSIBILITY.md` §1.1 states the criterion and names the spec that asserts it.
+**`ARCHITECTURE.md` §4.1 (the sequence diagram's "auto-forward after 1s" step) and `PHASE-16-22.md`
+(its conversion-flow diagram and the `InquirySuccess` deliverable) still carry the old behaviour and
+must be corrected to match this table** — they are not owned by this document, and the divergence is
+recorded here rather than left for an implementer to resolve by picking one at random.
 
 Secondary public journeys, each ending at the same funnel: `/custom-commissions` (the bespoke
 configurator, FEAT §15), `/contact` (the general enquiry form, SEED §22), and any product-adjacent
@@ -260,7 +283,7 @@ foreign key, so the graph cannot be walked from a public table into research dat
 | Element | Decision |
 |---|---|
 | Terminal state | A row in `inquiries` with `pipeline_status = 'NEW'` and a `reference_code` of the form `RIV-<yyyy>-<6 digits>` |
-| Handoff | A `wa.me` link built from the persisted inquiry, offered after the save succeeds |
+| Handoff | A `wa.me` link built from the persisted inquiry, offered after the save succeeds and **activated by the visitor** — never on a timer (§5.1, `ACCESSIBILITY.md` §1.1) |
 | Inquiry kinds | `PRODUCT · COMMISSION · CONSULTATION · QUOTE · GENERAL` |
 | Price display states | `FIXED · STARTING_FROM · REQUEST_QUOTE · PRICE_ON_REQUEST` — rules in `BUSINESS_RULES.md` §C |
 | Bespoke pricing | Never calculated. No price, cost, multiplier or surcharge column may exist on a customization field (FEAT §15) |

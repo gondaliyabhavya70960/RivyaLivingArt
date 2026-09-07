@@ -178,10 +178,16 @@ Written down once so it is not re-decided per route. `ARCHITECTURE.md` §6 owns 
 | `/privacy`, `/terms` | ISR, `revalidate = 86400` | `page:<path>` |
 | `/search` | Dynamic, `no-store` | — |
 | `/api/search/suggest` | `public, s-maxage=60, stale-while-revalidate=300` | — |
-| `/api/vitals`, `/api/inquiries`, `/api/revalidate`, every cron route | `no-store` | — |
+| `/api/vitals`, `/api/inquiries/upload-sign`, `/api/media/sign`, `/api/revalidate`, `/api/preview`, `/api/studio/**`, every cron route | `no-store` | — |
 | `/studio/**` | `private, no-store` | — |
 | Cloudinary delivery | `public, max-age=31536000, immutable` | Never — public IDs are immutable; a replacement is a new public ID |
 | `/_next/static` | Vercel default immutable | Build hash |
+
+**There is no `/api/inquiries` route and this table must never grow one.** Inquiry submission is the
+server action `app/(site)/_actions/submit-inquiry.ts` — the only public write path — so it has no cache
+header of its own; a server action response is never cached. The public API surface that exists is
+exactly the routes named above plus `app/api/search/suggest` and `app/api/auth/sign-out`
+(`ARCHITECTURE.md` §3, `SECURITY.md` §3).
 
 **The invalidation rule:** a mutation invalidates the narrowest tags that describe it, plus `chrome`
 only when chrome actually changed. Blanket `revalidatePath('/', 'layout')` is not used — it is how

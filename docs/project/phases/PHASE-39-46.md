@@ -40,7 +40,7 @@ of a project, under launch pressure:
 | Migration numbering | 39 → `0370–0379`, 40 → `0380–0389`, 41 → `0390–0399`, 42 → `0400–0409`, 43 → `0410–0419`, 44 → `0420–0429`, 45 → `0430–0439`, 46 → `0440–0449` (the `10N − 20` rule from `PHASE-10-15.md`) |
 | Migration filename | `supabase/migrations/<nnnn>_phase<nn>_<subject>.sql` |
 | Migration shape | Expand/contract only. Every migration is backward-compatible with the currently deployed code; a column is added nullable, backfilled, adopted, and dropped in a **later** migration (Phase 44 rule, applies retroactively to this block) |
-| Permission spelling | `<domain>.<action>`, the Phase 04 form (`seo.write`, `media.publish`), per the reconciliation in `PHASE-10-15.md` |
+| Permission spelling | `<domain>.<action>`, the Phase 04 form (`media.write`, `content.publish`), per the reconciliation in `PHASE-10-15.md`. **`media.publish` is not a permission** — the `PHASE-00-04.md` matrix holds `media.read`, `media.write` and `media.delete` only, and `BUSINESS_RULES.md` §*Open questions* 5 already records `media.publish` as a synonym for `media.write`. Any permission this block needs that the matrix lacks is declared in *Permissions added by this block* below, never used inline |
 | Data access | `lib/supabase/repositories/**` only. No route, action or script calls `.from(...)` directly |
 | Validation | Zod at every trust boundary (D1) |
 | Rendering default | Server Component. `'use client'` requires a named reason and a `components/patterns/**`, `components/three/**` or `components/studio/**` home |
@@ -48,6 +48,38 @@ of a project, under launch pressure:
 | Documentation ownership | FEAT §43 mapping, enforced by `scripts/docs/check-doc-contract.mjs` (Phase 01). 39 → `ARCHITECTURE.md` + `CONTENT_GUIDE.md` (D7 has no SEO document — see *Open questions*), 40 → `PERFORMANCE.md`, 41 → `ACCESSIBILITY.md` + `SECURITY.md`, 42 → `TESTING.md`, 43 → `MEDIA_GUIDE.md` + `HIGGSFIELD_GUIDE.md` + the two Higgsfield asset documents, 44 → `DEPLOYMENT.md` + `ENVIRONMENT.md`, 45 → `DESIGN_SYSTEM.md` + `COMPONENT_REGISTRY.md`, 46 → every path in D7 |
 | New documentation paths | **None.** D7 fixes the documentation map. Where a phase below needs a new report it is written as a generated section inside an existing D7 file, never as a new path |
 | Owner facts | Any statement asserting real business capability is seeded `OWNER_VERIFICATION_REQUIRED` and marked in this document as **OWNER_VERIFICATION_REQUIRED** at the point it appears |
+
+### Permissions added by this block
+
+The permission matrix is code. A permission that is not in `lib/auth/permissions.ts` does not exist,
+and after Phase 04 the `scripts/auth/gen-role-sql.ts` drift check turns an unnamed permission into a
+build failure rather than a documentation inconsistency. This block therefore follows the
+`PHASE-31-38.md` convention exactly: the new permission is declared here, added to the typed
+`Permission` union and `ROLE_PERMISSIONS` const in `lib/auth/permissions.ts`, regenerated into SQL by
+`scripts/auth/gen-role-sql.ts`, and **back-written into the matrix table in `PHASE-00-04.md` by the
+phase that adds it**. Roles not marked hold the permission not at all.
+
+| Permission | Phase | owner | admin | editor | merchandiser | researcher | viewer |
+|---|---|---|---|---|---|---|---|
+| `seo.write` | 39 | ✓ | ✓ | ✓ | — | — | — |
+
+`seo.write` is the block's **only** new permission. It gates every write to `seo_entries`,
+`seo_keyword_themes` and `seo_redirects`, at both layers — the RLS policy and the
+`requirePermission()` call at the top of every `/studio/content/seo` page. It goes to `editor`
+because SEO titles and descriptions are editorial copy and Phase 39's whole point is that the owner
+and their editor change them without an engineer; it is withheld from `merchandiser` and
+`researcher` because neither writes public copy, and from `viewer` by definition. Reading those
+tables needs only `content.read`, which every role already holds.
+
+It is not a new invention of this document: `DATA_MODEL.md` already annotates `seo_entries` with
+`seo.write`, `STUDIO_GUIDE.md` §18 already lists it as the write permission for
+`/studio/content/seo`, and `STUDIO_GUIDE.md` *Open questions* 2 flags it as the one permission used
+against a table without a matrix row. Phase 39 closes that gap rather than widening it.
+
+Every other permission named anywhere in Phases 39–46 — `media.write` (Phase 43 media writes),
+`analytics.read` (Phase 40 vitals reads), `system.docs.read` (Phase 46's viewer re-confirmation) —
+already exists in the Phase 04 matrix or in the `PHASE-31-38.md` additions table. No phase below may
+introduce a permission by using one; if a phase needs another, this table gains a row first.
 
 ### The visual QA widths
 
@@ -223,6 +255,8 @@ feature flags, system logs).
 | Artefact | Path | Notes |
 |---|---|---|
 | Migrations | `supabase/migrations/0370_phase39_seo.sql`, `0371_phase39_seo_rls.sql` | Keyword themes, redirects, `seo_entries` columns, policies |
+| Permission | `lib/auth/permissions.ts` (extended) | Adds `seo.write` to the `Permission` union and to `ROLE_PERMISSIONS` for owner · admin · editor, per *Permissions added by this block*. **Back-write the row into the `PHASE-00-04.md` matrix table in the same PR** — the matrix is the checked source and an undeclared permission fails the drift check |
+| Regenerated role SQL | `scripts/auth/gen-role-sql.ts` output (committed) | Re-run after the permission is added; CI regenerates and diffs, so a stale file is a red build |
 | Resolution ladder | `lib/seo/resolve.ts` | Four levels; pure; unit-tested per level |
 | Metadata builder | `lib/seo/metadata.ts` (extended) | Title template, canonical, robots, OG/Twitter |
 | Canonical helper | `lib/seo/canonical.ts` | Absolute URL, query allowlist, pagination rules |
@@ -253,6 +287,10 @@ RLS: `seo_entries` and `seo_keyword_themes` — `select` for any active staff ro
 `seo.write` (owner, admin, editor). `seo_redirects` — `select` additionally granted to `anon` for
 `status = 'PUBLISHED'` rows only, because the 404 path resolves them for anonymous visitors; write
 requires `seo.write`. No table in this phase is readable by `anon` beyond that one case.
+`seo.write` is **new in this phase** and is declared in *Permissions added by this block* above; it
+is added to `lib/auth/permissions.ts`, regenerated into the role SQL, and back-written into the
+`PHASE-00-04.md` matrix before either migration is written, because `0371_phase39_seo_rls.sql`
+references the generated role list.
 
 **Studio surface** — **fills** `/studio/content/seo` with seven tabs: **Global** (site name, title
 template, default description, social title/description, default OG asset — the SEED §41/§44 rows),
@@ -300,11 +338,12 @@ and `collectible-design` have no bound asset, so their category OG falls back to
 5. `node scripts/seo/validate-jsonld.mjs --base http://localhost:3000` — parses every emitted block on every route; exits non-zero if any of `aggregateRating`, `review`, `award`, `offers` (non-`FIXED`), `LocalBusiness`, `shippingDetails`, `returnPolicy` appears.
 6. `npm run test:unit -- seo-resolve seo-canonical jsonld-guard jsonld-builders sitemap-scope redirect-chain` — all green.
 7. `node scripts/seo/check-jsonld-scope.mjs` — exits 0. Add an inline `ld+json` to any page and confirm it exits non-zero naming the file.
-8. In Studio: set an entity title on a product, reload the PDP → the entity title wins. Delete it → the path-level value wins. Delete that → the derived value appears and the Pages tab labels it `DERIVED`.
-9. Keywords tab: all seventeen SEED §42 themes present, all `UNRESEARCHED`, `custom furniture India` and `resin furniture India` flagged `OWNER_VERIFICATION_REQUIRED`. Confirm no numeric metric field exists anywhere in the UI or the schema (`\d seo_keyword_themes`).
-10. Change a product slug in Studio with the redirect box ticked; request the old path → 308 to the new path with `Location` absolute. Create `a → b` then attempt `b → a` → rejected as a loop.
-11. `curl -sI localhost:3000/studio` → `X-Robots-Tag: noindex, nofollow`; `curl -s localhost:3000/robots.txt` → `Disallow: /studio`, `Disallow: /api`, and the sitemap index line.
-12. `npx playwright test tests/e2e/seo-metadata.spec.ts tests/e2e/studio-seo.spec.ts` — green.
+8. `npx tsx scripts/auth/gen-role-sql.ts && git diff --exit-code` — clean, proving `seo.write` reached `lib/auth/permissions.ts` and the generated role SQL together. `grep -n 'seo.write' docs/project/phases/PHASE-00-04.md` returns the back-written matrix row. As `merchandiser`, POST an SEO entry update → 403 with an `audit_log` row `result='DENIED'`; as `editor` → 200.
+9. In Studio: set an entity title on a product, reload the PDP → the entity title wins. Delete it → the path-level value wins. Delete that → the derived value appears and the Pages tab labels it `DERIVED`.
+10. Keywords tab: all seventeen SEED §42 themes present, all `UNRESEARCHED`, `custom furniture India` and `resin furniture India` flagged `OWNER_VERIFICATION_REQUIRED`. Confirm no numeric metric field exists anywhere in the UI or the schema (`\d seo_keyword_themes`).
+11. Change a product slug in Studio with the redirect box ticked; request the old path → 308 to the new path with `Location` absolute. Create `a → b` then attempt `b → a` → rejected as a loop.
+12. `curl -sI localhost:3000/studio` → `X-Robots-Tag: noindex, nofollow`; `curl -s localhost:3000/robots.txt` → `Disallow: /studio`, `Disallow: /api`, and the sitemap index line.
+13. `npx playwright test tests/e2e/seo-metadata.spec.ts tests/e2e/studio-seo.spec.ts` — green.
 
 **Exit criteria**
 
@@ -316,6 +355,7 @@ and `collectible-design` have no bound asset, so their category OG falls back to
 - [ ] All seventeen SEED §42 themes are seeded `UNRESEARCHED`, the two geography themes carry `OWNER_VERIFICATION_REQUIRED`, and the schema has no field capable of storing a claimed ranking metric.
 - [ ] `seo_redirects` resolves only on the 404 path, detects loops and chains, and is offered automatically on slug change.
 - [ ] `/studio/content/seo` exposes all seven tabs; every SEO field on every page and entity is editable without code.
+- [ ] `seo.write` exists in `lib/auth/permissions.ts` for owner · admin · editor, the generated role SQL is regenerated and diff-clean, and the row is back-written into the `PHASE-00-04.md` matrix. No other new permission was introduced by this phase.
 - [ ] `check-jsonld-scope.mjs` and `validate-jsonld.mjs` are wired into `npm run check` and CI.
 - [ ] Phase-specific D9 evidence: docs updated = `ARCHITECTURE.md`, `CONTENT_GUIDE.md`, `STUDIO_GUIDE.md`; tests run = the six unit suites and two e2e specs above; next phase = 40.
 - [ ] All ten points of the **Shared D9 completion checklist** verified and recorded.
@@ -384,10 +424,19 @@ that will render field data), 39 (sitemap and metadata, which affect crawl not p
   | `/collections/[slug]`, `/portfolio/**`, `/journal/**` | ISR, `revalidate = 3600` | per-entity tags |
   | `/search` | Dynamic, `no-store` | — |
   | `/api/search/suggest` | `public, s-maxage=60, stale-while-revalidate=300` | Phase 23 rule, unchanged |
-  | `/api/vitals`, `/api/inquiries`, `/api/revalidate` | `no-store` | — |
+  | `/api/vitals`, `/api/inquiries/upload-sign`, `/api/revalidate` | `no-store` | — |
   | `/studio/**` | `private, no-store` on every response | — |
   | Cloudinary delivery | `public, max-age=31536000, immutable` | version-pinned public ids |
   | Static assets (`/_next/static`) | Vercel default immutable | build hash |
+
+  **There is no `/api/inquiries` route and this table must never grow one.** Inquiry submission is
+  the server action `app/(site)/_actions/submit-inquiry.ts` — `PHASE-16-22.md` calls it "the only
+  public write path" — and a server action is a POST that is never cached, so it is not a cache
+  surface and has no row here. The only inquiry route handler is
+  `app/api/inquiries/upload-sign`, the visitor reference-image signer, which is `no-store` above.
+  `check-cache-headers.mjs` asserts the rows it can request; the server action is covered instead by
+  `tests/e2e/inquiry-conversion.spec.ts` (Phase 42), which asserts no response it produces is
+  cacheable.
 
 - **Guards, one per FEAT §46 rule.**
 
@@ -631,9 +680,9 @@ the same surfaces, and because separating them invites one of the two to be defe
 
   | Surface | Limit | Key |
   |---|---|---|
-  | `POST /api/inquiries` | 5 per 10 min | `ip_hash` + form fingerprint |
-  | Inquiry file upload | 10 per hour | `ip_hash` |
-  | `POST /api/uploads/sign` (Studio) | 20 per hour | staff `user_id` |
+  | `app/(site)/_actions/submit-inquiry.ts` (server action) | 5 per 10 min | `ip_hash` + form fingerprint |
+  | `POST /api/inquiries/upload-sign` (visitor reference images) | 10 per hour | `ip_hash` |
+  | `POST /api/media/sign` (Studio) | 20 per hour | staff `user_id` |
   | `GET /api/search/suggest` | 60 per min | `ip_hash` |
   | `POST /api/vitals` | 60 per min | `ip_hash` |
   | `POST /api/revalidate` | 30 per min | secret |
@@ -643,13 +692,46 @@ the same surfaces, and because separating them invites one of the two to be defe
   `ip_hash` is `hmac(ip, server_salt)`; the raw address is never stored, matching the `ip_hash`
   convention already used by Phase 20. A limited request returns 429 with `Retry-After` and writes a
   `SECURITY` system log, never an `audit_log` row (it has no actor).
+
+  Two of those rows correct paths that appear elsewhere in the documentation set and do not exist in
+  the code the previous phases specify. **Inquiry submission has no route handler**: it is the server
+  action `app/(site)/_actions/submit-inquiry.ts` (`PHASE-16-22.md`, "the only public write path"), so
+  `lib/security/rate-limit.ts` is called from inside the action *before* the Zod parse rather than
+  from `middleware.ts`, and the limiter returns a typed result the action turns into the SEED §49
+  form error — there is no `/api/inquiries` for `middleware.ts` to match. **The Studio signing route
+  is `app/api/media/sign`** (`PHASE-05-09.md` deliverable; `ARCHITECTURE.md`), not
+  `/api/uploads/sign`, which appears three times in `docs/ops/SECURITY.md` and once each in
+  `docs/ops/ENVIRONMENT.md` and `docs/ops/DEPLOYMENT.md`. Phase 41 corrects the three `SECURITY.md`
+  occurrences as part of its documentation deliverable; Phase 44 owns the other two and corrects
+  them with its `ENVIRONMENT.md` and `DEPLOYMENT.md` deliverables.
 - **Upload safety.** Magic-byte sniffing, not extension trust; the Phase 06 MIME allowlist enforced
   server-side after sniffing; size caps 25 MB image / 200 MB video / 50 MB model; **SVG rejected
-  outright** for every upload path, staff included, because a sanitiser is a permanent liability and
+  outright on every upload path, staff included**, because a sanitiser is a permanent liability and
   no Rivya surface needs an uploaded SVG; EXIF and GPS stripped on ingest; GLB parsed with
   `@gltf-transform/core` before acceptance (Phase 21) and rejected on parse failure; inquiry
   attachments stored in a **private** bucket, served only through an authenticated, short-lived
   signed URL, always with `Content-Disposition: attachment`.
+
+  **Brand marks are the case the SVG ban would otherwise block, so their formats are fixed here.**
+  Phase 43 asks the owner for a logo, a wordmark, a favicon and a default OG asset through
+  `/studio/media/brand`, and those are exactly the files a designer would normally hand over as SVG.
+  The accepted formats are therefore stated, and `/studio/media/brand` states them to the owner
+  before they choose a file rather than after the validator rejects one:
+
+  | Brand asset | Accepted upload | Minimum | Why not SVG |
+  |---|---|---|---|
+  | Logo | PNG with alpha | ≥ 2× the largest rendered size, ≥ 1024 px long edge | An SVG is XML the browser executes in the same origin; the ban is unconditional |
+  | Wordmark | PNG with alpha | ≥ 2× the largest rendered size, ≥ 1024 px long edge | As above. The interim wordmark is typographic and uses no image at all (Phase 43) |
+  | Favicon | ICO **or** PNG | ICO containing 16/32/48 px, or a 512 × 512 PNG from which the ICO is derived | As above |
+  | Default OG asset | PNG or JPEG | 1200 × 630 exactly (the Phase 06 `og` preset's output size) | As above |
+
+  This is a deliberate, permanent trade: a raster brand mark at 2× is indistinguishable at every
+  D6 ratio the site uses, and it costs one upload validator instead of a sanitiser that must be
+  right forever. `docs/media/MEDIA_GUIDE.md` currently records the `BRAND` row as accepting
+  "SVG, PNG"; Phase 43 corrects that row to this table as part of its `MEDIA_GUIDE.md` deliverable,
+  so the two documents cannot disagree about what the validator will take. If the owner has only an
+  SVG, the answer is a PNG export at 2×, made by whoever supplies the mark — never a sanitiser, and
+  never an exception in `lib/media/validate-upload.ts`.
 - **Mutation surface.** Every server action and route handler: origin check, Zod parse, session
   resolve, permission check, then work; `audit_log` row on success and on denial (Phase 04). A
   destructive action additionally requires typed confirmation (Phase 24) and re-authentication if
@@ -694,7 +776,7 @@ the same surfaces, and because separating them invites one of the two to be defe
 | CSP nonce plumbing | `lib/security/csp.ts` | Nonce per request, propagated to `<Script>` and inline styles |
 | Rate limiter | `lib/security/rate-limit.ts` | Fixed window over Postgres; `ip_hash` helper |
 | Redactor (extended) | `lib/logging/redact.ts` (Phase 38) | Never-expose name list as its source; coverage widened to `audit_log` blobs and server-action error paths |
-| Upload validation | `lib/media/validate-upload.ts` | Magic bytes, size, SVG rejection, EXIF strip |
+| Upload validation | `lib/media/validate-upload.ts` | Magic bytes, size, SVG rejection, EXIF strip, and the per-slot brand-mark format rules (PNG logo/wordmark, ICO or 512 px PNG favicon, 1200 × 630 PNG/JPEG default OG) with rejection copy from `global_content` |
 | PII tooling | `lib/inquiries/pii.ts`, `scripts/ops/anonymise-inquiries.ts` | Export, erase, scheduled anonymisation |
 | Focus + contrast guards | `scripts/a11y/{check-focus-styles.mjs,check-contrast.mjs}` | Token matrix; wired into `npm run check` |
 | Secret guards | `scripts/security/{check-secret-exposure.mjs,check-action-guards.mjs,check-licenses.mjs}` | Build output, action guards, licences |
@@ -722,13 +804,22 @@ text, decorative toggle, contrast preview of any text overlay), a "Data request"
 last dependency-audit result — **reachability and configuration state only, never a value** (D8).
 
 **Public surface** — no new route. Every response gains the header set. `/collection/[category]` and
-`/search` gain skip links. 429 responses become possible on the five public endpoints listed above,
-rendering the SEED §49 form-error copy rather than a raw status page.
+`/search` gain skip links. 429 responses become possible on the four unauthenticated visitor-facing
+surfaces in the rate-limit table — the `submit-inquiry` server action, `POST
+/api/inquiries/upload-sign`, `GET /api/search/suggest` and `POST /api/vitals` — and on the Studio
+sign-in form, which is publicly reachable but is a staff surface. Only the first two are ever seen
+by a reader, and both render the SEED §49 form-error copy with the `Retry-After` interval rather
+than a raw status page; `search/suggest` degrades silently to no suggestions, and `vitals` is a
+beacon whose failure is invisible by design.
 
-**Media** — none consumed, none generated. All 250 manifest assets are audited for alt-text quality:
-the manifest's `alt_text_draft` values are truncated prompt text (they end mid-sentence with an
-ellipsis), which fails 1.1.1 in spirit even though the field is non-empty. Rewriting them is Phase
-43's job; this phase supplies the constraint and the count.
+**Media** — none consumed, none generated. All 250 manifest assets are audited for alt-text quality.
+**124 of the 250 `alt_text_draft` values are truncated prompt text**, ending mid-sentence in an
+ellipsis (`…`, the character — no value uses `...`); the remaining 126 are complete sentences but
+still carry prompt vocabulary — reframing instructions, lighting direction, backdrop notes — so all
+250 need review and 124 need rewriting. Every value is non-empty, so the Phase 41 constraint passes
+on all of them while 1.1.1 is failed in spirit by a large minority. Rewriting is Phase 43's job;
+this phase supplies the constraint, the `is_decorative` escape hatch, and the count that makes the
+size of the job visible.
 
 **Risks**
 
@@ -750,8 +841,8 @@ ellipsis), which fails 1.1.1 in spirit even though the field is non-empty. Rewri
 3. `npm start` then `curl -sI localhost:3000/` — every header in the table present with the exact value; `curl -sI localhost:3000/studio` additionally `private, no-store` and `X-Robots-Tag: noindex, nofollow`.
 4. `npx playwright test tests/e2e/security-headers.spec.ts` — CSP nonce differs per request; no inline script without a nonce; the 3D viewer loads with the flag on and produces zero CSP violations.
 5. `npx playwright test tests/e2e/studio-authz.spec.ts` — as `viewer`, direct POSTs to publish, bulk-apply, media-delete and role-change all return 403 and each writes an `audit_log` row with `result='DENIED'`.
-6. POST `/api/inquiries` six times in ten minutes from one client → the sixth returns 429 with `Retry-After` and a `SECURITY` system log; the first five persist.
-7. Upload an SVG through `/studio/media/all` → rejected with a stated reason. Upload a 30 MB JPEG → rejected on size. Upload a JPEG renamed `.glb` → rejected on sniffing.
+6. Submit the contact form six times in ten minutes from one client, exercising the `app/(site)/_actions/submit-inquiry.ts` server action → the sixth is refused with the SEED §49 rate-limit copy and its `Retry-After` interval, and writes a `SECURITY` system log; the first five persist as `inquiries` rows. Confirm with `curl` that no `/api/inquiries` route exists (404) — the limiter lives inside the action, not in `middleware.ts`. Then POST `/api/media/sign` twenty-one times in an hour as one staff user → the twenty-first returns 429.
+7. Upload an SVG through `/studio/media/all` → rejected with a stated reason. Upload a 30 MB JPEG → rejected on size. Upload a JPEG renamed `.glb` → rejected on sniffing. Upload an SVG logo through `/studio/media/brand` → rejected with the **brand-mark format copy**, which names PNG (logo, wordmark), ICO or 512 px PNG (favicon) and 1200 × 630 PNG/JPEG (default OG); upload a 2048 px PNG logo → accepted.
 8. `npx playwright test tests/e2e/a11y/` — the full sweep: zero critical and zero serious axe violations on every public route and the seven Studio routes at 1440 px and 390 px; heading order valid on every route; every interactive target ≥ 44 × 44 at 390 px; `exceptions.json` has zero rows.
 9. `node scripts/a11y/check-contrast.mjs` — every permitted token pair meets its ratio. Darken one body-text token by 10 % and confirm failure naming the pair.
 10. `node scripts/a11y/check-focus-styles.mjs` — no unreplaced `outline: none`.
@@ -767,8 +858,9 @@ ellipsis), which fails 1.1.1 in spirit even though the field is non-empty. Rewri
 - [ ] Every bound media asset has non-empty alt text or an explicit `is_decorative` flag, enforced by a database constraint.
 - [ ] The full response-header set including a nonce-based CSP is enforced on every route, with both exceptions documented and justified.
 - [ ] No value on the never-expose list can reach a client bundle, a log, an error, a Studio screen or the Environment page — proved by four independent guards, each with a seeded counter-example.
-- [ ] Rate limiting is active on all eight listed surfaces, returns seeded copy with `Retry-After`, and stores only `ip_hash`.
+- [ ] Rate limiting is active on all eight listed surfaces — including the `submit-inquiry` **server action** rather than a non-existent `/api/inquiries` route, and `POST /api/media/sign` rather than `/api/uploads/sign` — returns seeded copy with `Retry-After`, and stores only `ip_hash`.
 - [ ] Upload validation sniffs magic bytes, rejects SVG outright, strips EXIF, parses GLB, and serves inquiry attachments only through short-lived signed URLs from a private bucket.
+- [ ] The accepted brand-mark formats (PNG logo and wordmark, ICO or 512 px PNG favicon, 1200 × 630 PNG/JPEG default OG) are enforced by the validator, stated to the owner in `/studio/media/brand`, and recorded in `SECURITY.md` and `MEDIA_GUIDE.md`, so the SVG ban never blocks the Phase 43 brand handoff.
 - [ ] Inquiry personal data is absent from every index, sample, log and audit blob, proved by test; export, erase and scheduled anonymisation all work and are dry-runnable.
 - [ ] Privacy and terms remain `DRAFT` with `OWNER_VERIFICATION_REQUIRED`; no accessibility, compliance or certification claim is published anywhere.
 - [ ] `gitleaks`, `npm audit` and the licence check run in CI and are green.
@@ -805,12 +897,16 @@ redefine them.
   | Visual | Playwright snapshots | Same, animations frozen | Layout and composition at the eight widths | Asserting text content |
 
 - **One deterministic fixture, built not seeded ad hoc.** `scripts/test/seed-fixture.ts` produces a
-  known database state: the Phase 09 content **published**, three products entered as an owner would
-  (with `PRICE_ON_REQUEST`, `STARTING_FROM` and `FIXED` price states so every branch is covered),
-  one collection, one portfolio project, two journal articles, ten FAQs, five inquiries in different
-  states, one research source with one run and twenty research products, and one staff user per
-  role. IDs and slugs are fixed constants in `tests/fixtures/ids.ts`; timestamps come from a frozen
-  clock at `2026-01-15T12:00:00Z`. Nothing in the fixture is a business fact — the products are
+  known database state: the Phase 09 content **published**, **four** products entered as an owner
+  would, one collection, one portfolio project, two journal articles, ten FAQs, five inquiries in
+  different states, one research source with one run and twenty research products, and one staff
+  user per role. **Four products, not three, because `products.price_state` has four values.**
+  `PHASE-10-15.md` fixes them as `FIXED · STARTING_FROM · REQUEST_QUOTE · PRICE_ON_REQUEST` and
+  tests all four; a fixture carrying three leaves `REQUEST_QUOTE` uncovered, and with it one branch
+  of `presentPrice`, one arm of the `products_price_state_coherent` constraint, and one of the three
+  non-`FIXED` states the Phase 39 `offers` gate must suppress. The fixture therefore carries exactly
+  one product per state. IDs and slugs are fixed constants in `tests/fixtures/ids.ts`; timestamps
+  come from a frozen clock at `2026-01-15T12:00:00Z`. Nothing in the fixture is a business fact — the products are
   obviously fictional test rows, they exist only in the fixture database, and
   `scripts/test/check-fixture-isolation.mjs` fails if a fixture id, slug or title string appears
   anywhere outside `tests/**`.
@@ -937,7 +1033,7 @@ byte-identically (D6).
 
 **Verification**
 
-1. `supabase start && npm run db:reset && npx tsx scripts/test/seed-fixture.ts` — completes; re-run → identical state, zero changed rows.
+1. `supabase start && npm run db:reset && npx tsx scripts/test/seed-fixture.ts` — completes; re-run → identical state, zero changed rows. `psql -c "select price_state, count(*) from products group by 1 order by 1"` → exactly four rows, one each for `FIXED`, `PRICE_ON_REQUEST`, `REQUEST_QUOTE` and `STARTING_FROM`. Delete the `REQUEST_QUOTE` row and re-run the Phase 39 `jsonld-builders` suite → its "`offers` absent for the other three states" assertion fails, proving the fixture is what covers the branch.
 2. `npm run test` (unit + integration) — green; `migrations-replay.test.ts` applies every migration to an empty database in order.
 3. `npm run test -- --coverage` — `lib/**` statements ≥ 80 %; every file on the critical list at 100 % branch. Remove a branch test from `lib/whatsapp/shorten.ts` and confirm the gate fails naming the file.
 4. `npm run build && npx playwright test` — all E2E and visual projects green across the eight §45 widths; snapshot count reported is 127.
@@ -952,6 +1048,7 @@ byte-identically (D6).
 
 - [ ] Four layers are defined, documented in `TESTING.md`, and every existing spec is classified into one.
 - [ ] One deterministic fixture builds the same database state every time, with fixed ids and a frozen clock, and is proved isolated from production code.
+- [ ] The fixture carries one product per price state — all four of `FIXED`, `STARTING_FROM`, `REQUEST_QUOTE` and `PRICE_ON_REQUEST` — so `presentPrice`, the price-state constraint and the Phase 39 `offers` gate each have a row for every branch.
 - [ ] No test contacts an external origin; the media interceptor serves twelve committed derivatives and the suite passes offline.
 - [ ] The visual matrix runs at the eight FEAT §45 widths over the tiered route list, producing 127 stable snapshots with a documented stability ruleset.
 - [ ] Every surface named in FEAT §45 has an owning spec listed in `TESTING.md`.
@@ -1021,27 +1118,77 @@ constraint and `is_decorative`), 42 (fixture media, which must keep working).
   | Product photography | 0 | Products come from the owner, never from AI |
   | Brand assets (logo, wordmark, favicon, default OG) | 0 | Owner-supplied, not generated (below) |
   | Portfolio project media | 0 project assets; 5 `gallery-scene` atmosphere stills | Portfolio stays an empty state (D10) |
-  | Alt text | 250 `alt_text_draft` values are truncated prompt text ending mid-sentence | All must be rewritten |
+  | Alt text | **124 of 250** `alt_text_draft` values are truncated prompt text ending in an ellipsis (`…`); the remaining **126** are complete sentences that still carry prompt vocabulary | All 250 reviewed; the 124 rewritten outright, the 126 edited where prompt vocabulary survives |
 
 - **The `/` hero.** The largest single gap. Disposition: `GENERATE_NEW` for `HOME-HERO-VIDEO-001`
   and `HOME-HERO-POSTER-001`, at 21:9 desktop and 9:16 mobile, because no `home` video exists and
   because upscaling a 1280 px process video into a full-bleed hero is visibly worse than generating
   at the right size. The poster is the LCP element (Phase 11) and must be generated at ≥ 2560 px.
+
+  **Which manifest family they join, stated because two allocators share this namespace (D6, A1).**
+  `build-higgsfield-manifest.py` mints `<FAMILY>-<NNN>`, so the family determines the ID the moment
+  the asset exists. The two new assets are appended into the families **`home-hero-video`** and
+  **`home-hero-poster`** respectively — one asset each — which is `HIGGSFIELD_MASTER_ASSET_PLAN.md`
+  §3.1's rule applied literally: *a planned asset's family is its own ID prefix in lower case, and it
+  keeps that family after generation*. The builder therefore mints `HOME-HERO-VIDEO-001` and
+  `HOME-HERO-POSTER-001` — **byte-identical to the planned IDs recorded in Phase 07 and quoted
+  above** — and no manifest family prefix is borrowed, because neither `home-hero-video` nor
+  `home-hero-poster` is one of the 24 existing families.
+
+  | Asset | Planned ID (Phase 07) | Family appended into | Builder-minted ID | Same string? |
+  |---|---|---|---|---|
+  | `/` hero video, desktop | `HOME-HERO-VIDEO-001` | `home-hero-video` | `HOME-HERO-VIDEO-001` | yes |
+  | `/` hero poster, desktop | `HOME-HERO-POSTER-001` | `home-hero-poster` | `HOME-HERO-POSTER-001` | yes |
+
+  **The master plan's G1 and G2 brief tables currently record `Family | home-hero` for both, and
+  that value must be corrected in this phase before generation runs.** A shared `home-hero` family
+  would make the builder mint `HOME-HERO-001` and `HOME-HERO-002` — neither is the planned ID, the
+  video/poster pairing is lost from the ID, and the family prefix `HOME-HERO-` then collides with
+  the planned form `HOME-HERO-VIDEO-001`, which is exactly the two-allocator collision amendment A1
+  exists to prevent and exactly what `check-asset-ids.py` fails on. Correcting those two `Family`
+  cells is part of this phase's `HIGGSFIELD_MASTER_ASSET_PLAN.md` deliverable. The Cloudinary folder
+  is unaffected and stays `rivya/home/hero` for both — a folder is a delivery taxonomy, not an ID
+  namespace (§3.1). The same rule governs every other `GENERATE_NEW` brief: its family is its own ID
+  prefix lower-cased, never an existing manifest family.
 - **Brand assets are not generated.** A logo, a wordmark and a favicon are an organisation's
   identity; an AI-generated mark presented as Rivya's would be a fabricated fact about the business
   and would also carry unresolved provenance. Disposition: **OWNER_VERIFICATION_REQUIRED** — the
   owner supplies them through `/studio/media/brand`. Until then the site uses a typographic wordmark
   built from design tokens (no image), and `/collection/furniture` and `/collection/collectible-design`
   emit no `og:image` rather than borrowing one (Phase 39).
+
+  **The owner is asked for formats the validator will actually accept.** Phase 41 rejects SVG on
+  every upload path without exception, and a logo, wordmark or favicon is exactly the file a
+  designer would hand over as SVG — so `/studio/media/brand` states the accepted formats *before*
+  the owner picks a file, and this phase's `MEDIA_GUIDE.md` deliverable corrects the `BRAND` row,
+  which currently reads "SVG, PNG":
+
+  | Brand asset | Ask the owner for | Minimum |
+  |---|---|---|
+  | Logo | PNG with alpha | ≥ 2× the largest rendered size, ≥ 1024 px long edge |
+  | Wordmark | PNG with alpha | ≥ 2× the largest rendered size, ≥ 1024 px long edge |
+  | Favicon | ICO, **or** a 512 × 512 PNG from which the ICO is derived | 16 / 32 / 48 px inside the ICO |
+  | Default OG asset | PNG or JPEG | 1200 × 630 exactly (the Phase 06 `og` preset output) |
+
+  If the owner holds only an SVG, the answer is a 2× PNG export made by whoever supplies the mark —
+  never a sanitiser, never a validator exception, and never an AI redraw of the owner's mark, which
+  would be a fabricated identity as surely as a generated one.
 - **No speculative 3D models.** Higgsfield can produce a 3D asset, but a model of a product Rivya has
   not made is a fabricated product, not concept media: it has dimensions, a form and an implied
   specification. Disposition for every 3D slot: `LEAVE_EMPTY`. The `3d_viewer` flag stays off until
   the owner supplies a GLB of a real object (Phase 21's contract, unchanged).
-- **Alt-text finalisation.** Every one of the 250 draft values is rewritten to describe what is
+- **Alt-text finalisation.** All 250 draft values are **reviewed**; the 124 that end in an ellipsis
+  are **rewritten** outright, because a sentence cut mid-clause describes nothing. The other 126 are
+  complete sentences and are kept where they already describe what is visible, but they are not
+  waved through: many still carry the prompt's own vocabulary — "reframed to a tall vertical crop",
+  "a single soft key light", "matte black backdrop" — which is instruction to a generator, not
+  description to a reader, and `check-alt-text.mjs` rejects it. The finished value describes what is
   visible, in one sentence, without prompt vocabulary, hex codes, camera language or the word
-  "AI" (SEED §43). Assets bound to a published slot are rewritten first and reviewed by an editor;
-  unbound assets are rewritten by the same rules and stay `OWNER_VERIFICATION_REQUIRED` until used.
-  Decorative uses set `is_decorative` (Phase 41) instead of an empty string.
+  "AI" (SEED §43). Assets bound to a published slot are handled first and reviewed by an editor;
+  unbound assets follow the same rules and stay `OWNER_VERIFICATION_REQUIRED` until used.
+  Decorative uses set `is_decorative` (Phase 41) instead of an empty string. The `AltTextQueue`
+  orders by binding status first and by "ends in an ellipsis" second, so the 124 broken values
+  surface ahead of the 126 merely-wordy ones.
 - **New generation protocol**, if and only if a slot reached `GENERATE_NEW`:
   1. The brief is added to `docs/media/HIGGSFIELD_MASTER_ASSET_PLAN.md` with target Rivya asset id,
      family, page, section, desktop and mobile ratio, minimum long-edge pixels, Cloudinary folder,
@@ -1049,12 +1196,30 @@ constraint and `is_decorative`), 42 (fixture media, which must keep working).
      `#08283A`, obsidian `#080A0E`, sapphire `#164E6B`, champagne gold `#B89B63`).
   2. `npm run media:assert-no-regen` must pass — it fails if the target matches an existing
      `rivya_asset_id` or an already-satisfied family/section pair (Phase 07 guard, unchanged).
-  3. Generation runs; outputs are appended by the existing Python builder, bumping
-     `manifest_version` to `rivya-hf-v2`. **The 250 existing rows are byte-identical**;
-     `npm run manifest:verify` proves the builder is still deterministic.
-  4. The Phase 07 migration script moves the new assets into Cloudinary and `media_assets` with
+  3. `python3 scripts/media/check-asset-ids.py` must pass. D6 as amended by **A1** requires it in
+     CI **and before any media migration**, and Phase 43 is the only phase in this block that mints
+     an asset ID, so it is the phase where skipping it costs something. It fails if a planned ID
+     reuses a manifest family prefix — including the prefix a family the *same* brief is about to
+     create would introduce. It is a Python script invoked directly; there is no npm alias for it,
+     and `HIGGSFIELD_GUIDE.md` §4 already prints it as step 2b of the same sequence.
+  4. Generation runs; outputs are appended by the existing Python builder, which mints
+     `<FAMILY>-<NNN>` from the brief's declared family — see *The `/` hero* above for why the
+     family and the planned ID prefix must be the same string — and bumps `manifest_version` to
+     `rivya-hf-v2`. **The 250 existing rows are byte-identical**; `npm run manifest:verify` proves
+     the builder is still deterministic.
+  5. `python3 scripts/media/check-asset-ids.py` and `npm run media:assert-no-regen` **again**, now
+     against the appended manifest. Step 4 is what turns a planned family into a manifest family, so
+     this second run is the one that catches a brief whose family silently absorbed a planned ID,
+     and D6/A1's "before any media migration" clause lands precisely here — step 6 is the migration.
+     Any new Cloudinary folder is added to `lib/media/folders.ts` at this point, before the
+     migration runs.
+  6. The Phase 07 migration script moves the new assets into Cloudinary and `media_assets` with
      `is_ai_generated = true`, `is_concept = true`, `owner_verification = 'OWNER_VERIFICATION_REQUIRED'`.
-  5. An editor writes real alt text and binds the slot.
+  7. An editor writes real alt text and binds the slot.
+
+  Steps 2, 3 and 5 are the whole regeneration-and-collision guard for this block. They are not new:
+  `HIGGSFIELD_GUIDE.md` §4 already prints the same pair as its steps 2 and 2b, and `CLOUDINARY.md`
+  §9.8 as its steps 1 and 5. This phase adds no guard; it is the phase that finally runs them.
 - **Concept-media discipline, re-asserted.** No new or existing concept asset may be attached to a
   product, a portfolio project, or any caption naming a product, price, dimension, client or
   project. The Phase 14 trigger already forbids the first; this phase adds a coverage-report column
@@ -1083,7 +1248,8 @@ constraint and `is_decorative`), 42 (fixture media, which must keep working).
 | Crop editor | `components/studio/media/CropEditor.tsx` | Client; live crop over the real asset, per ratio |
 | Alt-text workspace | `components/studio/media/AltTextQueue.tsx` | Queue ordered by binding status; rewrite, approve |
 | Alt-text linter | `scripts/media/check-alt-text.mjs` | Fails on prompt vocabulary, hex codes, trailing ellipsis, "AI", `<` 15 chars |
-| Master plan | `docs/media/HIGGSFIELD_MASTER_ASSET_PLAN.md` | Briefs for `GENERATE_NEW` slots only |
+| ID-collision guard | `scripts/media/check-asset-ids.py` (Phase 05–09, unchanged) | **Not rewritten — run.** Steps 3 and 5 of the generation protocol, and gate 3 of `scripts/ops/preflight.ts` (Phase 44). D6 as amended by A1 requires it in CI and before any media migration |
+| Master plan | `docs/media/HIGGSFIELD_MASTER_ASSET_PLAN.md` | Briefs for `GENERATE_NEW` slots only. **Corrects the G1/G2 `Family` cells** from `home-hero` to `home-hero-video` and `home-hero-poster` so the builder-minted ID equals the planned ID |
 | Asset status | `docs/media/HIGGSFIELD_ASSET_STATUS.md` | Regenerated; adds Coverage and Concept-Placement sections |
 | Manifest (if generated) | `data/higgsfield/asset-manifest.json` | `rivya-hf-v2`; existing 250 rows byte-identical |
 | Tests | `tests/unit/{gap-disposition,crop-resolver,alt-text-lint}.test.ts`, `tests/e2e/{studio-crop,studio-alt-queue}.spec.ts` | Dispositions, crop maths, linter, editors |
@@ -1103,7 +1269,9 @@ readable; write requires `media.write`.
 **Concept Placement** tab (every concept asset currently bound to a published slot). **Extends**
 `/studio/media/all` and the asset drawer with the crop editor and the alt-text queue. **Extends**
 `/studio/media/brand` with the owner-supplied brand asset upload and a banner naming the four
-missing brand assets. No regeneration control is added anywhere — that prohibition is Phase 07's and
+missing brand assets **and the format accepted for each** (PNG logo and wordmark, ICO or 512 px PNG
+favicon, 1200 × 630 PNG/JPEG default OG), so the owner is never asked for a file type the Phase 41
+validator rejects. No regeneration control is added anywhere — that prohibition is Phase 07's and
 it stands.
 
 **Public surface** — no new route. Slots that were empty become filled; slots that stay empty render
@@ -1123,6 +1291,7 @@ It appends only what the disposition table marks `GENERATE_NEW`, and it modifies
 | Risk | Mitigation |
 |---|---|
 | A slot gets filled by regenerating something that already exists | `assert-no-regeneration.ts` runs in CI over the master plan and fails on any brief whose target matches an existing asset; the disposition ladder requires four documented "no" answers before `GENERATE_NEW`; the tracker has no generate control |
+| A newly minted ID collides with the planned-ID namespace, or drifts from the ID Phase 07 recorded | `check-asset-ids.py` runs at protocol step 3 and again at step 5, before the migration, per D6 amendment A1; the new families are `home-hero-video` and `home-hero-poster`, neither of which is an existing manifest family, so `<FAMILY>-<NNN>` mints exactly `HOME-HERO-VIDEO-001` and `HOME-HERO-POSTER-001`; the master plan's two `Family` cells are corrected in this phase so the brief and the builder cannot disagree |
 | A low-resolution asset is bound to a hero and upscales visibly | The coverage report computes resolution fit per slot against the preset's target width; a slot whose only candidate is below the preset width is reported as a gap, not silently bound |
 | A concept image is read as a delivered Rivya project | The Concept Placement tab lists every published binding; portfolio stays empty; no caption may name a product, price, dimension, client or project; the Phase 14 trigger blocks product attachment |
 | An AI-generated logo becomes the brand mark | Brand assets are explicitly out of scope and flagged `OWNER_VERIFICATION_REQUIRED`; the interim wordmark is typographic and uses no image |
@@ -1136,24 +1305,28 @@ It appends only what the disposition table marks `GENERATE_NEW`, and it modifies
 1. `npx tsx scripts/media/build-coverage-report.ts && git diff --exit-code docs/media/HIGGSFIELD_ASSET_STATUS.md` — the generated section is current.
 2. Read the Coverage section: every slot in `content/media-slots.ts` appears with exactly one disposition, and every `GENERATE_NEW` row has a corresponding brief in `HIGGSFIELD_MASTER_ASSET_PLAN.md`.
 3. `npm run media:assert-no-regen` — passes. Add a brief targeting `WALL-ART-001` and confirm it fails naming the asset; remove it.
-4. `npm run manifest:verify` — no diff. After any generation: `jq '.counts.total' data/higgsfield/asset-manifest.json` shows the new total, `jq '.manifest_version'` shows `rivya-hf-v2`, and `git diff` on the file shows **only appended objects** — no modification to any of the original 250.
-5. `npm run test:unit -- gap-disposition crop-resolver alt-text-lint` — green, including a crop that would fall outside the source bounds being rejected.
-6. `node scripts/media/check-alt-text.mjs` — zero failures for assets bound to a published slot. Set one alt text back to its truncated draft and confirm it fails.
-7. `psql -c "select count(*) from media_assets where alt_text is null or btrim(alt_text)='' ) and is_decorative = false"` → 0 (the Phase 41 constraint should make this impossible; the query proves it).
-8. `npx playwright test tests/e2e/studio-crop.spec.ts` — crop a 16:9 master to 4:5, save, and assert the public page requests a `c_crop` URL with the saved box and that the rendered box matches at 390 px.
-9. Open the Concept Placement tab: every listed binding is a material, process or atmosphere slot; none is a product, a portfolio project, or a caption naming one.
-10. `/studio/media/brand` shows the four missing brand assets as outstanding and `OWNER_VERIFICATION_REQUIRED`; the site renders the typographic wordmark with no image request.
-11. `npx playwright test tests/visual/` (Phase 42) — 127 snapshots still pass, or fail only where a slot was deliberately filled and the baseline was re-accepted in this PR.
+4. `python3 scripts/media/check-asset-ids.py` — exits 0 both **before** generation (protocol step 3) and **after the manifest is appended but before `media:migrate:higgsfield` runs** (protocol step 5), which is D6/A1's "before any media migration". Change one brief's family to an existing manifest family and confirm it exits non-zero naming the family; revert. Confirm the script is in CI alongside `assert-no-regeneration.ts` and is invoked as Python — there is no npm alias.
+5. Read the two home-hero briefs: `Family` is `home-hero-video` and `home-hero-poster`, not `home-hero`. After generation, `jq -r '.assets[]|select(.page=="home" and .section=="hero")|"\(.rivya_asset_id) \(.family)"' data/higgsfield/asset-manifest.json` prints exactly `HOME-HERO-VIDEO-001 home-hero-video` and `HOME-HERO-POSTER-001 home-hero-poster` — the same strings Phase 07 recorded as gaps, so every prior document's reference still resolves.
+6. `npm run manifest:verify` — no diff. After any generation: `jq '.counts.total' data/higgsfield/asset-manifest.json` shows the new total, `jq '.manifest_version'` shows `rivya-hf-v2`, and `git diff` on the file shows **only appended objects** — no modification to any of the original 250.
+7. `npm run test:unit -- gap-disposition crop-resolver alt-text-lint` — green, including a crop that would fall outside the source bounds being rejected.
+8. `node scripts/media/check-alt-text.mjs` — zero failures for assets bound to a published slot. Set one alt text back to its truncated draft and confirm it fails.
+9. `psql -c "select count(*) from media_assets where alt_text is null or btrim(alt_text)='' ) and is_decorative = false"` → 0 (the Phase 41 constraint should make this impossible; the query proves it).
+10. `npx playwright test tests/e2e/studio-crop.spec.ts` — crop a 16:9 master to 4:5, save, and assert the public page requests a `c_crop` URL with the saved box and that the rendered box matches at 390 px.
+11. Open the Concept Placement tab: every listed binding is a material, process or atmosphere slot; none is a product, a portfolio project, or a caption naming one.
+12. `/studio/media/brand` shows the four missing brand assets as outstanding and `OWNER_VERIFICATION_REQUIRED`, and names the accepted format beside each; the site renders the typographic wordmark with no image request. Upload an SVG logo → rejected, and the rejection copy names the PNG alternative rather than a bare MIME error. Upload a 2048 px PNG logo → accepted and bound.
+13. `npx playwright test tests/visual/` (Phase 42) — 127 snapshots still pass, or fail only where a slot was deliberately filled and the baseline was re-accepted in this PR.
 
 **Exit criteria**
 
 - [ ] The coverage report enumerates every declared media slot with exactly one of the four dispositions, and is generated, not hand-written.
 - [ ] Every `GENERATE_NEW` disposition is justified by four recorded "no" answers to the decision gate and has a brief in the master plan.
 - [ ] `assert-no-regeneration.ts` passes and is still wired into CI; no existing manifest asset was regenerated, replaced or modified.
+- [ ] `python3 scripts/media/check-asset-ids.py` exits 0 both before generation and after the manifest is appended, ahead of the migration run, as D6 amendment A1 requires; no planned ID reuses a manifest family prefix.
+- [ ] Every newly minted `rivya_asset_id` is the same string the brief planned: the home-hero pair are `HOME-HERO-VIDEO-001` in family `home-hero-video` and `HOME-HERO-POSTER-001` in family `home-hero-poster`, and the master plan's `Family` cells were corrected to match before generation.
 - [ ] If any asset was generated, `manifest_version` is `rivya-hf-v2`, the original 250 objects are byte-identical, and `manifest:verify` is green.
 - [ ] `media_crops` is in use; the crop editor lets an editor serve multiple D6 ratios from one master without a new generation.
-- [ ] All 250 draft alt texts are rewritten; every asset bound to a published slot has editor-approved alt text passing the linter; decorative uses set `is_decorative`.
-- [ ] Zero 3D models, zero product photographs, zero portfolio project images and zero brand marks were generated; each is recorded as owner-supplied or an honest empty state.
+- [ ] All 250 draft alt texts are reviewed and the 124 truncated ones rewritten; every asset bound to a published slot has editor-approved alt text passing the linter; decorative uses set `is_decorative`.
+- [ ] Zero 3D models, zero product photographs, zero portfolio project images and zero brand marks were generated; each is recorded as owner-supplied or an honest empty state, and the brand-asset formats the owner is asked for are the formats the Phase 41 validator accepts.
 - [ ] The Concept Placement tab shows no concept asset attached to a product, a portfolio project or a caption naming one.
 - [ ] `/collection/furniture` and `/collection/collectible-design` are either genuinely filled or genuinely empty — never filled with another category's image.
 - [ ] Phase-specific D9 evidence: docs updated = `MEDIA_GUIDE.md`, `HIGGSFIELD_GUIDE.md`, `HIGGSFIELD_ASSET_STATUS.md`, `HIGGSFIELD_MASTER_ASSET_PLAN.md`, `DATA_MODEL.md`; tests run = three unit suites, two e2e specs, the visual suite; next phase = 44.
@@ -1259,10 +1432,28 @@ verified on the platform), 42 (the suite that gates a deploy).
   Phase 41. The domain itself is owner-supplied: **OWNER_VERIFICATION_REQUIRED**, with the DNS
   records and the verification steps written out in `DEPLOYMENT.md` so the owner or their registrar
   can act without an engineer present.
-- **Preflight and release runbook.** `scripts/ops/preflight.ts` runs, in order: `npm run check`,
-  `manifest:verify`, the doc-contract check, all Phase 39–43 guard scripts, `check-env.ts`, a
-  migration replay, and a report of every row still `OWNER_VERIFICATION_REQUIRED` that is blocking a
-  publish. It exits non-zero on any failure and prints a single summary table. The release runbook in
+- **Preflight and release runbook.** `scripts/ops/preflight.ts` runs every gate in one command,
+  exits non-zero on any failure, and prints a single summary table. The gate list is named rather
+  than gestured at, because "all the guard scripts" is how one stops being run:
+
+  | # | Gate | Owning phase |
+  |---|---|---|
+  | 1 | `npm run check` (lint, types, unit) | 00 |
+  | 2 | `npm run manifest:verify` | 00 · 07 |
+  | 3 | `python3 scripts/media/check-asset-ids.py` — **named explicitly**; D6 amendment A1 requires it in CI and before any media migration, and Phase 43 is the only phase in this block that mints an ID | 05–09 · 43 |
+  | 4 | `npm run media:assert-no-regen` | 07 |
+  | 5 | `node scripts/docs/check-doc-contract.mjs` | 01 · 46 |
+  | 6 | `scripts/seo/{check-jsonld-scope,validate-jsonld}.mjs` | 39 |
+  | 7 | `scripts/perf/{check-bundle,count-islands,check-image-props,check-video-props,check-cache-headers,check-third-party,check-priority-images}.mjs` | 40 |
+  | 8 | `scripts/a11y/{check-focus-styles,check-contrast}.mjs`, `scripts/security/{check-secret-exposure,check-action-guards,check-licenses}.mjs` | 41 |
+  | 9 | `node scripts/test/check-fixture-isolation.mjs` | 42 |
+  | 10 | `node scripts/media/check-alt-text.mjs` | 43 |
+  | 11 | `npx tsx scripts/ops/check-env.ts` | 44 |
+  | 12 | Migration replay against an ephemeral Postgres | 03 · 44 |
+  | 13 | Report of every row still `OWNER_VERIFICATION_REQUIRED` that is blocking a publish | 08 · 46 |
+
+  Gate 3 is a Python script and is spawned as `python3`, not through npm; a missing interpreter is a
+  preflight failure with a stated reason, never a skipped gate. The release runbook in
   `DEPLOYMENT.md` is a numbered list ending in a post-deploy verification section.
 - **Observability without third parties.** Runtime errors are caught by the route-segment error
   boundaries and written to `system_logs` (Phase 38) with the request id and the commit SHA; Vercel
@@ -1344,7 +1535,7 @@ verified during preflight but no asset is uploaded, derived or generated.
 7. Open `/studio/system/environment` as `owner`: commit SHA matches `git rev-parse HEAD`, build time and environment are correct, every integration shows a reachability boolean, and no value, prefix or length appears anywhere. `npx playwright test tests/e2e/deploy-smoke.spec.ts` asserts the same automatically.
 8. **Rollback drill**, timed and recorded: deploy a deliberately broken build to staging, promote it, then roll back by promoting the previous deployment. Record the elapsed time in `DEPLOYMENT.md`. Target under five minutes.
 9. **Forward-fix drill**: apply an expand migration to staging, deploy code using it, then roll the code back only, and confirm the older code still functions against the newer schema.
-10. `npx tsx scripts/ops/preflight.ts` — every gate green, and the report lists the outstanding `OWNER_VERIFICATION_REQUIRED` rows blocking a publish.
+10. `npx tsx scripts/ops/preflight.ts` — all thirteen gates green and each named in the summary table, and the report lists the outstanding `OWNER_VERIFICATION_REQUIRED` rows blocking a publish. Confirm gate 3 (`python3 scripts/media/check-asset-ids.py`) appears in the table by name; rename a manifest family so the guard fails and confirm preflight exits non-zero naming that gate rather than reporting a generic media failure.
 11. Confirm the production Supabase project has public sign-up disabled and that a sign-up attempt is rejected.
 12. Confirm `vercel.json` registers cron entries for production only, and that hitting the research cron route on a preview returns 404.
 
@@ -1359,8 +1550,9 @@ verified during preflight but no asset is uploaded, derived or generated.
 - [ ] Preview deployments are access-protected, `noindex`, ribboned, and backed by fixture data — never production data.
 - [ ] `www` redirects to apex; production carries HSTS with `preload` and the full Phase 41 header set.
 - [ ] `/studio/system/environment` reports commit SHA, build time, environment, migration state and integration reachability — booleans and identifiers only.
-- [ ] `scripts/ops/preflight.ts` runs every gate in one command and reports the outstanding owner-verification backlog.
+- [ ] `scripts/ops/preflight.ts` runs all thirteen named gates in one command — including `python3 scripts/media/check-asset-ids.py` (D6 amendment A1) — and reports the outstanding owner-verification backlog.
 - [ ] Cron entries exist for production only; public sign-up is disabled on the production Supabase project.
+- [ ] `docs/ops/ENVIRONMENT.md` and `docs/ops/DEPLOYMENT.md` name the signing route as `app/api/media/sign`; the stale `/api/uploads/sign` appears nowhere in either.
 - [ ] Phase-specific D9 evidence: docs updated = `DEPLOYMENT.md`, `ENVIRONMENT.md`, `SECURITY.md`; tests run = `env-schema`, `deploy-smoke.spec.ts`, the full suite via preflight; next phase = 45.
 - [ ] All ten points of the **Shared D9 completion checklist** verified and recorded.
 
@@ -1729,16 +1921,19 @@ Cloudinary, and must not contain a real enquirer's personal data or any environm
 |---|---|
 | 39 | Reads bound assets to derive `og` crops. No generation. |
 | 40 | None. Re-derives transformations of already-bound assets. |
-| 41 | Audits `alt_text` and `is_decorative` on all 250 rows. No generation. |
+| 41 | Audits `alt_text` and `is_decorative` on all 250 rows, and counts the 124 truncated drafts. No generation. |
 | 42 | Commits twelve small fixture derivatives under `tests/fixtures/media/`. Originals untouched; `manifest:verify` green. |
-| 43 | **The only phase permitted to append.** All 24 families consumed; new assets only where the four-question decision gate returns four "no" answers; `manifest_version` → `rivya-hf-v2` with the original 250 objects byte-identical. |
+| 43 | **The only phase permitted to append, and therefore the only phase that mints an asset ID.** All 24 families consumed; new assets only where the four-question decision gate returns four "no" answers; `check-asset-ids.py` at protocol steps 3 and 5, the second run before the migration per D6/A1; new families `home-hero-video` and `home-hero-poster` so the minted IDs equal the planned ones; `manifest_version` → `rivya-hf-v2` with the original 250 objects byte-identical. |
 | 44 | None. Verifies Cloudinary configuration during preflight. |
 | 45 | Adds `media_crops` focal points across the bound families. No generation. |
 | 46 | None. Runbook screenshots are documentation images, not media assets. |
 
-The Phase 07 regeneration guard (`assert-no-regeneration.ts`) remains armed and wired into CI for
-the whole block. No phase above may modify, replace, upscale or re-encode any of the 250 original
-assets (D6, FEAT §33, manifest `policy.rules[4]`).
+Both media guards remain armed and wired into CI for the whole block: the Phase 07 regeneration
+guard (`assert-no-regeneration.ts`) and the Phase 05–09 ID-collision guard
+(`scripts/media/check-asset-ids.py`, D6 as amended by **A1**), the latter also run immediately
+before any media migration and named as gate 3 of the Phase 44 preflight. No phase above may modify,
+replace, upscale or re-encode any of the 250 original assets (D6, FEAT §33, manifest
+`policy.rules[4]`), and no phase above may mint an asset ID that reuses a manifest family prefix.
 
 ---
 
@@ -1806,3 +2001,14 @@ These are raised, not acted on. Nothing above knowingly diverges from `CANONICAL
     is the last in FEAT §44's map. This document records "none — post-launch backlog in
     `ROADMAP.md`" as the answer to D9 point 9. Confirm that satisfies the contract, or state in D9
     what the final phase records instead.
+11. **D6/A1 fixes the gap-ID *form* but not the family a generated gap asset lands in.** D6 says the
+    builder mints `<FAMILY>-<NNN>` and that a planned ID uses `<PAGE>-<SECTION>[-<KIND>]-<NNN>`, but
+    the rule that reconciles them — *a planned asset's family is its own ID prefix in lower case, and
+    it keeps that family after generation* — lives only in `HIGGSFIELD_MASTER_ASSET_PLAN.md` §3.1,
+    which is not a binding document. Without it the two allocators still disagree the moment a gap
+    asset is generated, because the builder derives the ID from the family and the plan derived the
+    family from nothing. Phase 43 above applies §3.1 literally, which is why the two home-hero
+    assets join `home-hero-video` and `home-hero-poster` rather than a shared `home-hero` — the
+    master plan's own G1/G2 brief tables currently say `home-hero`, and Phase 43 corrects them.
+    Suggested amendment: promote §3.1's family rule into D6 beside the ID form, so the reconciliation
+    is binding and a future brief cannot reintroduce the collision by choosing a tidier family name.

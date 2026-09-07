@@ -59,7 +59,7 @@ component knowing which scheme it is in.
 | `app/styles/base.css` | Reset, `:focus-visible` ring, `prefers-reduced-motion` block, root typography, selection colour | No component selectors |
 | `app/styles/scheme.css` | The three scheme classes (`.rv-scheme-deep`, `.rv-scheme-ink`, `.rv-scheme-bone`) | Semantic re-declarations only |
 | `app/globals.css` | `@import` of the three above, plus the Tailwind bridge | No values of its own |
-| `app/layout.tsx` | Loads `globals.css` and the three font families | Renders no chrome |
+| `app/layout.tsx` | Loads `globals.css` and the two `next/font` families (§3.1) | Renders no chrome |
 
 ### 1.2 Tailwind bridge
 
@@ -90,7 +90,7 @@ token file is byte-identical either way and no value is ever duplicated into the
 
   --font-display:             var(--rv-font-display);
   --font-sans:                var(--rv-font-body);
-  --font-mono:                var(--rv-font-technical);
+  --font-mono:                var(--rv-font-mono);
 
   --spacing:                  var(--rv-space-1);   /* 4px base unit */
 
@@ -153,15 +153,19 @@ Neutrals are generated, so that no one ever hand-picks a fourth grey. The rule, 
 | Token | Hex | OKLab L | Relative luminance |
 |---|---|---|---|
 | `--rv-neutral-900` | `#080A0E` | 0.1443 | 0.0030 |
-| `--rv-neutral-800` | `#1D1F22` | 0.2374 | 0.0122 |
-| `--rv-neutral-700` | `#343639` | 0.3304 | 0.0330 |
-| `--rv-neutral-600` | `#4C4E50` | 0.4235 | 0.0700 |
-| `--rv-neutral-500` | `#67686A` | 0.5165 | 0.1276 |
-| `--rv-neutral-400` | `#828384` | 0.6096 | 0.2127 |
-| `--rv-neutral-300` | `#9F9F9F` | 0.7026 | 0.3323 |
-| `--rv-neutral-200` | `#BCBCBB` | 0.7957 | 0.4934 |
-| `--rv-neutral-100` | `#DBDAD7` | 0.8887 | 0.7080 |
+| `--rv-neutral-800` | `#1D1F22` | 0.2374 | 0.0136 |
+| `--rv-neutral-700` | `#343639` | 0.3304 | 0.0366 |
+| `--rv-neutral-600` | `#4C4E50` | 0.4235 | 0.0756 |
+| `--rv-neutral-500` | `#67686A` | 0.5165 | 0.1382 |
+| `--rv-neutral-400` | `#828384` | 0.6096 | 0.2264 |
+| `--rv-neutral-300` | `#9F9F9F` | 0.7026 | 0.3467 |
+| `--rv-neutral-200` | `#BCBCBB` | 0.7957 | 0.5025 |
+| `--rv-neutral-100` | `#DBDAD7` | 0.8887 | 0.7011 |
 | `--rv-neutral-50` | `#FAF9F5` | 0.9818 | 0.9467 |
+
+The last column is the WCAG 2.x sRGB relative luminance of the rounded hex, to four decimal
+places. It is recorded so every ratio in §2.6–§2.9 can be re-derived from this document alone;
+`check-tokens.mjs` recomputes it from the hex and fails on a mismatch. Do not hand-edit it.
 
 ### 2.3 Derived surfaces and inks — also generated
 
@@ -175,8 +179,9 @@ the stated amount, chroma and hue unchanged.
 | `--rv-color-ocean-raised-2` | `#1F3E51` | ocean, `L + 0.085` |
 | `--rv-color-ocean-line` | `#32444F` | ocean, `L + 0.130` |
 | `--rv-color-obsidian-raised` | `#14161A` | obsidian, `L + 0.055` |
+| `--rv-color-obsidian-raised-2` | `#1D1F22` | Aliases `--rv-neutral-800`, ramp step 800 (OKLab `L` 0.2374, i.e. obsidian `L + 0.093`). Named rather than borrowed so INK's second raised surface has a token of its own and appears in the §2.6 pairings table |
 | `--rv-color-obsidian-line` | `#2E3035` | obsidian, `L + 0.130` |
-| `--rv-color-steel` | `#79868E` | ocean hue, chroma 0.020, `L` solved for ≥ 3:1 on all three deep surfaces |
+| `--rv-color-steel` | `#79868E` | ocean hue, chroma 0.020, `L` solved for ≥ 3:1 on **every** DEEP and INK surface — the binding case is ocean-raised-2 at 3.01 (§2.6) |
 | `--rv-color-bone-raised` | `#F3F2EE` | bone, `L − 0.020` |
 | `--rv-color-bone-sunken` | `#EEEDE9` | bone, `L − 0.035` |
 | `--rv-color-bone-well` | `#E9E8E4` | bone, `L − 0.050` |
@@ -239,25 +244,45 @@ Every scheme defines the same names. This is the complete list; there are no oth
 `--rv-surface-sunken` in `INK` is the one place pure `#000000` is permitted, and only as a media
 well behind a letterboxed asset. It is never a text ground.
 
+Two of these cells resolve through a token added for the purpose rather than through a ramp step:
+INK's `--rv-surface-raised-2` `#1D1F22` is `var(--rv-color-obsidian-raised-2)` (§2.3), not a bare
+`var(--rv-neutral-800)`, so that it appears in §2.6 under its own name; and DEEP's `--rv-ink-accent`
+is stepped up to gold-bright on that same second raised surface (§2.6).
+
 ### 2.6 Permitted pairings — DEEP and INK
 
 Measured with the WCAG 2.x relative-luminance formula. `AA` = ≥ 4.5:1, valid for any text.
 `UI` = ≥ 3:1, valid for large text (≥ 24px regular or ≥ 18.66px semibold) and for non-text UI
 boundaries only. `✗` = not permitted.
 
-| Ink ↓ / Surface → | ocean `#08283A` | ocean-raised `#153346` | ocean-raised-2 `#1F3E51` | obsidian `#080A0E` | obsidian-raised `#14161A` | sapphire `#164E6B` |
-|---|---|---|---|---|---|---|
-| bone `#FAF9F5` | 14.50 AA | 12.51 AA | 10.68 AA | 18.80 AA | 17.19 AA | 8.53 AA |
-| neutral-200 `#BCBCBB` | 8.04 AA | 6.93 AA | 5.92 AA | 10.42 AA | 9.53 AA | 4.73 AA |
-| neutral-300 `#9F9F9F` | 5.77 AA | 4.98 AA | 4.25 UI | 7.48 AA | 6.84 AA | 3.40 UI |
-| neutral-400 `#828384` | 4.02 UI | 3.47 UI | 2.96 ✗ | 5.22 AA | 4.77 AA | 2.37 ✗ |
-| champagne `#B89B63` | 5.75 AA | 4.96 AA | 4.24 UI | 7.46 AA | 6.82 AA | 3.38 UI |
-| gold-bright `#D4AF37` | 7.26 AA | 6.27 AA | 5.35 AA | 9.42 AA | 8.61 AA | 4.27 UI |
+| Ink ↓ / Surface → | ocean `#08283A` | ocean-raised `#153346` | ocean-raised-2 `#1F3E51` | obsidian `#080A0E` | obsidian-raised `#14161A` | obsidian-raised-2 `#1D1F22` | sapphire `#164E6B` |
+|---|---|---|---|---|---|---|---|
+| bone `#FAF9F5` | 14.50 AA | 12.51 AA | 10.68 AA | 18.80 AA | 17.19 AA | 15.68 AA | 8.53 AA |
+| neutral-200 `#BCBCBB` | 8.04 AA | 6.93 AA | 5.92 AA | 10.42 AA | 9.53 AA | 8.69 AA | 4.73 AA |
+| neutral-300 `#9F9F9F` | 5.77 AA | 4.98 AA | 4.25 UI | 7.48 AA | 6.84 AA | 6.24 AA | 3.40 UI |
+| neutral-400 `#828384` | 4.02 UI | 3.47 UI | 2.96 ✗ | 5.22 AA | 4.77 AA | 4.35 UI | 2.37 ✗ |
+| champagne `#B89B63` | 5.75 AA | 4.96 AA | 4.24 UI | 7.46 AA | 6.82 AA | 6.22 AA | 3.38 UI |
+| gold-bright `#D4AF37` | 7.26 AA | 6.27 AA | 5.35 AA | 9.42 AA | 8.61 AA | 7.86 AA | 4.27 UI |
+| steel `#79868E` — *boundary only* | 4.08 UI | 3.52 UI | 3.01 UI | 5.30 AA | 4.84 AA | 4.42 UI | 2.40 ✗ |
 
 Consequences that are easy to get wrong and are therefore stated as rules:
 
 - On `--rv-surface-raised-2`, `--rv-ink-tertiary` steps up from neutral-300 to **neutral-200**.
   The scheme blocks do this automatically for `.rv-surface-raised-2` descendants; do not override it.
+- **On `--rv-surface-raised-2` in DEEP, `--rv-ink-accent` steps up from champagne to
+  `--rv-color-gold-bright` `#D4AF37`** (5.35 AA on `#1F3E51`, against champagne's 4.24 UI). Without
+  the step-up an inline `TextLink` (§7.3) or a `heading_highlight` run (§3.5) inside a nested raised
+  surface on a DEEP section would render accent ink below AA at body size. The scheme block in §2.11
+  applies it automatically, exactly as the tertiary step-up above; do not override it. This mirrors
+  §2.7's rule for BONE's well and chip surfaces — the two are the same problem on opposite grounds.
+  INK needs no equivalent: its accent is already gold-bright, which is 7.86 AA on `#1D1F22`.
+- `--rv-focus-ring` is **not** stepped up. It is a non-text boundary governed by WCAG 1.4.11, and
+  champagne clears 3:1 on every deep surface including `ocean-raised-2` (4.24). One ring colour per
+  scheme is the rule in §2.10 and it survives here.
+- The **steel row is a boundary row, not an ink row.** `--rv-color-steel` is `--rv-line-strong` in
+  DEEP and INK; it clears 1.4.11's 3:1 on every deep surface (lowest: 3.01 on `ocean-raised-2`) and
+  is never used as a text colour. It is recorded here because §2 rule 3 admits no unmeasured
+  pairing, and `check-contrast.mjs` asserts control borders as well as text.
 - **Never put body text on `--rv-color-sapphire`** in any weight smaller than large. Sapphire is a
   fill for the BONE scheme's accent, and a decorative band on deep grounds, not a text ground.
   `bone` on sapphire (8.53) is the only AA-safe ink on it.
@@ -276,11 +301,17 @@ Consequences that are easy to get wrong and are therefore stated as rules:
 | champagne-deep `#83672F` | 5.05 AA | 4.75 AA | 4.54 AA | 4.34 UI | 3.81 UI |
 | sapphire `#164E6B` | 8.53 AA | 8.02 AA | 7.67 AA | 7.33 AA | 6.43 AA |
 | ocean `#08283A` | 14.50 AA | 13.63 AA | 13.04 AA | 12.46 AA | 10.93 AA |
+| neutral-400 `#828384` — *boundary only* | 3.61 UI | 3.39 UI | 3.24 UI | 3.10 UI | 2.72 ✗ |
 
 `--rv-ink-accent` in BONE is `champagne-deep`. It clears AA on bone, bone-raised and bone-sunken, but
 only `UI` on bone-well (4.34) and neutral-100 (3.81). **Those two are well and chip surfaces — table
 headers, code blocks, disabled chips — and are not accent-text grounds.** Accent text on either uses
 `--rv-color-sapphire` (7.33 / 6.43) instead.
+
+`--rv-line-strong` in BONE is neutral-400. It clears 1.4.11's 3:1 on bone, bone-raised,
+bone-sunken and bone-well, and **fails on neutral-100** (2.72) — which is why a control border is
+never drawn on a neutral-100 chip ground. Like the steel row in §2.6 this is a boundary row: it
+records a non-text pairing `check-contrast.mjs` asserts, not a permitted text colour.
 
 ### 2.8 Pairings that fail, and what to use instead
 
@@ -395,6 +426,7 @@ it survives on any photograph.
   --rv-color-ocean-raised-2:  #1F3E51;
   --rv-color-ocean-line:      #32444F;
   --rv-color-obsidian-raised: #14161A;
+  --rv-color-obsidian-raised-2: #1D1F22;
   --rv-color-obsidian-line:   #2E3035;
   --rv-color-steel:           #79868E;
   --rv-color-bone-raised:     #F3F2EE;
@@ -439,11 +471,24 @@ it survives on any photograph.
   --rv-state-danger:      var(--rv-color-danger-light);
   --rv-state-info:        var(--rv-color-info-light);
 }
-/* .rv-scheme-ink and .rv-scheme-bone redeclare the same names, per §2.5. */
-/* Tertiary ink steps up on the second raised surface (§2.6). */
+/* .rv-scheme-ink and .rv-scheme-bone redeclare the same names, per §2.5.
+   In .rv-scheme-ink, --rv-surface-raised-2 is var(--rv-color-obsidian-raised-2) — the token
+   added in §2.3 — never a bare var(--rv-neutral-800). */
+
+/* Nested raised surfaces: two automatic step-ups, both measured in §2.6. */
 .rv-scheme-deep .rv-surface-raised-2,
 .rv-scheme-ink  .rv-surface-raised-2 { --rv-ink-tertiary: var(--rv-neutral-200); }
+
+/* DEEP only: champagne is 4.24 on ocean-raised-2 (UI), gold-bright is 5.35 (AA).
+   INK's accent is already gold-bright, so it needs no rule. */
+.rv-scheme-deep .rv-surface-raised-2 { --rv-ink-accent: var(--rv-color-gold-bright); }
 ```
+
+These two blocks are the whole mechanism. A component nested inside a `--rv-surface-raised-2`
+element keeps reading `--rv-ink-tertiary` and `--rv-ink-accent`; the values it receives are already
+the compliant ones. No component tests which surface it is on, and no component may re-declare
+either token to undo the step-up — `check-contrast.mjs` re-derives both pairings from `tokens.css`
+and `scheme.css` and fails the build if either drops below its §2.6 threshold.
 
 ---
 
@@ -451,35 +496,61 @@ it survives on any photograph.
 
 ### 3.1 Families
 
-Three families, three jobs. All three are self-hosted at build time through `next/font`; there is
-no runtime request to a font CDN, and no `@import` from `fonts.googleapis.com`.
+**Two loaded families, plus a device-resident monospace stack.** The ceiling is not this document's
+to set: `docs/ops/PERFORMANCE.md` §2.2 fixes it as `next/font`, self-hosted, subset to Latin, **at
+most two families (one display, one text)**, `font-display: swap`, and **only the display face used
+above the fold is preloaded**. This section is the design system's side of that rule and stays
+inside it. Neither loaded family is requested at runtime: there is no call to a font CDN and no
+`@import` from `fonts.googleapis.com`.
 
 | Role | Token | Family | Licence | Loading |
 |---|---|---|---|---|
-| Display | `--rv-font-display` | Newsreader (variable, `opsz` 6–72, weight 200–800) | Expected SIL OFL 1.1 — **VERIFY_BEFORE_USE**, registry RC-901 | `next/font/google`, latin subset, `display: 'swap'`, **preloaded** |
-| Body / UI | `--rv-font-body` | Inter (variable, weight 100–900) | Expected SIL OFL 1.1 — **VERIFY_BEFORE_USE**, registry RC-902 | `next/font/google`, latin subset, `display: 'swap'`, **preloaded** |
-| Technical | `--rv-font-technical` | IBM Plex Mono, weight 400 only | Expected SIL OFL 1.1 — **VERIFY_BEFORE_USE**, registry RC-903 | `next/font/google`, latin subset, `display: 'swap'`, not preloaded |
+| Display | `--rv-font-display` | Newsreader (variable, `opsz` 6–72, weight 200–800) | Expected SIL OFL 1.1 — **VERIFY_BEFORE_USE**, registry RC-901 | `next/font/google`, latin subset, `display: 'swap'`, **preloaded — the only preloaded face in the product** |
+| Body / UI | `--rv-font-body` | Inter (variable, weight 100–900) | Expected SIL OFL 1.1 — **VERIFY_BEFORE_USE**, registry RC-902 | `next/font/google`, latin subset, `display: 'swap'`, **not preloaded** |
+| Machine text | `--rv-font-mono` | The platform monospace stack. **No font file is loaded, hosted or fetched** | N/A — no font is shipped | None. A CSS stack resolved from faces already on the device |
 
-The licences are stated as *expected*, not verified. Each family carries a `PENDING_AUDIT` row in
+The two licences are stated as *expected*, not verified. Each carries a `PENDING_AUDIT` row in
 `COMPONENT_REGISTRY.md`; the licence file at the pinned version is read and the SPDX identifier
 recorded before the font ships. A licence quoted from a specimen page is not a verified licence.
+`--rv-font-mono` has no licence row because it ships no file.
+
+**Decision — the third webfont is dropped.** An earlier revision of this section loaded IBM Plex
+Mono as a third family for the `technical` role and preloaded two faces. Both exceeded
+`docs/ops/PERFORMANCE.md` §2.2, which this document does not get to overrule. The conflict is
+resolved in PERFORMANCE.md's favour and the consequences are recorded here rather than absorbed
+quietly:
+
+| Previously | Now | Why |
+|---|---|---|
+| IBM Plex Mono loaded as `--rv-font-technical` | Dropped. Registry **RC-903 is `REJECTED`** with the reason in `COMPONENT_REGISTRY.md` §8 | A third family breaks the two-family ceiling and buys one visual register |
+| Eyebrows and technical labels set in a mono face | Body family, uppercase, `--rv-tracking-eyebrow` (0.14em) or `--rv-tracking-technical` (0.02em) | Uppercase plus wide tracking is what makes a technical label read as one. The face was never doing that work |
+| Identifiers set in a loaded mono face | `--rv-font-mono`, the platform stack | Column alignment and glyph disambiguation are what identifiers need, and the device already has a face that does both — for zero bytes |
+| Inter preloaded | **Not preloaded** | §2.2 permits one preload, and it belongs to the display face that sets the first heading |
+
+The token `--rv-font-technical` no longer exists. A component that wants technical texture asks for
+the `technical` or `eyebrow` type role (§3.5); a component rendering a machine identifier asks for
+the `identifier` role, which is the only consumer of `--rv-font-mono`.
 
 ```css
---rv-font-display:   "Newsreader", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
---rv-font-body:      "Inter", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
---rv-font-technical: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+--rv-font-display: "Newsreader", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+--rv-font-body:    "Inter", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+--rv-font-mono:    ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+                   "Liberation Mono", monospace;
 ```
 
 Rules:
 
-- **Total font payload ≤ 120 kB** across all three, woff2, latin subset. This is a line item in the
-  per-route JavaScript-and-asset budget in `docs/ops/PERFORMANCE.md`.
-- `adjustFontFallback` stays on for display and body so the fallback metrics match and font swap
+- **Total font payload ≤ 120 kB**, woff2, latin subset, across the two loaded faces, measured on the
+  built output. **This budget is owned by this section.** `docs/ops/PERFORMANCE.md` §3 budgets
+  per-route JavaScript and carries **no font line item today**, so do not cite it for a font number
+  — cite this line. Adding the line item there is an open item recorded in §18.
+- `--rv-font-mono` contributes **0 kB**. It downloads nothing, so it is outside both the payload
+  budget and the two-family ceiling, which counts *loaded* families. This reading is recorded in §18
+  for Phase 40 to confirm or overrule.
+- `adjustFontFallback` stays on for both loaded families so the fallback metrics match and the swap
   costs no layout shift. The CLS budget is 0.05; fonts may not consume it.
-- IBM Plex Mono ships **one weight**. Emphasis in technical text comes from colour and letter
-  spacing, never from a second mono weight.
-- No italic is loaded for body or technical. Display italic is loaded only if and when a block
-  schema needs it; today none does.
+- No italic is loaded for either family. Display italic is loaded only if and when a block schema
+  needs it; today none does.
 - The Rivya **wordmark and logo are owner-supplied assets**, not type set in one of these families.
   Until the owner provides them, the header renders the brand name from `global_content` in the
   display family. `OWNER_VERIFICATION_REQUIRED`.
@@ -511,11 +582,12 @@ Above 1440px the display scale is frozen. A 1920px viewport gets more white spac
 | `--rv-text-base` | 1rem / 16px | 1.6 | Default body, form inputs, table cells |
 | `--rv-text-sm` | 0.875rem / 14px | 1.5 | Helper text, captions, Studio dense tables |
 | `--rv-text-xs` | 0.75rem / 12px | 1.4 | Badges, chips, table column heads |
-| `--rv-text-2xs` | 0.6875rem / 11px | 1.35 | Absolute floor. Technical family only, uppercase only |
+| `--rv-text-2xs` | 0.6875rem / 11px | 1.35 | Absolute floor. Uppercase, letter-spaced labels only |
 
-`--rv-text-2xs` is the smallest size in the system and may be used only for uppercase, letter-spaced
-technical labels where the letterforms are wide. Never for sentence-case prose. Form inputs are
-never below `--rv-text-base` on touch viewports — 16px is what stops iOS Safari zooming on focus.
+`--rv-text-2xs` is the smallest size in the system and may be used only for uppercase,
+letter-spaced labels at `--rv-tracking-eyebrow`, where the tracking is what keeps the letterforms
+apart. Never for sentence-case prose, and never in `--rv-font-mono`, whose glyphs are already
+wide enough. Form inputs are never below `--rv-text-base` on touch viewports — 16px is what stops iOS Safari zooming on focus.
 
 ### 3.4 Weights, tracking and line heights
 
@@ -533,7 +605,8 @@ never below `--rv-text-base` on touch viewports — 16px is what stops iOS Safar
 | `--rv-tracking-display` | -0.02em | display-2xl / xl |
 | `--rv-tracking-heading` | -0.01em | display-lg / md |
 | `--rv-tracking-body` | 0 | Everything else |
-| `--rv-tracking-eyebrow` | 0.14em | Uppercase eyebrows and technical labels |
+| `--rv-tracking-eyebrow` | 0.14em | Uppercase eyebrows |
+| `--rv-tracking-technical` | 0.02em | Sentence-case technical labels — unit suffixes, metadata keys |
 | `--rv-measure-narrow` | 46ch | Pull quotes, captions |
 | `--rv-measure-prose` | 68ch | All body copy. Hard maximum |
 | `--rv-measure-wide` | 84ch | Studio descriptions, table cell wrapping |
@@ -552,16 +625,23 @@ declares, not the level that looks right.
 | `subsection` | display | display-md | 400 | -0.01em | `h3` |
 | `card` | display | display-xs | 400 | 0 | Card titles |
 | `card-compact` | body | text-lg | 500 | 0 | Dense grid card titles, Studio |
-| `eyebrow` | technical | text-2xs → text-xs | 400 | 0.14em, uppercase | `section.eyebrow` |
+| `eyebrow` | body | text-2xs → text-xs | 500 | 0.14em, uppercase | `section.eyebrow` |
 | `lead` | body | text-xl | 400 | 0 | `section.supporting` under a hero |
 | `body` | body | text-base / text-md | 400 | 0 | `section.body` |
 | `caption` | body | text-sm | 400 | 0 | Media captions, alt-text notes |
-| `technical` | technical | text-sm | 400 | 0.02em | SKUs, asset IDs, dimensions, hex, cron |
+| `technical` | body | text-sm | 400 | 0.02em | Unit suffixes, dimension labels, metadata keys |
+| `identifier` | mono | text-sm | 400 | 0 | SKUs, `rivya_asset_id`, `higgsfield_generation_id`, hex values, commit SHAs, cron expressions |
 | `label` | body | text-sm | 500 | 0 | Form labels, table heads |
+
+`identifier` is the only role that reads `--rv-font-mono`, and it is the only role whose text is a
+machine value rather than prose. Everything a visitor reads is set in one of the two loaded
+families.
 
 `heading_highlight` (a real `page_sections` column) renders as a `<span>` inside the heading, in
 `--rv-ink-accent` at `--rv-weight-display-strong`. It never becomes a separate heading element, and
 its accent colour is never the only thing distinguishing it — the weight change carries it too.
+Inside a `--rv-surface-raised-2` element on a DEEP section the accent it inherits is already the
+stepped-up gold-bright (§2.6); the component does nothing to arrange that and must not override it.
 
 ### 3.6 Numerals
 
@@ -569,7 +649,7 @@ its accent colour is never the only thing distinguishing it — the weight chang
 |---|---|
 | Data tables, KPI values, any column of numbers | Body family with `font-variant-numeric: tabular-nums` |
 | Prices and price labels (SEED §30) | Body family, `tabular-nums`. The label ("From", "Price on Request") is `--rv-text-sm`, never smaller than the number it qualifies |
-| Identifiers — SKU, `rivya_asset_id`, `higgsfield_generation_id`, commit SHA, cron | Technical family, `--rv-text-sm`, selectable, `user-select: all` on click targets |
+| Identifiers — SKU, `rivya_asset_id`, `higgsfield_generation_id`, commit SHA, cron | `identifier` role: `--rv-font-mono`, `--rv-text-sm`, selectable, `user-select: all` on click targets |
 | Dimensions in a customization form (SEED §33–§35 spelling) | Body family, `tabular-nums`, unit rendered as a separate suffix element, never typed into the value |
 | Step numbers in `process-steps` / `numbered-steps` | Display family at `display-md`, `--rv-ink-accent`, `aria-hidden` when the step also has a real heading |
 
@@ -888,7 +968,9 @@ literal (SEED §1). Icons are 20px inline SVG with `stroke-width: 1.5`, `current
 
 ### 7.3 TextLink
 
-Inline links are `--rv-ink-accent` with a 1px underline at `text-underline-offset: 0.18em`.
+Inline links are `--rv-ink-accent` with a 1px underline at `text-underline-offset: 0.18em`. Inside a
+`--rv-surface-raised-2` element on a DEEP section that token is already the stepped-up gold-bright
+(§2.6) — the link inherits it and neither knows nor tests which surface it is on.
 Underline is **not** removable — colour alone is not a permitted affordance (WCAG 1.4.1). Hover
 thickens the underline to 2px. External links carry a 12px trailing glyph and
 `aria-describedby` pointing at a shared "opens in a new tab" string in `global_content`.
@@ -916,7 +998,7 @@ control → error `--rv-space-2`, field → field `--rv-space-5`.
 |---|---|
 | Height | 44px (`sm` 36px, Studio dense tables only) |
 | Background | `--rv-surface-raised` |
-| Border | `--rv-border-hairline` `--rv-line-strong` (3.49:1 on ocean, 3.61:1 on bone — clears 1.4.11) |
+| Border | `--rv-border-hairline` `--rv-line-strong`. Measured in §2.6/§2.7: 4.08:1 on ocean, 3.52:1 on ocean-raised, 3.01:1 on ocean-raised-2, 3.61:1 on bone, 3.39:1 on bone-raised — every input ground clears 1.4.11's 3:1 |
 | Radius | `--rv-radius-sm` |
 | Type | `--rv-text-base`, body family. Never below 16px on touch |
 | Padding | `--rv-space-3` block, `--rv-space-4` inline |
@@ -950,9 +1032,12 @@ Only for settings that apply immediately with no save step — Studio feature fl
 thumb position **and** a state label beside it, never by track colour alone. Transition: LIGHT,
 120ms, transform only.
 
-### 7.9 File and reference upload
+### 7.9 File and reference upload — `FileUpload`
 
+`components/primitives/FileUpload.tsx`, registry **RC-033**, owned by Phase 19 (its first consumer).
 Used by the bespoke configurator (FEAT §15) and the inquiry form for visitor reference images.
+Phase 19's `components/patterns/Configurator/ReferenceUpload.tsx` composes this control; it does not
+reimplement one. There is exactly one file-input contract in the product and this is it.
 
 - A `<input type="file">` with a real label, plus a drop zone that is an enhancement, never the only
   route. Keyboard users reach the input.
@@ -1023,6 +1108,11 @@ CTA is pinned to the bottom of the drawer above the safe-area inset.
 
 ### 8.4 Breadcrumbs
 
+`components/patterns/Breadcrumbs.tsx`, registry **RC-230**, built in Phase 02 rather than Phase 10
+because Phase 05's `StudioPage` needs a breadcrumb trail before the public chrome exists
+(`docs/project/phases/PHASE-00-04.md`, Phase 02 build list). One implementation serves both
+surfaces.
+
 `<nav aria-label>` + ordered list. The current page is `aria-current="page"` and is not a link.
 Rendered on `/collection/[category]`, `/product/[slug]`, `/collections/[slug]`,
 `/portfolio/[slug]`, `/journal/[slug]` and every Studio leaf. `text-sm`, `--rv-ink-tertiary`,
@@ -1074,7 +1164,16 @@ editorially:
 
 ## 10. Media: gallery, lightbox, slider, carousel
 
-### 10.1 MediaSlot and MediaFrame
+### 10.1 MediaSlot, MediaImage, MediaVideo and MediaFrame
+
+Four components, one chain. `MediaFrame` (RC-030, primitive) reserves the box. `MediaSlot` (RC-213)
+resolves which asset and which renderer. `MediaImage` (RC-232, server) and `MediaVideo` (RC-233,
+client) are the two renderers, built in Phase 06 alongside the `MediaProvider`
+(`docs/media/MEDIA_GUIDE.md` §5) — they are the only components in the product permitted to emit an
+`<img>` or a `<video>` element. `MediaImage` requires a `sizes` prop and throws without one in
+development; `scripts/perf/check-image-props.mjs` fails CI on a usage that omits it, and
+`scripts/perf/check-video-props.mjs` requires every `MediaVideo` to carry a poster, `preload="none"`,
+`muted` and `playsInline`, with no `autoplay` attribute in markup.
 
 Every image and video on the site passes through `components/patterns/MediaSlot.tsx`. It:
 
@@ -1135,7 +1234,10 @@ hero, never for primary navigation.
 
 ## 11. Overlays and disclosure
 
-All six are built in Phase 02 and everything else composes them. Each follows its APG pattern.
+All seven are built in Phase 02 and everything else composes them. Each follows its APG pattern.
+`DropdownMenu` is in this list rather than in a page phase for the same reason as `Breadcrumbs`
+(§8.4): Phase 05's Studio top bar needs a user menu, and Phase 05 runs before Phase 10 builds the
+public chrome, so deferring it would mean the Studio inventing a second one.
 
 | Component | Role / semantics | Open | Close | Focus | Motion |
 |---|---|---|---|---|---|
@@ -1145,6 +1247,7 @@ All six are built in Phase 02 and everything else composes them. Each follows it
 | `Accordion` | Headers are `<button>` inside `<h3>`, `aria-expanded`, `aria-controls` | Click / `Enter` / `Space` | Same | Stays on the header | FORM via `grid-template-rows: 0fr → 1fr` |
 | `Tooltip` | `role="tooltip"`, `aria-describedby` on the trigger | Hover after 400ms, or focus immediately | `Escape`, blur, pointer leave (with a 100ms grace so the pointer can cross to it) | Never receives focus | LIGHT 120ms fade |
 | `Disclosure` | `<button aria-expanded>` + region | Activation | Activation | Stays on the trigger | FORM |
+| `DropdownMenu` | APG menu button: `<button aria-haspopup="menu" aria-expanded aria-controls>` over a `role="menu"` of `role="menuitem"` children | Click, `Enter`, `Space`, `ArrowDown` | `Escape`, outside click, route change, item activation | Moves to the first item on open, roving tabindex inside, `Home`/`End` jump, restored to the trigger on close. **No focus trap** — a menu is not a dialog | FORM 240ms, opacity + 8px rise |
 
 Rules that apply to all of them:
 
@@ -1157,6 +1260,26 @@ Rules that apply to all of them:
   the **cancel** button, and which requires typed confirmation for bulk destructive actions
   (FEAT §20).
 - Nested modals are not permitted. A dialog that needs a second dialog is a two-step dialog.
+
+### 11.1 Toasts — `ToastRegion` and `Toast`
+
+`components/studio/ToastRegion.tsx`, registry **RC-317**, owned by Phase 05. **Studio only.** The
+public site has no toast: a visitor-facing outcome is the SEED §48 success surface or the SEED §49
+error message rendered in place, where it stays on screen and can be re-read. A component that
+wants a toast on a public route needs a new registry row and a reason, not a reuse of this one.
+
+| Aspect | Contract |
+|---|---|
+| Region | One `ToastRegion` per Studio shell, rendered once in `app/(studio)/studio/layout.tsx`. `role="status"` with `aria-live="polite"` and `aria-atomic="true"`. It is **empty in the DOM from first paint**, so the live region exists before the first message arrives — a live region added at the same moment as its content is not announced |
+| Severity | `success` · `info` · `warning`. **`danger` is not a toast severity.** A destructive or failed outcome is reported where the action was taken — in the dialog, on the form, in the row — because a toast is dismissible, transient and easy to miss (ACCESSIBILITY.md §2.5). A toast may accompany that report; it may never be the only carrier of it |
+| Anatomy | State icon (decorative, `aria-hidden`) + the message text + an optional single action + a close `IconButton` whose accessible name names the message. Severity is carried by the words, never by colour alone (§2.9) |
+| Colour | Soft state surface from §2.9 with a 1px border in the state colour and `--rv-ink-primary` text, at elevation 3. It renders in the Studio's `BONE` scheme like everything else |
+| Placement | Bottom-right above 768px, bottom-centre below, at `--rv-z-toast` (700), above the safe-area inset. It never covers the submit row of an open form |
+| Stacking | At most three at once; a fourth replaces the oldest. Identical consecutive messages coalesce into one with a count rather than repeating |
+| Dismiss | Auto-dismiss after **6 s** for `success` and `info`, **10 s** for `warning`; the timer pauses on hover, on focus within, and while `document.hidden`. A close button is always present, so the timer is never the only route out |
+| Keyboard | Focus is **never moved to a toast**. The toast and its action are reachable by `Tab` in DOM order while present. `Escape` dismisses the focused toast only |
+| Motion | FORM class: 240ms, opacity + 8px rise, `--rv-ease-out` in / `--rv-ease-in` out |
+| Reduced motion | No slide and no fade — the toast appears and disappears. **The auto-dismiss timer is unchanged**: reduced motion removes the movement, never the reading time (ACCESSIBILITY.md §2.5) |
 
 ---
 
@@ -1304,6 +1427,7 @@ system — plus the composed pieces in `components/studio/**`. Studio-specific c
 | Status | `StatusPill` per §2.9, on every row and in every drawer header |
 | Destructive | Never inline. Always `ConfirmDialog`, with the entity named in the dialog body and typed confirmation for bulk actions |
 | Forms | `DrawerForm` + `FormField`, server actions, Zod errors mapped to `ErrorText` by field path; a failed save never clears the form |
+| Feedback | Outcome toasts through the single `ToastRegion` (§11.1). A destructive or failed outcome is **also** reported in place — in the dialog, on the form or in the row — because a toast is transient |
 | Empty | `EmptyState` — heading, body, action. **The words "Coming Soon" are forbidden** (SEED §55) and a unit test greps for them |
 | Stub | A page whose feature lands in a later phase renders a stub notice naming the phase, not a blank screen |
 | Permission | `PermissionGate` hides UI, and is never the only guard — the server re-checks on every page and every action |
@@ -1318,18 +1442,22 @@ A rule without a script is a wish.
 | Check | Script | Fails when |
 |---|---|---|
 | Token discipline | `scripts/design/check-tokens.mjs` | A hex literal, `rgb(`/`hsl(` literal or raw `px` spacing appears under `components/**` or `app/**` outside `app/styles/**`; or the neutral ramp in `tokens.css` does not match the §2.2 derivation |
-| Contrast | `scripts/a11y/check-contrast.mjs` | Any pairing in §2.6/§2.7/§2.9 drops below its stated threshold after a token edit |
+| Contrast | `scripts/a11y/check-contrast.mjs` | Any pairing in §2.6/§2.7/§2.9 drops below its stated threshold after a token edit. It reads the hex values out of `tokens.css`, re-derives every ratio, and asserts the three automatic step-ups by name: `--rv-ink-tertiary` → neutral-200 and `--rv-ink-accent` → gold-bright on `--rv-surface-raised-2` in DEEP, and `--rv-ink-tertiary` → neutral-200 in INK. It also asserts the boundary rows — `--rv-line-strong` on every ground a control sits on, at 3:1 |
 | Focus styles | `scripts/a11y/check-focus-styles.mjs` | `outline: none` appears without a replacement ring |
-| Registry | `scripts/design/check-registry.mjs` | A component file has no `COMPONENT_REGISTRY.md` row, or a row is missing a required column |
+| Registry | `scripts/design/check-registry.mjs` | A component file under `components/{primitives,patterns,studio,three}/**` has no `COMPONENT_REGISTRY.md` row, or a row is missing a required column. `components/sections/**` is out of its scope by design — block renderers are checked 1:1 against the block registry by `tests/unit/cms-registry.test.ts` (see `COMPONENT_REGISTRY.md` §1) |
 | Copy in JSX | `scripts/site/check-content-literals.mjs` — script name proposed here for `ARCHITECTURE.md` import rule 6, owned by Phase 10 | Marketing copy appears in a `.tsx` file (SEED §1, D2) |
 | Visual | `tests/e2e/design-system.spec.ts` | A primitive's snapshot changes at any of the eight FEAT §45 widths |
 | Reduced motion | `tests/e2e/a11y/reduced-motion.spec.ts` | Any transform or opacity transition applies, or a `<video>` mounts, under `prefers-reduced-motion: reduce` |
 | Touch targets | `tests/e2e/a11y/touch-targets.spec.ts` | Any hit box is below 44 × 44 at 390px |
 | Axe sweep | `tests/e2e/a11y/*.spec.ts` | Any critical or serious violation, at 1440px and 390px |
 
-The dev-only gallery at `app/(dev)/_design` renders every primitive in every state at every width.
-It calls `notFound()` when `NODE_ENV === 'production'`, is excluded from the sitemap, and is not part
-of the D3 route map.
+The dev-only gallery at `app/(site)/design-system/**` renders every primitive in every state at
+every width, served at `/design-system` and `/design-system/[group]`. The first statement of both
+page components is an explicit `if (process.env.NODE_ENV === 'production') notFound()`, so the route
+returns 404 in a production build; it is excluded from the sitemap and is not part of the D3 route
+map. The segment is **not** underscore-prefixed: a `_`-prefixed directory is a Next.js private
+folder and is opted out of routing entirely, which would leave nothing to open, tab through or
+axe-scan. The path is fixed by the 2026-09-07 A2 amendment to `CANONICAL-DECISIONS.md`.
 
 ---
 
@@ -1345,3 +1473,17 @@ of the D3 route map.
    contract into `CHANGELOG.md`, `PROJECT_STATE.md` and `docs/SESSION-STATE.md`.
 5. This document is amended, never silently diverged from — the same rule the canonical decisions
    apply to themselves.
+
+---
+
+## 18. Open items handed to other documents
+
+Recorded here rather than resolved silently, because each needs an edit to a document this one does
+not own. None blocks Phase 02; each is a citation this document deliberately does not make until
+the other document carries the line.
+
+| # | Item | Document that must change | Why it is open |
+|---|---|---|---|
+| 1 | Add a font-payload line item — **≤ 120 kB total woff2, latin subset, across the two loaded faces** — to the budget tables | `docs/ops/PERFORMANCE.md` §2.2 or §3, owned by Phase 40 | §3.1 states the budget and owns it. PERFORMANCE.md §3 budgets per-route JavaScript only; the sole 120 kB figure there is `/faq`'s first-load JS and is unrelated. Until the line exists, §3.1 is the citation for a font number |
+| 2 | Confirm that "at most two families" counts **loaded** families, so a device-resident `--rv-font-mono` stack that fetches nothing is permitted | `docs/ops/PERFORMANCE.md` §2.2, owned by Phase 40 | §3.1 takes that reading and says so. If Phase 40 rules otherwise, the `identifier` role (§3.5) collapses onto the body family with `tabular-nums` and this document is amended — the fix is one row, not a redesign |
+| 3 | `components/patterns/ArticleCard.tsx` is named as the journal card; this system's journal card is `JournalCard` (registry RC-220, §9) | `docs/content/INITIAL_CONTENT_INVENTORY.md` | Two names for one component. `JournalCard` is the name in the registry, in the phase documents and in §9; the inventory row should follow it |

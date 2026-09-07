@@ -90,6 +90,9 @@ rivya/commission                 G9
 rivya/collection/furniture       G10
 ```
 
+Briefs G11 and G12 need no new folder: `rivya/large-format/seating` and
+`rivya/large-format/console` are already manifest folders.
+
 ### 2.1 The folder allowlist is code, not data
 
 `lib/media/folders.ts` holds the literal list and `assertFolder()`. It is a **security control** —
@@ -116,6 +119,12 @@ Manager filters on.
 
 The two ID forms share one namespace and must never collide — D6 amendment A1, enforced by
 `scripts/media/check-asset-ids.py`. Ordinals count across image and video together.
+
+The filename row is **one grammar for both allocators** — the asset ID lower-cased plus the ratio
+— so a filename is always derivable from an ID. It diverges from D6's literal
+`<page>-<section>-<variant>.<ext>` and from FEAT §35's examples, neither of which describes the
+250 filenames that already exist. `HIGGSFIELD_MASTER_ASSET_PLAN.md` §3.3 records the divergence
+and the dated D6 amendment it still needs; do not resolve it by renaming assets.
 
 **A public ID never carries a file extension.** The extension is a delivery choice — `f_auto`
 negotiates AVIF, WebP or the source format per request from one public ID.
@@ -312,7 +321,10 @@ Consequences to accept deliberately:
 the folder and public ID the manifest already assigns, and write the matching `media_assets` rows
 with full provenance. After this, **nothing on the public site references that CDN.**
 
-Phase 07 owns this. Phase 06 migrates three named canaries first.
+Phase 07 owns this. **Phase 06 imports exactly the three named canaries in §9.2 and nothing
+else; the remaining 247 rows, the migration script and its ledger are Phase 07 deliverables.**
+That is the split `docs/architecture/DATA_MODEL.md` §7 and §12 already state, and the two
+documents agree — §9.4's field mapping is likewise DATA_MODEL §7's mapping verbatim.
 
 ### 9.1 Preconditions
 
@@ -333,9 +345,10 @@ Migrated by hand through the Studio uploader's import-by-URL path, to prove the 
 | `LARGEFORMAT-DINING-004` | video | 9:16 · 768×1344 · 6 s | `rivya/large-format/dining/largeformat-dining-004-9x16` |
 | `LARGEFORMAT-MONUMENTAL-001` | image | 21:9 · 6336×2688 | `rivya/large-format/architectural/largeformat-monumental-001-21x9` |
 
-The video canary is deliberate: it shares its public ID with an **image** of the same name, so it
-proves the `(provider, resource_type, public_id)` key before the bulk run meets the other five
-pairs.
+The video canary is deliberate: it is the only `resource_type` other than `image` in the run, so
+it exercises the `(provider, resource_type, public_id)` write path. It no longer shares a public
+ID with any image — DQ-0 renumbered the 26 videos and all 250 public IDs are now unique
+(§3.1) — so the composite key is defence in depth here, not a collision test.
 
 ### 9.3 The script
 

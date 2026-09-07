@@ -171,7 +171,7 @@ Never compiled into client JavaScript. Every module that reads one carries `impo
 | Purpose | Identifies the account when signing uploads and calling the Admin API |
 | Set in | Vercel (server scope); `.env.local` for media work |
 | Read by | `lib/media/providers/cloudinary.ts` (server half) |
-| Without it | The signing endpoint `/api/uploads/sign` fails; Studio uploads and the media migration stop. **Delivery of existing assets is unaffected** — delivery URLs need only the cloud name |
+| Without it | Both signing endpoints fail — `app/api/media/sign` (Studio) and `app/api/inquiries/upload-sign` (visitor reference images) — so Studio uploads, visitor attachments and the media migration all stop. **Delivery of existing assets is unaffected** — delivery URLs need only the cloud name |
 | Rotation | **Owner**, 180 days, as a pair with the secret |
 
 ### `CLOUDINARY_API_SECRET`
@@ -228,10 +228,10 @@ Never compiled into client JavaScript. Every module that reads one carries `impo
 | | |
 |---|---|
 | Class | **Secret** — grants cache invalidation and scheduled-job invocation |
-| Purpose | Guards `POST /api/revalidate` (the only cache-invalidation entry point) and the cron routes |
+| Purpose | Guards `POST /api/revalidate` (the only cache-invalidation entry point) and **six of the seven** cron routes. `app/api/cron/research` does not read it — it authenticates on Vercel's `x-vercel-cron` header alone and `404`s otherwise (`DEPLOYMENT.md` §3.1) |
 | Set in | Vercel (server scope) per environment, unique per environment; `.env.local` |
-| Read by | `app/api/revalidate/route.ts`, `app/api/cron/**`, `lib/cms/publishing.ts` |
-| Without it | Publishing still writes, but the cache is not invalidated: pages stay stale for at most their `revalidate` window and a `WARNING` is written to `system_logs` on channel `CONTENT`. Cron routes reject every invocation |
+| Read by | `app/api/revalidate/route.ts`, `app/api/cron/{content-schedule,research-analytics,research-score,sheets-sync,analytics-snapshot,log-retention}/route.ts`, `lib/cms/publishing.ts` |
+| Without it | Publishing still writes, but the cache is not invalidated: pages stay stale for at most their `revalidate` window and a `WARNING` is written to `system_logs` on channel `CONTENT`. Those six cron routes reject every invocation — scheduled publication, nightly snapshots, scoring, the Sheets sync and log retention all stop silently; the research drain keeps running |
 | Blast radius if leaked | Forced cache invalidation (a cost and availability nuisance, not a data breach) and the ability to trigger scheduled jobs |
 | Rotation | Engineer, 90 days. Rotate the publish service and the routes in the same window |
 
@@ -385,7 +385,7 @@ What a visitor and an operator see when each variable is missing or wrong.
 | `CLOUDINARY_API_KEY` / `_API_SECRET` | Existing media still delivers | Uploads and media migration fail with a named reason | Environment page |
 | `GOOGLE_SERVICE_ACCOUNT_JSON` / `_SPREADSHEET_ID` | Unaffected | Sheets sync unavailable | Environment page `NOT_CONFIGURED` |
 | `SCRAPER_USER_AGENT` | Unaffected | **No research run can start** | Environment page `NOT_CONFIGURED` |
-| `REVALIDATE_SECRET` | Stale pages for at most the `revalidate` window | Publish succeeds; a `WARNING` names the uncleared tags | `system_logs`, channel `CONTENT` |
+| `REVALIDATE_SECRET` | Stale pages for at most the `revalidate` window; six of the seven cron routes reject every invocation | Publish succeeds; a `WARNING` names the uncleared tags. A scheduled job that never fires writes nothing at all, so the absence shows as a gap in `system_logs`, not as an error | `system_logs`, channel `CONTENT`; the Vercel Cron Jobs view |
 
 ---
 
@@ -395,8 +395,12 @@ What a visitor and an operator see when each variable is missing or wrong.
    `VERCEL_GIT_COMMIT_SHA`, `VERCEL_GIT_COMMIT_REF` are read by the Environment page and
    `check-env.ts`. Suggested amendment: note in D8 that platform-injected variables are permitted
    and are not project-set.
-2. **No cron secret.** The cron routes currently reuse `REVALIDATE_SECRET`. Suggested amendment: add
-   `CRON_SECRET` to D8's server-only list so one secret does not guard two unrelated capabilities.
+2. **No cron secret, and two schemes for seven routes.** Six cron routes reuse `REVALIDATE_SECRET`;
+   `app/api/cron/research` uses Vercel's `x-vercel-cron` header alone and cannot be exercised outside
+   Vercel. Suggested amendment: add `CRON_SECRET` to D8's server-only list and normalise all seven onto
+   it, so one secret does not guard two unrelated capabilities and one route is not untestable.
+   (`DEPLOYMENT.md` §13 item 1, `SECURITY.md` §16 item 2, `ARCHITECTURE.md` open question 3 and
+   `SCRAPER.md` §16 item 4 are the same amendment seen from five sides.)
 3. **Two tiers inside "server-only".** D8 has one server-only list, but `SCRAPER_USER_AGENT` is not a
    secret (its value is displayed, deliberately) and `GOOGLE_SHEETS_SPREADSHEET_ID` is an identifier
    rather than a credential. Suggested amendment: record the Secret / Sensitive / Server distinction

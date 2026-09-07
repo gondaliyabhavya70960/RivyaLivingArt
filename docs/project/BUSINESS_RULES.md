@@ -146,8 +146,12 @@ seeded copy — never a raw status page.
 
 | | |
 |---|---|
-| Enforced by | **Server guard:** `lib/security/rate-limit.ts` over `rate_limit_buckets` |
+| Enforced by | **Server guard:** `lib/security/rate-limit.ts`† over `rate_limit_buckets`, called from inside `app/(site)/_actions/submit-inquiry.ts` **before** the Zod parse. Inquiry submission is a server action, not a route handler, so there is no `/api/inquiries` path for `middleware.ts` to match and the limiter returns a typed result the action turns into the SEED §49 form error |
 | Test | Six submissions in ten minutes: the first five persist, the sixth returns 429 with `Retry-After` and writes a `SECURITY` system log |
+
+† `lib/security/` is **not** one of the ten `lib/` domains D2 fixes, and it is not among the eight
+`ARCHITECTURE.md` records as a pending amendment either — see §M open question 6. The rule binds
+regardless of where the module finally lives; only the path is provisional.
 
 ---
 
@@ -170,7 +174,7 @@ A quote-only product can never carry a number; a priced one must carry a currenc
 
 **Test.** `tests/integration/publish-gates.test.ts` attempts each of the eight invalid combinations
 and asserts the constraint rejects all eight; `tests/unit/price-state.test.ts` holds **100 % branch
-coverage** on `lib/catalog/price-state.ts`.
+coverage** on `lib/catalog/price-state.ts`† (Phase 14; a pending `lib/` domain — §M open question 6).
 
 ### BR-C2 — Zero is never a price
 
@@ -396,8 +400,29 @@ Rivya `products` row. The only path from research to catalogue is a human confir
 
 | | |
 |---|---|
-| Enforced by | **Schema:** `research_confirmations.created_product_id` is an opaque uuid with **no foreign key**, so the graph cannot be walked; `research_*` tables have exactly two allowlisted FKs into public tables (`research_source_category_map.category_id`, `research_products.matched_category_id`), both to `categories` only. **Permission:** `research.confirm` is held by `owner`, `admin`, `merchandiser` — not by `researcher` |
-| Test | `tests/integration/rls-policies.test.ts` asserts the FK inventory matches the allowlist exactly; a schema test asserts no FK from any `research_*` table to `products` |
+| Enforced by | **Schema:** `research_confirmations.created_product_id` is an opaque uuid with **no foreign key**, so the graph cannot be walked. Every foreign key from a `research_*` table into `public` is allowlisted **by constraint name** in `scripts/research/check-research-isolation.mjs`, and the allowlist is the single source of truth for what may cross — the count below is a consequence of that list, never a separate constant. **Permission:** `research.confirm` is held by `owner`, `admin`, `merchandiser` — not by `researcher` |
+| The allowlist | Two entries, both to `categories`, both written or configured by a member of staff rather than scraped. Neither points at `products`, and no `anon` role can read either side |
+| Test | `tests/integration/rls-policies.test.ts` reads `information_schema.referential_constraints` and asserts the research→public FK inventory **equals** the allowlist — a missing entry fails as loudly as an extra one; a schema test asserts no FK from any `research_*` table to `products` |
+
+| # | Constraint | Column | References | Added by | Why it is permitted |
+|---|---|---|---|---|---|
+| 1 | `research_source_category_map_category_id_fkey` | `research_source_category_map.category_id` | `categories (on delete set null)` | Phase 26 | A category mapping is configuration typed by staff. It points at taxonomy, not at `products` |
+| 2 | `research_products_matched_category_id_fkey` | `research_products.matched_category_id` | `categories (on delete set null)` | Phase 28 | The result of applying that human-authored map |
+
+**Known divergence — the schema register says three, and this rule says two.** The number is
+load-bearing because the test above is an equality assertion, so the two documents cannot both be
+built. `DATA_MODEL.md` §1.1 rule 7 and §11 state *three* allowlisted references, naming
+`research_direction_briefs.target_category_id` as the third. Every document that owns the schema it
+describes states *two*: `PHASE-23-30.md` (which owns Phases 26 and 28, and states "there is never a
+third"), `SCRAPER.md` §13.2, and — decisively — `PHASE-31-38.md`, which owns Phase 34 and specifies
+that table's column as `target_category_slug text` with a `check` constraint against D3's seven
+slugs and **no foreign key at all**, together with a verification step that temporarily converting it
+to `target_category_id uuid references categories(id)` must make the isolation guard *fail*. This
+rule therefore follows the three documents that specify the migrations and the subsystem, not the one
+that summarises them. `DATA_MODEL.md` §11 is the row to correct, and until it is, §M open question 7 records the
+contradiction rather than leaving an engineer to discover it when the equality assertion breaks.
+Adding a third entry — here, in `SECURITY.md` T5 and in the guard's allowlist — is a BR-K1
+amendment, not a pull request.
 
 ### BR-F3 — Research data is never publicly searchable
 
@@ -773,7 +798,10 @@ rule, without deleting the rule, is a rejection.
 
 ## M. Open questions for the canonical decisions
 
-Raised, not acted on. Nothing above knowingly diverges from `CANONICAL-DECISIONS.md`.
+Raised, not acted on. **Two divergences exist above and are marked in place rather than hidden:**
+the `lib/` module paths named in BR-B5 and BR-C1, which D2 does not enumerate (item 6), and the
+research foreign-key count, where the schema register and every phase document disagree (item 7).
+Nothing else above knowingly diverges from `CANONICAL-DECISIONS.md`.
 
 1. **Permission spelling.** D5 names the roles but not the permission format. This document uses the
    dot form (`content.write`) because `lib/auth/permissions.ts` owns the union and CI drift-checks
@@ -795,3 +823,40 @@ Raised, not acted on. Nothing above knowingly diverges from `CANONICAL-DECISIONS
    genuine addition. They must be reconciled **before** Phase 04 writes `lib/auth/permissions.ts`,
    because after that the CI drift check makes an unnamed permission a build failure rather than a
    documentation inconsistency.
+6. **Is D2's `lib/` domain list closed? — one of the two open divergences above.** D2 fixes ten
+   subdomains (`supabase · media · cms · auth · whatsapp · scraper · analytics · seo · logging ·
+   flags`). This document names two guards outside that list: `lib/security/rate-limit.ts` (BR-B5,
+   Phase 41) and `lib/catalog/price-state.ts` (BR-C1, Phase 14). `ARCHITECTURE.md` open question 2
+   raises the identical question and proposes amendment **A3** — record that D2's list is a *floor*
+   rather than a ceiling and fix the criterion for a new domain: *a distinct external dependency or a
+   distinct trust boundary*. Two notes that document does not carry. First, `lib/catalog/` is one of
+   the eight it already enumerates, so BR-C1 is covered by A3 as drafted. Second, **`lib/security/`
+   is a ninth path, listed in neither D2 nor that table**, yet `PHASE-39-46.md` places
+   `rate-limit.ts` and `csp.ts` there and `TESTING.md` §7 puts `rate-limit.ts` on the 100 %-branch
+   list; it meets the proposed criterion (a distinct trust boundary — every hostile public request
+   passes through it, and folding it into `lib/logging/` or `lib/auth/` would put the abuse ceiling
+   inside a domain that neither owns it), so A3 must enumerate **nine**, not eight. Until the
+   amendment lands, D2's ten remain the contract and both paths above are provisional; the fallback,
+   if A3 is refused, is `lib/auth/rate-limit.ts` and `lib/supabase/repositories/catalog/price-state.ts`,
+   corrected in the phase documents in the same change. Neither rule's substance changes either way.
+7. **`DATA_MODEL.md` and every phase document disagree on how many foreign keys may cross the
+   research boundary — the second open divergence, and it will fail a test rather than a review.**
+   BR-F2 fixes the allowlist at **two** entries and specifies an *equality* assertion over
+   `information_schema.referential_constraints`, so an allowlist with a name that no constraint
+   matches fails exactly as hard as an unallowlisted constraint. `DATA_MODEL.md` §1.1 rule 7 ("Exactly
+   three foreign keys cross that line") and §11 (which lists
+   `research_direction_briefs.target_category_id` as "the third and last taxonomy reference") say
+   three. `PHASE-23-30.md`, `SCRAPER.md` §13.2 and `PHASE-31-38.md` say two, and `PHASE-31-38.md` —
+   the document that owns Phase 34 and therefore migrations `0320`–`0321` — specifies the column as
+   `target_category_slug text` with a check constraint against D3's seven slugs and no foreign key,
+   plus a verification step asserting that converting it to a real reference *fails* the guard. BR-F2
+   and `SECURITY.md` T5 follow the four documents that specify migrations. Two ways to close this,
+   and the owner should pick one rather than let it drift: (a) correct `DATA_MODEL.md` §1.1 rule 7
+   and §11 to two, keeping the slug column — no migration changes, no coupling added; or (b) amend
+   D5 to permit a third taxonomy reference, convert `target_category_slug` to
+   `target_category_id uuid references categories(id)`, and update BR-F2, `SECURITY.md` T5,
+   `PHASE-23-30.md`, `PHASE-31-38.md`, `SCRAPER.md` §13.2 and the guard's allowlist in the same PR.
+   **(a) is the smaller change and the one this document expects**, because the check constraint is
+   as durable as a foreign key against a list D3 fixes and costs no coupling; `PHASE-31-38.md` raises
+   the same choice as its own open question 13. Whichever is chosen, the allowlist and this rule move
+   together — BR-K4 forbids changing one without the other.

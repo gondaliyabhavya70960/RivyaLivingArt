@@ -64,7 +64,10 @@ flowchart LR
   studio -->|signed upload| cdn
   api -->|sign, probe, move| cdn
   api -->|scheduled fetch, robots-checked| third
-  api -->|append-only export| sheets
+  studio -->|one audited probe fetch, robots-checked| third
+  staff -.->|source image bytes, staff browser direct,<br/>referrerpolicy=no-referrer, never proxied| third
+  api -->|append-only export, scheduled| sheets
+  studio -->|append-only export, Run now| sheets
   site -->|persisted inquiry first| wa
   wa --> owner
   hf -.->|read at build and by scripts| api
@@ -80,7 +83,7 @@ flowchart LR
 | Visitor → Supabase | Never direct. The browser holds no Supabase client on a public page; every public read happens in a Server Component through the repository layer |
 | Visitor → Cloudinary | Direct, for bytes only. The server builds URLs; it never proxies media |
 | Staff → Supabase | Through the cookie-bound server client under RLS, plus a server-side `requirePermission()` on every route and every mutation |
-| Anything → third-party websites | Only from `lib/scraper/**`, only through `app/api/cron/research`, only when a source is policy-approved and enabled. See `SCRAPER.md` |
+| Anything → third-party websites | **Exactly two server-side paths exist, and a third is a defect.** (1) `app/api/cron/research` — the scheduled drain (`SCRAPER.md` §4, §7). (2) `probeUrl`, the audited single-URL probe in `app/(studio)/studio/research/sources/[id]/actions.ts` — one fetch, `research.write` required, one `audit_log` row (`SCRAPER.md` §6). Both run only from `lib/scraper/**`, both pass the same robots → rate-limit → `circuit_open_until` gate, and both refuse a source that is not `policy_status = 'APPROVED'` **and** `is_enabled`. There is **no image proxy**: a competitor image is fetched by the staff member's own browser from the source URL with `referrerpolicy="no-referrer"`, never through a Rivya origin (`SCRAPER.md` §13.3) |
 | Research → public | Nothing. Ever. Four independent guards; `SCRAPER.md` §12 |
 | Payment / cart / account | No component, table, route, dependency or environment variable exists for any of them |
 
@@ -95,7 +98,7 @@ them is enforced by a check in `npm run check`, not by convention.
 |---|---|---|---|---|---|
 | R1 | **Server Component render** | `app/(site)/**`, `app/(studio)/**` page and layout files, `components/sections/**`, server-side `components/patterns/**` | Repositories, `lib/cms`, `lib/media` (URL building), `lib/auth/session` | Nothing | No mutation, no `'use client'`, no secret sent to the client |
 | R2 | **Client Component** | `components/patterns/**`, `components/studio/**`, `components/three/**` marked `'use client'` | Props, `searchParams`, browser APIs, its own `fetch` to R3 | Only by calling a server action | Never imports `lib/supabase/admin`, never holds a service key, never queries Postgres |
-| R3 | **Server Action / Route handler** | `app/**/actions.ts`, `app/api/**/route.ts` | Everything a server may read | Repositories only | Never trusts its input; Zod parses first, permission check second, work third |
+| R3 | **Server Action / Route handler** | `app/**/actions.ts`, `app/api/**/route.ts` | Everything a server may read | Repositories only | Never trusts its input; Zod parses first, permission check second, work third. Never reaches a third-party host except `probeUrl` (§1) |
 | R4 | **Scheduled job** | `app/api/cron/**` invoked by Vercel cron | Repositories, `lib/scraper`, `lib/sheets`, `lib/logging` | Repositories and the private snapshot bucket | Never runs longer than its `maxDuration`; work is drained in bounded slices and is resumable |
 | R5 | **PostgreSQL** | `supabase/migrations/**` | — | Its own tables | RLS is never disabled; a table without a policy is unreachable, which is the intended default |
 | R6 | **Offline script** | `scripts/**` run by a human or CI | Files, the database over `DATABASE_URL` | Whatever the script's own guard permits | Recomputation scripts (`reextract`, `renormalize`, `reclassify-scale`) make **zero** network calls |
@@ -145,8 +148,11 @@ which roles exist.
 
 ## 3. Module layout — D2, expanded
 
-D2 fixes this tree. The column that matters is **Responsibility**; the boundary rules under the
-table are what keep the tree from rotting.
+D2 fixes this tree, and every path below is a D2 path — **with one marked exception**: the
+*Pending amendment* table at the end of the `lib/` subsection lists eight domains D2 does not
+enumerate. Those eight are a proposal, not yet the contract; the rule and the blocking dependency are
+stated there and in *Open questions*, item 2. The column that matters is **Responsibility**; the
+boundary rules under the table are what keep the tree from rotting.
 
 ### `app/`
 
@@ -157,13 +163,13 @@ table are what keep the tree from rotting.
 | `app/(site)/**/page.tsx` | One thin file per D3 path, each delegating to `renderCmsPage(path)` or a catalogue/portfolio/journal resolver. No marketing copy, no query |
 | `app/(site)/_actions/**` | Public server actions. Today exactly one conversion path: `submit-inquiry.ts` |
 | `app/(studio)/studio/**` | The D4 route map, one directory per leaf. Every page begins with `await requirePermission(...)` |
-| `app/(studio)/studio/**/actions.ts` | Studio mutations. Zod → permission → repository → audit → revalidate |
+| `app/(studio)/studio/**/actions.ts` | Studio mutations. Zod → permission → repository → audit → revalidate. Exactly one of them reaches a third-party host: `research/sources/[id]/actions.ts` → `probeUrl` (`research.write`, one fetch, robots-checked, rate-limited, audited). Its sibling `testPatterns` makes **no** request |
 | `app/api/media/sign` | Signed direct-to-Cloudinary upload. Session + `media.write` + folder allowlist + MIME allowlist + byte ceiling |
 | `app/api/inquiries/upload-sign` | The same, narrowed to visitor reference images, rate-limited, no session |
 | `app/api/revalidate` | The **only** cache-invalidation entry point. POST, `REVALIDATE_SECRET` |
 | `app/api/preview` | Signed token → `draftMode().enable()` → redirect to the real public path |
-| `app/api/cron/**` | `content-schedule`, `research`, `research-analytics`, `research-score`, `sheets-sync`, `analytics-snapshot`, `log-retention`. Each bounded, resumable, idempotent per period |
-| `app/api/studio/**` | Studio-only JSON: `search`, `inquiries/export`, `models/inspect`. Permission-checked, never cached |
+| `app/api/cron/**` | Seven routes: `content-schedule`, `research`, `research-analytics`, `research-score`, `sheets-sync`, `analytics-snapshot`, `log-retention`. Each bounded, resumable, idempotent per period. Six authenticate on `REVALIDATE_SECRET`; `research` authenticates on Vercel's `x-vercel-cron` header alone and `404`s otherwise (`SCRAPER.md` §7). Two schemes, one deployment — *Open questions*, item 3 |
+| `app/api/studio/**` | Studio-only JSON: `search`, `inquiries/export`, `models/inspect`. Permission-checked, never cached. **No media or competitor-image proxy route exists here or anywhere under `app/api/**`** — adding one is the change §1's boundary row forbids |
 | `app/api/auth/sign-out` | POST only, clears the session, writes an audit row |
 | `app/not-found.tsx`, `app/(site)/error.tsx`, `app/global-error.tsx` | Error surfaces. Token-only, **no media**, copy from `global_content` |
 | `app/robots.ts`, `app/sitemap.ts` | Published paths only |
@@ -203,19 +209,41 @@ D2's list, verbatim, with responsibilities:
 | `lib/logging/` | `activity.ts` (`logActivity`), `system-log.ts` (`logSystem`), `redact.ts`. The redactor is shared by logs, environment checks and the documentation browser |
 | `lib/flags/` | `index.ts`, `flags.ts`. Typed flag union, evaluated server-side, default `false` |
 
-Domains added by later phases as siblings, following the `PHASE-10-15.md` precedent (raised in
-*Open questions*, item 2):
+#### `lib/` — pending amendment: eight domains D2 does not list
 
-| Path | Responsibility | Added by |
-|---|---|---|
-| `lib/site/` | `chrome.ts` — `getSiteChrome()`, the one request-scoped chrome read | Phase 10 |
-| `lib/catalog/` | Product filtering, faceting, publication-readiness and the FEAT §21 validation predicates shared with the scraper's validator | Phase 14 |
-| `lib/search/` | Public and Studio search over `*_search_documents`, permission-scoped | Phase 23 |
-| `lib/relations/` | The FEAT §10/§11 relationship engine over `product_relations` and `content_relations` | Phase 23 |
-| `lib/bulk/` | One bulk engine: preview → typed confirmation → per-item snapshot → 24-hour undo | Phase 24 |
-| `lib/sheets/` | The one-way Google Sheets writer, sibling of `lib/whatsapp/` | Phase 36 |
-| `lib/ops/` | Environment reachability checks, one module per integration | Phase 38 |
-| `lib/docs/` | Markdown rendering for the Studio documentation browser | Phase 38 |
+**This table is a proposal, not the contract.** D2 enumerates exactly ten `lib/` subdomains
+(`supabase · media · cms · auth · whatsapp · scraper · analytics · seo · logging · flags`) and
+CANONICAL-DECISIONS.md changes "by amendment (append a dated entry to *Amendments*), never by silent
+divergence". The eight paths below are specified by three phase documents but are **not yet in D2**, so
+this document records them as a divergence with a name rather than shipping them as settled fact.
+
+| Path | Responsibility | Wanted by | Distinct dependency or trust boundary that justifies it |
+|---|---|---|---|
+| `lib/site/` | `chrome.ts` — `getSiteChrome()`, the one request-scoped chrome read | Phase 10 | Request-scoped read shared by both route groups; belongs above neither `cms` nor `supabase` |
+| `lib/catalog/` | Product filtering, faceting, publication-readiness and the FEAT §21 validation predicates shared with the scraper's validator | Phase 14 | Predicates deliberately shared with `lib/scraper/validation`; a home under either would invert the dependency |
+| `lib/search/` | Public and Studio search over `*_search_documents`, permission-scoped | Phase 23 | Spans public and research corpora under one permission-scoping rule |
+| `lib/relations/` | The FEAT §10/§11 relationship engine over `product_relations` and `content_relations` | Phase 23 | Cross-entity graph; no single owning entity domain |
+| `lib/bulk/` | One bulk engine: preview → typed confirmation → per-item snapshot → 24-hour undo | Phase 24 | Undo and snapshot semantics apply to every domain, so it may not live inside one |
+| `lib/sheets/` | The one-way Google Sheets writer, sibling of `lib/whatsapp/` | Phase 36 | Distinct external dependency and credential (`GOOGLE_SERVICE_ACCOUNT_JSON`) |
+| `lib/ops/` | Environment reachability checks, one module per integration | Phase 38 | Reads `process.env` by name for every integration; a distinct trust boundary (B9) |
+| `lib/docs/` | Markdown rendering for the Studio documentation browser | Phase 38 | Renders repository files through an allowlist; a distinct trust boundary |
+
+**The criterion this table proposes** — a new `lib/` domain is justified only by a *distinct external
+dependency* or a *distinct trust boundary*, never by "this file felt tidier here". Every row above
+names one.
+
+**The rule until the amendment lands.** D2's ten remain the contract, so **Phase 10 must not create
+`lib/site/` before a dated entry is appended to CANONICAL-DECISIONS.md *Amendments*** recording that
+D2's `lib/` list is a floor rather than a ceiling and fixing the criterion above. A1 and A2 are
+already taken; the next free label is **A3**. If the amendment is refused, the fallback is to fold
+each module into the nearest of the ten — `lib/cms/site.ts`, `lib/supabase/repositories/catalog/`,
+`lib/supabase/repositories/search/`, and so on — and to correct the three phase documents in the same
+change. Either outcome is acceptable; the current state, in which three phase documents assume paths
+D2 does not list, is not.
+
+Every reference elsewhere in this document to one of these eight paths — R4 and B7/B9 in §2, import
+rule 5 (`lib/catalog/**`) below, §5.3 and §11 — inherits the same pending status and resolves the
+same way.
 
 ### Everything else
 
@@ -307,7 +335,7 @@ sequenceDiagram
     A->>DB: audit_log (result = 'DENIED')
     A-->>U: { ok: false, code: 'FORBIDDEN' }
   else allowed
-    A->>P: transition(DRAFT|APPROVED → PUBLISHED)
+    A->>P: transition(APPROVED → PUBLISHED)
     P->>P: reject if owner_verification = 'OWNER_VERIFICATION_REQUIRED'
     P->>R: update status, published_at, published_by
     R->>DB: update page_sections
@@ -321,10 +349,28 @@ sequenceDiagram
   end
 ```
 
+**The legal transitions, printed here because nothing else prints them.** D5 fixes the enum
+(`DRAFT · REVIEW · APPROVED · PUBLISHED · ARCHIVED`) but not the edges between its values. These are the edges. Every pair not in this table is illegal, including `DRAFT → PUBLISHED`
+and `REVIEW → PUBLISHED`: there is **no** direct-publish path for any role, `content.publish`
+included.
+
+| From | To | Permission | Notes |
+|---|---|---|---|
+| `DRAFT` | `REVIEW` | `content.write` | Submitting for review is the only way out of `DRAFT` |
+| `REVIEW` | `APPROVED` | `content.review` | Approval. See *Open questions*, item 4 — this permission is not in the Phase 04 matrix |
+| `REVIEW` | `DRAFT` | `content.review` | Sending it back, with a reason |
+| `APPROVED` | `PUBLISHED` | `content.publish` | The transition the diagram above performs |
+| `APPROVED` | `DRAFT` | `content.publish` | Withdrawing an approval |
+| `PUBLISHED` | `ARCHIVED` | `content.publish` | Retire; the path stops resolving and returns `notFound()` |
+| `PUBLISHED` | `DRAFT` | `content.publish` | Unpublish. Same revalidation as a publish |
+| `ARCHIVED` | `DRAFT` | `content.write` | Revive for editing. Never straight back to `PUBLISHED` |
+
 Properties that are load-bearing:
 
-- **The transition table is enforced twice** — in `publishing.ts` and by a database trigger — so an
-  API caller cannot skip `REVIEW`.
+- **The transition table is enforced twice** — in `publishing.ts` and by the
+  `enforce_status_transition` database trigger, from one shared declaration — so an API caller
+  cannot skip `REVIEW`, and a direct `update … set status = 'PUBLISHED'` on a `DRAFT` row is rejected
+  by the database even if the service role issues it.
 - **Owner verification blocks publication.** A section carrying
   `owner_verification = 'OWNER_VERIFICATION_REQUIRED'` cannot be published until an owner or admin
   sets `VERIFIED` or the claim is removed. The refusal names the field (D10, SEED §2).
@@ -451,7 +497,7 @@ procedure live in `SCRAPER.md` §4. This document only fixes the reason the two 
 | Block registry | `lib/cms/registry.ts` | A new page section is one schema file, one renderer, one editor, one registry line — never a code change to a page |
 | Permission matrix | `lib/auth/permissions.ts` | The single declaration of roles and permissions; SQL is generated from it with a CI drift check |
 | Repository layer | `lib/supabase/repositories/**` | The only place a query exists, which is what makes RLS, Zod and caching uniformly applicable |
-| Outbound integrations | `lib/whatsapp/`, `lib/sheets/` | Both render Rivya data into someone else's surface, both allowlist their fields, both are one-way |
+| Outbound integrations | `lib/whatsapp/`, `lib/sheets/` | Both render Rivya data into someone else's surface, both allowlist their fields, both are one-way. What the Sheets writer may carry out of the research subsystem — and the columns it may never carry — is fixed in `SCRAPER.md` §13.5 |
 | Feature flags | `lib/flags/` | Lets an incomplete capability ship dark rather than living on a branch. Not a substitute for configuration (FEAT §32) |
 | Logging redactor | `lib/logging/redact.ts` | One implementation shared by system logs, environment checks and the documentation browser, so "never show a secret" is one function to review |
 
@@ -503,7 +549,7 @@ strategies decay into "everything is dynamic".
 | `/search` | Dynamic | — | `searchParams` are the state; `/api/search/suggest` answers with `s-maxage=60, stale-while-revalidate=300` |
 | `/privacy`, `/terms` | Static, tag-revalidated | `86400` | |
 | `app/(studio)/**` | Dynamic, `no-store` | — | Authenticated. Cached output would be a data-leak class of bug |
-| `app/api/**` | Dynamic, `no-store` | — | Including every cron route and the research image proxy |
+| `app/api/**` | Dynamic, `no-store` | — | Including every cron route. No route here fetches or re-serves a competitor image; there is nothing to cache because there is nothing to proxy (§1, `SCRAPER.md` §13.3) |
 | Draft mode (any path) | Dynamic | — | `draftMode()` bypasses the full-route and data caches entirely |
 
 ### The revalidation path
@@ -698,7 +744,9 @@ is enforced by `scripts/docs/check-doc-contract.mjs`.
 
 ## 13. Open questions for the canonical decisions
 
-Raised, not acted on. Nothing above knowingly diverges from `CANONICAL-DECISIONS.md`.
+Raised, not acted on. **One known divergence exists and is marked in place**: the eight `lib/`
+domains in §3 that D2 does not enumerate, recorded there as a pending amendment and raised as item 2
+below. Nothing else above diverges from `CANONICAL-DECISIONS.md`.
 
 1. **Permission spelling.** D5 names the roles but not the permission format.
    `PHASE-00-04.md`, `PHASE-10-15.md` and `PHASE-31-38.md` use `<domain>.<action>` (`content.write`);
@@ -706,19 +754,33 @@ Raised, not acted on. Nothing above knowingly diverges from `CANONICAL-DECISIONS
    uses the **dot** form because Phase 04 owns `lib/auth/permissions.ts`, which declares the
    `Permission` union and is the artefact CI drift-checks. Suggested amendment: fix the spelling in
    D5 beside the role list and correct the disagreeing documents once.
-2. **Is D2's `lib/` domain list closed?** D2 enumerates ten `lib/` subdomains.
-   `PHASE-10-15.md` adds `lib/site/` and `lib/catalog/`; `PHASE-23-30.md` adds `lib/search/`,
-   `lib/relations/` and `lib/bulk/`; `PHASE-31-38.md` adds `lib/sheets/`, `lib/ops/` and
-   `lib/docs/`. §3 above follows that precedent and lists them as siblings. Suggested amendment:
-   record in D2 that the list is a floor rather than a ceiling, and state the criterion for a new
-   domain (a distinct dependency or a distinct trust boundary).
-3. **No cron secret in D8.** D8 lists `REVALIDATE_SECRET` but nothing for scheduled invocation, so
-   seven cron routes reuse it and `app/api/cron/research` additionally requires Vercel's
-   `x-vercel-cron` header. One secret now guards cache invalidation and every scheduled job.
-   Suggested amendment: add `CRON_SECRET` to D8's server-only list.
-4. **No `content.review` permission in the Phase 04 matrix.** The CMS status workflow requires a
-   `REVIEW → APPROVED` transition permission that the matrix does not contain. Either add
-   `content.review` to the matrix, or state that `content.publish` covers approval.
+2. **Is D2's `lib/` domain list closed? — the one open divergence, and it blocks Phase 10.**
+   D2 enumerates ten `lib/` subdomains. `PHASE-10-15.md` adds `lib/site/` and `lib/catalog/`;
+   `PHASE-23-30.md` adds `lib/search/`, `lib/relations/` and `lib/bulk/`; `PHASE-31-38.md` adds
+   `lib/sheets/`, `lib/ops/` and `lib/docs/`. §3 records all eight as a **pending amendment**, with
+   the justification for each and the fallback if it is refused, rather than presenting them as
+   settled. Suggested amendment **A3** (A1 and A2 are taken): record in D2 that the list is a floor
+   rather than a ceiling, and fix the criterion for a new domain — *a distinct external dependency
+   or a distinct trust boundary*. **This must be decided before Phase 10 creates `lib/site/`**; it is
+   the only item in this list that blocks an implementation phase.
+3. **No cron secret in D8, and two cron authentication schemes in one deployment.** D8 lists
+   `REVALIDATE_SECRET` but nothing for scheduled invocation. Six of the seven cron routes
+   (`content-schedule`, `research-analytics`, `research-score`, `sheets-sync`, `analytics-snapshot`,
+   `log-retention`) reuse `REVALIDATE_SECRET`, so one secret guards both cache invalidation and every
+   scheduled job. The seventh, `app/api/cron/research`, authenticates on Vercel's `x-vercel-cron`
+   header **only** and deliberately does not reuse `REVALIDATE_SECRET` — reuse was rejected as
+   widening one secret's blast radius across two unrelated systems (`SCRAPER.md` §7 and §16 item 4).
+   That leaves the route with the widest reach — the only one that contacts third-party hosts — on
+   the scheme that cannot be tested outside Vercel. Suggested amendment: add `CRON_SECRET` to D8's
+   server-only list and normalise all seven onto it. Both documents point at this same amendment and
+   must move together.
+4. **No `content.review` permission in the Phase 04 matrix.** The transition table now printed in
+   §4.2 requires a permission for `REVIEW → APPROVED` and for `REVIEW → DRAFT`; `PHASE-05-09.md`
+   names it `content.review`, and the Phase 04 matrix contains only `content.read`, `content.write`
+   and `content.publish`. Either add `content.review` to the matrix (and to `lib/auth/permissions.ts`,
+   which CI drift-checks), or state in D5 that `content.publish` covers approval — in which case
+   §4.2's table takes `content.publish` on both `REVIEW` edges. The table is written the first way
+   because that is what the owning phase document specifies.
 5. **Where research snapshots live.** D1 fixes Cloudinary behind `MediaProvider`, and D6 governs
    media. Research HTML snapshots are evidence, not media, and must never be publicly deliverable,
    so §5.1 places them in a private Supabase Storage bucket outside the media seam. Confirm that

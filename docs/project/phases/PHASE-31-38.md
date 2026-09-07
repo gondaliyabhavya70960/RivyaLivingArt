@@ -15,16 +15,19 @@ step short of the catalogue.
 Phase 31 measures the corpus and lets a researcher compare parts of it. Phase 32 scores it with a
 formula a person can recompute by hand. Phase 33 tells you when two pictures are the same picture,
 and says plainly when it does not know. Phase 34 gives a human a place to write a design direction
-with the evidence attached. Phase 35 defines the two states that matter — shortlisted, confirmed —
-and the hand-operated gate between research and the real catalogue. Phase 36 pushes any of it into
+with the evidence attached. Phase 35 gives the two stages that already matter — `SHORTLISTED`,
+`CONFIRMED` — the records and screens they have been missing, and adds the one hand-operated gate
+between research and the real catalogue. Phase 36 pushes any of it into
 a Google Sheet, one way only. Phase 37 finally fills the Studio Analytics tab that Phase 05 stubbed,
 with a coverage figure beside every number. Phase 38 closes the System group: a read-only
 environment page that never shows a secret, a documentation browser that only serves an allowlist,
 and an operational log that is not the audit trail.
 
-Nothing in this block writes to a public route, publishes a competitor's text or image, creates a
-product, invents a price, dimension, material, lead time or capability, or moves the project any
-closer to checkout, payment or customer accounts.
+Nothing in this block writes to a public route, publishes a competitor's text or image, invents a
+price, dimension, material, lead time or capability, or moves the project any closer to checkout,
+payment or customer accounts. Nothing creates a product **automatically or by copying a field** —
+Phase 35's bridge is a button a person presses, carrying a slug they typed, and it is narrowed by
+name inside the isolation guard rather than merely promised in prose.
 
 ## Assumed predecessor surface (Phases 25–30)
 
@@ -88,7 +91,8 @@ directly:
 | Route notation | `/studio/...` = D4 Studio route; `app/api/...` = route handler; no D3 public route is touched anywhere in this block |
 | Data-layer rule | only `lib/supabase/repositories/**` may call `.from(...)` (Phase 03), enforced by `scripts/db/check-data-layer.mjs` |
 | Research isolation | I1–I4 above, already enforced by `scripts/research/check-research-isolation.mjs` (Phase 25) and `scripts/research/check-no-autoimport.mjs` (Phase 29). This block adds **no second guard**: Phase 33 and Phase 34 keep their new tables inside I1 without an allowlist entry, and Phase 35 amends the existing I4 rule *in that script* rather than writing a new check elsewhere |
-| Never automatic | no research row, score, similarity pair, direction brief or Sheet cell ever creates, edits, publishes or unpublishes a Rivya product, page or media row (FEAT §25) |
+| Never automatic | no research row, score, similarity pair, direction brief or Sheet cell ever creates, edits, publishes or unpublishes a Rivya product, page or media row (FEAT §25). Exactly two things in the block act without a person asking, and both only ever **prevent**: Phase 33's upload guard refuses a duplicate before insert, and Phase 35's stage trigger refuses a write made outside `stage.ts` |
+| Competitor image bytes | Never persisted, in any phase. Phase 33 fetches them transiently to hash them, behind four gates and an amendment the owner must accept before the flag may be turned on; nothing else in the block touches them. See Phase 33 and *Open questions* 12 |
 | Coverage rule | every analytic number this block renders carries `n`, its denominator and an `as of` timestamp. A metric with no data renders `UNAVAILABLE` with a named reason and is never estimated, interpolated or filled (FEAT §28) |
 | Never invented | product names presented as inventory, prices, dimensions, materials, lead times, delivered projects, clients, testimonials, awards, certifications, durability claims (D10, FEAT §38, SEED §32/§55) |
 | Competitor content | competitor titles, descriptions, prices and images are research references only (SEED §40). None is ever copied into a Rivya row, rendered on a public route, or exported to a customer-facing surface |
@@ -245,7 +249,7 @@ Phase 30 (`scale_band`, `is_large_format`, `longest_axis_mm`, and the workspace'
 | Coverage badge | `components/studio/research/CoverageBadge.tsx` | `n / denominator · coverage% · as of`; reused by 32, 33, 37 |
 | Charts | `components/patterns/charts/{BarSeries,BandStrip,Scatter,Sparkline}.tsx` | inline SVG, tokens only, `role="img"` + table fallback |
 | Dashboard panel | `components/studio/research/SourceCoveragePanel.tsx` | mounted on `/studio/research/dashboard` |
-| CLI | `scripts/research/analytics.ts` (`npm run research:analytics`) | `--snapshot`, `--scope=source:<slug>|set:<id>|corpus`, `--dry-run` |
+| CLI | `scripts/research/analytics.ts` (`npm run research:analytics`) | `--snapshot`, `--scope=source:<slug>\|set:<id>\|corpus`, `--dry-run` |
 | Cron | `app/api/cron/research-analytics/route.ts` | nightly snapshot; `REVALIDATE_SECRET` header, 401 without it |
 | Docs | `docs/architecture/SCRAPER.md`, `docs/studio/STUDIO_GUIDE.md`, `docs/architecture/DATA_MODEL.md` | analysis definitions, the compare screen, four new tables |
 | Tests | `tests/unit/analytics-assortment.test.ts`, `analytics-price.test.ts`, `analytics-dimensions.test.ts`, `analytics-coverage.test.ts`, `tests/e2e/research-compare.spec.ts` | fixed fixtures with hand-checked expected values |
@@ -632,9 +636,9 @@ explicitly**, rather than pretending the bytes already exist:
 | What gates it | `research.enabled` (the master kill switch), a new per-source `image_hashing_enabled bool not null default false` on `research_sources`, a source `policy_status = 'APPROVED'`, and the new `research_image_hashing` flag, default `false`. All four must be true; any one false and the run skips that source with a stated reason |
 | Where it is raised | *Open questions* 12, with the exact amendment text `PHASE-23-30.md` would need. Until the owner accepts it, `research_image_hashing` stays off and this phase ships the first-party half only |
 
-  A hash is not a copy: a 64-bit reduction cannot reconstruct an image and is not a substitute for
-  one. But a fetch is still a request to somebody else's server, which is why it is governed by the
-  politeness machinery rather than by a new one.
+A hash is not a copy: a 64-bit reduction cannot reconstruct an image and is not a substitute for
+one. But a fetch is still a request to somebody else's server, which is why it is governed by the
+politeness machinery rather than by a new one.
 
 **Depends on** — Phase 25 (`fetch.ts`, `robots.ts`, `rate-limit.ts`, `research_fetches`, the
 `research.enabled` kill switch), Phase 26 (`policy_status`, `image_extraction_mode`), Phase 27/28
@@ -648,8 +652,9 @@ Phase 19 (`feature_flags`).
   difference and DCT perceptual hashes over an 8×8 / 32×32 grayscale reduction — plus `hamming.ts`.
   Both take a decoded pixel buffer and return a `bit(64)` string; neither performs I/O, so the
   fetch, the decode and the discard all live in `lib/scraper/analytics/similarity/hash-run.ts`,
-  which is the only module in the block that touches image bytes. Hashes are stored as `bit(64)`
-  so PostgreSQL computes Hamming distance in SQL.
+  which is the only module anywhere in the repository that touches a **competitor's** image bytes.
+  (`lib/media/hashes.ts` handles Rivya's own uploads and never fetches anything.) Hashes are stored
+  as `bit(64)` so PostgreSQL computes Hamming distance in SQL.
 - **Two hash tables, on two sides of the isolation boundary.** Research-side hashes live in
   `research_image_hashes`, keyed to `research_products`. Rivya-side hashes live in
   `media_asset_hashes`, keyed to `media_assets` and owned by `lib/media/`. They are **never joined**:
@@ -660,7 +665,10 @@ Phase 19 (`feature_flags`).
   research product, or one `media_assets` row), computes missing hashes, then compares. Comparison
   is blocked into buckets by the top 16 bits of the pHash to avoid an O(n²) sweep; the bucket rule
   and its recall trade-off are documented, because a blocking scheme that silently misses pairs is
-  worse than a slow one.
+  worse than a slow one. A `MEDIA_ASSET` scope is the one scope that **stores no pair row**:
+  `research_similarity_pairs` references `research_image_hashes` on both sides by design, so a
+  Rivya-versus-research comparison returns its verdict to the caller and records only the run's
+  counts. There is nowhere in the schema for a cross-corpus pair to live, and that is deliberate.
 - **Hashing is idempotent by URL key, not by checksum.** A `source_image_key` already present for a
   `research_product_id` is not re-fetched; `--rehash` is the only way to make a second request for
   the same URL. This is both a correctness rule and a politeness one: a nightly re-run must cost the
@@ -733,40 +741,60 @@ Phase 19 (`feature_flags`).
 
 | Artefact | Path | Notes |
 |---|---|---|
-| Migration | `supabase/migrations/0310_phase33_similarity.sql` | hashes, runs, pairs, suppressions, bands enum |
-| Optional migration | `supabase/migrations/0311_phase33_embeddings.sql` | `research_image_embeddings`; guarded by `create extension if not exists vector` and skipped cleanly when unavailable |
-| RLS | `supabase/migrations/0312_phase33_similarity_rls.sql` | staff read; service-role writes |
-| Hashers | `lib/scraper/analytics/similarity/{dhash,phash,hamming}.ts` | pure, no I/O, exhaustively unit-tested |
+| Migration | `supabase/migrations/0310_phase33_similarity.sql` | `research_image_hashes`, runs, pairs, suppressions, bands enum, `research_sources.image_hashing_enabled` |
+| Migration | `supabase/migrations/0311_phase33_media_hashes.sql` | `media_asset_hashes` — a **first-party** table, in its own migration so a reviewer can see it is not part of the research schema |
+| Optional migration | `supabase/migrations/0312_phase33_embeddings.sql` | `research_image_embeddings`; guarded by `create extension if not exists vector` and skipped cleanly when unavailable |
+| RLS | `supabase/migrations/0313_phase33_similarity_rls.sql` | staff read; service-role writes; `media_asset_hashes` follows the Phase 06 `media_assets` read policy, not the research one |
+| Hashers | `lib/scraper/analytics/similarity/{dhash,phash,hamming}.ts` | pure, no I/O, take a decoded pixel buffer, exhaustively unit-tested |
+| Hash run | `lib/scraper/analytics/similarity/hash-run.ts` | the **only** module that fetches image bytes; uses Phase 25's `fetch.ts`/`robots.ts`/`rate-limit.ts`, writes a `research_fetches` row, discards the buffer |
 | Blocking | `lib/scraper/analytics/similarity/blocking.ts` | prefix bucketing; documented recall trade-off |
 | Bands | `lib/scraper/analytics/similarity/bands.ts` | the table above, as the single source of the thresholds |
 | Embeddings | `lib/scraper/analytics/similarity/embed.ts` | flag-gated; `model_name` + `dim` recorded |
-| Media guard | `lib/media/duplicate-guard.ts` | `checkMediaAgainstResearch()`; called by the Phase 06 upload path |
-| Repository | `lib/supabase/repositories/research-similarity.ts` | hashes, runs, pairs, suppressions |
+| Media hashes | `lib/media/hashes.ts` | first-party hashing of a `media_assets` upload; writes `media_asset_hashes`; nullable hashes for video |
+| Media guard | `lib/media/duplicate-guard.ts` | `checkMediaAgainstResearch(bytes)`; two repository reads, compared in TypeScript; called by the Phase 06 upload path **before** insert |
+| Repository | `lib/supabase/repositories/research-similarity.ts` | research hashes, runs, pairs, suppressions |
+| Repository | `lib/supabase/repositories/media-hashes.ts` | `media_asset_hashes` only; imports nothing from the research repositories |
 | Similarity route | `app/(studio)/studio/research/similarity/page.tsx` + `actions.ts` | launcher, history, cluster results |
 | Band legend | `components/studio/research/SimilarityLegend.tsx` | renders the band table verbatim, including the "does not mean" column |
-| Cluster view | `components/studio/research/SimilarityClusters.tsx` | thumbnails at ≤ 240 px, distance, source links, per-pair actions |
+| Cluster view | `components/studio/research/SimilarityClusters.tsx` | remote thumbnails at ≤ 240 px rendered straight from the source URL, distance, source links, per-pair actions |
 | CLI | `scripts/research/similarity.ts` (`npm run research:similarity`) | `--scope=`, `--method=phash\|embedding`, `--rehash`, `--dry-run` |
+| CLI | `scripts/media/hash-media.ts` (`npm run media:hash`) | backfills `media_asset_hashes` over the existing library, including the migrated manifest |
 | Sampling tool | `scripts/research/similarity-sample.ts` | draws the 200-pair stratified sample and writes a labelling CSV |
-| Flag | `lib/flags/flags.ts` | adds `advanced_similarity`, default `false` |
-| Docs | `docs/architecture/SCRAPER.md`, `docs/studio/STUDIO_GUIDE.md`, `docs/media/MEDIA_GUIDE.md` | bands, measured precision table, the upload guard |
-| Tests | `tests/unit/similarity-phash.test.ts`, `similarity-bands.test.ts`, `similarity-blocking.test.ts`, `tests/unit/media-duplicate-guard.test.ts`, `tests/e2e/research-similarity.spec.ts` | known-image fixtures with known distances |
+| Isolation guard | `scripts/research/check-research-isolation.mjs` (unchanged) | must still pass with an I1 allowlist of exactly two constraints — this phase adds no third |
+| Flags | `lib/flags/flags.ts` | adds `advanced_similarity` and `research_image_hashing`, both default `false` |
+| Docs | `docs/architecture/SCRAPER.md`, `docs/studio/STUDIO_GUIDE.md`, `docs/media/MEDIA_GUIDE.md`, `docs/ops/SECURITY.md` | bands, measured precision table, the upload guard, and the fetch-to-hash amendment with its four gates |
+| Tests | `tests/unit/similarity-phash.test.ts`, `similarity-bands.test.ts`, `similarity-blocking.test.ts`, `similarity-no-persist.test.ts`, `tests/unit/media-duplicate-guard.test.ts`, `tests/e2e/research-similarity.spec.ts` | known-image fixtures with known distances; the no-persist test is load-bearing |
 
 **Database**
 
 | Table | Change | Key columns |
 |---|---|---|
-| `research_image_hashes` | new | `id uuid pk`, `research_image_id uuid null references research_product_images(id) on delete cascade`, `media_asset_id uuid null references media_assets(id) on delete cascade`, `checksum text not null`, `phash bit(64) not null`, `dhash bit(64) not null`, `width int`, `height int`, `computed_at timestamptz not null default now()`; `check (num_nonnulls(research_image_id, media_asset_id) = 1)`; `unique (checksum)`; index on `substring(phash from 1 for 16)` |
-| `research_similarity_runs` | new | `id uuid pk`, `scope_type text not null check (scope_type in ('CORPUS','SOURCE','SET','PRODUCT','MEDIA_ASSET'))`, `scope_id uuid null`, `method text not null check (method in ('PHASH','EMBEDDING'))`, `model_name text null`, `status text not null check (status in ('RUNNING','SUCCEEDED','FAILED'))`, `images_hashed int not null default 0`, `pairs_considered bigint not null default 0`, `pairs_stored int not null default 0`, `started_at`, `finished_at`, `error_code text`, `created_by uuid` |
+| `research_sources` | altered | `+ image_hashing_enabled bool not null default false`; `check (image_hashing_enabled = false or policy_status = 'APPROVED')`, mirroring the Phase 25 constraint on `is_enabled`. Setting it requires `research.write` **and** `system.settings.write` — the same pair Phase 26 requires to enable a source at all, because both decisions commit Rivya to making requests of somebody else's server |
+| `research_image_hashes` | new | `id uuid pk`, `research_product_id uuid not null references research_products(id) on delete cascade`, `source_id uuid not null references research_sources(id) on delete cascade`, `source_image_url text not null`, `source_image_key text not null` (SHA-256 of the normalised URL), `position int not null default 0`, `checksum text not null` (SHA-256 of the fetched bytes), `phash bit(64) not null`, `dhash bit(64) not null`, `fetch_id uuid null references research_fetches(id) on delete set null`, `computed_at timestamptz not null default now()`; `unique (research_product_id, source_image_key)`; index on `checksum` (**not unique**); index on `substring(phash from 1 for 16)`; index `(source_id)` |
+| `media_asset_hashes` | new, **first-party** | `id uuid pk`, `media_asset_id uuid not null unique references media_assets(id) on delete cascade`, `kind text not null check (kind in ('IMAGE','VIDEO'))`, `checksum text not null`, `phash bit(64) null`, `dhash bit(64) null`, `computed_at timestamptz not null default now()`; index on `checksum` (**not unique**); partial index on `substring(phash from 1 for 16)` `where phash is not null`; `check ((kind = 'IMAGE') = (phash is not null))` |
+| `research_similarity_runs` | new | `id uuid pk`, `scope_type text not null check (scope_type in ('CORPUS','SOURCE','SET','PRODUCT','MEDIA_ASSET'))`, `scope_id uuid null`, `method text not null check (method in ('PHASH','EMBEDDING'))`, `model_name text null`, `status text not null check (status in ('RUNNING','SUCCEEDED','FAILED'))`, `images_fetched int not null default 0`, `images_hashed int not null default 0`, `sources_skipped jsonb not null default '{}'` (source slug → skip reason), `pairs_considered bigint not null default 0`, `pairs_stored int not null default 0`, `pairs_exact int not null default 0`, `started_at`, `finished_at`, `error_code text`, `created_by uuid` |
 | `research_similarity_pairs` | new | `id uuid pk`, `run_id uuid not null references research_similarity_runs(id) on delete cascade`, `left_hash_id uuid not null references research_image_hashes(id) on delete cascade`, `right_hash_id uuid not null references research_image_hashes(id) on delete cascade`, `method text not null`, `distance int null`, `cosine numeric(5,4) null`, `band similarity_band not null`, `created_at`; `check (left_hash_id < right_hash_id)`, `unique (run_id, left_hash_id, right_hash_id)` |
 | `research_similarity_suppressions` | new | `id uuid pk`, `left_hash_id uuid not null`, `right_hash_id uuid not null`, `reason text not null`, `created_at`, `created_by uuid not null`; `unique (left_hash_id, right_hash_id)` |
 | `research_image_embeddings` | new, optional | `id uuid pk`, `hash_id uuid unique not null references research_image_hashes(id) on delete cascade`, `model_name text not null`, `dim int not null`, `embedding vector not null`, `computed_at` |
 
 New enum: `similarity_band` = `NEAR_DUPLICATE · PROBABLE_VARIANT · WEAK · FORM_SIMILAR`.
-RLS: `select` requires `research.read`; run creation requires `research.similarity.run`;
-suppressions require `research.write`; hashes, pairs and embeddings are service-role writes. No
-`anon` policy. `research_image_hashes` is the one table in the block that references
-`media_assets` — it stores a hash of a Rivya asset for the upload guard, never a research row
-joined to a product row, so the D5 isolation rule is respected.
+
+**Why the tables are split, and why that is not a formality.** I1 forbids any `research_*` table
+from referencing `media_assets`, `check-research-isolation.mjs` reads
+`information_schema.referential_constraints` to prove it, and its allowlist holds exactly two
+constraint names with the note "there is never a third". A single `research_image_hashes` carrying
+`media_asset_id uuid references media_assets(id)` would fail that guard in CI — not as a style
+objection but as a failed build. So Rivya-side hashes live in `media_asset_hashes`, which is a
+first-party table owned by `lib/media/` and may legitimately reference `media_assets`; research-side
+hashes reference only research tables; and the cross-corpus comparison the guard performs happens in
+application code, over two ordinary reads. Neither table names the other in any constraint, view or
+query.
+
+RLS: on the research tables, `select` requires `research.read`; run creation requires
+`research.similarity.run`; suppressions require `research.write`; hashes, pairs and embeddings are
+service-role writes; no `anon` policy. `media_asset_hashes` is not a research table and follows the
+Phase 06 media policy instead: `select` requires `media.read`, writes are service-role only, and it
+likewise has no `anon` policy — a hash is not published content.
 
 **Studio surface** — fills `/studio/research/similarity`: a **Run** panel (scope, method, flag
 state, an explicit note when `advanced_similarity` is off), **History** (`DataTable` of runs with
@@ -775,10 +803,15 @@ not collapsible and is rendered above the first result, not behind a tooltip.
 
 **Public surface** — None.
 
-**Media** — None generated and no Higgsfield family consumed for display. The phase *hashes* the
-250 migrated manifest assets so the upload guard can also detect a Higgsfield asset being
-re-uploaded as if it were new photography; it renders none of them on this screen and creates no
-new asset.
+**Media** — None generated and no Higgsfield family consumed for display (D6, FEAT §33). The phase
+writes a `media_asset_hashes` row for each of the manifest's **250 migrated assets** so the upload
+guard can detect a Higgsfield asset being re-uploaded as if it were new photography — but it
+computes a **perceptual** hash for only the **224 images** (`counts.image` in
+`data/higgsfield/asset-manifest.json`). The **26 videos** (`counts.video`) are out of scope for
+dHash/pHash: an 8×8 / 32×32 grayscale reduction is defined for a still frame, and picking one frame
+of a video and calling it the video's hash would be a fabricated measurement. A video row therefore
+carries `kind = 'VIDEO'`, its SHA-256 `checksum`, and `phash`/`dhash` null, and the guard catches a
+re-uploaded video only by exact bytes. The screen renders none of the 250 and creates no new asset.
 
 **Risks**
 
@@ -788,34 +821,67 @@ new asset.
 | Precision numbers get invented to make the feature look good | No precision figure may exist in the repository unless `similarity-sample.ts` produced the sample it came from; the docs table has mandatory `sample_size` and `sampled_on` columns and CI fails if a precision cell is populated without them |
 | The corpus grows and comparison becomes O(n²) | Prefix blocking with a documented recall trade-off; `pairs_considered` is recorded per run so a regression is visible; runs are CLI/action-triggered, never on page load |
 | Blocking silently loses true matches | `similarity-blocking.test.ts` runs an unblocked brute-force comparison over a 2,000-image fixture and asserts recall ≥ 0.98 for `NEAR_DUPLICATE`; the measured recall is printed in the docs |
-| A competitor image becomes Rivya media | The Phase 06 upload path calls `checkMediaAgainstResearch()` and blocks on `NEAR_DUPLICATE`; `media-duplicate-guard.test.ts` uploads a known research image and asserts rejection with a named reason and an `audit_log` row |
+| A competitor image becomes Rivya media | The Phase 06 upload path calls `checkMediaAgainstResearch()` **before** the insert and blocks on `NEAR_DUPLICATE`; `media-duplicate-guard.test.ts` uploads a known research image and asserts rejection with a named reason, an `audit_log` row, no `media_assets` row and no Cloudinary object |
 | Embeddings from two different models are compared as if they shared a space | A run may only compare embeddings with matching `model_name`; a mismatch fails the run with `error_code = 'EMBEDDING_MODEL_MISMATCH'` |
-| Storing thumbnails of other people's photography becomes a de-facto image archive | Thumbnails are rendered from the source URL at ≤ 240 px with `referrerpolicy="no-referrer"` and are never persisted by Rivya; the phase stores hashes only |
+| The fetch-to-hash amendment quietly widens into an image cache | `similarity-no-persist.test.ts` runs a full hash pass against a local fixture server and asserts: no file written under the process working directory, no Supabase Storage object created, no Cloudinary call made, no `media_assets` row inserted, and no column anywhere holding more than 64 bits of image-derived data. `hash-run.ts` is the only module permitted to import an image decoder, asserted by a CI grep |
+| Image fetching hammers a source, or fetches a path robots disallows | Image requests go through the same `fetch.ts`/`robots.ts`/`rate-limit.ts` path as page requests, write a `research_fetches` row each, and honour the source's `request_delay_ms`, `rate_limit_rpm`, `concurrency`, `Crawl-delay` and circuit breaker. Four gates must all be true before a single request is made: `research.enabled`, `research_image_hashing`, `policy_status = 'APPROVED'` and `image_hashing_enabled` |
+| A byte-identical pair is deduplicated away and the duplicate is never found | `checksum` is indexed but not unique on either table; one hash row exists per `(research_product_id, source_image_key)`; exact matches are stored as `NEAR_DUPLICATE` pairs at distance 0 and counted in `pairs_exact` |
+| Storing thumbnails of other people's photography becomes a de-facto image archive | Thumbnails are rendered by the browser straight from the source URL at ≤ 240 px with `referrerpolicy="no-referrer"`; Rivya's servers proxy nothing and persist nothing; the phase stores hashes only |
 
 **Verification**
 
-1. `npx supabase db push` — `0310` and `0312` apply; `0311` applies where `vector` is available and
-   is skipped with a notice where it is not, without failing the run.
-2. `npm run test:unit -- similarity-phash similarity-bands similarity-blocking` — includes fixture
+1. `npx supabase db push` — `0310`, `0311` and `0313` apply; `0312` applies where `vector` is
+   available and is skipped with a notice where it is not, without failing the run.
+2. `node scripts/research/check-research-isolation.mjs` — passes. The I1 allowlist still holds
+   exactly the two Phase 26/28 constraint names; `research_image_hashes` references only
+   `research_products`, `research_sources` and `research_fetches`, and `media_asset_hashes`
+   references only `media_assets`. Temporarily add
+   `alter table research_image_hashes add column media_asset_id uuid references media_assets(id);`
+   and confirm the guard fails naming the third constraint; revert. `npm run test:unit --
+   research-isolation` — passes (I1–I4).
+3. `npm run test:unit -- similarity-phash similarity-bands similarity-blocking` — includes fixture
    pairs with hand-known distances: identical file (0), re-encode at 80% JPEG quality (≤ 2), 10%
    centre crop (≤ 6), different object same background (≥ 14).
-3. `npm run research:similarity -- --scope=corpus --method=phash` over the Phase 31 fixture corpus;
-   `psql "$DATABASE_URL" -c "select band, count(*) from research_similarity_pairs group by band"` —
-   no row with a distance above 18 exists.
-4. `psql "$DATABASE_URL" -c "select count(*) from research_similarity_pairs where left_hash_id >=
+4. `npm run test:unit -- similarity-no-persist` — a full hash pass against a local fixture server
+   leaves no file, no storage object, no Cloudinary call and no `media_assets` row. Temporarily make
+   `hash-run.ts` write the buffer to a temp file and confirm the test fails; revert.
+5. **The four gates, one at a time.** With `research_image_hashing` off, run
+   `npm run research:similarity -- --scope=corpus --method=phash` → zero HTTP requests (fetch spy),
+   `images_fetched = 0`, and every source listed in `sources_skipped` with reason `FLAG_OFF`. Turn
+   the flag on but leave `image_hashing_enabled` false → same result with reason `SOURCE_OPT_OUT`.
+   Set `image_hashing_enabled = true` on a source whose `policy_status` is `UNREVIEWED` → rejected
+   by the check constraint. Turn `research.enabled` off → reason `KILL_SWITCH`.
+6. Enable all four for one fixture source, then
+   `npm run research:similarity -- --scope=source:fixture --method=phash` — `research_fetches` gains
+   one row per fetched image URL, each with a `robots_decision` and `storage_key is null`; a URL
+   under a robots-disallowed path records `DISALLOWED` and produces no request; the observed request
+   spacing is ≥ the source's `request_delay_ms`.
+7. `psql "$DATABASE_URL" -c "select band, count(*) from research_similarity_pairs group by band"` —
+   no row with a distance above 18 exists. Then plant two research products in **different sources**
+   carrying the identical image file and re-run: two `research_image_hashes` rows exist with the same
+   `checksum` (proving `checksum` is not unique), and exactly one `research_similarity_pairs` row
+   joins them with `band = 'NEAR_DUPLICATE'` and `distance = 0`, counted in `pairs_exact`.
+8. `psql "$DATABASE_URL" -c "select count(*) from research_similarity_pairs where left_hash_id >=
    right_hash_id"` — zero, proving the ordering constraint prevents mirrored duplicates.
-5. Open `/studio/research/similarity`; assert the band legend renders all four bands with their
+9. Open `/studio/research/similarity`; assert the band legend renders all four bands with their
    "does not mean" text, and that `PRECISION NOT YET MEASURED` is shown before the sample exists.
-6. `npm run research:similarity -- --scope=corpus` twice — the second run stores zero new hashes
-   (`images_hashed = 0`) and the same pair count, proving hashing is checksum-idempotent.
-7. Attempt to upload a file byte-identical to a research image through `/studio/media/all` → the
-   upload is rejected, the reason names the research source, and an `audit_log` row exists with
-   `result = 'DENIED'`.
-8. With `advanced_similarity` off, POST the embedding-run action directly → 403/409 with a flag
-   reason. Turn it on as `owner`, re-run → succeeds, or fails with a clear `pgvector` unavailable
-   message where the extension is absent.
-9. `npx playwright test tests/e2e/research-similarity.spec.ts` — run, cluster, dismiss a pair,
-   assert it does not return on the next run, at 1920 and 390.
+10. `npm run research:similarity -- --scope=source:fixture` twice — the second run reports
+    `images_fetched = 0` and `images_hashed = 0` and makes zero HTTP requests (fetch spy), proving
+    hashing is idempotent by `source_image_key`. Re-run with `--rehash` → requests are made again and
+    the row count is unchanged.
+11. `npm run media:hash` over the migrated manifest —
+    `select kind, count(*), count(phash) from media_asset_hashes group by kind` returns
+    `IMAGE 224 224` and `VIDEO 26 0`, matching `counts.image` and `counts.video` in the manifest.
+12. Attempt to upload a file byte-identical to a research image through `/studio/media/all` → the
+    upload is rejected before insert, the reason names the research source, `select count(*) from
+    media_assets` is unchanged, and an `audit_log` row exists with `result = 'DENIED'`. Repeat with a
+    file byte-identical to a migrated manifest **video** → rejected on exact checksum against
+    `media_asset_hashes`, with a reason that names the existing Rivya asset id.
+13. With `advanced_similarity` off, POST the embedding-run action directly → 403/409 with a flag
+    reason. Turn it on as `owner`, re-run → succeeds, or fails with a clear `pgvector` unavailable
+    message where the extension is absent.
+14. `npx playwright test tests/e2e/research-similarity.spec.ts` — run, cluster, dismiss a pair,
+    assert it does not return on the next run, at 1920 and 390.
 
 **Exit criteria**
 
@@ -827,14 +893,29 @@ new asset.
       `similarity-sample.ts`, with sample size and date recorded.
 - [ ] Blocking recall for `NEAR_DUPLICATE` is measured against brute force and documented.
 - [ ] Pairs beyond the `WEAK` ceiling are discarded; mirrored pairs cannot exist.
-- [ ] Hashing is idempotent by checksum; a second run over an unchanged corpus stores nothing new.
-- [ ] The Rivya upload guard blocks a near-duplicate of a research image and audits the refusal.
+- [ ] `checksum` is non-unique on both hash tables; two byte-identical images from two sources form a
+      `NEAR_DUPLICATE` pair at distance 0 rather than collapsing into one row.
+- [ ] Hashing is idempotent by `source_image_key`; a second run over an unchanged corpus makes zero
+      HTTP requests and stores nothing new.
+- [ ] Research hashes and Rivya hashes live in separate tables, neither referencing the other's
+      corpus; `check-research-isolation.mjs` passes with an I1 allowlist of exactly two constraints,
+      demonstrated to fail when a third is added.
+- [ ] Image bytes are fetched only through the Phase 25 politeness path, only behind all four gates,
+      and are never persisted in any form — proven by `similarity-no-persist.test.ts`, demonstrated
+      to fail when a write is introduced.
+- [ ] The amendment to `PHASE-23-30.md`'s no-download rule is written down, raised as *Open
+      questions* 12, and `research_image_hashing` ships `false` until the owner accepts it.
+- [ ] The Rivya upload guard blocks a near-duplicate of a research image **before** the
+      `media_assets` insert and audits the refusal.
+- [ ] `media_asset_hashes` covers all 250 manifest assets, with perceptual hashes on the 224 images
+      and null hashes plus exact-checksum coverage on the 26 videos.
 - [ ] `advanced_similarity` ships `false`, and embeddings are unreachable while it is off.
 - [ ] No label anywhere in the UI, schema or docs asserts that two research products are the same
       product or that one copies another.
-- [ ] No competitor image is persisted by Rivya; results link out and render at thumbnail scale.
-- [ ] Phase-specific D9 evidence: docs updated = `SCRAPER.md`, `STUDIO_GUIDE.md`, `MEDIA_GUIDE.md`;
-      tests run = four unit suites and `research-similarity.spec.ts`; next phase = 34.
+- [ ] No competitor image is persisted by Rivya; results link out and render at thumbnail scale
+      directly from the source.
+- [ ] Phase-specific D9 evidence: docs updated = `SCRAPER.md`, `STUDIO_GUIDE.md`, `MEDIA_GUIDE.md`,
+      `SECURITY.md`; tests run = five unit suites and `research-similarity.spec.ts`; next phase = 34.
 - [ ] All ten points of the **Shared D9 completion checklist** verified and recorded.
 
 ---
@@ -890,9 +971,11 @@ history pattern), Phase 05 (`DrawerForm`, `StatusPill`, `ConfirmDialog`).
 **Out of scope**
 
 - Creating a product. There is no code path from `research_direction_briefs` to `products`, and
-  `check-data-layer.mjs` gains an assertion that no file importing the direction repository also
-  imports the products repository. Product creation is a Phase 35 action taken from the confirmed
-  list, by hand.
+  `scripts/research/check-research-isolation.mjs` — the existing I4 guard, extended in place, not a
+  new script — gains an assertion that no file importing the direction repository also imports the
+  products repository. Product creation is a Phase 35 action taken from the confirmed list, by hand.
+- A foreign key from a brief to `categories`. The category is a checked slug; see the note under
+  **Database**.
 - Any generated prose. No language model, no template sentence, no "suggested description". A brief
   with empty prose sections is a valid `DRAFT` and stays empty until a person writes it.
 - Rivya prices, dimensions, materials, lead times, tolerances or capability statements. The schema
@@ -925,13 +1008,22 @@ history pattern), Phase 05 (`DrawerForm`, `StatusPill`, `ConfirmDialog`).
 
 | Table | Change | Key columns |
 |---|---|---|
-| `research_direction_briefs` | new | `id uuid pk`, `slug citext unique not null`, `title text not null`, `intent text`, `scale_intent text`, `form_language text`, `material_direction text`, `finish_direction text`, `constraints text`, `open_questions text`, `not_doing text`, `target_category_id uuid null references categories(id)`, `status content_status not null default 'DRAFT' check (status in ('DRAFT','REVIEW','APPROVED','ARCHIVED'))`, `owner_verification owner_verification not null default 'NOT_REQUIRED'`, `fact_classification fact_classification not null default 'EDITORIAL_COPY'`, `approved_at`, `approved_by`, `created_at`, `created_by`, `updated_at`, `updated_by` |
+| `research_direction_briefs` | new | `id uuid pk`, `slug citext unique not null`, `title text not null`, `intent text`, `scale_intent text`, `form_language text`, `material_direction text`, `finish_direction text`, `constraints text`, `open_questions text`, `not_doing text`, `target_category_slug text null check (target_category_slug is null or target_category_slug in ('furniture','collectible-design','3d-resin','wall-statement-art','preservation','decor','gifts'))`, `status content_status not null default 'DRAFT' check (status in ('DRAFT','REVIEW','APPROVED','ARCHIVED'))`, `owner_verification owner_verification not null default 'NOT_REQUIRED'`, `fact_classification fact_classification not null default 'EDITORIAL_COPY'`, `approved_at`, `approved_by`, `created_at`, `created_by`, `updated_at`, `updated_by` |
 | `research_direction_brief_evidence` | new | `id uuid pk`, `brief_id uuid not null references research_direction_briefs(id) on delete cascade`, `evidence_type text not null check (evidence_type in ('COMPARISON_SET','ANALYTICS_SNAPSHOT','OPPORTUNITY_SCORE','SIMILARITY_PAIR','RESEARCH_PRODUCT','RESEARCH_NOTE','MEDIA_ASSET'))`, `evidence_id uuid not null`, `captured jsonb not null default '{}'`, `rationale text not null`, `position int not null default 0`, `created_at`, `created_by uuid not null`; `unique (brief_id, evidence_type, evidence_id)`; `check (length(btrim(rationale)) > 0)` |
 | `research_direction_brief_revisions` | new | `id uuid pk`, `brief_id uuid not null references research_direction_briefs(id) on delete cascade`, `revision int not null`, `body jsonb not null`, `note text`, `created_at`, `created_by uuid not null`; `unique (brief_id, revision)` |
 
-`target_category_id` is the one link to a public taxonomy table and is deliberate: a brief is filed
-under one of the seven D3 categories so Phase 37 can report direction coverage per category. It
-carries no research identifier into the public schema, and no public read path touches this table.
+**`target_category_slug` carries no foreign key, and that is the whole point.** A brief is filed
+under one of the seven D3 categories so Phase 37 can report direction coverage per category — but
+`categories.id` is already the target of the **second and last** allowlisted research→public
+reference (`research_products.matched_category_id`, Phase 28), and `PHASE-23-30.md` states plainly
+that "there is never a third". `scripts/research/check-research-isolation.mjs` reads
+`information_schema.referential_constraints` against a two-name allowlist, so
+`references categories(id)` here would fail CI, not merely offend the rule. The column is therefore
+a plain `text` slug, constrained to D3's fixed seven values by a check constraint — D3 fixes that
+list, so the check is as durable as a foreign key and costs no coupling — and resolved to a category
+row, when a screen needs one, by the direction repository alone. Whether the owner would rather
+amend D5 and permit a real third reference is raised as *Open questions* 13; nothing below depends
+on the answer.
 
 The rationale requirement is not decorative — evidence attached without a stated reason is how a
 brief turns into a scrapbook. The `check` above makes an empty rationale impossible.
@@ -994,7 +1086,14 @@ attached as mood reference.
    no price, dimension or material presented as a Rivya specification.
 9. `npx playwright test tests/e2e/research-direction.spec.ts` — create, write, attach, revise,
    restore a revision, approve, print-preview, at 1920 and 390.
-10. `grep -rn "research_direction" app/\(site\)/ lib/cms/ components/sections/` — no match.
+10. `node scripts/research/check-research-isolation.mjs` — passes; the three new tables add no
+    referential constraint to any public table, so the I1 allowlist still holds exactly two entries
+    (I3's grep for `research_` under `app/(site)/**`, `lib/cms/**` and `components/sections/**`
+    already covers the manual grep this step used to perform). Temporarily change
+    `target_category_slug` to `target_category_id uuid references categories(id)` and confirm the
+    guard fails naming the third constraint; revert.
+11. `psql "$DATABASE_URL" -c "update research_direction_briefs set target_category_slug='sofas'"` —
+    rejected by the check constraint; `'furniture'` is accepted.
 
 **Exit criteria**
 
@@ -1007,6 +1106,9 @@ attached as mood reference.
 - [ ] Observed competitor figures always render with coverage and the observed-in-research label,
       on screen and in print.
 - [ ] The brief schema contains no Rivya price, dimension, material or lead-time field.
+- [ ] The brief schema adds no foreign key to any public table: the target category is a checked
+      slug, and `check-research-isolation.mjs` still passes with a two-entry I1 allowlist,
+      demonstrated to fail when a real reference is added.
 - [ ] Approval requires `research.direction.approve`, is audited, and records approver and time.
 - [ ] Mood media is limited to existing manifest concept assets; nothing is generated and no
       competitor image is attached.
@@ -1020,63 +1122,128 @@ attached as mood reference.
 
 ## PHASE 35 — Shortlist + Confirmation
 
-**Goal** — The FEAT §23 pipeline gets its last two states and, more importantly, its gate. A
-research row can be shortlisted — "worth a second look" — and later confirmed — "Rivya has decided
-to pursue a direction informed by this". Confirmation is a decision recorded about a *research row*;
-it creates nothing. The only bridge to the catalogue is a separate, deliberate, single-purpose
-action that a person with `catalog.write` takes from the confirmed list: it opens a new `products`
-row in `DRAFT` carrying a category and a slug the person types, and nothing else. No competitor
-title, description, price, currency, dimension, material, availability, lead time or image crosses
-that line, in any code path, ever. After this phase the pipeline is complete end to end and the
-catalogue is still only fillable by hand.
+**Goal** — The FEAT §23 pipeline gets its **workspace and its gate**. The two stages that matter —
+`SHORTLISTED` and `CONFIRMED` — already exist: `PHASE-23-30.md` fixes `research_stage` at exactly
+seven values and Phase 29 already ships Shortlist and Confirm as two of its nine review actions.
+What does not exist is anywhere to *work*: no record of why a row was shortlisted or by whom, no
+decision note behind a confirmation, no list a merchandiser can sit down in front of, and no way to
+get from a confirmed research row to a Rivya product without leaving the Studio. This phase adds
+those records and those two screens, and then adds the one deliberate, hand-operated bridge to the
+catalogue: a person with `catalog.write` opens a new `products` row in `DRAFT` carrying a category
+and a slug **they type**, and nothing else. No competitor title, description, price, currency,
+dimension, material, availability, lead time or image crosses that line, in any code path, ever.
+After this phase the pipeline is complete end to end and the catalogue is still only fillable by
+hand.
 
-**Depends on** — Phase 28/29 (`research_pipeline_state`, review actions), Phase 32 (scores, as a
-sort order on the shortlist), Phase 34 (briefs, linkable from a confirmation), Phase 24 (bulk
-selection machinery), Phase 14 (`products` and its repository), Phase 04 (`research.confirm`,
-`catalog.write`, audit).
+**What this phase does *not* add, stated first because the temptation is real.** No new stage. No
+new enum value. No second transition log beside `research_pipeline_events`. No second state machine
+beside `lib/scraper/core/stage.ts`. `PHASE-23-30.md` is authoritative for all four, and this block's
+own rule at the top of the document says the repair for a disagreement is a rename here, never a
+second table. Archival of a decision is a column on the decision record —
+`research_confirmations.archived_at` — not an eighth stage, because a row whose confirmation was
+archived is still a confirmed research reference, and FEAT §23's ladder ends at `CONFIRMED`.
+
+**Depends on** — Phase 25 (`research_stage`, `research_disposition`, `lib/scraper/core/stage.ts`,
+`research_pipeline_events`), Phase 29 (the nine review actions in
+`lib/scraper/workflows/review-actions.ts`, `research_review_actions`, `research_tags`), Phase 32
+(scores, as a sort order on the shortlist), Phase 34 (briefs, linkable from a confirmation), Phase 24
+(bulk selection machinery and `lib/bulk/operations/research/`), Phase 14 (`products` and its
+repository), Phase 04 (`research.confirm`, `catalog.write`, audit).
 
 **Scope**
 
-- **The state machine**, implemented once in `lib/scraper/workflows/pipeline.ts` as a transition
-  table and a single `transition(rowId, to, actor, reason)` function that every UI, bulk action and
-  CLI path calls. Direct `update research_products set pipeline_state = …` is forbidden and blocked
-  by a trigger that rejects a state change unless the transactional flag set by the function is
-  present.
+- **The movements, expressed in the columns that already exist.** `stage` is the ladder;
+  `disposition` is the verdict; they are orthogonal, and a row carries one of each. Every movement
+  below goes through Phase 25's `lib/scraper/core/stage.ts` — extended with the entries this phase
+  needs, **not** replaced — which is the only writer of `research_products.stage`, emits a
+  `research_pipeline_events` row for every stage move, and is called by Phase 29's
+  `review-actions.ts`, by the bulk operations and by the CLI alike. There is no `transition()`
+  beside it and no `lib/scraper/workflows/pipeline.ts`.
 
-| From | Allowed to | Permission | Reason required |
-|---|---|---|---|
-| `REVIEW` | `SHORTLISTED`, `REJECTED`, `DUPLICATE`, `IGNORED` | `research.write` | on `REJECTED`, `DUPLICATE` |
-| `SHORTLISTED` | `CONFIRMED`, `REJECTED`, `IGNORED`, `REVIEW` | `research.confirm` for `CONFIRMED`, else `research.write` | on `CONFIRMED`, `REJECTED` |
-| `CONFIRMED` | `ARCHIVED_DECISION`, `SHORTLISTED` | `research.confirm` | always |
-| `REJECTED` · `DUPLICATE` · `IGNORED` | `REVIEW` | `research.write` | always |
-| any | any | — | a transition not in this table raises `InvalidTransitionError` |
+| Column | From | Allowed to | Permission | Reason required |
+|---|---|---|---|---|
+| `stage` | `MATCHED` · `REVIEW` | `SHORTLISTED` | `research.confirm` (Phase 29's Shortlist action) | no |
+| `stage` | `SHORTLISTED` | `CONFIRMED` | `research.confirm` | **yes** — it becomes `research_confirmations.decision_note` |
+| `stage` | `SHORTLISTED` | `REVIEW` | `research.confirm` | yes — closes the shortlist entry |
+| `stage` | `CONFIRMED` | `SHORTLISTED` | `research.confirm` | yes — archives the confirmation and reopens the entry |
+| `disposition` | `NONE` | `IGNORED` | `research.confirm` | no |
+| `disposition` | `NONE` | `REJECTED` | `research.confirm` | **yes** |
+| `disposition` | `NONE` | `DUPLICATE` | `research.confirm` | **yes**, plus a surviving row for `duplicate_of_id` |
+| `disposition` | `IGNORED` · `REJECTED` · `DUPLICATE` | `NONE` | `research.confirm` | yes |
+| either | any | anything not in this table | — | `stage.ts` raises `InvalidStageTransitionError` |
 
+  Two properties of that table are load-bearing. First, **a disposition never moves a stage and a
+  stage never sets a disposition**: rejecting a shortlisted row leaves it at `SHORTLISTED` with
+  `disposition = 'REJECTED'`, exactly as Phase 29 specifies, so the corpus keeps the history of what
+  it once was. Second, **`stage.ts` is extended, not forked**: the new rows above are added to its
+  existing table, and `tests/unit/pipeline-transitions.test.ts` reads that table from the module and
+  asserts it matches this document cell for cell.
+- **The database enforces what the convention already asserted.** `PHASE-23-30.md` states that no
+  code path sets `stage` outside `stage.ts`, but nothing stops an ad-hoc `psql` update. This phase
+  adds `guard_research_stage_writer()`, a trigger on `research_products` that rejects a change to
+  `stage` or `disposition` unless the transaction-local flag `stage.ts` sets is present. It enforces
+  the **existing** rule at a second layer; it defines no transitions of its own and holds no
+  transition table.
 - **Shortlist entries**, `research_shortlist_entries`: the row, who shortlisted it, why, the tags
   applied, the score at the moment of shortlisting (`captured jsonb`), and an optional link to a
-  direction brief. A row leaving `SHORTLISTED` closes the entry (`closed_at`, `closed_reason`)
+  direction brief. A row leaving stage `SHORTLISTED` closes the entry (`closed_at`, `closed_reason`)
   rather than deleting it, so the shortlist has a history.
-- **Confirmations**, `research_confirmations`: the decision record. `decision_note` is mandatory and
-  non-empty. `brief_id` optionally links the direction brief that argued for it. `created_product_id`
-  is a **nullable uuid with no foreign key**, written only when the manual bridge action is used,
-  read only by Studio research screens, and never joined into any public read path — the D5
-  isolation rule is honoured by keeping the reference on the research side and forbidding the join
-  rather than by pretending the link does not exist.
-- **The manual bridge.** One server action, `startProductFromConfirmation`, with all of the
-  following required before it will run: the row is `CONFIRMED`; the actor holds `catalog.write`;
-  the actor types a slug and picks a category; the actor ticks an explicit acknowledgement whose
-  label is seeded copy stating that no competitor data is being imported. It inserts a `products`
-  row with `slug`, `category_id`, `status = 'DRAFT'`, `price_state = 'PRICE_ON_REQUEST'` and
-  `title` set to the slug's title case — a placeholder the owner must replace — and writes nothing
-  else. It then writes `created_product_id` back to the confirmation, an `audit_log` row and an
-  `activity_events` row.
+- **Confirmations**, `research_confirmations`: the decision record behind a `CONFIRMED` stage.
+  `decision_note` is mandatory and non-empty. `brief_id` optionally links the direction brief that
+  argued for it. `archived_at`/`archived_reason` retire a decision without touching the stage — the
+  row remains a confirmed research reference, and the partial unique index means a new decision can
+  then be recorded. `created_product_id` is a **nullable uuid with no foreign key**, written only
+  when the manual bridge action is used, read only by Studio research screens, and never joined into
+  any public read path — the D5 isolation rule is honoured by keeping the reference on the research
+  side and forbidding the join rather than by pretending the link does not exist.
+- **The manual bridge, and its reconciliation with I4.** One server action,
+  `startProductFromConfirmation`, with all of the following required before it will run: the row's
+  stage is `CONFIRMED` with an unarchived confirmation; the actor holds `catalog.write`; the actor
+  types a slug and picks a category; the actor ticks an explicit acknowledgement whose label is
+  seeded copy stating that no competitor data is being imported. It inserts a `products` row with
+  `slug`, `category_id`, `status = 'DRAFT'`, `price_state = 'PRICE_ON_REQUEST'` and `title` set to
+  the slug's title case — a placeholder the owner must replace — and writes nothing else. It then
+  writes `created_product_id` back to the confirmation, an `audit_log` row and an `activity_events`
+  row.
+
+  **This action, as specified, fails invariant I4 as it is literally written.**
+  `PHASE-23-30.md` says: "There is no code path — no server action, no script, no SQL function, no
+  Studio button — that writes to `products` from a `research_*` read", enforced by
+  `check-research-isolation.mjs` and `tests/unit/research-isolation.test.ts`; and its Phase 29
+  Confirm action says confirming "creates no product, no draft product". The bridge copies no
+  competitor field, so it does not breach FEAT §25 or SEED §32 — but it does read a
+  `research_confirmations` row and then insert into `products`, and the guard would fail the build.
+  Asserting compliance would be a lie. Instead:
+
+  1. The needed narrowing is written out in *Open questions* 11 as a proposed amendment: I4 becomes
+     "no **automatic** and no **field-copying** path", with one named carve-out.
+  2. `scripts/research/check-research-isolation.mjs`'s I4 rule is **edited in place** — this phase
+     touches no other guard script — to encode the carve-out exactly: the single symbol
+     `startProductFromConfirmation`, exported from
+     `app/(studio)/studio/research/confirmed/actions.ts`, is the only permitted writer of `products`
+     that also imports a research repository. The guard fails on a second such symbol, on the symbol
+     appearing in any other file, and on that file importing any research field-reading helper beyond
+     `getConfirmationForBridge(id): { id, stage, archived_at }` — a deliberately narrow projection
+     that returns no competitor text at all.
+  3. Until the owner accepts the amendment, the bridge ships behind the `research_product_bridge`
+     flag, default `false`, and `/studio/research/confirmed` renders the button in a disabled state
+     with the reason stated.
+
+  The guard is the specification here: the amendment describes the carve-out in English, and
+  `check-research-isolation.mjs` is where it becomes true.
 - **Field-provenance test.** `tests/unit/confirmation-no-import.test.ts` builds a research row whose
   every text field is a unique sentinel string, runs the bridge, and asserts no sentinel appears in
   any column of the created `products` row, in `product_media`, `product_materials` or
   `product_collections`. It is the phase's load-bearing test.
 - **Bulk actions** (FEAT §20/§25) over the explorer and shortlist: shortlist, reject, mark duplicate,
-  ignore, assign tags, confirm. Each runs through `transition()`, each requires a reason where the
-  table says so, each is capped at 200 rows per invocation, each is confirmed through
-  `ConfirmDialog`, and each writes one `audit_log` row per row changed.
+  ignore, assign tags, confirm. These are the Phase 24 registrations Phase 29 already enabled in
+  `lib/bulk/operations/research/` — this phase adds the two new operations the shortlist screens need
+  (close entry, archive confirmation) to that existing registry rather than a second bulk path. Each
+  goes through `stage.ts`, each requires a reason where the table above says so, each is capped at
+  200 rows per invocation, each is confirmed through `ConfirmDialog`, and each writes one `audit_log`
+  row and one `research_pipeline_events` row per row whose stage moved. Per `PHASE-23-30.md`'s
+  permission mapping, any bulk disposition of more than one row requires `research.confirm` **and**
+  `bulk.execute` — so the roles that can operate the bulk bar here are owner, admin and merchandiser.
 - `/studio/research/shortlist` and `/studio/research/confirmed` are filled: filterable tables, the
   score column with its confidence, entry age, tags, the reason text, and the per-row actions above.
   `/studio/research/confirmed` additionally shows whether a Rivya product was started, and links to
@@ -1092,19 +1259,23 @@ selection machinery), Phase 14 (`products` and its repository), Phase 04 (`resea
   checklist and a human publish action like any other product.
 - Prices. The created row is `PRICE_ON_REQUEST`; the observed competitor price is not written, not
   suggested and not shown on the product editor.
-- Deleting research rows. `REJECTED`, `DUPLICATE` and `IGNORED` are states, not deletions; the
-  corpus keeps its history so change detection stays meaningful.
+- Deleting research rows. `REJECTED`, `DUPLICATE` and `IGNORED` are **dispositions**, not deletions
+  and not stages; the corpus keeps its history so change detection stays meaningful.
+- Any new stage, any eighth `research_stage` value, any second transition log and any second state
+  machine. `research_stage`, `research_disposition`, `research_pipeline_events` and
+  `lib/scraper/core/stage.ts` are Phase 25's and stay Phase 25's.
 - Sheets export of the shortlist — Phase 36 defines it.
 
 **Deliverables**
 
 | Artefact | Path | Notes |
 |---|---|---|
-| Migration | `supabase/migrations/0330_phase35_pipeline_states.sql` | enum values `SHORTLISTED`, `CONFIRMED`, `ARCHIVED_DECISION`, each in its own statement |
-| Migration | `supabase/migrations/0331_phase35_shortlist_confirmation.sql` | entries, confirmations, transition guard trigger |
-| RLS | `supabase/migrations/0332_phase35_rls.sql` | staff read; confirm gated to `research.confirm` |
-| State machine | `lib/scraper/workflows/pipeline.ts` | transition table, `transition()`, `InvalidTransitionError` |
-| Bridge action | `lib/supabase/repositories/research-confirmations.ts` + `app/(studio)/studio/research/confirmed/actions.ts` | `startProductFromConfirmation` — the only writer of the bridge |
+| Migration | `supabase/migrations/0330_phase35_shortlist_confirmation.sql` | entries, confirmations, the stage-writer guard trigger. **No enum is altered**: `SHORTLISTED` and `CONFIRMED` already exist in `research_stage` from Phase 25's `0230` |
+| RLS | `supabase/migrations/0331_phase35_rls.sql` | staff read; confirm gated to `research.confirm` |
+| Stage machine | `lib/scraper/core/stage.ts` (**extended**, Phase 25) | the new rows in its existing transition table; `InvalidStageTransitionError`; sets the transaction flag the trigger checks |
+| Review actions | `lib/scraper/workflows/review-actions.ts` (**extended**, Phase 29) | Shortlist and Confirm now write a `research_shortlist_entries` / `research_confirmations` row alongside the existing `research_review_actions` row |
+| Bulk operations | `lib/bulk/operations/research/{close-entry,archive-confirmation}.ts` | added to the Phase 24 registry beside Phase 29's five |
+| Bridge action | `lib/supabase/repositories/research-confirmations.ts` + `app/(studio)/studio/research/confirmed/actions.ts` | `startProductFromConfirmation` — the only writer of the bridge; the repository exposes `getConfirmationForBridge(id)` returning `{ id, stage, archived_at }` and nothing else |
 | Repository | `lib/supabase/repositories/research-shortlist.ts` | entries, close, tag application |
 | Row schemas | `lib/supabase/schemas/research-shortlist.ts`, `research-confirmation.ts` | Zod; `decision_note` min length 1 |
 | Shortlist route | `app/(studio)/studio/research/shortlist/page.tsx` + `actions.ts` | table, filters, bulk bar |
@@ -1112,56 +1283,71 @@ selection machinery), Phase 14 (`products` and its repository), Phase 04 (`resea
 | Bulk bar | `components/studio/research/PipelineBulkBar.tsx` | 200-row cap, reason field, confirm dialog |
 | Bridge dialog | `components/studio/research/StartProductDialog.tsx` | slug, category, acknowledgement checkbox, no other field |
 | Seeded copy | `content/seed/studio-help.ts` (extended) | the acknowledgement label and the shortlist/confirmed helper copy (SEED §40) |
-| Data-layer check | `scripts/db/check-data-layer.mjs` (extended) | fails if `research_` appears under `app/(site)/**`, `lib/cms/**` or `components/sections/**` |
-| Docs | `docs/architecture/SCRAPER.md`, `docs/project/BUSINESS_RULES.md`, `docs/studio/STUDIO_GUIDE.md` | the state table, the gate, the bridge's exact field list |
-| Tests | `tests/unit/pipeline-transitions.test.ts`, `confirmation-no-import.test.ts`, `pipeline-guard-trigger.test.ts`, `tests/e2e/research-shortlist-confirm.spec.ts` | the transition matrix, the sentinel test, the trigger |
+| Isolation guard | `scripts/research/check-research-isolation.mjs` (**I4 rule edited in place**) | encodes the single-symbol carve-out for `startProductFromConfirmation`; fails on a second such symbol, on the symbol outside its one file, or on that file importing any research reader beyond `getConfirmationForBridge`. No rule is added to `check-data-layer.mjs`; I3 already covers the public-route containment this phase used to claim |
+| Flag | `lib/flags/flags.ts` | adds `research_product_bridge`, default `false`, until the I4 amendment is accepted |
+| Docs | `docs/architecture/SCRAPER.md`, `docs/project/BUSINESS_RULES.md`, `docs/studio/STUDIO_GUIDE.md` | the movement table, the gate, the bridge's exact field list, the I4 carve-out |
+| Tests | `tests/unit/pipeline-transitions.test.ts`, `confirmation-no-import.test.ts`, `stage-guard-trigger.test.ts`, `research-isolation.test.ts` (**extended**), `tests/e2e/research-shortlist-confirm.spec.ts` | the movement matrix read from `stage.ts`, the sentinel test, the trigger, the I4 carve-out |
 
 **Database**
 
 | Table | Change | Key columns |
 |---|---|---|
-| `research_pipeline_state` | enum extended | adds `SHORTLISTED`, `CONFIRMED`, `ARCHIVED_DECISION` via `alter type … add value if not exists`, one statement per migration transaction |
+| `research_stage` · `research_disposition` | **unchanged** | Seven stages and four dispositions, exactly as Phase 25's `0230` created them. This phase alters no type and adds no value |
 | `research_shortlist_entries` | new | `id uuid pk`, `research_product_id uuid not null references research_products(id) on delete cascade`, `reason text not null check (length(btrim(reason)) > 0)`, `captured jsonb not null default '{}'` (score, confidence, model version at entry), `brief_id uuid null references research_direction_briefs(id) on delete set null`, `opened_at timestamptz not null default now()`, `opened_by uuid not null`, `closed_at timestamptz null`, `closed_reason text null`, `closed_by uuid null`; partial unique index `(research_product_id) where closed_at is null` |
-| `research_confirmations` | new | `id uuid pk`, `research_product_id uuid not null references research_products(id) on delete cascade`, `decision_note text not null check (length(btrim(decision_note)) > 0)`, `brief_id uuid null references research_direction_briefs(id) on delete set null`, `confirmed_at timestamptz not null default now()`, `confirmed_by uuid not null`, `created_product_id uuid null`, `product_started_at timestamptz null`, `product_started_by uuid null`, `archived_at timestamptz null`, `archived_reason text null`; partial unique index `(research_product_id) where archived_at is null`; **no foreign key on `created_product_id`** — see the note below |
-| `research_pipeline_transitions` | new | `id uuid pk`, `research_product_id uuid not null`, `from_state research_pipeline_state`, `to_state research_pipeline_state not null`, `reason text null`, `actor_id uuid not null`, `actor_role user_role not null`, `occurred_at timestamptz not null default now()`; append-only, no update or delete policy |
+| `research_confirmations` | new | `id uuid pk`, `research_product_id uuid not null references research_products(id) on delete cascade`, `decision_note text not null check (length(btrim(decision_note)) > 0)`, `brief_id uuid null references research_direction_briefs(id) on delete set null`, `confirmed_at timestamptz not null default now()`, `confirmed_by uuid not null`, `created_product_id uuid null`, `product_started_at timestamptz null`, `product_started_by uuid null`, `archived_at timestamptz null`, `archived_reason text null`; partial unique index `(research_product_id) where archived_at is null`; `check ((archived_at is null) = (archived_reason is null))`; **no foreign key on `created_product_id`** — see the note below |
+
+**Archival is a column, not a stage.** A retired decision sets `archived_at` and `archived_reason`
+on the confirmation; the research row keeps stage `CONFIRMED`, because it remains a confirmed
+research reference and FEAT §23's ladder has no rung for "was confirmed once". The partial unique
+index means archiving frees the row for a fresh decision. This is why no `ARCHIVED_DECISION` value
+is added to `research_stage`, and why the seven-value enum in `PHASE-23-30.md` stands untouched.
 
 `created_product_id` deliberately carries no `references products(id)`. D5 states that research
-tables never join directly to public product tables; a foreign key would create exactly that
-coupling, would cascade a product deletion into research history, and would let a careless query
-join the two. Instead the column is an opaque identifier, the research repository resolves it with a
-second query when a Studio screen asks, and `check-data-layer.mjs` forbids any file outside
-`lib/supabase/repositories/research-*.ts` from resolving it. This reading of D5 is raised in
-*Open questions*.
+tables never join directly to public product tables, and I1's allowlist is closed at two constraint
+names; a foreign key would breach both, would cascade a product deletion into research history, and
+would let a careless query join the two. Instead the column is an opaque identifier, the research
+repository resolves it with a second query when a Studio screen asks, and
+`check-research-isolation.mjs` forbids any file outside `lib/supabase/repositories/research-*.ts`
+from resolving it. This reading of D5 is raised in *Open questions* 3.
 
-Transition guard, verbatim:
+Stage-writer guard, verbatim. It **enforces the Phase 25 rule** that only `lib/scraper/core/stage.ts`
+writes `stage`; it defines no transitions and holds no table of its own:
 
 ```sql
-create or replace function public.guard_pipeline_transition() returns trigger
+create or replace function public.guard_research_stage_writer() returns trigger
   language plpgsql as $$
 begin
-  if new.pipeline_state is distinct from old.pipeline_state
-     and coalesce(current_setting('rivya.pipeline_transition', true), '') <> 'on' then
-    raise exception 'pipeline_state on research_product % may only be changed by lib/scraper/workflows/pipeline.ts',
+  if (new.stage is distinct from old.stage
+      or new.disposition is distinct from old.disposition)
+     and coalesce(current_setting('rivya.stage_transition', true), '') <> 'on' then
+    raise exception 'stage/disposition on research_product % may only be changed by lib/scraper/core/stage.ts',
       old.id;
   end if;
   return new;
 end $$;
 ```
 
-RLS: `select` requires `research.read`. Shortlist writes require `research.write`; confirmations
-and `ARCHIVED_DECISION` require `research.confirm`; the bridge additionally requires `catalog.write`
-checked in the server action before the insert. `research_pipeline_transitions` is insert-only from
-the transition function and readable by `research.read`. No `anon` policy on any of the four.
+RLS: `select` on both new tables requires `research.read`. Writes on both require
+`research.confirm` — **not** `research.write` — because `PHASE-23-30.md`'s permission mapping puts
+all nine FEAT §25 dispositions, Shortlist and Confirm included, behind `research.confirm` (owner,
+admin, merchandiser), and a `researcher` operates the pipeline while a `merchandiser` judges its
+output. Archiving a confirmation is a write on `research_confirmations` and inherits the same
+requirement. The bridge additionally requires `catalog.write`, checked in the server action before
+the insert. No `anon` policy on either table.
 
 **Studio surface** — fills `/studio/research/shortlist` (open entries, score, confidence, age, tags,
 reason, bulk bar) and `/studio/research/confirmed` (decision note, confirming actor, linked brief,
-product-started state and link, archive action). Adds the bulk bar to the Phase 30 explorer and
-large-format workspace. The bridge dialog is the only place in the entire Studio where a research
+product-started state and link, archive action). Phase 29 already put the bulk toolbar on
+`/studio/research/explorer`; this phase adds its two new operations to that existing toolbar and
+mounts the same component on the Phase 30 large-format workspace. The bridge dialog is the only
+place in the entire Studio where a research
 screen can create a catalogue row, and it renders the seeded acknowledgement text above an unticked
 checkbox that the submit button depends on.
 
-**Public surface** — None. The extended `check-data-layer.mjs` rule makes that structural rather
-than conventional.
+**Public surface** — None. Invariant I3, already enforced by `check-research-isolation.mjs` since
+Phase 25, makes that structural rather than conventional; this phase writes no new containment rule
+because the one that exists already covers `app/(site)/**`, `lib/cms/**`, `lib/catalog/**`,
+`lib/seo/**`, `components/sections/**` and `content/**`.
 
 **Media** — None. No asset is consumed, created or attached; the created product row has no
 `hero_media_id` and shows the Phase 14 missing-media state until the owner attaches real photography.
@@ -1170,9 +1356,11 @@ than conventional.
 
 | Risk | Mitigation |
 |---|---|
-| Competitor fields are copied into the created product, now or in a later "convenience" change | `confirmation-no-import.test.ts` sentinels every research text field and asserts none reaches `products` or its join tables; the bridge's field list is written into `BUSINESS_RULES.md` and the test is named in the exit criteria |
-| A bulk action moves 4,000 rows and nobody can explain why | 200-row cap per invocation, mandatory reason where the transition table says so, one `audit_log` row per row, and a `research_pipeline_transitions` entry per row |
-| Pipeline states are changed by an ad-hoc SQL update or a stray repository call | The guard trigger rejects any change made outside `transition()`; `pipeline-guard-trigger.test.ts` attempts a direct update and asserts the exception |
+| Competitor fields are copied into the created product, now or in a later "convenience" change | `confirmation-no-import.test.ts` sentinels every research text field and asserts none reaches `products` or its join tables; the bridge repository exposes only `getConfirmationForBridge(id) → { id, stage, archived_at }`, so there is no competitor string in scope to copy; the bridge's field list is written into `BUSINESS_RULES.md` and the test is named in the exit criteria |
+| The I4 carve-out widens into a general research→product write path | The guard encodes **one** symbol in **one** file with **one** permitted reader; a second writer, a move of the symbol, or a wider import fails `check-research-isolation.mjs`. The `research_product_bridge` flag ships `false` until the owner accepts the amendment, so the carve-out is inert by default |
+| A bulk action moves 4,000 rows and nobody can explain why | 200-row cap per invocation, mandatory reason where the movement table says so, one `audit_log` row per row, and one `research_pipeline_events` row per row whose stage moved |
+| Stage or disposition is changed by an ad-hoc SQL update or a stray repository call | `guard_research_stage_writer()` rejects any change made without the flag `stage.ts` sets; `stage-guard-trigger.test.ts` attempts a direct update and asserts the exception. The trigger enforces the Phase 25 rule; it does not restate the transition table |
+| A second pipeline grows beside the first | This phase creates no enum value, no transition table and no transition log; `pipeline-transitions.test.ts` imports the table from `lib/scraper/core/stage.ts` and asserts it matches this document, so a fork would have to be committed to that one module in plain sight |
 | A confirmed row is read as a Rivya product | `/studio/research/confirmed` labels every row as a research decision; the created product is a `DRAFT` with a placeholder title and no price; the Phase 14 readiness checklist blocks publication until a human fills it |
 | The shortlist becomes a graveyard nobody prunes | Entries carry `opened_at`; the table sorts by age by default and the research dashboard shows a count of entries open longer than 60 days |
 | Deleting a product orphans a confirmation's reference | Intentional: `created_product_id` has no FK, so a deleted product leaves the historical decision intact; the Studio resolves it and renders "product no longer exists" rather than a broken link |
@@ -1180,56 +1368,93 @@ than conventional.
 
 **Verification**
 
-1. `npx supabase db push` — `0330`–`0332` apply from clean; the three enum additions are each in
-   their own statement and the migration replays without a "unsafe use of new value" error.
-2. `npm run test:unit -- pipeline-transitions pipeline-guard-trigger` — every cell of the transition
-   table is exercised, including the illegal transitions that must raise.
-3. `npm run test:unit -- confirmation-no-import` — the sentinel test passes. Temporarily add
-   `title: row.title_raw` to the bridge insert and confirm the test fails; revert.
-4. `psql "$DATABASE_URL" -c "update research_products set pipeline_state='CONFIRMED' where id='<id>'"`
-   — rejected by `guard_pipeline_transition` naming the row.
-5. In Studio as `researcher`: shortlist a row with a reason → entry opens, transition row written.
-   Attempt to confirm → 403 with a `DENIED` audit row (researcher lacks `research.confirm`).
-6. As `merchandiser`: confirm with a decision note → `research_confirmations` row exists, state is
-   `CONFIRMED`, `activity_events` and `audit_log` rows exist. Attempt to confirm with an empty note
-   → rejected in the action and by the check constraint.
-7. Run the bridge: type slug `demo-console`, pick `furniture`, tick the acknowledgement → a
-   `products` row exists with `status='DRAFT'`, `price_state='PRICE_ON_REQUEST'`,
-   `title='Demo Console'`, `price_from_minor is null`, `dimensions is null`, and zero rows in
-   `product_media`, `product_materials`, `product_collections`.
-8. Untick the acknowledgement → the submit button is disabled, and a direct server-action POST
-   without the acknowledgement field returns a validation error.
-9. Select 250 rows in the explorer and bulk-reject → the action refuses above 200 with a message
-   naming the cap; at 200 it succeeds and writes 200 audit rows and 200 transition rows.
-10. `npm run check:data-layer` — passes, including the new `research_` containment rule. Add
+1. `npx supabase db push` — `0330`/`0331` apply from clean and replay as a no-op. Then
+   `psql "$DATABASE_URL" -c "select unnest(enum_range(null::research_stage))"` — **seven** rows, the
+   FEAT §23 seven, unchanged; and `select unnest(enum_range(null::research_disposition))` — four.
+   This phase's migrations must contain no `alter type`, asserted by
+   `grep -c "alter type" supabase/migrations/033*.sql` returning zero.
+2. `npm run test:unit -- pipeline-transitions stage-guard-trigger` — `pipeline-transitions` imports
+   the transition table from `lib/scraper/core/stage.ts` and asserts it equals the movement table in
+   this document cell for cell, including the illegal movements that must raise
+   `InvalidStageTransitionError`. Assert also that no module named
+   `lib/scraper/workflows/pipeline.ts` exists.
+3. `npm run test:unit -- confirmation-no-import` — the sentinel test passes. Temporarily widen
+   `getConfirmationForBridge` to return `title_normalized` and copy it into the insert; confirm the
+   test fails **and** `check-research-isolation.mjs` fails on the wider projection; revert both.
+4. `psql "$DATABASE_URL" -c "update research_products set stage='CONFIRMED' where id='<id>'"` —
+   rejected by `guard_research_stage_writer` naming the row. Repeat with
+   `set disposition='REJECTED'` — likewise rejected.
+5. In Studio as `researcher`: attempt to shortlist a row → **403** with a `DENIED` audit row.
+   `PHASE-23-30.md` puts all nine FEAT §25 dispositions behind `research.confirm`, which a
+   `researcher` does not hold; a researcher operates the pipeline, a merchandiser judges it.
+6. As `merchandiser`: shortlist a row with a reason → a `research_shortlist_entries` row opens,
+   `stage` is `SHORTLISTED`, and one `research_pipeline_events` row records `REVIEW → SHORTLISTED`.
+   Confirm with a decision note → a `research_confirmations` row exists, `stage` is `CONFIRMED`, a
+   second `research_pipeline_events` row records the move, the shortlist entry is closed, and
+   `activity_events` and `audit_log` rows exist. Attempt to confirm with an empty note → rejected in
+   the action and by the check constraint.
+7. Reject that same confirmed row → `disposition = 'REJECTED'` and **`stage` is still `CONFIRMED`**,
+   proving the two columns are orthogonal and that a disposition is not a stage.
+8. Archive the confirmation with a reason → `archived_at` and `archived_reason` are set, `stage` is
+   **unchanged at `CONFIRMED`**, no `research_pipeline_events` row is written (no stage moved), and a
+   fresh confirmation on the same row is now permitted by the partial unique index.
+9. Turn `research_product_bridge` on as `owner`, then run the bridge: type slug `demo-console`, pick
+   `furniture`, tick the acknowledgement → a `products` row exists with `status='DRAFT'`,
+   `price_state='PRICE_ON_REQUEST'`, `title='Demo Console'`, `price_from_minor is null`,
+   `dimensions is null`, and zero rows in `product_media`, `product_materials`,
+   `product_collections`. With the flag off, the button renders disabled and a direct POST is
+   refused with the flag reason.
+10. Untick the acknowledgement → the submit button is disabled, and a direct server-action POST
+    without the acknowledgement field returns a validation error.
+11. Select 250 rows in the explorer and bulk-reject → the action refuses above 200 with a message
+    naming the cap; at 200 it succeeds and writes 200 audit rows (and zero
+    `research_pipeline_events` rows, because a rejection moves no stage).
+12. `node scripts/research/check-research-isolation.mjs` and
+    `npm run test:unit -- research-isolation` — both pass with the edited I4 rule. Prove the
+    carve-out is exactly one symbol wide: (a) add a second server action that inserts into `products`
+    while importing a research repository → the guard fails naming it; (b) move
+    `startProductFromConfirmation` into another file → the guard fails; (c) add
     `import { getConfirmation } from '@/lib/supabase/repositories/research-confirmations'` to a file
-    under `app/(site)/` and confirm the check fails; revert.
-11. `npx playwright test tests/e2e/research-shortlist-confirm.spec.ts` — review → shortlist →
+    under `app/(site)/` → I3 fails. Revert all three.
+13. `npm run check:data-layer` — passes; no `.from(` outside the repositories. This phase adds no
+    rule to it.
+14. `npx playwright test tests/e2e/research-shortlist-confirm.spec.ts` — review → shortlist →
     confirm → start product → open the product in `/studio/catalog/products` and assert it is empty
     but for slug, title placeholder and category, at 1920 and 390.
 
 **Exit criteria**
 
-- [ ] `SHORTLISTED`, `CONFIRMED` and `ARCHIVED_DECISION` exist and every transition goes through one
-      function, enforced by a database trigger.
-- [ ] The transition table in this document, `pipeline.ts` and `SCRAPER.md` agree exactly, checked by
-      a unit test that reads the table from the module.
+- [ ] `research_stage` still holds exactly seven values and `research_disposition` exactly four; this
+      phase alters no enum and creates no transition table or transition log.
+- [ ] Every stage movement goes through `lib/scraper/core/stage.ts`, emits a
+      `research_pipeline_events` row, and is enforced at the database by
+      `guard_research_stage_writer()`.
+- [ ] The movement table in this document, the table inside `lib/scraper/core/stage.ts` and the one
+      in `SCRAPER.md` agree exactly, checked by a unit test that reads the table from the module.
+- [ ] Stage and disposition remain orthogonal: rejecting a row changes no stage, and archiving a
+      confirmation changes no stage.
 - [ ] Every confirmation carries a non-empty decision note and a named confirming actor.
 - [ ] The bridge writes exactly `slug`, `title` (from the slug), `category_id`, `status='DRAFT'` and
       `price_state='PRICE_ON_REQUEST'`, and nothing else — proven by the sentinel test, which is
       demonstrated to fail when the barrier is removed.
 - [ ] The bridge requires `catalog.write`, an explicit typed slug, a chosen category and a ticked
       acknowledgement whose copy is seeded, not hard-coded.
+- [ ] The I4 carve-out is written into `check-research-isolation.mjs` as one named symbol in one
+      named file with one permitted reader, demonstrated to fail on a second writer, on a move and on
+      a wider projection; the proposed amendment is recorded in *Open questions* 11 and
+      `research_product_bridge` ships `false` until it is accepted.
 - [ ] No foreign key exists from `research_confirmations` to `products`, and no file outside the
       research repositories resolves `created_product_id`.
-- [ ] `check-data-layer.mjs` fails on any `research_` reference in the public route group, `lib/cms`
-      or `components/sections`, demonstrated by a temporary violation.
-- [ ] Bulk actions are capped at 200 rows, require a reason where the table says so, and write one
-      audit row and one transition row per affected row.
-- [ ] Rejected, duplicate and ignored rows are retained, never deleted.
+- [ ] I3 still fails on any `research_` reference in the public route group, `lib/cms`,
+      `lib/catalog`, `lib/seo`, `components/sections` or `content`, demonstrated by a temporary
+      violation. No new containment rule is added to `check-data-layer.mjs`.
+- [ ] Bulk actions are capped at 200 rows, require a reason where the movement table says so, and
+      write one audit row per affected row and one pipeline event per stage moved.
+- [ ] Rejected, duplicate and ignored rows are retained, never deleted, and remain at the stage they
+      had reached.
 - [ ] No competitor text, price, dimension, material or image reaches any Rivya table.
 - [ ] Phase-specific D9 evidence: docs updated = `SCRAPER.md`, `BUSINESS_RULES.md`,
-      `STUDIO_GUIDE.md`, `DATA_MODEL.md`; tests run = three unit suites and
+      `STUDIO_GUIDE.md`, `DATA_MODEL.md`; tests run = four unit suites and
       `research-shortlist-confirm.spec.ts`; next phase = 36.
 - [ ] All ten points of the **Shared D9 completion checklist** verified and recorded.
 
@@ -1265,12 +1490,12 @@ self-limiting — three consecutive failures pause a definition rather than retr
 
 | Entity | Source | Default columns | Permission to run |
 |---|---|---|---|
-| `RESEARCH_PRODUCTS` | `research_products` + source | source, title, category, price, currency, dimensions, state, first seen, last seen, URL | `integrations.sheets.run` + `research.read` |
+| `RESEARCH_PRODUCTS` | `research_products` + source | source, `title_normalized`, mapped category, `price_state`, `price_min_minor`, `price_max_minor`, currency, `dimensions_mm`, `dimension_parse_state`, `stage`, `disposition`, `first_seen_at`, `last_seen_at`, `source_url` | `integrations.sheets.run` + `research.read` |
 | `COMPARISON_SET` | Phase 31 set + its latest snapshot | member, source, category, price band, longest axis, coverage | same |
 | `OPPORTUNITY_SCORES` | Phase 32 scores + components | research product, score, confidence, state, model version, one column per signal contribution | same |
 | `SHORTLIST` | Phase 35 open entries | research product, reason, tags, score at entry, opened, opened by | same |
 | `CONFIRMED` | Phase 35 confirmations | research product, decision note, confirmed by, confirmed at, product started | same |
-| `DIRECTION_BRIEFS` | Phase 34 | title, status, target category, evidence count, approver, updated | same |
+| `DIRECTION_BRIEFS` | Phase 34 | title, status, `target_category_slug`, evidence count, approver, updated | same |
 | `INQUIRIES` | Phase 20 | reference code, kind, pipeline status, created, city, enquiry type, WhatsApp state | `integrations.sheets.run` + `inquiries.export` |
 
 - **PII discipline.** Name, phone and email are available to the `INQUIRIES` export only, only when
@@ -1317,7 +1542,7 @@ self-limiting — three consecutive failures pause a definition rather than retr
 | Migration | `supabase/migrations/0340_phase36_sheets.sql` | definitions, runs, pause state |
 | RLS | `supabase/migrations/0341_phase36_sheets_rls.sql` | manage vs run split; no `anon` policy |
 | Seed | `supabase/migrations/0342_phase36_default_definitions.sql` | the seven definitions above, all `MANUAL`, all `includes_pii = false`, all paused off but flag-gated |
-| Client | `lib/sheets/client.ts` | service-account JWT, token cache, `spreadsheets` scope only; `import 'server-only'` first line |
+| Client | `lib/sheets/client.ts` | service-account JWT, token cache, `spreadsheets` scope only; `import 'server-only'` first line. **`lib/sheets/` is not in D2's domain list** — raised in *Open questions* 4 alongside Phase 38's `lib/ops/` |
 | Writer | `lib/sheets/write.ts` | staging-tab write, chunking, atomic swap |
 | Retry | `lib/sheets/retry.ts` | backoff, jitter, `Retry-After`, non-retryable classes |
 | Definitions | `lib/sheets/definitions.ts` | entity → column allowlist → row builder; one builder per entity |
@@ -1390,9 +1615,14 @@ from every allowlist.
    retried, the Studio banner names the sharing step, and no response body is stored.
 7. Force three consecutive failures → `paused_at` is set, the cron skips the definition, and the
    Studio shows the paused banner with a **Resume** action gated to `integrations.sheets.manage`.
-8. Create an `INQUIRIES` definition as `admin` with `includes_pii = true`; run it as `merchandiser`
-   holding `integrations.sheets.run` but not `inquiries.export` → refused with a `DENIED` audit row.
-9. Attempt to set `includes_pii = true` as `merchandiser` → refused.
+8. Create an `INQUIRIES` definition as `admin` with `includes_pii = true`; run it as **`researcher`**
+   — who holds `integrations.sheets.run` per this block's permission table and does **not** hold
+   `inquiries.export` in the Phase 04 matrix → refused with a `DENIED` audit row and no network call.
+   The actor here must not be `merchandiser`: the Phase 04 matrix grants `inquiries.export` to owner,
+   admin **and** merchandiser, so a merchandiser can never produce this refusal. Run the same
+   definition as `merchandiser` → it succeeds, which is the paired assertion.
+9. Attempt to set `includes_pii = true` as `merchandiser` → refused (`integrations.sheets.manage` is
+   owner and admin only).
 10. `curl -X POST $NEXT_PUBLIC_SITE_URL/api/cron/sheets-sync` without the secret → 401; with it →
     only scheduled, enabled, unpaused definitions run.
 11. `npx playwright test tests/e2e/sheets-studio.spec.ts` — create a definition, pick columns, run,
@@ -1461,19 +1691,23 @@ card registry, the Analytics tab shell).
 | 8 | `media_coverage` | first-party | share of published entities with hero, gallery ≥ 3, a mobile slot and non-empty alt text; share of `media_assets` used in the CMS; concept-asset share | always |
 | 9 | `assortment` | competitive | Phase 31 assortment snapshot per source and category | needs ≥ 1 successful run in 30 days |
 | 10 | `price_architecture` | competitive | Phase 31 percentiles and bands, per currency | needs ≥ 12 priced rows in that currency |
-| 11 | `dimensions` | competitive | Phase 31 axis percentiles above the confidence floor | needs ≥ 12 rows at `dimension_confidence ≥ 0.6` |
-| 12 | `materials` | competitive | frequency of normalised material terms across research rows | needs materials captured by ≥ 1 enabled adapter |
+| 11 | `dimensions` | competitive | Phase 31 axis percentiles over rows whose dimensions parsed | needs ≥ 12 rows at `dimension_parse_state = 'PARSED'` |
+| 12 | `materials` | competitive | frequency of `material_tokens` across research rows | needs materials captured by ≥ 1 enabled adapter |
 | 13 | `resin_styles` | competitive | frequency of normalised resin-style terms | `UNAVAILABLE: no enabled adapter captures resin style` until an adapter declares the capability |
 | 14 | `colours` | competitive | frequency of normalised colour terms | `UNAVAILABLE` on the same rule |
 | 15 | `customization` | competitive | share of research rows offering customisation | needs the attribute captured by ≥ 1 adapter |
 | 16 | `production_model` | competitive | made-to-order vs stocked, where stated by the source | `UNAVAILABLE` on the same rule |
 | 17 | `opportunity_scores` | competitive | Phase 32 score distribution, per category, with the active model version | needs an `ACTIVE` model and ≥ 1 scored row |
-| 18 | `source_freshness` | competitive | per source: last successful run, rows captured, error rate, staleness band | always |
+| 18 | `source_freshness` | competitive | per source, read from `research_source_health_v`: `last_run_at`, `last_run_status`, `success_rate_7d`, `queue_depth`, `health` (`HEALTHY · DEGRADED · FAILING · STALE · DISABLED`), plus rows captured | always |
 
 - **Adapter capability declaration.** Metrics 12–16 depend on whether an adapter extracts a field at
-  all. Each Phase 26/27 adapter declares a `capabilities: string[]`, and the registry reads it, so
-  `UNAVAILABLE` names the missing capability and the sources that would need it rather than saying
-  "no data". This turns an empty chart into a work item.
+  all. Phase 27's `SourceAdapter` already declares `capabilities: AdapterCapability[]` (`DISCOVER ·
+  EXTRACT · PAGINATE`) and Phase 26's `research_sources.attribute_extraction` declares which
+  attribute keys a source is configured to pull. The registry reads **both** — the adapter for the
+  shape it can produce, the source for the keys it is configured to look for — so `UNAVAILABLE`
+  names the missing attribute key and the sources that would need it rather than saying "no data".
+  This turns an empty chart into a work item. Adding a new attribute key is a Phase 26/27 change,
+  not a Phase 37 one; this phase reads the declaration and never widens it.
 - **`content_performance` is not pageviews.** No web-analytics provider exists in D1's stack. Rather
   than invent one or leave the metric blank, the metric is redefined as the database-derived content
   health described above, and the tab states in one line that traffic analytics are not connected.
@@ -1653,11 +1887,11 @@ emit logs), Phase 36 (Sheets health), D8 (the environment-variable names).
 | `vercel` | reads the build-info module, not an API | require a Vercel token |
 | `higgsfield` | manifest presence and asset count from `data/higgsfield/asset-manifest.json` | call the Higgsfield API — the manifest is the record of truth (D6) |
 | `migrations` | applied count and latest version from `supabase_migrations.schema_migrations` vs files in `supabase/migrations/` | run or repair a migration |
-| `build` | commit SHA, branch, build time, environment from `lib/build-info.generated.ts` | expose environment variable values |
+| `build` | commit SHA, branch, build time, environment from `lib/ops/build-info.generated.ts` | expose environment variable values |
 
   `configured` is computed from the **presence of the variable name** in the process environment,
   never from its content. `scripts/build/write-build-info.ts` generates
-  `lib/build-info.generated.ts` at build time from `git rev-parse` with a `VERCEL_GIT_COMMIT_SHA`
+  `lib/ops/build-info.generated.ts` at build time from `git rev-parse` with a `VERCEL_GIT_COMMIT_SHA`
   fallback, so no new secret and no runtime git dependency is introduced.
 - **Documentation browser (FEAT §30).** A build step, `npm run docs:index`, reads an **allowlist**
   of exactly ten paths — `docs/architecture/ARCHITECTURE.md`, `docs/studio/STUDIO_GUIDE.md`,
@@ -1714,11 +1948,11 @@ emit logs), Phase 36 (Sheets health), D8 (the environment-variable names).
 | RLS | `supabase/migrations/0361_phase38_system_logs_rls.sql` | `operations.logs.read` only; no update, no delete policy |
 | Redactor | `lib/logging/redact.ts` | `redact`, `redactDeep`, the name list and the shape patterns |
 | System logger | `lib/logging/system-log.ts` | `logSystem()`, dedupe window, redaction before insert |
-| Env checks | `lib/ops/env-checks/*.ts` | one module per check in the table above; each returns the fixed shape |
+| Env checks | `lib/ops/env-checks/*.ts` | one module per check in the table above; each returns the fixed shape. **`lib/ops/` is not in D2's domain list** — see the note below and *Open questions* 4 |
 | Check runner | `lib/ops/environment.ts` | runs checks in parallel with a 3 s per-check timeout |
-| Build info | `scripts/build/write-build-info.ts` → `lib/build-info.generated.ts` | git SHA, branch, built-at, environment; generated, gitignored |
+| Build info | `scripts/build/write-build-info.ts` → `lib/ops/build-info.generated.ts` | git SHA, branch, built-at, environment; generated, gitignored, and placed inside `lib/ops/` so the block adds one new `lib/` domain rather than a loose top-level module |
 | Docs indexer | `scripts/docs/build-index.ts` (`npm run docs:index`) | allowlist read, redact, write `content/docs/index.generated.json` |
-| Docs renderer | `lib/docs/render.ts` | Markdown without raw HTML; link rewriting; heading anchors |
+| Docs renderer | `lib/cms/docs/render.ts` | Markdown without raw HTML; link rewriting; heading anchors. Placed under `lib/cms/` — a D2 domain — because rendering authored Markdown into a Studio page is exactly what `lib/cms` does; no `lib/docs/` domain is created |
 | Environment page | `app/(studio)/studio/system/environment/page.tsx` | server-rendered, no client fetch of check results |
 | Documentation page | `app/(studio)/studio/system/documentation/page.tsx` + `[docKey]/page.tsx` | allowlist keys only |
 | Logs page | `app/(studio)/studio/operations/logs/page.tsx` + `actions.ts` | filters, detail drawer, CSV export |
@@ -1726,6 +1960,19 @@ emit logs), Phase 36 (Sheets health), D8 (the environment-variable names).
 | Retention cron | `app/api/cron/log-retention/route.ts` | daily purge; `REVALIDATE_SECRET` |
 | Docs | `docs/ops/ENVIRONMENT.md`, `docs/ops/SECURITY.md`, `docs/studio/STUDIO_GUIDE.md`, `docs/architecture/DATA_MODEL.md` | the check list, the redaction rule, the three-log distinction |
 | Tests | `tests/unit/redact.test.ts`, `env-checks-no-secrets.test.ts`, `docs-allowlist.test.ts`, `system-log-dedupe.test.ts`, `tests/e2e/studio-system.spec.ts` | the load-bearing leak tests |
+
+**Phase 38 adds one new `lib/` domain, named rather than smuggled.** D2 fixes the `lib/` list at
+`supabase · media · cms · auth · whatsapp · scraper · analytics · seo · logging · flags`, and
+`lib/ops/` is not on it. It is not folded into `lib/logging/` because an environment check is not a
+log — it performs
+outbound reachability probes, holds timeouts and returns a status shape that the logger merely
+happens to record — and burying it under `logging` would misfile the one module in the system whose
+whole job is to touch every integration. `lib/cms/docs/render.ts` and `lib/media/hashes.ts`
+(Phase 33) both sit inside existing D2 domains for the same reason in reverse: they genuinely belong
+there. So this block adds exactly two new domains across eight phases — `lib/sheets/` (Phase 36) and
+`lib/ops/` (Phase 38) — both raised together in *Open questions* 4, following the precedent
+`PHASE-10-15.md` (`lib/site/`, `lib/catalog/`) and `PHASE-23-30.md` (`lib/search/`, `lib/relations/`,
+`lib/bulk/`) already set. Neither is a silent divergence.
 
 **Database**
 
@@ -1801,7 +2048,7 @@ manifest is present and intact. It displays no asset and generates nothing (D6, 
     summary row.
 11. `npx playwright test tests/e2e/studio-system.spec.ts` — all three pages, the role matrix, the
     log filters and the CSV export, at 1920/1440/1024/430/390.
-12. `npm run build` — `lib/build-info.generated.ts` is produced, is gitignored, and the environment
+12. `npm run build` — `lib/ops/build-info.generated.ts` is produced, is gitignored, and the environment
     page shows the current commit SHA and branch.
 
 **Exit criteria**
@@ -1831,7 +2078,8 @@ manifest is present and intact. It displays no asset and generates nothing (D6, 
 ## Cross-phase notes
 
 **What must be true before Phase 39 begins.** SEO assumes: no research surface is reachable from a
-public route or present in `sitemap.xml` (31–35, enforced by the extended `check-data-layer.mjs`);
+public route or present in `sitemap.xml` (31–35, enforced by invariant I3 in
+`scripts/research/check-research-isolation.mjs`, which already covers `lib/seo/**`);
 the only products that exist are ones a human created, so a product URL never encodes a competitor's
 title (35); the documentation browser and environment page are behind `noindex` because they live in
 the Studio route group (38); and `system_logs` exists, so Phase 39's redirect and canonical-drift
@@ -1851,16 +2099,25 @@ fact until the owner sets `VERIFIED`.
 | That Rivya can produce anything a direction brief describes | 34 | Manufacturing capability is a business fact (D10) |
 | That a confirmed research row corresponds to a piece Rivya will make | 35 | Confirmation records a decision to explore, nothing more |
 | That traffic analytics should be connected at all | 37 | Adding a provider is an owner decision with privacy consequences |
+| That Rivya may fetch a competitor's image bytes at all, even transiently and only to hash them | 33 | It amends a rule `PHASE-23-30.md` states four times; a policy question the owner settles, not this document |
 
-**Never-crossed lines, restated once.** No phase in this block creates a product from research data;
-no phase copies competitor text, price, dimension, material or imagery into a Rivya table; no phase
-publishes anything to a public route; no phase writes a score, similarity result or analytic figure
-that is not reproducible from stored inputs; no phase displays a secret; no phase regenerates a
-Higgsfield asset; and no phase moves the project toward checkout, payment or customer accounts.
+**Never-crossed lines, restated once.** No phase in this block creates a product from research data
+**automatically or by copying a field** — Phase 35's bridge is hand-operated, copies nothing, and is
+narrowed into `check-research-isolation.mjs` by name; no phase copies competitor text, price,
+dimension, material or imagery into a Rivya table; no phase persists a competitor image in any form,
+the transient hashing fetch in Phase 33 included; no phase publishes anything to a public route; no
+phase writes a score, similarity result or analytic figure that is not reproducible from stored
+inputs; no phase displays a secret; no phase regenerates a Higgsfield asset; and no phase moves the
+project toward checkout, payment or customer accounts.
 
 ## Open questions for the canonical decisions
 
-Raised, not acted on. Nothing above diverges from `CANONICAL-DECISIONS.md`.
+Raised, not acted on. **Three items below are real divergences, not hypotheticals**, and each names
+where in the document it occurs: the two new `lib/` domains (4), the I4 narrowing that Phase 35's
+bridge requires (11), and the fetch-to-hash amendment Phase 33 requires (12). Each is stated at the
+point of use as well as here, each ships behind a flag defaulting to `false` where behaviour is
+involved, and none is presented as already sanctioned. Everything else below is a question about
+wording rather than about code.
 
 1. **Permission spelling.** `PHASE-00-04.md` and `PHASE-10-15.md` use `<domain>.<action>`;
    `PHASE-16-22.md` uses `<resource>:<action>`. This document uses the dot form because Phase 04
@@ -1871,15 +2128,28 @@ Raised, not acted on. Nothing above diverges from `CANONICAL-DECISIONS.md`.
    set intact but hides a significant workspace one level down. Suggested amendment: either bless
    the nesting or add a `direction` leaf to D4 between `opportunities` and `shortlist`.
 3. **`created_product_id` and the D5 isolation rule.** D5 says research tables never join directly
-   to public product tables. Phase 35 needs to record which product a confirmation started, and does
-   so with a nullable uuid carrying no foreign key, resolved only by research repositories and
-   forbidden elsewhere by a CI check. This honours the rule's intent while keeping the audit trail.
-   Suggested amendment: state explicitly in D5 that an unconstrained identifier recorded on the
-   research side, with no query path into public reads, is permitted.
-4. **A `lib/sheets/` domain.** D2 fixes the `lib/` domain list and Sheets fits none of them. Phase 36
-   adds `lib/sheets/` as a sibling of `lib/whatsapp/` — both are outbound integrations that render
-   Rivya data into someone else's surface. Suggested amendment: add `sheets/` to D2's list, or bless
-   an `integrations/` parent for it and any future outbound client.
+   to public product tables, and `PHASE-23-30.md`'s I1 allowlist is closed at two constraint names.
+   Phase 35 needs to record which product a confirmation started, and does so with a nullable uuid
+   carrying no foreign key, resolved only by research repositories and forbidden elsewhere by
+   `check-research-isolation.mjs`. Phase 34 does the same thing for a brief's target category, using
+   a checked slug instead of a `references categories(id)`. Both honour the rule's intent while
+   keeping the record. Suggested amendment: state explicitly in D5 that an unconstrained identifier
+   or a checked slug recorded on the research side, with no query path into public reads, is
+   permitted — and that this is the *only* way research may point at public data beyond the two
+   allowlisted taxonomy references.
+4. **Two new `lib/` domains: `sheets/` and `ops/`.** D2 fixes the `lib/` domain list at `supabase ·
+   media · cms · auth · whatsapp · scraper · analytics · seo · logging · flags`, and this block adds
+   two that fit none of them. Phase 36 adds **`lib/sheets/`** as a sibling of `lib/whatsapp/` — both
+   are outbound integrations that render Rivya data into someone else's surface. Phase 38 adds
+   **`lib/ops/`** for the environment checks, the check runner and the generated
+   `lib/ops/build-info.generated.ts`; an integration reachability probe is not a log, and filing it
+   under `lib/logging/` would misname it. Two candidates were *not* added, because they belong in
+   existing domains: the documentation renderer is `lib/cms/docs/render.ts` and the first-party media
+   hasher is `lib/media/hashes.ts`. `PHASE-10-15.md` (`lib/site/`, `lib/catalog/`) and
+   `PHASE-23-30.md` (`lib/search/`, `lib/relations/`, `lib/bulk/`) already treat D2's list as
+   extensible by precedent; this question asks the owner to make that explicit. Suggested amendment:
+   add `sheets/` and `ops/` to D2's list, or bless an `integrations/` parent for outbound clients and
+   state the rule by which a new `lib/` domain may be added at all.
 5. **Cron secret.** Phases 08, 22, 31, 32, 36, 37 and 38 all expose cron route handlers guarded by
    `REVALIDATE_SECRET`, because D8 lists no dedicated cron secret. One secret now guards both cache
    revalidation and seven scheduled jobs. Suggested amendment: add `CRON_SECRET` to D8's server-only
@@ -1888,10 +2158,13 @@ Raised, not acted on. Nothing above diverges from `CANONICAL-DECISIONS.md`.
    but Phase 04 already delivered `/studio/system/users`. Phase 38 above does not rebuild it.
    Suggested correction: amend Phase 05's out-of-scope line to cite Phase 04.
 7. **Feature flags after Phase 19.** `PHASE-16-22.md` open question 6 asks whether Phase 38 extends
-   or replaces the Phase 19 flag primitive. This document answers: it does neither — Phases 33, 36
-   and 37 register `advanced_similarity`, `google_sheets` and `advanced_analytics` into the existing
-   registry, and `/studio/system/flags` is unchanged. FEAT §32's `higgsfield_tracker` remains
-   unclaimed and should be assigned to Phase 43. Confirm.
+   or replaces the Phase 19 flag primitive. This document answers: it does neither — Phases 33, 35,
+   36 and 37 register `advanced_similarity`, `research_image_hashing`, `research_product_bridge`,
+   `google_sheets` and `advanced_analytics` into the existing registry, all defaulting to `false`,
+   and `/studio/system/flags` is unchanged. Two of those five are not conveniences: until questions
+   11 and 12 are answered, `research_product_bridge` and `research_image_hashing` are the switches
+   that keep an unaccepted amendment inert. FEAT §32's `higgsfield_tracker` remains unclaimed and
+   should be assigned to Phase 43. Confirm.
 8. **Traffic analytics.** FEAT §28 lists Content Performance as a first-party dimension, but D1's
    stack contains no web-analytics provider and D10 forbids inventing one. Phase 37 redefines the
    metric as database-derived content health and states plainly that traffic is not measured.
@@ -1904,3 +2177,55 @@ Raised, not acted on. Nothing above diverges from `CANONICAL-DECISIONS.md`.
     `INFO`/`WARNING` logs for 90 and `ERROR`/`SECURITY` for 400. No canonical section fixes
     retention for `audit_log`, `activity_events` or research snapshots. Suggested amendment: state a
     retention table in D5 or `docs/ops/SECURITY.md` so the four logs do not drift apart.
+11. **Invariant I4 and Phase 35's manual bridge — a real divergence, blocking that phase.**
+    `PHASE-23-30.md` states I4 as: "There is no code path — no server action, no script, no SQL
+    function, no Studio button — that writes to `products` from a `research_*` read", and its Phase
+    29 Confirm action says confirming "creates no product, no draft product". Phase 35's
+    `startProductFromConfirmation` is a Studio button that reads a `research_confirmations` row and
+    inserts into `products`. It copies **no** competitor field — so it breaches neither FEAT §25 nor
+    SEED §32 nor D10 — but it breaches I4 as literally written, and
+    `scripts/research/check-research-isolation.mjs` would fail the build. The document does not
+    resolve this unilaterally. **Proposed amendment**, to be recorded against `PHASE-23-30.md`'s I4
+    row and echoed in D5:
+
+    > A row in `research_*` can only ever become a Rivya product by a person typing one. There is no
+    > **automatic** path and no **field-copying** path from a `research_*` read to `products`. Exactly
+    > one manual path exists: the server action `startProductFromConfirmation`, exported from
+    > `app/(studio)/studio/research/confirmed/actions.ts`, which requires `catalog.write`, a slug the
+    > actor types, a category the actor picks and a ticked acknowledgement, and which reads from the
+    > research side only `getConfirmationForBridge(id) → { id, stage, archived_at }`. It writes
+    > `slug`, `title` (title-cased from the slug), `category_id`, `status = 'DRAFT'` and
+    > `price_state = 'PRICE_ON_REQUEST'`, and nothing else.
+
+    The guard must encode exactly that: one symbol, one file, one permitted reader, and a failure on
+    a second writer, on a move, or on a wider projection. Until the owner accepts it, the bridge is
+    behind `research_product_bridge`, default `false`, and Phase 35 is not COMPLETE.
+12. **Fetching a competitor image to hash it — a real divergence, blocking Phase 33's competitive
+    half.** `PHASE-23-30.md` says at Phase 26 that "**no mode downloads or re-hosts an image**" and
+    at Phases 28/29 that "**no image is fetched, measured by download, cached**", storing only
+    `research_products.image_urls text[]`. Perceptual hashing needs bytes; there are none stored and
+    none obtainable without a request. **Proposed amendment**, narrowly scoped:
+
+    > Image bytes may be fetched for the sole purpose of computing a perceptual hash, only through
+    > `lib/scraper/analytics/similarity/hash-run.ts`, only through the Phase 25 politeness path
+    > (`fetch.ts`, `robots.ts`, `rate-limit.ts`, one `research_fetches` row per request,
+    > `storage_key` null), and only when all four of `research.enabled`, the
+    > `research_image_hashing` flag, `research_sources.policy_status = 'APPROVED'` and
+    > `research_sources.image_hashing_enabled` are true. Only the 64-bit pHash, the 64-bit dHash, the
+    > SHA-256 checksum, the source URL and a URL-derived key are persisted. The bytes, and every
+    > measurement derived from them other than those five values, are discarded before the function
+    > returns. Nothing is written to disk, Storage, Cloudinary or `media_assets`.
+
+    The rule this amends is a politeness and rights posture, not a schema detail, so it is the
+    owner's to accept. Until then `research_image_hashing` ships `false` and Phase 33 delivers only
+    its first-party half — `media_asset_hashes` and the Rivya-vs-Rivya upload guard. Recording this
+    also settles the related `OWNER_VERIFICATION_REQUIRED` line above about the lawfulness of the
+    fetch rate.
+13. **A third research→public reference, or none.** `PHASE-23-30.md` closes I1's allowlist at two
+    constraint names with the words "there is never a third". Phase 34 wants to file a direction
+    brief under a D3 category and would naturally write `references categories(id)`; instead it
+    stores `target_category_slug text` with a check constraint over D3's fixed seven, resolved by the
+    direction repository. That works, and costs a slug rename. Suggested decision: either confirm
+    that two is final and checked slugs are the pattern for everything after, or open the allowlist
+    to a named third and let Phase 34 use a real reference. Phase 34 ships the slug either way; only
+    a later migration changes if the answer is the second.

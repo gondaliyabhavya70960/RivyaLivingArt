@@ -135,8 +135,9 @@ Alt text is content. It is seeded, editable in Studio, versioned like any other 
 image 1 · image · hero · photo · picture · banner · img · asset · media · untitled
 ```
 
-These are the strings SEED §43 names. The linter rejects them and the reviewer rejects anything
-in the same spirit.
+SEED §43 names `image 1`, `hero` and `photo`; the remaining seven are a Rivya extension in the
+same spirit, enforced by `scripts/media/check-alt-text.mjs`. The linter rejects all ten and the
+reviewer rejects anything in the same spirit.
 
 ### 5.2 The rules
 

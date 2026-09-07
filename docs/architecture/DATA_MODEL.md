@@ -33,7 +33,7 @@ schema will not contain.
 | Element | Meaning |
 |---|---|
 | **Phase** | The phase that creates the table. `03` is the spine; everything else arrives later (§12) |
-| **RLS profile** | A named policy shape from §1.5. Every table has exactly one profile plus, where stated, an extra predicate |
+| **RLS profile** | A named policy shape from §1.5. Every table has exactly one profile plus, where its own entry states one, an extra predicate — which narrows the profile, except in the single case §1.5 names where it adds the `anon` policy the profile omits |
 | **Common set** | The columns from §1.2 that the table carries. Never repeated in a column list |
 | `type` in a column list | PostgreSQL type as written in the migration |
 | *(altered)* | The table already exists; this phase adds the listed columns |
@@ -51,7 +51,9 @@ lower-case because D5 fixes the role names in lower case.
 
 1. `snake_case` tables and columns; plural table names.
 2. `id uuid primary key default gen_random_uuid()` on every table that is not a pure join table.
-   Join tables use a composite primary key of their two foreign keys.
+   Join tables use a composite primary key of their two foreign keys. Three further tables use a
+   natural key; they are named exhaustively in the carve-out below, and a fourth would need a D5
+   amendment rather than a precedent.
 3. Foreign key columns are `<singular_referenced_table>_id` (`category_id`, `media_asset_id`).
    Where two columns reference the same table the role prefixes the name (`hero_media_id`,
    `model_media_id`, `media_desktop_id`, `media_mobile_id`).
@@ -64,6 +66,21 @@ lower-case because D5 fixes the role names in lower case.
    `products` (§11).
 8. **Reserved words are never used as identifiers.** This document renames one column the phase
    documents spell as `group` — see §1.8.
+
+**The three natural-key exemptions to rule 2.** None of these is a join table, so each is a genuine
+departure from D5's fixed `id uuid primary key default gen_random_uuid()` and is recorded here
+rather than taken quietly. The list is closed.
+
+| Table | Primary key | Why not a surrogate `id` |
+|---|---|---|
+| `staff_profiles` (§4) | `user_id uuid references auth.users(id)` | The row is 1:1 with an `auth.users` row and has no identity of its own. A surrogate key would be a second name for the same person and would make two profiles for one account representable, which is precisely what the 1:1 must forbid — `current_staff_role()` reads this table, so an ambiguous profile would be an ambiguous RLS decision |
+| `feature_flags` (§10) | `key text` | The flag key *is* the identity. Call sites read `isEnabled('three_d_viewer')` and never hold a uuid; a surrogate key would add a lookup to every read and buy nothing |
+| `rate_limit_buckets` (§10) | `(bucket_key, window_start)` | A fixed-window counter is addressed by bucket and window. The table is one upsert — `on conflict (bucket_key, window_start) do update set count = count + 1` — which needs that pair to be the key; a surrogate would require a second unique index on the same pair to work at all |
+
+Raised as open question 11. If D5 is not amended, all three take
+`id uuid primary key default gen_random_uuid()` with a `unique` constraint on the natural key, and
+every call site gains a lookup; the correctness of the schema does not depend on which way it goes,
+only its ergonomics do.
 
 ### 1.2 The common column sets
 
@@ -109,10 +126,19 @@ D10 is not a review convention here; it is a schema. Four mechanisms carry it:
 
 | Mechanism | Where | Effect |
 |---|---|---|
-| `owner_verification` | Tier B, every content table | `OWNER_VERIFICATION_REQUIRED` makes `status = 'PUBLISHED'` unreachable — enforced by trigger (§8.2) |
+| `owner_verification` | Tier B, every content table | `OWNER_VERIFICATION_REQUIRED` makes `status = 'PUBLISHED'` unreachable **while the flag stands** — enforced by trigger (§8.2), with no table exempt |
 | `fact_classification` + `field_classifications jsonb` | `page_sections`, content tables | Marketing language is never stored as a `PRODUCT_FACT` or `VERIFIED_BUSINESS_FACT` |
 | `client_consent_state` | `portfolio_projects`, `testimonials` | A named person or client cannot be published without `GRANTED` consent |
-| `is_ai_generated` / `is_concept` | `media_assets` (not null, both) | Concept media cannot be attached to a product at all — trigger, §8.4 |
+| `is_ai_generated` / `is_concept` | `media_assets` (not null, both) | Concept media cannot be attached to a product at all — trigger, §8.4. Unlike `owner_verification`, `is_concept` never clears |
+
+**`owner_verification` is a gate, not a permanent ban.** The distinction matters most on
+`media_assets`, so it is stated here rather than left to be inferred. A human clears the flag by
+setting `VERIFIED`, which is a deliberate, audited, permissioned act — and until they do, the row
+cannot be published. The 250 imported Higgsfield assets land
+`OWNER_VERIFICATION_REQUIRED` because their `alt_text` is a machine-written draft, and D6 and
+SEED §10 both require some of them to reach a public page; §7 works that path through step by
+step. What survives publication is `is_concept = true`, which never clears and which §8.4 uses to
+keep concept media off every product for the life of the row.
 
 Two tables ship with **zero rows, permanently, by seed policy** (SEED §32): `products` and
 `product_specs`. Two more ship with zero rows and are filled only by owner entry:
@@ -149,7 +175,7 @@ below names its profile and any extra predicate.
 | **RLS-PUBLIC** | `select using (status = 'PUBLISHED')` | `select using (current_staff_role() is not null)` | `insert`/`update` gated by `has_role(...)` per the permission named on the table; `delete` owner/admin only | Content and catalogue tables |
 | **RLS-STAFF** | *no policy* | `select` gated by a named permission | `insert`/`update`/`delete` gated by a named permission | Studio-only configuration |
 | **RLS-APPEND** | *no policy* | `select` gated by a named permission | `insert` by trigger or service role; `revoke update, delete on <table> from anon, authenticated` | Histories and audit |
-| **RLS-SERVICE** | *no policy* | `select` gated by a named permission | every write is service-role only (the server action runs `requirePermission()` first, then the admin client) | Snapshots, indexes, counters |
+| **RLS-SERVICE** | *no policy*, unless the table's own entry names an `anon` predicate explicitly — exactly one does (`search_documents`, §10) | `select` gated by a named permission | every write is service-role only (the server action runs `requirePermission()` first, then the admin client) | Snapshots, indexes, counters |
 | **RLS-RESEARCH** | *no policy, ever* | `select` requires `research.read` | `research.write`, or `research.confirm` for disposition-bearing writes | Every `research_*` table |
 | **RLS-INQUIRY** | `insert` only, with a `with check` pinning `pipeline_status = 'NEW'`, `assigned_to is null`, `updated_by is null`; **no `select` policy at all** | `select` requires `inquiries.read` | `update` requires `inquiries.write` | `inquiries`, `inquiry_attachments` |
 
@@ -158,6 +184,18 @@ per-action `requirePermission()` in `lib/auth/require.ts` is the fine net. Permi
 dot form `<domain>.<action>` (`content.publish`), owned by `lib/auth/permissions.ts` and generated
 into SQL by `scripts/auth/gen-role-sql.ts`. Where a phase document spells a permission
 `content:write`, read it as `content.write`.
+
+**The one RLS-SERVICE exception, stated exhaustively.** An extra predicate on a table's entry
+normally *narrows* a profile; it cannot invent a policy the profile omits. `search_documents` is
+the single place where it grants one, and the reason is that the table has two different needs
+pulling in opposite directions: every write is made by a `security definer` trigger and never by a
+user, which is exactly the service profile, yet the public search page must read it as an
+anonymous visitor. Its entry in §10 therefore names the `anon` predicate in full
+(`visibility = 'PUBLIC' and status = 'PUBLISHED'`), and an engineer implementing from the profile
+table alone would otherwise ship a public search index that silently returns nothing. No other
+RLS-SERVICE table has an `anon` policy; `tests/unit/rls-profiles.test.ts` asserts that
+`search_documents` is the only one, so a second such grant fails the build rather than passing
+unnoticed.
 
 `research_*` tables never receive the public `select` policy. `check-research-isolation.mjs` fails
 the build if one is added.
@@ -520,7 +558,7 @@ this table and no route that creates one; staff are invited from `/studio/system
 
 | Column | Type | Notes |
 |---|---|---|
-| `user_id` | `uuid primary key references auth.users(id) on delete cascade` | not a separate `id` |
+| `user_id` | `uuid primary key references auth.users(id) on delete cascade` | not a separate `id` — a natural key, per the §1.1 rule-2 carve-out and open question 11 |
 | `email` | `citext unique not null` | |
 | `display_name` | `text` | |
 | `role` | `user_role not null default 'viewer'` | exactly one role per user |
@@ -1009,7 +1047,7 @@ group**, and a unit test greps the migration and the schema builder to keep it t
 
 ## 7. Media
 
-### `media_assets` — Phase 03 (`0005`), completed Phase 06 (`0030`), extended 07/21/41 · RLS-PUBLIC (`media.write`)
+### `media_assets` — Phase 03 (`0005`), completed Phase 06 (`0030`), populated Phase 07 (`0040`), extended 21/41 · RLS-PUBLIC (`media.write`)
 
 The record of truth for every image, video, 3D model, document and brand asset. Cloudinary is the
 origin; this row is the meaning. D6 makes three columns mandatory on every row.
@@ -1021,17 +1059,24 @@ origin; this row is the meaning. D6 makes three columns mandatory on every row.
 | Technical | `mime_type text`, `bytes bigint`, `width int`, `height int`, `aspect_ratio text`, `duration_s numeric`, `poster_public_id text`, `checksum text` |
 | Governance | `is_ai_generated boolean not null`, `is_concept boolean not null`, `is_decorative boolean not null default false` (Phase 41), `uploaded_by uuid`, Tier A + B |
 | 3D (FEAT §13) | `model_format text check (model_format in ('GLB','GLTF'))`, `file_size_bytes bigint`, `poly_count int`, `texture_count int`, `model_thumbnail_id uuid references media_assets(id)`, `model_poster_id uuid references media_assets(id)`, `associated_product_id uuid`, `associated_project_id uuid`, `viewer_settings jsonb not null default '{}'` (Phase 21) |
-| Higgsfield provenance (Phase 07) | `higgsfield_generation_id text`, `higgsfield_model text`, `higgsfield_prompt text`, `manifest_version text`, `migrated_at timestamptz` |
+| Higgsfield provenance (columns added by Phase 06 `0030`; **populated** by Phase 07 `0040`) | `higgsfield_generation_id text`, `higgsfield_model text`, `higgsfield_prompt text`, `manifest_version text`, `migrated_at timestamptz` |
 
 **Keys and indexes**
 
-- `unique (provider, resource_type, public_id)` — deliberately **not** `unique (public_id)`: six
-  manifest `cloudinary_public_id` values are shared by an image/video pair (for example
-  `rivya/collection/decor/decor-001-16x9`), which Cloudinary keeps apart by resource type.
+- `unique (provider, resource_type, public_id)` — deliberately **not** `unique (public_id)`. All
+  250 `cloudinary_public_id` values in the current manifest are unique, so a plain unique index on
+  `public_id` would hold today as well. The wider key is not a workaround for a duplicate: it stays
+  because Cloudinary namespaces public IDs by resource type — `image/upload/<id>` and
+  `video/upload/<id>` are different objects — so the index describes Cloudinary's model rather than
+  a property of one manifest build, and a future poster/clip pair uploaded under one name remains
+  insertable without a migration (`docs/media/CLOUDINARY.md` §3.1). No current row depends on the
+  extra column, and the test that covers it uses fixtures rather than manifest data.
 - `unique (rivya_asset_id)`; `unique (higgsfield_generation_id) where higgsfield_generation_id is
   not null` — this is what makes regeneration detectable and therefore preventable.
-- Indexes: `(kind, status)`, `(folder)`, `(source)`, GIN on `tags`, GIN on `subject_tags`,
-  `(is_concept) where is_concept`, `pg_trgm` GIN on `filename`.
+- Indexes: `(kind, status)`, `(folder)`, `(source)`, GIN on `tags` (this is the index that makes a
+  Higgsfield family or page scope answerable — see *Where the manifest's `family`, `page`, `section`
+  and `source_url` land*), GIN on `subject_tags`, `(is_concept) where is_concept`, `pg_trgm` GIN on
+  `filename`.
 
 **Constraints**
 
@@ -1046,12 +1091,79 @@ check (kind <> 'VIDEO'    or duration_s   is not null)
 `media.write`; `delete` requires `media.delete` **and** is blocked by trigger while any
 `media_usages` row references the asset.
 
-**The 250 Higgsfield rows.** Phase 06 imports `data/higgsfield/asset-manifest.json` verbatim: every
-row lands with `source = 'HIGGSFIELD'`, `is_ai_generated = true`, `is_concept = true`,
-`owner_verification = 'OWNER_VERIFICATION_REQUIRED'`, `alt_text` from `alt_text_draft`, and
-`rivya_asset_id` as the authoritative identity (D6 — the filename is not). Nothing in the manifest
-may be regenerated. The manifest's `status` value `AVAILABLE_UNMIGRATED` is manifest bookkeeping,
-not `content_status`; it maps to `content_status = 'DRAFT'` on import.
+**The 250 Higgsfield rows.** Phase 07 imports `data/higgsfield/asset-manifest.json` verbatim —
+Phase 06 declares the columns and migrates three named canaries only; the migration script, its
+ledger and the whole 250-row import are Phase 07 deliverables (§12). Every row lands with
+`source = 'HIGGSFIELD'`, `is_ai_generated = true`, `is_concept = true`, `alt_text` from
+`alt_text_draft`, `rivya_asset_id` as the authoritative identity (D6 — the filename is not),
+`manifest_version = 'rivya-hf-v1'`, `migrated_at = now()`, and:
+
+| Column | Value on import | Why |
+|---|---|---|
+| `status` | `'APPROVED'` | Reviewed enough to bind to a CMS slot, not yet cleared for public delivery. It is the one state Phase 08's publishing service will promote |
+| `owner_verification` | `'OWNER_VERIFICATION_REQUIRED'` | `alt_text` is a machine-written draft. The flag asserts nothing about the picture; it says no human has yet taken responsibility for the words a screen reader will read |
+
+Nothing in the manifest may be regenerated. The manifest's own `status` value
+`AVAILABLE_UNMIGRATED` is manifest bookkeeping, not `content_status`, and does not map onto it: the
+import writes `APPROVED` outright.
+
+**How a concept asset reaches a public page.** D6 ranks an existing Higgsfield asset third in the
+priority ladder, and SEED §10 HOME SECTION 01 names the launch hero as "Higgsfield asset or
+approved real Rivya flagship large-format media" — so this path must exist and must terminate in
+`status = 'PUBLISHED'`, because anon `select` on this table is restricted to published rows. It has
+four steps and no shortcut:
+
+| # | Row state | What moves it on | Actor / permission |
+|---|---|---|---|
+| 1 | `APPROVED` · `OWNER_VERIFICATION_REQUIRED` | the Phase 07 import | migration script (service role) |
+| 2 | `APPROVED` · `VERIFIED` | an editor rewrites the drafted `alt_text` and sets `owner_verification = 'VERIFIED'` in `/studio/media/higgsfield` or `/studio/media/all` | `media.write` |
+| 3 | bound to a slot | the Studio media picker writes the `media_usages` row for a `page_sections` slot | `content.write` |
+| 4 | `PUBLISHED` | Phase 08 `lib/cms/publishing.ts`: publishing the section promotes, in the same transaction, every `APPROVED` asset reached through that section's `media_usages` rows | `content.publish` |
+
+A row still at step 1 fails at step 4: §8.2's gate refuses `PUBLISHED` while
+`owner_verification = 'OWNER_VERIFICATION_REQUIRED'`, so the section publish is refused and the
+error names the offending `rivya_asset_id`. That refusal is the intended behaviour, not a deadlock
+— it is how a machine-drafted alt text is stopped from going live, and it is cleared by doing
+step 2, never by weakening the gate. `media_assets` is **not** exempt from §8.2.
+
+**Why publishing a concept asset does not breach D10.** The two governance flags do different jobs
+and only one of them ever clears:
+
+- `owner_verification` is a **gate with a key**. On a `media_assets` row it asserts exactly one
+  thing — that a human owns the alt text — and a human clears it by writing the alt text.
+- `is_concept = true` is **permanent** and never clears, on any of the 250. §8.4 refuses any
+  `product_media` row that points at a concept asset, so a concept image may illustrate a page
+  section, a material or a process, and may never be presented as a photograph of a piece the
+  business has actually made. That is the D10 rule, and it survives publication untouched.
+
+**Where the manifest's `family`, `page`, `section` and `source_url` land.** Three of the four are
+stored and none of those three gets a column of its own; the fourth is not stored at all. The rules
+are fixed here rather than left to the migration script, because the Studio tracker and the
+migration scopes both depend on them (`subject_tags` is included for contrast — it *is* a column,
+and it is not the same data as `family`):
+
+| Manifest field | Destination | Notes |
+|---|---|---|
+| `family` (24 distinct values) | `tags` entry `family:<family>` | `PHASE-05-09.md` maps `family` into `tags` without fixing the literal; this document fixes the prefixed form so all three scope tags share one shape and cannot collide with a free-form editorial tag |
+| `page` (11 distinct values) | `tags` entry `page:<page>` | Not derivable from `folder`: 141 of the 250 assets have a `cloudinary_folder` that is not `rivya/<page>/<section>` (`rivya/collection/wall-art` carries page `collection/wall-statement-art`), so the tag is the only reliable carrier |
+| `section` (19 distinct values) | `tags` entry `section:<section>` | Supplies the *Purpose* column of the FEAT §34 inventory |
+| `subject_tags` | `subject_tags text[]` | Kept separate from `tags`; it is **not** a copy of `family` — 170 of the 250 assets have `subject_tags` that differ from `[family]` |
+| `source_url` | **deliberately not stored** | It is the Higgsfield CDN address the uploader fetches the bytes from once. Persisting it would create a second, decaying delivery address for an asset Cloudinary now owns, and `lib/media/` would have two URLs to choose between. The value stays recoverable from the committed manifest, keyed by `higgsfield_generation_id` |
+
+Both scope forms are matched with the GIN index on `tags`, which is what makes
+`higgsfield_migration_runs.requested_scope` answerable by query rather than by re-reading the
+manifest: `where tags @> array['family:process-pour']`, `where tags @> array['page:journal']`.
+
+The same three tags supply the FEAT §34 inventory columns, so the tracker needs no additional
+schema:
+
+| FEAT §34 column | Source |
+|---|---|
+| Asset ID · Type · Source · Higgsfield? | `rivya_asset_id` · `kind` + `resource_type` · `source` · `source = 'HIGGSFIELD'` |
+| Page · Purpose | `tags` entries `page:<page>` and `section:<section>` |
+| Product · Collection · CMS placement · Used? | `media_usages` (`context_type`, `context_id`, `slot_key`, `role`); *Product* is empty for all 250 by §8.4 and stays that way |
+| Prompt · Cloudinary location | `higgsfield_prompt` · `folder` + `public_id` |
+| Status | `status` together with `owner_verification` — the pair, never `status` alone |
 
 ### `media_usages` — Phase 06 · migration `0030` · RLS-SERVICE (`media.read`)
 
@@ -1116,7 +1228,7 @@ Bookkeeping for manifest → Cloudinary → `media_assets` imports.
 | `id` | `uuid pk` |
 | `started_at`, `finished_at` | `timestamptz` |
 | `manifest_version` | `text not null` (`rivya-hf-v1`) |
-| `requested_scope` | `text` — family, page or `ALL` |
+| `requested_scope` | `text` — `ALL`, `family:<family>` (24 values) or `page:<page>` (11 values). Resolved against `media_assets.tags` through the GIN index, per §7; it is a stored scope, not a free-text note |
 | `attempted`, `migrated`, `skipped`, `failed` | `int not null default 0` |
 | `dry_run` | `boolean not null default false` |
 | `run_by` | `uuid references auth.users(id)` |
@@ -1315,7 +1427,7 @@ rather than a broken card. Writes require `merchandising.write`.
 
 | Table | Key columns | Keys / RLS |
 |---|---|---|
-| `search_documents` | `id`, `entity_type text check (entity_type in ('product','category','collection','portfolio_project','journal_article','material','media_asset','inquiry'))`, `entity_id uuid`, `visibility search_visibility`, `status content_status`, `url_path`, `title text not null`, `subtitle`, `body`, `keywords text[]`, `image_media_id`, `category_slug citext`, `search_vector tsvector generated always as (…) stored`, `indexed_at` | `unique (entity_type, entity_id)`; GIN on `search_vector`; GIN `gin_trgm_ops` on `title`. RLS-SERVICE: anon `select using (visibility = 'PUBLIC' and status = 'PUBLISHED')`; staff `select` for any active role; writes by `security definer` triggers only |
+| `search_documents` | `id`, `entity_type text check (entity_type in ('product','category','collection','portfolio_project','journal_article','material','media_asset','inquiry'))`, `entity_id uuid`, `visibility search_visibility`, `status content_status`, `url_path`, `title text not null`, `subtitle`, `body`, `keywords text[]`, `image_media_id`, `category_slug citext`, `search_vector tsvector generated always as (…) stored`, `indexed_at` | `unique (entity_type, entity_id)`; GIN on `search_vector`; GIN `gin_trgm_ops` on `title`. RLS-SERVICE **plus the one named `anon` grant permitted by §1.5**: anon `select using (visibility = 'PUBLIC' and status = 'PUBLISHED')`; staff `select` for any active role; writes by `security definer` triggers only, never by a role policy |
 | `research_search_documents` | Same shape; `entity_type check (entity_type in ('research_product','research_source','research_run'))` | Created **empty** in Phase 23 so the separation is visible in the schema from day one. RLS-RESEARCH. **No `anon` policy, ever** |
 | `search_queries` | `id`, `query_text`, `normalized_query`, `scope text check (scope in ('PUBLIC','STUDIO'))`, `result_count int`, `staff_user_id uuid null`, `occurred_at` | No IP, no user agent, no visitor identifier. 90-day retention. `select` requires `analytics.read` |
 
@@ -1383,7 +1495,7 @@ competitor page body, or an unmapped upstream error message.
 
 | Column | Type |
 |---|---|
-| `key` | `text primary key` |
+| `key` | `text primary key` — a natural key, per the §1.1 rule-2 carve-out and open question 11 |
 | `description` | `text` |
 | `is_enabled` | `boolean not null default false` |
 | `updated_at`, `updated_by` | |
@@ -1424,7 +1536,7 @@ require `research.read`, enforced by a policy predicate rather than filtered in 
 | `seo_keyword_themes` | 39 · `0370` | `id`, `theme text not null`, `normalized_theme citext`, `mapped_path`, `research_status text check (...)`, `notes`, `evidence_url`, `researched_by`, `researched_at`, Tier A+B+C | `unique (normalized_theme)`. **No numeric metric column exists** — there is deliberately nowhere to store a fabricated search volume or difficulty (D10) |
 | `seo_redirects` | 39 · `0370` | `id`, `from_path text not null`, `to_path text not null`, `status_code int not null default 308 check (status_code in (301,308))`, `reason`, `hit_count int default 0`, `last_hit_at`, Tier A+B | `unique (from_path)`; `check (from_path <> to_path)`; write-time chain detection. The only Phase 39 table with an `anon` `select`, restricted to `status = 'PUBLISHED'`, because the 404 path resolves it for anonymous visitors |
 | `web_vitals_samples` | 40 · `0380` | `id`, `route_pattern text not null`, `metric text check (metric in ('LCP','CLS','INP','TTFB','FCP'))`, `value numeric not null`, `rating text check (rating in ('good','needs-improvement','poor'))`, `nav_type`, `effective_type`, `device_memory_bucket`, `viewport_bucket`, `occurred_at` | **No** IP, user agent, session id, user id, referrer, slug or query string. `route_pattern`, never a resolved path. Index `(route_pattern, metric, occurred_at)`; 90-day retention; RLS-SERVICE, `select` requires `analytics.read` |
-| `rate_limit_buckets` | 41 · `0390` | `bucket_key text not null`, `window_start timestamptz not null`, `count int not null default 0`, `primary key (bucket_key, window_start)` | Fixed window. **No policy for `anon` or `authenticated` at all** — only the service role touches it. Pruned by the Phase 38 cron |
+| `rate_limit_buckets` | 41 · `0390` | `bucket_key text not null`, `window_start timestamptz not null`, `count int not null default 0`, `primary key (bucket_key, window_start)` | Fixed window; a natural key, per the §1.1 rule-2 carve-out and open question 11. **No policy for `anon` or `authenticated` at all** — only the service role touches it. Pruned by the Phase 38 cron |
 
 **`/studio/operations/workflows` creates no table.** A workflow run already exists in five places —
 `research_runs`, `sheets_sync_runs`, `content_seed_runs`, `higgsfield_migration_runs` and
@@ -1560,8 +1672,8 @@ functions (`set_updated_at()`, `rivya_slugify(text)`). RLS is **enabled with no 
 |---|---|---|
 | 04 | `0009`–`0012` | T `staff_profiles`, `audit_log`; enum `user_role`; RLS helper functions; the four-policy pattern on every Phase 03 table |
 | 05 | `0020` | T `activity_events`, `studio_preferences` |
-| 06 | `0030` | A `media_assets` (full column set); T `media_usages`; enums `media_kind` (fixed), `media_source` |
-| 07 | `0040` | T `higgsfield_migration_runs`; populates the 250 manifest rows |
+| 06 | `0030` | A `media_assets` (full column set, **including** the Higgsfield-provenance columns Phase 07 populates); T `media_usages`; enums `media_kind` (fixed), `media_source`. Three named canary assets only — not the 250 |
+| 07 | `0040` | T `higgsfield_migration_runs`; populates all 250 manifest rows into `media_assets` (§7). **No `media_assets` schema change** — Phase 06 `0030` already declared every column the import writes |
 | 08 | `0050` | T `pages`, `page_sections`, `content_revisions`, `navigation_items`, `global_content`, `seo_entries`, `faqs`; the CMS trigger set |
 | 09 | `0070` | A seed indexes; tightens `set_owner_edited`. **No new tables** — Phase 09 is copy |
 | 10–13 | — | **None.** These phases render what Phases 06–09 created |
@@ -1629,7 +1741,9 @@ proposes the rest. It is raised for confirmation as open question 6.
 
 ## 14. Open questions for the canonical decisions
 
-Raised, not acted on. Nothing above knowingly diverges from `CANONICAL-DECISIONS.md`.
+Raised, not acted on. Exactly one thing above departs from `CANONICAL-DECISIONS.md` — the three
+natural primary keys of question 11 — and it is named there, in §1.1 and on each of the three
+tables. Nothing diverges silently.
 
 1. **Three relationship tables.** Phase 03 fixed `product_relations` on `source_product_id`;
    Phase 16 introduced the general `entity_relations`; Phase 23 introduced `content_relations` for
@@ -1689,3 +1803,14 @@ Raised, not acted on. Nothing above knowingly diverges from `CANONICAL-DECISIONS
     are D4 routes that no phase document claims in full. §10 settles the *data* question (neither
     creates a table; workflows gets a view) but not the *ownership* question. Suggested amendment:
     assign both pages to Phase 38 in `ROADMAP.md`.
+
+11. **Three natural primary keys (D5).** D5 fixes `id uuid primary key default gen_random_uuid()`
+    and §1.1 rule 2 exempts only pure join tables, but `staff_profiles` (`user_id`),
+    `feature_flags` (`key`) and `rate_limit_buckets` (`bucket_key, window_start`) are none of
+    those. §1.1's carve-out gives the reason for each: a row that is 1:1 with `auth.users`, a row
+    whose identity *is* its configuration key, and a fixed-window counter addressed by bucket and
+    window. Suggested amendment to D5, beside the naming rules: "a table whose identity is a
+    foreign key to `auth.users`, a configuration key, or a fixed-window counter may take that
+    natural key as its primary key; every other table takes the surrogate uuid." Confirm before
+    Phase 04 ships `staff_profiles` — that is the only one of the three whose key is load-bearing
+    for RLS — or the three gain a surrogate `id` plus a unique constraint on the natural key.
