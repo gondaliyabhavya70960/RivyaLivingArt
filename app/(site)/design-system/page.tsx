@@ -163,7 +163,7 @@ export default function DesignSystemPage() {
           <Radio name="scale" value="large" label="Large format" />
         </State>
         <State label="switch">
-          <Switch onLabel="Published" offLabel="Draft" />
+          <Switch label="Publication state" onLabel="Published" offLabel="Draft" />
         </State>
       </Specimen>
 

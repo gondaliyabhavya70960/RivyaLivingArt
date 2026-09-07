@@ -6,13 +6,13 @@ import { Switch } from './index'
 
 describe('Switch', () => {
   it('exposes a switch role carrying its own state', () => {
-    render(<Switch aria-label="Visible on the public site" onLabel="On" offLabel="Off" />)
+    render(<Switch label="Visible on the public site" onLabel="On" offLabel="Off" />)
     const control = screen.getByRole('switch', { name: 'Visible on the public site' })
     expect(control).toHaveAttribute('aria-checked', 'false')
   })
 
   it('states on and off in words, not in track colour alone', async () => {
-    render(<Switch aria-label="Visible on the public site" onLabel="On" offLabel="Off" />)
+    render(<Switch label="Visible on the public site" onLabel="On" offLabel="Off" />)
     expect(screen.getByText('Off')).toBeInTheDocument()
 
     await userEvent.click(screen.getByRole('switch'))
@@ -25,7 +25,7 @@ describe('Switch', () => {
     const onCheckedChange = vi.fn()
     render(
       <Switch
-        aria-label="Visible on the public site"
+        label="Visible on the public site"
         onLabel="On"
         offLabel="Off"
         onCheckedChange={onCheckedChange}
@@ -42,7 +42,7 @@ describe('Switch', () => {
     const onCheckedChange = vi.fn()
     render(
       <Switch
-        aria-label="Visible on the public site"
+        label="Visible on the public site"
         onLabel="On"
         offLabel="Off"
         onCheckedChange={onCheckedChange}
@@ -67,7 +67,7 @@ describe('Switch', () => {
     const onCheckedChange = vi.fn()
     render(
       <Switch
-        aria-label="Visible on the public site"
+        label="Visible on the public site"
         onLabel="On"
         offLabel="Off"
         checked={false}
@@ -86,7 +86,7 @@ describe('Switch', () => {
     const onCheckedChange = vi.fn()
     render(
       <Switch
-        aria-label="Visible on the public site"
+        label="Visible on the public site"
         onLabel="On"
         offLabel="Off"
         disabled
@@ -114,10 +114,43 @@ describe('Switch', () => {
   })
 
   it('starts from the state it is given', () => {
-    render(
-      <Switch aria-label="Visible on the public site" onLabel="On" offLabel="Off" defaultChecked />,
-    )
+    render(<Switch label="Visible on the public site" onLabel="On" offLabel="Off" defaultChecked />)
     expect(screen.getByRole('switch')).toHaveAttribute('aria-checked', 'true')
     expect(screen.getByText('On')).toBeInTheDocument()
+  })
+})
+
+describe('Switch accessible name', () => {
+  it('has a name that does not change when toggled', async () => {
+    render(<Switch label="Publication state" onLabel="Published" offLabel="Draft" />)
+    const sw = screen.getByRole('switch', { name: 'Publication state' })
+    expect(sw).toHaveAttribute('aria-checked', 'false')
+
+    await userEvent.click(sw)
+
+    // The state moved; the NAME must not. A name that changes under the user is a name
+    // screen-reader users cannot rely on — and the on/off words are state, not name.
+    expect(sw).toHaveAttribute('aria-checked', 'true')
+    expect(screen.getByRole('switch', { name: 'Publication state' })).toBe(sw)
+  })
+})
+
+describe('Switch name enforcement', () => {
+  it('warns in development when it has no accessible name source', () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    render(<Switch onLabel="On" offLabel="Off" />)
+    expect(spy).toHaveBeenCalledWith(expect.stringContaining('no accessible name'))
+    spy.mockRestore()
+  })
+
+  it('does not warn when a Field supplies the name through the injected id', () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    render(
+      <Field label="Visible on the public site">
+        <Switch onLabel="On" offLabel="Off" />
+      </Field>,
+    )
+    expect(spy).not.toHaveBeenCalledWith(expect.stringContaining('no accessible name'))
+    spy.mockRestore()
   })
 })

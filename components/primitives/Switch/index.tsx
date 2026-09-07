@@ -29,7 +29,7 @@ import { cn } from '@/lib/ui/cn'
  * `className` styles the row; `id`, `aria-label`, `aria-describedby` and `data-*` spread
  * onto the <button>, which is also what `ref` points at.
  */
-export interface SwitchProps extends Omit<
+interface SwitchBaseProps extends Omit<
   React.ButtonHTMLAttributes<HTMLButtonElement>,
   'type' | 'role' | 'aria-checked' | 'value' | 'defaultValue'
 > {
@@ -43,8 +43,36 @@ export interface SwitchProps extends Omit<
   offLabel: string
 }
 
+/**
+ * A switch must have an accessible name, and a STABLE one.
+ *
+ * `onLabel`/`offLabel` are the STATE, never the name: a name that changes as the user
+ * toggles is a name screen-reader users cannot rely on. With no other source the button
+ * has no name at all — axe reports `button-name` as a critical violation, which is how
+ * this was found, after unit tests that passed `aria-label` themselves had hidden it.
+ *
+ * There are three legitimate name sources and only one can be checked by the compiler:
+ *
+ *   - `label`            standalone use; becomes `aria-label`
+ *   - `aria-labelledby`  supplied explicitly by the consumer
+ *   - a `Field` wrapper  which renders `<Label htmlFor>` against the `id` it injects
+ *
+ * The third arrives through `cloneElement` and is invisible to the type system, so
+ * `label` cannot be made statically required without breaking correct Field usage. It is
+ * therefore optional here and enforced at runtime in development instead — see the
+ * assertion in the component. The axe test in tests/e2e/design-system.spec.ts is the
+ * backstop.
+ */
+type SwitchLabelling = {
+  /** What the switch CONTROLS, e.g. "Publication state". Becomes `aria-label`. */
+  label?: string
+}
+
+export type SwitchProps = SwitchBaseProps & SwitchLabelling
+
 export const Switch = React.forwardRef<HTMLButtonElement, SwitchProps>(function Switch(
   {
+    label,
     checked,
     defaultChecked = false,
     onCheckedChange,
@@ -81,6 +109,23 @@ export const Switch = React.forwardRef<HTMLButtonElement, SwitchProps>(function 
 
   const thumbTone = disabled ? 'bg-ink-disabled' : on ? 'bg-ink-on-accent' : 'bg-line-strong'
 
+  // Development-only. A switch with no name source renders an unnamed button, which is a
+  // critical axe violation and unusable with a screen reader. Warn loudly where it is
+  // cheap to fix rather than waiting for the e2e axe pass.
+  if (process.env.NODE_ENV !== 'production') {
+    const named =
+      label !== undefined ||
+      rest['aria-label'] !== undefined ||
+      rest['aria-labelledby'] !== undefined ||
+      rest.id !== undefined // a Field injects `id` and renders <Label htmlFor>
+    if (!named) {
+      console.error(
+        'Switch: no accessible name. Pass `label`, or `aria-labelledby`, or wrap it in a Field. ' +
+          'onLabel/offLabel are the state and must not be used as the name.',
+      )
+    }
+  }
+
   return (
     <span className={cn('inline-flex items-center gap-3', className)}>
       <button
@@ -88,6 +133,7 @@ export const Switch = React.forwardRef<HTMLButtonElement, SwitchProps>(function 
         type="button"
         role="switch"
         aria-checked={on}
+        aria-label={label}
         disabled={disabled}
         onClick={handleClick}
         className={cn(
