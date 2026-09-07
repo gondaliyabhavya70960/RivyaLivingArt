@@ -44,6 +44,25 @@ Every phase adds an entry; see `docs/architecture/CANONICAL-DECISIONS.md` D9 for
 
 **Fixed**
 
+- **Every button in the product rendered unstyled** — no padding, no accent fill on the
+  primary CTA, no border on the secondary. `app/styles/base.css` was imported *unlayered*,
+  and Tailwind 4 puts utilities in `@layer utilities`; an unlayered stylesheet beats a
+  layered one regardless of source order, so `button { padding: 0; border: none;
+  background: none }` overrode every padding, border and background utility on every button.
+  Nothing caught it: the classes were present in source, they compiled to real CSS, axe was
+  satisfied because text-on-ground contrast is fine without a fill, and **the sixteen visual
+  baselines agreed with it, having been captured from the broken state.** Found only by
+  chasing a 43px-wide button reported by a newly added touch-target test. Fixed by importing
+  Tailwind first and pulling `base.css` into `layer(base)`; guarded by an e2e assertion that
+  reads computed style, which is the only place a cascade loss is visible.
+- **Nine components had no transitions.** `duration-[--rv-duration-fast]` is an arbitrary
+  *value* in Tailwind 4 and compiles to `transition-duration: --rv-duration-fast`, invalid
+  CSS the browser drops. The parenthesis form is the variable reference. `check-tokens` now
+  rejects the bracket-variable pattern anywhere.
+- **The QA matrix could not test touch.** The three "mobile" projects reported a fine
+  pointer, so they were narrow desktops and the 44px touch-target rule in FEAT §48 was
+  untestable at exactly the widths it exists for. `hasTouch` is now set on those projects and
+  a touch-target test asserts the rule.
 - **`Dialog` and `Drawer` did not restore focus to their trigger**, though both promise it in
   their registry contracts. `useModalSurface` applies `inert` in a layout effect; `FocusTrap`
   captured `document.activeElement` in a passive effect, which runs later — so it captured

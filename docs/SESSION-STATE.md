@@ -72,7 +72,8 @@ NODE_ENV=production npm run build && npm start   (route guard)
 ## Test Results
 
 - Unit: **282 tests across 41 files**, all passing.
-- E2E: **104 tests across the 8 QA widths**, all passing — rendering, 16 visual baselines,
+- E2E: **120 tests across the 8 QA widths** (115 pass, 5 correctly skipped — the touch-target
+  check does not apply on a fine pointer), all passing — rendering, 16 visual baselines,
   axe, keyboard reachability, the reduced-motion contract, and the pattern keyboard
   walkthrough (Dialog trap and restore, Tabs roving tabindex, Accordion aria-expanded,
   DropdownMenu Escape).
@@ -91,21 +92,32 @@ disabled), not a defect in the diff. The full CI sequence passes locally from a 
 
 **Resolved during this phase**, recorded because each was a real defect:
 
-1. `Dialog` and `Drawer` **did not restore focus to their trigger**. `useModalSurface`
+1. **Every button rendered unstyled.** `base.css` was imported unlayered and beat every
+   Tailwind utility on `button` — no padding, no accent fill, no border. The visual baselines
+   had been captured from that state and therefore endorsed it. This is the phase's most
+   important lesson: **a snapshot proves nothing changed, never that anything is right.** The
+   checks that found real defects were the ones asserting against an external standard —
+   computed style, the OKLab rule, axe, a real keyboard — not the ones comparing the system
+   to its own past output.
+2. **Nine components had no transitions** — `duration-[--var]` compiles to invalid CSS that
+   browsers drop silently. Gated in `check-tokens`.
+3. **The QA matrix could not test touch** — mobile projects reported a fine pointer until
+   `hasTouch` was set, so the 44px rule was unverifiable where it applies.
+4. `Dialog` and `Drawer` **did not restore focus to their trigger**. `useModalSurface`
    applies `inert` in a layout effect; `FocusTrap` captured `document.activeElement` in a
    passive effect, which runs later, so it captured `<body>` after the browser had blurred
    the inert trigger. **jsdom does not implement `inert`'s focus behaviour**, so the unit
    test asserting restoration passed throughout — the Chromium test caught it. Recorded above
    that test so it is not trusted alone.
-2. `Switch` rendered a button with **no accessible name** — a critical axe violation. The
+5. `Switch` rendered a button with **no accessible name** — a critical axe violation. The
    unit tests had hidden it by passing `aria-label` themselves. Now optional `label` with a
    dev-time assertion covering all three name sources, plus a test that the name does not
    change when toggled.
-3. Four component groups independently hit the **polymorphic ref** error. Fixed in
+6. Four component groups independently hit the **polymorphic ref** error. Fixed in
    `lib/ui/polymorphic.ts` and documented as DESIGN_SYSTEM §6.3 so a fifth does not.
-4. **False positives in my own gates** — unescaped variant selectors, bare utility
+7. **False positives in my own gates** — unescaped variant selectors, bare utility
    roots matching prose, unstripped block comments, and CSS leading-digit escaping.
-5. Playwright polled `/` for readiness, which legitimately 404s until Phase 10.
+8. Playwright polled `/` for readiness, which legitimately 404s until Phase 10.
 
 ## Remaining Work
 
