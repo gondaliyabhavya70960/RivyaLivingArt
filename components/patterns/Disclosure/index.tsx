@@ -131,7 +131,9 @@ export const Disclosure = React.forwardRef<HTMLDivElement, DisclosureProps>(func
       <div
         id={regionId}
         role={landmark ? 'region' : undefined}
-        aria-labelledby={landmark ? triggerId : undefined}
+        // Declared whether or not the landmark role is, as in RC-204: the relationship is
+        // what the role would have used, and it costs nothing to keep when it is withheld.
+        aria-labelledby={triggerId}
         inert={!isOpen}
         className={cn(
           'grid',

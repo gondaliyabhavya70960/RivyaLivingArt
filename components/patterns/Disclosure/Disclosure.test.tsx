@@ -52,10 +52,7 @@ describe('Disclosure', () => {
       </Disclosure>,
     )
 
-    expect(screen.getByRole('button', { name: 'Contact' })).toHaveAttribute(
-      'aria-expanded',
-      'true',
-    )
+    expect(screen.getByRole('button', { name: 'Contact' })).toHaveAttribute('aria-expanded', 'true')
   })
 
   it('reports the state it is being moved to and leaves a controlled disclosure alone', async () => {

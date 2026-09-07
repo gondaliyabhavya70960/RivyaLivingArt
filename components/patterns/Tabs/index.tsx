@@ -185,8 +185,10 @@ export const Tabs = React.forwardRef<HTMLDivElement, TabsProps>(function Tabs(
                 // `transition-duration: --rv-duration-quick`, which is invalid and silently
                 // drops the transition. Do not "tidy" the parentheses into brackets.
                 'transition-[color,border-color] duration-(--rv-duration-quick) ease-standard',
-                // Selection is carried by the underline AND by the ink weight of the
-                // label, never by the accent colour alone (WCAG 1.4.1).
+                // Selection is carried by the underline as well as by the ink step from
+                // secondary to primary, never by the accent colour alone (WCAG 1.4.1):
+                // the border is a shape, and a shape survives a reader who cannot
+                // separate the two inks.
                 isSelected
                   ? 'border-ink-accent text-ink'
                   : 'border-transparent text-ink-secondary hover:text-ink',

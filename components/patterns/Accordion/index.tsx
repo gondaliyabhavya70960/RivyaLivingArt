@@ -230,6 +230,9 @@ export const Accordion = React.forwardRef<HTMLDivElement, AccordionProps>(functi
             <div
               id={regionId(item.id)}
               role={landmark ? 'region' : undefined}
+              // Declared whether or not the landmark role is: §11 wants the region
+              // labelled by its header, and the relationship costs nothing to keep when
+              // the role is withheld — it is what the role would have used.
               aria-labelledby={headerId(item.id)}
               // Present in the DOM for find-in-page; out of the accessibility tree and out
               // of the tab order while collapsed. See the note at the top of the file.

@@ -48,7 +48,7 @@ import { useReducedMotion } from '@/components/primitives/motion/useReducedMotio
  *
  * TYPEAHEAD IS NOT IMPLEMENTED. APG lists it as optional, and a Studio menu of four to
  * eight items is reached faster by two arrow presses than by a buffered string match. It
- * is a addition this component can take later without changing anything above.
+ * is an addition this component can take later without changing anything above.
  *
  * DISABLED ITEMS STAY FOCUSABLE. `aria-disabled`, not the `disabled` attribute: a menu
  * item a reader cannot reach is a menu item they cannot find out about, and §12.1 makes
@@ -345,9 +345,14 @@ export const DropdownMenu = React.forwardRef<HTMLDivElement, DropdownMenuProps>(
               const itemClassName = cn(
                 // ≥ 44px rows either way (RC-231), and the row itself is the hit box.
                 'flex min-h-11 items-center gap-3 rounded-sm px-4 py-2 text-left text-sm',
-                'transition-[color,background-color] duration-(--rv-duration-fast) ease-standard',
+                'transition-[color,filter] duration-(--rv-duration-fast) ease-standard',
                 item.destructive === true ? 'text-state-danger' : 'text-ink',
-                'hover:bg-surface-raised',
+                // §7.1's hover rule, and the same move Button's `quiet` variant makes on
+                // this exact surface: lift the fill rather than swap to another token.
+                // `bg-surface-raised` would darken the row on DEEP and INK, where the
+                // raised surface sits BELOW raised-2, and lighten it on BONE — a hover
+                // that means opposite things in two schemes.
+                'hover:brightness-110',
                 // Never opacity: 0.5 — that drags the contrast below the §2.6 exemption.
                 'aria-disabled:cursor-not-allowed aria-disabled:text-ink-disabled',
               )
@@ -361,7 +366,9 @@ export const DropdownMenu = React.forwardRef<HTMLDivElement, DropdownMenuProps>(
                 tabIndex: isActive ? 0 : -1,
                 'aria-disabled': item.disabled === true ? (true as const) : undefined,
                 onClick: (event: React.MouseEvent<HTMLElement>) => activate(item, event),
-                className,
+                // Named, never `className` shorthand: the shorthand binds the component's
+                // own `className` prop and quietly paints the root's classes on every row.
+                className: itemClassName,
               }
 
               return item.href === undefined ? (

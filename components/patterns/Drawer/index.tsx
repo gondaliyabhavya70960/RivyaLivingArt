@@ -151,7 +151,20 @@ export const Drawer = React.forwardRef<HTMLElement, DrawerProps>(function Drawer
 ) {
   const headingId = React.useId()
   const descriptionId = React.useId()
-  const { visible, overlayRef, panelRef } = useModalSurface(open, ENTER_FROM[side], ref)
+  const overlayRef = React.useRef<HTMLDivElement | null>(null)
+  const panelRef = React.useRef<HTMLElement | null>(null)
+  const visible = useModalSurface({ open, overlayRef, panelRef, enterFrom: ENTER_FROM[side] })
+
+  // One node, two consumers: the entrance needs the element to animate, and the caller
+  // still gets the ref it passed. The same shape FocusTrap uses for its own container.
+  const setPanel = React.useCallback(
+    (node: HTMLElement | null) => {
+      panelRef.current = node
+      if (typeof ref === 'function') ref(node)
+      else if (ref) ref.current = node
+    },
+    [ref],
+  )
 
   function handleKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
     if (event.key !== 'Escape' || event.defaultPrevented) return
@@ -198,7 +211,7 @@ export const Drawer = React.forwardRef<HTMLElement, DrawerProps>(function Drawer
         className={cn('relative flex flex-col', WRAPPER[side])}
       >
         <Surface
-          ref={panelRef}
+          ref={setPanel}
           level={3}
           radius="none"
           role="dialog"

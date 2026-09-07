@@ -135,52 +135,52 @@ function inertOutside(overlay: HTMLElement): () => void {
 
 /* ------------------------------------------------------------------- the shared surface */
 
-export interface ModalSurface {
-  /** The portal may render: a document exists, and the surface is open. */
-  visible: boolean
+/** No subscription: whether a document exists cannot change during a page view. */
+const subscribeNever = () => () => {}
+const isClient = () => true
+const isServer = () => false
+
+export interface ModalSurfaceOptions {
+  /** The consumer's open state. */
+  open: boolean
   /** The overlay root — the scroll-locked, `inert`-excluded, fading box. */
   overlayRef: React.RefObject<HTMLDivElement | null>
-  /** The panel. Carries the entrance transform, and forwards the consumer's own ref. */
-  panelRef: (node: HTMLElement | null) => void
+  /** The panel, which carries the entrance transform. */
+  panelRef: React.RefObject<HTMLElement | null>
+  /**
+   * The panel's armed `transform`: `translateY(...)` for a dialog, a full edge translation
+   * for a drawer. This is the whole of the difference between the two surfaces.
+   */
+  enterFrom: string
 }
 
 /**
  * Everything a modal surface needs that is not its markup: the portal gate, the scroll
- * lock, the `inert` sweep and the FORM entrance. `Drawer` (RC-202) consumes it too —
- * `COMPONENT_REGISTRY.md` §7.2 says it "shares RC-201's focus and scroll-lock
- * implementation; differs only in placement and transform axis", and `enterFrom` is that
- * axis. Exported for that reason and no other; it is not a public API.
+ * lock, the `inert` sweep and the FORM entrance. Returns whether the portal may render.
  *
- * @param open        the consumer's open state
- * @param enterFrom   the panel's armed `transform` — `translateY(...)` for a dialog, a
- *                    100% edge translation for a drawer
- * @param forwardedRef the consumer's ref, which lands on the panel
+ * `Drawer` (RC-202) consumes it too — `COMPONENT_REGISTRY.md` §7.2 says it "shares RC-201's
+ * focus and scroll-lock implementation; differs only in placement and transform axis", and
+ * `enterFrom` is that axis. Exported for that reason and no other; it is not a public API.
+ *
+ * The two elements are passed IN rather than created here and handed back, so that the ref
+ * a consumer forwards is merged onto the panel by the component that owns both — one place
+ * where a node has two readers, which is the same shape `FocusTrap` uses for its container.
  */
-export function useModalSurface(
-  open: boolean,
-  enterFrom: string,
-  forwardedRef: React.ForwardedRef<HTMLElement>,
-): ModalSurface {
+export function useModalSurface({
+  open,
+  overlayRef,
+  panelRef,
+  enterFrom,
+}: ModalSurfaceOptions): boolean {
   const reducedMotion = useReducedMotion()
-  const overlayRef = React.useRef<HTMLDivElement | null>(null)
-  const panelNode = React.useRef<HTMLElement | null>(null)
 
-  // `createPortal` needs a document. Rendering the portal on the first client render
-  // instead would disagree with the server's empty output, and React 19 throws the server
-  // tree away on that mismatch rather than patching it.
-  const [mounted, setMounted] = React.useState(false)
-  React.useEffect(() => setMounted(true), [])
-
-  const visible = open && mounted
-
-  const panelRef = React.useCallback(
-    (node: HTMLElement | null) => {
-      panelNode.current = node
-      if (typeof forwardedRef === 'function') forwardedRef(node)
-      else if (forwardedRef) forwardedRef.current = node
-    },
-    [forwardedRef],
-  )
+  // `createPortal` needs a document, and the server has none. `useSyncExternalStore` is how
+  // that is asked without a render-phase `typeof window` test: the server snapshot is
+  // `false` and the client snapshot is `true`, so the server's empty output and the first
+  // client render agree and React 19 has no mismatch to throw the tree away over. A
+  // `setState` in a mount effect would say the same thing one cascading render later.
+  const hydrated = React.useSyncExternalStore(subscribeNever, isClient, isServer)
+  const visible = open && hydrated
 
   // Layout effect, for the ordering reason in the header comment. Cleanup is what makes
   // an unmount mid-open safe.
@@ -193,7 +193,7 @@ export function useModalSurface(
       releaseInert?.()
       releaseScroll()
     }
-  }, [visible])
+  }, [visible, overlayRef])
 
   useIsomorphicLayoutEffect(() => {
     if (!visible || reducedMotion) return
@@ -203,7 +203,7 @@ export function useModalSurface(
     if (typeof requestAnimationFrame !== 'function') return
 
     const overlay = overlayRef.current
-    const panel = panelNode.current
+    const panel = panelRef.current
     if (!overlay) return
 
     // Armed, with no transition, before this frame is painted.
@@ -224,9 +224,9 @@ export function useModalSurface(
       }
     })
     return () => cancelAnimationFrame(frame)
-  }, [visible, reducedMotion, enterFrom])
+  }, [visible, reducedMotion, enterFrom, overlayRef, panelRef])
 
-  return { visible, overlayRef, panelRef }
+  return visible
 }
 
 /* -------------------------------------------------------------------------- the glyph */
@@ -307,7 +307,20 @@ export const Dialog = React.forwardRef<HTMLElement, DialogProps>(function Dialog
 ) {
   const headingId = React.useId()
   const descriptionId = React.useId()
-  const { visible, overlayRef, panelRef } = useModalSurface(open, DIALOG_ENTER_FROM, ref)
+  const overlayRef = React.useRef<HTMLDivElement | null>(null)
+  const panelRef = React.useRef<HTMLElement | null>(null)
+  const visible = useModalSurface({ open, overlayRef, panelRef, enterFrom: DIALOG_ENTER_FROM })
+
+  // One node, two consumers: the entrance needs the element to animate, and the caller
+  // still gets the ref it passed. The same shape FocusTrap uses for its own container.
+  const setPanel = React.useCallback(
+    (node: HTMLElement | null) => {
+      panelRef.current = node
+      if (typeof ref === 'function') ref(node)
+      else if (ref) ref.current = node
+    },
+    [ref],
+  )
 
   function handleKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
     if (event.key !== 'Escape' || event.defaultPrevented) return
@@ -350,7 +363,7 @@ export const Dialog = React.forwardRef<HTMLElement, DialogProps>(function Dialog
         className={cn('relative flex w-full flex-col', SIZE[size])}
       >
         <Surface
-          ref={panelRef}
+          ref={setPanel}
           level={3}
           radius="none"
           role="dialog"
