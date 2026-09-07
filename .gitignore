@@ -16,3 +16,10 @@ test-results/
 next-env.d.ts
 tsconfig.tsbuildinfo
 .vitest/
+
+# Scratch probes. Component agents write one-off scripts at the repo root to compile
+# Tailwind or inspect output; the useful one became scripts/design/check-utilities.mjs.
+# Ignored so they are not committed by a `git add -A` mid-build.
+scratch-*.mjs
+.tw-probe.mjs
+probe.tmp.mjs
