@@ -216,19 +216,19 @@ All rows are `Source: Rivya first-party`, `Licence: N/A — first-party`, `Verdi
 
 | ID | Component | Purpose (FEAT §5) | Phase | State |
 |---|---|---|---|---|
-| RC-001 | `Button` | conversion, usability | 02 | PLANNED |
-| RC-002 | `IconButton` | usability | 02 | PLANNED |
-| RC-003 | `TextLink` | navigation | 02 | PLANNED |
-| RC-004 | `Field` | usability | 02 | PLANNED |
-| RC-005 | `Input` | conversion | 02 | PLANNED |
-| RC-006 | `Textarea` | conversion | 02 | PLANNED |
-| RC-007 | `Select` | conversion | 02 | PLANNED |
-| RC-008 | `Checkbox` | conversion | 02 | PLANNED |
-| RC-009 | `Radio` | conversion | 02 | PLANNED |
-| RC-010 | `Switch` | usability | 02 | PLANNED |
-| RC-011 | `Label` | usability | 02 | PLANNED |
-| RC-012 | `HelpText` | usability | 02 | PLANNED |
-| RC-013 | `ErrorText` | usability | 02 | PLANNED |
+| RC-001 | `Button` | conversion, usability | 02 | BUILT |
+| RC-002 | `IconButton` | usability | 02 | BUILT |
+| RC-003 | `TextLink` | navigation | 02 | BUILT |
+| RC-004 | `Field` | usability | 02 | BUILT |
+| RC-005 | `Input` | conversion | 02 | BUILT |
+| RC-006 | `Textarea` | conversion | 02 | BUILT |
+| RC-007 | `Select` | conversion | 02 | BUILT |
+| RC-008 | `Checkbox` | conversion | 02 | BUILT |
+| RC-009 | `Radio` | conversion | 02 | BUILT |
+| RC-010 | `Switch` | usability | 02 | BUILT |
+| RC-011 | `Label` | usability | 02 | BUILT |
+| RC-012 | `HelpText` | usability | 02 | BUILT |
+| RC-013 | `ErrorText` | usability | 02 | BUILT |
 | RC-014 | `Surface` | brand perception | 02 | PLANNED |
 | RC-015 | `Container` | usability | 02 | PLANNED |
 | RC-016 | `Section` | storytelling | 02 | PLANNED |
@@ -241,7 +241,7 @@ All rows are `Source: Rivya first-party`, `Licence: N/A — first-party`, `Verdi
 | RC-023 | `Divider` | usability | 02 | PLANNED |
 | RC-024 | `Badge` | usability | 02 | PLANNED |
 | RC-025 | `Tag` | navigation | 02 | PLANNED |
-| RC-026 | `Spinner` | usability | 02 | PLANNED |
+| RC-026 | `Spinner` | usability | 02 | BUILT |
 | RC-027 | `Skeleton` | usability | 02 | PLANNED |
 | RC-028 | `VisuallyHidden` | usability | 02 | PLANNED |
 | RC-029 | `AspectBox` | material understanding | 02 | PLANNED |
@@ -291,7 +291,7 @@ and Phase 10's site shell then reuses it.
 | RC-227 | `InquirySuccess` | conversion | 20 | PLANNED | index only — server, SEED §48 copy |
 | RC-228 | `ModelViewerMount` | product understanding | 21 | PLANNED | §7.22 |
 | RC-229 | `charts/*` (`BarSeries`, `BandStrip`, `Scatter`, `Sparkline`) | usability | 31 | PLANNED | §7.23 |
-| RC-230 | `Breadcrumbs` | navigation | 02 | PLANNED | §7.35 |
+| RC-230 | `Breadcrumbs` | navigation | 02 | BUILT | §7.35 |
 | RC-231 | `DropdownMenu` | navigation | 02 | PLANNED | §7.36 |
 | RC-232 | `MediaImage` | material understanding | 06 | PLANNED | §7.37 |
 | RC-233 | `MediaVideo` | material understanding | 06 | PLANNED | §7.38 |
