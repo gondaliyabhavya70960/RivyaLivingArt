@@ -29,7 +29,9 @@ gateway, no customer accounts. Conversion terminates in a persisted inquiry then
 app/
   (site)/                    public website route group
   (studio)/studio/           authenticated Studio route group
+  (studio)/studio/login/     unauthenticated sign-in surface (middleware redirect target)
   api/                       route handlers (webhooks, cron, media sign)
+  styles/                    tokens.css, base.css — shared by both route groups
 components/
   primitives/                design-system atoms (Button, Field, Surface…)
   patterns/                  composed UI (ProductCard, Lightbox, MegaMenu…)
@@ -74,6 +76,7 @@ Seeded categories, in priority order:
 
 ```
 /studio                                     overview · analytics · activity
+/studio/login                               sign-in; the only unauthenticated Studio route
 /studio/catalog/{products,categories,collections,materials,relationships,
                  customization-forms,bulk}
 /studio/merchandising/{homepage,store,featured,scheduling}
@@ -159,6 +162,17 @@ Brand and editorial copy may be written; anything asserting business capability 
 `OWNER_VERIFICATION_REQUIRED`. Empty states are used instead of invented projects.
 
 ## Amendments
+
+**2026-09-07 · A2 — two paths the build cannot avoid (D2, D4).** The phase documents raised these
+as proposals rather than taking them silently, which is the required procedure. Both are adopted.
+*A2·a* — D2's `app/` tree enumerated route directories only and named no home for the token layer.
+D1 rejects CSS-in-JS, so tokens must be a real stylesheet, and Studio and the public site share one
+token set (FEAT §6), so it must sit above both route groups: `app/styles/`. Needed by Phase 02.
+*A2·b* — middleware may only redirect; the redirect target must be an unauthenticated page inside
+the Studio group, and D4 listed authenticated surfaces only. `/studio/login` is now listed. Needed
+by Phase 04. The dev-only design-system gallery is deliberately **not** part of this amendment: it
+lives under `app/(site)/design-system/**`, which D2 already covers, and calls `notFound()` in
+production, so it adds no route to a production build and D3 is unchanged.
 
 **2026-09-07 · A1 — asset ID allocation (D6).** The Higgsfield audit exposed two allocators
 minting into one asset-ID namespace: the manifest generator numbering within a family, and the

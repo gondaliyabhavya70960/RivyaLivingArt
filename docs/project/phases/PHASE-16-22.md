@@ -285,7 +285,9 @@ copy and empty-state copy), Phase 10 (public shell), Phase 06 (media).
 - `portfolio_projects`, `portfolio_project_media` and `testimonials`, each shipping with zero rows.
 - Two independent publication gates on a project: `owner_verification = 'VERIFIED'`, and — when
   `client_display_name is not null` — `client_consent = 'GRANTED'` with a recorded consent
-  reference. Both enforced by trigger and by the publishing service.
+  reference. The same pair applies to a testimonial through its own columns
+  (`attributed_to`, `consent`). Both gates are enforced by a per-table trigger function and by the
+  publishing service.
 - The entity-page pattern for project detail: `pages.kind` gains `PROJECT`; a project's story is an
   ordered block list at `/portfolio/[slug]`.
 - `/portfolio` landing: seeded hero (SEED §17) plus a `portfolio-strip` of published projects that
@@ -351,28 +353,67 @@ copy and empty-state copy), Phase 10 (public shell), Phase 06 (media).
 New enum: `client_consent_state` = `NOT_APPLICABLE · PENDING · GRANTED · WITHDRAWN`.
 `pages.kind` check becomes `('PAGE','CATEGORY','SYSTEM','COLLECTION','PROJECT')`.
 
-Both gates in one trigger, applied to `portfolio_projects` and `testimonials`:
+The two tables name a person through different columns — `portfolio_projects.client_display_name` /
+`client_consent`, `testimonials.attributed_to` / `consent` — so the gate is **one function per
+table**, each referencing only columns that exist on its own table. A single shared function would
+raise `record "new" has no field …` on the first write to either table:
 
 ```sql
-create or replace function public.enforce_evidence_gate() returns trigger
+create or replace function public.enforce_project_evidence_gate() returns trigger
   language plpgsql as $$
 begin
   if new.status = 'PUBLISHED' then
     if new.owner_verification <> 'VERIFIED' then
-      raise exception 'row % cannot be published until owner_verification = VERIFIED (D10)', new.id;
+      raise exception 'portfolio_project % cannot be published until owner_verification = VERIFIED (D10)',
+        new.id;
     end if;
-    if coalesce(new.client_display_name, new.attributed_to) is not null
+    if new.client_display_name is not null
        and new.client_consent is distinct from 'GRANTED' then
-      raise exception 'row % names a person or client without GRANTED consent', new.id;
+      raise exception 'portfolio_project % names a client without GRANTED consent', new.id;
     end if;
+  end if;
+  if new.client_consent = 'WITHDRAWN' then
+    new.status := 'ARCHIVED';
   end if;
   return new;
 end $$;
+
+create or replace function public.enforce_testimonial_evidence_gate() returns trigger
+  language plpgsql as $$
+begin
+  if new.status = 'PUBLISHED' then
+    if new.owner_verification <> 'VERIFIED' then
+      raise exception 'testimonial % cannot be published until owner_verification = VERIFIED (D10)',
+        new.id;
+    end if;
+    if new.attributed_to is not null
+       and new.consent is distinct from 'GRANTED' then
+      raise exception 'testimonial % names a person without GRANTED consent', new.id;
+    end if;
+  end if;
+  if new.consent = 'WITHDRAWN' then
+    new.status := 'ARCHIVED';
+  end if;
+  return new;
+end $$;
+
+create trigger trg_portfolio_projects_evidence_gate
+  before insert or update on public.portfolio_projects
+  for each row execute function public.enforce_project_evidence_gate();
+
+create trigger trg_testimonials_evidence_gate
+  before insert or update on public.testimonials
+  for each row execute function public.enforce_testimonial_evidence_gate();
 ```
 
-`WITHDRAWN` consent additionally forces `status` back to `ARCHIVED` on update. RLS: `anon` may
+Both functions are `before` triggers so the `WITHDRAWN` branch can rewrite `status` in place: a
+consent column moving to `WITHDRAWN` forces the row back to `ARCHIVED` on the same statement.
+`lib/cms/publishing.ts` re-checks both gates before it attempts the write, so `OwnerVerificationPanel`
+names the unmet gate instead of surfacing a raised exception; the triggers are the backstop, not the
+user interface. RLS: `anon` may
 `SELECT` published rows only; staff reads need `content:read`; writes need `content:write`; only
-`owner`/`admin` may set `owner_verification = 'VERIFIED'` or `client_consent = 'GRANTED'`.
+`owner`/`admin` may set `owner_verification = 'VERIFIED'`,
+`portfolio_projects.client_consent = 'GRANTED'` or `testimonials.consent = 'GRANTED'`.
 
 **Studio surface** — fills `/studio/content/portfolio` (list with a permanent zero-row explanation
 rather than an error state, plus "New project") and creates
@@ -388,8 +429,10 @@ and per-item alt override), **Related** (`RelatedContentPicker`), **Verification
 (404 for every slug while zero projects are published). `/portfolio` stays in the sitemap;
 individual project URLs enter it only on publish.
 
-**Media** — `gallery-scene`, 5 assets (`GALLERY-SCENE-001` 4:5, `-002` 21:9, `-003` 16:9, `-004`
-16:9, and the `GALLERY-SCENE-001` **video** 16:9 that shares the id with the 4:5 still). These
+**Media** — `gallery-scene`, 5 assets, all on manifest page `portfolio`, section `gallery`:
+`GALLERY-SCENE-001` image 4:5, `-002` image 21:9, `-003` image 16:9, `-004` image 16:9,
+`-005` **video** 16:9. Each `rivya_asset_id` is unique across the manifest, so media is bound by
+id with no disambiguation by type. These
 remain bound to the `/portfolio` landing hero and atmosphere strip exactly as Phase 09 bound them,
 carry `is_concept = true`, and are never attached to a `portfolio_projects` row. No other family is
 consumed. Nothing is generated: the Phase 07 gap list already records "no project media" as an
@@ -414,7 +457,10 @@ accepted gap, resolved by the empty state, not by generation.
 3. `curl -s $NEXT_PUBLIC_SITE_URL/portfolio | grep -F 'The project archive is being prepared.'` —
    one match; `curl -o /dev/null -w '%{http_code}' $NEXT_PUBLIC_SITE_URL/portfolio/anything` → `404`.
 4. `npm run test:unit -- portfolio-publish-gate portfolio-empty` — passes, including the
-   concept-media rejection and both publish gates.
+   concept-media rejection and both publish gates **on both tables**: an insert into
+   `portfolio_projects` and an insert into `testimonials` each succeed as `DRAFT` without a
+   missing-field error, publishing either while `owner_verification <> 'VERIFIED'` raises, and a
+   testimonial with `attributed_to` set and `consent = 'PENDING'` cannot be published.
 5. Create a project in Studio, mark it a client project with a display name, leave consent
    `PENDING`, set `owner_verification = VERIFIED` as owner, attempt publish → refused with the
    consent reason named in the UI and a `DENIED` audit row.
@@ -434,7 +480,10 @@ accepted gap, resolved by the empty state, not by generation.
       "Coming Soon" anywhere.
 - [ ] `/portfolio/[slug]` returns 404 for every slug while no project is published.
 - [ ] Publishing requires `owner_verification = 'VERIFIED'`; naming a client or a person
-      additionally requires `client_consent = 'GRANTED'`; both are enforced in the database.
+      additionally requires `GRANTED` consent — `portfolio_projects.client_consent` and
+      `testimonials.consent` respectively — enforced in the database by
+      `enforce_project_evidence_gate()` and `enforce_testimonial_evidence_gate()`, each of which
+      references only its own table's columns.
 - [ ] Concept media (`is_concept = true`) cannot be attached to a project gallery.
 - [ ] The five `gallery-scene` assets remain landing-only and are not referenced by any project row.
 - [ ] `/studio/content/portfolio` and `/studio/content/testimonials` are filled and no longer stubs.
@@ -523,7 +572,7 @@ Phase 10 (public shell), Phase 06/07 (the 24 migrated journal assets).
 | Public landing | `app/(site)/journal/page.tsx` | list, filter chips, pagination, empty state |
 | Public article | `app/(site)/journal/[slug]/page.tsx` | block document, byline, cover, related strip |
 | Public category | `app/(site)/journal/category/[slug]/page.tsx` | category intro + list; 404 on unknown slug |
-| Feed | `app/(site)/journal/rss.xml/route.ts` | published articles only; absolute URLs |
+| Feed *(held — see open question 8)* | `app/(site)/journal/rss.xml/route.ts` | published articles only; absolute URLs; adds a public URL D3 does not list, so it ships only if that amendment is accepted |
 | Studio list/editor | `app/(studio)/studio/content/journal/page.tsx`, `[articleId]/page.tsx`, `actions.ts` | identity, categories, cover, body blocks, related, schedule |
 | Studio categories | `app/(studio)/studio/content/journal/categories/page.tsx` | rename, reorder, hide; slugs are stable |
 | Seed re-application | `content/seed/journal.ts` (Phase 09, unchanged) | resolved from `deferred` in this phase |
@@ -557,13 +606,19 @@ linked `ARTICLE` page), *Related* (`RelatedContentPicker`) and *Publishing* (sta
 `unpublish_at`, owner-verification panel). Adds
 `/studio/content/journal/categories` for the nine seeded categories.
 
-**Public surface** — `/journal`, `/journal/[slug]`, `/journal/category/[slug]`, plus
-`/journal/rss.xml`. All three page routes exist in D3. Unknown category slugs 404; unpublished
+**Public surface** — `/journal`, `/journal/[slug]` and `/journal/category/[slug]`, all three fixed
+by D3, plus one public URL D3 does not list: the feed at `/journal/rss.xml`. It is a route handler,
+not a page, and it is not a Next.js root convention the way `sitemap.xml` and `robots.txt` are
+(PHASE-10-15), so it is a genuine addition to the D3 map and is raised as
+**open question 8** below rather than shipped silently. Build the feed only once that amendment is
+accepted; until then the deliverable, verification step 8 and the exit-criteria line for it are
+held. Unknown category slugs 404; unpublished
 article slugs 404 for anonymous requests and render in draft mode for staff through the Phase 08
 preview token.
 
-**Media** — the `journal` page bucket: `editorial` (19 assets — 16 images at 4:5, 3:2, 1:1, 3:4 and
-16:9, plus three videos including the 9:16 `EDITORIAL-001` that shares its id with the 4:5 still)
+**Media** — the `journal` page bucket: `editorial` (19 assets — `EDITORIAL-001` … `-016` are images
+at 4:5, 3:2, 1:1, 3:4 and 16:9, plus three videos: `EDITORIAL-017` 9:16, `EDITORIAL-018` 16:9,
+`EDITORIAL-019` 16:9)
 and `workshop-session` (5 images, all 16:9). Twenty-four assets for ten drafts, so each seeded draft
 gets a distinct desktop cover from `editorial` and a distinct mobile cover where a 4:5 or 3:4
 variant exists; `workshop-session` supplies the landing atmosphere and the category headers. Covers
@@ -601,8 +656,10 @@ generated — the Phase 07 gap table already records journal covers as **covered
    article renders cover + body + related strip, `/journal/category/materials` lists only that
    category, an unknown category 404s, and an unpublished slug 404s anonymously but renders under a
    valid preview token.
-8. `curl -s $NEXT_PUBLIC_SITE_URL/journal/rss.xml | xmllint --noout -` — well-formed; item count
-   equals the published article count.
+8. *Only if open question 8 is accepted:* `curl -s $NEXT_PUBLIC_SITE_URL/journal/rss.xml |
+   xmllint --noout -` — well-formed; item count equals the published article count. If the
+   amendment is declined, assert instead that the URL returns `404` and that no feed link element
+   appears in `/journal`'s `<head>`.
 
 **Exit criteria**
 
@@ -612,6 +669,8 @@ generated — the Phase 07 gap table already records journal covers as **covered
 - [ ] Every seeded draft has a bound desktop cover, and a mobile cover wherever a portrait variant
       exists; no binding falls back to a placeholder.
 - [ ] `/journal`, `/journal/[slug]` and `/journal/category/[slug]` all render; unknown slugs 404.
+- [ ] `/journal/rss.xml` exists **only** if open question 8 has been accepted as a D3 amendment;
+      otherwise it is absent and no feed is advertised.
 - [ ] The related-content engine uses curated edges first and exactly one documented fallback rule.
 - [ ] Articles 02, 04 and 08 carry `OWNER_VERIFICATION_REQUIRED` and cannot be published unverified.
 - [ ] `reading_minutes` is computed, never entered by hand.
@@ -1108,7 +1167,8 @@ model).
   defaults are stored in `media_assets.viewer_settings jsonb`.
 - Variant switching reads `KHR_materials_variants` from the model when present; Studio may attach a
   human label and an optional `materials` reference per variant key. Labels only — no invented
-  material specification.
+  material specification — and a variant that names a material is owner-verified before that name
+  reaches the public viewer.
 - Dimension indicators render **only** `products.dimensions` values entered by the owner. A model's
   bounding box is never presented as a product dimension (D10).
 - Studio model management: `/studio/media/models` gains a GLB inspector that parses the file
@@ -1155,7 +1215,7 @@ model).
 | Compression | required above 5 MB (`KHR_draco_mesh_compression` or `EXT_meshopt_compression`) | inspector rejects on upload |
 | Triangles | reject > 250,000; warn > 150,000 | inspector |
 | Textures | reject any texture > 2048 px; warn > 4 textures | inspector |
-| Poster | mandatory before a model may be associated with a public entity | check constraint `kind <> 'MODEL_3D' or model_poster_id is not null` |
+| Poster | mandatory before a model may be **associated** with a public entity; a model may be uploaded and inspected without one | check constraint `kind <> 'MODEL_3D' or (associated_product_id is null and associated_project_id is null) or model_poster_id is not null` |
 | Reduced motion | no auto-rotate, no intro animation, no idle motion; poster plus an explicit control | `useReducedMotion` from Phase 02; e2e assertion under `prefers-reduced-motion: reduce` |
 | Mobile fallback | below 768 px the viewer is opt-in only, fullscreen by default once opened | e2e at 390 px |
 | Flag off | nothing 3D is requested, rendered or downloaded | e2e with `3d_viewer` disabled |
@@ -1165,10 +1225,21 @@ model).
 `lightingPreset`, `environmentPreset`, `autoRotate`, `minDistance`, `maxDistance`) and the check
 constraints for size, triangles and poster above. New table `model_variant_labels`:
 `id`, `media_asset_id fk on delete cascade`, `variant_key text`, `label text`,
-`material_id uuid null references materials(id)`, `position int`;
-`unique (media_asset_id, variant_key)`. Labels are `EDITORIAL_COPY`; attaching a `material_id`
-links to an existing `materials` row and never invents a specification. RLS mirrors `media_assets`:
-public read only where the owning asset is `PUBLISHED`; writes need `media:write`.
+`material_id uuid null references materials(id)`, `position int`,
+`fact_classification not null default 'EDITORIAL_COPY'`,
+`owner_verification owner_verification not null default 'NOT_REQUIRED'`, `created_at`,
+`updated_at`, `updated_by`; `unique (media_asset_id, variant_key)`.
+
+A bare label is editorial copy and needs no verification. A label that also carries a `material_id`
+asserts that a named material is present in a real object, which is a product fact (D10), so:
+`check (material_id is null or owner_verification <> 'NOT_REQUIRED')` — attaching a material forces
+the row to at least `OWNER_VERIFICATION_REQUIRED` — and the public read path in
+`lib/media/model.ts` returns `material_id` **only** where `owner_verification = 'VERIFIED'`. An
+unverified association still renders its label in `VariantSwitcher`; it simply carries no material
+name. Attaching a `material_id` links to an existing `materials` row and never invents a
+specification, and only `owner`/`admin` may set `owner_verification = 'VERIFIED'`. RLS otherwise
+mirrors `media_assets`: public read only where the owning asset is `PUBLISHED`; writes need
+`media:write`.
 
 **Studio surface** — fills the 3D half of `/studio/media/models`: upload with the inspector
 (rejections and warnings shown before save), the FEAT §13 metadata block populated from the parse
@@ -1210,8 +1281,10 @@ models and creates the first upload path for them. Nothing is generated.
 3. Upload a 20 MB uncompressed GLB in `/studio/media/models` → rejected with the size and
    compression reasons named. Upload a 6 MB Draco-compressed model with 120k triangles → accepted,
    with `poly_count`, `texture_count` and `file_size_bytes` populated from the parse, not typed.
+   No poster exists yet and the row is accepted anyway: the poster constraint gates *association*,
+   not existence.
 4. Attempt to associate that model with a product before capturing a poster → rejected by the
-   poster check constraint.
+   poster check constraint. Capture a poster, retry → accepted.
 5. `npx playwright test tests/e2e/model-viewer.spec.ts` — with `3d_viewer` on and a model attached:
    the poster renders first, *Inspect in 3D* loads the viewer with a visible progress indicator, and
    every FEAT §12 control works by mouse, by touch emulation and by the keyboard route in the table
@@ -1226,6 +1299,10 @@ models and creates the first upload path for them. Nothing is generated.
    values → the overlay renders exactly those values and no others.
 10. Run axe on the product page with the viewer open at 1280 px — zero critical or serious
     violations; the canvas has an accessible name and a text alternative describing the object.
+11. Add a variant label with a `material_id` while leaving `owner_verification = 'NOT_REQUIRED'` →
+    rejected by the check constraint. Set `OWNER_VERIFICATION_REQUIRED` and save → accepted, and the
+    public viewer shows the label with no material name. Verify as `owner` → the material name
+    appears; the same mutation as `merchandiser` returns 403 with a `DENIED` audit row.
 
 **Exit criteria**
 
@@ -1234,7 +1311,10 @@ models and creates the first upload path for them. Nothing is generated.
 - [ ] The viewer contributes zero bytes to the initial route bundle, proven by a build assertion.
 - [ ] The LCP element on a product page with a model is the poster image at 1920 and at 390.
 - [ ] All upload ceilings are enforced server-side, and metadata is parsed, never typed.
-- [ ] A model cannot be associated with a public entity without a poster.
+- [ ] A model cannot be associated with a public entity without a poster; a model with no
+      association may exist without one.
+- [ ] A variant label carrying a `material_id` is at least `OWNER_VERIFICATION_REQUIRED` by check
+      constraint, and its material name reaches the public viewer only at `VERIFIED`.
 - [ ] Dimension indicators render owner-entered `products.dimensions` only, and nothing when null.
 - [ ] Reduced-motion, small-viewport, save-data and flag-off paths all fall back to the poster with
       no console error and no downloaded 3D payload.
@@ -1263,23 +1343,44 @@ Phase 19 (flags, optional).
 
 - `merchandising_slots` and `merchandising_entries`: a slot is a named, typed, scheduled, ordered
   list of entity references; an entry is one reference with its own window.
-- Six seeded slots, all empty:
+- **Eleven seeded slots, all empty**: four global slots plus one per-category pinning slot for each
+  of the seven D3 categories. `merchandising_slots.key` is `citext unique`, so the per-category
+  slots need a deterministic key — `CATEGORY_PINNED_<CATEGORY_SLUG>` with the D3 slug uppercased and
+  `-` replaced by `_`. Every slot has exactly one owning Studio screen; no slot is edited from two
+  places, and there is no "reusable" slot without a surface.
 
-  | Slot key | Scope | Entity types | Min items | Fallback |
-  |---|---|---|---|---|
-  | `HOMEPAGE_SELECTED_WORKS` | `/` §10-04 | `PRODUCT` | 3 | `EDITORIAL_BLOCK` |
-  | `HOMEPAGE_FEATURED_COLLECTIONS` | `/` §10-03 | `COLLECTION`, `CATEGORY` | 3 | `HIDE_SECTION` |
-  | `HOMEPAGE_JOURNAL_STRIP` | `/` §10-12 | `JOURNAL_ARTICLE` | 3 | `HIDE_SECTION` |
-  | `STORE_FEATURED_ROW` | `/collection` | `PRODUCT`, `COLLECTION` | 3 | `HIDE_SECTION` |
-  | `CATEGORY_PINNED` (one per category) | `/collection/[category]` | `PRODUCT` | 1 | `SHOW_EMPTY_STATE` |
-  | `FEATURED_COLLECTIONS` | reusable | `COLLECTION` | 1 | `HIDE_SECTION` |
+  | Slot key | `surface` (D3 path) | Entity types | Min items | Fallback | Owning Studio screen |
+  |---|---|---|---|---|---|
+  | `HOMEPAGE_SELECTED_WORKS` | `/` §10-04 | `PRODUCT` | 3 | `EDITORIAL_BLOCK` | `/studio/merchandising/homepage` |
+  | `HOMEPAGE_FEATURED_COLLECTIONS` | `/` §10-03 | `COLLECTION`, `CATEGORY` | 3 | `HIDE_SECTION` | `/studio/merchandising/featured` |
+  | `HOMEPAGE_JOURNAL_STRIP` | `/` §10-12 | `JOURNAL_ARTICLE` | 3 | `HIDE_SECTION` | `/studio/merchandising/homepage` |
+  | `STORE_FEATURED_ROW` | `/collection` | `PRODUCT`, `COLLECTION` | 3 | `HIDE_SECTION` | `/studio/merchandising/featured` |
+  | `CATEGORY_PINNED_FURNITURE` | `/collection/furniture` | `PRODUCT` | 1 | `SHOW_EMPTY_STATE` | `/studio/merchandising/store` |
+  | `CATEGORY_PINNED_COLLECTIBLE_DESIGN` | `/collection/collectible-design` | `PRODUCT` | 1 | `SHOW_EMPTY_STATE` | `/studio/merchandising/store` |
+  | `CATEGORY_PINNED_3D_RESIN` | `/collection/3d-resin` | `PRODUCT` | 1 | `SHOW_EMPTY_STATE` | `/studio/merchandising/store` |
+  | `CATEGORY_PINNED_WALL_STATEMENT_ART` | `/collection/wall-statement-art` | `PRODUCT` | 1 | `SHOW_EMPTY_STATE` | `/studio/merchandising/store` |
+  | `CATEGORY_PINNED_PRESERVATION` | `/collection/preservation` | `PRODUCT` | 1 | `SHOW_EMPTY_STATE` | `/studio/merchandising/store` |
+  | `CATEGORY_PINNED_DECOR` | `/collection/decor` | `PRODUCT` | 1 | `SHOW_EMPTY_STATE` | `/studio/merchandising/store` |
+  | `CATEGORY_PINNED_GIFTS` | `/collection/gifts` | `PRODUCT` | 1 | `SHOW_EMPTY_STATE` | `/studio/merchandising/store` |
+
+  Featured collections are one slot, not two: `HOMEPAGE_FEATURED_COLLECTIONS` is the only slot
+  `components/sections/FeaturedCollections.tsx` reads, and `/studio/merchandising/featured` is the
+  only screen that writes it. A category added after this phase gets its `CATEGORY_PINNED_*` slot
+  created by the same server action that creates the category, so `surface` is never null and the
+  key scheme stays mechanical.
+
+  A `CATEGORY_PINNED_*` slot governs the pinned region of its category page and nothing else: an
+  empty slot leaves the category's own product listing untouched, and its `SHOW_EMPTY_STATE`
+  fallback is reached only when the category has no published products at all — which is the state
+  the site ships in (SEED §32).
 
 - Store ordering: `/studio/merchandising/store` edits `categories.sort_order` (Phase 03) with drag
   ordering, defaulting to the SEED §13 order — Furniture, Collectible Design, 3D + Resin, Wall &
   Statement Art, Preservation, Décor, Gifts — which is also the SEED §56 content priority. A guard
   warns, with the SEED §56 rationale, when Gifts or Décor is moved above Furniture.
-- Featured collections: `/studio/merchandising/featured` curates published collections only; a
-  collection in `DRAFT_COLLECTION_CONCEPT` cannot be featured (Phase 16 gate, re-checked here).
+- Featured collections: `/studio/merchandising/featured` owns `HOMEPAGE_FEATURED_COLLECTIONS` and
+  `STORE_FEATURED_ROW`, and curates published collections only; a collection in
+  `DRAFT_COLLECTION_CONCEPT` cannot be featured (Phase 16 gate, re-checked here).
 - Scheduling: `/studio/merchandising/scheduling` is a single calendar view of every slot and entry
   window. Windows are honoured by the Phase 08 cron
   (`app/api/cron/content-schedule/route.ts`), which gains a merchandising pass and revalidates the
@@ -1307,7 +1408,7 @@ Phase 19 (flags, optional).
 
 | Artefact | Path | Notes |
 |---|---|---|
-| Migration | `supabase/migrations/0200_phase22_merchandising.sql` | two tables, enums, six seeded slots, indexes |
+| Migration | `supabase/migrations/0200_phase22_merchandising.sql` | two tables, enums, eleven seeded slots (four global + seven `CATEGORY_PINNED_*`), indexes |
 | RLS | `supabase/migrations/0201_phase22_merchandising_rls.sql` | public read of open windows; writes need `merchandising:write` |
 | Resolver | `lib/cms/merchandising.ts` | `resolveSlot(key, ctx)` — the single read path; returns entries, fallback mode and provenance |
 | Selector swap | `lib/cms/selectors/products.ts` (Phase 11) | its Phase 11 implementation is replaced by one backed by `resolveSlot`; the interface and every consuming block are untouched (Phase 11: "Phase 22 swaps products") |
@@ -1316,9 +1417,9 @@ Phase 19 (flags, optional).
 | Renderer | `components/sections/SelectedWorks.tsx` | curated grid, or the editorial fallback; never a placeholder card |
 | Renderer | `components/sections/FeaturedCollections.tsx` | published collections only |
 | Editorial fallback | `components/patterns/EditorialFallback.tsx` (Phase 11, extended) | now accepts a `fallbackSectionId`; still media + copy tiles with no price, no *View Product*, no product link |
-| Studio homepage | `app/(studio)/studio/merchandising/homepage/page.tsx` + `actions.ts` | Selected Works, featured collections, journal strip, hero override |
-| Studio store | `app/(studio)/studio/merchandising/store/page.tsx` + `actions.ts` | category order, per-category pinning, default sort |
-| Studio featured | `app/(studio)/studio/merchandising/featured/page.tsx` + `actions.ts` | featured collections curation |
+| Studio homepage | `app/(studio)/studio/merchandising/homepage/page.tsx` + `actions.ts` | `HOMEPAGE_SELECTED_WORKS`, `HOMEPAGE_JOURNAL_STRIP`, hero override; links out to the featured screen |
+| Studio store | `app/(studio)/studio/merchandising/store/page.tsx` + `actions.ts` | category order, the seven `CATEGORY_PINNED_*` slots, default sort |
+| Studio featured | `app/(studio)/studio/merchandising/featured/page.tsx` + `actions.ts` | `HOMEPAGE_FEATURED_COLLECTIONS` and `STORE_FEATURED_ROW`, published collections only |
 | Studio scheduling | `app/(studio)/studio/merchandising/scheduling/page.tsx` | calendar of every window, conflict warnings |
 | Cron update | `app/api/cron/content-schedule/route.ts` | adds the merchandising pass and path revalidation |
 | Docs | `docs/studio/STUDIO_GUIDE.md`, `docs/content/CONTENT_GUIDE.md`, `docs/architecture/DATA_MODEL.md` | slots, fallback rules, scheduling |
@@ -1350,7 +1451,7 @@ piece (manifest `policy.rules[0]`).
 
 | Table | Key columns |
 |---|---|
-| `merchandising_slots` | `id`, `key citext unique`, `name`, `description`, `surface text` (the D3 path the slot appears on), `allowed_entity_types relation_entity[]`, `min_items int not null default 3`, `max_items int not null default 12`, `auto_fill bool not null default false`, `auto_fill_rule text`, `fallback_mode merch_fallback not null`, `fallback_section_id uuid null references page_sections(id)`, `status content_status`, `seed_key`, audit columns |
+| `merchandising_slots` | `id`, `key citext unique`, `name`, `description`, `surface text not null` (the D3 path the slot appears on — every slot has exactly one; there are no surface-less "reusable" slots), `owning_studio_route text not null` (the single D4 screen permitted to write the slot), `allowed_entity_types relation_entity[]`, `min_items int not null default 3`, `max_items int not null default 12`, `auto_fill bool not null default false`, `auto_fill_rule text`, `fallback_mode merch_fallback not null`, `fallback_section_id uuid null references page_sections(id)`, `status content_status`, `seed_key`, audit columns |
 | `merchandising_entries` | `id`, `slot_id fk on delete cascade`, `entity_type relation_entity`, `entity_id uuid`, `position int not null`, `is_pinned bool default false`, `publish_at`, `unpublish_at`, `status content_status`, `note text`, audit columns; `unique (slot_id, entity_type, entity_id)`; `check (unpublish_at is null or publish_at is null or unpublish_at > publish_at)` |
 
 New enum: `merch_fallback` = `EDITORIAL_BLOCK · HIDE_SECTION · SHOW_EMPTY_STATE`. Indexes:
@@ -1359,14 +1460,17 @@ is reused for store ordering — no second ordering column is created. RLS: `ano
 tables for published slots and in-window entries (the resolver still re-filters targets); writes
 need `merchandising:write` (Phase 04 matrix: owner, admin, merchandiser).
 
-**Studio surface** — fills all four D4 merchandising routes.
-`/studio/merchandising/homepage`: three slot editors (Selected Works, Featured Collections, Journal
-Strip) with entity search, drag ordering, per-entry windows, a fallback-mode selector with a live
-preview of what the public currently sees, plus the homepage hero media override.
+**Studio surface** — fills all four D4 merchandising routes, with the slot ownership fixed by the
+table above so no slot is editable from two screens.
+`/studio/merchandising/homepage`: two slot editors (`HOMEPAGE_SELECTED_WORKS`,
+`HOMEPAGE_JOURNAL_STRIP`) with entity search, drag ordering, per-entry windows, a fallback-mode
+selector with a live preview of what the public currently sees, plus the homepage hero media
+override; the featured-collections region shows a read-only preview and a link to the featured
+screen rather than a second editor.
 `/studio/merchandising/store`: drag ordering of the seven categories with the SEED §56 priority
-warning, plus per-category pinned products.
-`/studio/merchandising/featured`: featured collections, published only, with an inline explanation
-when a concept collection is not selectable.
+warning, plus the seven `CATEGORY_PINNED_*` slots, each edited beside the category it belongs to.
+`/studio/merchandising/featured`: `HOMEPAGE_FEATURED_COLLECTIONS` and `STORE_FEATURED_ROW`,
+published collections only, with an inline explanation when a concept collection is not selectable.
 `/studio/merchandising/scheduling`: a month calendar of every slot and entry window, with overlap
 and gap warnings and a jump-to-editor action. Every mutation writes `activity_events` and is
 audited.
@@ -1398,8 +1502,11 @@ its bound still until the owner supplies the film.
 
 **Verification**
 
-1. `npx supabase db push` — `0200`/`0201` apply; `select key, min_items, fallback_mode from
-   merchandising_slots order by key` returns the six seeded slots, all with zero entries.
+1. `npx supabase db push` — `0200`/`0201` apply; `select key, surface, min_items, fallback_mode
+   from merchandising_slots order by key` returns the eleven seeded slots — four global plus one
+   `CATEGORY_PINNED_<CATEGORY_SLUG>` for each of the seven D3 categories, each with a non-null
+   `surface` — all with zero entries; `select count(*) from merchandising_slots where key like
+   'CATEGORY\_PINNED\_%'` → `7`.
 2. `npm run test:unit -- merchandising-resolve` — all five ladder steps, including: fewer than
    `min_items` with `auto_fill = false` falls back; an entry whose target is unpublished is dropped;
    an out-of-window entry is dropped; `HIDE_SECTION` renders nothing rather than an empty heading.
@@ -1423,7 +1530,10 @@ its bound still until the owner supplies the film.
 
 **Exit criteria**
 
-- [ ] Six slots exist, seeded empty, with the stated types, minimums and fallback modes.
+- [ ] Eleven slots exist, seeded empty, with the stated keys, surfaces, types, minimums and fallback
+      modes: four global slots plus one `CATEGORY_PINNED_<CATEGORY_SLUG>` per D3 category.
+- [ ] Every slot has exactly one owning Studio screen, and `HOMEPAGE_FEATURED_COLLECTIONS` is the
+      only featured-collections slot in the schema.
 - [ ] No product appears on the homepage or store through anything but a merchandising slot; no
       product slug is written in code.
 - [ ] The resolution ladder is implemented exactly once and returns provenance
@@ -1456,25 +1566,30 @@ palette (20); and merchandising slots exist so that search results and curated s
 disagree about what is published (22). Phase 23 must not expose research (`research_*`) data in
 public search (FEAT §19).
 
-**Statements requiring owner verification before publication.** Every one of the following is
-created `OWNER_VERIFICATION_REQUIRED` by the phase that introduces it, and cannot be published
-until the owner sets `VERIFIED`:
+**Statements requiring owner sign-off before publication.** Each of the following ships blocked by
+an owner-only gate enforced in the database. Most use the D5 `owner_verification` flag and cannot be
+published until the owner sets `VERIFIED`; the collection concepts use a different gate, named in
+the table, because a concept's problem is not an unverified claim but an unconfirmed body of work.
+Only `owner` and `admin` may clear any gate below.
 
-| Artefact | Phase | Why |
-|---|---|---|
-| The ten collection concepts (FEAT §9) | 16 | Named collections assert that a body of work exists |
-| Any collection statement written later | 16 | Describes what the collection is and implies delivered pieces |
-| Every portfolio project, and every field on it | 17 | A delivered project is a business fact by definition |
-| Every testimonial and every named person | 17 | Attribution requires consent, not just accuracy |
-| Journal articles 02, 04 and 08 | 18 | Dimension standards, fabrication capability, preservation performance |
-| Any human byline replacing the organisation | 18 | Names a real person |
-| The `three-d-resin-commission` template (SEED §35) | 19 | Manufacturing options are not yet defined |
-| Contact phone, WhatsApp number, email and map link | 20 | Real business contact details |
-| `Ready Stock` and any availability label | 20/22 | Asserts stock the system does not track |
-| Variant labels and material associations on a model | 21 | Names a material as present in a real object |
+| Artefact | Phase | Gate | Why |
+|---|---|---|---|
+| The ten collection concepts (FEAT §9) | 16 | `concept_state = 'OWNER_CONFIRMED'`, enforced by `enforce_collection_publish_gate()`; seeded `DRAFT_COLLECTION_CONCEPT` / `DRAFT` | Named collections assert that a body of work exists |
+| Any collection statement written later | 16 | `owner_verification = 'VERIFIED'` on `collections` | Describes what the collection is and implies delivered pieces |
+| Every portfolio project, and every field on it | 17 | `owner_verification = 'VERIFIED'`, via `enforce_project_evidence_gate()` | A delivered project is a business fact by definition |
+| Every testimonial and every named person | 17 | `owner_verification = 'VERIFIED'` plus `consent = 'GRANTED'`, via `enforce_testimonial_evidence_gate()` | Attribution requires consent, not just accuracy |
+| Journal articles 02, 04 and 08 | 18 | `owner_verification = 'VERIFIED'` on `journal_articles` | Dimension standards, fabrication capability, preservation performance |
+| Any human byline replacing the organisation | 18 | `owner_verification = 'VERIFIED'` on `journal_articles` | Names a real person |
+| The `three-d-resin-commission` template (SEED §35) | 19 | `owner_verification = 'VERIFIED'` on `customization_forms` | Manufacturing options are not yet defined |
+| Contact phone, WhatsApp number, email and map link | 20 | `owner_verification = 'VERIFIED'` on the `global_content` `CONTACT` rows; an unverified value never overrides `NEXT_PUBLIC_WHATSAPP_NUMBER` | Real business contact details |
+| `Ready Stock` and any availability label | 20/22 | `owner_verification = 'VERIFIED'` on its `global_content` `COMMERCE_LABEL` row | Asserts stock the system does not track |
+| A model variant label that names a material | 21 | `check (material_id is null or owner_verification <> 'NOT_REQUIRED')` on `model_variant_labels`; the material name reaches the public read path only at `VERIFIED` | Names a material as present in a real object |
 
-**Open questions for the canonical decisions.** Raised, not acted on. Nothing above diverges from
-`CANONICAL-DECISIONS.md`.
+**Open questions for the canonical decisions.** Raised, not acted on. Items 1–7 are readings of
+the canonical decisions that this document adopts without contradicting them. **Item 8 is a
+genuine proposed divergence** — a public URL D3 does not list — and the work it covers is held
+until the amendment is accepted or declined; nothing else in this document adds a route, table
+prefix, role or stack choice the canonical decisions do not already allow.
 
 1. **Migration block allocation.** `PHASE-10-15.md` allocates `0080–0139` to Phases 10–15, one
    decade each, so this document continues at `0140`. The convention now spans three phase
@@ -1507,3 +1622,13 @@ until the owner sets `VERIFIED`:
    group `CONTACT` rather than creating a `site_settings` table, so SEED §21's "do not hardcode
    these values" holds with no new table. If Phase 38 introduces `site_settings`, it should read
    through the same keys rather than duplicating them.
+8. **A journal feed at `/journal/rss.xml` (proposed D3 amendment).** Phase 18 wants a syndication
+   feed, and D3's public route map does not contain one. `sitemap.xml` and `robots.txt` are outside
+   the map because they are Next.js root-level file conventions established in `PHASE-10-15.md`;
+   `/journal/rss.xml` is not — it is a route handler under `app/(site)/journal/`, so shipping it
+   would extend the fixed map by one public URL. Suggested amendment: add `/journal/rss.xml` to D3
+   as a non-page endpoint, with the rule that feed items are published articles only and every URL
+   in the feed is absolute and derived from `NEXT_PUBLIC_SITE_URL`. Until this is accepted the
+   deliverable, verification step 8 and the matching exit criterion in Phase 18 are held, and the
+   route is not created. Declining it costs nothing else in the phase: no other deliverable depends
+   on the feed.

@@ -40,7 +40,9 @@ catalogue was incomplete, and the correct repair is a registry entry plus an edi
 | Copy | Never a literal in JSX (SEED §1, D2). Every string a visitor reads comes from `page_sections`, `global_content`, `faqs`, `seo_entries` or a `products` column |
 | Media slots | Desktop and mobile are separate CMS columns (D6): `media_desktop_id`, `media_mobile_id`. A missing mobile asset falls back to the desktop asset re-cropped, never to a placeholder image |
 | Concept media | An asset with `is_concept = true` may illustrate a **material** or a **process**. It may never be attached to a product or a portfolio project, and may never be captioned with a product name, price, dimension, client or project (D6, D10, SEED §32) |
-| Owner verification | A section whose `owner_verification = 'OWNER_VERIFICATION_REQUIRED'` cannot reach `PUBLISHED` (Phase 08 trigger). Public renderers therefore never need a runtime check — but every phase below asserts the invariant in a test |
+| Owner verification — sections | A `page_sections` row whose `owner_verification = 'OWNER_VERIFICATION_REQUIRED'` cannot reach `PUBLISHED` (Phase 08 trigger). The publish gate reads `page_sections.owner_verification` **and nothing else** |
+| Owner verification — entries | An item **inside** a block payload — a `category-grid` card, a `category-list` entry, a `commission-cta` chip, a `process-steps` statement — carries its own `owner_verification` value in `page_sections.payload`, inside the block's `entries[]` array, each entry having a stable `key`. No trigger can see it: the Phase 08 Zod schema makes the field required, and the renderer emits nothing for an entry that is not `NOT_REQUIRED` or `VERIFIED`. Every rendered entry is stamped `data-entry-key="<key>"` so the absence of a withheld one is provable in the DOM. Section-level and entry-level withholding are proved by different assertions, and every phase below asserts both |
+| Owner verification — media | All 250 manifest assets carry `media_assets.owner_verification = 'OWNER_VERIFICATION_REQUIRED'` (`HIGGSFIELD_ASSET_STATUS.md` §1). That flag governs **alt-text and caption approval in Phase 43** and does **not** participate in the publish gate: a section does not become unpublishable because a bound asset is unverified, or launch day would ship with no images at all. An `is_concept = true` asset is permitted on a material or process surface under the concept-media rule above, and is refused on a product by database trigger (Phase 14). Raised as *Open question 7* |
 | Verification database | Phases 10–15 are proved against a Playwright fixture that seeds **and publishes** the Phase 09 content. Nothing unverified is published to production to make a test pass |
 
 ### Inherited-name reconciliation
@@ -94,7 +96,11 @@ renderers, preview route), 09 (all seeded chrome copy and navigation rows).
   and site settings in a single round trip. The layout calls it once; no component fetches chrome.
 - Announcement bar from `global_content` group `ANNOUNCEMENT`: honours `is_enabled`, renders its CTA,
   and is dismissible per browser via a cookie (`rv_ann_dismissed=<row id>`) read on the server so the
-  bar does not flash in and out.
+  bar does not flash in and out. **The dismiss control is not a client island.** It is a
+  `<form method="post">` bound to the Server Action `dismissAnnouncement` in
+  `app/(site)/announcement-actions.ts` (`'use server'`), which writes the cookie and revalidates the
+  path. It works with JavaScript disabled and adds zero client JS to the shell — which matters beyond
+  this phase, because the shell's islands are charged against the Phase 11 island budget for `/`.
 - Header and mega menu. Header is a Server Component; only the mega-menu panel and the mobile drawer
   are client (`components/patterns/MegaMenu/`, `components/patterns/MobileNav/`). Menu content comes
   from `navigation_items` (`menu = 'HEADER'`, children `menu = 'CATEGORY'`). Keyboard model:
@@ -164,7 +170,7 @@ renderers, preview route), 09 (all seeded chrome copy and navigation rows).
 | Header | `components/patterns/SiteHeader.tsx` | Server; sticky, scroll-state via CSS only |
 | Mega menu | `components/patterns/MegaMenu/{index.tsx,MegaMenuPanel.tsx}` | Client; full keyboard model |
 | Mobile nav | `components/patterns/MobileNav/index.tsx` | Client; focus trap from Phase 02 `Drawer` |
-| Announcement | `components/patterns/AnnouncementBar.tsx` | Server render, client dismiss action |
+| Announcement | `components/patterns/AnnouncementBar.tsx`, `app/(site)/announcement-actions.ts` | Server render; dismissal is a no-JS `<form method="post">` + Server Action; **no client island** |
 | Footer | `components/patterns/SiteFooter.tsx` | Server; four seeded columns + contact |
 | Media slot | `components/patterns/MediaSlot.tsx` | Ratio box, desktop/mobile art direction, §47 fallback |
 | Static routes | `app/(site)/{page.tsx,about/page.tsx,process/page.tsx,large-format/page.tsx,collection/page.tsx,custom-commissions/page.tsx,portfolio/page.tsx,journal/page.tsx,contact/page.tsx,faq/page.tsx,search/page.tsx,privacy/page.tsx,terms/page.tsx}` | Thin `renderCmsPage` delegates |
@@ -206,7 +212,7 @@ placeholder, no borrowed image from another category. Error pages consume no med
 | A WhatsApp template leaks an internal field or exceeds the URL limit | Interpolation runs against an allowlist of the exact SEED §36/§37 token names; unknown tokens throw. `shorten.ts` truncates the longest free-text token first, then drops optional blocks in a fixed order, and a unit test asserts the encoded URL stays under 1 800 characters |
 | `'use client'` creeps up into a page and destroys Server-Component-by-default | `check-client-boundary.mjs` in `npm run check`; a client component may only live in `components/patterns/**`, `components/three/**` or `components/studio/**` |
 | An unpublished page renders an empty shell that reads as "Coming Soon" (SEED §55) | `renderCmsPage` calls `notFound()` when the page or all of its sections are unpublished; an e2e test asserts a 404 status code, not a 200 with an empty `<main>` |
-| The announcement bar shifts layout on hydration | Dismissal state is a cookie read on the server; the bar renders in its final state in the first response, and a CLS assertion runs at 390 px |
+| The announcement bar shifts layout on hydration | Dismissal state is a cookie read on the server; the bar renders in its final state in the first response, and there is no client component to hydrate. A CLS assertion runs at 390 px, and an e2e run with JavaScript disabled dismisses the bar and reloads |
 | Category thumbnails get filled with a "close enough" image from another family | Media binding is Phase 09's map; this phase reads `categories.hero_media_id` and renders text-only when null. A unit test asserts the text-only branch for `furniture` and `collectible-design` |
 
 **Verification**
@@ -236,7 +242,7 @@ placeholder, no borrowed image from another category. Error pages consume no med
 - [ ] Every one of the thirteen static D3 paths has a route file, and the route-parity test proves the set is exact.
 - [ ] Every visitor-visible string in the chrome comes from `global_content`, `navigation_items` or site settings — zero copy literals in `components/patterns/Site*`.
 - [ ] Header, mega menu, mobile nav and footer are keyboard-complete with zero critical/serious axe violations at all eight FEAT §45 widths.
-- [ ] The announcement bar honours `is_enabled`, its CTA target and per-browser dismissal, with no hydration shift.
+- [ ] The announcement bar honours `is_enabled`, its CTA target and per-browser dismissal, with no hydration shift; dismissal works with JavaScript disabled and ships no client island.
 - [ ] 404 and 500 render seeded copy and consume no media.
 - [ ] `MediaSlot` preserves the CMS ratio and renders the SEED §47 fallback on failure without collapsing layout.
 - [ ] Metadata, `robots.txt` and `sitemap.xml` are driven by `seo_entries` and publication state; a page with zero published sections is `noindex`.
@@ -285,8 +291,13 @@ structurally), 09 (all thirteen sections seeded with copy, media bindings and ve
 - Section rhythm and theming: alternating `theme` values from the CMS drive light/dark bands; the
   composition is verified as a whole in a full-page visual snapshot, not section by section.
 - Performance budget for `/`, enforced in CI by Lighthouse CI: LCP ≤ 2.5 s on Moto G4 / Slow 4G,
-  CLS ≤ 0.05, INP ≤ 200 ms, total client JS for the route ≤ 180 kB gzipped, at most three client
-  component islands (mega menu, mobile nav, material sequence).
+  CLS ≤ 0.05, INP ≤ 200 ms, total client JS for the route ≤ 180 kB gzipped, and **at most four client
+  component islands, named exactly**: `MegaMenu`, `MobileNav`, `MaterialSequence` and `HeroMotion`.
+  Three of the four come from the shell and this phase; the fourth, `HeroMotion`, is shipped here. The
+  announcement bar is deliberately **not** among them — Phase 10 ships its dismiss control as a no-JS
+  form plus a Server Action — and neither is `MediaSlot`, which is a Server Component. A fifth island
+  fails the build: `scripts/site/check-island-budget.mjs` counts `'use client'` modules reachable from
+  `app/(site)/page.tsx`, not bundle chunks, so the number cannot be gamed by merging files.
 - Homepage `seo_entries` wiring, OpenGraph image selection, and `WebSite` + `Organization` JSON-LD
   containing only the brand name, URL and logo. No `aggregateRating`, no `award`, no `founder`, no
   `foundingDate` — nothing the owner has not supplied (D10).
@@ -312,8 +323,9 @@ structurally), 09 (all thirteen sections seeded with copy, media bindings and ve
 | Entity selectors | `lib/cms/selectors/{products,projects,articles}.ts` | Interface + Phase 11 implementations; Phase 22 swaps products |
 | Fallback pattern | `components/patterns/EditorialFallback.tsx` | Renders a seeded `empty-state` payload inside a reference block |
 | Perf budget | `lighthouserc.json`, `.github/workflows/lighthouse.yml` | Asserts the budget above on `/` |
+| Island budget | `scripts/site/check-island-budget.mjs` | Counts `'use client'` modules reachable from `app/(site)/page.tsx`; fails above four; wired into `npm run check` |
 | Tests | `tests/unit/selectors-empty.test.ts`, `tests/e2e/{homepage,homepage-motion}.spec.ts`, `tests/e2e/homepage.visual.spec.ts` | Empty behaviour, motion branches, eight-width snapshots |
-| Docs | `docs/design/COMPONENT_REGISTRY.md`, `docs/ops/PERFORMANCE.md` | Registry rows for the two new client patterns; the `/` budget |
+| Docs | `docs/design/COMPONENT_REGISTRY.md`, `docs/ops/PERFORMANCE.md`, `docs/media/HIGGSFIELD_ASSET_STATUS.md` | Registry rows for the two new client patterns; the `/` budget and island list; the missing 21:9 hero-motion asset recorded as a gap |
 
 **Database** — **None.** The selector seam reads existing `products`, `portfolio_projects` (Phase 17)
 and `journal_articles` (Phase 18) tables where they exist and returns an empty result where they do
@@ -330,7 +342,7 @@ is added to that editor: 1440, 768 and 390 px, using the Phase 08 preview route.
 
 | # | Section | Block type | Primary family (assets) | Supporting family (assets) | Slot ratios |
 |---|---|---|---|---|---|
-| 01 | Hero | `hero` | `largeformat-dining` (5: 3 image, 2 video) | `interior-lifestyle` (5) | Desktop still 21:9 `LARGEFORMAT-DINING-002`; mobile still 9:16 `LARGEFORMAT-DINING-001`; motion = the video rows sharing those two ids |
+| 01 | Hero | `hero` | `largeformat-dining` (5: 3 image, 2 video) | `interior-lifestyle` (5) | Desktop still 21:9 `LARGEFORMAT-DINING-002`; mobile still 9:16 `LARGEFORMAT-DINING-001`; desktop motion 16:9 `LARGEFORMAT-DINING-005`; mobile motion 9:16 `LARGEFORMAT-DINING-004` — read the ratio note below before implementing |
 | 02 | Manifesto | `manifesto` | `material-macro` (39) | — | 4:5 (4 available in family) |
 | 03 | Signature Collections | `category-grid` | Tables → `largeformat-dining` (5) · `largeformat-coffee` (1) · `largeformat-console` (4); Sculptural Furniture → `largeformat-seating` (4); 3D + Resin → `three-d-resin` (13); Statement Art → `wall-art` (20); Architectural → `largeformat-monumental` (1) | — | 4:5 and 3:4 per card |
 | 04 | Selected Works | `selected-works` | **None** — zero published products | `interior-lifestyle` (5) as band backdrop only | 16:9 |
@@ -344,17 +356,42 @@ is added to that editor: 1440, 768 and 390 px, using the Phase 08 preview route.
 | 12 | Journal | `journal-strip` | `editorial` (19, incl. 3 video; 11 at 16:9) | `workshop-session` (5, all 16:9) | 16:9 |
 | 13 | Final CTA | `final-cta` | `material-macro` 21:9 — `MATERIAL-MACRO-009`, `-011`, `-015`, `-027` | — | 21:9 |
 
-Two honest gaps, both recorded by Phase 09 and neither filled: the homepage has **no dedicated hero
-family** (the `home` page bucket contains only the five `interior-lifestyle` assets, none at 21:9 or
-9:16), which is why the hero borrows the large-format dining pair; and the section-11 "Personalised
-Pieces" card has no family of its own and draws from `gifts` — a personalisation capability claim,
-and therefore **OWNER_VERIFICATION_REQUIRED**.
+Three honest gaps, all recorded and none filled: the homepage has **no dedicated hero family** (the
+`home` page bucket contains only the five `interior-lifestyle` assets, none at 21:9 or 9:16), which is
+why the hero borrows the large-format dining pair; the section-11 "Personalised Pieces" card has no
+family of its own and draws from `gifts` — a personalisation capability claim, and therefore
+**OWNER_VERIFICATION_REQUIRED**; and the manifest contains **no 21:9 video at all**, so the desktop
+hero's motion layer cannot match the ratio of its still.
 
-Sections seeded `OWNER_VERIFICATION_REQUIRED` and therefore absent from the published homepage until
-the owner verifies them: 03's "3D + Resin" and "Architectural Pieces" cards, 06's "Fabricated Form"
-card, 07's six capability chips, 08 in its entirety, 10's five process statements, and 11's
-"Personalised Pieces" card (SEED §10). Every one is **OWNER_VERIFICATION_REQUIRED**. The homepage must
-read as complete with all of them hidden — that is the launch-day state and it is what the visual
+**Hero motion, stated exactly — do not infer a pairing from the ids.** `largeformat-dining` holds five
+assets: three images (`-001` 9:16, `-002` 21:9, `-003` 16:9) and two videos (`-004` 9:16, `-005` 16:9).
+`rivya_asset_id` is unique across all 250 manifest rows (`HIGGSFIELD_ASSET_STATUS.md` §1), so no video
+"shares" a still's id and none can be derived from one. The bindings are:
+
+| Slot | Asset | Ratio | Behaviour |
+|---|---|---|---|
+| Desktop still (LCP) | `LARGEFORMAT-DINING-002` | 21:9 | Priority image; the composition is set to this crop |
+| Mobile still (LCP) | `LARGEFORMAT-DINING-001` | 9:16 | Priority image |
+| Desktop motion | `LARGEFORMAT-DINING-005` | 16:9 | Plays inside the 21:9 box, `object-fit: cover`, centre-anchored, losing roughly a quarter of its height. **Never letterboxed** — bars read as a broken asset — and never used as the poster, which stays the 21:9 still |
+| Mobile motion | `LARGEFORMAT-DINING-004` | 9:16 | An exact ratio match, but the ≥ 768 px gate above means it **does not mount at launch**. It is bound so the gate can be relaxed later without a re-binding, and the verification below asserts its absence from the small-viewport DOM |
+
+The desktop mismatch is accepted, not hidden, and it is acceptable only because the still is the LCP
+element and the motion layer is decorative, gated and post-paint. The missing 21:9 motion asset is
+recorded as a gap in `docs/media/HIGGSFIELD_ASSET_STATUS.md`; filling it would be a new generation and
+is out of scope for this block (D6, FEAT §33).
+
+Withheld until the owner verifies, and therefore absent from the published homepage at launch (SEED
+§10). Only one of these is a whole section; the rest are entries inside sections that do publish, and
+the two are enforced by two different mechanisms:
+
+| Level | What is withheld | Where the flag lives | What enforces it |
+|---|---|---|---|
+| Section | 08 *3D + Resin*, in its entirety | `page_sections.owner_verification` | The Phase 08 publish trigger — the row cannot reach `PUBLISHED` |
+| Entry | 03's "3D + Resin" and "Architectural Pieces" cards (2), 06's "Fabricated Form" card (1), 07's six capability chips (6), 10's five process statements (5), 11's "Personalised Pieces" card (1) — **15 entries across five sections that are themselves published** | `page_sections.payload → entries[] → owner_verification` | The Phase 08 Zod schema requires the field; the renderer emits nothing for an entry that is not `NOT_REQUIRED` or `VERIFIED` |
+
+The distinction is not pedantry. A `select` over `page_sections` proves the first and is structurally
+blind to the second, so the two are asserted separately in *Verification* below. The homepage must read
+as complete with all sixteen items hidden — that is the launch-day state and it is what the visual
 snapshot baseline records.
 
 **Risks**
@@ -378,14 +415,38 @@ snapshot baseline records.
    `[data-article-card]`.
 3. `npx playwright test tests/e2e/homepage-motion.spec.ts` under
    `prefers-reduced-motion: reduce` — no `transform` or `opacity` transition is applied, the material
-   sequence renders four static stages, and the hero video element is absent from the DOM.
+   sequence renders four static stages, and the hero video element is absent from the DOM. The same
+   spec, with motion allowed, asserts at 1440 px that the mounted video resolves to
+   `LARGEFORMAT-DINING-005` and fills the 21:9 box with `object-fit: cover`; and at 390 px that **no**
+   video element mounts, `LARGEFORMAT-DINING-004` being bound but gated off below 768 px.
 4. Emulate Slow 4G with JS disabled → the hero still, all copy and all four material stages render.
 5. `npx lhci autorun --collect.url=http://localhost:3000/` — LCP ≤ 2.5 s, CLS ≤ 0.05, INP ≤ 200 ms,
    route JS ≤ 180 kB gzipped; the reported LCP element is the hero image.
 6. `npx playwright test tests/e2e/homepage.visual.spec.ts` — snapshots pass at 1920, 1440, 1280, 1024,
    768, 430, 390, 360.
-7. `select count(*) from page_sections s join pages p on p.id = s.page_id where p.path = '/' and
-   s.owner_verification = 'OWNER_VERIFICATION_REQUIRED' and s.status = 'PUBLISHED'` → 0.
+7. Withholding, proved at **both** levels. Section level — the publish gate holds:
+
+   ```sql
+   select count(*) from page_sections s join pages p on p.id = s.page_id
+    where p.path = '/' and s.status = 'PUBLISHED'
+      and s.owner_verification = 'OWNER_VERIFICATION_REQUIRED';        -- → 0
+   ```
+
+   Entry level — that query cannot see a payload entry, so assert over the payload instead:
+
+   ```sql
+   select s.block_type, e ->> 'key' as entry_key
+     from page_sections s
+     join pages p on p.id = s.page_id
+     cross join lateral jsonb_array_elements(coalesce(s.payload -> 'entries', '[]'::jsonb)) e
+    where p.path = '/' and s.status = 'PUBLISHED'
+      and e ->> 'owner_verification' = 'OWNER_VERIFICATION_REQUIRED';  -- → 15 rows
+   ```
+
+   Feed those 15 `entry_key` values into the Playwright spec and assert that
+   `[data-entry-key="<key>"]` matches **zero** elements on `/`, while the five parent sections still
+   render. Then flip one entry to `VERIFIED` in the fixture and assert exactly one additional card
+   appears — which proves the renderer reads the flag, rather than the snapshot happening to match.
 8. Every media id rendered on `/` exists in the manifest:
    `jq -r '.assets[].rivya_asset_id' data/higgsfield/asset-manifest.json` contains each id captured
    from the page's `data-rivya-asset-id` attributes.
@@ -398,14 +459,14 @@ snapshot baseline records.
 
 - [ ] All thirteen SEED §10 sections render from the CMS in seeded order, with zero copy literals in `components/sections/**`.
 - [ ] Each section is bound to the families in the media table above; every rendered asset id exists in the manifest and nothing was regenerated.
-- [ ] The LCP element on `/` is the hero still; the video mounts only post-paint behind the three gates.
+- [ ] The LCP element on `/` is the hero still; the video mounts only post-paint behind the three gates, and the desktop motion layer is `LARGEFORMAT-DINING-005` (16:9) `cover`-cropped into the 21:9 box, with the ratio mismatch recorded rather than disguised.
 - [ ] Reduced-motion and no-JS branches render complete, readable content — not a degraded animation.
 - [ ] `selected-works`, `portfolio-strip` and `journal-strip` render seeded fallbacks with zero fabricated cards against an empty catalogue.
-- [ ] The seven `OWNER_VERIFICATION_REQUIRED` sections are absent from the published page, and the page composition holds with and without them.
-- [ ] Lighthouse budget met at the stated thresholds; at most three client islands on the route.
+- [ ] One withheld section (08) and fifteen withheld payload entries across five published sections are absent from the page — proved at both levels, never by a `page_sections` count alone — and the composition holds with and without them.
+- [ ] Lighthouse budget met at the stated thresholds; exactly the four named client islands on `/` — `MegaMenu`, `MobileNav`, `MaterialSequence`, `HeroMotion` — and `check-island-budget.mjs` fails on a fifth.
 - [ ] Visual snapshots pass at all eight FEAT §45 widths; zero critical/serious axe violations at 390 px and 1440 px.
 - [ ] JSON-LD asserts nothing the owner has not supplied.
-- [ ] Phase-specific D9 evidence: docs updated = `COMPONENT_REGISTRY.md`, `PERFORMANCE.md`, `CONTENT_GUIDE.md`; tests run = `selectors-empty`, `homepage.spec.ts`, `homepage-motion.spec.ts`, `homepage.visual.spec.ts`, Lighthouse CI; next phase = 12.
+- [ ] Phase-specific D9 evidence: docs updated = `COMPONENT_REGISTRY.md`, `PERFORMANCE.md`, `CONTENT_GUIDE.md`, `HIGGSFIELD_ASSET_STATUS.md` (the 21:9 motion gap); tests run = `selectors-empty`, `homepage.spec.ts`, `homepage-motion.spec.ts`, `homepage.visual.spec.ts`, Lighthouse CI; next phase = 12.
 - [ ] All ten points of the **Shared D9 completion checklist** verified and recorded.
 
 ---
@@ -436,9 +497,12 @@ both must read as complete while those sections are withheld.
 
 - `/process`, eight sections: a `hero` plus one `process-steps` section per SEED §16 step, each
   carrying a single step so it has its own media slots, its own position and its own verification
-  flag. All seven step sections are **OWNER_VERIFICATION_REQUIRED** (SEED §16 explicitly, and Phase 09
-  seeded them that way), and step 04 additionally carries the "avoid specific production claims until
-  verified" note in its Studio helper copy.
+  flag. **Attribution matters here.** SEED §16 explicitly flags only STEP 04 — "Avoid specific
+  production claims until verified" — and marks nothing else. Phase 09 extended
+  `OWNER_VERIFICATION_REQUIRED` to all seven steps under D10, on the ground that every step describes
+  an actual production method; that extension is a project decision recorded here, not a requirement
+  the specification states. Step 04 additionally carries the SEED §16 sentence verbatim in its Studio
+  helper copy.
 - The About page's scale section is the site's one legitimate use of a 21:9 crop at editorial scale;
   it uses the `material-macro` 21:9 assets rather than a large-format product shot, so no reader can
   mistake it for a delivered piece.
@@ -457,8 +521,11 @@ both must read as complete while those sections are withheld.
   pages. Phase 12 links to them; it does not build them.
 - Any studio-team, founder, biography, timeline, "years of experience" or credentials content. None is
   seeded and none may be invented (D10, SEED §55).
-- Video-led treatment of the process chapters. The six process videos exist and are bound as optional
-  motion layers, but the chapters are complete without them.
+- Video-led treatment of the process chapters. The `process` bucket holds **thirteen** videos —
+  `process-studio` 4, `process-pour` 4, `process-pigment` 2, `process-timber` 2, `process-mould` 1 —
+  and they are bound as optional motion layers, but every chapter is complete without them.
+  `process-cure` and `process-finish` contain **no video at all**, so chapter 05's cure half and the
+  whole of chapter 06 are still-only by fact of the library, not by choice.
 - A "materials" index route. `/collection/[category]` covers material-led browsing from Phase 14.
 
 **Deliverables**
@@ -497,8 +564,8 @@ migrated in Phase 07.
 | `/process` | 02 Material Direction | `process-pigment` (13, incl. 2 video) + `process-timber` (7, incl. 2 video) | Colour and timber selection |
 | `/process` | 03 Form Development | `process-mould` (12, incl. 1 video) | Mould building |
 | `/process` | 04 Fabrication | `process-mould` (12) + `process-timber` (7) | Claims-sensitive; see helper copy |
-| `/process` | 05 Resin Work | `process-pour` (12, incl. 4 video) + `process-cure` (8) | Pour and cure |
-| `/process` | 06 Finishing | `process-finish` (8) | Sanding, edges, transitions |
+| `/process` | 05 Resin Work | `process-pour` (12, incl. 4 video) + `process-cure` (8, **no video**) | Pour and cure; the cure half is still-only |
+| `/process` | 06 Finishing | `process-finish` (8, **no video**) | Sanding, edges, transitions; the only entirely still-only chapter |
 | `/process` | 07 Final Review | `process-studio` (19) | Reviewed object in the studio |
 
 Family totals reconcile to the manifest exactly: `material-macro` 39 = the `about` bucket;
@@ -512,7 +579,7 @@ Family totals reconcile to the manifest exactly: `material-macro` 39 = the `abou
 | A process chapter reads as a documented, guaranteed production method | All seven are **OWNER_VERIFICATION_REQUIRED** and cannot publish unverified; the Studio banner names the claim; captions describe only what is visible in the frame |
 | The Process page publishes with gaps and looks unfinished | Numbering is positional, bands alternate by rendered index, and a unit test renders 1, 3 and 7 chapters asserting contiguous numbering and correct alternation |
 | A concept image acquires a caption naming a piece or a client | `CONTENT_GUIDE.md` caption rule; an e2e assertion that no caption on `/about` or `/process` matches a currency symbol, a dimension pattern (a number followed by `mm`, `cm`, `m`, `in` or `ft`) or the word "client" |
-| Six process videos autoplay together and saturate the connection | At most one motion layer plays at a time, gated by `IntersectionObserver`; all are `preload="none"` with posters; reduced motion and save-data render stills |
+| Thirteen process videos autoplay together and saturate the connection | At most one motion layer plays at a time, gated by `IntersectionObserver`; all are `preload="none"` with posters; reduced motion and save-data render stills |
 | About drifts into founder-story or credentials copy over time | No such field exists in the seeded schema; adding one requires a block-schema change and a `CONTENT_GUIDE.md` entry, which review rejects without owner-supplied facts |
 | The 21:9 scale image is cropped to nothing on mobile | Mobile uses a separate 4:5 slot per D6, not a CSS crop of the 21:9 asset; a visual snapshot at 360 px proves it |
 
@@ -590,8 +657,14 @@ phase is explicit about which of them the owner must confirm before anything is 
   `page_sections.payload`, not rows in the `categories` table, and they create no routes. The seven
   taxonomy categories in D3 are a different, disjoint set. A card links out only when a published
   target exists; otherwise it is non-interactive editorial. No card ever links to a 404.
-- Hero art direction: desktop 21:9 `LARGEFORMAT-DINING-002`, mobile 9:16 `LARGEFORMAT-DINING-001`,
-  with the two same-id video rows as the optional motion layer, gated exactly as the homepage hero.
+- Hero art direction: desktop still 21:9 `LARGEFORMAT-DINING-002`, mobile still 9:16
+  `LARGEFORMAT-DINING-001`. The optional motion layer is the family's two videos —
+  `LARGEFORMAT-DINING-005` (16:9) on desktop and `LARGEFORMAT-DINING-004` (9:16) on mobile — bound and
+  gated exactly as the homepage hero, including the ≥ 768 px gate that keeps the mobile video off the
+  page at launch and the `object-fit: cover`, centre-anchored rule that plays the 16:9 desktop video
+  inside the 21:9 box. There is no 21:9 video anywhere in the manifest and no id is shared between a
+  still and a video — `rivya_asset_id` is unique across all 250 rows — so the pairing is a stated
+  binding, not something the implementer can derive from the numbering.
 - Scale as a design device: the category band uses the widest container in the design system and the
   largest display type step, and image crops favour the horizontal. This is where FEAT §49's "does
   large furniture visually dominate?" audit is answered.
@@ -623,7 +696,7 @@ phase is explicit about which of them the owner must confirm before anything is 
 | Wide hero treatment | `components/patterns/WideHero.tsx` | 21:9 desktop / 9:16 mobile art direction, shared with future exhibition pages |
 | Link validator | `lib/site/resolve-target.ts` | `resolveInternalTarget(href)` → published path or `null` |
 | Tests | `tests/e2e/large-format.spec.ts`, `tests/e2e/large-format.visual.spec.ts`, `tests/unit/resolve-target.test.ts` | Entry count, text-only card, dead-link absence |
-| Docs | `docs/content/CONTENT_GUIDE.md`, `docs/media/HIGGSFIELD_ASSET_STATUS.md` | Editorial-vs-taxonomy rule; the conference gap |
+| Docs | `docs/content/CONTENT_GUIDE.md`, `docs/media/HIGGSFIELD_ASSET_STATUS.md` | Editorial-vs-taxonomy rule; the conference gap; the missing 21:9 motion asset, if Phase 11 has not already recorded it |
 
 **Database** — **None.** The six entries live in `page_sections.payload`, validated by the Phase 08
 `category-list` Zod schema.
@@ -639,7 +712,7 @@ only (Phase 08).
 
 | Section | Family (assets) | Slots |
 |---|---|---|
-| Hero | `largeformat-dining` (5) | Desktop 21:9 `LARGEFORMAT-DINING-002`; mobile 9:16 `LARGEFORMAT-DINING-001`; motion from the two video rows sharing those ids |
+| Hero | `largeformat-dining` (5: `-001` 9:16 image, `-002` 21:9 image, `-003` 16:9 image, `-004` 9:16 video, `-005` 16:9 video) | Desktop still 21:9 `LARGEFORMAT-DINING-002`; mobile still 9:16 `LARGEFORMAT-DINING-001`; desktop motion `LARGEFORMAT-DINING-005` (16:9, `cover`-cropped into the 21:9 box); mobile motion `LARGEFORMAT-DINING-004` (9:16, bound but gated off below 768 px) |
 | Category intro | `largeformat-console` (4, three at 16:9) | 16:9 |
 | Dining & Statement Tables | `largeformat-dining` (5) | 16:9 `LARGEFORMAT-DINING-003`, 21:9, 9:16 |
 | Coffee & Centre Tables | `largeformat-coffee` (1) | 3:2 `LARGEFORMAT-COFFEE-001` — the family's only asset |
@@ -657,7 +730,7 @@ SEED §12 merges them into one category. The card therefore draws from both, sel
 
 | Risk | Mitigation |
 |---|---|
-| Three thin or empty categories make the page look unfinished | The text-only card is a designed layout with its own snapshot, not a fallback; and three of the six are unverified at launch anyway, so the launch composition is four cards, which the baseline snapshot records |
+| Three thin or empty categories make the page look unfinished | The text-only card is a designed layout with its own snapshot, not a fallback; and three of the six are unverified at launch anyway, so the launch composition is **three cards** — Dining & Statement Tables, Coffee & Centre Tables, Consoles & Side Pieces — which is what the baseline snapshot records |
 | The six editorial groupings get mistaken for taxonomy and grow routes | Stated explicitly above and in `CONTENT_GUIDE.md`; `tests/unit/site-routes.test.ts` (Phase 10) fails if a `/large-format/*` route file appears |
 | A card links to `/collection/furniture` before that page publishes | `resolveInternalTarget` returns `null` for an unpublished path and the card renders non-interactive; an e2e assertion finds zero anchors resolving to a 404 |
 | The customization statement publishes unverified and asserts capability Rivya lacks | Seeded `OWNER_VERIFICATION_REQUIRED`; Phase 08 refuses to publish it; `CustomizationNote` also renders nothing if it ever arrives unverified — belt and braces |
@@ -673,14 +746,38 @@ SEED §12 merges them into one category. The card therefore draws from both, sel
    Pieces) — the other three are unverified. Mark all three `VERIFIED` in the fixture and assert six.
 3. The Conference entry, when verified, renders as a text-only card with no image element and no
    broken-image icon.
-4. `select count(*) from page_sections s join pages p on p.id = s.page_id where p.path =
-   '/large-format' and s.status = 'PUBLISHED' and s.owner_verification =
-   'OWNER_VERIFICATION_REQUIRED'` → 0.
+4. Withholding, proved at **both** levels — the three unverified categories are `category-list`
+   entries, so a `page_sections` query is blind to them. Section level, which covers section 04, the
+   customization statement:
+
+   ```sql
+   select count(*) from page_sections s join pages p on p.id = s.page_id
+    where p.path = '/large-format' and s.status = 'PUBLISHED'
+      and s.owner_verification = 'OWNER_VERIFICATION_REQUIRED';        -- → 0
+   ```
+
+   Entry level, which covers the three unverified categories:
+
+   ```sql
+   select e ->> 'key' as entry_key
+     from page_sections s
+     join pages p on p.id = s.page_id
+     cross join lateral jsonb_array_elements(coalesce(s.payload -> 'entries', '[]'::jsonb)) e
+    where p.path = '/large-format' and s.block_type = 'category-list'
+      and s.status = 'PUBLISHED'
+      and e ->> 'owner_verification' = 'OWNER_VERIFICATION_REQUIRED';
+   -- → exactly 3: conference-commercial-tables, sculptural-seating, architectural-statement-pieces
+   ```
+
+   Then assert in Playwright that `[data-entry-key]` matches exactly three elements on the page and
+   that none of them carries one of those three keys.
 5. Collect every internal `href` on the page and request each — zero 404s, zero anchors with an empty
    or `#` target.
 6. Scan the rendered text for `₹|\$|€|\d+\s?(mm|cm|m|in|ft)|kg|seats` → no matches.
-7. Assert the hero's desktop source is `LARGEFORMAT-DINING-002` at 21:9 and the mobile source is
-   `LARGEFORMAT-DINING-001` at 9:16, and that under reduced motion no video element mounts.
+7. Assert the hero's desktop still is `LARGEFORMAT-DINING-002` at 21:9 and the mobile still is
+   `LARGEFORMAT-DINING-001` at 9:16; that the desktop motion layer, when it mounts, is
+   `LARGEFORMAT-DINING-005` and no other id; that no video element mounts at 390 px or under reduced
+   motion; and that no rendered `<source>` on the page claims a 21:9 video, because none exists.
 8. `npx playwright test tests/e2e/large-format.visual.spec.ts` — snapshots at all eight widths,
    including the mixed-ratio category row.
 9. axe at 390 px and 1440 px — zero critical or serious violations; the non-interactive cards are not
@@ -690,7 +787,7 @@ SEED §12 merges them into one category. The card therefore draws from both, sel
 **Exit criteria**
 
 - [ ] `/large-format` renders the five SEED §12 sections and the six category entries from the CMS, in seeded order.
-- [ ] Conference & Commercial Tables, Sculptural Seating and Architectural & Statement Pieces each carry `OWNER_VERIFICATION_REQUIRED` and are withheld until verified; the customization statement likewise.
+- [ ] Conference & Commercial Tables, Sculptural Seating and Architectural & Statement Pieces each carry `OWNER_VERIFICATION_REQUIRED` **in the `category-list` payload** and are withheld by the renderer, proved by the payload query plus a DOM assertion; the customization statement is withheld one level up, by the publish trigger.
 - [ ] The launch-day composition (three verified entries) and the fully-verified composition (six) both pass visual review.
 - [ ] The text-only card is a designed state with its own snapshot; no placeholder image is used for the conference gap.
 - [ ] The six entries create no routes and are documented as editorial groupings, not taxonomy.
@@ -749,7 +846,9 @@ both of those are correct.
   decision, not an omission.
 - Pagination. Page-number based, 24 per page, `?page=n`, with `rel="prev"`/`rel="next"` and a canonical
   URL per page. Not infinite scroll — crawlable and keyboard-navigable by construction.
-- Price-state and badge vocabulary. Ten SEED §30 labels split by what they actually are:
+- Price-state and badge vocabulary. **Ten** SEED §30 label strings, in nine rows below — `From` and
+  `Starting from` are two spellings of the same state's label and share a row — split by what each
+  one actually is:
 
   | Label | Kind | Column | Rendering rule |
   |---|---|---|---|
@@ -929,7 +1028,7 @@ consumes nothing from the manifest, by database trigger: a product's media must 
 
 - [ ] `/collection` and all seven `/collection/[category]` pages render seeded copy and return 404 for an unknown or unpublished slug.
 - [ ] Zero products are seeded; every category page renders its empty state and CI asserts `count(*) = 0`.
-- [ ] All nine SEED §30/§31 label strings render from `global_content`; no label literal exists in `components/**`.
+- [ ] All ten SEED §30 commerce labels render from `global_content` group `COMMERCE_LABEL`; no label literal exists in `components/**`. The seven SEED §31 action labels live in group `ACTION_LABEL` and belong to Phase 15 — this phase renders none of them, including `View Details`, which the product card does not use.
 - [ ] A quote-only product can never display a number, enforced by constraint and by `presentPrice`.
 - [ ] Filters, sort and pagination are URL-driven, server-rendered and fully functional with JavaScript disabled.
 - [ ] Zero-count facets are hidden; facet counts match the rendered result set.
@@ -988,11 +1087,19 @@ with everything filled, because early real products will be the former.
   invented.** One permitted automatic behaviour, and it is labelled honestly: when a product has zero
   manual edges, render up to six other published products in the same category under the heading
   "More in {Category}", never "Related" or "You may also like".
-- Conversion rail. `Ask About This Piece`, `Request a Quote` and, where applicable, `Customize This
-  Piece` — all labels from `global_content` group `ACTION_LABEL`. Targets are
-  `/contact?product=<slug>&type=product` and `/custom-commissions?product=<slug>`. **No WhatsApp link
-  appears on this route in this phase**: persistence does not exist until Phase 20, and D1 requires the
-  inquiry to be saved first. `Place Order` stays disabled (Phase 09 seeded it so).
+- Conversion rail. **Exactly three actions and no others**: `Ask About This Piece`, `Request a Quote`
+  and, where applicable, `Customize This Piece` — all labels from `global_content` group
+  `ACTION_LABEL`, selected by an explicit allowlist of those three keys, never by iterating the group.
+  Targets are `/contact?product=<slug>&type=product` and `/custom-commissions?product=<slug>`. **No
+  WhatsApp link appears on this route in this phase**: persistence does not exist until Phase 20, and
+  D1 requires the inquiry to be saved first.
+- `Place Order` is **not rendered on `/product/[slug]` in this phase — not as a button, not as a
+  disabled control, not as a greyed affordance.** It is a `global_content` `ACTION_LABEL` row that
+  Phase 09 seeded with `is_enabled = false`; a disabled checkout button reads as a checkout that is
+  temporarily unavailable, which is the opposite of what D1 says about this business. The allowlist
+  above is what keeps it out, and `tests/e2e/product-detail.spec.ts` asserts the string is absent from
+  the DOM. Its fate is decided in Phase 20, where an inquiry can actually be persisted
+  (`PHASE-16-22.md` enables it there as an alias for *Send an Enquiry*, never as a transaction).
 - JSON-LD. `Product` with `name`, `description`, `image`, `brand`, `category`, and `sku` only where the
   owner set one. `offers` is emitted **only** when `price_state = 'FIXED'`; for every other state the
   key is omitted entirely rather than emitted with a zero, a null or a guessed `priceValidUntil`. No
@@ -1015,7 +1122,7 @@ with everything filled, because early real products will be the former.
 | Gallery | `components/patterns/ProductGallery/{index.tsx,Lightbox.tsx,Thumbnails.tsx}` | Server stills, client lightbox |
 | Material band | `components/patterns/ProductMaterialStory.tsx` | Absent when no materials attached |
 | Specification block | `components/patterns/ProductSpecifications.tsx` | Owner-entered rows only; absent when empty |
-| Conversion rail | `components/patterns/ProductInquiryRail.tsx` | Action labels from CMS; no WhatsApp link this phase |
+| Conversion rail | `components/patterns/ProductInquiryRail.tsx` | Three-key `ACTION_LABEL` allowlist; no WhatsApp link and no `Place Order` control this phase |
 | Related content | `components/patterns/RelatedContent.tsx` | Manual edges; labelled same-category fallback |
 | Spec repository | `lib/supabase/repositories/product-specs.ts` | Read/write `product_specs` |
 | Dimensions schema | `lib/catalog/dimensions.ts` | Zod: every key optional; unknown keys rejected |
@@ -1093,7 +1200,10 @@ renders for no one until the owner enters a product; that is the intended state.
 7. `curl -s /product/<slug> | jq` the JSON-LD block — `@type: Product`, no `offers` for a
    `REQUEST_QUOTE` product. Switch the product to `FIXED` with a price and confirm `offers` appears
    with the correct currency.
-8. `grep -rn "wa.me" app/\(site\)/product` → no matches.
+8. `grep -rn "wa.me" app/\(site\)/product` → no matches. In the same spec, read the `Place Order`
+   value out of `global_content` and assert `page.getByText(value, { exact: true })` resolves to
+   **zero** nodes — on a customizable product and a non-customizable one alike — and that the rail
+   renders exactly the three allowlisted actions.
 9. With zero manual relations, the related section heading reads "More in {Category}"; add one manual
    edge and confirm the heading and the set change to the curated one.
 10. Request an unpublished product's slug anonymously → 404; request it in staff draft mode → 200.
@@ -1107,7 +1217,7 @@ renders for no one until the owner enters a product; that is the intended state.
 - [ ] `products.dimensions` is constrained to the declared key set and positive values at the database.
 - [ ] The material band is present only when materials are attached, is labelled as material study, and is the only place concept media appears on the route.
 - [ ] Related content renders manual edges as "Related" and the same-category fallback under its own honest heading, capped at six.
-- [ ] The conversion rail renders CMS action labels and contains no WhatsApp link, no cart and no payment affordance; `Place Order` remains disabled.
+- [ ] The conversion rail renders exactly the three allowlisted CMS action labels and contains no WhatsApp link, no cart and no payment affordance. The `Place Order` label does not appear in the DOM at all, asserted by e2e.
 - [ ] JSON-LD omits `offers` for every non-`FIXED` price state and never emits ratings or reviews.
 - [ ] A minimally-populated product renders as a complete page, proven by `product-minimal.spec.ts`.
 - [ ] Studio Media, Materials, Specifications and Related tabs are functional and audited, and the readiness checklist accepts "no published specifications" as a deliberate choice.
@@ -1174,3 +1284,12 @@ These are raised, not acted on. Nothing above diverges from `CANONICAL-DECISIONS
 6. **Concept media on products.** D6 orders asset priority but does not forbid a concept asset on a
    product. Phase 14 forbids it by trigger, on the strength of D10 and SEED §32. Suggested amendment:
    state the prohibition explicitly in D6 so the trigger is not later read as over-reach.
+7. **What `owner_verification` gates, per table.** D5 defines one flag for every content-bearing
+   table, and D10 says anything asserting business capability is seeded `OWNER_VERIFICATION_REQUIRED`,
+   but neither says which tables' flags block publication. All 250 manifest assets carry
+   `media_assets.owner_verification = 'OWNER_VERIFICATION_REQUIRED'`, and Phases 11–13 bind those
+   assets into pages that must publish on launch day. This document therefore reads the gate as
+   applying to `page_sections` (and, from Phase 14, `products` and `product_specs`) and **not** to
+   `media_assets`, whose flag governs alt-text and caption approval in Phase 43. Read the other way,
+   launch day ships with no images. Suggested amendment: state the per-table meaning of the flag in
+   D5, so a later phase does not add a publish trigger on `media_assets` and empty every page.

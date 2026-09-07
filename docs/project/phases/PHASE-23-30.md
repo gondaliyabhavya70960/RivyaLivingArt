@@ -30,10 +30,18 @@ trade-off.
 
 | # | Invariant | Enforced by |
 |---|---|---|
-| I1 | No `research_*` table has a foreign key to, or is referenced by, any public content table (`products`, `categories`, `collections`, `materials`, `media_assets`, `portfolio_projects`, `journal_articles`, `pages`, `page_sections`, `product_relations`, `content_relations`) | Migration review + `scripts/research/check-research-isolation.mjs` reading `information_schema.referential_constraints` |
+| I1 | No `research_*` table has a foreign key to, or is referenced by, any public content table (`products`, `categories`, `collections`, `materials`, `media_assets`, `portfolio_projects`, `journal_articles`, `pages`, `page_sections`, `product_relations`, `content_relations`) — except the two allowlisted taxonomy references (`research_source_category_map.category_id`, Phase 26; `research_products.matched_category_id`, Phase 28), named individually in the guard | Migration review + `scripts/research/check-research-isolation.mjs` reading `information_schema.referential_constraints`, whose allowlist holds exactly those two constraint names and fails on a third |
 | I2 | No `research_*` table has an `anon` policy of any kind. Staff `select` requires `research.read` | Phase 04 policy pattern (research tables never receive policy 1) + `scripts/auth/check-rls.ts` extension |
-| I3 | No identifier matching `/research_|researchProduct|scraper/i` appears anywhere under `app/(site)/**`, `lib/cms/**`, `lib/catalog/**`, `lib/seo/**`, `components/sections/**` or `content/**` | `check-research-isolation.mjs`, wired into `npm run check` |
+| I3 | No identifier matching `/research_\|researchProduct\|scraper/i` appears anywhere under `app/(site)/**`, `lib/cms/**`, `lib/catalog/**`, `lib/seo/**`, `components/sections/**` or `content/**` | `check-research-isolation.mjs`, wired into `npm run check` |
 | I4 | A row in `research_*` can only ever become a Rivya product by an owner typing one. There is no code path — no server action, no script, no SQL function, no Studio button — that writes to `products` from a `research_*` read | `check-research-isolation.mjs` (no import of `lib/scraper/**` inside `lib/supabase/repositories/products.ts` or any catalog server action) + `tests/unit/research-isolation.test.ts` |
+
+The two allowlisted references are staff-written taxonomy pointers, not scraped values, and both are
+`on delete set null`. They are still a narrow, knowing exception to D5's "scraped data … never joins
+directly to public product tables", and D5 carries no amendment for them yet. Either a dated amendment
+(A2) records the exception before Phase 26's migration `0240` ships, or both tables store the category
+*slug* as text instead and the allowlist stays empty. That is *Open question 4*, and it is the single
+item in this document that does not yet conform to `CANONICAL-DECISIONS.md`. The invariant is
+otherwise absolute: a third research→public foreign key is a defect, not a trade-off.
 
 Competitor **imagery and text are never re-hosted**. Extracted image URLs are stored as text.
 Nothing from a research row is uploaded to Cloudinary, written to `media_assets`, or served from a
@@ -66,9 +74,18 @@ merchandiser judges its output.**
 | Read any `/studio/research/**` surface | `research.read` | owner, admin, merchandiser, researcher, viewer |
 | Create/edit a source, job or schedule; queue or cancel a run; re-run normalization | `research.write` | owner, admin, researcher |
 | Approve a source's policy review, or enable a source | `research.write` **and** `system.settings.write` | owner, admin |
-| Disposition a row or a change — Review · Ignore · Shortlist · Reject · Mark Duplicate · Confirm · Add Note · Add Tag (FEAT §25) | `research.confirm` | owner, admin, merchandiser |
+| Edit a normalised value, set `matched_category_id`, set `is_large_format` or `scale_band`, freeze a key in `normalized_overrides`, dismiss a `research_validation_issues` row | `research.write` | owner, admin, researcher |
+| Disposition a row or a change — Review · Ignore · Shortlist · Reject · Mark Duplicate (writing `duplicate_of_id` + `disposition = 'DUPLICATE'`, and its reversal) · Confirm · Add Note · Add Tag · Compare (FEAT §25) — and every `stage` move | `research.confirm` | owner, admin, merchandiser |
 | Any bulk disposition of more than one row | `research.confirm` **and** `bulk.execute` | owner, admin, merchandiser |
 | Bulk archive, bulk unpublish, or any bulk write that removes live content | `bulk.execute` **and** `destructive.execute` | owner, admin |
+
+The dividing line is the **column, not the screen**. `disposition`, `duplicate_of_id`, `stage` and any
+`research_match_candidates` decision (accepting one writes both of the first two) are `research.confirm`.
+Every other research column a person can edit — normalised values, `matched_category_id`,
+`normalized_overrides`, `is_large_format`, `scale_band`, `large_format_source`, issue dismissal — is
+`research.write`. This is exactly the split `PHASE-00-04.md` already records for the `research_*` RLS
+profile: "`research.write`, or `research.confirm` for disposition-bearing writes". Each phase below
+restates it for the columns it introduces, so no screen has to be read to know which permission applies.
 
 ### Inherited-precedent notes
 
@@ -134,7 +151,7 @@ reorders or overrides every one of them.
   | `journal_article` | PUBLIC | title, excerpt, body, category | |
   | `material` | STAFF | name, family, description | FEAT §18 lists Materials for Studio search only |
   | `media_asset` | STAFF | `rivya_asset_id`, filename, alt text, folder, tags | |
-  | `inquiry` | STAFF | reference code, inquiry type, related product title, status | **No personal data.** Never the name, phone number, email address, uploaded filename or message body of an enquirer |
+  | `inquiry` | STAFF | reference code, inquiry type, related product title, `pipeline_status` | **No personal data.** Never the name, phone number, email address, uploaded filename or message body of an enquirer |
 
 - **Index maintenance is a trigger, not a job.** `refresh_search_document(entity_type, entity_id)` is
   a `security definer` function; one `after insert or update or delete` trigger per source table calls
@@ -160,9 +177,12 @@ reorders or overrides every one of them.
   submitting to `/search` with JavaScript disabled.
 - **Studio search.** Extends the Phase 05 endpoint and palette registry with one provider per entity
   type. Each provider declares its required permission and is dropped from the response when the
-  session role lacks it — a viewer without `inquiries.read` gets no inquiry group and no count that
-  implies one exists. Research providers are **not** registered here; Phases 25 and 26 register them
-  against `research_search_documents`, which this phase creates empty and unreadable by `anon`.
+  session role lacks it — a researcher, who does not hold `inquiries.read` in the Phase 04 matrix, gets
+  no inquiry group and no count that implies one exists. Research providers are **not** registered here;
+  Phases 25, 26 and 28 register them against `research_search_documents`, which this phase creates empty
+  and unreadable by `anon`: *Competitor Sources* and *Workflow Runs* in Phases 25 and 26, and FEAT §18's
+  *Scraped Products* in Phase 28, which is the first phase in which a research row carries a normalised
+  title worth indexing.
 - **Zero-result logging.** `search_queries` records `query_text`, `normalized_query`, `scope`,
   `result_count` and `occurred_at` for public and Studio searches. No IP, no user agent, no actor id
   for public searches. Retention is 90 days, enforced by `scripts/search/prune-queries.ts` run from
@@ -240,13 +260,29 @@ reorders or overrides every one of them.
 
 | Table | Key columns | Notes |
 |---|---|---|
-| `search_documents` | `id`, `entity_type text not null check (entity_type in ('product','category','collection','portfolio_project','journal_article','material','media_asset','inquiry'))`, `entity_id uuid not null`, `visibility search_visibility not null`, `status content_status not null`, `url_path text`, `title text not null`, `subtitle text`, `body text`, `keywords text[]`, `image_media_id uuid`, `category_slug citext`, `search_vector tsvector generated always as (…) stored`, `indexed_at timestamptz` | `unique (entity_type, entity_id)`; GIN on `search_vector`; GIN `gin_trgm_ops` on `title` |
-| `research_search_documents` | Same shape, `entity_type check (entity_type in ('research_product','research_source','research_run'))` | Created **empty** here so the separation is visible in the schema from day one. Populated by Phases 25–26. No `anon` policy, ever (I2) |
+| `search_documents` | `id`, `entity_type text not null check (entity_type in ('product','category','collection','portfolio_project','journal_article','material','media_asset','inquiry'))`, `entity_id uuid not null`, `visibility search_visibility not null`, `status text not null` (see the status note below), `url_path text`, `title text not null`, `subtitle text`, `body text`, `keywords text[]`, `image_media_id uuid`, `category_slug citext`, `search_vector tsvector generated always as (…) stored`, `indexed_at timestamptz` | `unique (entity_type, entity_id)`; GIN on `search_vector`; GIN `gin_trgm_ops` on `title` |
+| `research_search_documents` | Same shape, `entity_type check (entity_type in ('research_product','research_source','research_run'))`, `visibility` always `'STAFF'`, `status text not null` over the seven `research_stage` values | Created **empty** here so the separation is visible in the schema from day one. Populated by Phases 25, 26 and 28. No `anon` policy, ever (I2) |
 | `search_queries` | `id`, `query_text text not null`, `normalized_query text not null`, `scope text check (scope in ('PUBLIC','STUDIO'))`, `result_count int not null`, `staff_user_id uuid null`, `occurred_at timestamptz default now()` | No IP, no user agent. 90-day retention |
 | `content_relations` | `id`, `source_type text check (source_type in ('portfolio_project','journal_article','collection'))`, `source_id uuid not null`, `target_type text`, `target_id uuid not null`, `relation_type text`, `sort_order int default 0`, `origin relation_origin not null default 'EDITOR'`, `rule_key text`, `note text`, `paired_relation_id uuid`, plus D5 common set | `unique (source_type, source_id, target_type, target_id, relation_type)` |
 | `relation_suppressions` | `id`, `source_type text`, `source_id uuid`, `target_type text`, `target_id uuid`, `rule_key text not null`, `reason text`, `suppressed_by uuid`, `suppressed_at timestamptz default now()` | A dismissed suggestion never returns |
 | `product_attribute_terms` | `id`, `taxonomy attribute_taxonomy not null`, `slug citext`, `name text not null`, `description text`, `sort_order int`, plus D5 common set | `unique (taxonomy, slug)`; **zero rows seeded** |
 | `product_relations` (altered) | `+ origin relation_origin not null default 'EDITOR'`, `+ rule_key text`, `+ note text`, `+ paired_relation_id uuid` | `+ unique (source_product_id, target_type, target_id, relation_type)`; `+ check` on the relation vocabulary |
+
+**Why `status` is `text` and not `content_status`.** Seven of the eight indexed entities carry
+`content_status`, but `inquiries` does not: `DATA_MODEL.md` §1.4 exempts it and its `inquiries` table
+entry says "**not** `content_status`", because it carries `pipeline_status inquiry_status` instead.
+There is therefore no legal `content_status` value an inquiry document could hold, and
+`refresh_search_document('inquiry', …)` would have to invent a mapping. It does not. `status` stores
+the source row's own status token **verbatim** — `content_status` for the seven content types,
+`inquiry_status` for `inquiry`, and `research_stage` on `research_search_documents`. Junk values are
+still impossible, because `search_documents` carries
+`check (status in ('DRAFT','REVIEW','APPROVED','PUBLISHED','ARCHIVED','NEW','READ','IN_CONVERSATION','QUOTED','WON','LOST','SPAM'))`
+and `research_search_documents` carries the equivalent check over the seven stage values. The anon
+predicate `visibility = 'PUBLIC' and status = 'PUBLISHED'` is unaffected: only the five public content
+types are ever written with `visibility = 'PUBLIC'`, and
+`check (entity_type not in ('material','media_asset','inquiry') or visibility = 'STAFF')` makes that
+structural rather than conventional. `DATA_MODEL.md`'s `search_documents` row currently reads
+`status content_status`; correcting it to `status text` is part of this phase's documentation deliverable.
 
 New enums in `0210`/`0213`: `search_visibility as enum ('PUBLIC','STAFF')`,
 `relation_origin as enum ('EDITOR','RULE_ACCEPTED')`,
@@ -289,7 +325,7 @@ generated (D6, FEAT §33).
 
 1. `npm run db:migrate && npm run db:types && git diff --exit-code lib/supabase/database.types.ts` — clean.
 2. `psql -c "insert into search_documents (entity_type, entity_id, visibility, status, title) values ('research_product', gen_random_uuid(), 'PUBLIC', 'PUBLISHED', 'x');"` → rejected by the `check` constraint.
-3. As the `anon` role: `select count(*) from research_search_documents;` → permission denied. As `viewer` without `research.read` → permission denied.
+3. As the `anon` role: `select count(*) from research_search_documents;` → permission denied. As `editor` — the only role in the Phase 04 matrix without `research.read`; `viewer` holds it — the same query is denied.
 4. `node scripts/search/check-search-scope.mjs` → exits 0. Add `research_products` to `lib/search/query.ts` and confirm it exits non-zero.
 5. `npm run test:unit -- search-query search-scope relation-rules relation-reciprocity` — all green.
 6. Seed the Playwright fixture with one published product, one collection, one project and one article. `npx playwright test tests/e2e/search-public.spec.ts` — `/search?q=resin` returns grouped results in the fixed order; `/search?q=zzzzzz` returns the seeded SEED §26 copy and HTTP 200; a `DRAFT` article never appears.
@@ -301,7 +337,7 @@ generated (D6, FEAT §33).
 **Exit criteria**
 
 - [ ] `search_documents` covers all eight entity types with the correct visibility, and the `check` constraint makes a research row uninsertable.
-- [ ] `research_search_documents` exists, is empty, and is unreadable by `anon` and by staff without `research.read`.
+- [ ] `research_search_documents` exists, is empty, and is unreadable by `anon` and by `editor`, the only staff role without `research.read`.
 - [ ] No inquiry personal data reaches any index row, proved by test.
 - [ ] Public `/search` returns grouped, ranked, filtered, paginated results and the seeded SEED §26 empty state; unpublished content never appears.
 - [ ] The header combobox is fully keyboard-operable, screen-reader-announced, and works with JavaScript disabled.
@@ -668,7 +704,7 @@ in this phase or any later one.
 
 1. `npm run db:migrate` — `0230`–`0233` apply from clean; `npm run db:types` produces no diff.
 2. `psql -c "select tablename from pg_policies where schemaname='public' and tablename like 'research_%' and roles::text like '%anon%';"` → zero rows (I2).
-3. `psql -c "select count(*) from information_schema.referential_constraints rc join information_schema.table_constraints tc on … where (research → public) or (public → research);"` → zero (I1). Encoded in `check-research-isolation.mjs`.
+3. `psql -c "select count(*) from information_schema.referential_constraints rc join information_schema.table_constraints tc on … where (research → public) or (public → research);"` → zero (I1); the guard's allowlist is empty at this point. Encoded in `check-research-isolation.mjs`.
 4. `node scripts/research/check-research-isolation.mjs` → exits 0. Add `import { getResearchProducts } from '@/lib/scraper/core'` to any `app/(site)` file and confirm non-zero.
 5. `npm run test:unit -- robots-parse rate-limit stage-machine research-isolation` — green. `robots-parse` covers `Disallow: /`, agent-specific blocks, `Crawl-delay`, malformed files and a 404 robots.
 6. Insert a source with `policy_status = 'UNREVIEWED'` and `is_enabled = true` → rejected by the check constraint.
@@ -682,7 +718,7 @@ in this phase or any later one.
 **Exit criteria**
 
 - [ ] The seven FEAT §23 stage values exist exactly as written, with disposition as a separate column, and only `lib/scraper/core/stage.ts` writes `stage`.
-- [ ] No `research_*` table has an `anon` policy; no FK crosses the research/public boundary; the isolation guard is wired into `npm run check` and fails on a violation.
+- [ ] No `research_*` table has an `anon` policy; no FK crosses the research/public boundary at the end of this phase — the guard's allowlist is empty here, gains its first entry in Phase 26 and its second and last in Phase 28; the isolation guard is wired into `npm run check` and fails on a violation.
 - [ ] A source cannot be enabled without `policy_status = 'APPROVED'`, and approval is owner/admin only and flagged OWNER_VERIFICATION_REQUIRED.
 - [ ] robots.txt is honoured, cached, and its `Crawl-delay` acts as a floor; a disallowed URL produces a logged decision and zero network requests.
 - [ ] Rate limit, request delay, concurrency, `Retry-After` backoff and the circuit breaker are all enforced at lease time and proved against a fixture server.
@@ -794,7 +830,8 @@ provider for the mapping picker), 24 (bulk enable/disable of sources).
 | Pattern tester action | `app/(studio)/studio/research/sources/[id]/actions.ts` | `testPatterns` (no network), `probeUrl` (one audited fetch) |
 | Adapter picker | `components/studio/research/AdapterPicker.tsx` | Reads the Phase 27 registry; version + capabilities |
 | Policy panel | `components/studio/research/PolicyReviewPanel.tsx` | robots.txt render, notes, three-way decision, OVR banner |
-| Search provider | `components/studio/command/providers/research-sources.ts` | Indexes into `research_search_documents` |
+| Search provider | `components/studio/command/providers/research-sources.ts` | Indexes into `research_search_documents`; FEAT §18's *Competitor Sources* group |
+| Isolation guard | `scripts/research/check-research-isolation.mjs` | Allowlist entry 1: `research_source_category_map.category_id`, by constraint name. Exactly one entry at the end of this phase |
 | Tests | `tests/unit/{source-schema,url-patterns,category-map,source-health}.test.ts`, `tests/e2e/{research-sources-crud,research-policy-review}.spec.ts` | Validation, matching, health rules, workflow |
 | Docs | `docs/architecture/SCRAPER.md` (source configuration chapter), `docs/architecture/DATA_MODEL.md`, `docs/studio/STUDIO_GUIDE.md` | The field table above is copied into `SCRAPER.md` verbatim |
 
@@ -804,18 +841,25 @@ provider for the mapping picker), 24 (bulk enable/disable of sources).
 |---|---|---|
 | `research_sources` (altered) | `+ analytics_league`, `+ collection_mode`, `+ image_extraction_mode`, `+ price_extraction jsonb`, `+ sku_extraction jsonb`, `+ attribute_extraction jsonb`, `+ notes text`, `+ readiness text check (readiness in ('DRAFT','READY_FOR_REVIEW','REVIEWED'))` | Four new enums: `research_source_type`, `research_analytics_league`, `research_collection_mode`, `research_image_extraction_mode` |
 | `research_source_url_patterns` | `id`, `source_id`, `kind text check (kind in ('PRODUCT','CATEGORY','EXCLUDE','PAGINATION'))`, `pattern text not null`, `is_regex bool default false`, `priority int default 0`, `notes text`, plus D5 common set | `unique (source_id, kind, pattern)`; a regex is compiled and length-capped on save |
-| `research_source_category_map` | `id`, `source_id`, `source_label text not null`, `source_path text`, `category_id uuid references categories`, `is_ignored bool default false`, plus D5 common set | `check (category_id is not null or is_ignored)`; `unique (source_id, source_label)`. **This is the only reference from a `research_*` table to a public table, and it is deliberate**: see the note below |
+| `research_source_category_map` | `id`, `source_id`, `source_label text not null`, `source_path text`, `category_id uuid references categories`, `is_ignored bool default false`, plus D5 common set | `check (category_id is not null or is_ignored)`; `unique (source_id, source_label)`. **This is the first of exactly two references from a `research_*` table to a public table, and both are deliberate**: see the note below |
 | `research_source_schedules` | `id`, `source_id`, `job_type research_job_type`, `cron_expression text`, `timezone text default 'UTC'`, `is_enabled bool default false`, `next_run_at`, plus D5 common set | `check` rejecting an interval shorter than 6 hours |
 | `research_source_health_v` | View: `source_id`, `last_run_at`, `last_run_status`, `success_rate_7d`, `queue_depth`, `health text` | Derived only; no writes |
 
 **Note on I1 and `research_source_category_map.category_id`.** D5 says scraped data never joins
 directly to public product tables. A *category mapping* is configuration written by a member of staff,
 not scraped data, and it points at taxonomy rather than at `products`. The exception is therefore
-narrow and explicit: `category_id` references `categories` with `on delete set null`, it is the only
-such reference permitted anywhere in the research schema, and
-`check-research-isolation.mjs` allowlists exactly this one constraint by name and fails on any other.
-If a reviewer considers even this too close, the alternative is storing the category *slug* as text;
-that is recorded in *Open questions* rather than decided unilaterally.
+narrow and explicit: `category_id` references `categories` with `on delete set null`, and it is one of
+exactly two such references permitted anywhere in the research schema — the other being
+`research_products.matched_category_id`, added in Phase 28 on the same reasoning.
+`check-research-isolation.mjs` gains its **first** allowlist entry here, naming this constraint, and
+fails on any other; Phase 28 adds the **second and final** entry. There is never a third.
+
+D5 itself still reads "scraped data … never joins directly to public product tables" and carries no
+amendment for either reference. This phase is therefore blocked on one of two owner decisions, recorded
+as *Open question 4*: append a dated amendment (A2) to `CANONICAL-DECISIONS.md` recording the narrow
+taxonomy exception, or direct the alternative — store the category *slug* as text on both tables,
+losing referential integrity and keeping the allowlist empty. The document does not choose
+unilaterally, and both Phase 26 and Phase 28 carry the decision as an exit criterion.
 
 **Studio surface** — **fills** `/studio/research/sources` (list with health and last-run columns,
 create/edit drawer covering all 23 fields, category-mapping editor, URL-pattern editor and tester,
@@ -849,7 +893,7 @@ schedule editor, policy-review panel, enable/disable with the constraint's reaso
 6. Paste 20 candidate URLs into the pattern tester → per-URL match and robots decision returned; assert the fixture server logged **zero** requests. Then use "probe one URL" on a disallowed path → refused before any request, with the reason shown.
 7. `psql -c "select health from research_source_health_v;"` after forcing two failed runs → `FAILING`; after a successful run → `HEALTHY`; after ageing the last success beyond twice the interval → `STALE`.
 8. `psql -c "insert into research_source_schedules (source_id, job_type, cron_expression) values (…, 'REFRESH', '*/5 * * * *');"` → rejected by the minimum-interval check.
-9. `node scripts/research/check-research-isolation.mjs` → exits 0 with the single allowlisted FK; add a second FK from a research table to `products` and confirm it exits non-zero.
+9. `node scripts/research/check-research-isolation.mjs` → exits 0 with exactly one allowlisted FK (Phase 28 adds the second and last); add an FK from any research table to `products` and confirm it exits non-zero.
 10. `select count(*) from research_sources;` on a freshly seeded database → `0`.
 
 **Exit criteria**
@@ -861,7 +905,8 @@ schedule editor, policy-review panel, enable/disable with the constraint's reaso
 - [ ] The pattern tester makes no network request; the single-URL probe is rate-limited, robots-checked and audited.
 - [ ] Policy review is owner/admin only, records reviewer, timestamp and notes, is audited, and carries the OWNER_VERIFICATION_REQUIRED banner.
 - [ ] No source is seeded; no competitor name or domain appears anywhere in the repository.
-- [ ] `research_source_category_map.category_id` is the only research→public foreign key, allowlisted by name in the isolation guard.
+- [ ] `research_source_category_map.category_id` is the only research→public foreign key at the end of Phase 26 and is allowlisted by constraint name in the isolation guard; Phase 28 adds the second and final one.
+- [ ] The D5 question is settled before `0240` ships: `CANONICAL-DECISIONS.md` carries a dated amendment recording the taxonomy exception, **or** the mapping stores the category slug as text and the guard's allowlist stays empty (*Open question 4*).
 - [ ] Phase-specific D9 evidence: docs updated = `SCRAPER.md`, `DATA_MODEL.md`, `STUDIO_GUIDE.md`; tests run = four unit suites and two e2e specs; next phase = 27.
 - [ ] All ten points of the **Shared D9 completion checklist** verified and recorded.
 
@@ -1048,7 +1093,8 @@ comparison, opportunity score and large-format decision inherits that first judg
 
 **Depends on** — Phase 26 (category map, currency and extraction configuration), 27
 (`research_product_versions`, drafts, provenance), 14 (`lib/catalog/validation.ts`, whose FEAT §21
-rules are reused rather than re-derived).
+rules are reused rather than re-derived), 23 (`research_search_documents` and the index-trigger
+pattern, reused here for the *Scraped Products* provider).
 
 **Scope**
 
@@ -1081,6 +1127,7 @@ rules are reused rather than re-derived).
   | Range | `120–140 cm` | `{ length_mm: 1200, length_mm_max: 1400 }`, `parse_state = 'PARSED'` |
   | Unitless | `120 x 60` | `AMBIGUOUS` — no unit is inferred from magnitude |
   | Prose | `seats six comfortably` | `UNPARSED`; the original string is retained |
+  | Out of range | `1 200 x 60 x 45 cm` (12 000 mm) or `4 x 3 mm` | `UNPARSED`; `dimensions_mm` left null, the original string retained, `impossible_dimension` raised — an out-of-range value is never written |
 
   Canonical storage is millimetres for length and grams for mass. **Positional order is never assumed
   when labels are absent and the source has no configured order** — that case is `AMBIGUOUS`.
@@ -1100,7 +1147,7 @@ rules are reused rather than re-derived).
   | `malformed_source_url` / `non_https_url` | ERROR | Blocks; the row is quarantined |
   | `price_quote_with_amount` (quote state carrying a number) | ERROR | Blocks — the mirror of the Rivya constraint |
   | `price_zero_or_negative` | ERROR | Blocks |
-  | `impossible_dimension` (any axis < 10 mm or > 10 000 mm) | ERROR | Blocks |
+  | `impossible_dimension` (any axis < 10 mm or > 10 000 mm) | ERROR | Blocks. The normalizer writes `dimensions_mm = null` and `dimension_parse_state = 'UNPARSED'`, keeps the original string, and attaches the issue — so the row is retained and flagged, never refused by the database |
   | `dimension_ambiguous` | WARNING | Promotes, flagged; excluded from Phase 30's scale bands |
   | `currency_ambiguous` | WARNING | Promotes, flagged; excluded from price comparisons |
   | `duplicate_source_url_within_source` | ERROR | Blocks; the older row wins |
@@ -1111,6 +1158,20 @@ rules are reused rather than re-derived).
   A blocked row **stays at `VALIDATED` with `ERROR` issues attached** and is listed in the explorer's
   Issues view. It is never silently dropped, never deleted, and never quietly promoted on a later run
   unless the issue clears.
+
+  **Where each rule is enforced, so that no rule is unreachable.** Every rule above is evaluated in
+  `lib/scraper/validation/rules.ts` *before* the write, and the database constraints below are
+  backstops against a hand-written `UPDATE`, not the enforcement point. `impossible_dimension` is the
+  case where that distinction matters: `research_dimensions_sane` would refuse an out-of-range value
+  outright and the normalizer would raise a database error instead of persisting a flagged row, so the
+  normalizer never offers one — it nulls `dimensions_mm`, sets `dimension_parse_state = 'UNPARSED'`,
+  retains the source string (which survives untouched in the version's `raw` regardless), and attaches
+  the `ERROR`. The same holds against `research_price_state_coherent`: a quote state carrying an amount
+  is written as the quote state with `price_min_minor`/`price_max_minor` null and
+  `price_quote_with_amount` attached, and a zero or negative amount is written as
+  `price_state = 'UNKNOWN'` with both amounts null and `price_zero_or_negative` attached. The extracted
+  text survives untouched in the version's `raw` either way, so nothing is lost by refusing to store a
+  value the row is not allowed to hold.
 - **Matching.** Two independent jobs, both producing candidates rather than verdicts:
   1. *Duplicate detection within a source* — exact `source_external_id`, then exact normalised title +
      price, then trigram similarity on the normalised title above 0.85 combined with a dimension match
@@ -1122,17 +1183,32 @@ rules are reused rather than re-derived).
      stops at `VALIDATED`.
   Cross-source duplicate detection is deliberately out of scope; two sources listing similar objects
   is a comparison question (Phase 31), not a deduplication one.
-- **Editor override is always available and always recorded.** A researcher can set the category,
-  clear a duplicate flag, mark a row as a duplicate by hand, edit any normalised value, or dismiss an
-  issue with a reason. Each writes `override_by`, `override_at` and a `research_pipeline_events` row,
-  and an overridden field is **never** recomputed by a later run — `normalized_overrides jsonb`
-  records which keys are frozen.
+- **Editor override is always available, always recorded, and split by column.** Under `research.write`
+  a researcher can set `matched_category_id`, edit any normalised value, and dismiss a validation issue
+  with a reason. Marking a row as a duplicate by hand, or clearing a duplicate flag, writes
+  `disposition` and `duplicate_of_id` and is therefore a `research.confirm` action — a merchandiser's,
+  not a researcher's — as is deciding a `research_match_candidates` row, because accepting one writes
+  both columns. Every override, either side of that line, writes `override_by`, `override_at` and a
+  `research_pipeline_events` row, and an overridden field is **never** recomputed by a later run —
+  `normalized_overrides jsonb` records which keys are frozen.
 - **Re-normalization without re-fetching.** `scripts/research/renormalize.ts --source=<slug>` re-runs
   the normalizer over stored versions with zero network traffic, respecting frozen override keys and
   reporting what changed. This is how a lexicon or parser fix is rolled out.
 - **Explorer.** `/studio/research/explorer` becomes the working surface: filter by source, stage,
   disposition, issue severity, category, price state, currency and parse state; per-row drawer showing
   raw text beside normalised value beside the provenance strategy, with inline override controls.
+- **Scraped products enter Studio search.** FEAT §18 lists *Scraped Products* among the twelve Studio
+  search scopes, and this is the first phase in which a research row has a title worth indexing. An
+  `after insert or update or delete` trigger on `research_products`, added in `0260` and following the
+  Phase 23 pattern (`security definer`, one document row per entity), calls
+  `refresh_research_search_document('research_product', id)` and writes one `research_search_documents`
+  row with `visibility = 'STAFF'`, `title = coalesce(title_normalized, <current version's raw title>)`,
+  `subtitle` = the source name, `status` = the row's `research_stage`, `keywords` = `material_tokens`
+  plus `category_labels`, and `url_path = '/studio/research/explorer?row=<id>'`. The provider
+  `components/studio/command/providers/research-products.ts` declares `research.read`, so the group is
+  absent for `editor` — the only role without it. Nothing here becomes public: `research_search_documents`
+  has no `anon` policy (I2) and the public `search_documents` cannot hold a research row by constraint
+  (Phase 23).
 - **Data-quality surface.** `/studio/operations/data-quality` gains a **Research** tab: issue counts by
   rule and severity, unmapped-category counts, parse-failure rates per source and per field, and the
   material lexicon editor. If an earlier phase already filled a Products tab on that page, this phase
@@ -1152,7 +1228,7 @@ rules are reused rather than re-derived).
 
 | Artefact | Path | Notes |
 |---|---|---|
-| Migration | `supabase/migrations/0260_phase28_normalization.sql` | Normalised columns, issues, match candidates |
+| Migration | `supabase/migrations/0260_phase28_normalization.sql` | Normalised columns, issues, match candidates, lexicon, and the `research_search_documents` upsert trigger for `research_products` |
 | Normalizer | `lib/scraper/normalization/{index.ts,currency.ts,units.ts,dimensions.ts,materials.ts,availability.ts,lexicon.ts}` | Pure; no I/O |
 | Normalized schema | `lib/scraper/normalization/schema.ts` | Zod `NormalizedProduct` with per-field `parse_state` |
 | Validators | `lib/scraper/validation/{rules.ts,run.ts}` | The eleven rules above; shares FEAT §21 predicates with `lib/catalog/validation.ts` |
@@ -1161,7 +1237,9 @@ rules are reused rather than re-derived).
 | Re-normalization | `scripts/research/renormalize.ts` | Offline; respects frozen overrides; `--dry-run` |
 | Explorer | `app/(studio)/studio/research/explorer/**` | Fills the D4 leaf |
 | Data-quality tab | `app/(studio)/studio/operations/data-quality/**` | Research tab + lexicon editor |
-| Tests | `tests/unit/{normalize-currency,normalize-dimensions,normalize-materials,validation-rules,match-duplicates,renormalize-overrides}.test.ts`, `tests/e2e/research-explorer.spec.ts` | Fixture-table driven |
+| Search provider | `components/studio/command/providers/research-products.ts` | FEAT §18's *Scraped Products* group; declares `research.read`; reads `research_search_documents` |
+| Isolation guard | `scripts/research/check-research-isolation.mjs` | Allowlist entry 2: `research_products.matched_category_id`, by constraint name. Exactly two entries after this phase; a third fails the guard and `npm run check` |
+| Tests | `tests/unit/{normalize-currency,normalize-dimensions,normalize-materials,validation-rules,match-duplicates,renormalize-overrides}.test.ts`, `tests/e2e/research-explorer.spec.ts` | Fixture-table driven; the e2e spec also covers the *Scraped Products* palette group and its absence for `editor` |
 | Docs | `docs/architecture/SCRAPER.md` (normalization + validation chapters incl. the dimension table), `docs/architecture/DATA_MODEL.md`, `docs/studio/STUDIO_GUIDE.md` | |
 
 **Database**
@@ -1175,7 +1253,9 @@ rules are reused rather than re-derived).
 | `research_material_lexicon` | `id`, `token text unique`, `patterns text[] not null`, `family text`, `is_enabled bool default true`, plus D5 common set | Data, not code; editable in Studio |
 
 Two constraints worth naming, mirroring the Phase 03 products constraint so the two worlds fail the
-same way:
+same way. **Both are backstops against hand-written SQL, not the enforcement point**: the validation
+rules above run inside the normalizer, before the write, and keep a bad row at `VALIDATED` with an
+issue attached rather than letting an `INSERT` fail.
 
 ```sql
 alter table research_products add constraint research_price_state_coherent check (
@@ -1185,6 +1265,9 @@ alter table research_products add constraint research_price_state_coherent check
       and price_min_minor is null and price_max_minor is null)
 );
 
+-- backstop only. The normalizer never offers an out-of-range value: `impossible_dimension`
+-- nulls `dimensions_mm`, sets `dimension_parse_state = 'UNPARSED'` and attaches an ERROR issue,
+-- so this constraint fires for a hand-written UPDATE and for nothing else.
 alter table research_products add constraint research_dimensions_sane check (
   dimensions_mm is null or (
     jsonb_typeof(dimensions_mm) = 'object'
@@ -1193,6 +1276,13 @@ alter table research_products add constraint research_dimensions_sane check (
   )
 );
 ```
+
+RLS as Phase 25, with the column split stated once in the permission mapping at the top of this
+document: `research.read` to select; `research.write` for every normalised-value edit,
+`matched_category_id`, `normalized_overrides`, and dismissing a `research_validation_issues` row;
+`research.confirm` for `disposition`, `duplicate_of_id`, any `stage` move, and any
+`research_match_candidates` decision; service role for the pipeline's own writes; **no `anon` policy on
+any table in this phase**.
 
 **Studio surface** — **fills** `/studio/research/explorer`; **fills** the Research tab of
 `/studio/operations/data-quality`; **extends** `/studio/research/dashboard` with issue and
@@ -1209,7 +1299,8 @@ written to `media_assets`.
 |---|---|
 | A guessed unit or currency propagates silently into every later comparison | `parse_state` is per field with an explicit `AMBIGUOUS` value; `$` alone and unitless dimensions are ambiguous by rule; ambiguous rows are excluded from price comparison and from scale bands, and the exclusion is shown as a coverage figure, not hidden |
 | Foreign-exchange conversion appears as a "small convenience" | No conversion function exists in `lib/scraper/**`; a unit test asserts no FX rate literal or currency-conversion import is present, and `SCRAPER.md` records the decision and its trigger condition |
-| A quote-only competitor row is stored as zero and skews every average | `research_price_state_coherent` rejects it at the database, mirroring the Phase 03 rule for Rivya products |
+| A quote-only competitor row is stored as zero and skews every average | `price_quote_with_amount` catches it in the normalizer, which writes the quote state with null amounts and an `ERROR` issue; `research_price_state_coherent` rejects it at the database as a backstop, mirroring the Phase 03 rule for Rivya products |
+| A validation rule and a database constraint cover the same condition, and the rule becomes unreachable because the write fails first | Every `ERROR` rule is evaluated in `lib/scraper/validation/rules.ts` before the write; constraints exist for hand-written SQL only. `tests/unit/validation-rules.test.ts` asserts that each `ERROR` rule yields a retained row at `VALIDATED` with an attached issue — never a raised database error |
 | Re-normalization overwrites a researcher's manual correction | `normalized_overrides` freezes the corrected keys; `renormalize.ts` skips them and reports the count; `tests/unit/renormalize-overrides.test.ts` proves it |
 | Auto-deduplication merges two genuinely different products | Auto-merge only at confidence ≥ 0.95 requiring title *and* dimension agreement; everything else becomes a reviewable candidate; a duplicate flag is always reversible and its reversal is audited |
 | Rows failing validation vanish and the gap is never noticed | Blocked rows keep their stage and their issues, appear in the explorer's Issues view, and are counted on the dashboard and the data-quality tab |
@@ -1221,7 +1312,7 @@ written to `media_assets`.
 1. `npm run db:migrate` — `0260` applies; types regenerate with no diff.
 2. `npm run test:unit -- normalize-currency normalize-dimensions normalize-materials validation-rules match-duplicates renormalize-overrides` — green. `normalize-dimensions` runs the full table above plus at least twelve real-world malformed strings.
 3. `psql -c "insert into research_products (…, price_state, price_min_minor) values (…, 'REQUEST_QUOTE', 0);"` → rejected by `research_price_state_coherent`.
-4. `psql -c "update research_products set dimensions_mm = '{\"length_mm\": 99999}';"` → rejected by `research_dimensions_sane`.
+4. Feed a fixture draft whose dimension text parses to 24 000 mm on the longest axis → the normalizer writes `dimensions_mm = null` and `dimension_parse_state = 'UNPARSED'`, retains the original string, attaches `impossible_dimension` at `ERROR`, and the row **stays at `VALIDATED`** and is not promoted; no database error is raised. Then, separately, `psql -c "update research_products set dimensions_mm = '{\"length_mm\": 99999}';"` → rejected by `research_dimensions_sane`, proving the constraint is the backstop the normalizer never reaches.
 5. Feed a fixture draft with `priceText = '$1,299.00'` and a source currency of `INR` → `parse_state = 'AMBIGUOUS'`, a `currency_ambiguous` WARNING, the row promoted to `VALIDATED`, and the row absent from any price-comparison query.
 6. Feed `120 x 60` with no unit → `dimension_ambiguous`, `dimensions_mm` null, the original string retained, and the row excluded from Phase 30's scale bands.
 7. Feed a draft whose category label has no `research_source_category_map` row → the row reaches `VALIDATED` and stops; `matched_category_id` is null; the dashboard's unmapped count increments. Add the mapping, re-run promotion → the row reaches `MATCHED`.
@@ -1229,6 +1320,8 @@ written to `media_assets`.
 9. Override a normalised price in the explorer, then `node scripts/research/renormalize.ts --source=fixture` → the overridden field is unchanged, the report lists it as frozen, and a `research_pipeline_events` row records the override.
 10. `npx playwright test tests/e2e/research-explorer.spec.ts` — filter by `severity=ERROR`, open a row drawer, assert raw text, normalised value and provenance all render; as `viewer`, override controls are absent and a direct POST is refused.
 11. `grep -rn "exchangeRate\|convertCurrency\|fx_rate" lib/scraper` → no matches.
+12. `node scripts/research/check-research-isolation.mjs` → exits 0 with exactly two allowlisted FKs (`research_source_category_map.category_id`, `research_products.matched_category_id`); `npm run check` passes on this branch. Add any further research→public foreign key and confirm the guard exits non-zero and names the offending constraint.
+13. As `merchandiser`, open the command palette and type a normalised title → the *Scraped Products* group returns the row and links to its explorer drawer. As `editor` (no `research.read`), the group is absent from the endpoint's response body, not merely hidden in the UI. `psql -c "select count(*) from search_documents where entity_type like 'research%';"` → 0, and as `anon`, `select count(*) from research_search_documents;` → permission denied.
 
 **Exit criteria**
 
@@ -1242,6 +1335,10 @@ written to `media_assets`.
 - [ ] Manual overrides freeze their fields against re-normalization, proved by test.
 - [ ] The material lexicon is a Studio-editable table and a lexicon change can be rolled out with zero network traffic.
 - [ ] `/studio/research/explorer` shows raw, normalised and provenance side by side with permission-gated override controls.
+- [ ] `research_products.matched_category_id` is the **second and final** allowlisted research→public foreign key: the guard's allowlist names exactly two constraints, exits 0, and exits non-zero on a third.
+- [ ] The D5 question of *Open question 4* is settled — a dated amendment records the two taxonomy references, or both are stored as slug text — before `0260` ships.
+- [ ] Normalised-value edits, `matched_category_id` and issue dismissal require `research.write`; `disposition`, `duplicate_of_id`, stage moves and match-candidate decisions require `research.confirm`, proved per column in the RLS tests.
+- [ ] Scraped products are findable in Studio search under `research.read` through `research_search_documents`, satisfying FEAT §18's *Scraped Products* scope, and appear in no public index.
 - [ ] Phase-specific D9 evidence: docs updated = `SCRAPER.md`, `DATA_MODEL.md`, `STUDIO_GUIDE.md`; tests run = six unit suites and one e2e spec; next phase = 29.
 - [ ] All ten points of the **Shared D9 completion checklist** verified and recorded.
 
@@ -1465,7 +1562,8 @@ configuration and health), 24 (bulk engine for saved-view bulk actions).
   `largeformat-*` family names Rivya already uses internally, so a merchandiser reads one set of words
   across the whole system. **A band is a research classification and never appears publicly.**
 - **Editor override, per row and permanent.** A researcher sets `is_large_format` or `scale_band` by
-  hand; `large_format_source` records `RULE · EDITOR · UNKNOWN`, and an `EDITOR` value is never
+  hand — a `research.write` action, because a scale band is a classification and carries no disposition
+  meaning; `large_format_source` records `RULE · EDITOR · UNKNOWN`, and an `EDITOR` value is never
   recomputed when rules change. Rule edits trigger a reclassification pass that reports how many rows
   moved band and skips every overridden row.
 - **The workspace.** `/studio/research/large-format` shows, over the filtered subset:
@@ -1530,8 +1628,12 @@ configuration and health), 24 (bulk engine for saved-view bulk actions).
 | `research_large_format_rules` | `id`, `priority int not null`, `predicate jsonb not null`, `result_band text`, `result_is_large boolean`, `is_enabled bool default true`, `notes text`, plus D5 common set | `unique (priority)`; five default rows seeded as configuration, not content |
 | `research_saved_views` | `id`, `surface text check (surface in ('explorer','large-format','changes','compare'))`, `name text not null`, `filters jsonb not null`, `sort jsonb`, `columns text[]`, `is_shared bool default false`, `owner_user_id`, plus D5 common set | `unique (owner_user_id, surface, name)`; shared views readable by anyone with `research.read` |
 
-RLS as Phase 25: `research.read` to select, `research.write` for rules and reclassification,
-`research.confirm` for the row-level overrides that carry a disposition meaning; no `anon` policy.
+RLS as Phase 25, by column rather than by screen: `research.read` to select; `research.write` for
+`research_large_format_rules`, for running a reclassification, and for the row-level `is_large_format`,
+`scale_band` and `large_format_source` overrides — none of which carries a disposition meaning;
+`research.confirm` only for `disposition`, `duplicate_of_id` and `stage`, none of which this phase
+writes. `research_saved_views` rows are inserted and updated by their own `owner_user_id` under
+`research.read`, and a shared view is readable by anyone with `research.read`. No `anon` policy.
 
 **Studio surface** — **fills** `/studio/research/large-format`. **Extends**
 `/studio/research/dashboard` with large-format and coverage tiles, `/studio/research/explorer` with
@@ -1542,11 +1644,13 @@ scale-rule editor.
 on a **Rivya** row are different columns in different worlds; nothing joins them, and the isolation
 guard proves it.
 
-**Media** — **None.** The `largeformat-*` manifest families (`largeformat-dining` 5,
-`largeformat-console` 4, `largeformat-seating` 4, `largeformat-side` 3, `largeformat-coffee` 1,
-`largeformat-monumental` 1, plus 2 videos) are Rivya's own concept assets, bound by Phase 13 to the
-public Large Format experience. They are **not** used here: this workspace displays no Rivya marketing
-media at all, and it displays no competitor image beyond the Phase 27 URL rendered through the
+**Media** — **None.** The `largeformat-*` manifest families (`largeformat-dining` 5 — of which
+`LARGEFORMAT-DINING-004` and `LARGEFORMAT-DINING-005` are videos — `largeformat-console` 4,
+`largeformat-seating` 4, `largeformat-side` 3, `largeformat-coffee` 1, `largeformat-monumental` 1;
+18 assets in total, 2 of them video, matching the manifest's `counts.by_page["large-format"]`) are
+Rivya's own concept assets, bound by Phase 13 to the public Large Format experience. They are **not**
+used here: this workspace displays no Rivya marketing media at all, and it displays no competitor
+image beyond the Phase 27 URL rendered through the
 authenticated non-caching proxy. The band vocabulary borrows those family *names* for consistency; it
 borrows none of their assets.
 
@@ -1587,6 +1691,7 @@ borrows none of their assets.
 - [ ] Scale bands exist only inside the research schema and Studio research components, proved by the isolation guard.
 - [ ] Saved views are shareable, reproducible from a URL, and reusable by later phases.
 - [ ] Reclassification runs offline with zero network traffic.
+- [ ] `is_large_format`, `scale_band` and `large_format_source` overrides are `research.write` actions; this phase writes no `disposition`, no `duplicate_of_id` and no `stage`, and requires `research.confirm` for nothing it introduces.
 - [ ] Phase-specific D9 evidence: docs updated = `SCRAPER.md`, `STUDIO_GUIDE.md`, `DATA_MODEL.md`; tests run = three unit suites and one e2e spec; next phase = 31.
 - [ ] All ten points of the **Shared D9 completion checklist** verified and recorded.
 
@@ -1637,7 +1742,12 @@ this block.
 
 ## Open questions for the canonical decisions
 
-These are raised, not acted on. Nothing above knowingly diverges from `CANONICAL-DECISIONS.md`.
+These are raised, not acted on — with one stated exception. **Open question 4 is a knowing divergence
+from D5**: two research tables reference `categories`, D5 says scraped data never joins directly to
+public product tables, and no dated amendment exists. Invariant I1, the Phase 26 note, and both phases'
+exit criteria carry that dependency rather than hiding it, and the divergence must be resolved — by
+amendment or by the slug-as-text alternative — before migration `0240` ships. Nothing else in this
+document diverges from `CANONICAL-DECISIONS.md`.
 
 1. **No cron secret in D8.** D8 fixes the environment-variable names and includes `REVALIDATE_SECRET`
    but nothing for scheduled invocation. Phase 25's cron route therefore authenticates on Vercel's
@@ -1653,13 +1763,24 @@ These are raised, not acted on. Nothing above knowingly diverges from `CANONICAL
    matrix. This document therefore gates all nine on `research.confirm` — with the consequence that a
    **researcher can run the pipeline but cannot shortlist or reject a row**, which may not be intended.
    Suggested amendment: either grant `researcher` the `research.confirm` permission, or state in D5
-   that disposition is deliberately a merchandising act.
-4. **Two allowlisted research→public foreign keys.** D5 says scraped data "never joins directly to
-   public product tables". `research_source_category_map.category_id` (Phase 26) and
-   `research_products.matched_category_id` (Phase 28) both reference `categories` — taxonomy, not
-   products, and both written or configured by staff rather than scraped. The isolation guard allowlists
-   exactly these two by name. The alternative is storing the category slug as text and losing referential
-   integrity. Confirm the narrow exception, or direct the text approach.
+   that disposition is deliberately a merchandising act. The split has a mirror image this document has
+   had to resolve by column rather than by screen: a **merchandiser holds `research.confirm` but not
+   `research.write`**, so under the permission mapping above they may shortlist, reject and confirm a
+   row yet cannot correct its normalised price or set its category. Both halves follow from the same
+   Phase 04 matrix; whichever way the intent is recorded, it should record both.
+4. **Two allowlisted research→public foreign keys — the one knowing divergence in this document, and a
+   blocker for Phase 26.** D5 says scraped data "never joins directly to public product tables".
+   `research_source_category_map.category_id` (Phase 26) and `research_products.matched_category_id`
+   (Phase 28) both reference `categories` — taxonomy, not products, and both written or configured by
+   staff rather than scraped. `docs/architecture/SCRAPER.md` §13.2 and invariant I1 above already carry
+   the exception and the isolation guard allowlists exactly these two constraints by name, failing on a
+   third; `CANONICAL-DECISIONS.md` carries nothing. Required action before `0240` ships, one of two:
+   (a) append a dated amendment **A2** to §Amendments recording the narrow taxonomy exception in D5's
+   own terms — that scraped *values* never join to public tables, while a staff-authored taxonomy
+   pointer with `on delete set null` may; or (b) direct the alternative — store the category *slug* as
+   `citext` on both tables, accept the loss of referential integrity and of `on delete` behaviour, and
+   keep the guard's allowlist empty. This document cannot amend the canonical decisions and does not
+   choose on the owner's behalf.
 5. **Two relation tables.** Phase 03 fixed `product_relations` on `source_product_id` and Phase 15
    indexes it, so Phase 23 adds `content_relations` for portfolio-, journal- and collection-sourced
    edges rather than generalising a shipped table. This leaves two structurally identical tables. If a

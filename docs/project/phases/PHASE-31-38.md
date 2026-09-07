@@ -29,24 +29,54 @@ closer to checkout, payment or customer accounts.
 ## Assumed predecessor surface (Phases 25–30)
 
 Every phase below reads tables that `PHASE-23-30.md` owns. **That document is authoritative for
-their names.** If it spells one differently, the correct repair is a rename in this document and an
-`Amendments` entry — never a second table. The columns listed are the ones this block depends on;
-each table has more.
+their names.** If this document spells one differently, this document is wrong and the correct
+repair is a rename here plus an `Amendments` entry — never a second table. The columns listed are
+the ones this block depends on; each table has more. Every name below is quoted from
+`PHASE-23-30.md`'s **Database** tables, with the phase that introduced it in the last column.
 
-| Assumed table | Columns this block relies on | Consumed by |
-|---|---|---|
-| `research_sources` | `id`, `slug`, `name`, `region`, `currency char(3)`, `source_type`, `analytics_league`, `is_enabled`, `category_mapping jsonb`, `last_run_at`, `health` | 31, 32, 36, 37 |
-| `research_runs` | `id`, `source_id`, `started_at`, `finished_at`, `status`, `item_count`, `error_count` | 31, 33, 37 |
-| `research_products` | `id`, `source_id`, `source_url`, `external_ref`, `title_raw`, `title_normalized`, `category_mapped_id`, `price_minor bigint`, `currency char(3)`, `price_state_raw`, `dimensions_mm jsonb`, `dimension_confidence numeric`, `materials text[]`, `attributes jsonb`, `is_large_format bool`, `first_seen_at`, `last_seen_at`, `pipeline_state research_pipeline_state` | all eight |
-| `research_product_images` | `id`, `research_product_id`, `source_image_url`, `stored_object_key`, `width`, `height`, `checksum`, `position` | 33 |
-| `research_product_snapshots` | `id`, `research_product_id`, `run_id`, `captured_at`, `payload jsonb` | 31, 33 |
-| `research_changes` | `id`, `research_product_id`, `field`, `before jsonb`, `after jsonb`, `detected_at`, `review_state` | 31, 32, 35 |
-| `research_tags` · `research_product_tags` | `id`, `slug`, `label` · `(research_product_id, tag_id)` | 34, 35 |
-| `research_notes` | `id`, `research_product_id`, `body`, `author_id`, `created_at` | 34, 35 |
+| Assumed table | Columns this block relies on | From | Consumed by |
+|---|---|---|---|
+| `research_sources` | `id`, `slug citext`, `name`, `base_url`, `region`, `currency char(3)`, `source_type`, `analytics_league`, `collection_mode`, `image_extraction_mode`, `adapter_key`, `is_enabled`, `policy_status`, `rate_limit_rpm`, `request_delay_ms`, `concurrency` | 25, 26 | 31, 32, 33, 36, 37 |
+| `research_source_category_map` | `id`, `source_id`, `source_label`, `source_path`, `category_id uuid references categories`, `is_ignored` | 26 | 31, 37 |
+| `research_source_health_v` (view) | `source_id`, `last_run_at`, `last_run_status`, `success_rate_7d`, `queue_depth`, `health` | 26 | 31, 37 |
+| `research_runs` | `id`, `job_id`, `source_id`, `status research_run_status`, `trigger research_trigger`, `queued_at`, `started_at`, `finished_at`, `stats jsonb`, `error_summary`, `is_dry_run` | 25 | 31, 33, 37 |
+| `research_fetches` | `id`, `run_id`, `source_id`, `url`, `final_url`, `http_status`, `robots_decision`, `content_hash`, `bytes`, `duration_ms`, `storage_key`, `fetched_at`, `error` | 25 | 33 |
+| `research_products` | `id`, `source_id`, `source_url`, `source_external_id`, `stage research_stage`, `disposition research_disposition`, `first_seen_at`, `last_seen_at`, `current_version_id`, `title_normalized`, `brand_text`, `currency char(3)`, `price_state`, `price_min_minor bigint`, `price_max_minor bigint`, `dimensions_mm jsonb`, `dimension_parse_state`, `material_tokens text[]`, `availability`, `variant_count`, `image_urls text[]`, `category_labels text[]`, `matched_category_id`, `match_confidence`, `match_method`, `duplicate_of_id`, `normalized_overrides jsonb`, `scale_band`, `is_large_format boolean` (nullable), `longest_axis_mm`, `large_format_source` | 25, 28, 30 | all eight |
+| `research_product_versions` | `id`, `research_product_id`, `run_id`, `fetch_id`, `raw jsonb`, `content_hash`, `storage_key`, `adapter_key`, `adapter_version`, `observed_at`, `normalized jsonb`, `normalizer_version` | 27, 28 | 31, 32, 33, 34 |
+| `research_changes` | `id`, `research_product_id`, `source_id`, `field`, `change_kind`, `materiality`, `before jsonb`, `after jsonb`, `version_before_id`, `version_after_id`, `run_id`, `snapshot_before_key`, `snapshot_after_key`, `detected_at`, `decided_action`, `decided_by`, `decided_at` | 29 | 31, 32, 35 |
+| `research_pipeline_events` | `id`, `entity_type`, `entity_id`, `from_stage`, `to_stage`, `actor_user_id`, `actor_kind`, `reason`, `occurred_at` | 25 | 35 |
+| `research_review_actions` | `id`, `research_product_id`, `change_id`, `action`, `reason`, `actor_user_id`, `actor_role`, `occurred_at`, `undone_by_action_id` | 29 | 35 |
+| `research_tags` · `research_product_tags` | `id`, `slug citext`, `label`, `colour`, `is_enabled` · `(research_product_id, tag_id)` composite PK, `assigned_by`, `assigned_at` | 29 | 34, 35 |
+| `research_notes` | `id`, `research_product_id`, `body`, `author_user_id`, `created_at`, `superseded_by` | 29 | 34, 35 |
 
-`research_pipeline_state` is assumed to exist with `RAW · NORMALIZED · VALIDATED · MATCHED ·
-REVIEW · REJECTED · DUPLICATE · IGNORED` (FEAT §23). Phase 35 adds `SHORTLISTED` and `CONFIRMED`
-to it and owns the transition table.
+**The pipeline enum this block inherits, and does not extend.** `PHASE-23-30.md` fixes
+`research_stage` at exactly the seven FEAT §23 values — `RAW · NORMALIZED · VALIDATED · MATCHED ·
+REVIEW · SHORTLISTED · CONFIRMED` — and states that **rejection is not a stage**: `IGNORED ·
+REJECTED · DUPLICATE` are values of the separate `research_disposition` column, whose fourth value
+is `NONE`. `SHORTLISTED` and `CONFIRMED` therefore already exist, delivered by Phases 25 and 29;
+Phase 35 below adds neither, adds no eighth value, and creates no second transition log. There is
+no `research_pipeline_state` type anywhere in this project, and no `research_product_images` or
+`research_product_snapshots` table — competitor images are `research_products.image_urls text[]`
+(Phase 28) and per-run evidence is `research_product_versions` plus the `snapshot_*_key` storage
+keys on `research_changes`.
+
+**The isolation invariants this block inherits.** `PHASE-23-30.md` states I1–I4 and enforces them
+with `scripts/research/check-research-isolation.mjs`, `scripts/research/check-no-autoimport.mjs`
+and `tests/unit/research-isolation.test.ts`. Two of them constrain new schema in this block
+directly:
+
+- **I1** — no `research_*` table may have a foreign key to, or be referenced by, `products`,
+  `categories`, `collections`, `materials`, `media_assets`, `portfolio_projects`,
+  `journal_articles`, `pages`, `page_sections`, `product_relations` or `content_relations`, **except**
+  the two allowlisted taxonomy references (`research_source_category_map.category_id`,
+  `research_products.matched_category_id`). The guard's allowlist holds exactly those two constraint
+  names and fails on a third. **No phase in this block adds a third**; where one was tempted — the
+  media hashes in Phase 33 and the target category in Phase 34 — the schema is arranged to avoid it,
+  and the arrangement is stated where it occurs.
+- **I4** — as literally written, there is no code path of any kind that writes to `products` from a
+  `research_*` read. Phase 35's manual bridge is the one place in this block that touches that
+  sentence; it does not proceed on an assertion of compliance but on an explicit, narrow, proposed
+  amendment recorded in *Open questions* 11.
 
 ## Conventions used by all eight phases
 
@@ -57,7 +87,7 @@ to it and owns the transition table.
 | Permission naming | `<domain>.<action>`, the **dot** form owned by `lib/auth/permissions.ts` (Phase 04). See *Inherited-name reconciliation* |
 | Route notation | `/studio/...` = D4 Studio route; `app/api/...` = route handler; no D3 public route is touched anywhere in this block |
 | Data-layer rule | only `lib/supabase/repositories/**` may call `.from(...)` (Phase 03), enforced by `scripts/db/check-data-layer.mjs` |
-| Research isolation | `research_*` tables never join directly to public product tables (D5). No file under `app/(site)/**`, `lib/cms/**` or `components/sections/**` may reference a `research_` identifier — Phase 35 adds that check to `check-data-layer.mjs` |
+| Research isolation | I1–I4 above, already enforced by `scripts/research/check-research-isolation.mjs` (Phase 25) and `scripts/research/check-no-autoimport.mjs` (Phase 29). This block adds **no second guard**: Phase 33 and Phase 34 keep their new tables inside I1 without an allowlist entry, and Phase 35 amends the existing I4 rule *in that script* rather than writing a new check elsewhere |
 | Never automatic | no research row, score, similarity pair, direction brief or Sheet cell ever creates, edits, publishes or unpublishes a Rivya product, page or media row (FEAT §25) |
 | Coverage rule | every analytic number this block renders carries `n`, its denominator and an `as of` timestamp. A metric with no data renders `UNAVAILABLE` with a named reason and is never estimated, interpolated or filled (FEAT §28) |
 | Never invented | product names presented as inventory, prices, dimensions, materials, lead times, delivered projects, clients, testimonials, awards, certifications, durability claims (D10, FEAT §38, SEED §32/§55) |
@@ -123,9 +153,11 @@ number of rows it was computed from and the number it *could* have been computed
 ever reads a median derived from four records as though it described a market. After this phase the
 Studio holds evidence; it still holds no opinion.
 
-**Depends on** — Phase 26 (sources, currency, category mapping, analytics league), Phase 27
-(extraction), Phase 28 (normalisation and validation, `dimensions_mm`, `dimension_confidence`),
-Phase 29 (change detection), Phase 30 (large-format workspace and its filters), Phase 05
+**Depends on** — Phase 26 (sources, currency, `research_source_category_map`, `analytics_league`,
+`research_source_health_v`), Phase 27 (extraction, `research_product_versions`), Phase 28
+(normalisation and validation: `price_state`, `price_min_minor`, `price_max_minor`, `dimensions_mm`,
+`dimension_parse_state`, `material_tokens`, `matched_category_id`), Phase 29 (change detection),
+Phase 30 (`scale_band`, `is_large_format`, `longest_axis_mm`, and the workspace's filters), Phase 05
 (`DataTable`, `FilterBar`, `StatCard`, `EmptyState`), Phase 03 (repository layer).
 
 **Scope**
@@ -136,24 +168,33 @@ Phase 29 (change detection), Phase 30 (large-format workspace and its filters), 
   the database; the repository fetches, the module computes, the route renders.
 - The **coverage record**, returned beside every result and stored with every snapshot:
   `{ metric_key, n, denominator, coverage_pct, excluded_reasons: Record<string, number>, as_of }`.
-  `excluded_reasons` is a count per reason (`no_price`, `no_dimensions`, `low_dimension_confidence`,
-  `unmapped_category`, `stale`), so a thin result explains itself rather than looking like a small
-  market.
+  `excluded_reasons` is a count per reason (`no_price`, `quote_only_price`, `ambiguous_currency`,
+  `no_dimensions`, `dimensions_unparsed`, `unmapped_category`, `stale`), so a thin result explains
+  itself rather than looking like a small market.
 - **Assortment analysis** — per enabled source and per mapped category: live item count, share of
-  that source's assortment, large-format share (`is_large_format`), share of items carrying a
-  parsed price, and first/last-seen spread. Categories are the seven D3 categories via
-  `research_sources.category_mapping`; anything unmapped is reported as `unmapped` and never
-  silently distributed across the seven.
-- **Price architecture** — a histogram of `price_minor` **within a single currency**, plus p10,
-  p25, median, p75, p90 and the band edges. Cross-currency comparison is refused by default: a set
-  containing more than one currency renders one panel per currency with a notice, not a converted
-  total. `bands.ts` produces bands by a declared rule (`QUANTILE` over the set, or `FIXED` edges
-  entered by the researcher), and the rule used is stored with the result.
-- **Dimension analysis** — width/depth/height/diameter in millimetres from `dimensions_mm`, only
-  for rows with `dimension_confidence >= 0.6`; below that a row is excluded and counted in
-  `excluded_reasons.low_dimension_confidence`. Outputs: per-axis percentiles, a longest-axis
-  distribution, a width-versus-height scatter, and a "table-scale" cut (longest axis ≥ 1800 mm)
-  that Phase 30's workspace already uses so the two surfaces agree.
+  that source's assortment, large-format share (`is_large_format`, three-valued, so `true`, `false`
+  and `unknown` are all reported), share of items carrying a parsed price, and first/last-seen
+  spread. Categories are the seven D3 categories reached through `research_products.matched_category_id`
+  (set in Phase 28 from `research_source_category_map`); a row with `matched_category_id is null` is
+  reported as `unmapped` and never silently distributed across the seven.
+- **Price architecture** — a histogram of `price_min_minor` **within a single currency**, plus p10,
+  p25, median, p75, p90 and the band edges. Only rows with `price_state in ('FIXED','STARTING_FROM')`
+  and a non-null `price_min_minor` are included; `REQUEST_QUOTE`, `PRICE_ON_REQUEST` and `UNKNOWN`
+  rows are excluded and counted under `quote_only_price`, never imputed as zero. For a range row
+  (`STARTING_FROM`, carrying `price_max_minor`) the comparable point is `price_min_minor`, stated on
+  the panel, and `price_max_minor` is used only for the range-width figure beside the histogram.
+  Cross-currency comparison is refused by default: a set containing more than one currency renders
+  one panel per currency with a notice, not a converted total. `bands.ts` produces bands by a
+  declared rule (`QUANTILE` over the set, or `FIXED` edges entered by the researcher), and the rule
+  used is stored with the result.
+- **Dimension analysis** — width/depth/height/diameter in millimetres from `dimensions_mm`, only for
+  rows with `dimension_parse_state = 'PARSED'`. `AMBIGUOUS` and `UNPARSED` rows are excluded and
+  counted in `excluded_reasons.dimensions_unparsed`; there is no numeric confidence to threshold on,
+  because Phase 28 records a parse **state** rather than a score, deliberately — it refuses to infer
+  a unit from a magnitude, so a row either parsed or it did not. Outputs: per-axis percentiles, a
+  longest-axis distribution built from `longest_axis_mm`, a width-versus-height scatter, and a
+  "table-scale" cut (longest axis ≥ 1800 mm) that Phase 30's workspace already uses, so the two
+  surfaces agree row for row.
 - **Comparison sets** — a named, saved, Studio-visible selection. A set holds members of two kinds:
   whole sources, and individual research products. Sets are re-runnable; the analysis is recomputed
   against current data and a snapshot is written each time so a set has a history.
@@ -161,9 +202,10 @@ Phase 29 (change detection), Phase 30 (large-format workspace and its filters), 
   (scope, metric family) so `/studio/research/dashboard` and Phase 37 read a stored row rather than
   scanning the corpus on page load. `npm run research:analytics -- --snapshot` recomputes; a cron
   route recomputes nightly.
-- A **coverage panel** added to `/studio/research/dashboard`: per source, rows captured, rows with
-  price, rows with dimensions, last successful run, staleness. This is the honest header the rest
-  of the block inherits.
+- A **coverage panel** added to `/studio/research/dashboard`: per source, rows captured, rows with a
+  usable price, rows with `dimension_parse_state = 'PARSED'`, and — read straight from Phase 26's
+  `research_source_health_v`, not recomputed here — `last_run_at`, `last_run_status`,
+  `success_rate_7d` and `health`. This is the honest header the rest of the block inherits.
 - Charts render through `components/patterns/charts/*` — token-driven inline SVG (`BarSeries`,
   `BandStrip`, `Scatter`, `Sparkline`), no new runtime dependency. Any external chart library must
   go through the FEAT §7 registry process first.
@@ -244,7 +286,7 @@ sources and numbers, and links out to the source URL in a new tab.
 |---|---|
 | A median over six rows is read as a market fact | Every panel is headed by `CoverageBadge`; below a configurable floor (default `n < 12`) the panel renders the distribution but suppresses percentiles and shows `INSUFFICIENT SAMPLE`, asserted by a unit test |
 | Currencies are silently mixed and produce a meaningless price band | `price-architecture.ts` throws `MixedCurrencyError` if handed rows of more than one currency; the route splits before calling it and renders one panel per currency |
-| Dimension parse noise inflates the size distribution | Hard floor at `dimension_confidence >= 0.6`; excluded rows counted and displayed; an e2e test lowers one row's confidence and asserts the `n` drops by exactly one |
+| Dimension parse noise inflates the size distribution | Only `dimension_parse_state = 'PARSED'` rows are measured; `AMBIGUOUS` and `UNPARSED` rows are excluded, counted under `dimensions_unparsed` and displayed; an e2e test flips one row to `AMBIGUOUS` and asserts `n` drops by exactly one while `denominator` is unchanged |
 | Unmapped categories quietly vanish and shares add to less than 100% | `unmapped` is a first-class bucket in the assortment result; a unit test asserts shares sum to 100 ± 0.01 including it |
 | Recomputing the whole corpus on page load times out | Routes read `research_analytics_snapshots`; recompute is an explicit action or the cron; the CLI is the only full-corpus path and is measured in `tests/unit/analytics-*.test.ts` fixtures, not in the request path |
 | A set silently changes meaning as sources are disabled | The snapshot stores `input_run_max_id` and `row_count`; the workbench shows "computed from N rows on <date>" and a stale badge when the corpus has grown since |
@@ -257,24 +299,51 @@ sources and numbers, and links out to the source URL in a new tab.
 2. `npm run test:unit -- analytics-assortment analytics-price analytics-dimensions analytics-coverage`
    — all pass against fixtures whose expected percentiles and shares are written in the test file
    by hand, not snapshotted from the implementation.
-3. Seed the Playwright research fixture (three sources, 140 rows, two currencies, 38 rows without
-   price, 51 without dimensions). `npm run research:analytics -- --scope=corpus --snapshot`.
-4. `psql "$DATABASE_URL" -c "select metric_key, n, denominator, coverage_pct from
-   research_metric_coverage where snapshot_id = (select id from research_analytics_snapshots
-   where metric_family='PRICE_ARCHITECTURE' order by computed_at desc limit 1)"` — `n` equals
-   140 − 38 = 102 and `denominator` equals 140.
-5. Open `/studio/research/compare`, create a set with two sources of different currencies, recompute
+3. Seed the Playwright research fixture, whose composition is fixed so the assertions below are
+   arithmetic rather than approximate: **three sources, 140 rows, two currencies** — sources A and B
+   in `INR` (95 rows) and source C in `GBP` (45 rows) — **38 rows without a usable price** (26 `INR`,
+   12 `GBP`, all in a quote or unknown `price_state`) and **51 rows whose `dimension_parse_state` is
+   not `PARSED`**. Then `npm run research:analytics -- --scope=corpus --snapshot`.
+4. Because `price-architecture.ts` throws `MixedCurrencyError` on mixed input, the route splits by
+   currency before calling it and `research_analytics_snapshots` is keyed by `currency`, so a
+   two-currency corpus produces **two** `PRICE_ARCHITECTURE` snapshots, not one. Assert both:
+
+   ```sql
+   select s.currency, c.n, c.denominator, c.coverage_pct
+   from research_analytics_snapshots s
+   join research_metric_coverage c on c.snapshot_id = s.id
+   where s.scope_type = 'CORPUS' and s.metric_family = 'PRICE_ARCHITECTURE'
+     and c.metric_key = 'price_architecture'
+     and s.computed_at = (select max(computed_at) from research_analytics_snapshots
+                          where scope_type = 'CORPUS' and metric_family = 'PRICE_ARCHITECTURE')
+   order by s.currency;
+   ```
+
+   Expected: exactly two rows — `GBP` with `n = 33`, `denominator = 45`; `INR` with `n = 69`,
+   `denominator = 95`. `sum(n) = 102` (140 − 38) and `sum(denominator) = 140`. **No row has
+   `n = 102`**, and no snapshot exists with a null `currency` for this metric family — a combined
+   figure across currencies is not merely unrendered, it is never computed.
+5. Repeat step 4 against a single-currency scope for the scalar case:
+   `npm run research:analytics -- --scope=source:source-a --snapshot`, then the same query with
+   `scope_type = 'SOURCE'` — one row, `INR`, whose `denominator` equals source A's row count and
+   whose `n + Σ excluded_reasons` equals that denominator.
+6. Open `/studio/research/compare`, create a set with two sources of different currencies, recompute
    — two price panels render, each labelled with its currency, and no combined total appears
    anywhere on the page.
-6. Remove one source so the set holds nine priced rows; recompute — the price panel renders
-   `INSUFFICIENT SAMPLE` and no median is shown.
-7. `npx playwright test tests/e2e/research-compare.spec.ts` — create, add members, reorder,
+7. Remove one source so the set holds nine priced rows in a single currency; recompute — the price
+   panel renders `INSUFFICIENT SAMPLE` and no median is shown.
+8. Flip one fixture row's `dimension_parse_state` from `PARSED` to `AMBIGUOUS`, recompute the
+   `DIMENSIONS` family — `n` falls by exactly one, `denominator` is unchanged, and
+   `excluded_reasons->>'dimensions_unparsed'` rises by exactly one.
+9. `npx playwright test tests/e2e/research-compare.spec.ts` — create, add members, reorder,
    recompute, read each coverage badge, delete behind the confirm dialog, at 1920 and 390.
-8. As `viewer`, POST the recompute server action directly → 403 and a `DENIED` row in `audit_log`.
-   As `researcher` → succeeds.
-9. `psql "$DATABASE_URL" -c "select count(*) from research_comparison_sets"` as the `anon` role —
-   permission error, proving no public policy exists.
-10. `npm run check:data-layer` — passes; no `.from(` outside the repositories.
+10. As `viewer`, POST the recompute server action directly → 403 and a `DENIED` row in `audit_log`.
+    As `researcher` → succeeds.
+11. `psql "$DATABASE_URL" -c "select count(*) from research_comparison_sets"` as the `anon` role —
+    permission error, proving no public policy exists.
+12. `npm run check:data-layer` — passes; no `.from(` outside the repositories.
+    `node scripts/research/check-research-isolation.mjs` — passes; the four new tables add no
+    referential constraint to any public table, so the I1 allowlist still holds exactly two entries.
 
 **Exit criteria**
 
@@ -285,8 +354,9 @@ sources and numbers, and links out to the source URL in a new tab.
 - [ ] `excluded_reasons` accounts for every row not counted; `n + Σ excluded = denominator` is
       asserted by a unit test.
 - [ ] Multi-currency price comparison is refused, not converted, and the refusal is visible to the
-      user rather than silent.
-- [ ] Dimension analysis excludes rows below the confidence floor and says how many it excluded.
+      user rather than silent: a two-currency scope stores two snapshots and never one combined row.
+- [ ] Dimension analysis measures only `dimension_parse_state = 'PARSED'` rows and reports how many
+      it excluded, under `dimensions_unparsed`.
 - [ ] `/studio/research/compare` and `/studio/research/compare/[setId]` are filled, permission-gated
       and reachable from the research navigation.
 - [ ] `/studio/research/dashboard` shows per-source coverage and staleness.
@@ -312,9 +382,11 @@ phase. When the inputs are too thin, the engine returns `INSUFFICIENT_DATA` inst
 because a low score and an absent score mean opposite things.
 
 **Depends on** — Phase 31 (assortment, price bands, dimension buckets, the coverage record), Phase
-28 (validated fields and completeness), Phase 29 (`research_changes` for velocity), Phase 26
-(enabled source count), Phase 14 (published Rivya products, the first-party side of the gap
-signals).
+28 (validated fields and completeness: `price_state`, `price_min_minor`, `material_tokens`,
+`matched_category_id`, and `research_product_versions.normalized`), Phase 30 (`is_large_format`,
+three-valued), Phase 29 (`research_changes.materiality` for velocity), Phase 26 (enabled source
+count and each source's `attribute_extraction` capabilities), Phase 14 (published Rivya products,
+the first-party side of the gap signals).
 
 **Scope**
 
@@ -331,12 +403,42 @@ signals).
 | Signal key | Question it answers | Input | Normalisation to 0–100 | Weight | Minimum coverage |
 |---|---|---|---|---|---|
 | `category_gap` | how thinly does Rivya's published catalogue cover this mapped category? | count of `products` with `status='PUBLISHED'` in the mapped category | 0 → 100; ≥ 12 → 0; linear between | 20 | none (a first-party count is always knowable, including zero) |
-| `large_format_fit` | does it sit where SEED §56 says Rivya's priority sits? | `is_large_format`, longest axis, mapped category | large-format → 100; collectible/sculptural → 75; 3D + resin → 70; wall/statement → 60; preservation → 40; décor → 25; gifts → 10 | 20 | `dimension_confidence ≥ 0.6` **or** an explicit source category |
-| `price_band_gap` | is this price band unoccupied by Rivya's published range? | the row's Phase 31 band vs bands occupied by published Rivya products in the same currency | unoccupied → 100; adjacent → 50; occupied → 0 | 15 | ≥ 5 published Rivya products carrying a price in that currency |
-| `assortment_density` | how many independent sources list something comparable? | distinct `source_id` in the same category and band | 1 → 30; 2 → 60; ≥ 3 → 100 | 15 | ≥ 3 enabled sources |
-| `change_velocity` | is this part of the market moving? | `research_changes` rows for the category in the last 90 days | 0 → 0; ≥ 10 → 100; linear between | 10 | ≥ 30 days of run history for the source |
-| `customisation_signal` | does the market treat this as customisable, as Rivya's model assumes? | the normalised customisation attribute from Phase 28 | present and true → 100; present and false → 0 | 10 | the attribute is captured by the source's adapter |
-| `material_adjacency` | is it made of what Rivya works in? | `materials[]` ∩ the `materials` table vocabulary | matched share × 100 | 10 | materials captured for the row |
+| `large_format_fit` | does it sit where SEED §56 says Rivya's priority sits? | `is_large_format` (three-valued), `matched_category_id` | the full table below | 20 | `is_large_format is not null` **and** `matched_category_id is not null` |
+| `price_band_gap` | is this price band unoccupied by Rivya's published range? | the row's Phase 31 band, from `price_min_minor`, vs bands occupied by published Rivya products in the same currency | unoccupied → 100; adjacent → 50; occupied → 0 | 15 | the row's `price_state in ('FIXED','STARTING_FROM')` **and** ≥ 5 published Rivya products carrying a price in that currency |
+| `assortment_density` | how many independent sources list something comparable? | distinct `source_id` in the same `matched_category_id` and band | 1 → 30; 2 → 60; ≥ 3 → 100 | 15 | ≥ 3 enabled sources |
+| `change_velocity` | is this part of the market moving? | `research_changes` rows with `materiality = 'MATERIAL'` for the category in the last 90 days | 0 → 0; ≥ 10 → 100; linear between | 10 | ≥ 30 days of run history for the source |
+| `customisation_signal` | does the market treat this as customisable, as Rivya's model assumes? | the `customization` token set in `research_product_versions.normalized` for the row's `current_version_id` (Phase 28) | present and true → 100; present and false → 0 | 10 | the source's `attribute_extraction` declares a `customization` key **and** the version's `normalized` payload carries the key |
+| `material_adjacency` | is it made of what Rivya works in? | `research_products.material_tokens` ∩ the `materials` table's token vocabulary, compared in application code — no SQL join crosses the research boundary | matched share × 100 | 10 | `material_tokens` is non-empty for the row |
+
+  **`large_format_fit` in full**, because a partial table is a licence to guess. `is_large_format` is
+  three-valued (Phase 30 makes it `null` whenever `dimension_parse_state <> 'PARSED'` and no editor
+  has overridden it), and `matched_category_id` is nullable, so the rule must resolve every
+  combination of the seven D3 categories and the three flag states, plus the unmapped case:
+
+| `matched_category_id` slug | `is_large_format = true` | `is_large_format = false` | `is_large_format is null` |
+|---|---|---|---|
+| `furniture` | 100 | **50** | excluded — `large_format_unknown` |
+| `collectible-design` | 100 | 75 | excluded — `large_format_unknown` |
+| `3d-resin` | 100 | 70 | excluded — `large_format_unknown` |
+| `wall-statement-art` | 100 | 60 | excluded — `large_format_unknown` |
+| `preservation` | 100 | 40 | excluded — `large_format_unknown` |
+| `decor` | 100 | 25 | excluded — `large_format_unknown` |
+| `gifts` | 100 | 10 | excluded — `large_format_unknown` |
+| *unmapped* (`null`) | excluded — `unmapped_category` | excluded — `unmapped_category` | excluded — `unmapped_category` |
+
+  The `false` column is SEED §56's priority ladder read literally: collectible/sculptural 75, 3D +
+  resin 70, statement art 60, preservation 40, décor 25, gifts 10. `furniture` that is **not**
+  large-format is the one cell SEED §56 does not name, because its tier 1 is "large-format
+  furniture" and the scale is what puts it there. It scores **50** — above statement art because it
+  is still Rivya's core craft, below collectible design because it is neither at the priority scale
+  nor a collectible piece. That number is a judgement, it is written in the model file as a
+  judgement, and changing it means publishing a new model version like any other weight.
+
+  **Excluded is not zero.** Both exclusion paths lower `confidence` through the formula below; they
+  never contribute a value of 0, which would read as "a poor fit" rather than "we do not know".
+  `tests/unit/opportunity-signals.test.ts` asserts that all **24** combinations above — seven
+  categories plus unmapped, times three flag states — resolve to either a number or a named
+  exclusion reason, with no fall-through and no default.
 
 - **The formula**, implemented once in `lib/scraper/analytics/opportunity/score.ts` and printed
   verbatim in `docs/architecture/SCRAPER.md`:
@@ -455,7 +557,9 @@ on every load, so no score is ever read without its provenance.
 2. `npm run test:unit -- opportunity-signals opportunity-score` — includes a worked example: a
    fixture row whose seven normalised values and weights are written in the test, whose expected
    `raw`, `confidence`, `completeness` and `score` are written as literals, and which fails if the
-   implementation changes any of them.
+   implementation changes any of them. `opportunity-signals` additionally enumerates the 24
+   `large_format_fit` combinations (seven D3 categories plus unmapped × `true`/`false`/`null`) and
+   asserts each returns either the tabled number or the named exclusion reason.
 3. `psql "$DATABASE_URL" -c "update research_scoring_models set lifecycle='ACTIVE' where
    version='v1'"`, then attempt `update research_scoring_models set signals='{}'::jsonb where
    version='v1'` — rejected by `freeze_active_scoring_model` naming the version.
@@ -485,7 +589,10 @@ on every load, so no score is ever read without its provenance.
 - [ ] The formula in `docs/architecture/SCRAPER.md` is character-identical to `score.ts` and a unit
       test asserts a hand-computed example.
 - [ ] Signals below their coverage requirement are excluded with a stored reason and lower the
-      confidence rather than defaulting to zero.
+      confidence rather than defaulting to zero — including `large_format_fit` on an unmapped
+      category or a `null` `is_large_format`.
+- [ ] `large_format_fit` resolves every one of the 24 category × flag combinations to a number or a
+      named exclusion, with no default branch, proven by an exhaustive unit test.
 - [ ] `INSUFFICIENT_DATA` rows are visible but never ranked.
 - [ ] No ML, embedding, clustering or language-model call exists in the scoring path (CI grep).
 - [ ] No score triggers any action on any Rivya product, page or media row.
@@ -499,43 +606,85 @@ on every load, so no score is ever read without its provenance.
 ## PHASE 33 — Visual Similarity
 
 **Goal** — The Studio can answer "have we seen this picture before?" reliably, and "does this look
-like that?" honestly. Perceptual hashing over images the scraper already retained finds
-near-duplicates across sources, relistings of the same item and re-crops of the same shoot, at a
-precision worth acting on. An optional embedding path, behind a feature flag that ships off, finds
-loosely similar form and palette at a precision that is not worth acting on alone — and the
-interface says so, in words, next to every pair it shows. The phase also turns the same machinery
-inward: a Rivya media upload can be checked against the research image corpus, so a competitor's
-photograph can never quietly become Rivya media. No result from this phase is ever described as
-"the same product", because two identical photographs prove a shared image, not a shared object.
+like that?" honestly. Perceptual hashing finds near-duplicates across sources, relistings of the
+same item and re-crops of the same shoot, at a precision worth acting on. An optional embedding
+path, behind a feature flag that ships off, finds loosely similar form and palette at a precision
+that is not worth acting on alone — and the interface says so, in words, next to every pair it
+shows. The phase also turns the same machinery inward: a Rivya media upload is checked against both
+the research hash corpus and Rivya's own, so a competitor's photograph can never quietly become
+Rivya media and a manifest asset cannot be re-uploaded as if it were new photography. No result from
+this phase is ever described as "the same product", because two identical photographs prove a shared
+image, not a shared object.
 
-**Depends on** — Phase 27 (retained images and `checksum`), Phase 28 (normalised rows), Phase 31
-(the coverage record), Phase 06/07 (`media_assets` and the migrated Higgsfield corpus, as the
-first-party side of the duplicate check), Phase 19 (`feature_flags`).
+**Where the bytes come from — the one rule this phase amends.** `PHASE-23-30.md` stores competitor
+images as `research_products.image_urls text[]` and nothing else. It says at Phase 26 that "**no
+mode downloads or re-hosts an image**" and at Phases 28/29 that "**no image is fetched, measured by
+download, cached**". There is therefore no stored byte and no checksum anywhere for this phase to
+hash, and hashing without fetching is impossible. **This phase amends that rule, narrowly and
+explicitly**, rather than pretending the bytes already exist:
+
+| The amendment | Detail |
+|---|---|
+| What is fetched | Each entry of `research_products.image_urls`, once, at hash time |
+| Under what governance | The **existing** Phase 25 politeness path — `lib/scraper/core/fetch.ts`, `robots.ts` and `rate-limit.ts` — so an image request is rate-limited, delayed, circuit-broken and robots-checked exactly like a page request, and a `DISALLOWED` decision performs no request. Every image fetch writes a `research_fetches` row with `storage_key = null` |
+| What is kept | The 64-bit pHash, the 64-bit dHash, the SHA-256 `checksum` of the bytes, the source URL, and `source_image_key` = SHA-256 of the normalised URL. Nothing else |
+| What is **not** kept | The bytes, in any form: no file, no buffer written to disk, no Supabase Storage object, no Cloudinary upload, no `media_assets` row, no thumbnail, no snapshot, no width, no height, no dominant colour, no EXIF. The decoded pixels exist only inside one function call and are released before it returns |
+| What gates it | `research.enabled` (the master kill switch), a new per-source `image_hashing_enabled bool not null default false` on `research_sources`, a source `policy_status = 'APPROVED'`, and the new `research_image_hashing` flag, default `false`. All four must be true; any one false and the run skips that source with a stated reason |
+| Where it is raised | *Open questions* 12, with the exact amendment text `PHASE-23-30.md` would need. Until the owner accepts it, `research_image_hashing` stays off and this phase ships the first-party half only |
+
+  A hash is not a copy: a 64-bit reduction cannot reconstruct an image and is not a substitute for
+  one. But a fetch is still a request to somebody else's server, which is why it is governed by the
+  politeness machinery rather than by a new one.
+
+**Depends on** — Phase 25 (`fetch.ts`, `robots.ts`, `rate-limit.ts`, `research_fetches`, the
+`research.enabled` kill switch), Phase 26 (`policy_status`, `image_extraction_mode`), Phase 27/28
+(`image_urls` extraction and normalisation), Phase 31 (the coverage record), Phase 06/07
+(`media_assets` and the migrated Higgsfield corpus, as the first-party side of the duplicate check),
+Phase 19 (`feature_flags`).
 
 **Scope**
 
 - **Hashing.** `lib/scraper/analytics/similarity/` implements `dhash.ts` and `phash.ts` — 64-bit
   difference and DCT perceptual hashes over an 8×8 / 32×32 grayscale reduction — plus `hamming.ts`.
-  Hashes are computed once per image, keyed by `research_product_images.checksum`, and stored as
-  `bit(64)` so PostgreSQL can compute distance in SQL. Nothing about the image itself is stored by
-  this phase.
+  Both take a decoded pixel buffer and return a `bit(64)` string; neither performs I/O, so the
+  fetch, the decode and the discard all live in `lib/scraper/analytics/similarity/hash-run.ts`,
+  which is the only module in the block that touches image bytes. Hashes are stored as `bit(64)`
+  so PostgreSQL computes Hamming distance in SQL.
+- **Two hash tables, on two sides of the isolation boundary.** Research-side hashes live in
+  `research_image_hashes`, keyed to `research_products`. Rivya-side hashes live in
+  `media_asset_hashes`, keyed to `media_assets` and owned by `lib/media/`. They are **never joined**:
+  I1 forbids a `research_*` table from referencing `media_assets` and forbids a third allowlisted
+  constraint in either direction, so `checkMediaAgainstResearch()` reads one table, reads the other,
+  and compares in TypeScript. Two repository calls, no SQL join, no foreign key, no allowlist entry.
 - **Runs.** A similarity run takes a scope (whole corpus, one source, one comparison set, one
   research product, or one `media_assets` row), computes missing hashes, then compares. Comparison
   is blocked into buckets by the top 16 bits of the pHash to avoid an O(n²) sweep; the bucket rule
   and its recall trade-off are documented, because a blocking scheme that silently misses pairs is
   worse than a slow one.
+- **Hashing is idempotent by URL key, not by checksum.** A `source_image_key` already present for a
+  `research_product_id` is not re-fetched; `--rehash` is the only way to make a second request for
+  the same URL. This is both a correctness rule and a politeness one: a nightly re-run must cost the
+  source zero requests.
 - **Bands, and what each one is allowed to claim.** This table is rendered in the Studio next to
   every result set, not only written in the docs:
 
 | Band | Method | Threshold | What it reliably means | What it does **not** mean |
 |---|---|---|---|---|
-| `NEAR_DUPLICATE` | pHash, 64-bit | Hamming ≤ 6 | the same image file, or a re-encode, resize or mild crop of it | that the two listings are the same physical object, or that either seller made it |
+| `NEAR_DUPLICATE` | pHash, 64-bit | Hamming ≤ 6, **including distance 0** | the same image file, or a re-encode, resize or mild crop of it | that the two listings are the same physical object, or that either seller made it |
 | `PROBABLE_VARIANT` | pHash | 7–12 | very likely the same photo shoot, set or listing family | that the products are the same, or comparable in size or price |
 | `WEAK` | pHash | 13–18 | similar composition, crop or palette | anything at all about the object, its material or its maker |
 | `FORM_SIMILAR` | embedding, cosine | ≥ 0.86 | similar visual form and material impression, at low precision | similarity of design, dimensions, construction, or that one copies the other |
 
   Pairs above the `WEAK` ceiling are discarded, not stored. `FORM_SIMILAR` exists only when the
   `advanced_similarity` flag is on.
+- **Byte-identical images are a result, not a deduplication.** Two sources listing the same image
+  file produce **two** hash rows — one per `(research_product_id, source_image_key)` — with the same
+  `checksum`, and the run stores a `NEAR_DUPLICATE` pair between them at distance 0. `checksum` is
+  indexed but **not unique**: collapsing byte-identical rows into one would delete exactly the fact
+  the phase exists to surface, and would make it impossible to hold a Rivya asset that happens to be
+  byte-identical to a research image — the single case the upload guard is built for. The run
+  reports exact matches separately in its counts (`pairs_exact`) so "the same file, twice" is
+  distinguishable on screen from "≤ 6 bits apart".
 - **Honest precision.** The thresholds above are thresholds, not accuracy claims. Before the flag
   may be turned on in production, a researcher labels a stratified sample of 200 candidate pairs
   (50 per band) as correct or incorrect, and the measured precision per band is recorded in
@@ -546,14 +695,23 @@ first-party side of the duplicate check), Phase 19 (`feature_flags`).
   the flag cannot be enabled and the Studio says why. Embeddings are stored with `model_name` and
   `dim`; a model change invalidates the table rather than mixing spaces, enforced by a check that a
   run may only compare embeddings sharing `model_name`.
-- **Rivya-side duplicate guard.** `checkMediaAgainstResearch(mediaAssetId)` runs on every
-  `media_assets` insert from a user upload (Phase 06 hook) and blocks the upload with a named reason
-  when a `NEAR_DUPLICATE` match against a research image exists. This is the phase's only automatic
-  consequence, and it only ever *prevents* something.
+- **Rivya-side duplicate guard.** `checkMediaAgainstResearch(bytes)` runs in the Phase 06 upload path
+  **before** a `media_assets` row is inserted — it hashes the incoming bytes in memory, then makes two
+  reads: `media_asset_hashes` (is this already a Rivya asset?) and `research_image_hashes` (is this a
+  competitor's photograph?). A `NEAR_DUPLICATE` match on either side blocks the upload with a named
+  reason. Because it refuses before the insert, no row and no Cloudinary object is created, and there
+  is nothing to link the two tables with. This is the phase's only automatic consequence, and it only
+  ever *prevents* something.
+- **Videos.** A perceptual hash over an 8×8 / 32×32 grayscale reduction is defined for a still image
+  and for nothing else. `media_asset_hashes.phash` and `.dhash` are therefore **nullable**: a video
+  row carries its SHA-256 `checksum` and null hashes, and the guard falls back to exact-checksum
+  matching for it. A re-uploaded manifest video is caught; a re-encoded one is not, and the guard
+  says so rather than implying a coverage it does not have.
 - `/studio/research/similarity`: run launcher, run history, and a results view grouped into clusters
   with the band legend, the pair distance, both source links, and per-pair actions **Mark duplicate**
-  (writes the Phase 35 `DUPLICATE` state via that phase's transition function, once it exists) and
-  **Dismiss pair** (stores a suppression so the pair never resurfaces).
+  (sets `disposition = 'DUPLICATE'` and `duplicate_of_id` through Phase 29's existing
+  `review-actions.ts` — this phase adds no second write path for it) and **Dismiss pair** (stores a
+  suppression so the pair never resurfaces).
 
 **Out of scope**
 
@@ -562,8 +720,12 @@ first-party side of the duplicate check), Phase 19 (`feature_flags`).
 - Feeding similarity into the Phase 32 score. A new model version and an amendment to this document
   would be required.
 - Similarity between Rivya products (a first-party "related products" engine is Phase 23).
-- Storing, re-hosting, proxying or rendering competitor images at higher than thumbnail scale.
-  Results link out; they do not build a gallery of other people's photography.
+- **Persisting a competitor image in any form.** The amendment above buys exactly one thing: the
+  right to fetch bytes, hash them and drop them. It does not buy a cache, a proxy, a thumbnail
+  store, a width, a height, a colour histogram or a re-host. Results link out; they do not build a
+  gallery of other people's photography.
+- Any foreign key, view or SQL join between `research_image_hashes` and `media_asset_hashes`, or
+  between either and `media_assets` on the research side (I1).
 - Text similarity, description matching or title clustering — Phase 28 owns matching.
 - Any public surface.
 
