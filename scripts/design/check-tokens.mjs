@@ -89,7 +89,8 @@ const NAMED =
   /(^|[^-\w])(white|black|red|blue|green|yellow|orange|purple|pink|gray|grey|silver|gold|navy|teal|olive|maroon|lime|aqua|fuchsia)([^-\w]|$)/i
 const HEX = /#[0-9a-fA-F]{3,8}\b/
 const RGB = /\brgba?\s*\(/
-const ARBITRARY = /\b(?:bg|text|border|p|px|py|pt|pb|pl|pr|m|mx|my|gap|w|h|size|top|left|right|bottom|inset|rounded|shadow|z)-\[[^\]]+\]/
+const ARBITRARY =
+  /\b(?:bg|text|border|p|px|py|pt|pb|pl|pr|m|mx|my|gap|w|h|size|top|left|right|bottom|inset|rounded|shadow|z)-\[[^\]]+\]/
 
 for (const file of SCAN_DIRS.flatMap((d) => walk(join(ROOT, d)))) {
   const rel = relative(ROOT, file)
@@ -105,7 +106,8 @@ for (const file of SCAN_DIRS.flatMap((d) => walk(join(ROOT, d)))) {
       if (NAMED.test(code) && /class(Name)?\s*[=:]/.test(code))
         problems.push(`${where}  CSS named colour in a class attribute`)
       const arb = code.match(ARBITRARY)
-      if (arb) problems.push(`${where}  arbitrary Tailwind value ${arb[0]} bypasses the token scale`)
+      if (arb)
+        problems.push(`${where}  arbitrary Tailwind value ${arb[0]} bypasses the token scale`)
     })
 }
 
@@ -120,7 +122,9 @@ const readToken = (name) => {
 const obsidian = readToken('--rv-color-obsidian')
 const bone = readToken('--rv-color-bone')
 if (!obsidian || !bone) {
-  problems.push('tokens.css  --rv-color-obsidian or --rv-color-bone is missing or not a 6-digit hex')
+  problems.push(
+    'tokens.css  --rv-color-obsidian or --rv-color-bone is missing or not a 6-digit hex',
+  )
 } else {
   const a = linearToOklab(hexToLinear(obsidian))
   const b = linearToOklab(hexToLinear(bone))
@@ -148,4 +152,6 @@ if (problems.length) {
   console.error(`\n${problems.length} violation(s).`)
   process.exit(1)
 }
-console.log('token discipline: clean — no colour literals outside app/styles/, no arbitrary values, neutral ramp re-derives exactly')
+console.log(
+  'token discipline: clean — no colour literals outside app/styles/, no arbitrary values, neutral ramp re-derives exactly',
+)

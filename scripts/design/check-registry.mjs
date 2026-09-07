@@ -73,7 +73,12 @@ try {
 const problems = []
 const lines = src.split('\n')
 const cells = (line) =>
-  line.trim().replace(/^\|/, '').replace(/\|$/, '').split('|').map((c) => c.trim())
+  line
+    .trim()
+    .replace(/^\|/, '')
+    .replace(/\|$/, '')
+    .split('|')
+    .map((c) => c.trim())
 const clean = (v) => v.replace(/`|\*/g, '').trim()
 
 /* ------------------------------------------------- §5: every source has an audit outcome */
@@ -84,7 +89,9 @@ for (const source of SOURCES) {
     problems.push(`§5: source "${source}" has no row in the approved-sources table`)
     continue
   }
-  const outcome = cells(row).map(clean).find((c) => AUDIT_OUTCOMES.includes(c.toUpperCase()))
+  const outcome = cells(row)
+    .map(clean)
+    .find((c) => AUDIT_OUTCOMES.includes(c.toUpperCase()))
   if (!outcome) {
     problems.push(
       `§5: source "${source}" carries no audit outcome ` +
@@ -157,7 +164,9 @@ for (let i = 0; i < lines.length; i++) {
   }
   const prior = seenIds.get(id)
   if (prior && prior !== '§7') {
-    problems.push(`line ${i + 1}: Registry ID ${id} is reused (also ${prior}) — IDs are never reused`)
+    problems.push(
+      `line ${i + 1}: Registry ID ${id} is reused (also ${prior}) — IDs are never reused`,
+    )
   } else if (!prior) {
     seenIds.set(id, `line ${i + 1}`)
   }

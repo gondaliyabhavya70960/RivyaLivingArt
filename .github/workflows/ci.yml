@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # Each check is its own step so a red run names the failure without reading a log.
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Format
+        run: npm run format:check
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      # --- media gates (CANONICAL-DECISIONS D6, amendment A1) ---
+      - name: Manifest is deterministic
+        run: npm run manifest:verify
+
+      - name: No colliding asset IDs
+        run: npm run media:check-ids
+
+      # --- design-system gates (Phase 02) ---
+      - name: Token discipline
+        run: npm run design:check-tokens
+
+      - name: Component registry
+        run: npm run design:check-registry

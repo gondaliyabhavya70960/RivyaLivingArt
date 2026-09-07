@@ -35,4 +35,3 @@ export function Spinner({ size = 'md', label, className }: SpinnerProps) {
     </span>
   )
 }
-

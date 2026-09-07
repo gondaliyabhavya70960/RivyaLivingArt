@@ -68,12 +68,12 @@
      Two loaded families only. --rv-font-mono ships no file: it is a device-resident
      stack, which is why the two-family ceiling in ops/PERFORMANCE.md §2.2 is not breached.
      next/font sets --rv-font-display-src and --rv-font-body-src in app/layout.tsx. */
-  --rv-font-display: var(--rv-font-display-src), 'Iowan Old Style', 'Palatino Linotype', Georgia,
-    serif;
-  --rv-font-body: var(--rv-font-body-src), system-ui, -apple-system, 'Segoe UI', Roboto, Arial,
-    sans-serif;
-  --rv-font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono',
-    monospace;
+  --rv-font-display:
+    var(--rv-font-display-src), 'Iowan Old Style', 'Palatino Linotype', Georgia, serif;
+  --rv-font-body:
+    var(--rv-font-body-src), system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+  --rv-font-mono:
+    ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
 
   /* ---- typography: display scale, fluid 360 -> 1440 (§3.2) ---- */
   --rv-text-display-2xl: clamp(3rem, 1.833rem + 5.185vw, 6.5rem);
