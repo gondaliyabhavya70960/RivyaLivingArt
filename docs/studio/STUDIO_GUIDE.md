@@ -56,7 +56,7 @@ Four properties define the workspace:
 2. **Every mutation is permission-checked twice.** RLS is the coarse net in PostgreSQL;
    `requirePermission()` in the server action is the fine net. `middleware.ts` only redirects
    unauthenticated requests — it never authorises (D4).
-3. **Every mutation is recorded three ways.** `audit_log` records who was allowed or refused,
+3. **Every mutation is recorded three ways.** `audit_logs` records who was allowed or refused,
    `activity_events` records what a human did in the Studio, `system_logs` records what the machine
    did. The three are never merged (§13.6).
 4. **Nothing invents a business fact.** The Studio has controls for marking a claim
@@ -456,7 +456,7 @@ to the last 50 events; filters by entity type and actor. `action` is a controlle
 
 **Guardrails.** `activity_events` is insert-only and service-role-written; there is no update or
 delete policy for any application role. It is readable by any active staff member, which is why it
-never carries the payload of a change — the payload lives in `audit_log` (owner/admin) and
+never carries the payload of a change — the payload lives in `audit_logs` (owner/admin) and
 `content_revisions`.
 
 ---
@@ -701,7 +701,7 @@ edit. Undo is itself an audited `bulk_operations` row with `undo_of_operation_id
 runs in batches of 50, one transaction per batch, with `status = 'PARTIAL'` on partial failure,
 because a 500-row publish failing on row 499 must not discard 498 good writes.
 
-**Audit.** One `audit_log` row per operation (`action = 'bulk.<kind>'`, counts in the summary, never
+**Audit.** One `audit_logs` row per operation (`action = 'bulk.<kind>'`, counts in the summary, never
 the full row set) and one `activity_events` row. Per-item before/after lives in
 `bulk_operation_items` and is reachable from `/studio/operations/audit/[operationId]`.
 `revoke delete` applies to both bulk tables: the record of what was done is not itself erasable.
@@ -1192,7 +1192,7 @@ thresholds editable per source in `/studio/system/settings`. `NOISE` changes are
 default and never counted in the dashboard's "changed" figure.
 
 **The nine FEAT §25 actions.** Eight of them mutate a disposition or a stage, and each writes a
-`research_review_actions` row, an `audit_log` row and, if a stage moves, a `research_pipeline_events`
+`research_review_actions` row, an `audit_logs` row and, if a stage moves, a `research_pipeline_events`
 row; all eight require `research.confirm`. **Compare is the exception** — it is read-only, requires only
 `research.read`, and writes an `activity_events` row and nothing else. It has to be, or a `researcher`
 holding `research.read` and `research.write` could open `/studio/research/compare` directly (§3, §12.8)
@@ -1325,7 +1325,7 @@ second exporter.
 
 ### 13.4 `/studio/operations/audit`
 
-`audit_log`: who was allowed or refused to do what. Filterable by time, actor, action, entity and result
+`audit_logs`: who was allowed or refused to do what. Filterable by time, actor, action, entity and result
 (`SUCCESS · DENIED · ERROR`). `/studio/operations/audit/[operationId]` opens the per-item before/after
 viewer for a bulk operation.
 
@@ -1354,7 +1354,7 @@ inquiry free text, a competitor page body or an unmapped upstream error message.
 
 | Log | Table | Written by | Read by | Answers |
 |---|---|---|---|---|
-| Audit | `audit_log` | Every privileged mutation **and every denial** | owner, admin | Who was allowed or refused to do what |
+| Audit | `audit_logs` | Every privileged mutation **and every denial** | owner, admin | Who was allowed or refused to do what |
 | Activity | `activity_events` | Human Studio actions worth showing in a feed | Any staff member | What has been happening in the Studio |
 | System | `system_logs` | Background jobs, integrations, cron, workflow runs | owner, admin | What the machine did and where it failed |
 

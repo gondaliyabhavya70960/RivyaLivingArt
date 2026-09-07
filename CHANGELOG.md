@@ -39,6 +39,12 @@ Every phase adds an entry; see `docs/architecture/CANONICAL-DECISIONS.md` D9 for
   now use the `<PAGE>-<SECTION>[-<KIND>]-<NNN>` form, which the family allocator cannot mint.
   Added `scripts/media/check-asset-ids.py` to enforce the separation; recorded the rule in
   CANONICAL-DECISIONS D6 with amendment A1.
+- **`audit_log` vs `audit_logs`.** CANONICAL-DECISIONS D5 fixes plural table names, but fifteen
+  documents spelled the audit table singular — 89 occurrences across the architecture, ops, Studio,
+  product and phase documentation. Caught because a phase document, having corrected its own copy,
+  recorded the other files it could not reach and added an exit criterion asserting that
+  `grep -rn 'audit_log\b' docs` returns nothing. Renamed everywhere outside `docs/requirements/`
+  (which holds the specifications verbatim and is never edited); that assertion now passes.
 - **PHASE 09 missing exit criteria.** The phase document ended on open questions without its exit
   criteria section. Added, aligned to SEED §57's definition of done.
 

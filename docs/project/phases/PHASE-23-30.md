@@ -360,7 +360,7 @@ It then mounts that engine on the three FEAT §20 surfaces: products, media and 
 scraper surface is registered but empty — its tables do not exist until Phase 25 — and that is stated
 here rather than discovered later.
 
-**Depends on** — Phase 04 (`bulk.execute`, `destructive.execute`, `audit_log`), 05 (`DataTable` row
+**Depends on** — Phase 04 (`bulk.execute`, `destructive.execute`, `audit_logs`), 05 (`DataTable` row
 selection hook, `ConfirmDialog`), 06 (media library), 14 (product editor, `lib/catalog/validation.ts`,
 publication readiness), 20 (`inquiries`, for export), 23 (search index triggers must fire on bulk
 writes).
@@ -388,7 +388,7 @@ writes).
   someone else's later edit. Undo is itself a `bulk_operations` row with `undo_of_operation_id` set,
   so undoing an undo is a normal, audited operation. Import is undoable in the same way: rows it
   inserted are archived, rows it updated are restored.
-- **Audit.** One `audit_log` row per operation (`action = 'bulk.<kind>'`, `summary` carrying counts,
+- **Audit.** One `audit_logs` row per operation (`action = 'bulk.<kind>'`, `summary` carrying counts,
   `before`/`after` carrying the params and the counts, never the full row set) and one
   `activity_events` row. Per-item before/after lives in `bulk_operation_items` and is reachable from
   `/studio/operations/audit` by following the operation id. This keeps the audit log readable while
@@ -524,7 +524,7 @@ asset (D6, FEAT §33).
 - [ ] Destructive operations require `destructive.execute` plus a typed row count; non-destructive require `bulk.execute`.
 - [ ] Bulk never hard-deletes; archive is the only removal, and it is undoable for 24 hours.
 - [ ] Undo skips rows changed since the operation and reports them by id.
-- [ ] Every operation writes one `audit_log` row and per-item before/after, and the audit rows cannot be deleted.
+- [ ] Every operation writes one `audit_logs` row and per-item before/after, and the audit rows cannot be deleted.
 - [ ] Import lands every row as `DRAFT` and cannot publish; every FEAT §21 rule is enforced with a named error and a row number.
 - [ ] Media bulk cannot alter `rivya_asset_id`, `higgsfield_generation_id`, `is_ai_generated` or `is_concept`.
 - [ ] The scraper bulk surface is registered, disabled, and names Phase 29.
@@ -544,7 +544,7 @@ Phase 27 does that — and it normalizes nothing — Phase 28 does that. What it
 is the politeness posture and the isolation invariant, because both are far harder to retrofit than
 to build.
 
-**Depends on** — Phase 03 (migrations, repositories), 04 (RLS pattern, roles, `audit_log`), 05
+**Depends on** — Phase 03 (migrations, repositories), 04 (RLS pattern, roles, `audit_logs`), 05
 (Studio shell, `DataTable`, `EmptyState`), 23 (`research_search_documents` exists and is unreadable
 by anon), 24 (bulk engine, for the registered-but-disabled research operations).
 
@@ -799,7 +799,7 @@ provider for the mapping picker), 24 (bulk enable/disable of sources).
 - **Policy review workflow.** A researcher prepares a source and marks it *Ready for review*. An owner
   or admin sees a review panel with the site's robots.txt (rendered from cache), the URL patterns, the
   extraction configuration and a mandatory notes field, then sets `APPROVED`, `RESTRICTED` (approved
-  but limited to specific patterns) or `BLOCKED`. Every transition writes an `audit_log` row. The
+  but limited to specific patterns) or `BLOCKED`. Every transition writes an `audit_logs` row. The
   panel carries the standing **OWNER_VERIFICATION_REQUIRED** banner: this repository cannot determine
   what a third party's terms permit.
 - **Zero seeded sources.** No competitor name, domain, region or currency is invented. The sources
@@ -888,7 +888,7 @@ schedule editor, policy-review panel, enable/disable with the constraint's reaso
 1. `npm run db:migrate` — `0240` applies; `npm run db:types` produces no diff.
 2. `npm run test:unit -- source-schema url-patterns category-map source-health` — green; `url-patterns` covers `EXCLUDE` beating `PRODUCT`, priority ordering, glob vs regex, and a host mismatch against `base_url`.
 3. `npx playwright test tests/e2e/research-sources-crud.spec.ts` — as `researcher`, create a source filling all 23 fields, add three URL patterns, map four source categories (one to `IGNORE`), add a 12-hour schedule, and save. Assert **zero** source files changed (`git status --porcelain` is empty in the test's repo check).
-4. Attempt to enable the new source while `policy_status = 'UNREVIEWED'` → the control is disabled; a direct server-action POST returns a permission/constraint error and writes an `audit_log` row with `result = 'DENIED'`.
+4. Attempt to enable the new source while `policy_status = 'UNREVIEWED'` → the control is disabled; a direct server-action POST returns a permission/constraint error and writes an `audit_logs` row with `result = 'DENIED'`.
 5. `npx playwright test tests/e2e/research-policy-review.spec.ts` — as `admin`, open the policy panel, see the cached robots.txt rendered, submit `APPROVED` with notes; assert `policy_reviewed_by`/`_at` set and an audit row written. As `researcher`, the same control is absent and a direct POST is refused.
 6. Paste 20 candidate URLs into the pattern tester → per-URL match and robots decision returned; assert the fixture server logged **zero** requests. Then use "probe one URL" on a disallowed path → refused before any request, with the reason shown.
 7. `psql -c "select health from research_source_health_v;"` after forcing two failed runs → `FAILING`; after a successful run → `HEALTHY`; after ageing the last success beyond twice the interval → `STALE`.
@@ -1390,7 +1390,7 @@ operations this phase enables), 23 (Studio search for the changes surface).
   its price moves; the change is attached to it and appears in the review queue. Only a person moves a
   row between `REVIEW`, `SHORTLISTED` and `CONFIRMED`.
 - **The nine FEAT §25 actions, precisely defined.** Each is a `research_review_actions` row, an
-  `audit_log` row and a `research_pipeline_events` row where a stage moves. All nine require
+  `audit_logs` row and a `research_pipeline_events` row where a stage moves. All nine require
   `research.confirm`.
 
   | Action | Effect | Reversible |
@@ -1414,7 +1414,7 @@ operations this phase enables), 23 (Studio search for the changes surface).
      and that neither reads a research table.
   3. The Studio confirm dialog says exactly what confirming does and does not do, from seeded copy.
   4. `tests/unit/research-no-autoimport.test.ts` runs a full pipeline pass with changes on a
-     `CONFIRMED` row and asserts `select count(*) from products` is unchanged and no `audit_log` row
+     `CONFIRMED` row and asserts `select count(*) from products` is unchanged and no `audit_logs` row
      with `entity_type = 'product'` was written.
 - **Review queue.** `/studio/research/changes` lists changes filtered by source, field, materiality,
   age, disposition and tag, defaulting to `MATERIAL` and undecided. Each row opens a diff drawer:
@@ -1492,7 +1492,7 @@ there it is research-only.
 | A diff cannot be reproduced because the row it compared against has since changed | Diffs are version-to-version and both snapshot keys are stored; the drawer links to both stored snapshots |
 | `CONFIRMED` is read as "approved for the Rivya catalogue" | The confirm dialog's seeded copy states what it does and does not do; the stage is documented in `SCRAPER.md` and `BUSINESS_RULES.md`; no downstream code treats `CONFIRMED` as a product signal |
 | Bulk reject destroys a week of review with one click | Bulk reject is destructive: `bulk.execute` + `destructive.execute`, typed row count, per-item snapshot, 24-hour undo, and a required reason applied to every item |
-| An action is taken and nobody can tell who or why | `research_review_actions` is append-only with actor and role, mirrored into `audit_log`; reversal is a new row, never an edit |
+| An action is taken and nobody can tell who or why | `research_review_actions` is append-only with actor and role, mirrored into `audit_logs`; reversal is a new row, never an edit |
 | Change thresholds get hard-coded and a noisy source cannot be tuned | Thresholds live in `research_change_rules` with a Studio editor and a per-source override |
 
 **Verification**
@@ -1503,8 +1503,8 @@ there it is research-only.
 4. Change only whitespace in the title → `NOISE`, hidden by default, and the dashboard's changed count does not increment.
 5. Remove one image URL and add another → one `MATERIAL` change of kind `MODIFIED` on `image_urls` with both sets in `before`/`after`. Change only a CDN query string → `NOISE`.
 6. Lower the `price` material threshold for one source to 1 % in Studio, re-run detection on a stored version pair → the 3 % change is reclassified `MATERIAL` for that source only, with the global default unaffected.
-7. `npx playwright test tests/e2e/research-changes.spec.ts` — as `merchandiser`, perform all nine actions; assert a `research_review_actions` row and an `audit_log` row for each, that Compare writes only an activity event, and that Confirm moves the stage to `CONFIRMED`. As `researcher` (no `research.confirm`), every action control is absent and a direct POST is refused.
-8. `psql -c "select count(*) from products;"` before and after step 7 → identical. `select count(*) from audit_log where entity_type='product' and occurred_at > <t0>;` → 0.
+7. `npx playwright test tests/e2e/research-changes.spec.ts` — as `merchandiser`, perform all nine actions; assert a `research_review_actions` row and an `audit_logs` row for each, that Compare writes only an activity event, and that Confirm moves the stage to `CONFIRMED`. As `researcher` (no `research.confirm`), every action control is absent and a direct POST is refused.
+8. `psql -c "select count(*) from products;"` before and after step 7 → identical. `select count(*) from audit_logs where entity_type='product' and occurred_at > <t0>;` → 0.
 9. `node scripts/research/check-no-autoimport.mjs` → exits 0. Add a `products` insert to `lib/scraper/workflows/review-actions.ts` and confirm it exits non-zero.
 10. `npx playwright test tests/e2e/research-bulk-review.spec.ts` — bulk-shortlist 40 rows through the Phase 24 preview/confirm flow; bulk-reject 10 with a typed count and a reason; undo the reject within the window and assert all 10 return with their prior disposition and an audited undo operation.
 11. Run the digest job twice for the same date → one `research_change_digests` row, updated not duplicated.

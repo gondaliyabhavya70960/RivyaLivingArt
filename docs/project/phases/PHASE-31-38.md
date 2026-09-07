@@ -341,7 +341,7 @@ sources and numbers, and links out to the source URL in a new tab.
    `excluded_reasons->>'dimensions_unparsed'` rises by exactly one.
 9. `npx playwright test tests/e2e/research-compare.spec.ts` — create, add members, reorder,
    recompute, read each coverage badge, delete behind the confirm dialog, at 1920 and 390.
-10. As `viewer`, POST the recompute server action directly → 403 and a `DENIED` row in `audit_log`.
+10. As `viewer`, POST the recompute server action directly → 403 and a `DENIED` row in `audit_logs`.
     As `researcher` → succeeds.
 11. `psql "$DATABASE_URL" -c "select count(*) from research_comparison_sets"` as the `anon` role —
     permission error, proving no public policy exists.
@@ -821,7 +821,7 @@ re-uploaded video only by exact bytes. The screen renders none of the 250 and cr
 | Precision numbers get invented to make the feature look good | No precision figure may exist in the repository unless `similarity-sample.ts` produced the sample it came from; the docs table has mandatory `sample_size` and `sampled_on` columns and CI fails if a precision cell is populated without them |
 | The corpus grows and comparison becomes O(n²) | Prefix blocking with a documented recall trade-off; `pairs_considered` is recorded per run so a regression is visible; runs are CLI/action-triggered, never on page load |
 | Blocking silently loses true matches | `similarity-blocking.test.ts` runs an unblocked brute-force comparison over a 2,000-image fixture and asserts recall ≥ 0.98 for `NEAR_DUPLICATE`; the measured recall is printed in the docs |
-| A competitor image becomes Rivya media | The Phase 06 upload path calls `checkMediaAgainstResearch()` **before** the insert and blocks on `NEAR_DUPLICATE`; `media-duplicate-guard.test.ts` uploads a known research image and asserts rejection with a named reason, an `audit_log` row, no `media_assets` row and no Cloudinary object |
+| A competitor image becomes Rivya media | The Phase 06 upload path calls `checkMediaAgainstResearch()` **before** the insert and blocks on `NEAR_DUPLICATE`; `media-duplicate-guard.test.ts` uploads a known research image and asserts rejection with a named reason, an `audit_logs` row, no `media_assets` row and no Cloudinary object |
 | Embeddings from two different models are compared as if they shared a space | A run may only compare embeddings with matching `model_name`; a mismatch fails the run with `error_code = 'EMBEDDING_MODEL_MISMATCH'` |
 | The fetch-to-hash amendment quietly widens into an image cache | `similarity-no-persist.test.ts` runs a full hash pass against a local fixture server and asserts: no file written under the process working directory, no Supabase Storage object created, no Cloudinary call made, no `media_assets` row inserted, and no column anywhere holding more than 64 bits of image-derived data. `hash-run.ts` is the only module permitted to import an image decoder, asserted by a CI grep |
 | Image fetching hammers a source, or fetches a path robots disallows | Image requests go through the same `fetch.ts`/`robots.ts`/`rate-limit.ts` path as page requests, write a `research_fetches` row each, and honour the source's `request_delay_ms`, `rate_limit_rpm`, `concurrency`, `Crawl-delay` and circuit breaker. Four gates must all be true before a single request is made: `research.enabled`, `research_image_hashing`, `policy_status = 'APPROVED'` and `image_hashing_enabled` |
@@ -874,7 +874,7 @@ re-uploaded video only by exact bytes. The screen renders none of the 250 and cr
     `IMAGE 224 224` and `VIDEO 26 0`, matching `counts.image` and `counts.video` in the manifest.
 12. Attempt to upload a file byte-identical to a research image through `/studio/media/all` → the
     upload is rejected before insert, the reason names the research source, `select count(*) from
-    media_assets` is unchanged, and an `audit_log` row exists with `result = 'DENIED'`. Repeat with a
+    media_assets` is unchanged, and an `audit_logs` row exists with `result = 'DENIED'`. Repeat with a
     file byte-identical to a migrated manifest **video** → rejected on exact checksum against
     `media_asset_hashes`, with a reason that names the existing Rivya asset id.
 13. With `advanced_similarity` off, POST the embedding-run action directly → 403/409 with a flag
@@ -1203,7 +1203,7 @@ repository), Phase 04 (`research.confirm`, `catalog.write`, audit).
   seeded copy stating that no competitor data is being imported. It inserts a `products` row with
   `slug`, `category_id`, `status = 'DRAFT'`, `price_state = 'PRICE_ON_REQUEST'` and `title` set to
   the slug's title case — a placeholder the owner must replace — and writes nothing else. It then
-  writes `created_product_id` back to the confirmation, an `audit_log` row and an `activity_events`
+  writes `created_product_id` back to the confirmation, an `audit_logs` row and an `activity_events`
   row.
 
   **This action, as specified, fails invariant I4 as it is literally written.**
@@ -1240,7 +1240,7 @@ repository), Phase 04 (`research.confirm`, `catalog.write`, audit).
   `lib/bulk/operations/research/` — this phase adds the two new operations the shortlist screens need
   (close entry, archive confirmation) to that existing registry rather than a second bulk path. Each
   goes through `stage.ts`, each requires a reason where the table above says so, each is capped at
-  200 rows per invocation, each is confirmed through `ConfirmDialog`, and each writes one `audit_log`
+  200 rows per invocation, each is confirmed through `ConfirmDialog`, and each writes one `audit_logs`
   row and one `research_pipeline_events` row per row whose stage moved. Per `PHASE-23-30.md`'s
   permission mapping, any bulk disposition of more than one row requires `research.confirm` **and**
   `bulk.execute` — so the roles that can operate the bulk bar here are owner, admin and merchandiser.
@@ -1358,7 +1358,7 @@ because the one that exists already covers `app/(site)/**`, `lib/cms/**`, `lib/c
 |---|---|
 | Competitor fields are copied into the created product, now or in a later "convenience" change | `confirmation-no-import.test.ts` sentinels every research text field and asserts none reaches `products` or its join tables; the bridge repository exposes only `getConfirmationForBridge(id) → { id, stage, archived_at }`, so there is no competitor string in scope to copy; the bridge's field list is written into `BUSINESS_RULES.md` and the test is named in the exit criteria |
 | The I4 carve-out widens into a general research→product write path | The guard encodes **one** symbol in **one** file with **one** permitted reader; a second writer, a move of the symbol, or a wider import fails `check-research-isolation.mjs`. The `research_product_bridge` flag ships `false` until the owner accepts the amendment, so the carve-out is inert by default |
-| A bulk action moves 4,000 rows and nobody can explain why | 200-row cap per invocation, mandatory reason where the movement table says so, one `audit_log` row per row, and one `research_pipeline_events` row per row whose stage moved |
+| A bulk action moves 4,000 rows and nobody can explain why | 200-row cap per invocation, mandatory reason where the movement table says so, one `audit_logs` row per row, and one `research_pipeline_events` row per row whose stage moved |
 | Stage or disposition is changed by an ad-hoc SQL update or a stray repository call | `guard_research_stage_writer()` rejects any change made without the flag `stage.ts` sets; `stage-guard-trigger.test.ts` attempts a direct update and asserts the exception. The trigger enforces the Phase 25 rule; it does not restate the transition table |
 | A second pipeline grows beside the first | This phase creates no enum value, no transition table and no transition log; `pipeline-transitions.test.ts` imports the table from `lib/scraper/core/stage.ts` and asserts it matches this document, so a fork would have to be committed to that one module in plain sight |
 | A confirmed row is read as a Rivya product | `/studio/research/confirmed` labels every row as a research decision; the created product is a `DRAFT` with a placeholder title and no price; the Phase 14 readiness checklist blocks publication until a human fills it |
@@ -1391,7 +1391,7 @@ because the one that exists already covers `app/(site)/**`, `lib/cms/**`, `lib/c
    `stage` is `SHORTLISTED`, and one `research_pipeline_events` row records `REVIEW → SHORTLISTED`.
    Confirm with a decision note → a `research_confirmations` row exists, `stage` is `CONFIRMED`, a
    second `research_pipeline_events` row records the move, the shortlist entry is closed, and
-   `activity_events` and `audit_log` rows exist. Attempt to confirm with an empty note → rejected in
+   `activity_events` and `audit_logs` rows exist. Attempt to confirm with an empty note → rejected in
    the action and by the check constraint.
 7. Reject that same confirmed row → `disposition = 'REJECTED'` and **`stage` is still `CONFIRMED`**,
    proving the two columns are orthogonal and that a disposition is not a stage.
@@ -1500,7 +1500,7 @@ self-limiting — three consecutive failures pause a definition rather than retr
 
 - **PII discipline.** Name, phone and email are available to the `INQUIRIES` export only, only when
   `includes_pii = true`, only when the definition was created by owner or admin, and every run of
-  such a definition writes an `audit_log` row naming the actor, the row count and the destination
+  such a definition writes an `audit_logs` row naming the actor, the row count and the destination
   spreadsheet id. A definition cannot be flipped to `includes_pii` by anyone below admin.
 - **The write, made atomic.** Each run writes into a scratch tab named `<tab>__staging`: create or
   clear it, write values in `spreadsheets.values.batchUpdate` chunks of ≤ 5,000 cells, then a single
@@ -1529,7 +1529,7 @@ self-limiting — three consecutive failures pause a definition rather than retr
   This is a business-integrity decision, not a scheduling one; changing it needs an amendment.
 - Google Drive access of any kind, file creation, folder browsing, or sharing management.
 - Exporting media binaries, page content, secrets, environment values, or anything from
-  `audit_log`, `system_logs` or `staff_profiles`.
+  `audit_logs`, `system_logs` or `staff_profiles`.
 - Formulas, charts, conditional formatting or pivot tables inside the Sheet. Rivya writes values
   and a header row; the owner may build whatever they like on top in another tab.
 - A generic CSV/XLSX exporter — Phase 24 owns file exports; this phase is Sheets only.
@@ -1859,7 +1859,7 @@ filters that make an incident findable and a retention policy that keeps the tab
 largest thing in the database. After this phase, an operator can answer "is it up, what is deployed,
 what broke and where is that documented" without opening a terminal.
 
-**Depends on** — Phase 04 (`audit_log`, roles, `requirePermission`), Phase 05 (`activity_events`,
+**Depends on** — Phase 04 (`audit_logs`, roles, `requirePermission`), Phase 05 (`activity_events`,
 Studio primitives, stubbed System routes), Phase 06 (Cloudinary), Phase 25–30 (scraper modules that
 emit logs), Phase 36 (Sheets health), D8 (the environment-variable names).
 
@@ -1914,7 +1914,7 @@ emit logs), Phase 36 (Sheets health), D8 (the environment-variable names).
 
 | Log | Table | Written by | Read by | Answers |
 |---|---|---|---|---|
-| Audit | `audit_log` (Phase 04) | every privileged mutation and every denial | owner, admin | who was allowed or refused to do what |
+| Audit | `audit_logs` (Phase 04) | every privileged mutation and every denial | owner, admin | who was allowed or refused to do what |
 | Activity | `activity_events` (Phase 05) | human Studio actions worth showing in a feed | any staff member | what has been happening in the Studio |
 | System | `system_logs` (this phase) | background jobs, integrations, cron, workflow runs | owner, admin | what the machine did and where it failed |
 
@@ -1981,7 +1981,7 @@ there. So this block adds exactly two new domains across eight phases — `lib/s
 | `system_logs` | new | `id uuid pk`, `level log_level not null`, `channel log_channel not null`, `event text not null`, `message text not null`, `context jsonb not null default '{}'`, `actor_id uuid null`, `actor_role user_role null`, `request_id text null`, `workflow_run_id uuid null`, `research_source_id uuid null`, `entity_type text null`, `entity_id uuid null`, `dedupe_key text not null`, `occurrence_count int not null default 1`, `first_occurred_at timestamptz not null default now()`, `occurred_at timestamptz not null default now()`; indexes `(occurred_at desc)`, `(level, occurred_at desc)`, `(channel, occurred_at desc)`, `(actor_id, occurred_at desc)`, `(workflow_run_id)`, unique `(dedupe_key, date_trunc('minute', first_occurred_at))` |
 
 New enums: `log_level` = `INFO · WARNING · ERROR · SECURITY`; `log_channel` = `WORKFLOW · SCRAPER ·
-MEDIA · CONTENT · AUTH · SHEETS · ANALYTICS · SYSTEM`. Like `audit_log` and `activity_events`,
+MEDIA · CONTENT · AUTH · SHEETS · ANALYTICS · SYSTEM`. Like `audit_logs` and `activity_events`,
 `system_logs` is an append-only operational table and a documented exemption from the D5
 content-column rule.
 
@@ -2175,7 +2175,7 @@ wording rather than about code.
    market view, a dated FX snapshot table and its source need to be specified. Raised, not designed.
 10. **Retention windows.** Phase 37 keeps analytics snapshots for 400 days and Phase 38 keeps
     `INFO`/`WARNING` logs for 90 and `ERROR`/`SECURITY` for 400. No canonical section fixes
-    retention for `audit_log`, `activity_events` or research snapshots. Suggested amendment: state a
+    retention for `audit_logs`, `activity_events` or research snapshots. Suggested amendment: state a
     retention table in D5 or `docs/ops/SECURITY.md` so the four logs do not drift apart.
 11. **Invariant I4 and Phase 35's manual bridge — a real divergence, blocking that phase.**
     `PHASE-23-30.md` states I4 as: "There is no code path — no server action, no script, no SQL

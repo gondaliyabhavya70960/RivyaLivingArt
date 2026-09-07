@@ -83,7 +83,7 @@ flowchart LR
 | Visitor → Supabase | Never direct. The browser holds no Supabase client on a public page; every public read happens in a Server Component through the repository layer |
 | Visitor → Cloudinary | Direct, for bytes only. The server builds URLs; it never proxies media |
 | Staff → Supabase | Through the cookie-bound server client under RLS, plus a server-side `requirePermission()` on every route and every mutation |
-| Anything → third-party websites | **Exactly two server-side paths exist, and a third is a defect.** (1) `app/api/cron/research` — the scheduled drain (`SCRAPER.md` §4, §7). (2) `probeUrl`, the audited single-URL probe in `app/(studio)/studio/research/sources/[id]/actions.ts` — one fetch, `research.write` required, one `audit_log` row (`SCRAPER.md` §6). Both run only from `lib/scraper/**`, both pass the same robots → rate-limit → `circuit_open_until` gate, and both refuse a source that is not `policy_status = 'APPROVED'` **and** `is_enabled`. There is **no image proxy**: a competitor image is fetched by the staff member's own browser from the source URL with `referrerpolicy="no-referrer"`, never through a Rivya origin (`SCRAPER.md` §13.3) |
+| Anything → third-party websites | **Exactly two server-side paths exist, and a third is a defect.** (1) `app/api/cron/research` — the scheduled drain (`SCRAPER.md` §4, §7). (2) `probeUrl`, the audited single-URL probe in `app/(studio)/studio/research/sources/[id]/actions.ts` — one fetch, `research.write` required, one `audit_logs` row (`SCRAPER.md` §6). Both run only from `lib/scraper/**`, both pass the same robots → rate-limit → `circuit_open_until` gate, and both refuse a source that is not `policy_status = 'APPROVED'` **and** `is_enabled`. There is **no image proxy**: a competitor image is fetched by the staff member's own browser from the source URL with `referrerpolicy="no-referrer"`, never through a Rivya origin (`SCRAPER.md` §13.3) |
 | Research → public | Nothing. Ever. Four independent guards; `SCRAPER.md` §12 |
 | Payment / cart / account | No component, table, route, dependency or environment variable exists for any of them |
 
@@ -332,7 +332,7 @@ sequenceDiagram
   A->>A: Zod parse (B2)
   A->>A: requirePermission('content.publish')
   alt denied
-    A->>DB: audit_log (result = 'DENIED')
+    A->>DB: audit_logs (result = 'DENIED')
     A-->>U: { ok: false, code: 'FORBIDDEN' }
   else allowed
     A->>P: transition(APPROVED → PUBLISHED)
@@ -342,7 +342,7 @@ sequenceDiagram
     DB->>DB: trigger enforce_status_transition
     DB->>DB: trigger write_revision → content_revisions
     DB->>DB: trigger sync_media_usages → media_usages
-    P->>DB: audit_log (SUCCESS) + activity_events
+    P->>DB: audit_logs (SUCCESS) + activity_events
     P->>RV: POST { paths, tags } + REVALIDATE_SECRET
     RV->>RV: revalidateTag('page:/about'), revalidateTag('chrome')
     A-->>U: { ok: true, publishedAt }
@@ -598,7 +598,7 @@ can rewrite, not a string in a catch block.
    and a visible diagnostic in development. A dashboard card whose backing table does not exist yet
    renders an explicit unavailable state, never a fabricated zero (FEAT §17, D10).
 5. **Never redirect on a failed write.** Stated once in §4.3 and enforced by type.
-6. **Every denial is a record.** `PermissionError` writes an `audit_log` row with
+6. **Every denial is a record.** `PermissionError` writes an `audit_logs` row with
    `result = 'DENIED'` before the response is formed.
 
 ### Failure-mode matrix
@@ -622,7 +622,7 @@ later phase does not "simplify" them into one table.
 
 | Log | Table | Written by | Read by | Answers |
 |---|---|---|---|---|
-| Audit | `audit_log` | Every privileged mutation **and every denial** | owner, admin | Who was allowed or refused to do what |
+| Audit | `audit_logs` | Every privileged mutation **and every denial** | owner, admin | Who was allowed or refused to do what |
 | Activity | `activity_events` | Human Studio actions worth showing in a feed | Any staff member | What has been happening in the Studio |
 | System | `system_logs` | Background jobs, integrations, cron, workflow runs | owner, admin | What the machine did and where it failed |
 
@@ -643,7 +643,7 @@ literally. Every log write, environment check result and documentation render pa
 window increment `occurrence_count` instead of inserting. Retention: `INFO`/`WARNING` 90 days,
 `ERROR`/`SECURITY` 400 days, purged by a daily cron that logs its own summary.
 
-**Correlation.** `middleware.ts` assigns a `request_id` and it is threaded into `audit_log`,
+**Correlation.** `middleware.ts` assigns a `request_id` and it is threaded into `audit_logs`,
 `system_logs` and every server-action error, so one incident is one query.
 
 **What is never logged:** any secret value, any visitor's raw IP, any WhatsApp message body, any
@@ -786,7 +786,7 @@ below. Nothing else above diverges from `CANONICAL-DECISIONS.md`.
    so §5.1 places them in a private Supabase Storage bucket outside the media seam. Confirm that
    store and record it in D6 so a later phase does not route them through Cloudinary.
 6. **Retention is unspecified.** `system_logs` has a stated retention and research snapshots have
-   180 days, but no canonical section fixes retention for `audit_log`, `activity_events`,
+   180 days, but no canonical section fixes retention for `audit_logs`, `activity_events`,
    `content_revisions` or `inquiries`. Suggested amendment: a retention table in D5 or
    `docs/ops/SECURITY.md` so the four do not drift apart.
 7. **No web-analytics provider exists in D1**, yet FEAT §28 lists Content Performance as a

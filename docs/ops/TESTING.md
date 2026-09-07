@@ -149,7 +149,7 @@ the rules in executable form.
 | **BR-F1/F2/F3/F4** | `tests/unit/rls/research.test.ts`, `check-research-isolation.mjs`, `check-data-layer.mjs`, `tests/integration/rls-policies.test.ts` | No `anon` policy on any `research_*` table; no FK to `products`; the research→public FK inventory **equals** the guard's constraint-name allowlist, so a missing entry fails as loudly as an extra one (`BUSINESS_RULES.md` BR-F2 names the entries; §M open question 7 records that `DATA_MODEL.md` disagrees on how many there are, which this assertion will surface as a red test rather than a review comment); no research term in a public search result; no image is downloaded |
 | BR-G1/G2 | `tests/unit/rls/*.test.ts`, `tests/e2e/studio-authz.spec.ts` | One client per role, allow/deny per table; forbidden POSTs return 403 **and** write `DENIED` audit rows |
 | BR-G4 | `tests/e2e/bulk.spec.ts` | Typed confirmation, exact preview count, undo within 24 h restores byte-identically |
-| BR-I1 | `tests/unit/pii-scope.test.ts` | No inquiry personal field reaches `search_documents`, `web_vitals_samples` or an `audit_log` blob |
+| BR-I1 | `tests/unit/pii-scope.test.ts` | No inquiry personal field reaches `search_documents`, `web_vitals_samples` or an `audit_logs` blob |
 | BR-J1/J2 | `tests/unit/redact.test.ts`, `env-checks-no-secrets.test.ts`, `tests/e2e/deploy-smoke.spec.ts` | The never-expose list cannot reach a bundle, a log or a rendered page |
 | BR-J3 | `tests/unit/docs-allowlist.test.ts` | An unknown doc key 404s; nothing outside the ten-path allowlist is reachable |
 

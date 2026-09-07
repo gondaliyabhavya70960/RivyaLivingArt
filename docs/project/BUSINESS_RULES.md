@@ -553,7 +553,7 @@ calls the permission helper before rendering; each server action does the same b
 | | |
 |---|---|
 | Enforced by | **Build guard:** `scripts/security/check-action-guards.mjs` asserts every exported server action calls the permission helper |
-| Test | `tests/e2e/studio-authz.spec.ts` requests a forbidden page directly by URL and asserts a 403/redirect plus an `audit_log` row with `result = 'DENIED'` |
+| Test | `tests/e2e/studio-authz.spec.ts` requests a forbidden page directly by URL and asserts a 403/redirect plus an `audit_logs` row with `result = 'DENIED'` |
 
 ### BR-G3 — Staff are invited, never self-registered
 
@@ -563,7 +563,7 @@ audited action. A newly provisioned profile defaults to `viewer` / `INVITED`.
 | | |
 |---|---|
 | Enforced by | **Platform:** public sign-up disabled. **Schema:** provisioning trigger defaults; **Permission:** `system.users.manage` |
-| Test | A sign-up attempt is rejected; a role change writes an `audit_log` row naming the before and after role |
+| Test | A sign-up attempt is rejected; a role change writes an `audit_logs` row naming the before and after role |
 
 ### BR-G4 — Destructive actions are confirmed, snapshotted and undoable
 
@@ -578,7 +578,7 @@ session is older than 30 minutes.
 
 ### BR-G5 — Every privileged mutation and every denial is a record
 
-**Rule.** `audit_log` receives a row on success **and** on denial, with actor, role snapshot, action,
+**Rule.** `audit_logs` receives a row on success **and** on denial, with actor, role snapshot, action,
 entity, redacted before/after, result, request id. It is append-only: `revoke update, delete`.
 
 | | |
@@ -617,7 +617,7 @@ row to `VERIFIED`, and the transition is audited. No script, seed run, import or
 
 | | |
 |---|---|
-| Enforced by | **Schema:** the seed runner never changes `owner_verification` or `status` on an existing row (BR-D6); **Audit:** the transition writes an `audit_log` row |
+| Enforced by | **Schema:** the seed runner never changes `owner_verification` or `status` on an existing row (BR-D6); **Audit:** the transition writes an `audit_logs` row |
 | Test | `tests/integration/seed-idempotency.test.ts` asserts the runner leaves both columns untouched; an audit assertion covers the transition |
 
 ---
@@ -628,7 +628,7 @@ row to `VERIFIED`, and the transition is audited. No script, seed run, import or
 
 **Rule.** The only personal data in the system is in `inquiries` and `inquiry_attachments`: name,
 phone, optional email, city, message, configurator answers and uploaded reference files. It may
-never appear in `search_documents`, `web_vitals_samples`, `audit_log` blobs, `system_logs`, a
+never appear in `search_documents`, `web_vitals_samples`, `audit_logs` blobs, `system_logs`, a
 WhatsApp URL beyond what the enquirer typed, or a screenshot from a lower environment.
 
 | | |
@@ -648,7 +648,7 @@ WhatsApp URL beyond what the enquirer typed, or a screenshot from a lower enviro
 | `search_queries` | 90 days | Daily cron |
 | `rate_limit_buckets` | 7 days | Daily cron |
 | Research snapshots | 180 days | Retention job |
-| `audit_log`, `activity_events`, `content_revisions` | Not yet fixed — see §K open question 3 | — |
+| `audit_logs`, `activity_events`, `content_revisions` | Not yet fixed — see §K open question 3 | — |
 
 ### BR-I3 — Production data never travels downward
 
@@ -810,7 +810,7 @@ Nothing else above knowingly diverges from `CANONICAL-DECISIONS.md`.
 2. **No `content.review` permission.** The status workflow needs a `REVIEW → APPROVED` transition
    permission that the Phase 04 matrix lacks. Either add `content.review`, or state in D5 that
    `content.publish` covers approval.
-3. **Retention for `audit_log`, `activity_events` and `content_revisions` is unspecified.** BR-I2
+3. **Retention for `audit_logs`, `activity_events` and `content_revisions` is unspecified.** BR-I2
    leaves three rows blank because no canonical section fixes them. Suggested amendment: a retention
    table in D5, so the four histories do not drift apart.
 4. **`GOOGLE_SHEETS_SPREADSHEET_ID` classification.** D8 lists it as server-only; this document and

@@ -106,7 +106,7 @@ mitigation works.
 |---|---|
 | Vectors | Calling a server action directly with a lower role; a page that trusts navigation; a self-service role change; a crafted inquiry insert that assigns itself |
 | Mitigations | Two enforcement nets — RLS (role-level, in the database) and `requirePermission()` (permission-level, per action) · the role list is generated from `lib/auth/permissions.ts` with a CI drift check, so the nets cannot disagree · role changes require `system.users.manage`; `system.owner.transfer` is `owner`-only · the inquiry insert policy pins `pipeline_status`, `assigned_to` and `updated_by` |
-| Proof | `tests/e2e/studio-authz.spec.ts` (as `viewer`, direct POSTs to publish, bulk-apply, media-delete and role-change all return 403 **and** each writes an `audit_log` row with `result = 'DENIED'`), `scripts/security/check-action-guards.mjs` |
+| Proof | `tests/e2e/studio-authz.spec.ts` (as `viewer`, direct POSTs to publish, bulk-apply, media-delete and role-change all return 403 **and** each writes an `audit_logs` row with `result = 'DENIED'`), `scripts/security/check-action-guards.mjs` |
 
 ### T3 — Secret exposure (A3, A4, A8)
 
@@ -229,7 +229,7 @@ even a prefix or a length.
 |---|---|---|---|
 | 1 | Module boundary | Every module reading a server secret carries `import 'server-only'`; only `lib/supabase/admin.ts` may construct the admin client | Importing it from a client component fails the build |
 | 2 | Build output | `scripts/security/check-secret-exposure.mjs` greps `.next/static` for each server-only name **and** for high-entropy strings matching known key shapes | `console.log(process.env.SUPABASE_SERVICE_ROLE_KEY)` in a client component must fail the build, naming the chunk |
-| 3 | Runtime redaction | `lib/logging/redact.ts` (`redact`, `redactDeep`) over every log write, environment-check result, documentation render, `audit_log` before/after blob and server-action error path | A nested payload containing each never-expose name must come back `[redacted]` |
+| 3 | Runtime redaction | `lib/logging/redact.ts` (`redact`, `redactDeep`) over every log write, environment-check result, documentation render, `audit_logs` before/after blob and server-action error path | A nested payload containing each never-expose name must come back `[redacted]` |
 | 4 | Repository | `gitleaks` scans history and the diff in CI, with `.gitleaks.toml` | A planted fake key must fail the scan |
 
 **How the redactor redacts.** By **name**: every D8 server-only variable and any key matching
@@ -372,7 +372,7 @@ The inquiry limiter is called from **inside the server action, before the Zod pa
 
 `ip_hash` is `hmac(ip, server_salt)`; the raw address is never stored. A limited request returns
 **429 with `Retry-After`**, renders the seeded form-error copy (SEED §49), and writes a `SECURITY`
-system log — never an `audit_log` row, because it has no actor.
+system log — never an `audit_logs` row, because it has no actor.
 
 **Known limitation, accepted and documented:** a fixed window permits a 2× burst at a window
 boundary. The threat here is abuse volume, not precision; a sliding window would require Redis.
@@ -412,17 +412,17 @@ Three logs, three jobs. They are never merged.
 
 | Log | Table | Written by | Read by | Answers |
 |---|---|---|---|---|
-| Audit | `audit_log` | Every privileged mutation **and every denial** | `owner`, `admin` | Who was allowed or refused to do what |
+| Audit | `audit_logs` | Every privileged mutation **and every denial** | `owner`, `admin` | Who was allowed or refused to do what |
 | Activity | `activity_events` | Human Studio actions worth a feed | Any staff member | What has been happening in the Studio |
 | System | `system_logs` | Background jobs, integrations, cron, workflow runs | `owner`, `admin` | What the machine did and where it failed |
 
-`audit_log` is append-only (`revoke update, delete`), carries an `actor_role` snapshot so a later
+`audit_logs` is append-only (`revoke update, delete`), carries an `actor_role` snapshot so a later
 role change cannot rewrite history, and stores `before`/`after` blobs **after** `redactDeep`.
 `system_logs` separates `level` (`INFO · WARNING · ERROR · SECURITY`) from `channel`
 (`WORKFLOW · SCRAPER · MEDIA · CONTENT · AUTH · SHEETS · ANALYTICS · SYSTEM`), so "SECURITY events in
 the last hour" is one query.
 
-**Correlation.** `middleware.ts` assigns a `request_id` threaded into `audit_log`, `system_logs` and
+**Correlation.** `middleware.ts` assigns a `request_id` threaded into `audit_logs`, `system_logs` and
 every server-action error, so one incident is one query.
 
 **Volume control.** Every log call carries a `dedupe_key`; identical events within five minutes
@@ -441,8 +441,8 @@ No on-call rotation exists (`DEPLOYMENT.md` §10). This is the procedure for who
 | Step | Action |
 |---|---|
 | 1. Contain | If a secret may be exposed: rotate it **first** (`DEPLOYMENT.md` §9). If Studio access may be compromised: suspend the affected `staff_profiles` rows. If a public surface is affected: roll back the deployment |
-| 2. Preserve | Do not delete logs. `audit_log` and `system_logs` are append-only by design; capture the `request_id` range and the time window before anything is purged by retention |
-| 3. Assess | Which asset in §1? Which threat in §4? Was A1 (personal data) reachable? Search `audit_log` by actor and by `result = 'DENIED'`; search `system_logs` by `level = 'SECURITY'` |
+| 2. Preserve | Do not delete logs. `audit_logs` and `system_logs` are append-only by design; capture the `request_id` range and the time window before anything is purged by retention |
+| 3. Assess | Which asset in §1? Which threat in §4? Was A1 (personal data) reachable? Search `audit_logs` by actor and by `result = 'DENIED'`; search `system_logs` by `level = 'SECURITY'` |
 | 4. Eradicate | Fix forward. Never a `down` migration. If data was corrupted, use point-in-time restore to a chosen timestamp |
 | 5. Verify | Re-run `scripts/security/check-secret-exposure.mjs`, `gitleaks`, the RLS suite and `studio-authz.spec.ts`. Confirm `/studio/system/environment` is healthy |
 | 6. Record | Write the timeline into `CHANGELOG.md` and, if a rule or guard was missing, add it here **and** add the test that would have caught it |
@@ -516,7 +516,7 @@ Run before any release that touches auth, RLS, uploads, headers or the research 
 
 ## 16. Open questions for the canonical decisions
 
-1. **Retention for `audit_log`, `activity_events` and `content_revisions` is unspecified.**
+1. **Retention for `audit_logs`, `activity_events` and `content_revisions` is unspecified.**
    `system_logs`, vitals, search queries, rate-limit buckets and research snapshots all have stated
    retention; these three do not. Suggested amendment: a retention table in D5.
 2. **No cron secret in D8** — the cron routes reuse `REVALIDATE_SECRET`, so one secret guards both

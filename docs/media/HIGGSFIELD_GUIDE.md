@@ -343,7 +343,7 @@ Four gates. An asset that fails any of them is not bound; it is not "fixed" by r
 ### Gate 4 — Owner verification
 
 `owner_verification` moves `OWNER_VERIFICATION_REQUIRED → VERIFIED` only by an owner or admin
-action, recorded in `audit_log`. Until then the asset may be **migrated and bound** but the
+action, recorded in `audit_logs`. Until then the asset may be **migrated and bound** but the
 section that uses it may not be **published** — the D5 status workflow enforces the second half.
 
 ---

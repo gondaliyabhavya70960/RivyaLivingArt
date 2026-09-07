@@ -793,11 +793,12 @@ been closed on the record.
 The seven tiles read their heading, description and hero image from `categories` (§10) — there is no
 second copy of category text on this page. Reordering is a merchandising action, not a content edit,
 and `sort_order` is the single column both the landing grid and the mega menu read. Plan §4.4 also
-lists a per-tile `card.1…card.7` binding, which differs from the category hero for four of the seven
-(`GALLERY-SCENE-001`, `THREE-D-RESIN-001`, `WALL-ART-011`, `PRESERVATION-VARMALA-003`,
-`DECOR-005`, `GIFTS-001`). Those are swap candidates, not a second control: this inventory keeps the
-single-source design and renders the tile from `categories.hero_media_id`. Recorded as §31, open
-question 9. The Furniture tile is the one that cannot be filled either way — see §10.
+lists a per-tile `card.1…card.7` binding, which differs from the category hero for six of the seven
+— `GALLERY-SCENE-001`, `THREE-D-RESIN-001`, `WALL-ART-011`, `PRESERVATION-VARMALA-003`,
+`DECOR-005` and `GIFTS-001`, all portrait cards where the category hero is landscape. Those are swap
+candidates, not a second control: this inventory keeps the single-source design and renders the tile
+from `categories.hero_media_id`. Recorded as §31, open question 9. Furniture is the seventh, and it
+is the one that cannot be filled either way until brief G10 exists — see §10.
 
 ### 9.1 The ten collection concepts — `/collections/[slug]`
 
@@ -822,23 +823,25 @@ plan §7 and reopen when the owner confirms the concept, at which point a brief 
 
 | Page | Section | Field | Seeded? | Editable? | Studio location | Fact verification needed? | Media asset ID | SEO status | Publication status |
 |---|---|---|---|---|---|---|---|---|---|
-| `/collections/ocean` | Concept | `collections.name` — Ocean · `hero_media_id` | Yes | Yes | `/studio/catalog/collections → Ocean` | No · BRAND_COPY | MATERIAL-MACRO-015 (image, 21:9, 6336×2688) · MATERIAL-MACRO-002 (image, 9:16, 3072×5504) | ENTITY seeded | DRAFT · concept |
-| `/collections/midnight` | Concept | `collections.name` — Midnight · `hero_media_id` | Yes | Yes | `/studio/catalog/collections → Midnight` | No · BRAND_COPY | WALL-ART-013 (image, 21:9, 6336×2688) · MATERIAL-MACRO-004 (image, 9:16, 3072×5504) | ENTITY seeded | DRAFT · concept |
-| `/collections/clear` | Concept | `collections.name` — Clear · `hero_media_id` | Yes | Yes | `/studio/catalog/collections → Clear` | No · BRAND_COPY | MATERIAL-MACRO-009 (image, 21:9, 6336×2688) · MATERIAL-MACRO-003 (image, 9:16, 3072×5504) | ENTITY seeded | DRAFT · concept |
-| `/collections/geode` | Concept | `collections.name` — Geode · `hero_media_id` | Yes | Yes | `/studio/catalog/collections → Geode` | No · BRAND_COPY | WALL-ART-008 (image, 21:9, 6336×2688) · DECOR-003 (image, 9:16, 3072×5504) | ENTITY seeded | DRAFT · concept |
-| `/collections/aurora` | Concept | `collections.name` — Aurora · `hero_media_id` | Yes | Yes | `/studio/catalog/collections → Aurora` | No · BRAND_COPY | EMPTY (plan §4.11, §7) | ENTITY seeded | DRAFT · concept |
-| `/collections/earth` | Concept | `collections.name` — Earth · `hero_media_id` | Yes | Yes | `/studio/catalog/collections → Earth` | No · BRAND_COPY | EMPTY (plan §4.11, §7) | ENTITY seeded | DRAFT · concept |
-| `/collections/monsoon` | Concept | `collections.name` — Monsoon · `hero_media_id` | Yes | Yes | `/studio/catalog/collections → Monsoon` | No · BRAND_COPY | EMPTY (plan §4.11, §7) | ENTITY seeded | DRAFT · concept |
-| `/collections/forest` | Concept | `collections.name` — Forest · `hero_media_id` | Yes | Yes | `/studio/catalog/collections → Forest` | No · BRAND_COPY | EMPTY (plan §4.11, §7) | ENTITY seeded | DRAFT · concept |
-| `/collections/botanical` | Concept | `collections.name` — Botanical · `hero_media_id` | Yes | Yes | `/studio/catalog/collections → Botanical` | No · BRAND_COPY | EMPTY (plan §4.11, §7) | ENTITY seeded | DRAFT · concept |
-| `/collections/bespoke` | Concept | `collections.name` — Bespoke · `hero_media_id` | Yes | Yes | `/studio/catalog/collections → Bespoke` | No · BRAND_COPY | EMPTY (plan §4.11, §7) | ENTITY seeded | DRAFT · concept |
+| `/collections/ocean` | Concept | `collections.name` — Ocean · `hero_media_id` | Yes | Yes | `/studio/catalog/collections → Ocean` | No · BRAND_COPY | MATERIAL-MACRO-015 (image, 21:9, 6336×2688) · MATERIAL-MACRO-002 (image, 9:16, 3072×5504) | GLOBAL default | DRAFT · concept |
+| `/collections/midnight` | Concept | `collections.name` — Midnight · `hero_media_id` | Yes | Yes | `/studio/catalog/collections → Midnight` | No · BRAND_COPY | WALL-ART-013 (image, 21:9, 6336×2688) · MATERIAL-MACRO-004 (image, 9:16, 3072×5504) | GLOBAL default | DRAFT · concept |
+| `/collections/clear` | Concept | `collections.name` — Clear · `hero_media_id` | Yes | Yes | `/studio/catalog/collections → Clear` | No · BRAND_COPY | MATERIAL-MACRO-009 (image, 21:9, 6336×2688) · MATERIAL-MACRO-003 (image, 9:16, 3072×5504) | GLOBAL default | DRAFT · concept |
+| `/collections/geode` | Concept | `collections.name` — Geode · `hero_media_id` | Yes | Yes | `/studio/catalog/collections → Geode` | No · BRAND_COPY | WALL-ART-008 (image, 21:9, 6336×2688) · DECOR-003 (image, 9:16, 3072×5504) | GLOBAL default | DRAFT · concept |
+| `/collections/aurora` | Concept | `collections.name` — Aurora · `hero_media_id` | Yes | Yes | `/studio/catalog/collections → Aurora` | No · BRAND_COPY | EMPTY (plan §4.11, §7) | GLOBAL default | DRAFT · concept |
+| `/collections/earth` | Concept | `collections.name` — Earth · `hero_media_id` | Yes | Yes | `/studio/catalog/collections → Earth` | No · BRAND_COPY | EMPTY (plan §4.11, §7) | GLOBAL default | DRAFT · concept |
+| `/collections/monsoon` | Concept | `collections.name` — Monsoon · `hero_media_id` | Yes | Yes | `/studio/catalog/collections → Monsoon` | No · BRAND_COPY | EMPTY (plan §4.11, §7) | GLOBAL default | DRAFT · concept |
+| `/collections/forest` | Concept | `collections.name` — Forest · `hero_media_id` | Yes | Yes | `/studio/catalog/collections → Forest` | No · BRAND_COPY | EMPTY (plan §4.11, §7) | GLOBAL default | DRAFT · concept |
+| `/collections/botanical` | Concept | `collections.name` — Botanical · `hero_media_id` | Yes | Yes | `/studio/catalog/collections → Botanical` | No · BRAND_COPY | EMPTY (plan §4.11, §7) | GLOBAL default | DRAFT · concept |
+| `/collections/bespoke` | Concept | `collections.name` — Bespoke · `hero_media_id` | Yes | Yes | `/studio/catalog/collections → Bespoke` | No · BRAND_COPY | EMPTY (plan §4.11, §7) | GLOBAL default | DRAFT · concept |
 | `/collections/[slug]` | All ten | `collections.concept_state` — `DRAFT_COLLECTION_CONCEPT` for all ten; only `owner` or `admin` may promote to `OWNER_CONFIRMED` | Yes | Yes | `/studio/catalog/collections → [concept] → State` | No · UI | — | n/a | DRAFT · concept |
 | `/collections/[slug]` | All ten | `collections.sort_order` — the FEAT §9 order | Yes | Yes | `/studio/catalog/collections` — drag to reorder | No · UI | — | n/a | DRAFT · concept |
-| `/collections/[slug]` | All ten | `collections.statement` — the exhibition statement | No | Yes | `/studio/catalog/collections → [concept]` | No · BRAND_COPY | — | ENTITY seeded | not seeded |
+| `/collections/[slug]` | All ten | `collections.statement` — the exhibition statement | No | Yes | `/studio/catalog/collections → [concept]` | No · BRAND_COPY | — | GLOBAL default | not seeded |
 
-The Phase 16 columns — `page_id`, `subtitle`, `statement_long`, `signature_media_id`,
-`video_media_id`, `seo_entry_id` — do not exist at Phase 09 and are not inventoried here; they
-arrive with block-model editing for collections and are out of `rivya-v1` scope.
+The SEO column reads `GLOBAL default` throughout because `collections.seo_entry_id` is a Phase 16
+column: at Phase 09 there is no per-collection SEO row to seed, and no published concept page for
+one to describe. The Phase 16 columns — `page_id`, `subtitle`, `statement_long`,
+`signature_media_id`, `video_media_id`, `seo_entry_id` — do not exist yet and are not inventoried
+here; they arrive with block-model editing for collections and are out of `rivya-v1` scope.
 
 `collection_concept_state` has exactly one value at Phase 03 and gains `OWNER_CONFIRMED` and
 `RETIRED` in Phase 16 (`DATA_MODEL.md` §14, open question 8). Until that migration lands the gate is

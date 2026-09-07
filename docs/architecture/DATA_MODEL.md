@@ -154,7 +154,7 @@ recorded here so a later phase does not "fix" it.
 
 | Table | Why exempt | What it carries instead |
 |---|---|---|
-| `audit_log` | Immutable record of privileged mutations and denials | `result`, `occurred_at`; `revoke update, delete` |
+| `audit_logs` | Immutable record of privileged mutations and denials | `result`, `occurred_at`; `revoke update, delete` |
 | `activity_events` | Human-readable Studio feed | `occurred_at`; insert-only |
 | `system_logs` | Machine log | `level`, `channel`, `occurred_at`, `occurrence_count` |
 | `inquiries` | A customer record, not content | `pipeline_status inquiry_status` in place of `status` |
@@ -260,7 +260,7 @@ extensions, always in its own migration statement so no transaction uses a value
 | `media_kind` | `IMAGE · VIDEO · MODEL_3D · DOCUMENT · BRAND` | 03 | — | `media_assets` |
 | `price_state` | `STARTING_FROM · REQUEST_QUOTE · PRICE_ON_REQUEST` | 03 | 14 adds `FIXED` | `products` |
 | `collection_concept_state` | `DRAFT_COLLECTION_CONCEPT` | 03 | 16 adds `OWNER_CONFIRMED`, `RETIRED` | `collections` |
-| `user_role` | `owner · admin · editor · merchandiser · researcher · viewer` | 04 | — | `staff_profiles`, `audit_log`, RLS helpers |
+| `user_role` | `owner · admin · editor · merchandiser · researcher · viewer` | 04 | — | `staff_profiles`, `audit_logs`, RLS helpers |
 | `media_source` | `REAL · USER_UPLOAD · HIGGSFIELD · RENDER · FALLBACK` (the D6 priority ladder) | 06 | — | `media_assets` |
 | `availability_state` | `READY_STOCK · MADE_TO_ORDER` | 14 | — | `products` |
 | `edition_state` | `ONE_OF_ONE · LIMITED_EDITION · OPEN_EDITION` | 14 | — | `products` |
@@ -312,7 +312,7 @@ migration transaction; a check constraint can be replaced in place, which is why
 | `product_media.role`, `portfolio_project_media.role` | `hero · gallery · detail · lifestyle · process · video · model` |
 | `materials.family` | `resin · timber · metal · stone · finish` |
 | `staff_profiles.status` | `INVITED · ACTIVE · SUSPENDED` |
-| `audit_log.result` | `SUCCESS · DENIED · ERROR` |
+| `audit_logs.result` | `SUCCESS · DENIED · ERROR` |
 | `research_work_items.state` | `PENDING · LEASED · DONE · FAILED · SKIPPED` |
 | `research_fetches.robots_decision` | `ALLOWED · DISALLOWED · NO_ROBOTS · ERROR` |
 | `research_products.scale_band` | `DINING · CONSOLE · COFFEE · SEATING · SIDE · MONUMENTAL · WALL · UNKNOWN` |
@@ -520,7 +520,7 @@ erDiagram
 ```mermaid
 erDiagram
   auth_users ||--|| staff_profiles : "1:1, role lives here"
-  staff_profiles ||--o{ audit_log : "actor_user_id"
+  staff_profiles ||--o{ audit_logs : "actor_user_id"
   staff_profiles ||--o{ activity_events : "actor_id"
   staff_profiles ||--o| studio_preferences : "user_id unique"
   staff_profiles ||--o{ bulk_operations : "actor_user_id"
@@ -536,7 +536,7 @@ erDiagram
     user_role role
     text status
   }
-  audit_log {
+  audit_logs {
     uuid id PK
     text action
     text entity_type
@@ -576,7 +576,7 @@ statement trigger.
 **Why it matters** — `current_staff_role()` reads this table, so every RLS policy in the schema
 depends on it. Its own policies are deliberately non-recursive.
 
-### `audit_log` — Phase 04 · migration `0012` · RLS-APPEND
+### `audit_logs` — Phase 04 · migration `0012` · RLS-APPEND
 
 Who was allowed or refused to do what. Written by **every** privileged mutation *and every denial*.
 
@@ -599,13 +599,13 @@ Who was allowed or refused to do what. Written by **every** privileged mutation 
 **Indexes** — `(occurred_at desc)`, `(entity_type, entity_id)`, `(actor_user_id, occurred_at desc)`,
 `(result) where result <> 'SUCCESS'`.
 **RLS** — `select` requires `operations.audit.read` (owner, admin).
-`revoke update, delete on audit_log from authenticated, anon`.
+`revoke update, delete on audit_logs from authenticated, anon`.
 **Never contains** — a secret value, a raw visitor IP for a public form, a WhatsApp message body, or
 inquiry free text.
 
 ### `activity_events` — Phase 05 · migration `0020` · RLS-APPEND
 
-The human-readable Studio feed. Distinct from `audit_log` (authorisation) and `system_logs`
+The human-readable Studio feed. Distinct from `audit_logs` (authorisation) and `system_logs`
 (machine); the three are never merged.
 
 | Column | Type |
@@ -1476,7 +1476,7 @@ every FEAT §31 type, so "SCRAPER errors in the last hour" is one query.
 | `event`, `message` | `text not null` |
 | `context` | `jsonb not null default '{}'` — passed through `redact.ts` |
 | `actor_id`, `actor_role` | `uuid`, `user_role` |
-| `request_id` | `text` — correlates with `audit_log` |
+| `request_id` | `text` — correlates with `audit_logs` |
 | `workflow_run_id` | `uuid` — the run this line belongs to, whichever run table owns it |
 | `research_source_id` | `uuid` |
 | `entity_type`, `entity_id` | `text`, `uuid` |
@@ -1670,7 +1670,7 @@ functions (`set_updated_at()`, `rivya_slugify(text)`). RLS is **enabled with no 
 
 | Phase | Migrations | Tables created (T) / altered (A) |
 |---|---|---|
-| 04 | `0009`–`0012` | T `staff_profiles`, `audit_log`; enum `user_role`; RLS helper functions; the four-policy pattern on every Phase 03 table |
+| 04 | `0009`–`0012` | T `staff_profiles`, `audit_logs`; enum `user_role`; RLS helper functions; the four-policy pattern on every Phase 03 table |
 | 05 | `0020` | T `activity_events`, `studio_preferences` |
 | 06 | `0030` | A `media_assets` (full column set, **including** the Higgsfield-provenance columns Phase 07 populates); T `media_usages`; enums `media_kind` (fixed), `media_source`. Three named canary assets only — not the 250 |
 | 07 | `0040` | T `higgsfield_migration_runs`; populates all 250 manifest rows into `media_assets` (§7). **No `media_assets` schema change** — Phase 06 `0030` already declared every column the import writes |
@@ -1732,7 +1732,7 @@ proposes the rest. It is raised for confirmation as open question 6.
 | `bulk_import_rows` | 30 days after apply | Phase 38 cron |
 | Unreferenced visitor uploads (`media_assets` where `source = 'USER_UPLOAD'` with no `inquiry_attachments` row) | 30 days | Phase 38 cron |
 | `rate_limit_buckets` | 7 days | Phase 38 cron |
-| `audit_log` | **Proposed: indefinite** | It is the record of authorisation; deleting it defeats its purpose |
+| `audit_logs` | **Proposed: indefinite** | It is the record of authorisation; deleting it defeats its purpose |
 | `activity_events` | **Proposed: 400 days** | A feed, not a record of authorisation |
 | `content_revisions` | **Proposed: indefinite, capped at 200 revisions per entity** | Beyond that, the oldest are pruned in blocks |
 | `inquiries` | **Proposed: indefinite until an owner decision** | It is customer data; a deletion policy is an owner decision, not an engineering default. `OWNER_VERIFICATION_REQUIRED` |
@@ -1777,7 +1777,7 @@ tables. Nothing diverges silently.
    holds with no new table. Confirm that a settings table is never introduced, or state which
    values would justify one.
 
-6. **Retention is unspecified in the canonical decisions.** §13 proposes values for `audit_log`,
+6. **Retention is unspecified in the canonical decisions.** §13 proposes values for `audit_logs`,
    `activity_events`, `content_revisions` and `inquiries`. `inquiries` in particular is customer
    data and its retention is an owner decision — the row is marked
    `OWNER_VERIFICATION_REQUIRED` in the table above rather than defaulted. Suggested amendment: a

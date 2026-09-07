@@ -129,6 +129,13 @@ family count and asset ID cited in the documentation against the manifest, and l
    immediately. Planned IDs now use the `<PAGE>-<SECTION>[-<KIND>]-<NNN>` form;
    `check-asset-ids.py` enforces it; CANONICAL-DECISIONS D6 + amendment A1 record the rule.
 
+3. `audit_log` was spelled singular in fifteen documents (89 occurrences) against D5's plural rule.
+   Renamed to `audit_logs` everywhere outside `docs/requirements/`; the exit criterion asserting
+   `grep -rn 'audit_log\b' docs` returns nothing now passes.
+4. Two paths the build needs were absent from the fixed canonical maps — the token layer had no
+   home under D2, and the Studio sign-in surface had none under D4. Adopted as amendment **A2**
+   (`app/styles/`, `/studio/login`).
+
 **Open** — raised by the phase documents, awaiting an owner or architect decision:
 
 | # | Question | Raised in |

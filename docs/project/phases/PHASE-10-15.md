@@ -1019,7 +1019,7 @@ consumes nothing from the manifest, by database trigger: a product's media must 
 7. Assert `rel="next"` on page 1 and `rel="prev"` on page 2, and that `sort` and `page` are reflected
    in `<link rel="canonical">`.
 8. Attempt to publish a product missing a hero image → refused, with "Hero image" named in the unmet
-   list. As `viewer`, POST the publish action directly → 403 and a `DENIED` row in `audit_log`.
+   list. As `viewer`, POST the publish action directly → 403 and a `DENIED` row in `audit_logs`.
 9. `select count(*) from products` on the production-shaped fixture → 0.
 10. axe on `/collection/furniture` at 390 px and 1440 px — zero critical or serious violations; the
     filter rail is reachable and operable by keyboard.

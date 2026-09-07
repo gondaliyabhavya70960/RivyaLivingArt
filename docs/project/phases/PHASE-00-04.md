@@ -937,9 +937,9 @@ New enum in `0009`: `user_role as enum ('owner','admin','editor','merchandiser',
 
 **Naming note — the table is `audit_logs`, plural.** D5 fixes plural table names and every other
 table in this document already obeys it (`staff_profiles`, `media_assets`, `content_seed_runs`,
-`product_relations`); the singular `audit_log` was a lone divergence with no amendment behind it, so
+`product_relations`); the singular `audit_logs` was a lone divergence with no amendment behind it, so
 it is corrected here rather than carved out. Fourteen documents written before this correction still
-spell it `audit_log` on 81 lines — `docs/architecture/{ARCHITECTURE,DATA_MODEL,SCRAPER}.md`,
+spell it `audit_logs` on 81 lines — `docs/architecture/{ARCHITECTURE,DATA_MODEL,SCRAPER}.md`,
 `docs/ops/{SECURITY,TESTING,DEPLOYMENT}.md`, `docs/studio/STUDIO_GUIDE.md`,
 `docs/project/{PRD,BUSINESS_RULES}.md`, `docs/media/HIGGSFIELD_GUIDE.md` and
 `docs/project/phases/{PHASE-10-15,PHASE-23-30,PHASE-31-38,PHASE-39-46}.md`. The rename lands across
@@ -1132,7 +1132,7 @@ POST-only with an origin check.
    `SUCCESS` row naming the action and the target. Attempt the same as `editor` — one `DENIED` row.
 9. Attempt to demote the sole `owner` — rejected with a specific message, and a `DENIED` audit row.
 10. `psql -c "update audit_logs set summary='x';"` as the authenticated role — permission denied.
-11. `grep -rn 'audit_log\b' docs --include='*.md' | grep -v '^docs/requirements/'` returns nothing:
+11. `grep -rn 'audit_logs\b' docs --include='*.md' | grep -v '^docs/requirements/'` returns nothing:
     the plural rename has propagated to every document that names the table.
 
 **Exit criteria**
@@ -1158,7 +1158,7 @@ POST-only with an origin check.
       wording. The same keys become `global_content` `STUDIO_HELP` rows in Phase 09 — that is where
       "editable from Studio" is satisfied, and Phase 09's exit criteria must name these keys.
 - [ ] Amendment **A2·b** (`/studio/login` in D4) is merged into `CANONICAL-DECISIONS.md`.
-- [ ] Every document that names the audit table spells it `audit_logs`; `grep -rn 'audit_log\b'`
+- [ ] Every document that names the audit table spells it `audit_logs`; `grep -rn 'audit_logs\b'`
       over `docs/**` outside `docs/requirements/**` returns nothing.
 - [ ] `docs/ops/SECURITY.md` documents the two enforcement layers, the matrix, and the audit schema;
       `docs/architecture/DATA_MODEL.md` documents `staff_profiles` and `audit_logs`.

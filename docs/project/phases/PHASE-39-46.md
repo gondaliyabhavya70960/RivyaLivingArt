@@ -338,7 +338,7 @@ and `collectible-design` have no bound asset, so their category OG falls back to
 5. `node scripts/seo/validate-jsonld.mjs --base http://localhost:3000` — parses every emitted block on every route; exits non-zero if any of `aggregateRating`, `review`, `award`, `offers` (non-`FIXED`), `LocalBusiness`, `shippingDetails`, `returnPolicy` appears.
 6. `npm run test:unit -- seo-resolve seo-canonical jsonld-guard jsonld-builders sitemap-scope redirect-chain` — all green.
 7. `node scripts/seo/check-jsonld-scope.mjs` — exits 0. Add an inline `ld+json` to any page and confirm it exits non-zero naming the file.
-8. `npx tsx scripts/auth/gen-role-sql.ts && git diff --exit-code` — clean, proving `seo.write` reached `lib/auth/permissions.ts` and the generated role SQL together. `grep -n 'seo.write' docs/project/phases/PHASE-00-04.md` returns the back-written matrix row. As `merchandiser`, POST an SEO entry update → 403 with an `audit_log` row `result='DENIED'`; as `editor` → 200.
+8. `npx tsx scripts/auth/gen-role-sql.ts && git diff --exit-code` — clean, proving `seo.write` reached `lib/auth/permissions.ts` and the generated role SQL together. `grep -n 'seo.write' docs/project/phases/PHASE-00-04.md` returns the back-written matrix row. As `merchandiser`, POST an SEO entry update → 403 with an `audit_logs` row `result='DENIED'`; as `editor` → 200.
 9. In Studio: set an entity title on a product, reload the PDP → the entity title wins. Delete it → the path-level value wins. Delete that → the derived value appears and the Pages tab labels it `DERIVED`.
 10. Keywords tab: all seventeen SEED §42 themes present, all `UNRESEARCHED`, `custom furniture India` and `resin furniture India` flagged `OWNER_VERIFICATION_REQUIRED`. Confirm no numeric metric field exists anywhere in the UI or the schema (`\d seo_keyword_themes`).
 11. Change a product slug in Studio with the redirect box ticked; request the old path → 308 to the new path with `Location` absolute. Create `a → b` then attempt `b → a` → rejected as a loop.
@@ -579,7 +579,7 @@ policy for inquiry data, secret-scanning in CI, and a written, tested statement 
 values may never leave the server.
 
 **Depends on** — Phase 02 (tokens, focus styles, `Dialog`/`Drawer` primitives), 04 (RBAC, RLS,
-`audit_log`), 05 (Studio shell), 06 (signed upload endpoint, MIME allowlist, size caps), 10 (site
+`audit_logs`), 05 (Studio shell), 06 (signed upload endpoint, MIME allowlist, size caps), 10 (site
 shell, skip link, navigation keyboard model), 14–21 (the surfaces being audited), 20 (`inquiries`
 and its uploads — the only personal data in the system), 25–30 (research subsystem, whose isolation
 invariants this phase re-asserts), 38 (system logs, environment page), 40 (the third-party ban that
@@ -654,7 +654,7 @@ the same surfaces, and because separating them invites one of the two to be defe
   output for each server-only name **and** for high-entropy strings matching known key shapes,
   failing the build on a hit (this generalises the Phase 04 check, which covered two names);
   (3) Phase 38's `lib/logging/redact.ts` (`redact`, `redactDeep`) runs over every log payload and is
-  **extended here** to cover `audit_log` `before`/`after` blobs and every server-action error path,
+  **extended here** to cover `audit_logs` `before`/`after` blobs and every server-action error path,
   with the never-expose name list above as its source; (4) `gitleaks` scans history and the diff in
   CI. This phase does not re-create the redactor — Phase 38 owns it and Phase 41 widens its reach.
 - **Response headers**, set in `middleware.ts` for every response and asserted by e2e:
@@ -691,7 +691,7 @@ the same surfaces, and because separating them invites one of the two to be defe
 
   `ip_hash` is `hmac(ip, server_salt)`; the raw address is never stored, matching the `ip_hash`
   convention already used by Phase 20. A limited request returns 429 with `Retry-After` and writes a
-  `SECURITY` system log, never an `audit_log` row (it has no actor).
+  `SECURITY` system log, never an `audit_logs` row (it has no actor).
 
   Two of those rows correct paths that appear elsewhere in the documentation set and do not exist in
   the code the previous phases specify. **Inquiry submission has no route handler**: it is the server
@@ -733,7 +733,7 @@ the same surfaces, and because separating them invites one of the two to be defe
   SVG, the answer is a PNG export at 2×, made by whoever supplies the mark — never a sanitiser, and
   never an exception in `lib/media/validate-upload.ts`.
 - **Mutation surface.** Every server action and route handler: origin check, Zod parse, session
-  resolve, permission check, then work; `audit_log` row on success and on denial (Phase 04). A
+  resolve, permission check, then work; `audit_logs` row on success and on denial (Phase 04). A
   destructive action additionally requires typed confirmation (Phase 24) and re-authentication if
   the session is older than 30 minutes. `scripts/security/check-action-guards.mjs` asserts every
   exported server action calls the permission helper.
@@ -747,7 +747,7 @@ the same surfaces, and because separating them invites one of the two to be defe
   from last activity, then anonymisation (contact fields nulled, row kept for counts); an owner-only
   Studio action to export or erase a single enquirer's data on request; personal fields never in
   `search_documents` (Phase 23 rule, re-asserted by test), never in `web_vitals_samples`, never in
-  `audit_log` blobs (redactor), never in a WhatsApp URL beyond what the enquirer themselves typed.
+  `audit_logs` blobs (redactor), never in a WhatsApp URL beyond what the enquirer themselves typed.
   The privacy and terms pages describe these mechanisms but **cannot** name a legal entity,
   jurisdiction, controller or statutory basis — all four are **OWNER_VERIFICATION_REQUIRED** and the
   pages stay `DRAFT` until the owner supplies them.
@@ -775,7 +775,7 @@ the same surfaces, and because separating them invites one of the two to be defe
 | Middleware headers | `middleware.ts` | Nonce generation, the header table, preview `noindex` |
 | CSP nonce plumbing | `lib/security/csp.ts` | Nonce per request, propagated to `<Script>` and inline styles |
 | Rate limiter | `lib/security/rate-limit.ts` | Fixed window over Postgres; `ip_hash` helper |
-| Redactor (extended) | `lib/logging/redact.ts` (Phase 38) | Never-expose name list as its source; coverage widened to `audit_log` blobs and server-action error paths |
+| Redactor (extended) | `lib/logging/redact.ts` (Phase 38) | Never-expose name list as its source; coverage widened to `audit_logs` blobs and server-action error paths |
 | Upload validation | `lib/media/validate-upload.ts` | Magic bytes, size, SVG rejection, EXIF strip, and the per-slot brand-mark format rules (PNG logo/wordmark, ICO or 512 px PNG favicon, 1200 × 630 PNG/JPEG default OG) with rejection copy from `global_content` |
 | PII tooling | `lib/inquiries/pii.ts`, `scripts/ops/anonymise-inquiries.ts` | Export, erase, scheduled anonymisation |
 | Focus + contrast guards | `scripts/a11y/{check-focus-styles.mjs,check-contrast.mjs}` | Token matrix; wired into `npm run check` |
@@ -840,7 +840,7 @@ size of the job visible.
 2. `npm run test:unit -- redact rate-limit-window upload-validation pii-scope` — green, including: the redactor removes every never-expose name from a nested payload; a fixed window resets correctly at the boundary; a `.png` file with a `.svg` payload is rejected by magic-byte sniffing; no inquiry personal field appears in `search_documents` or `web_vitals_samples`.
 3. `npm start` then `curl -sI localhost:3000/` — every header in the table present with the exact value; `curl -sI localhost:3000/studio` additionally `private, no-store` and `X-Robots-Tag: noindex, nofollow`.
 4. `npx playwright test tests/e2e/security-headers.spec.ts` — CSP nonce differs per request; no inline script without a nonce; the 3D viewer loads with the flag on and produces zero CSP violations.
-5. `npx playwright test tests/e2e/studio-authz.spec.ts` — as `viewer`, direct POSTs to publish, bulk-apply, media-delete and role-change all return 403 and each writes an `audit_log` row with `result='DENIED'`.
+5. `npx playwright test tests/e2e/studio-authz.spec.ts` — as `viewer`, direct POSTs to publish, bulk-apply, media-delete and role-change all return 403 and each writes an `audit_logs` row with `result='DENIED'`.
 6. Submit the contact form six times in ten minutes from one client, exercising the `app/(site)/_actions/submit-inquiry.ts` server action → the sixth is refused with the SEED §49 rate-limit copy and its `Retry-After` interval, and writes a `SECURITY` system log; the first five persist as `inquiries` rows. Confirm with `curl` that no `/api/inquiries` route exists (404) — the limiter lives inside the action, not in `middleware.ts`. Then POST `/api/media/sign` twenty-one times in an hour as one staff user → the twenty-first returns 429.
 7. Upload an SVG through `/studio/media/all` → rejected with a stated reason. Upload a 30 MB JPEG → rejected on size. Upload a JPEG renamed `.glb` → rejected on sniffing. Upload an SVG logo through `/studio/media/brand` → rejected with the **brand-mark format copy**, which names PNG (logo, wordmark), ICO or 512 px PNG (favicon) and 1200 × 630 PNG/JPEG (default OG); upload a 2048 px PNG logo → accepted.
 8. `npx playwright test tests/e2e/a11y/` — the full sweep: zero critical and zero serious axe violations on every public route and the seven Studio routes at 1440 px and 390 px; heading order valid on every route; every interactive target ≥ 44 × 44 at 390 px; `exceptions.json` has zero rows.

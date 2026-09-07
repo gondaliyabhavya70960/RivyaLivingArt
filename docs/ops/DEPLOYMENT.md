@@ -313,7 +313,7 @@ response) — rotation alone is not the whole response.
 | Source | What it answers |
 |---|---|
 | `system_logs` (`/studio/operations/logs`) | What the machine did and where it failed, with `request_id` and commit SHA |
-| `audit_log` (`/studio/operations/audit`) | Who was allowed or refused to do what |
+| `audit_logs` (`/studio/operations/audit`) | Who was allowed or refused to do what |
 | Vercel runtime logs | Platform-level failures the application never saw |
 | `/studio/system/environment` | Is it up, what is deployed, which migration is applied |
 | Lighthouse CI history + `web_vitals_samples` | Whether performance moved |

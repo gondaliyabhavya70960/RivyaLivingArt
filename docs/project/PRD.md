@@ -388,7 +388,7 @@ opens; none of these may be marked met by assertion.
 
 | # | Criterion | Evidence |
 |---|---|---|
-| S14 | Every D4 route exists, is role-aware and re-checks permission server-side | `tests/e2e/studio-authz.spec.ts`: each role's forbidden POSTs return 403 and write `audit_log` rows with `result = 'DENIED'` |
+| S14 | Every D4 route exists, is role-aware and re-checks permission server-side | `tests/e2e/studio-authz.spec.ts`: each role's forbidden POSTs return 403 and write `audit_logs` rows with `result = 'DENIED'` |
 | S15 | Catalogue: products, categories, collections, materials, relationships, bulk | Phases 14–16, 23, 24 exit criteria |
 | S16 | CMS: pages, homepage editor, portfolio, journal, FAQs, navigation, footer, SEO | Phase 08–09; 100 % of launch copy mapped to a Studio control in `INITIAL_CONTENT_INVENTORY.md` |
 | S17 | Merchandising: homepage, store, featured, scheduling | Phase 22; empty slots resolve through `fallback_mode` |

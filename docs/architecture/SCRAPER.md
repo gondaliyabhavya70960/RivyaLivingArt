@@ -147,7 +147,7 @@ leaves its stage at `SHORTLISTED` and sets `disposition = 'REJECTED'` with a req
 It means *"confirmed as a research reference."* It creates no product, no draft product, no media
 row, no CMS content and no obligation. The Studio confirm dialog says so in seeded copy, and
 `tests/unit/research-no-autoimport.test.ts` runs a full pipeline pass over a `CONFIRMED` row and
-asserts `select count(*) from products` is unchanged and that no `audit_log` row with
+asserts `select count(*) from products` is unchanged and that no `audit_logs` row with
 `entity_type = 'product'` was written. The name is kept because FEAT §23 fixes it; the misreading
 risk is raised in *Open questions*.
 
@@ -383,7 +383,7 @@ contact a third-party host, and it is not a general fetcher: it calls the same
 `policy_status = 'APPROVED'` and `is_enabled`, the robots decision (a `Disallow` match refuses before
 any request is made), `rate_limit_rpm` / `request_delay_ms` / `concurrency`, the `Crawl-delay` floor,
 `circuit_open_until`, the `research.enabled` flag, `SCRAPER_USER_AGENT`, the 2 MB body cap and the
-15-second timeout. It requires `research.write`, writes one `audit_log` row naming actor, source and
+15-second timeout. It requires `research.write`, writes one `audit_logs` row naming actor, source and
 URL, and stores no snapshot. `ARCHITECTURE.md` §1 fixes it as one of exactly two outbound paths.
 
 **A category mapping never guesses.** An unmapped source category is `null`, counted on the
@@ -461,7 +461,7 @@ alter table research_sources add constraint research_source_enable_requires_appr
   patterns, the extraction configuration and a **mandatory** notes field — and sets `APPROVED`,
   `RESTRICTED` (approved but limited to named patterns) or `BLOCKED`.
 - Approval requires `research.write` **and** `system.settings.write`, records
-  `policy_reviewed_by` / `policy_reviewed_at` / `policy_notes`, and writes an `audit_log` row.
+  `policy_reviewed_by` / `policy_reviewed_at` / `policy_notes`, and writes an `audit_logs` row.
 - The panel carries a standing banner stating that this repository cannot determine what a third
   party's terms permit, and that approval is the owner's assertion.
 
@@ -697,7 +697,7 @@ Studio surface, not an email.
 ### 12.1 The nine FEAT §25 actions
 
 Each writes a `research_review_actions` row (append-only — a reversal is a new row, never an edit),
-an `audit_log` row, and a `research_pipeline_events` row where a stage moves. All nine require
+an `audit_logs` row, and a `research_pipeline_events` row where a stage moves. All nine require
 `research.confirm`.
 
 | Action | Effect | Reversible |
@@ -728,7 +728,7 @@ controls.
 
 Bulk shortlist, reject, mark duplicate, assign tags and confirm run on the **same** `lib/bulk/`
 engine as every other bulk operation: preview, typed row-count confirmation for destructive actions,
-per-item snapshots, a 200-row cap per invocation, one `audit_log` row per row changed, and a 24-hour
+per-item snapshots, a 200-row cap per invocation, one `audit_logs` row per row changed, and a 24-hour
 undo. There is no second bulk implementation. Bulk reject additionally requires `bulk.execute` **and**
 `destructive.execute` plus a reason applied to every item.
 
@@ -775,7 +775,7 @@ forbidding the join, rather than by pretending the link does not exist.
 3. **The interface says what it does.** The Studio confirm dialog states, from seeded copy, exactly
    what confirming does and does not do.
 4. **A test asserts the outcome, not the intention.** A full pipeline pass with changes on a
-   `CONFIRMED` row leaves `select count(*) from products` unchanged and writes no `audit_log` row
+   `CONFIRMED` row leaves `select count(*) from products` unchanged and writes no `audit_logs` row
    with `entity_type = 'product'`.
 
 ### 13.2 The two allowlisted foreign keys
@@ -847,7 +847,7 @@ the capability, and FEAT §32 names the flag.
 | Who may run it | A Studio action on `/studio/research/sheets` requiring `integrations.sheets.run` **plus** `research.read`. Creating or editing a definition requires `integrations.sheets.manage`. The scheduled path is `app/api/cron/sheets-sync` (`REVALIDATE_SECRET`), which skips paused definitions |
 | Flag | `google_sheets`, default `false` in every environment. With it off the page is read-only and every run action is refused with a stated reason and no network call |
 | What is written | Values and a header row into a staging tab, swapped atomically into place. No formulas, charts or formatting |
-| Audit | Every run writes a `sheets_sync_runs` row (status, row count, cell count, attempts, duration, sanitised `error_code` — **never** the upstream response body) **and** an `audit_log` row naming the actor, the definition, the row count and the destination spreadsheet id |
+| Audit | Every run writes a `sheets_sync_runs` row (status, row count, cell count, attempts, duration, sanitised `error_code` — **never** the upstream response body) **and** an `audit_logs` row naming the actor, the definition, the row count and the destination spreadsheet id |
 | Where it goes | A spreadsheet an admin has shared with the service-account email. **It is a staff artefact.** Publishing it to the web, or sharing it with "anyone with the link", defeats I3 by hand; `STUDIO_GUIDE.md` says so beside the destination banner, and the destination id is displayed so the owner can check it |
 
 **The column allowlist.** A definition's `columns` may only be chosen from the per-entity allowlist in
@@ -878,7 +878,7 @@ every allowlist, so no column picker can offer them:
 - `research_notes` bodies, `policy_notes`, and `research_sources.notes` — staff commentary about a
   third party is the material most likely to be read out of context;
 - any credential, environment value, media asset id or Cloudinary URL;
-- anything from `audit_log`, `system_logs` or `staff_profiles`.
+- anything from `audit_logs`, `system_logs` or `staff_profiles`.
 
 `source_url` **is** exportable — it is the public address of a public page and the only way an owner
 can check a row against its source — and it is the single most important reason the sheet must not be
