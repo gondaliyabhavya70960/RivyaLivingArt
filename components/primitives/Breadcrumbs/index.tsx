@@ -91,10 +91,7 @@ export const Breadcrumbs = React.forwardRef<HTMLElement, BreadcrumbsProps>(funct
           return (
             <li
               key={item.href}
-              className={cn(
-                'items-center gap-2',
-                isDroppedOnMobile ? 'hidden sm:flex' : 'flex',
-              )}
+              className={cn('items-center gap-2', isDroppedOnMobile ? 'hidden sm:flex' : 'flex')}
             >
               {isCurrent ? (
                 // Not a link: the current page has nowhere to navigate to, and a link that

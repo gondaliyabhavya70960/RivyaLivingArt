@@ -21,7 +21,8 @@
     "manifest:verify": "npm run manifest:build && git diff --exit-code data/higgsfield/asset-manifest.json",
     "media:check-ids": "python3 scripts/media/check-asset-ids.py",
     "design:check-tokens": "node scripts/design/check-tokens.mjs",
-    "design:check-registry": "node scripts/design/check-registry.mjs"
+    "design:check-registry": "node scripts/design/check-registry.mjs",
+    "design:check-utilities": "node scripts/design/check-utilities.mjs"
   },
   "dependencies": {
     "next": "^16.3.4",

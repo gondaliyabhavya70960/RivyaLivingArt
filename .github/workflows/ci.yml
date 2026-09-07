@@ -51,3 +51,6 @@ jobs:
 
       - name: Component registry
         run: npm run design:check-registry
+
+      - name: No dead utility classes
+        run: npm run design:check-utilities
