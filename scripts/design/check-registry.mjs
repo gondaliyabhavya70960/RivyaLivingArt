@@ -203,19 +203,26 @@ for (let i = 0; i < lines.length; i++) {
     if (!/^(PLANNED|BUILT|REJECTED)$/.test(state)) {
       problems.push(`line ${j + 1} (${id}): State "${state}" must be PLANNED, BUILT or REJECTED`)
     }
-    // A BUILT row must correspond to a file on disk. PLANNED rows are not armed.
+    // A BUILT row must correspond to files on disk. PLANNED rows are not armed.
+    //
+    // One row may legitimately cover more than one export — `Reveal` + `useReducedMotion`
+    // ship together, as do `ProductGallery` + `Lightbox` — so the cell is split and EVERY
+    // named part must resolve. Checking only the first would let half a row be marked
+    // built, which is precisely the claim this check exists to prevent.
     if (state === 'BUILT' && component) {
-      const name = component.replace(/[`<>]/g, '')
-      const candidates = [
-        `components/primitives/${name}/index.tsx`,
-        `components/patterns/${name}/index.tsx`,
-        `components/primitives/motion/${name}.tsx`,
-        `components/primitives/motion/${name}.ts`,
-      ]
-      if (!candidates.some((pth) => existsSync(join(ROOT, pth)))) {
-        problems.push(
-          `line ${j + 1} (${id}): state is BUILT but no file exists at any of: ${candidates.join(', ')}`,
-        )
+      for (const part of component.split('+').map((n) => n.replace(/[`<>]/g, '').trim())) {
+        if (!part || !/^[A-Za-z][A-Za-z0-9]*$/.test(part)) continue
+        const candidates = [
+          `components/primitives/${part}/index.tsx`,
+          `components/patterns/${part}/index.tsx`,
+          `components/primitives/motion/${part}.tsx`,
+          `components/primitives/motion/${part}.ts`,
+        ]
+        if (!candidates.some((pth) => existsSync(join(ROOT, pth)))) {
+          problems.push(
+            `line ${j + 1} (${id}): state is BUILT but no file exists for "${part}" at any of: ${candidates.join(', ')}`,
+          )
+        }
       }
     }
   }

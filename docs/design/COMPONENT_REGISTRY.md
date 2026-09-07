@@ -229,24 +229,24 @@ All rows are `Source: Rivya first-party`, `Licence: N/A — first-party`, `Verdi
 | RC-011 | `Label` | usability | 02 | BUILT |
 | RC-012 | `HelpText` | usability | 02 | BUILT |
 | RC-013 | `ErrorText` | usability | 02 | BUILT |
-| RC-014 | `Surface` | brand perception | 02 | PLANNED |
-| RC-015 | `Container` | usability | 02 | PLANNED |
-| RC-016 | `Section` | storytelling | 02 | PLANNED |
-| RC-017 | `Stack` | usability | 02 | PLANNED |
-| RC-018 | `Cluster` | usability | 02 | PLANNED |
-| RC-019 | `Grid` | usability | 02 | PLANNED |
-| RC-020 | `Heading` | storytelling | 02 | PLANNED |
-| RC-021 | `Text` | storytelling | 02 | PLANNED |
-| RC-022 | `Eyebrow` | brand perception | 02 | PLANNED |
-| RC-023 | `Divider` | usability | 02 | PLANNED |
-| RC-024 | `Badge` | usability | 02 | PLANNED |
-| RC-025 | `Tag` | navigation | 02 | PLANNED |
+| RC-014 | `Surface` | brand perception | 02 | BUILT |
+| RC-015 | `Container` | usability | 02 | BUILT |
+| RC-016 | `Section` | storytelling | 02 | BUILT |
+| RC-017 | `Stack` | usability | 02 | BUILT |
+| RC-018 | `Cluster` | usability | 02 | BUILT |
+| RC-019 | `Grid` | usability | 02 | BUILT |
+| RC-020 | `Heading` | storytelling | 02 | BUILT |
+| RC-021 | `Text` | storytelling | 02 | BUILT |
+| RC-022 | `Eyebrow` | brand perception | 02 | BUILT |
+| RC-023 | `Divider` | usability | 02 | BUILT |
+| RC-024 | `Badge` | usability | 02 | BUILT |
+| RC-025 | `Tag` | navigation | 02 | BUILT |
 | RC-026 | `Spinner` | usability | 02 | BUILT |
-| RC-027 | `Skeleton` | usability | 02 | PLANNED |
-| RC-028 | `VisuallyHidden` | usability | 02 | PLANNED |
-| RC-029 | `AspectBox` | material understanding | 02 | PLANNED |
-| RC-030 | `MediaFrame` | material understanding | 02 | PLANNED |
-| RC-031 | `FocusTrap` | usability | 02 | PLANNED |
+| RC-027 | `Skeleton` | usability | 02 | BUILT |
+| RC-028 | `VisuallyHidden` | usability | 02 | BUILT |
+| RC-029 | `AspectBox` | material understanding | 02 | BUILT |
+| RC-030 | `MediaFrame` | material understanding | 02 | BUILT |
+| RC-031 | `FocusTrap` | usability | 02 | BUILT |
 | RC-032 | `SkipLink` | navigation | 05 | PLANNED |
 | RC-033 | `FileUpload` | conversion | 19 | PLANNED |
 
@@ -268,7 +268,7 @@ and Phase 10's site shell then reuses it.
 | RC-204 | `Accordion` | usability | 02 | PLANNED | §7.4 |
 | RC-205 | `Tooltip` | usability | 02 | PLANNED | §7.5 |
 | RC-206 | `Disclosure` | usability | 02 | PLANNED | §7.6 |
-| RC-207 | `Reveal` + `useReducedMotion` | brand perception | 02 | PLANNED | §7.7 |
+| RC-207 | `Reveal` + `useReducedMotion` | brand perception | 02 | BUILT | §7.7 |
 | RC-208 | `SiteHeader` | navigation | 10 | PLANNED | index only — server, no interaction model |
 | RC-209 | `AnnouncementBar` | conversion | 10 | PLANNED | index only |
 | RC-210 | `MegaMenu` | navigation | 10 | PLANNED | §7.8 |
