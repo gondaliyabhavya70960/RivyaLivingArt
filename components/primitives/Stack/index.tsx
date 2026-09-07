@@ -14,11 +14,19 @@ import { asTag } from '@/lib/ui/polymorphic'
  * written out as a whole class name because Tailwind reads source text — a template
  * literal would compile to no CSS at all.
  *
- * LIST SEMANTICS. A `ul` or `ol` here becomes a flex container, and Safari + VoiceOver
- * drop list semantics from a list whose markers are removed — which base.css does for
- * `ul[role='list']`. So an explicit `role="list"` is restored, exactly the pattern that
- * stylesheet is written against. A caller's own `role` still wins: `...rest` is spread
- * after it, for the rare list that really is a `menu` or a `tablist`.
+ * LIST SEMANTICS, AND ONLY FOR `ul`. A `ul` here becomes a flex container, and Safari +
+ * VoiceOver drop list semantics from a list whose markers are removed — which base.css
+ * does for `ul[role='list']`. So an explicit `role="list"` is restored, exactly the
+ * pattern that stylesheet is written against.
+ *
+ * An `ol` gets none. Its implicit role is already `list` — ARIA has no ordered-list role
+ * — so the attribute buys assistive tech nothing, while it does match base.css's
+ * `ol[role='list']` arm and silently strip the numbering. An `ol`'s children stay
+ * `display: list-item` inside a flex container, so left alone the markers render and the
+ * ordinal information the element exists to carry survives.
+ *
+ * A caller's own `role` still wins either way: `...rest` is spread after it, for the rare
+ * list that is really a `menu` or a `tablist` — or the `ol` that wants no numbers.
  */
 export type StackGap = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 8 | 10 | 12 | 16 | 20
 
@@ -39,7 +47,8 @@ const GAP: Record<StackGap, string> = {
   20: 'gap-20',
 }
 
-const LIST_ELEMENTS = new Set<StackElement>(['ul', 'ol'])
+/** Only `ul`: see the note above on why an `ol` must keep its markers. */
+const LIST_ELEMENTS = new Set<StackElement>(['ul'])
 
 export interface StackProps extends React.HTMLAttributes<HTMLElement> {
   as?: StackElement

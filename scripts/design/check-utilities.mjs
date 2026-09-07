@@ -33,6 +33,7 @@ const TW = resolve(ROOT, 'node_modules/tailwindcss')
 const VARIANT =
   '(?:(?:group|peer|hover|focus|focus-visible|focus-within|active|disabled|first|last|odd|even|' +
   'motion-safe|motion-reduce|sm|md|lg|xl|2xl|3xl|max-sm|max-md|max-lg|print|rtl|ltr|open|checked|' +
+  'pointer-fine|pointer-coarse|any-pointer-fine|any-pointer-coarse|' +
   'aria-[a-z-]+|data-\\[[^\\]]+\\]|has-\\[[^\\]]+\\]):)*'
 
 const PREFIXED =

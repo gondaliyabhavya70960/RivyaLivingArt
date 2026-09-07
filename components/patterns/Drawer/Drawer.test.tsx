@@ -144,4 +144,21 @@ describe('Drawer', () => {
 
     expect(container).not.toHaveAttribute('inert')
   })
+
+  /*
+   * Same defect as Dialog's: a <header> inside `role="dialog"` maps to `banner`, and the
+   * mobile navigation and the filter sheet are both this component on routes that render the
+   * site header.
+   */
+  it('contributes no landmark of its own to a page that already has a banner', async () => {
+    render(
+      <div>
+        <header>Rivya Living Art</header>
+        <Harness />
+      </div>,
+    )
+    await open()
+
+    expect(screen.getAllByRole('banner')).toHaveLength(1)
+  })
 })

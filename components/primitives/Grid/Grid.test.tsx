@@ -26,6 +26,19 @@ describe('Grid', () => {
     expect(screen.getByTestId('grid')).not.toHaveAttribute('role')
   })
 
+  it('leaves an ordered list to number itself, and still names it', () => {
+    render(
+      <Grid as="ol" aria-label="Commission steps" data-testid="steps">
+        <li>Enquire</li>
+        <li>Design</li>
+      </Grid>,
+    )
+    // `ol` already exposes role="list"; setting it would only match base.css's
+    // `ol[role='list']` arm and strip the markers that carry the order.
+    expect(screen.getByRole('list', { name: 'Commission steps' })).toBeInTheDocument()
+    expect(screen.getByTestId('steps')).not.toHaveAttribute('role')
+  })
+
   it('presents every child, so nothing is hidden by the column count', () => {
     render(
       <Grid as="ul">

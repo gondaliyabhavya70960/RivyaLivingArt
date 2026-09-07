@@ -69,7 +69,10 @@ export const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(f
       className={cn(
         'relative inline-flex shrink-0 items-center justify-center rounded-sm',
         // LIGHT (§4.2): paint properties only, one frame budget, no layout property.
-        'transition-[color,background-color,border-color] duration-[--rv-duration-fast] ease-standard',
+        // duration-(--var) is the CSS-variable form; duration-[--var] emits a bare
+        // `transition-duration: --rv-duration-fast`, which is invalid and silently
+        // drops the transition. Do not "tidy" the parentheses into brackets.
+        'transition-[color,background-color,border-color] duration-(--rv-duration-fast) ease-standard',
         // Never opacity: 0.5 — that drags the contrast ratio below the disabled exemption.
         'disabled:cursor-not-allowed disabled:text-ink-disabled disabled:border-line',
         VARIANT[variant],

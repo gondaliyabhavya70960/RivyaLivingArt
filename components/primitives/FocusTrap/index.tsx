@@ -24,9 +24,20 @@ import * as React from 'react'
  * THE CYCLE. Tab from the last tabbable goes to the first, Shift+Tab from the first goes to
  * the last, in DOM order. Positive `tabindex` values are not honoured, because they are a
  * defect anywhere in this system — a control that needs to come earlier moves earlier in the
- * DOM. Anything focusable only programmatically (`tabindex="-1"`), disabled, `hidden`,
- * `aria-hidden` or inside an `inert` subtree is skipped, which is the same set the browser
- * itself skips.
+ * DOM. Anything focusable only programmatically (`tabindex="-1"`) or disabled is skipped,
+ * as is anything inside a `hidden`, `aria-hidden="true"` or `inert` subtree — the tests are
+ * ancestor-aware, not element-only, because that is the set the browser itself skips. A
+ * control under a `hidden` wrapper is not focusable at all: `focus()` on it is a no-op in a
+ * real browser (jsdom obliges, which is why an element-only test looks like it passes), so
+ * treating it as the first tabbable leaves the keyboard on `<body>` — outside the trap, with
+ * the next Tab walking into the page behind.
+ *
+ * NESTING. Traps compose: §11 anticipates "a filter drawer behind a confirm", and both
+ * surfaces portal to `<body>`, so the two containers are siblings rather than ancestors and
+ * neither can see the other by DOM position. `TRAP_STACK` is the register that orders them.
+ * Only the trap on top of it pulls stray focus back or cycles Tab; every trap below defers.
+ * Without that, two guards each yank focus into their own container, each `focus()` firing
+ * the other's `focusin`, until the stack overflows — a crash, not a degradation.
  *
  * THE EMPTY CASE, WHICH IS THE ONE THAT BITES. A trap can legitimately contain nothing
  * tabbable: a confirm dialog rendered a frame before its buttons, a drawer whose content is
@@ -76,8 +87,13 @@ const FOCUSABLE_SELECTOR = [
 
 function isTabbable(element: HTMLElement): boolean {
   if (element.hasAttribute('disabled')) return false
-  if (element.hasAttribute('hidden')) return false
-  if (element.getAttribute('aria-hidden') === 'true') return false
+  // Ancestor-aware, like the `inert` test below it and unlike an element-only
+  // `hasAttribute` check: `hidden` and `aria-hidden` both apply to a whole subtree, so a
+  // control inside `<div hidden>` is no more tabbable than one carrying the attribute
+  // itself. jsdom will happily focus it; a browser will not, and the difference is a trap
+  // that leaks on the very first Tab.
+  if (element.closest('[hidden]') !== null) return false
+  if (element.closest('[aria-hidden="true"]') !== null) return false
   if (element.closest('[inert]') !== null) return false
   // A control inside a disabled fieldset cannot take focus — a drawer form disabled while
   // it saves (§7.10) is exactly that — and calling focus() on one silently leaves the
@@ -97,6 +113,20 @@ function isTabbable(element: HTMLElement): boolean {
  */
 function tabbablesIn(root: HTMLElement): HTMLElement[] {
   return Array.from(root.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)).filter(isTabbable)
+}
+
+/**
+ * Every active trap's container, innermost last. Module-level because that is the only
+ * scope the two portalled siblings of the nesting case (§11's confirm over a drawer) share
+ * — neither container contains the other, so neither can discover the other by walking the
+ * DOM. Entries are removed by identity rather than popped, so a trap that deactivates out
+ * of order (`active={false}` on the one underneath) takes its own entry and not the top.
+ */
+const TRAP_STACK: HTMLElement[] = []
+
+/** The trap that owns the keyboard right now. Everything below it stands down. */
+function isInnermostTrap(container: HTMLElement): boolean {
+  return TRAP_STACK[TRAP_STACK.length - 1] === container
 }
 
 export interface FocusTrapProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -146,10 +176,21 @@ export const FocusTrap = React.forwardRef<HTMLDivElement, FocusTrapProps>(functi
   // Declared first on purpose — see EFFECT ORDER above.
   React.useEffect(() => {
     if (!active) return
+    const container = containerRef.current
+    if (container === null) return
 
-    function handleFocusIn(event: FocusEvent) {
-      const container = containerRef.current
-      if (container === null) return
+    // Registered before the focus effect below runs, so this trap is already the innermost
+    // one by the time it moves focus into itself and the trap underneath stands down
+    // instead of fighting for it.
+    TRAP_STACK.push(container)
+
+    // An arrow const rather than a hoisted `function`: only this form lets TypeScript keep
+    // the `container !== null` narrowing above across the closure boundary.
+    const handleFocusIn = (event: FocusEvent) => {
+      // Only the innermost trap pulls focus back. Two guards that both claim it are not a
+      // near-miss: each one's focus() fires the other's focusin and the recursion runs the
+      // stack out. See NESTING above.
+      if (!isInnermostTrap(container)) return
       const target = event.target
       if (target instanceof Node && container.contains(target)) return
       // Focus reached something outside without passing through the key handler — a
@@ -159,7 +200,12 @@ export const FocusTrap = React.forwardRef<HTMLDivElement, FocusTrapProps>(functi
     }
 
     document.addEventListener('focusin', handleFocusIn)
-    return () => document.removeEventListener('focusin', handleFocusIn)
+
+    return () => {
+      document.removeEventListener('focusin', handleFocusIn)
+      const index = TRAP_STACK.lastIndexOf(container)
+      if (index !== -1) TRAP_STACK.splice(index, 1)
+    }
   }, [active])
 
   React.useEffect(() => {
@@ -197,6 +243,11 @@ export const FocusTrap = React.forwardRef<HTMLDivElement, FocusTrapProps>(functi
 
     const container = containerRef.current
     if (container === null) return
+    // The same deference the focus guard applies. A trap rendered inside another one's
+    // subtree sees the inner trap's Tab bubble through it as a React synthetic event;
+    // cycling it here would measure the OUTER container's tabbable list — a superset that
+    // reaches past the inner surface — and move focus out of the trap the user is in.
+    if (!isInnermostTrap(container)) return
 
     const tabbables = tabbablesIn(container)
     const first = tabbables[0]

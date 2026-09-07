@@ -12,11 +12,13 @@ import { Reveal } from './Reveal'
  */
 const observed = new Set<Element>()
 let constructed = 0
+let init: IntersectionObserverInit | undefined
 let notify: ((targets: Element[]) => void) | null = null
 
 class FakeIntersectionObserver {
-  constructor(callback: IntersectionObserverCallback) {
+  constructor(callback: IntersectionObserverCallback, options?: IntersectionObserverInit) {
     constructed += 1
+    init = options
     notify = (targets) => {
       callback(
         targets.map((target) => ({ target, isIntersecting: true }) as IntersectionObserverEntry),
@@ -58,6 +60,7 @@ beforeEach(() => {
   observed.clear()
   changeListeners.clear()
   constructed = 0
+  init = undefined
   notify = null
   prefersReduce = false
   vi.stubGlobal('IntersectionObserver', FakeIntersectionObserver)
@@ -231,6 +234,22 @@ describe('Reveal', () => {
     expect(third.style.transitionDelay).toBe('calc(var(--rv-motion-stagger) * 2)')
     // Item 10 shares item 6's delay: the cap is --rv-motion-stagger-max, not the count.
     expect(tenth.style.transitionDelay).toBe('calc(var(--rv-motion-stagger) * 5)')
+  })
+
+  it('waits on the viewport rather than on the element, whatever the element is', () => {
+    render(
+      <Reveal as="section" aria-label="Materials">
+        <p>Resin over reclaimed teak</p>
+      </Reveal>,
+    )
+
+    // jsdom computes no geometry, so the trigger's shape is only observable here — and it
+    // is worth pinning. A `threshold` is a fraction of the ELEMENT's own area, unreachable
+    // for a section taller than the viewport divided by it: such an element would stay
+    // armed at opacity 0 for the whole page view. The negative bottom margin asks the same
+    // question of every element instead — has it cleared the fold — at any height.
+    expect(init?.threshold).toBe(0)
+    expect(init?.rootMargin).toBe('0px 0px -12% 0px')
   })
 
   it('watches every element on the page with one observer, not one each', () => {

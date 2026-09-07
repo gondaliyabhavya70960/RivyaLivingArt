@@ -139,7 +139,10 @@ export const Switch = React.forwardRef<HTMLButtonElement, SwitchProps>(function 
         className={cn(
           'rv-hit-44 relative inline-flex h-6 w-11 shrink-0 items-center rounded-pill border',
           // LIGHT (§4.2): colour and border only on the track, no layout property.
-          'transition-[background-color,border-color] duration-[--rv-duration-fast] ease-standard',
+          // duration-(--var) is the CSS-variable form; duration-[--var] emits a bare
+          // `transition-duration: --rv-duration-fast`, which is invalid and silently
+          // drops the transition. Do not "tidy" the parentheses into brackets.
+          'transition-[background-color,border-color] duration-(--rv-duration-fast) ease-standard',
           trackTone,
         )}
         {...rest}
@@ -148,7 +151,10 @@ export const Switch = React.forwardRef<HTMLButtonElement, SwitchProps>(function 
           aria-hidden="true"
           className={cn(
             'ml-px size-5 rounded-pill',
-            'transition-transform duration-[--rv-duration-fast] ease-standard',
+            // duration-(--var) is the CSS-variable form; duration-[--var] emits a bare
+            // `transition-duration: --rv-duration-fast`, which is invalid and silently
+            // drops the transition. Do not "tidy" the parentheses into brackets.
+            'transition-transform duration-(--rv-duration-fast) ease-standard',
             'motion-reduce:transition-none',
             on ? 'translate-x-5' : 'translate-x-0',
             thumbTone,

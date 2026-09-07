@@ -21,8 +21,8 @@ import { asTag } from '@/lib/ui/polymorphic'
  * those entities, each of which knows its own minimum. This primitive stays the column
  * grid, and a card rail is not built by bending it.
  *
- * See Stack for why `gap` is a union of §5.1 steps and why a list element gets an
- * explicit `role`.
+ * See Stack for why `gap` is a union of §5.1 steps, why `ul` alone gets an explicit
+ * `role`, and why an `ol` is left to render its own numbers.
  */
 export type GridGap = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 8 | 10 | 12 | 16 | 20
 
@@ -46,7 +46,8 @@ const GAP: Record<GridGap, string> = {
   20: 'gap-20',
 }
 
-const LIST_ELEMENTS = new Set<GridElement>(['ul', 'ol'])
+/** Only `ul`: see the note above on why an `ol` must keep its markers. */
+const LIST_ELEMENTS = new Set<GridElement>(['ul'])
 
 export interface GridProps extends React.HTMLAttributes<HTMLElement> {
   as?: GridElement

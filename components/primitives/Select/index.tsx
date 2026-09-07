@@ -40,7 +40,10 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(function 
           'peer w-full appearance-none rounded-sm border bg-surface-raised text-ink',
           'h-11 pr-11 pl-4 text-base',
           // LIGHT (§4.2): colour and border only, never a layout property.
-          'transition-[color,background-color,border-color] duration-[--rv-duration-fast] ease-standard',
+          // duration-(--var) is the CSS-variable form; duration-[--var] emits a bare
+          // `transition-duration: --rv-duration-fast`, which is invalid and silently
+          // drops the transition. Do not "tidy" the parentheses into brackets.
+          'transition-[color,background-color,border-color] duration-(--rv-duration-fast) ease-standard',
           'focus:border-ink-accent',
           // Full opacity, never opacity-50 — that drags the ratio below the §2.6 exemption.
           'disabled:cursor-not-allowed disabled:border-line disabled:text-ink-disabled',

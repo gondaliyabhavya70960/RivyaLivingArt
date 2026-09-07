@@ -16,34 +16,39 @@ import { cn } from '@/lib/ui/cn'
  * `Home`/`End` jumping to the first and last. Those four keys `preventDefault()` so the
  * page does not scroll underneath the focus they just moved.
  *
- * MANUAL ACTIVATION IS THE DEFAULT, and it is a deliberate departure from the one line in
- * §11's table that reads "arrow keys move and activate". Automatic activation is hostile
- * the moment a panel costs anything to render — arrowing from the first tab to the fourth
- * mounts three panels nobody asked for, and on a slow device the focus ring outruns the
- * paint. So `ArrowLeft`/`ArrowRight` move focus, and `Enter` or `Space` activates. Both
- * come free from the `<button>` element; there is no key handler here for either, which is
- * one less thing to get wrong. §11's behaviour is still reachable — `activation="automatic"`
- * — for a strip of three cheap panels where following focus genuinely reads better.
+ * AUTOMATIC ACTIVATION IS THE DEFAULT, because that is what §11's table and RC-203's
+ * accessibility row both promise: "arrow keys move and activate". Selection follows focus,
+ * so a keyboard reader walking the strip meets each panel as they arrive at its tab and
+ * never has to learn a second key. `Enter` and `Space` activate too — both come free from
+ * the `<button>` element, and there is no key handler here for either, which is one less
+ * thing to get wrong. Where a panel is expensive enough that following focus would mount
+ * work nobody asked for, `activation="manual"` moves focus and waits for `Enter`/`Space`;
+ * APG sanctions both, and the cost of a panel is knowledge only the consumer has.
  *
  * EVERY PANEL EXISTS; ONLY THE SELECTED ONE HAS CONTENT. `aria-controls` on a tab must
  * point at an element that is actually in the document, so all panels are rendered and the
  * unselected ones carry `hidden` (which removes them from the accessibility tree and from
- * find-in-page). Their CHILDREN are not rendered, so manual activation keeps the promise it
- * made above: an expensive panel is mounted when it is selected and not before. The empty
- * hidden div left behind costs nothing and keeps every `aria-controls` reference valid,
- * which is what an axe pass checks.
+ * find-in-page). Their CHILDREN are not rendered, so an unvisited panel costs nothing until
+ * it is selected — and under `activation="manual"` it costs nothing until it is chosen. The
+ * empty hidden div left behind keeps every `aria-controls` reference valid, which is what an
+ * axe pass checks.
  *
  * PANELS ARE `tabIndex={-1}`, as §11 requires — "focusable as a group". That is a narrower
  * contract than APG's suggestion of `0` for a panel with no focusable content, and it is
  * the design system's call to make: the panel can be focused programmatically (by a
  * consumer that wants to send the reader into it) but never appears in the tab sequence.
  *
- * MOTION. The panel swap is `--rv-duration-instant` — nothing to implement, because
- * nothing animates. The indicator transitions colour over `--rv-duration-quick` (180ms),
- * which is the LIGHT class: §4.2 keeps colour changes under reduced motion because they
- * are not motion. The indicator is drawn per tab rather than as one bar that travels,
- * because a travelling bar has to be positioned from each tab's measured box and §4.2
- * permits no JS-measured pixels; the 180ms belongs to the colour instead.
+ * MOTION. The panel swap is `--rv-duration-instant` — nothing to implement, because nothing
+ * animates. The indicator is drawn per tab and transitions COLOUR over `--rv-duration-quick`
+ * (180ms); it is not one bar that travels. §11 and RC-203 both describe it as sliding, and
+ * that phrase cannot be honoured as written: a travelling bar is a `transform` driven by each
+ * tab's measured box, while 180ms is `--rv-duration-quick`, which puts it in the LIGHT class,
+ * and LIGHT permits colour, border, opacity and shadow and no transform at all (§4.2). The
+ * colour transition is the branch that satisfies §4.2, so it is the one that ships; the word
+ * "slides" in §11 and RC-203 is the half that wants amending, and neither file is this
+ * component's to edit. RC-203's "indicator does not slide under reduced motion" is satisfied
+ * a fortiori by an indicator that never slides, and §4.2 exempts colour from the reduced-motion
+ * branch outright, so there is no second branch to render here.
  *
  * NO COPY (§2 rule 2). `label` — the tab list's accessible name — and every tab's label
  * and panel content arrive as data.
@@ -78,12 +83,25 @@ export interface TabsProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'd
   value?: string
   defaultValue?: string
   onValueChange?: (id: string) => void
-  /** `manual` (default) moves focus and waits for `Enter`/`Space`. See the note above. */
+  /**
+   * `automatic` (default, per §11 and RC-203) selects whichever tab the arrow keys move to.
+   * `manual` moves focus only and waits for `Enter`/`Space` — worth opting into when a panel
+   * is expensive enough that following focus would mount work nobody asked for.
+   */
   activation?: TabsActivation
 }
 
 export const Tabs = React.forwardRef<HTMLDivElement, TabsProps>(function Tabs(
-  { items, label, value, defaultValue, onValueChange, activation = 'manual', className, ...rest },
+  {
+    items,
+    label,
+    value,
+    defaultValue,
+    onValueChange,
+    activation = 'automatic',
+    className,
+    ...rest
+  },
   ref,
 ) {
   const baseId = React.useId()

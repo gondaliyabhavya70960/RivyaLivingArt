@@ -27,6 +27,19 @@ describe('Cluster', () => {
     expect(screen.getByTestId('cluster')).not.toHaveAttribute('role')
   })
 
+  it('leaves an ordered list to number itself, and still names it', () => {
+    render(
+      <Cluster as="ol" aria-label="Commission steps" data-testid="steps">
+        <li>Enquire</li>
+        <li>Design</li>
+      </Cluster>,
+    )
+    // `ol` already exposes role="list"; setting it would only match base.css's
+    // `ol[role='list']` arm and strip the markers that carry the order.
+    expect(screen.getByRole('list', { name: 'Commission steps' })).toBeInTheDocument()
+    expect(screen.getByTestId('steps')).not.toHaveAttribute('role')
+  })
+
   it('leaves the controls it wraps individually focusable in source order', async () => {
     render(
       <Cluster justify="start" gap={3}>

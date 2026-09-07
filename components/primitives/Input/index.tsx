@@ -16,13 +16,21 @@ export type InputSize = 'sm' | 'md'
 
 /**
  * `sm` is the Studio dense-table box, and it is 36px only where there is a pointer.
- * Below --rv-bp-md it stays 44px at text-base, for two reasons that are not negotiable:
+ * Everywhere else it stays 44px at text-base, for two reasons that are not negotiable:
  * a control under 44px fails FEAT §48's touch minimum, and type under 16px makes iOS
  * Safari zoom the page on focus. An <input> is a replaced element and cannot carry the
  * ::before that `rv-hit-44` uses, so the height itself has to earn the hit box.
+ *
+ * The gate is `pointer-fine` — `@media (pointer: fine)` — and NOT a width breakpoint.
+ * `md:` asks how wide the viewport is, which is not the question: an iPad in landscape,
+ * a Surface and a touch laptop are all ≥ 768px and all finger-driven, and `md:h-9` shrank
+ * the box for every one of them. `pointer: fine` asks whether the primary input device is
+ * a cursor, which is the condition the 36px box actually depends on. Select (§7.6)
+ * declines to offer `sm` at all for the same replaced-element reason; this is that rule
+ * honoured rather than contradicted.
  */
 const SIZE: Record<InputSize, string> = {
-  sm: 'h-11 text-base md:h-9 md:text-sm',
+  sm: 'h-11 text-base pointer-fine:h-9 pointer-fine:text-sm',
   md: 'h-11 text-base',
 }
 
@@ -32,7 +40,7 @@ function isInvalid(value: React.AriaAttributes['aria-invalid']): boolean {
 }
 
 export interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size'> {
-  /** Visual size. `sm` is the Studio dense-table box (§7.5), desktop only. */
+  /** Visual size. `sm` is the Studio dense-table box (§7.5); 36px on pointer devices only. */
   size?: InputSize
 }
 

@@ -20,12 +20,27 @@ describe('Stack', () => {
 
   it('names the list from the caller so it is announced as something', () => {
     render(
-      <Stack as="ol" aria-label="Commission steps">
+      <Stack as="ul" aria-label="Materials">
+        <li>Walnut</li>
+        <li>Resin</li>
+      </Stack>,
+    )
+    expect(screen.getByRole('list', { name: 'Materials' })).toBeInTheDocument()
+  })
+
+  it('leaves an ordered list to number itself, and still names it', () => {
+    render(
+      <Stack as="ol" aria-label="Commission steps" data-testid="steps">
         <li>Enquire</li>
         <li>Design</li>
       </Stack>,
     )
+    // An `ol` is already exposed as a list, so the attribute would buy assistive tech
+    // nothing — and it would match base.css's `ol[role='list']` arm, stripping the
+    // markers that are the ordinal information the element exists to carry.
     expect(screen.getByRole('list', { name: 'Commission steps' })).toBeInTheDocument()
+    expect(screen.getAllByRole('listitem')).toHaveLength(2)
+    expect(screen.getByTestId('steps')).not.toHaveAttribute('role')
   })
 
   it('does not invent a role for an element that is not a list', () => {

@@ -107,7 +107,10 @@ export const Breadcrumbs = React.forwardRef<HTMLElement, BreadcrumbsProps>(funct
                   className={cn(
                     'rv-hit-44 inline-flex items-center underline decoration-1',
                     'hover:text-ink hover:decoration-2',
-                    'transition-[color,text-decoration-thickness] duration-[--rv-duration-fast] ease-standard',
+                    // duration-(--var) is the CSS-variable form; duration-[--var] emits a
+                    // bare `transition-duration: --rv-duration-fast`, which is invalid and
+                    // silently drops the transition. Do not "tidy" these into brackets.
+                    'transition-[color,text-decoration-thickness] duration-(--rv-duration-fast) ease-standard',
                   )}
                 >
                   {item.label}

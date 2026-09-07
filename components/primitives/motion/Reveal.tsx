@@ -50,10 +50,20 @@ export interface RevealProps extends React.HTMLAttributes<HTMLElement> {
 const STAGGER_MAX = 6
 
 /**
- * Enough of a tall element must be in view to count as arrived, but not so much that a
- * section taller than the viewport can never reach it.
+ * ARRIVAL IS MEASURED AGAINST THE VIEWPORT, NEVER AGAINST THE ELEMENT. A negative bottom
+ * root margin shrinks the observer's root by 12% of the viewport height, so an element
+ * counts as arrived only once it has climbed clear of the fold by that much — the same
+ * rule, and the same feel, for a 40px caption and a 6000px section.
+ *
+ * A `threshold` cannot express this, and reaching for one is the trap. `intersectionRatio`
+ * is a fraction of the TARGET's area, so any ratio large enough to mean "properly in view"
+ * is unreachable for an element taller than viewport ÷ ratio — 0.15 is already impossible
+ * past ~5300px on a 1440×800 desktop, ordinary for `as="section"` — and that element would
+ * sit armed at `opacity: 0` for the rest of the page view, which is exactly the permanent
+ * failure the docblock above says this component exists to avoid. Hence `threshold: 0`
+ * with the gate on `isIntersecting`: the root does the measuring, and height drops out.
  */
-const THRESHOLD = 0.15
+const ROOT_MARGIN = '0px 0px -12% 0px'
 
 /**
  * Arming carries NO transition, so the hide is instantaneous: an element that faded out
@@ -94,7 +104,7 @@ function observeOnce(node: Element, settle: () => void): () => void {
         run?.()
       }
     },
-    { threshold: THRESHOLD },
+    { threshold: 0, rootMargin: ROOT_MARGIN },
   )
   settlers.set(node, settle)
   observer.observe(node)

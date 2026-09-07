@@ -417,7 +417,12 @@ export const Dialog = React.forwardRef<HTMLElement, DialogProps>(function Dialog
           }}
           {...rest}
         >
-          <header className="flex items-start justify-between gap-4 p-6 pb-4">
+          {/* A <div>, not a <header>: `role="dialog"` is neither sectioning content nor a
+              sectioning root, so a <header> inside it is still scoped to <body> and maps to
+              `banner` (HTML-AAM) — a second, nested landmark on every page that has a site
+              header. The accessible name comes from `aria-labelledby`, so the element type
+              carries nothing. */}
+          <div className="flex items-start justify-between gap-4 p-6 pb-4">
             <div className="flex flex-col gap-2">
               <Heading id={headingId} level={titleLevel} size="display-xs">
                 {title}
@@ -431,7 +436,7 @@ export const Dialog = React.forwardRef<HTMLElement, DialogProps>(function Dialog
             <IconButton aria-label={closeLabel} onClick={onClose}>
               {CloseGlyph}
             </IconButton>
-          </header>
+          </div>
           {/* `min-h-0` so this box may shrink inside the capped column; without it a flex
               item refuses to go below its content height and the panel overflows instead
               of scrolling. */}

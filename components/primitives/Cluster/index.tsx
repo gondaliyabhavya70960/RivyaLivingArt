@@ -19,7 +19,8 @@ import { asTag } from '@/lib/ui/polymorphic'
  * than the boxes being centred on one another.
  *
  * See Stack for why `gap` is a union of the §5.1 steps rather than a number, why each
- * class name is written out in full, and why a list element gets an explicit `role`.
+ * class name is written out in full, and why `ul` alone gets an explicit `role` while an
+ * `ol` is left to render its own numbers.
  */
 export type ClusterGap = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 8 | 10 | 12 | 16 | 20
 export type ClusterAlign = 'start' | 'center' | 'end' | 'baseline' | 'stretch'
@@ -57,7 +58,8 @@ const JUSTIFY: Record<ClusterJustify, string> = {
   between: 'justify-between',
 }
 
-const LIST_ELEMENTS = new Set<ClusterElement>(['ul', 'ol'])
+/** Only `ul`: see the note above on why an `ol` must keep its markers. */
+const LIST_ELEMENTS = new Set<ClusterElement>(['ul'])
 
 export interface ClusterProps extends React.HTMLAttributes<HTMLElement> {
   as?: ClusterElement

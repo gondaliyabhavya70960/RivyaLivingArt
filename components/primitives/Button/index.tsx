@@ -48,7 +48,11 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(function 
       className={cn(
         'relative inline-flex items-center justify-center gap-2 rounded-sm',
         'font-medium whitespace-nowrap',
-        'transition-[color,background-color,border-color] duration-[--rv-duration-fast] ease-standard',
+        // Parentheses, not brackets. In Tailwind 4 `duration-[--rv-duration-fast]` is an
+        // arbitrary VALUE and compiles to `transition-duration: --rv-duration-fast`, which is
+        // invalid CSS the browser drops — leaving no transition at all, silently.
+        // `duration-(--rv-duration-fast)` is the variable reference and compiles to `var(...)`.
+        'transition-[color,background-color,border-color] duration-(--rv-duration-fast) ease-standard',
         // Never opacity: 0.5 — that drags the contrast ratio below the disabled exemption.
         'disabled:cursor-not-allowed disabled:text-ink-disabled disabled:border-line',
         VARIANT[variant],

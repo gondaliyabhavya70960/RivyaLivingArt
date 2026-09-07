@@ -41,6 +41,29 @@ const panel = (
   </>
 )
 
+/**
+ * §11's composition: a confirm opened over a filter drawer. Both surfaces portal to
+ * <body>, so the two containers are SIBLINGS — neither contains the other — which is
+ * exactly the arrangement that has each trap's guard pulling focus out of the other's.
+ * Rendered as siblings here for the same reason the portals produce siblings there.
+ */
+function DrawerWithConfirm({ confirmOpen }: { confirmOpen: boolean }) {
+  return (
+    <div>
+      <FocusTrap>
+        <button type="button">Apply filters</button>
+        <button type="button">Clear all</button>
+      </FocusTrap>
+      {confirmOpen ? (
+        <FocusTrap>
+          <button type="button">Delete permanently</button>
+          <button type="button">Keep it</button>
+        </FocusTrap>
+      ) : null}
+    </div>
+  )
+}
+
 describe('FocusTrap', () => {
   it('moves focus to the first tabbable when it opens', () => {
     render(<Harness open>{panel}</Harness>)
@@ -105,6 +128,40 @@ describe('FocusTrap', () => {
       </Harness>,
     )
     expect(screen.getByRole('button', { name: 'Close' })).toHaveFocus()
+  })
+
+  it('does not open onto a control inside a hidden subtree', () => {
+    render(
+      <Harness open>
+        <div hidden>
+          <button type="button">Edit the draft</button>
+        </div>
+        <button type="button">Close</button>
+      </Harness>,
+    )
+    // A browser refuses focus() on a display:none control, so treating it as the first
+    // tabbable would leave the keyboard on <body> and the next Tab would walk into the
+    // page behind. jsdom permits the call, which is why this asserts where focus LANDED.
+    expect(screen.getByRole('button', { name: 'Close' })).toHaveFocus()
+  })
+
+  it('skips a control inside an aria-hidden subtree when it cycles', async () => {
+    render(
+      <Harness open>
+        <button type="button">Cancel</button>
+        <button type="button">Save changes</button>
+        <div aria-hidden="true">
+          <button type="button">Decorative control</button>
+        </div>
+      </Harness>,
+    )
+    screen.getByRole('button', { name: 'Save changes' }).focus()
+
+    await userEvent.tab()
+
+    // Save changes is the LAST tabbable, so Tab wraps. If the aria-hidden button counted,
+    // the wrap would happen one control later and focus would land on it instead.
+    expect(screen.getByRole('button', { name: 'Cancel' })).toHaveFocus()
   })
 
   it('holds focus without throwing when there is nothing tabbable inside', async () => {
@@ -177,5 +234,36 @@ describe('FocusTrap', () => {
     await userEvent.tab()
 
     expect(screen.getByRole('link', { name: 'Back to the collection' })).toHaveFocus()
+  })
+
+  it('gives the keyboard to the trap opened over it, and cycles inside that one', async () => {
+    render(<DrawerWithConfirm confirmOpen />)
+
+    expect(screen.getByRole('button', { name: 'Delete permanently' })).toHaveFocus()
+
+    await userEvent.tab()
+    expect(screen.getByRole('button', { name: 'Keep it' })).toHaveFocus()
+
+    // The wrap is the confirm's, not the drawer's: neither of the drawer's controls may
+    // take the keyboard while a surface sits on top of them.
+    await userEvent.tab()
+    expect(screen.getByRole('button', { name: 'Delete permanently' })).toHaveFocus()
+    expect(screen.getByRole('button', { name: 'Apply filters' })).not.toHaveFocus()
+    expect(screen.getByRole('button', { name: 'Clear all' })).not.toHaveFocus()
+  })
+
+  it('takes the keyboard back when the trap above it goes away', async () => {
+    const { rerender } = render(<DrawerWithConfirm confirmOpen />)
+    expect(screen.getByRole('button', { name: 'Delete permanently' })).toHaveFocus()
+
+    rerender(<DrawerWithConfirm confirmOpen={false} />)
+
+    expect(screen.getByRole('button', { name: 'Apply filters' })).toHaveFocus()
+
+    await userEvent.tab()
+    expect(screen.getByRole('button', { name: 'Clear all' })).toHaveFocus()
+
+    await userEvent.tab()
+    expect(screen.getByRole('button', { name: 'Apply filters' })).toHaveFocus()
   })
 })

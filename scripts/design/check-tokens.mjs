@@ -92,6 +92,20 @@ const RGB = /\brgba?\s*\(/
 const ARBITRARY =
   /\b(?:bg|text|border|p|px|py|pt|pb|pl|pr|m|mx|my|gap|w|h|size|top|left|right|bottom|inset|rounded|shadow|z)-\[[^\]]+\]/
 
+/**
+ * `utility-[--var]` is a silent invalid-CSS producer, and the nastiest bug this file catches.
+ *
+ * In Tailwind 4 the bracket form is an arbitrary VALUE, so `duration-[--rv-duration-fast]`
+ * compiles to `transition-duration: --rv-duration-fast` — invalid CSS the browser drops. The
+ * result is no transition at all, reported by nothing: not typecheck, not lint, not the unit
+ * tests, and not check-utilities, which skips arbitrary values by design so one violation is
+ * not reported by two gates. The variable reference is the parenthesis form,
+ * `duration-(--rv-duration-fast)`, which compiles to `var(--rv-duration-fast)`.
+ *
+ * It was present in nine components at once, which is why it is a gate and not a review note.
+ */
+const BRACKET_VAR = /[a-z-]+-\[--[a-zA-Z0-9-]+\]/
+
 for (const file of SCAN_DIRS.flatMap((d) => walk(join(ROOT, d)))) {
   const rel = relative(ROOT, file)
   if (rel.split(sep).slice(0, 2).join('/') === 'app/styles') continue
@@ -112,6 +126,14 @@ for (const file of SCAN_DIRS.flatMap((d) => walk(join(ROOT, d)))) {
       const arb = code.match(ARBITRARY)
       if (arb)
         problems.push(`${where}  arbitrary Tailwind value ${arb[0]} bypasses the token scale`)
+      const bracketVar = code.match(BRACKET_VAR)
+      if (bracketVar) {
+        const fixed = bracketVar[0].replace('[', '(').replace(']', ')')
+        problems.push(
+          `${where}  ${bracketVar[0]} is an arbitrary value, not a variable reference — it ` +
+            `compiles to invalid CSS the browser drops silently. Use ${fixed}`,
+        )
+      }
     })
 }
 

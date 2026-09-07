@@ -54,7 +54,10 @@ export const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(functi
             'checked:border-surface-accent checked:bg-surface-accent',
             // LIGHT (§4.2): colour and border only. The tick itself is instant
             // (--rv-duration-instant, §4.1) — a checkbox must feel mechanical.
-            'transition-[background-color,border-color] duration-[--rv-duration-fast] ease-standard',
+            // duration-(--var) is the CSS-variable form; duration-[--var] emits a bare
+            // `transition-duration: --rv-duration-fast`, which is invalid and silently
+            // drops the transition. Do not "tidy" the parentheses into brackets.
+            'transition-[background-color,border-color] duration-(--rv-duration-fast) ease-standard',
             // Disabled is a full-opacity swap, never opacity-50: a checked-and-disabled
             // box keeps a legible mark (surface-raised on ink-disabled, ≥ 4.3:1 in all
             // three schemes) instead of fading below the §2.6 exemption.

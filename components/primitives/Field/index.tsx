@@ -9,7 +9,7 @@ import { ErrorText } from '@/components/primitives/ErrorText'
  *
  *   <Label htmlFor={id} required>       label / 500 / --rv-ink-primary
  *   <HelpText id={helpId}>              text-sm / --rv-ink-tertiary   (ABOVE the control)
- *   {control aria-describedby="helpId errorId" aria-invalid}
+ *   {control aria-describedby="helpId errorId" aria-invalid aria-required}
  *   <ErrorText id={errorId} role=alert> text-sm / --rv-state-danger + icon   (BELOW)
  *
  * MECHANISM — `useId` + `cloneElement`, deliberately not React context. `createContext`
@@ -26,24 +26,33 @@ import { ErrorText } from '@/components/primitives/ErrorText'
  * collapsing against it.
  */
 
-/** The only props Field injects. Kept narrow so cloning cannot smuggle anything else in. */
+/**
+ * The only props Field injects. Kept narrow so cloning cannot smuggle anything else in.
+ *
+ * `aria-required` rather than the native `required` attribute, for three reasons. Field
+ * wraps whatever control it is handed — Input, Textarea, Select, but also Switch, which is
+ * a <button role="switch"> where `required` is not a valid attribute at all. Field's whole
+ * injected contract is already ARIA state (`aria-invalid` carries invalid, not the native
+ * constraint API), and one model is easier to reason about than two. And native `required`
+ * would switch browser validation bubbles on for every form in the product, which §7.10
+ * does not describe: an inquiry is validated on the way to being persisted, and the answer
+ * comes back as an `error` rendered by ErrorText. A control that genuinely wants native
+ * constraint validation still passes `required` itself and cloneElement leaves it alone.
+ */
 type ControlProps = {
   id?: string
   'aria-describedby'?: string
   'aria-invalid'?: React.AriaAttributes['aria-invalid']
+  'aria-required'?: React.AriaAttributes['aria-required']
 }
 
-export interface FieldProps extends React.HTMLAttributes<HTMLDivElement> {
+interface FieldOwnProps extends React.HTMLAttributes<HTMLDivElement> {
   /** The visible label. Content, so it is a prop — never a literal in a component. */
   label: React.ReactNode
   /** Format hint, rendered above the control and linked by aria-describedby. */
   help?: React.ReactNode
   /** The error message. Its presence is what makes the field invalid; there is no flag. */
   error?: React.ReactNode
-  /** Marks the field required. Renders `requiredLabel` in the label (§7.4). */
-  required?: boolean
-  /** The word used as the required marker, e.g. "Required". From `global_content`. */
-  requiredLabel?: string
   /**
    * id for the CONTROL. Defaults to the control's own id, then to a generated one.
    * `id` in ...rest lands on the wrapper, as it would on any div.
@@ -52,6 +61,34 @@ export interface FieldProps extends React.HTMLAttributes<HTMLDivElement> {
   /** Exactly one control element — an Input, a Textarea, a Select. */
   children: React.ReactNode
 }
+
+/**
+ * `required` and `requiredLabel` travel together, enforced by the type rather than by a
+ * review comment. §7.4 marks a required field with the WORD, and §2 rule 2 says the word
+ * is content that arrives from `global_content`; Label therefore renders no marker at all
+ * without it. Left as two independent optional props, `<Field required>` compiled fine and
+ * shipped a field a sighted visitor could not tell apart from an optional one.
+ *
+ * The `required: boolean` member — rather than the narrower `required: true` — is what
+ * keeps `required={schema.isRequired}` assignable: a boolean-typed variable matches no
+ * literal-typed member, and a type that only accepts the constant is a type people work
+ * around with a cast.
+ */
+type RequiredMarker =
+  | {
+      /** Marks the field required. Renders `requiredLabel` in the label (§7.4). */
+      required?: false | undefined
+      /** The word used as the required marker, e.g. "Required". From `global_content`. */
+      requiredLabel?: string
+    }
+  | {
+      /** Marks the field required. Renders `requiredLabel` in the label (§7.4). */
+      required: boolean
+      /** The word used as the required marker, e.g. "Required". From `global_content`. */
+      requiredLabel: string
+    }
+
+export type FieldProps = FieldOwnProps & RequiredMarker
 
 export const Field = React.forwardRef<HTMLDivElement, FieldProps>(function Field(
   { label, help, error, required = false, requiredLabel, controlId, className, children, ...rest },
@@ -85,6 +122,9 @@ export const Field = React.forwardRef<HTMLDivElement, FieldProps>(function Field
             id,
             'aria-describedby': describedBy === '' ? undefined : describedBy,
             'aria-invalid': hasError ? true : control.props['aria-invalid'],
+            // The word in the label is the visible half of WCAG 3.3.2; this is the half
+            // assistive tech reads. Neither one substitutes for the other.
+            'aria-required': required ? true : control.props['aria-required'],
           })
         : children}
       {hasError ? <ErrorText id={errorId}>{error}</ErrorText> : null}

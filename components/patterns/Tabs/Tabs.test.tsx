@@ -43,8 +43,21 @@ describe('Tabs', () => {
     expect(screen.getByRole('button', { name: 'After the tabs' })).toHaveFocus()
   })
 
-  it('moves focus with the arrow keys without activating (manual activation)', async () => {
+  it('selects the tab the arrow keys move to, by default', async () => {
     render(<Tabs items={ITEMS} label="Product details" />)
+
+    await userEvent.tab()
+    await userEvent.keyboard('{ArrowRight}')
+
+    expect(screen.getByRole('tab', { name: 'Materials' })).toHaveFocus()
+    expect(screen.getByRole('tab', { name: 'Materials' })).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getByRole('tabpanel', { name: 'Materials' })).toHaveTextContent(
+      'Black walnut, bio-resin, brass inlay.',
+    )
+  })
+
+  it('moves focus without activating when activation is manual', async () => {
+    render(<Tabs items={ITEMS} label="Product details" activation="manual" />)
 
     await userEvent.tab()
     await userEvent.keyboard('{ArrowRight}')
@@ -55,8 +68,8 @@ describe('Tabs', () => {
     expect(screen.getByRole('tabpanel', { name: 'Overview' })).toBeInTheDocument()
   })
 
-  it('activates the focused tab on Enter and on Space', async () => {
-    render(<Tabs items={ITEMS} label="Product details" />)
+  it('activates the focused tab on Enter and on Space under manual activation', async () => {
+    render(<Tabs items={ITEMS} label="Product details" activation="manual" />)
 
     await userEvent.tab()
     await userEvent.keyboard('{ArrowRight}{Enter}')
@@ -85,16 +98,6 @@ describe('Tabs', () => {
     expect(screen.getByRole('tab', { name: 'Overview' })).toHaveFocus()
   })
 
-  it('follows focus when activation is automatic', async () => {
-    render(<Tabs items={ITEMS} label="Product details" activation="automatic" />)
-
-    await userEvent.tab()
-    await userEvent.keyboard('{ArrowRight}')
-
-    expect(screen.getByRole('tab', { name: 'Materials' })).toHaveAttribute('aria-selected', 'true')
-    expect(screen.getByRole('tabpanel', { name: 'Materials' })).toBeInTheDocument()
-  })
-
   it('skips a disabled tab and never selects one', async () => {
     const items: readonly TabItem[] = [
       { id: 'overview', label: 'Overview', content: 'One' },
@@ -108,6 +111,9 @@ describe('Tabs', () => {
     await userEvent.tab()
     await userEvent.keyboard('{ArrowRight}')
     expect(screen.getByRole('tab', { name: 'Care' })).toHaveFocus()
+    // Arrowing selects as it moves, and it moved past the disabled tab rather than onto it.
+    expect(screen.getByRole('tab', { name: 'Care' })).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getByRole('tab', { name: 'Materials' })).toHaveAttribute('aria-selected', 'false')
   })
 
   it('reports the tab being selected and leaves a controlled strip alone', async () => {

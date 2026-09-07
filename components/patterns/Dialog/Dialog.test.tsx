@@ -184,4 +184,22 @@ describe('Dialog', () => {
 
     expect(container).not.toHaveAttribute('inert')
   })
+
+  /*
+   * A <header> inside `role="dialog"` is still "scoped to the body" — `dialog` is neither
+   * sectioning content nor a sectioning root and is not in HTML-AAM's exclusion list — so it
+   * maps to `banner`. The panel header was one, which put a second banner landmark inside the
+   * modal on every route that also renders the site header.
+   */
+  it('contributes no landmark of its own to a page that already has a banner', async () => {
+    render(
+      <div>
+        <header>Rivya Living Art</header>
+        <Harness />
+      </div>,
+    )
+    await open()
+
+    expect(screen.getAllByRole('banner')).toHaveLength(1)
+  })
 })

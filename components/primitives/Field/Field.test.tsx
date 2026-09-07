@@ -23,6 +23,24 @@ describe('Field', () => {
     expect(screen.getByRole('textbox', { name: 'Email address Required' })).toBeInTheDocument()
   })
 
+  it('puts the required state on the control, not only the word in the label', () => {
+    render(
+      <Field label="Email address" required requiredLabel="Required">
+        <Input name="email" />
+      </Field>,
+    )
+    expect(screen.getByRole('textbox', { name: /Email address/ })).toBeRequired()
+  })
+
+  it('keeps a required state the control already carried', () => {
+    render(
+      <Field label="Email address">
+        <Input name="email" aria-required />
+      </Field>,
+    )
+    expect(screen.getByRole('textbox', { name: 'Email address' })).toBeRequired()
+  })
+
   it('describes the control with its help text, which precedes the control', () => {
     render(
       <Field label="Telephone" help="Include your country code">
@@ -64,6 +82,7 @@ describe('Field', () => {
     const control = screen.getByRole('textbox', { name: 'Company' })
     expect(control).not.toHaveAttribute('aria-invalid')
     expect(control).not.toHaveAttribute('aria-describedby')
+    expect(control).not.toBeRequired()
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 

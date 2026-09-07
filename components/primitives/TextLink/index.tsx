@@ -67,7 +67,10 @@ export const TextLink = React.forwardRef<HTMLAnchorElement, TextLinkProps>(funct
       className={cn(
         'text-ink-accent underline decoration-1 hover:decoration-2',
         // LIGHT (§4.2): the underline thickens as a paint change, not a layout change.
-        'transition-[text-decoration-thickness] duration-[--rv-duration-fast] ease-standard',
+        // duration-(--var) is the CSS-variable form; duration-[--var] emits a bare
+        // `transition-duration: --rv-duration-fast`, which is invalid and silently
+        // drops the transition. Do not "tidy" the parentheses into brackets.
+        'transition-[text-decoration-thickness] duration-(--rv-duration-fast) ease-standard',
         className,
       )}
       {...rest}

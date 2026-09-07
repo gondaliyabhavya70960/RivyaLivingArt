@@ -42,10 +42,26 @@ import { AspectBox, type AspectBoxProps } from '@/components/primitives/AspectBo
  * content. There is no bridged utility for the gradient, so it is read from the token
  * directly in `style`, exactly as Container reads `--rv-gutter` (§5.3).
  *
+ * It paints only when there IS media. The veil protects overlay ink from a photograph; with
+ * no photograph the only thing under it is the fallback label, and darkening that is the
+ * exact opposite of what the veil is for. At the label's vertical midpoint the gradient is
+ * roughly 0.385 alpha of obsidian, which takes secondary ink on DEEP's well from 10.42:1
+ * (§2.6) to about 4.4:1 — under AA at the label's `text-sm` — and further still on a second
+ * wrapped line nearer the opaque foot. Gating it on `hasMedia` is what keeps the AA claim
+ * above true in both states rather than only in the one the docstring was written for.
+ *
  * STACKING WITHOUT A Z-INDEX. Media, then veil, then overlay, in DOM order. Positioned
  * elements paint above in-flow ones and later siblings above earlier ones, so the three
  * layers stack correctly with no `z-index` at all — which is right, because §5.6's scale
  * is for whole layers of the interface and a frame is not one of them.
+ *
+ * THE OVERLAY IS INSET, AND THAT IS A FOCUS DECISION. AspectBox clips (`overflow-hidden`),
+ * and §2.10 draws every `:focus-visible` ring 2px OUTSIDE its control — AspectBox's own
+ * contract names the hazard and hands the inset to whoever frames the media. That is this
+ * component, so the overlay carries `--rv-space-4` off all three clipping edges and a play
+ * control or a link at the foot of a hero keeps a whole ring. It is not a prop: a caller
+ * who could set it to zero would ship a clipped indicator, and padding the overlay's own
+ * content is still theirs to add on top.
  *
  * Media is square-cornered: `--rv-radius-0` per §6.1, on every image in every card and
  * gallery. "A rounded photograph of a resin table reads as a web widget."
@@ -56,7 +72,11 @@ export interface MediaFrameProps extends AspectBoxProps {
    * (`error.media_unavailable.label`), never a string written in a component.
    */
   fallbackLabel: string
-  /** Paints `--rv-media-veil` over the media. Set it whenever text sits on the frame. */
+  /**
+   * Paints `--rv-media-veil` over the media. Set it whenever text sits on the frame. It is
+   * ignored in the fallback state: there is no photograph to protect the ink from, and the
+   * gradient would only drag `fallbackLabel` under AA.
+   */
   veil?: boolean
   /** Content that sits above the veil — a caption, an eyebrow, a play control. */
   overlay?: React.ReactNode
@@ -80,7 +100,7 @@ export const MediaFrame = React.forwardRef<HTMLElement, MediaFrameProps>(functio
         </div>
       )}
 
-      {veil ? (
+      {veil && hasMedia ? (
         <span
           aria-hidden="true"
           className="pointer-events-none absolute inset-0"
@@ -90,8 +110,10 @@ export const MediaFrame = React.forwardRef<HTMLElement, MediaFrameProps>(functio
 
       {/* Anchored to the foot of the frame rather than stretched across it: the veil is
           bottom-weighted for exactly this content, and a full-bleed layer would swallow
-          pointer events over media it does not cover. */}
-      {overlay ? <div className="absolute inset-x-0 bottom-0">{overlay}</div> : null}
+          pointer events over media it does not cover. The inset is the focus ring's:
+          AspectBox clips, and a ring sits 2px outside its control (§2.10), so a control
+          flush to the frame edge loses its indicator on three sides. */}
+      {overlay ? <div className="absolute inset-x-0 bottom-0 p-4">{overlay}</div> : null}
     </AspectBox>
   )
 })
