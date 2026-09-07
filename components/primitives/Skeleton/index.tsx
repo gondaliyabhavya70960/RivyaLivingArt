@@ -51,8 +51,10 @@ const RADIUS: Record<SkeletonRadius, string> = {
   pill: 'rounded-pill',
 }
 
-export interface SkeletonProps
-  extends Omit<React.HTMLAttributes<HTMLDivElement>, 'aria-hidden' | 'children'> {
+export interface SkeletonProps extends Omit<
+  React.HTMLAttributes<HTMLDivElement>,
+  'aria-hidden' | 'children'
+> {
   /**
    * §6.1. `sm` matches inputs and buttons, `md` cards and panels, `pill` chips and status
    * pills, `none` the media a MediaFrame would hold.

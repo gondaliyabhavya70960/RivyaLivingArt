@@ -12,6 +12,19 @@ import { Checkbox } from '@/components/primitives/Checkbox'
 import { Radio } from '@/components/primitives/Radio'
 import { Switch } from '@/components/primitives/Switch'
 import { Breadcrumbs } from '@/components/primitives/Breadcrumbs'
+import { Heading } from '@/components/primitives/Heading'
+import { Text } from '@/components/primitives/Text'
+import { Eyebrow } from '@/components/primitives/Eyebrow'
+import { Divider } from '@/components/primitives/Divider'
+import { Badge } from '@/components/primitives/Badge'
+import { Tag } from '@/components/primitives/Tag'
+import { Surface } from '@/components/primitives/Surface'
+import { Stack } from '@/components/primitives/Stack'
+import { Cluster } from '@/components/primitives/Cluster'
+import { Grid } from '@/components/primitives/Grid'
+import { AspectBox } from '@/components/primitives/AspectBox'
+import { MediaFrame } from '@/components/primitives/MediaFrame'
+import { Skeleton } from '@/components/primitives/Skeleton'
 
 /**
  * The design-system gallery. Dev-only by an explicit guard, not by accident of routing:
@@ -165,6 +178,93 @@ export default function DesignSystemPage() {
         <State label="switch">
           <Switch label="Publication state" onLabel="Published" offLabel="Draft" />
         </State>
+      </Specimen>
+
+      <Specimen
+        name="Heading"
+        note="Level and visual size are independent — the outline stays correct however big the type looks."
+      >
+        <Stack gap={4}>
+          <Heading level={2} size="display-lg" highlight="shaped by flow">
+            Objects shaped by flow
+          </Heading>
+          <Heading level={3} size="display-sm">
+            A smaller heading, still a real h3
+          </Heading>
+        </Stack>
+      </Specimen>
+
+      <Specimen name="Text / Eyebrow">
+        <Stack gap={3}>
+          <Eyebrow>Selected works</Eyebrow>
+          <Text size="lg">
+            Collectible furniture, sculptural resin objects and large-format commissions.
+          </Text>
+          <Text size="base" tone="secondary">
+            Supporting copy in the secondary ink tone.
+          </Text>
+          <Text size="sm" tone="tertiary">
+            Metadata and captions sit at tertiary.
+          </Text>
+        </Stack>
+      </Specimen>
+
+      <Specimen name="Badge / Tag / Divider">
+        <Cluster gap={3} align="center">
+          <Badge tone="success">Published</Badge>
+          <Badge tone="warning">Review</Badge>
+          <Badge tone="danger">Error</Badge>
+          <Badge tone="info">Draft</Badge>
+          <Tag>Resin</Tag>
+          <Tag>Walnut</Tag>
+        </Cluster>
+        <div className="w-full">
+          <Divider />
+        </div>
+      </Specimen>
+
+      <Specimen
+        name="Surface"
+        note="Elevation is a lifted surface on DEEP/INK and a shadow on BONE — the component does not test which."
+      >
+        <Cluster gap={4}>
+          <Surface level={0} className="p-4">
+            <Text size="sm">level 0</Text>
+          </Surface>
+          <Surface level={1} className="p-4">
+            <Text size="sm">level 1</Text>
+          </Surface>
+          <Surface level={2} className="p-4">
+            <Text size="sm">level 2</Text>
+          </Surface>
+          <Surface level={3} className="p-4">
+            <Text size="sm">level 3</Text>
+          </Surface>
+        </Cluster>
+      </Specimen>
+
+      <Specimen name="Grid" note="4 / 8 / 12 columns by viewport (§5.4).">
+        <Grid className="w-full">
+          {[1, 2, 3, 4].map((n) => (
+            <Surface key={n} level={1} className="p-4">
+              <Text size="sm">{`cell ${n}`}</Text>
+            </Surface>
+          ))}
+        </Grid>
+      </Specimen>
+
+      <Specimen
+        name="AspectBox / MediaFrame / Skeleton"
+        note="Ratios reserve space so media cannot spend the CLS budget."
+      >
+        <div className="w-64">
+          <AspectBox ratio="16:9" mobileRatio="4:5">
+            <Skeleton className="size-full" />
+          </AspectBox>
+        </div>
+        <div className="w-64">
+          <MediaFrame ratio="3:2" fallbackLabel="Image temporarily unavailable" />
+        </div>
       </Specimen>
 
       <Specimen name="Colour schemes" note="The same components on all three grounds.">
