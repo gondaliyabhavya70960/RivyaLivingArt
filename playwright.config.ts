@@ -36,6 +36,19 @@ export default defineConfig({
       ...devices['Desktop Chrome'],
       viewport: { width, height: width < 500 ? 844 : 900 },
       isMobile: false,
+      /**
+       * The three mobile widths emulate touch; the five larger ones do not.
+       *
+       * Without this a 360px project still reports `(pointer: fine)`, so it is a narrow
+       * desktop rather than a phone — `pointer-coarse:` rules never apply, `pointer-fine:`
+       * rules wrongly do, and the 44px touch-target rule in FEAT §48 cannot be verified at
+       * the very widths it exists for. `hasTouch` makes Chromium report a coarse pointer.
+       *
+       * `isMobile` stays false deliberately: it also enables mobile viewport meta emulation,
+       * which changes layout scaling and would make these baselines measure something other
+       * than the CSS.
+       */
+      hasTouch: width < 500,
       // This image ships Chromium at /opt/pw-browsers and sets
       // PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD, so the bundled build number will not match what
       // a given @playwright/test expects. Point at the installed binary rather than

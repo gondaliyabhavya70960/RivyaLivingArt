@@ -32,7 +32,12 @@ export function Specimen({
 
 export function State({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="flex flex-col gap-2">
+    // shrink-0 so a row of nine states cannot squeeze a control below its own label.
+    //
+    // Kept, but note it was NOT the cause of the 43px button that led here: that button had
+    // no padding at all, because an unlayered reset in base.css was beating every Tailwind
+    // utility (see app/globals.css). This is cheap insurance, not the fix.
+    <div className="flex shrink-0 flex-col gap-2">
       <span className="text-ink-tertiary font-mono text-2xs uppercase tracking-eyebrow">
         {label}
       </span>

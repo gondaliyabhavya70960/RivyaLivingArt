@@ -2,10 +2,28 @@
  * GLOBAL ENTRY — imports only, plus the Tailwind bridge.
  * This file holds NO values of its own: every name below resolves to a --rv-* token.
  */
+/*
+ * ORDER AND LAYERING ARE LOAD-BEARING — read before touching.
+ *
+ * Tailwind is imported FIRST so its `@layer theme, base, components, utilities` declaration
+ * establishes the layer order. base.css is then imported INTO `layer(base)`.
+ *
+ * Both matter. An unlayered stylesheet beats every layered one regardless of source order,
+ * so while base.css sat unlayered its `button { padding: 0; border: none; background: none }`
+ * reset silently overrode every Tailwind padding, border and background utility on every
+ * button in the product: the primary CTA rendered with no accent fill, the secondary with no
+ * border, and all of them with no padding. Nothing caught it — the classes were present in
+ * source, they compiled to real CSS, and the visual baselines had been generated from the
+ * broken state, so they agreed with it.
+ *
+ * tokens.css and scheme.css stay unlayered on purpose: they declare custom properties, which
+ * nothing competes with, and keeping them outside the layers means a token can never lose to
+ * a utility.
+ */
+@import 'tailwindcss';
 @import './styles/tokens.css';
 @import './styles/scheme.css';
-@import './styles/base.css';
-@import 'tailwindcss';
+@import './styles/base.css' layer(base);
 
 @theme inline {
   --color-surface: var(--rv-surface-ground);

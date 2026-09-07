@@ -228,3 +228,101 @@ test.describe('behavioural patterns', () => {
     await expect(trigger).toBeFocused()
   })
 })
+
+/**
+ * FEAT §48 requires touch targets of at least 44x44 CSS px — stricter than WCAG 2.5.8's 24px.
+ *
+ * Only checkable where the browser reports a coarse pointer, so it skips the five desktop
+ * widths. playwright.config.ts sets `hasTouch` on the three mobile projects for exactly this
+ * reason: without it a 360px project is a narrow desktop and the rule cannot be tested at the
+ * widths it exists for.
+ *
+ * THREE THINGS THIS HAS TO MODEL, all of which a naive version gets wrong — the first draft
+ * reported six violations and every one of them was a flaw in the test:
+ *
+ *   1. The target is the HIT BOX, not the glyph. A control may render smaller and earn its
+ *      target from the `rv-hit-44` ::before overlay.
+ *   2. For a checkbox or radio the target is the wrapping `<label>`, not the 20px input:
+ *      Checkbox's root is a label precisely so the whole row activates the control.
+ *   3. Hidden controls have no target to measure. Breadcrumbs drops its ancestor links to
+ *      `hidden sm:flex` below 430px, and a zero-size rect is absence, not a violation.
+ *
+ * Inline links are exempt, matching WCAG 2.5.8's inline exception: a link inside a sentence
+ * cannot be 44px tall without breaking the line box it lives in. Links styled as blocks or
+ * buttons are not exempt and are checked.
+ */
+test.describe('touch targets', () => {
+  test('every interactive control is at least 44px on a coarse pointer', async ({ page }) => {
+    await page.goto('/design-system')
+
+    const coarse = await page.evaluate(() => matchMedia('(pointer: coarse)').matches)
+    test.skip(!coarse, 'desktop width — the rule applies to touch pointers')
+
+    const undersized = await page.evaluate(() => {
+      const sel =
+        'main button:not([disabled]), main input:not([type="hidden"]), main select, main textarea'
+      const bad: string[] = []
+
+      for (const el of Array.from(document.querySelectorAll(sel))) {
+        // A checkbox or radio is activated through its wrapping label, which carries the
+        // overlay; measuring the 20px input measures the wrong element.
+        const type = el.getAttribute('type')
+        const target =
+          (type === 'checkbox' || type === 'radio') && el.closest('label')
+            ? el.closest('label')!
+            : el
+
+        const rect = target.getBoundingClientRect()
+        // Absent, not undersized.
+        if (rect.width === 0 && rect.height === 0) continue
+
+        const before = getComputedStyle(target, '::before')
+        const overlayH =
+          before.content !== 'none' ? Number.parseFloat(before.blockSize || '0') || 0 : 0
+        const overlayW =
+          before.content !== 'none' ? Number.parseFloat(before.inlineSize || '0') || 0 : 0
+
+        const h = Math.max(rect.height, overlayH)
+        const w = Math.max(rect.width, overlayW)
+
+        if (h < 44 || w < 44) {
+          bad.push(
+            `${target.tagName.toLowerCase()}${type ? `[${type}]` : ''} ` +
+              `"${(target.textContent ?? '').trim().slice(0, 24)}" ${Math.round(w)}x${Math.round(h)}`,
+          )
+        }
+      }
+      return bad
+    })
+
+    expect(undersized, 'controls under 44x44 on a coarse pointer').toEqual([])
+  })
+})
+
+/**
+ * A guard against the cascade defect this suite found late: `base.css` sat unlayered, so its
+ * element resets beat every Tailwind utility, and every button in the product rendered with
+ * no padding, no border and no background — the primary CTA was bare text on the ground.
+ *
+ * Nothing else could see it. The classes were in the source, they compiled to real CSS, axe
+ * was satisfied because text-on-ground contrast was fine, and the visual baselines had been
+ * captured FROM the broken state so they agreed with it.
+ *
+ * These assertions read COMPUTED style, which is the only place a cascade loss is visible.
+ */
+test.describe('tokens reach the DOM', () => {
+  test('utilities are not overridden by an unlayered reset', async ({ page }) => {
+    await page.goto('/design-system')
+
+    const primary = page.getByRole('button', { name: 'Commission a Piece' })
+    const secondary = page.getByRole('button', { name: 'View the Collection' })
+
+    // The accent fill must be the champagne token, not transparent.
+    await expect(primary).toHaveCSS('background-color', 'rgb(184, 155, 99)')
+    // Padding must come from the size scale, not the reset's `padding: 0`.
+    await expect(primary).not.toHaveCSS('padding-left', '0px')
+    // The secondary variant is defined by its border; without it the variant does not exist.
+    await expect(secondary).not.toHaveCSS('border-left-width', '0px')
+    await expect(secondary).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)')
+  })
+})
