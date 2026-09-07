@@ -346,7 +346,7 @@ that will render field data), 39 (sitemap and metadata, which affect crawl not p
 
   | Metric | Target | Rivya budget | Fails the build above |
   |---|---|---|---|
-  | LCP | ≤ 2.5 s | ≤ 2.5 s, ≤ 2.0 s on text-led routes | 2.5 s |
+  | LCP | ≤ 2.5 s | per route; 2.5 s media-led, 2.0 s text-led | the route's own value in `perf/budgets.json` |
   | CLS | ≤ 0.1 | ≤ 0.05 | 0.05 |
   | INP | ≤ 200 ms | ≤ 200 ms | 200 ms |
   | TTFB | ≤ 800 ms | ≤ 600 ms warm ISR, ≤ 1.2 s cold render | 800 ms warm |
