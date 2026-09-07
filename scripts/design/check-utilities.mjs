@@ -125,12 +125,23 @@ const css = compiler.build(list)
 
 const dead = []
 for (const c of list) {
-  // Tailwind CSS-escapes ':', '.', '/' and '%' in generated selectors, so the stylesheet
-  // literally contains `.hover\:bg-surface-raised:hover`. Matching those characters
-  // unescaped reports every variant class as dead.
-  const selector = [...c]
-    .map((ch) => ('.:/%'.includes(ch) ? '\\\\' + ch : ch.replace(/[*+?^${}()|[\]\\]/g, '\\$&')))
-    .join('')
+  // Two layers of CSS escaping have to be reproduced or the check reports false deaths:
+  //
+  //   1. ':', '.', '/' and '%' are backslash-escaped, so the stylesheet literally holds
+  //      `.hover\:bg-surface-raised:hover`.
+  //   2. A LEADING DIGIT cannot start a CSS identifier, so it becomes a hex escape with a
+  //      trailing space: `2xl:gap-8` is emitted as `.\32 xl\:gap-8`.
+  //
+  // Missing either one reports live classes as dead — which is worse than missing a dead
+  // one, because a gate that cries wolf stops being read.
+  const esc = (ch) => ('.:/%'.includes(ch) ? '\\\\' + ch : ch.replace(/[*+?^${}()|[\]\\]/g, '\\$&'))
+
+  const first = c[0] ?? ''
+  const head = /[0-9]/.test(first)
+    ? `\\\\3${first}\\s?` // hex escape for the leading digit, optional separating space
+    : esc(first)
+  const selector = head + [...c.slice(1)].map(esc).join('')
+
   if (!new RegExp(`\\.${selector}(?![\\w-])`).test(css)) dead.push(c)
 }
 

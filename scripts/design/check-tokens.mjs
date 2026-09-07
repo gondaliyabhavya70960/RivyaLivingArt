@@ -96,11 +96,15 @@ for (const file of SCAN_DIRS.flatMap((d) => walk(join(ROOT, d)))) {
   const rel = relative(ROOT, file)
   if (rel.split(sep).slice(0, 2).join('/') === 'app/styles') continue
   readFileSync(file, 'utf8')
+    // Strip BLOCK comments across lines before scanning. A component that explains why it
+    // avoids `px-[...]` must not be reported for the arbitrary value it is warning about,
+    // and a comment quoting a hex to justify a token decision is documentation, not a
+    // literal. Stripping only single-line comments misses both.
+    .replace(/\/\*[\s\S]*?\*\//g, '')
     .split('\n')
     .forEach((line, i) => {
       const where = `${rel}:${i + 1}`
-      // A comment may legitimately quote a hex when explaining a token decision.
-      const code = line.replace(/\/\/.*$/, '').replace(/\/\*.*?\*\//g, '')
+      const code = line.replace(/\/\/.*$/, '')
       if (HEX.test(code)) problems.push(`${where}  colour literal (hex) outside app/styles/`)
       if (RGB.test(code)) problems.push(`${where}  colour literal (rgb) outside app/styles/`)
       if (NAMED.test(code) && /class(Name)?\s*[=:]/.test(code))
