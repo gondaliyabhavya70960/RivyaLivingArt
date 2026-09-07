@@ -172,7 +172,7 @@ Rules the existing videos observe, and every new one must:
 | One move only — a dolly, a push-in, a rise, or locked-off | Every 26 prompts name at most one move |
 | 5–10 s | Durations are 5 s ×5, 6 s ×15, 8 s ×4, 10 s ×2 |
 | Loopable, stated in the prompt | 14 of 26 say `Loopable` / `Seamless loop` outright |
-| No faces, hands only where people appear | `PROCESS-STUDIO-001`: "craftsman's hands only, no face" |
+| No faces, hands only where people appear | `PROCESS-STUDIO-016`: "craftsman's hands only, no face" |
 | Vertical variants declare the safe area | `PROCESS-PIGMENT-002`: "upper third calm and dark as headline safe area" |
 | No audio is briefed, ever | The site plays every inline video muted |
 
@@ -181,9 +181,9 @@ lower-resolution re-render of an earlier clip, carry a one-line label instead of
 
 | Pair | Stub text |
 |---|---|
-| `PROCESS-STUDIO-002` / `-003` | `Workshop bench dolly (720p variant 2)` / `(720p variant)` |
-| `MATERIAL-MACRO-001` / `-006` | `Gold leaf settling on sapphire resin (720p variant 2)` / `(720p variant)` |
-| `EDITORIAL-002` / `-003` | `Sapphire resin pour, high angle (720p variant 2)` / `(720p variant)` |
+| `PROCESS-STUDIO-017` / `-018` | `Workshop bench dolly (720p variant 2)` / `(720p variant)` |
+| `MATERIAL-MACRO-034` / `-039` | `Gold leaf settling on sapphire resin (720p variant 2)` / `(720p variant)` |
+| `EDITORIAL-018` / `-019` | `Sapphire resin pour, high angle (720p variant 2)` / `(720p variant)` |
 
 Treat their `higgsfield_prompt` as provenance, not as a model to copy — and note that all six are
 1280 × 720, which is below the 1920 × 1080 a hero video needs.
@@ -284,6 +284,9 @@ Then, and only then:
     section, slot key and role, desktop and mobile ratio, minimum long edge, Cloudinary folder
     and public ID, filename, prompt, RIVYA-NEG-V2, draft alt text, and the four gate answers.
 2.  npm run media:assert-no-regen        # fails if the target already exists. CI runs it too.
+2b. python scripts/media/check-asset-ids.py
+                                         # fails if the planned ID reuses a manifest family
+                                         # prefix (D6 amendment A1). CI runs it too.
 3.  Generate.
 4.  scripts/media/build-higgsfield-manifest.py appends the new rows and bumps manifest_version
     to rivya-hf-v2. The original 250 objects stay byte-identical.
@@ -397,8 +400,9 @@ from Cloudinary only.
 |---|---|
 | How many assets exist? | 250 — 224 images, 26 videos, 24 families, 23 folders |
 | Can I regenerate one? | No. Not for any reason. `assert-no-regeneration.ts` is in CI |
-| What is an asset's identity? | `(rivya_asset_id, type)`. The ID alone is not unique — 26 are shared by an image/video pair |
+| What is an asset's identity? | `rivya_asset_id`, unique across all 250. The **migration** key is `higgsfield_generation_id` — it survives a manifest renumbering |
 | What is the migration key? | `higgsfield_generation_id` — unique across all 250 |
+| How do I name a planned asset? | `<PAGE>-<SECTION>[-<KIND>]-<NNN>`, never a manifest family prefix — the family allocator would mint the same ID later (D6 A1) |
 | Which ratios may I ask for? | 21:9, 16:9, 4:3, 3:2, 1:1, 4:5, 3:4, 9:16. Nothing else |
 | Which recipe for a new brief? | A for making and material; B for interiors and heroes. Never C or E |
 | Which negative prompt? | `RIVYA-NEG-V2`, always |

@@ -19,9 +19,9 @@
 | Measure | Value | As of |
 |---|---|---|
 | Assets catalogued | **250** (224 image · 26 video) | `rivya-hf-v1` |
-| Distinct `rivya_asset_id` values | **224** — 26 IDs are shared by an image/video pair | `rivya-hf-v1` |
+| Distinct `rivya_asset_id` values | **250** — unique. Restored by the duplicate-ID fix, §6 DQ-0 | `rivya-hf-v1` |
 | Distinct `filename` values | **250** — unique, usable as a human key | `rivya-hf-v1` |
-| Distinct `cloudinary_public_id` values | **244** — 6 shared by an image/video pair, kept apart by `resource_type` | `rivya-hf-v1` |
+| Distinct `cloudinary_public_id` values | **250** — unique. Same fix | `rivya-hf-v1` |
 | Families | 24 | `rivya-hf-v1` |
 | Cloudinary folders | 23, all under `rivya/` | `rivya-hf-v1` |
 | Migrated to Cloudinary | **0 of 250** — every row reads `AVAILABLE_UNMIGRATED` | pre-Phase-07 |
@@ -43,7 +43,7 @@ generator will move them.
 
 | FEAT §34 column | Source | Notes |
 |---|---|---|
-| **Asset ID** | `rivya_asset_id` | Authoritative identity (D6), but **not unique alone** — pair it with **Type** |
+| **Asset ID** | `rivya_asset_id` | Authoritative identity (D6), unique across all 250. The **migration** key is still `higgsfield_generation_id` — it survives a manifest rebuild, an ordinal does not |
 | **Type** | `type` | `image` \| `video`. Maps to `media_assets.resource_type` and `.kind` |
 | **Product** | `product_media` join | Always empty for these 250 and always will be — concept media cannot attach to a product |
 | **Collection** | `collections` join | Empty until Phase 16 binds a `DRAFT_COLLECTION_CONCEPT` |
@@ -136,13 +136,13 @@ Distribution facts the generator also asserts:
 ## 4. Per-asset inventory *(generated — worked example)*
 
 > The generator emits **all 250 rows**. Reproduced below are **14 real rows copied exactly from
-> the manifest**, chosen to exercise every awkward case the generator has to handle:
-> the three Phase 06 canaries, both members of two `rivya_asset_id` collision pairs, a shared
-> `cloudinary_public_id` pair, all three prompt recipes, and both media types.
+> the manifest**, chosen to exercise every awkward case the generator has to handle: the three
+> Phase 06 canaries, a whole family across both media types with the post-fix numbering, the
+> library's resolution extremes, and all four prompt recipes.
 > Do not hand-add rows here. Run `npm run media:build-status`.
 
-Each asset occupies two lines: **(a) identity and placement**, **(b) provenance and governance**.
-The pair `(Asset ID, Type)` joins them.
+Each asset occupies two lines: **(a) identity and placement**, **(b) provenance and governance**,
+joined on Asset ID.
 
 ### 4a. Identity and placement
 
@@ -150,9 +150,10 @@ The pair `(Asset ID, Type)` joins them.
 |---|---|---|---|---|---|---|---|---|
 | `PROCESS-STUDIO-001` | image | — | — | `process` | `PROCESS_STORY` | no | `rivya/process/studio/process-studio-001-4x3` | — |
 | `LARGEFORMAT-DINING-001` | image | — | — | `large-format` | `LARGE_FORMAT_SUBJECT` | no | `rivya/large-format/dining/largeformat-dining-001-9x16` | — |
-| `LARGEFORMAT-DINING-001` | video | — | — | `large-format` | `LARGE_FORMAT_SUBJECT` | no | `rivya/large-format/dining/largeformat-dining-001-9x16` | — |
+| `LARGEFORMAT-DINING-003` | image | — | — | `large-format` | `LARGE_FORMAT_SUBJECT` | no | `rivya/large-format/dining/largeformat-dining-003-16x9` | — |
 | `LARGEFORMAT-DINING-002` | image | — | — | `large-format` | `LARGE_FORMAT_SUBJECT` | no | `rivya/large-format/dining/largeformat-dining-002-21x9` | — |
-| `LARGEFORMAT-DINING-002` | video | — | — | `large-format` | `LARGE_FORMAT_SUBJECT` | no | `rivya/large-format/dining/largeformat-dining-002-16x9` | — |
+| `LARGEFORMAT-DINING-004` | video | — | — | `large-format` | `LARGE_FORMAT_SUBJECT` | no | `rivya/large-format/dining/largeformat-dining-004-9x16` | — |
+| `LARGEFORMAT-DINING-005` | video | — | — | `large-format` | `LARGE_FORMAT_SUBJECT` | no | `rivya/large-format/dining/largeformat-dining-005-16x9` | — |
 | `LARGEFORMAT-MONUMENTAL-001` | image | — | — | `large-format` | `LARGE_FORMAT_SUBJECT` | no | `rivya/large-format/architectural/largeformat-monumental-001-21x9` | — |
 | `MATERIAL-MACRO-009` | image | — | — | `about` | `MATERIAL_STORY` | no | `rivya/material/material-macro-009-21x9` | — |
 | `MATERIAL-MACRO-016` | image | — | — | `about` | `MATERIAL_STORY` | no | `rivya/material/material-macro-016-1x1` | — |
@@ -161,7 +162,7 @@ The pair `(Asset ID, Type)` joins them.
 | `PRESERVATION-VARMALA-001` | image | — | — | `collection/preservation` | `CATEGORY_GALLERY` | no | `rivya/collection/preservation/preservation-varmala-001-4x5` | — |
 | `GALLERY-SCENE-002` | image | — | — | `portfolio` | `EXHIBITION_ATMOSPHERE` | no | `rivya/portfolio/gallery/gallery-scene-002-21x9` | — |
 | `INTERIOR-LIFESTYLE-002` | image | — | — | `home` | `INTERIOR_CONTEXT` | no | `rivya/interior/interior-lifestyle-002-3x2` | — |
-| `PROCESS-PIGMENT-002` | video | — | — | `process` | `PROCESS_STORY` | no | `rivya/process/pigment/process-pigment-002-9x16` | — |
+| `PROCESS-PIGMENT-013` | video | — | — | `process` | `PROCESS_STORY` | no | `rivya/process/pigment/process-pigment-013-9x16` | — |
 
 ### 4b. Provenance and governance
 
@@ -172,9 +173,10 @@ and in the Studio asset drawer. **Source** is `higgsfield` and **Higgsfield?** i
 |---|---|---|---|---|---|---|
 | `PROCESS-STUDIO-001` | image | 4:3 · 4800×3584 | `nano_banana_2` | `6040ceaf-8ae7-4bad-8de6-b9657875831b` | `A studio tool wall photographed straight on: heat guns, notched spreaders, a digital scale, clamps and mixing st…` | `AVAILABLE_UNMIGRATED` |
 | `LARGEFORMAT-DINING-001` | image | 9:16 · 1536×2752 | `cinematic_studio_2_5` | `d4874f69-3690-4327-a2be-9f93f964b472` | `Vertical editorial photograph for a mobile hero: a large live-edge resin dining table with deep ocean blue river…` | `AVAILABLE_UNMIGRATED` |
-| `LARGEFORMAT-DINING-001` | video | 9:16 · 768×1344 · 6 s | `cinematic_studio_3_0` | `02a61cde-e714-45c6-b7e5-f00c86e6869a` | `Vertical cinematic: a large live-edge resin dining table with a deep ocean blue epoxy river through natural waln…` | `AVAILABLE_UNMIGRATED` |
+| `LARGEFORMAT-DINING-003` | image | 16:9 · 2048×1152 | `seedream_v5_pro` | `edec824d-3099-4a34-bd3c-bd1899438a92` | `A walnut river table with a deep ocean-blue resin channel in a warm Indian living room. Photorealistic editorial photogr…` | `AVAILABLE_UNMIGRATED` |
 | `LARGEFORMAT-DINING-002` | image | 21:9 · 6336×2688 | `cinematic_studio_2_5` | `3dad704e-d177-49af-8722-5ee9ca44e885` | `Ultra-wide architectural editorial photograph: a large live-edge resin dining table with a deep ocean blue epoxy…` | `AVAILABLE_UNMIGRATED` |
-| `LARGEFORMAT-DINING-002` | video | 16:9 · 1344×768 · 8 s | `cinematic_studio_3_0` | `fac0659a-8201-4392-b74c-45498bc55945` | `Slow cinematic dolly toward a large live-edge resin dining table, deep ocean blue epoxy river meeting natural wa…` | `AVAILABLE_UNMIGRATED` |
+| `LARGEFORMAT-DINING-004` | video | 9:16 · 768×1344 · 6 s | `cinematic_studio_3_0` | `02a61cde-e714-45c6-b7e5-f00c86e6869a` | `Vertical cinematic: a large live-edge resin dining table with a deep ocean blue epoxy river through natural waln…` | `AVAILABLE_UNMIGRATED` |
+| `LARGEFORMAT-DINING-005` | video | 16:9 · 1344×768 · 8 s | `cinematic_studio_3_0` | `fac0659a-8201-4392-b74c-45498bc55945` | `Slow cinematic dolly toward a large live-edge resin dining table, deep ocean blue epoxy river meeting natural wa…` | `AVAILABLE_UNMIGRATED` |
 | `LARGEFORMAT-MONUMENTAL-001` | image | 21:9 · 6336×2688 | `cinematic_studio_2_5` | `350adf43-96b6-4453-9d11-a0e09965b510` | `Ultra-wide architectural lobby, editorial photograph: a monumental freestanding resin and timber sculptural piec…` | `AVAILABLE_UNMIGRATED` |
 | `MATERIAL-MACRO-009` | image | 21:9 · 6336×2688 | `cinematic_studio_2_5` | `119c8cea-b601-4cc6-bf78-f4751b30fb6a` | `Ultra-wide abstract macro: deep ocean blue resin in slow frozen flow, white mineral veils suspended mid-bloom, f…` | `AVAILABLE_UNMIGRATED` |
 | `MATERIAL-MACRO-016` | image | 1:1 · 4096×4096 | `nano_banana_2` | `d03baefc-51f1-4c10-81d6-fc36271339d6` | `One of four material macros shot on an identical matte charcoal-neutral stone ground under identical light, same…` | `AVAILABLE_UNMIGRATED` |
@@ -183,21 +185,22 @@ and in the Studio asset drawer. **Source** is `higgsfield` and **Higgsfield?** i
 | `PRESERVATION-VARMALA-001` | image | 4:5 · 3712×4608 | `nano_banana_2` | `6306c12d-ec00-461d-b8f3-6e2e95d16ab9` | `A fresh marigold-and-rose wedding varmala coiled on a seasoned dark teak workbench, still bright, blotting paper…` | `AVAILABLE_UNMIGRATED` |
 | `GALLERY-SCENE-002` | image | 21:9 · 3168×1344 | `cinematic_studio_2_5` | `f9c6343b-0a3b-42be-bd2a-6190476027fb` | `Wide shot of a dark midnight-blue gallery room with handcrafted resin objects displayed on stone plinths of vary…` | `AVAILABLE_UNMIGRATED` |
 | `INTERIOR-LIFESTYLE-002` | image | 3:2 · 2528×1696 | `cinematic_studio_2_5` | `fad87622-b632-4b62-b29a-3624823f2e23` | `Editorial interior photograph, Japandi style: a resin and oak dining table with a clear smoky epoxy seam, low wa…` | `AVAILABLE_UNMIGRATED` |
-| `PROCESS-PIGMENT-002` | video | 9:16 · 768×1344 · 6 s | `cinematic_studio_3_0` | `af5ff1de-2f11-4f87-a133-9e4f60165e3f` | `Vertical macro for mobile: deep ocean blue resin flowing with white pigment veils blooming upward, upper third c…` | `AVAILABLE_UNMIGRATED` |
+| `PROCESS-PIGMENT-013` | video | 9:16 · 768×1344 · 6 s | `cinematic_studio_3_0` | `af5ff1de-2f11-4f87-a133-9e4f60165e3f` | `Vertical macro for mobile: deep ocean blue resin flowing with white pigment veils blooming upward, upper third c…` | `AVAILABLE_UNMIGRATED` |
 
 ### 4c. What the worked example proves
 
 | Case | Rows that exercise it |
 |---|---|
-| Phase 06 canaries — three named assets migrated by hand before the bulk run | `PROCESS-STUDIO-001` (image), `LARGEFORMAT-DINING-001` (video), `LARGEFORMAT-MONUMENTAL-001` (image) |
-| `rivya_asset_id` shared by an image and a video | `LARGEFORMAT-DINING-001`, `LARGEFORMAT-DINING-002` — four rows, two IDs |
-| Same ID, **different** ratio and public ID | `LARGEFORMAT-DINING-002` image is 21:9; the video is 16:9 |
-| Same ID, **same** ratio and public ID, kept apart by `resource_type` | `LARGEFORMAT-DINING-001` — both are `…/largeformat-dining-001-9x16`, one `image`, one `video` |
+| Phase 06 canaries — three named assets migrated by hand before the bulk run | `PROCESS-STUDIO-001` (image), `LARGEFORMAT-DINING-004` (video), `LARGEFORMAT-MONUMENTAL-001` (image) |
+| One whole family, both media types, under the corrected numbering | `LARGEFORMAT-DINING-001…003` are the images, `-004` and `-005` the videos. Ordinals run across both types in one sequence |
+| The same asset ID never appears twice | Every row above has a distinct Asset ID; so do all 250 |
+| Ratio and public ID vary within one family | `-001` is 9:16, `-002` is 21:9, `-003` and `-005` are 16:9, `-004` is 9:16 |
 | Recipe A (palette-limited workshop grammar) | `PROCESS-STUDIO-001`, `MATERIAL-MACRO-016`, `WALL-ART-008`, `THREE-D-RESIN-001`, `PRESERVATION-VARMALA-001` |
-| Recipe B (quiet-luxury interior grammar) | `LARGEFORMAT-DINING-001/002` images, `LARGEFORMAT-MONUMENTAL-001`, `MATERIAL-MACRO-009`, `INTERIOR-LIFESTYLE-002` |
-| Recipe D/E (video and atelier prose) | `LARGEFORMAT-DINING-001/002` videos, `PROCESS-PIGMENT-002`, `GALLERY-SCENE-002` |
+| Recipe B (quiet-luxury interior grammar) | `LARGEFORMAT-DINING-001`, `-002`, `LARGEFORMAT-MONUMENTAL-001`, `MATERIAL-MACRO-009`, `INTERIOR-LIFESTYLE-002` |
+| Recipe C (journal / blog grammar) | `LARGEFORMAT-DINING-003` |
+| Video grammar and the atelier prose | `LARGEFORMAT-DINING-004`, `-005`, `PROCESS-PIGMENT-013`, `GALLERY-SCENE-002` |
 | Highest-resolution masters in the library | the five 6336 × 2688 21:9 rows |
-| Lowest-resolution video | `LARGEFORMAT-DINING-001` at 768 × 1344 |
+| Lowest-resolution video | `LARGEFORMAT-DINING-004` at 768 × 1344 |
 
 ---
 
@@ -253,6 +256,7 @@ them justifies regenerating anything.
 
 | # | Finding | Measure | Consequence | Fix |
 |---|---|---|---|---|
+| DQ-0 · **FIXED** | The manifest generator numbered images and videos with separate counters, so a video was minted the same `rivya_asset_id` as a still in its family | **26 of 250** IDs were shared by an image/video pair — 224 IDs for 250 assets — and **6** `cloudinary_public_id` values with them | The asset ID is the authoritative key (D6). A collision there is a correctness defect, not a cosmetic one: any ledger, binding or Studio filter keyed on it would silently merge two assets | Fixed at source. `build-higgsfield-manifest.py` now shares one counter across both types and asserts uniqueness before writing; the 26 videos were renumbered and **no image ID changed**. `check-asset-ids.py` keeps the planned-ID allocator out of the same namespace (D6, amendment A1) |
 | DQ-1 | Draft alt text is truncated prompt output | **124 of 250** `alt_text_draft` values end in `…` | Unusable as published alt text; a screen reader hears a sentence stop mid-clause | Phase 43 alt-text queue rewrites all 250; `scripts/media/check-alt-text.mjs` rejects a trailing ellipsis |
 | DQ-2 | Draft alt text is too long | **148 of 250** exceed 160 characters; longest is 180; mean 139 | Alt text is read aloud in full; 180 characters is a paragraph, not a label | Rewrite to one sentence describing what is visible (SEED §43) |
 | DQ-3 | Draft alt text opens with camera vocabulary | **55 of 250** begin with `Vertical`, `Ultra-wide`, `Wide shot`, `Extreme macro`, `Macro`, `Square`, `Close`, `Abstract`, `Editorial`, `Photorealistic`, `Slow`, `Cinematic` or `One frame` | Describes the photograph, not the object. A blind visitor learns the lens, not the table | Rewrite; the linter rejects the opening vocabulary |
@@ -271,8 +275,10 @@ them justifies regenerating anything.
 ## 7. Migration ledger *(generated after Phase 07 runs)*
 
 Populated from `higgsfield_migration_runs` and `data/higgsfield/migration-log.json`.
-The log is keyed by `higgsfield_generation_id`, which is unique across all 250 rows —
-`rivya_asset_id` is not, and must never be used as a migration key.
+The log is keyed by `higgsfield_generation_id`. Asset IDs are unique too, since the fix in
+§6 DQ-0 — but an asset ID is an **ordinal within a family**, and a manifest rebuild can legitimately
+renumber it, as one already has. A generation id is minted by Higgsfield and never moves. That is
+why it, and not the asset id, keys the ledger.
 
 | Run | Started | Scope | Attempted | Migrated | Skipped | Failed | Dry run | By |
 |---|---|---|---|---|---|---|---|---|

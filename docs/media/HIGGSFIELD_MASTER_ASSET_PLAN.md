@@ -53,9 +53,9 @@ Page counts, verbatim from `counts.by_page`: `process` 79 · `about` 39 · `jour
 `large-format` 18 · `collection/3d-resin` 13 · `collection/gifts` 10 · `home` 5 · `portfolio` 5.
 
 > **`page` is generation intent, not a binding.** The manifest's `page` field records the brief the
-> asset was generated under. It does **not** restrict where the asset may be placed. Six of the
-> nine 21:9 assets sit under `about`, `collection/wall-statement-art` and `portfolio`, and several
-> of them are the correct answer for heroes on other routes. Coverage below is decided by subject
+> asset was generated under. It does **not** restrict where the asset may be placed. Seven of the
+> nine 21:9 assets sit under `about` (4), `collection/wall-statement-art` (2) and `portfolio` (1) —
+> and several of them are the correct answer for a hero on a different route entirely. Coverage below is decided by subject
 > and ratio, never by the `page` string.
 
 ### 1.1 Two library facts that change where assets can be placed
@@ -125,38 +125,64 @@ Q4 has two failure modes and both must be checked:
 
 ### 3.1 Rivya asset ID — the authoritative identity
 
+**Two allocators mint into one namespace, and they must never collide (D6, amendment A1).**
+
+| Allocator | Form | Mints | Example |
+|---|---|---|---|
+| `scripts/media/build-higgsfield-manifest.py` | `<FAMILY-UPPERCASE>-<NNN>` | assets that **exist** | `MATERIAL-MACRO-016`, `LARGEFORMAT-DINING-005` |
+| This document, §6 | `<PAGE>-<SECTION>[-<KIND>]-<NNN>` | assets that are **planned** | `HOME-HERO-VIDEO-001`, `LARGE-COFFEE-CARD-001` |
+
+The ordinal is zero-padded to three digits, counted **across image and video together**, and is
+**never reused** — not after an archive, not after a failed migration.
+
+**A planned ID may never borrow a manifest family prefix.** `LARGEFORMAT-DINING-004` looks like a
+free slot today only if you count images; the family allocator mints it the moment the family
+grows, and in this repository it already had. Planned IDs therefore use the SEED §50
+page-section form, which the family allocator cannot produce.
+
 ```
-<FAMILY-UPPERCASE>-<NNN>          e.g. MATERIAL-MACRO-016, LARGEFORMAT-DINING-002
-<PAGE>-<SECTION>[-<KIND>]-<NNN>   e.g. HOME-HERO-VIDEO-001   (SEED §50 form, for new families)
+scripts/media/check-asset-ids.py     # exit 1 on any gap ID reusing a family prefix.
+                                     # CI, and before any media migration.
 ```
 
-Both forms parse under one rule: **the ID names the subject family and the ordinal within it.**
-The existing 250 use the first form because their family already encodes page and section.
-New families created by a §6 brief use the second form where SEED §50 already names the ID.
+The rule reaches further than the ID string. **A planned asset also carries a planned `family`.**
+If a brief for a portrait dining-table card declared `family: largeformat-dining`, the manifest
+generator would mint it the next free ordinal in that family on the next build, and the two
+allocators would be back in the same namespace. A planned asset's family is therefore its own ID
+prefix in lower case (`large-dining-card`), and it keeps that family after generation. The
+**Cloudinary folder** is unaffected — a folder is a delivery taxonomy, not an ID namespace, so a
+planned large-format card still lands in `rivya/large-format/dining` beside its siblings.
 
-`NNN` is zero-padded to three digits and is **never reused**, even after an asset is archived.
+Note that `check-asset-ids.py` scans prose as well as tables and cannot tell a cautionary example
+from a real plan. Do not spell out a colliding ID anywhere in `docs/`, even to explain why it is
+wrong — describe it instead.
 
-### 3.2 The ID is not unique on its own
+### 3.2 Identity, uniqueness and keys
 
-**26 of the 250 `rivya_asset_id` values are shared by an image/video pair** — every one of the
-26 videos re-uses the ID of a still in the same family. 224 IDs, 250 assets.
+| Key | Uniqueness | Used for |
+|---|---|---|
+| `rivya_asset_id` | **unique across all 250** | CMS bindings, the ledger, every human reference. D6: authoritative |
+| `filename` | unique across all 250 | The readable key in a table or a `git` diff |
+| `cloudinary_public_id` | unique across all 250 | Delivery |
+| `higgsfield_generation_id` | unique across all 250 | **The migration key** — stable across a manifest rebuild, which an ordinal is not |
 
-> Unique identity is the pair **`(rivya_asset_id, type)`**.
-> The migration key is `higgsfield_generation_id`, which *is* unique across all 250.
-> In Cloudinary, identity is `(resource_type, public_id)`.
+> **This was not always true.** The first manifest build numbered images and videos with separate
+> counters, so 26 videos were minted the same ID as a still in their family — 224 IDs for 250
+> assets, and six `cloudinary_public_id` values shared by an image/video pair. The generator now
+> shares one counter and asserts uniqueness before writing. The 26 videos were renumbered; **no
+> image ID changed**, and every `higgsfield_generation_id` is untouched, which is precisely why
+> the generation id and not the asset id is the migration key.
 
-Six `cloudinary_public_id` values are likewise shared by an image/video pair
-(`rivya/collection/decor/decor-001-16x9`, `rivya/journal/editorial/editorial-003-16x9`,
-`rivya/large-format/dining/largeformat-dining-001-9x16`,
-`rivya/process/studio/process-studio-002-16x9`, `-003-16x9`, `-004-16x9`). This is **not** a
-collision: Cloudinary namespaces public IDs by `resource_type`, so the image and the video are
-separate objects. The database unique index is `(provider, resource_type, public_id)`.
+The database index stays `unique (provider, resource_type, public_id)` rather than
+`unique (public_id)`. That is defence in depth, not a workaround: Cloudinary genuinely namespaces
+public IDs by resource type, and the index should describe Cloudinary's model rather than a
+property of one particular manifest build.
 
 ### 3.3 Filename — the human key, not the identity
 
 ```
 <family-lowercase>-<nnn>-<ratio-with-x>.<ext>      process-studio-001-4x3.webp
-                                                   largeformat-dining-001-9x16.mp4
+                                                   largeformat-dining-004-9x16.mp4
 ```
 
 All 250 filenames are unique. `filename` is the useful human key in a table or a `git` diff;
@@ -229,7 +255,7 @@ Slot keys are `media_usages.slot_key` values, scoped to the `page_sections` row;
 | 03 · Statement Art | `card.4` | 4:5 · `WALL-ART-001` (3712×4608) | same | `COVERED` |
 | 03 · Architectural Pieces | `card.5` | 4:5 · **GAP → `LARGE-ARCHITECTURAL-CARD-001`**, held | same | `GAP` (held — §6 G5) |
 | 04 Selected Works | — | no media slot — renders published products or the editorial fallback | — | `EMPTY` by design (SEED §10) |
-| 05 Material Story | `video` | 16:9 · `MATERIAL-MACRO-003` (video, 1344×768, 10 s) | 9:16 · `PROCESS-PIGMENT-002` (video, 768×1344, 6 s) | `COVERED` |
+| 05 Material Story | `video` | 16:9 · `MATERIAL-MACRO-036` (video, 1344×768, 10 s) | 9:16 · `PROCESS-PIGMENT-013` (video, 768×1344, 6 s) | `COVERED` |
 | 05 Material Story | `media` (poster) | 21:9 · `MATERIAL-MACRO-011` (6336×2688) | 9:16 · `MATERIAL-MACRO-003` (image, 3072×5504) | `COVERED` |
 | 06 Material Palette · Resin | `card.1` | 1:1 · `MATERIAL-MACRO-018` (4096×4096) | same | `COVERED` |
 | 06 · Wood | `card.2` | 1:1 · `MATERIAL-MACRO-020` (4096×4096) | same | `COVERED` |
@@ -259,7 +285,7 @@ Slot keys are `media_usages.slot_key` values, scoped to the `page_sections` row;
 | Philosophy | `media` | 16:9 · `MATERIAL-MACRO-014` (5504×3072) | 4:5 · `MATERIAL-MACRO-023` (3712×4608) | `COVERED` |
 | Scale | `media` | 21:9 · `LARGEFORMAT-MONUMENTAL-001` (6336×2688) | 4:5 · `LARGEFORMAT-SEATING-002` (3712×4608) | `COVERED` |
 | Bespoke | `media` | 16:9 · `PROCESS-STUDIO-005` (5504×3072) | 4:5 · `PROCESS-STUDIO-006` (3712×4608) | `COVERED` |
-| Closing | `video` | 16:9 · `MATERIAL-MACRO-005` (video, 1344×768, 8 s) | — | `COVERED` |
+| Closing | `video` | 16:9 · `MATERIAL-MACRO-038` (video, 1344×768, 8 s) | — | `COVERED` |
 | Closing | `media` (poster) | 16:9 · `MATERIAL-MACRO-026` (2752×1536) | 4:5 · `MATERIAL-MACRO-013` (3712×4608) | `COVERED` |
 
 `about` is the best-supplied page in the library: 39 `material-macro` assets across six ratios,
@@ -269,7 +295,7 @@ including four 21:9 at 6336 px and four 9:16 at 3072 px.
 
 | Section | Slot | Desktop | Mobile | Verdict |
 |---|---|---|---|---|
-| Hero | `video` | 16:9 · `LARGEFORMAT-DINING-002` (video, 1344×768, 8 s) | — | `COVERED` |
+| Hero | `video` | 16:9 · `LARGEFORMAT-DINING-005` (video, 1344×768, 8 s) | — | `COVERED` |
 | Hero | `media` (poster) | 21:9 · `LARGEFORMAT-MONUMENTAL-001` (6336×2688) | 9:16 · `LARGEFORMAT-DINING-001` (image, 1536×2752) | `COVERED` |
 | Category intro | `media` | 16:9 · `LARGEFORMAT-DINING-003` (2048×1152) | 3:2 · `LARGEFORMAT-CONSOLE-003` (2528×1696) | `COVERED` |
 | Dining & Statement Tables | `card.1` | 4:5 · **GAP → `LARGE-DINING-CARD-001`** | same | `GAP` (§6 G3) |
@@ -334,13 +360,13 @@ site's primary conversion page — that is an editorial call, not a coverage fai
 
 | Section | Slot | Desktop | Mobile | Verdict |
 |---|---|---|---|---|
-| Hero | `video` | 16:9 · `PROCESS-STUDIO-004` (video, 1920×1080, 6 s) | 9:16 · `PROCESS-PIGMENT-002` (video, 768×1344, 6 s) | `COVERED` |
+| Hero | `video` | 16:9 · `PROCESS-STUDIO-019` (video, 1920×1080, 6 s) | 9:16 · `PROCESS-PIGMENT-013` (video, 768×1344, 6 s) | `COVERED` |
 | Hero | `media` (poster) | 21:9 · recrop `PROCESS-STUDIO-005` 16:9→21:9 (→5504×2359) | 9:16 · `PROCESS-POUR-001` (3072×5504) | `RECROP` |
 | 01 Brief | `media` | 4:3 · `PROCESS-STUDIO-009` (1216×896) | 4:5 · `PROCESS-STUDIO-006` (3712×4608) | `COVERED` |
 | 02 Material direction | `media` | 16:9 · `PROCESS-PIGMENT-008` (2048×1152) | 4:5 · `PROCESS-PIGMENT-003` (1856×2304) | `COVERED` |
 | 03 Form development | `media` | 16:9 · `PROCESS-MOULD-005` (5504×3072) | 3:4 · `PROCESS-MOULD-009` (3584×4800) | `COVERED` |
 | 04 Fabrication | `media` | 16:9 · `THREE-D-RESIN-003` (5504×3072) | 3:4 · `THREE-D-RESIN-004` (3584×4800) | `COVERED` |
-| 05 Resin work | `video` | 16:9 · `PROCESS-POUR-003` (video, 1920×1080, 6 s) | — | `COVERED` |
+| 05 Resin work | `video` | 16:9 · `PROCESS-POUR-011` (video, 1920×1080, 6 s) | — | `COVERED` |
 | 05 Resin work | `media` (poster) | 16:9 · `PROCESS-POUR-007` (2688×1536) | 9:16 · `PROCESS-POUR-002` (3072×5504) | `COVERED` |
 | 06 Finishing | `media` | 4:3 · `PROCESS-FINISH-005` (2400×1792) | 4:5 · `PROCESS-FINISH-003` (3712×4608) | `COVERED` |
 | 07 Final review | `media` | 16:9 · `PROCESS-CURE-006` (2048×1152) | 9:16 · `PROCESS-CURE-002` (3072×5504) | `COVERED` |
@@ -364,7 +390,7 @@ portfolio archive stays empty until the owner has a verified project (D10, SEED 
 | Surface | Slot | Desktop | Mobile | Verdict |
 |---|---|---|---|---|
 | Landing hero | `media` | 16:9 · `EDITORIAL-009` (5504×3072) | 3:4 · `EDITORIAL-010` (3584×4800) | `COVERED` |
-| Landing band | `video` | 16:9 · `EDITORIAL-002` (video, 1280×720, 6 s) | 9:16 · `EDITORIAL-001` (video, 768×1344, 6 s) | `COVERED` |
+| Landing band | `video` | 16:9 · `EDITORIAL-018` (video, 1280×720, 6 s) | 9:16 · `EDITORIAL-017` (video, 768×1344, 6 s) | `COVERED` |
 | Article covers ×10 seeded drafts | `media` | 16:9 · `EDITORIAL-011…016`, `EDITORIAL-003`, `WORKSHOP-SESSION-001…005` | 3:4/4:5 · `EDITORIAL-007`, `-010`, `-001`, `-002` | `COVERED` — 24 candidates for 10 drafts |
 | Category headers ×9 | `media` | 16:9 · drawn from `editorial`, `workshop-session`, `process-*`, `material-macro` | 4:5 · same families | `COVERED` |
 
@@ -570,14 +596,14 @@ heavy gold, no generic showroom look.
 | Field | Value |
 |---|---|
 | Type | image |
-| Family | `largeformat-dining` |
+| Planned family (see §3.1) | `large-dining-card` — **not** `largeformat-dining` |
 | Page · section | `large-format` · `dining-tables` |
 | Slot · role | `card.1` · `DESKTOP` and `MOBILE` |
 | Aspect ratio | 4:5 |
 | Minimum resolution | 1600 × 2000 — target 3712 × 4608 |
 | Cloudinary folder | `rivya/large-format/dining` |
-| Cloudinary public ID | `rivya/large-format/dining/largeformat-dining-004-4x5` |
-| Filename | `largeformat-dining-004-4x5.webp` |
+| Cloudinary public ID | `rivya/large-format/dining/large-dining-card-001-4x5` |
+| Filename | `large-dining-card-001-4x5.webp` |
 | Suggested model | `nano_banana_2` (all 3712 × 4608 masters) |
 | Gate | Q1 no · Q2 no · Q3 no (no portrait table) · Q4 no (portrait crop removes the table's length) |
 
@@ -607,14 +633,14 @@ shallow depth of field; no text, no logos, no watermarks, no faces.
 | Field | Value |
 |---|---|
 | Type | image |
-| Family | `largeformat-coffee` |
+| Planned family (see §3.1) | `large-coffee-card` — **not** `largeformat-coffee` |
 | Page · section | `large-format` · `coffee-tables` |
 | Slot · role | `card.2` · `DESKTOP` and `MOBILE` |
 | Aspect ratio | 4:5 |
 | Minimum resolution | 1600 × 2000 — target 3712 × 4608 |
 | Cloudinary folder | `rivya/large-format/coffee` |
-| Cloudinary public ID | `rivya/large-format/coffee/largeformat-coffee-002-4x5` |
-| Filename | `largeformat-coffee-002-4x5.webp` |
+| Cloudinary public ID | `rivya/large-format/coffee/large-coffee-card-001-4x5` |
+| Filename | `large-coffee-card-001-4x5.webp` |
 | Suggested model | `nano_banana_2` |
 | Gate | Q1 no · Q2 no · Q3 no (family = 1 asset, 3:2 only) · Q4 no (crop removes the low proportion) |
 
@@ -650,14 +676,14 @@ no watermarks, no faces.
 | Field | Value |
 |---|---|
 | Type | image |
-| Family | `largeformat-monumental` |
+| Planned family (see §3.1) | `large-architectural-card` — **not** `largeformat-monumental` |
 | Page · section | `large-format` · `architectural` |
 | Slot · role | `card.6` · `DESKTOP` and `MOBILE`; homepage `card.5` |
 | Aspect ratio | 4:5 |
 | Minimum resolution | 1600 × 2000 — target 3712 × 4608 |
 | Cloudinary folder | `rivya/large-format/architectural` |
-| Cloudinary public ID | `rivya/large-format/architectural/largeformat-monumental-002-4x5` |
-| Filename | `largeformat-monumental-002-4x5.webp` |
+| Cloudinary public ID | `rivya/large-format/architectural/large-architectural-card-001-4x5` |
+| Filename | `large-architectural-card-001-4x5.webp` |
 | Gate | Q1 no · Q2 no · Q3 no (family = 1 asset, 21:9 only) · Q4 no (portrait crop destroys the scale) |
 | Release gate | `owner_verification` on the `/large-format` architectural section = `VERIFIED` |
 
@@ -711,7 +737,10 @@ daylit room.*
 | Field | Value |
 |---|---|
 | Type | image · 1:1 · min 2048 × 2048, target 4096 × 4096 |
-| Cloudinary public ID | `rivya/material/material-macro-034-1x1` |
+| Family | `home-material` |
+| Cloudinary folder | `rivya/material` |
+| Cloudinary public ID | `rivya/material/home-material-fabricated-001-1x1` |
+| Filename | `home-material-fabricated-001-1x1.webp` |
 | Gate | Q1 no · Q2 no · Q3 no (no 1:1 fabricated-form macro) · **Q4 yes** (recrop `THREE-D-RESIN-002`) |
 | Generate only if | The four-tile Material Palette set must be shot in one session, as `MATERIAL-MACRO-016…022` were |
 
@@ -739,7 +768,10 @@ lattice.*
 | Field | Value |
 |---|---|
 | Type | image · 1:1 · min 2048 × 2048, target 4096 × 4096 |
-| Cloudinary public ID | `rivya/material/material-macro-035-1x1` |
+| Family | `home-material` |
+| Cloudinary folder | `rivya/material` |
+| Cloudinary public ID | `rivya/material/home-material-finish-001-1x1` |
+| Filename | `home-material-finish-001-1x1.webp` |
 | Gate | Q1 no · Q2 no · Q3 no (no 1:1 finish macro) · **Q4 yes** (recrop `PROCESS-FINISH-001`) |
 | Generate only if | Set continuity with G7 and `MATERIAL-MACRO-016…022` |
 
@@ -848,7 +880,7 @@ Every one of these is a decision, not an omission. Each names the condition that
 | A new CMS slot appears | Add it to `content/media-slots.ts`, then run the gate and add a row to §4 or §5 |
 | A gap is closed by generation | The Python builder appends to the manifest, bumping `manifest_version` to `rivya-hf-v2`; the original 250 objects stay **byte-identical**; `npm run manifest:verify` proves it |
 | A gap is closed by re-crop | A `media_crops` row is written from the Studio crop editor; §4 verdict changes to `RECROP` with the ratio recorded. No manifest change |
-| A brief is added here | `npm run media:assert-no-regen` must pass in CI before merge |
+| A brief is added here | Both guards must pass in CI before merge: `npm run media:assert-no-regen` (the target must not already exist) and `python scripts/media/check-asset-ids.py` (the planned ID must not reuse a manifest family prefix — D6 A1) |
 | An existing asset is judged unusable | It is archived, never regenerated. Its ID is never reused |
 | This document and the manifest disagree | The manifest wins. Correct this file |
 | This document and `CANONICAL-DECISIONS.md` disagree | D6 wins. Correct this file, or amend D6 by dated amendment |

@@ -57,11 +57,18 @@ section, always editable at the section's own Studio location, never seeded with
 declared once here rather than repeated 200 times. Nothing else is omitted — if a field carries a
 seeded sentence, a label, a URL or a media binding, it has a row below.
 
-### 0.4 Media identity is composite
+### 0.4 Media identity and why every cell names a type
 
-26 of the 250 manifest assets share a `rivya_asset_id` between an image and a video
-(224 distinct ids, 250 rows). Identity is therefore `(rivya_asset_id, type)`, and every media cell
-in this document names both. This is raised as an amendment candidate in §31.
+The manifest holds **250 assets with 250 distinct `rivya_asset_id` values** — 224 images and 26
+videos — so the id alone is the key, exactly as D6 says. Videos continue their family's numbering
+rather than sharing an id with a still: `PROCESS-POUR-001…008` are images and
+`PROCESS-POUR-009…012` are videos; `LARGEFORMAT-DINING-001…003` are images and `-004`, `-005` are
+videos.
+
+Because the id does not encode the type, and because a media slot behaves differently when it
+receives a clip instead of a still — poster, `prefers-reduced-motion` fallback, weight budget —
+every media cell in this document names the type alongside the id, and the Studio media picker does
+the same.
 
 ### 0.5 GAP means Phase 43, never a placeholder
 
@@ -82,76 +89,86 @@ The real figure this inventory achieves:
 
 | Measure | Rows | Share |
 |---|---|---|
-| Total launch-copy fields inventoried | 486 | 100% |
-| **Mapped to a named Studio editing control** | **474** | **97.5%** |
-| Not reachable from the Studio | 12 | 2.5% |
-| Seeded with a value by `npm run seed:content` | 461 | 94.9% |
-| Awaiting an owner-supplied value | 25 | 5.1% |
-| Carrying `OWNER_VERIFICATION_REQUIRED` | 118 | 24.3% |
-| Publishable in the launch pass without owner verification | 343 | 70.6% |
+| Total launch-copy fields inventoried | 492 | 100% |
+| **Mapped to a named Studio editing control** | **479** | **97.4%** |
+| Not reachable from the Studio | 13 | 2.6% |
+| Seeded with a value by `npm run seed:content` | 452 | 91.9% |
+| Awaiting an owner-supplied value | 40 | 8.1% |
+| Carrying `OWNER_VERIFICATION_REQUIRED` | 108 | 22.0% |
+| Publishable in the launch pass without owner verification | 306 | 62.2% |
+| Media slots declared | 85 | — |
+| Media slots bound to a real manifest asset | 65 | 76.5% of slots |
 
-**97.5% is the honest answer, not 100%.** The twelve unmapped rows are enumerated in §1.3, and
-every one of them is a decision an engineer must make rather than an oversight. Nine of the twelve
-are fixable inside Phase 09 by extending one `check` constraint; two are deployment configuration
-by design; one is a generated identifier.
+**97.4% is the honest answer, not 100%.** The thirteen unmapped rows are enumerated in §1.3, and
+every one of them is a decision an engineer must make rather than an oversight. Nine of the thirteen
+close with a single migration; three are deployment configuration by design; one is a derived value
+that should never be typed.
 
 ### 1.2 Coverage by area
 
-| Area | Rows | Studio-mapped | Seeded | OVR | Media slots | GAP |
-|---|---|---|---|---|---|---|
-| Global brand content (§6) | 6 | 6 | 6 | 1 | 0 | 0 |
-| CTA library (§7) | 13 | 13 | 13 | 0 | 0 | 0 |
-| Navigation (§8) | 20 | 20 | 20 | 0 | 0 | 0 |
-| Announcement bar (§9) | 3 | 3 | 3 | 0 | 0 | 0 |
-| Homepage (§10) | 84 | 84 | 84 | 14 | 24 | 4 |
-| About (§11) | 27 | 27 | 27 | 8 | 10 | 0 |
-| Large Format (§12) | 33 | 33 | 33 | 15 | 14 | 3 |
-| Collection landing (§13) | 7 | 7 | 7 | 0 | 2 | 2 |
-| The seven categories (§14) | 28 | 28 | 28 | 9 | 7 | 2 |
-| Custom Commissions (§15) | 26 | 26 | 26 | 12 | 6 | 6 |
-| Process (§16) | 32 | 32 | 32 | 24 | 16 | 0 |
-| Portfolio landing (§17, §28) | 8 | 8 | 8 | 0 | 2 | 0 |
-| Journal (§18–§20) | 34 | 34 | 34 | 2 | 21 | 1 |
-| Contact (§21–§22) | 27 | 27 | 25 | 7 | 2 | 2 |
-| FAQ (§23) | 12 | 12 | 12 | 10 | 2 | 2 |
-| Footer (§24) | 12 | 12 | 12 | 4 | 0 | 0 |
-| Newsletter (§25) | 3 | 3 | 3 | 0 | 0 | 0 |
-| Search (§26) | 5 | 5 | 5 | 0 | 2 | 2 |
-| Empty states (§27–§29) | 9 | 9 | 9 | 0 | 0 | 0 |
-| Commerce and action labels (§30–§31) | 17 | 17 | 17 | 1 | 0 | 0 |
-| Customization form templates (§33–§35) | 33 | 33 | 33 | 9 | 0 | 0 |
-| WhatsApp templates (§36–§37) | 3 | 3 | 3 | 0 | 0 | 0 |
-| Studio copy (§38–§40) | 18 | 18 | 18 | 0 | 0 | 0 |
-| SEO and social (§41, §42, §44) | 12 | 12 | 12 | 0 | 1 | 1 |
-| Error and system surfaces (§45–§49) | 17 | 17 | 17 | 0 | 0 | 0 |
-| Legal pages (`/privacy`, `/terms`) | 6 | 6 | 2 | 4 | 0 | 0 |
-| Interface chrome not enumerated by SEED | 12 | 3 | 0 | 0 | 0 | 0 |
-| **Total** | **486** | **474** | **461** | **118** | **109** | **27** |
+Section numbers below are this document's own; the SEED reference follows in brackets.
 
-### 1.3 The twelve unmapped rows, named
+| Area | Rows | Studio-mapped | Seeded | OVR | Media slots | Bound | GAP |
+|---|---|---|---|---|---|---|---|
+| §2 Global brand content [SEED §6] | 6 | 6 | 6 | 1 | 0 | 0 | 0 |
+| §3 CTA library [§7] | 13 | 13 | 13 | 0 | 0 | 0 | 0 |
+| §4 Navigation [§8] | 20 | 20 | 20 | 0 | 0 | 0 | 0 |
+| §5 Announcement bar [§9] | 3 | 3 | 3 | 0 | 0 | 0 | 0 |
+| §6 Homepage [§10] | 82 | 82 | 79 | 19 | 23 | 20 | 3 |
+| §7 About [§11] | 23 | 23 | 23 | 6 | 6 | 6 | 0 |
+| §8 Large Format [§12] | 27 | 27 | 26 | 8 | 13 | 11 | 2 |
+| §9 Collection landing [§13] | 9 | 9 | 7 | 0 | 2 | 0 | 2 |
+| §10 The seven categories [§14] | 28 | 28 | 26 | 7 | 7 | 5 | 2 |
+| §11 Custom Commissions [§15] | 26 | 26 | 20 | 10 | 6 | 0 | 6 |
+| §12 Process [§16] | 29 | 29 | 29 | 21 | 9 | 9 | 0 |
+| §13 Portfolio landing [§17, §28] | 8 | 8 | 8 | 0 | 2 | 2 | 0 |
+| §14 Journal [§18, §19, §20] | 30 | 29 | 28 | 2 | 12 | 12 | 0 |
+| §15 Contact [§21] | 14 | 14 | 10 | 5 | 2 | 0 | 2 |
+| §16 Contact form [§22] | 12 | 12 | 12 | 1 | 0 | 0 | 0 |
+| §17 FAQ [§23] | 12 | 12 | 11 | 10 | 1 | 0 | 1 |
+| §18 Footer [§24] | 14 | 14 | 14 | 5 | 0 | 0 | 0 |
+| §19 Newsletter [§25] | 3 | 3 | 3 | 0 | 0 | 0 | 0 |
+| §20 Search and empty states [§26–§29] | 15 | 15 | 14 | 0 | 1 | 0 | 1 |
+| §21 Commerce and action labels [§30, §31] | 17 | 17 | 17 | 1 | 0 | 0 | 0 |
+| §22 Customization form templates [§33–§35] | 33 | 33 | 33 | 8 | 0 | 0 | 0 |
+| §23 WhatsApp templates [§36, §37] | 3 | 3 | 3 | 0 | 0 | 0 | 0 |
+| §24 Studio copy [§38–§40] | 18 | 18 | 18 | 0 | 0 | 0 | 0 |
+| §25 SEO, keywords and social [§41, §42, §44] | 12 | 12 | 10 | 0 | 1 | 0 | 1 |
+| §26 Error and inquiry surfaces [§45–§49] | 17 | 17 | 17 | 0 | 0 | 0 | 0 |
+| §27 Legal pages | 6 | 6 | 2 | 4 | 0 | 0 | 0 |
+| §28 Interface chrome not enumerated by SEED | 12 | 0 | 0 | 0 | 0 | 0 | 0 |
+| **Total** | **492** | **479** | **452** | **108** | **85** | **65** | **20** |
+
+The thirteenth unmapped row is `journal_articles.reading_minutes` (§14.3), which is computed on save
+at 200 words per minute and must never be typed. It is counted as unmapped because it is a
+visitor-facing value with no Studio control, and recorded here so nobody adds one.
+
+### 1.3 The thirteen unmapped rows, named
 
 | # | String | Where it lives instead | Why it is not in the Studio | Proposed fix |
 |---|---|---|---|---|
-| 1 | Inquiry reference format `RIV-<yyyy>-<seq>` | `supabase/migrations/0180…` default + `lib/whatsapp/template.ts` | It is an identifier the database allocates in the insert transaction, not copy | Leave in code. The prefix is a data contract, not a sentence |
-| 2 | Date rendering (`en-GB`, `d MMMM yyyy`) on journal and inquiry surfaces | `lib/format/date.ts` | Locale formatting, not a string | Leave in code |
-| 3 | `NEXT_PUBLIC_WHATSAPP_NUMBER` fallback | Deployment environment (D8) | Used only until `contact.whatsapp` is `VERIFIED`; a Studio control that overrides a deploy secret would be a second source of truth | Leave. STUDIO_GUIDE §13.8 already gives the verified row precedence |
-| 4 | `NEXT_PUBLIC_SITE_URL` in canonical and OG URLs | Deployment environment (D8) | Environment identity, not copy | Leave in code |
-| 5 | Skip-to-content link label | `components/primitives/SkipLink.tsx` | No `global_content.group_key` accepts it | Extend the `group_key` check with `UI_CHROME` |
-| 6 | Breadcrumb root label | `components/patterns/Breadcrumbs.tsx` | As above | `UI_CHROME` |
-| 7 | Pagination labels (previous, next, page *n* of *m*) | `components/patterns/Pagination.tsx` | As above | `UI_CHROME` |
-| 8 | Filter and sort control labels on `/collection` | `components/patterns/FilterBar.tsx` | As above | `UI_CHROME` |
-| 9 | Gallery and lightbox controls (close, next, previous, zoom) | `components/patterns/Lightbox.tsx` | As above | `UI_CHROME` |
-| 10 | 3D viewer controls (reset camera, full screen, lighting preset) | `components/three/ViewerControls.tsx` | As above; also Phase 21, after the seed | `UI_CHROME` |
-| 11 | Reading-time suffix on journal cards | `components/patterns/ArticleCard.tsx` | As above | `UI_CHROME` |
-| 12 | Cookie-free analytics disclosure line in the footer | `components/sections/Footer.tsx` | LEGAL_COPY with no `group_key` | `UI_CHROME`, or `LEGAL` if legal strings are separated |
+| 1 | Skip-to-content link label | `components/primitives/SkipLink.tsx` | No `global_content.group_key` accepts it | Extend the `group_key` check with `UI_CHROME` |
+| 2 | Breadcrumb root label | `components/patterns/Breadcrumbs.tsx` | As above | `UI_CHROME` |
+| 3 | Pagination labels — previous, next, position | `components/patterns/Pagination.tsx` | As above | `UI_CHROME` |
+| 4 | Filter and sort control labels on `/collection` | `components/patterns/FilterBar.tsx` | As above | `UI_CHROME` |
+| 5 | Lightbox controls — close, next, previous, zoom | `components/patterns/Lightbox.tsx` | As above | `UI_CHROME` |
+| 6 | 3D viewer controls — reset camera, full screen, lighting preset | `components/three/ViewerControls.tsx` | As above; also Phase 21, long after the seed | `UI_CHROME` |
+| 7 | Reading-time suffix on journal cards | `components/patterns/ArticleCard.tsx` | As above | `UI_CHROME` |
+| 8 | Mobile menu open and close labels | `components/patterns/MobileNav.tsx` | As above | `UI_CHROME` |
+| 9 | Analytics disclosure line in the footer | `components/sections/Footer.tsx` | `LEGAL_COPY` with no `group_key` | `UI_CHROME`, or a separate `LEGAL` group |
+| 10 | `journal_articles.reading_minutes` | Computed on save at 200 wpm | A derived value; a Studio control would let someone type a wrong one | Leave derived. Only the suffix (row 7) is copy |
+| 11 | `NEXT_PUBLIC_WHATSAPP_NUMBER` fallback | Deployment environment (D8) | Used only until `contact.whatsapp` is `VERIFIED`; a Studio control overriding a deploy value would be a second source of truth | Leave. STUDIO_GUIDE §13.8 already gives the verified row precedence |
+| 12 | `NEXT_PUBLIC_SITE_URL` in canonical and OG URLs | Deployment environment (D8) | Environment identity, not copy | Leave in code |
+| 13 | Inquiry reference format `RIV-<yyyy>-<sequence>` | `supabase/migrations/0180…` default and `lib/whatsapp/template.ts` | An identifier the database allocates inside the insert transaction | Leave in code. The prefix is a data contract, not a sentence |
 
-Rows 5–11 are seven distinct strings families that SEED never enumerates because they are interface
-chrome rather than marketing copy — but they are still visitor-facing sentences, and SEED §1 says
-public components must not contain primary copy. **The single fix is one migration**: extend the
+Rows 1–9 are nine string families that SEED never enumerates because they are interface chrome
+rather than marketing copy — but they are still visitor-facing sentences, and SEED §1 says public
+components must not contain primary copy. **The fix is one migration**: extend the
 `global_content.group_key` check constraint with `UI_CHROME` and seed those strings from
-`content/seed/global.ts`. That would take Studio-mapped coverage to **99.4% (483 of 486)**, with
-only the two environment variables and the reference-code format outside. This is raised in §31 as
-open question 1 because `group_key`'s vocabulary is fixed in `DATA_MODEL.md` §2.1.
+`content/seed/global.ts` like every other reusable label. That takes Studio-mapped coverage to
+**99.2% (488 of 492)**, leaving only the two environment variables, the reference-code format and
+one derived integer outside. Raised in §31 as open question 1, because `group_key`'s vocabulary is
+fixed in `DATA_MODEL.md` §2.1 and this document does not change it unilaterally.
 
 ### 1.4 Where the launch site is not yet complete
 
@@ -160,9 +177,9 @@ Not a Studio-mapping problem — a content problem the owner must close:
 | Blocker | Rows | Consequence at launch |
 |---|---|---|
 | `/privacy` and `/terms` body copy is not seeded | 4 | Both paths resolve to `notFound()` until the owner supplies legal text. Fabricating a privacy policy or terms of sale is forbidden by D10 |
-| `contact.location_url` and `contact.location_label` have no supplied value | 2 | The map link is not rendered. CONTEXT.md records the destination as owner-supplied; it is not in the repository |
-| 118 rows carry `OVR` | 118 | Each is blocked from `PUBLISHED` until an owner or admin verifies it. §30 lists them grouped by the single decision that clears each group — nine decisions clear all 118 |
-| 27 media slots are `GAP` | 27 | Those sections render copy without media. §29 is the Phase 43 brief list |
+| `contact.location_url` and `contact.location_label` have no supplied value | 2 | The map link is not rendered. `CONTEXT.md` records the destination as owner-supplied; it is not in the repository |
+| 108 rows carry `OVR` | 108 | Each is blocked from `PUBLISHED` until an owner or admin verifies it. §30 groups them by the single decision that clears each group — **ten decisions clear all 108** |
+| 20 media slots are `GAP` | 20 | Those sections render copy without media. §29 expands them into twenty-one Phase 43 briefs, fourteen of which have a reuse candidate already in the manifest |
 
 ---
 
@@ -302,8 +319,8 @@ SEO editor shows whether a value is the owner's or a fallback.
 site and no existing asset was generated for it; the `home` page family in the manifest holds only
 five `interior-lifestyle` stills. Phase 43 briefs a flagship 21:9 desktop video plus poster and a
 9:16 mobile video plus poster. **Before generating anything, evaluate the reuse candidates already
-in the manifest** — `LARGEFORMAT-DINING-002 (video, 16:9)` for desktop and
-`LARGEFORMAT-DINING-001 (video, 9:16)` for mobile, with `LARGEFORMAT-DINING-002 (image, 21:9)` and
+in the manifest** — `LARGEFORMAT-DINING-005 (video, 16:9)` for desktop and
+`LARGEFORMAT-DINING-004 (video, 9:16)` for mobile, with `LARGEFORMAT-DINING-002 (image, 21:9)` and
 `LARGEFORMAT-DINING-001 (image, 9:16)` as posters. If the owner accepts them the gap closes with
 four bindings and no generation (D6).
 
@@ -362,11 +379,12 @@ asserts the seed runner's table allowlist excludes every catalogue table.
 | `/` | 05 Material Story | `payload.sequence` — LIQUID. FORM. CRAFT. OBJECT. | Yes | Yes | `/studio/content/homepage → 05 → Headline sequence` | No · BRAND_COPY | — | n/a | DRAFT → publishable |
 | `/` | 05 Material Story | `body` — two paragraphs on resin's transformation from fluid to lasting | Yes | Yes | `/studio/content/homepage → 05 Material Story` | No · EDITORIAL_COPY | — | n/a | DRAFT → publishable |
 | `/` | 05 Material Story | `cta_label` / `cta_url` — Discover Our Process → `/process` | Yes | Yes | `/studio/content/homepage → 05 Material Story` | No · BRAND_COPY | — | n/a | DRAFT → publishable |
-| `/` | 05 Material Story | `media_desktop_id` / `media_mobile_id` | Yes | Yes | `/studio/content/homepage → 05 → Media` | No · UI | PROCESS-POUR-001 (video) · PROCESS-POUR-001 (image) | n/a | DRAFT → publishable |
+| `/` | 05 Material Story | `media_desktop_id` / `media_mobile_id` | Yes | Yes | `/studio/content/homepage → 05 → Media` | No · UI | PROCESS-POUR-009 (video) · PROCESS-POUR-001 (image) | n/a | DRAFT → publishable |
 
-The desktop video and the mobile still share `rivya_asset_id = 'PROCESS-POUR-001'` and differ only
-by `type` — the composite-identity case of §0.4, and the reason the media picker shows type
-alongside id.
+Desktop takes a clip and mobile takes a still from the same `process-pour` family, which is the
+common shape across this inventory: the vertical frame is a separate asset, never a re-crop of the
+landscape one (D6 makes desktop and mobile separate CMS slots). The video needs a poster — see §31,
+open question 4.
 
 ### 6.6 Section 06 — Material Palette
 
@@ -550,7 +568,7 @@ part of the seven D3 taxonomy categories.
 | `/large-format` | 01 Hero | `heading` — Designed to shape the room around them. | Yes | Yes | `/studio/content/pages → Large Format → 01 Hero` | No · BRAND_COPY | — | n/a | DRAFT → publishable |
 | `/large-format` | 01 Hero | `body` — the large-format collection focuses on furniture and statement objects where scale becomes part of the design | Yes | Yes | `/studio/content/pages → Large Format → 01 Hero` | No · BRAND_COPY | — | n/a | DRAFT → publishable |
 | `/large-format` | 01 Hero | `cta_label` / `cta_url` — Discuss a Large-Format Project → `/custom-commissions` | Yes | Yes | `/studio/content/pages → Large Format → 01 Hero` | No · BRAND_COPY | — | n/a | DRAFT → publishable |
-| `/large-format` | 01 Hero | `media_desktop_id` / `media_mobile_id` | Yes | Yes | `/studio/content/pages → Large Format → 01 Hero → Media` | No · UI | LARGEFORMAT-DINING-002 (video) · LARGEFORMAT-DINING-001 (video) | n/a | DRAFT → publishable |
+| `/large-format` | 01 Hero | `media_desktop_id` / `media_mobile_id` | Yes | Yes | `/studio/content/pages → Large Format → 01 Hero → Media` | No · UI | LARGEFORMAT-DINING-005 (video) · LARGEFORMAT-DINING-004 (video) | n/a | DRAFT → publishable |
 | `/large-format` | 02 Category intro | `heading` — Furniture as a focal point. | Yes | Yes | `/studio/content/pages → Large Format → 02 Category Intro` | No · BRAND_COPY | — | n/a | DRAFT → publishable |
 | `/large-format` | 02 Category intro | `body` — dining tables, conference tables, coffee tables, consoles and sculptural furniture | Yes | Yes | `/studio/content/pages → Large Format → 02 Category Intro` | OVR | — | n/a | DRAFT · OVR |
 | `/large-format` | 02 Category intro | `media_desktop_id` / `media_mobile_id` | Yes | Yes | `/studio/content/pages → Large Format → 02 → Media` | OVR | LARGEFORMAT-DINING-003 (image) · LARGEFORMAT-SEATING-002 (image) | n/a | DRAFT · OVR |
@@ -720,22 +738,22 @@ verification block on the site and clears with one owner conversation.
 | `/process` | 01 Hero | `eyebrow` — PROCESS | Yes | Yes | `/studio/content/pages → Process → 01 Hero` | No · BRAND_COPY | — | n/a | DRAFT → publishable |
 | `/process` | 01 Hero | `heading` — From an idea to a material object. | Yes | Yes | `/studio/content/pages → Process → 01 Hero` | No · BRAND_COPY | — | n/a | DRAFT → publishable |
 | `/process` | 01 Hero | `body` — every project differs, but the process is guided by the same principle | Yes | Yes | `/studio/content/pages → Process → 01 Hero` | No · EDITORIAL_COPY | — | n/a | DRAFT → publishable |
-| `/process` | 01 Hero | `media_desktop_id` / `media_mobile_id` | Yes | Yes | `/studio/content/pages → Process → 01 Hero → Media` | No · UI | PROCESS-STUDIO-001 (video) · PROCESS-STUDIO-006 (image) | n/a | DRAFT → publishable |
+| `/process` | 01 Hero | `media_desktop_id` / `media_mobile_id` | Yes | Yes | `/studio/content/pages → Process → 01 Hero → Media` | No · UI | PROCESS-STUDIO-016 (video) · PROCESS-STUDIO-006 (image) | n/a | DRAFT → publishable |
 | `/process` | 02 Step 01 Brief | `heading` — Understand the purpose. | Yes | Yes | `/studio/content/pages → Process → 02 Step 01` | OVR | — | n/a | DRAFT · OVR |
 | `/process` | 02 Step 01 Brief | `body` — dimensions, use, environment, reference imagery and visual direction establish the starting point | Yes | Yes | `/studio/content/pages → Process → 02 Step 01` | OVR | — | n/a | DRAFT · OVR |
 | `/process` | 02 Step 01 Brief | `media_desktop_id` / `media_mobile_id` | Yes | Yes | `/studio/content/pages → Process → 02 → Media` | OVR | EDITORIAL-005 (image) · PROCESS-STUDIO-015 (image) | n/a | DRAFT · OVR |
 | `/process` | 03 Step 02 Material direction | `heading` — Choose what the piece needs to express. | Yes | Yes | `/studio/content/pages → Process → 03 Step 02` | OVR | — | n/a | DRAFT · OVR |
 | `/process` | 03 Step 02 Material direction | `body` — resin colour, transparency, wood character, structural material and finish influence appearance and function | Yes | Yes | `/studio/content/pages → Process → 03 Step 02` | OVR | — | n/a | DRAFT · OVR |
-| `/process` | 03 Step 02 Material direction | `media_desktop_id` / `media_mobile_id` | Yes | Yes | `/studio/content/pages → Process → 03 → Media` | OVR | PROCESS-PIGMENT-001 (video) · PROCESS-PIGMENT-002 (video) | n/a | DRAFT · OVR |
+| `/process` | 03 Step 02 Material direction | `media_desktop_id` / `media_mobile_id` | Yes | Yes | `/studio/content/pages → Process → 03 → Media` | OVR | PROCESS-PIGMENT-012 (video) · PROCESS-PIGMENT-013 (video) | n/a | DRAFT · OVR |
 | `/process` | 04 Step 03 Form development | `heading` — Shape the relationship between materials. | Yes | Yes | `/studio/content/pages → Process → 04 Step 03` | OVR | — | n/a | DRAFT · OVR |
 | `/process` | 04 Step 03 Form development | `body` — proportion, edge, thickness, silhouette and structural direction are developed around the piece | Yes | Yes | `/studio/content/pages → Process → 04 Step 03` | OVR | — | n/a | DRAFT · OVR |
-| `/process` | 04 Step 03 Form development | `media_desktop_id` / `media_mobile_id` | Yes | Yes | `/studio/content/pages → Process → 04 → Media` | OVR | PROCESS-TIMBER-001 (video) · PROCESS-TIMBER-001 (image) | n/a | DRAFT · OVR |
+| `/process` | 04 Step 03 Form development | `media_desktop_id` / `media_mobile_id` | Yes | Yes | `/studio/content/pages → Process → 04 → Media` | OVR | PROCESS-TIMBER-006 (video) · PROCESS-TIMBER-001 (image) | n/a | DRAFT · OVR |
 | `/process` | 05 Step 04 Fabrication | `heading` — Translate the direction into physical form. | Yes | Yes | `/studio/content/pages → Process → 05 Step 04` | OVR | — | n/a | DRAFT · OVR |
 | `/process` | 05 Step 04 Fabrication | `body` — the appropriate fabrication method is selected according to the design and material requirements | Yes | Yes | `/studio/content/pages → Process → 05 Step 04` | OVR | — | n/a | DRAFT · OVR |
-| `/process` | 05 Step 04 Fabrication | `media_desktop_id` / `media_mobile_id` | Yes | Yes | `/studio/content/pages → Process → 05 → Media` | OVR | PROCESS-MOULD-001 (video) · PROCESS-MOULD-003 (image) | n/a | DRAFT · OVR |
+| `/process` | 05 Step 04 Fabrication | `media_desktop_id` / `media_mobile_id` | Yes | Yes | `/studio/content/pages → Process → 05 → Media` | OVR | PROCESS-MOULD-012 (video) · PROCESS-MOULD-003 (image) | n/a | DRAFT · OVR |
 | `/process` | 06 Step 05 Resin work | `heading` — Control movement without removing character. | Yes | Yes | `/studio/content/pages → Process → 06 Step 05` | OVR | — | n/a | DRAFT · OVR |
 | `/process` | 06 Step 05 Resin work | `body` — colour, layering, transparency and composition are developed according to the intended visual result | Yes | Yes | `/studio/content/pages → Process → 06 Step 05` | OVR | — | n/a | DRAFT · OVR |
-| `/process` | 06 Step 05 Resin work | `media_desktop_id` / `media_mobile_id` | Yes | Yes | `/studio/content/pages → Process → 06 → Media` | OVR | PROCESS-POUR-002 (video) · PROCESS-POUR-002 (image) | n/a | DRAFT · OVR |
+| `/process` | 06 Step 05 Resin work | `media_desktop_id` / `media_mobile_id` | Yes | Yes | `/studio/content/pages → Process → 06 → Media` | OVR | PROCESS-POUR-010 (video) · PROCESS-POUR-002 (image) | n/a | DRAFT · OVR |
 | `/process` | 07 Step 06 Finishing | `heading` — Refine what the eye and hand experience. | Yes | Yes | `/studio/content/pages → Process → 07 Step 06` | OVR | — | n/a | DRAFT · OVR |
 | `/process` | 07 Step 06 Finishing | `body` — surfaces, edges and transitions are finished to support the final visual and tactile quality | Yes | Yes | `/studio/content/pages → Process → 07 Step 06` | OVR | — | n/a | DRAFT · OVR |
 | `/process` | 07 Step 06 Finishing | `media_desktop_id` / `media_mobile_id` | Yes | Yes | `/studio/content/pages → Process → 07 → Media` | OVR | PROCESS-FINISH-007 (image) · PROCESS-FINISH-001 (image) | n/a | DRAFT · OVR |
@@ -792,7 +810,7 @@ The portfolio empty state is a `global_content` row, listed in §20.
 | `/journal` | 01 Hero | `eyebrow` — RIVYA JOURNAL | Yes | Yes | `/studio/content/pages → Journal → 01 Hero` | No · BRAND_COPY | — | n/a | DRAFT → publishable |
 | `/journal` | 01 Hero | `heading` — Material. Process. Perspective. | Yes | Yes | `/studio/content/pages → Journal → 01 Hero` | No · BRAND_COPY | — | n/a | DRAFT → publishable |
 | `/journal` | 01 Hero | `body` — stories and guides exploring the materials, ideas and processes surrounding Rivya's work | Yes | Yes | `/studio/content/pages → Journal → 01 Hero` | No · EDITORIAL_COPY | — | n/a | DRAFT → publishable |
-| `/journal` | 01 Hero | `media_desktop_id` / `media_mobile_id` | Yes | Yes | `/studio/content/pages → Journal → 01 Hero → Media` | No · UI | EDITORIAL-009 (image) · EDITORIAL-001 (video) | n/a | DRAFT → publishable |
+| `/journal` | 01 Hero | `media_desktop_id` / `media_mobile_id` | Yes | Yes | `/studio/content/pages → Journal → 01 Hero → Media` | No · UI | EDITORIAL-009 (image) · EDITORIAL-017 (video) | n/a | DRAFT → publishable |
 
 ### 14.2 The nine journal categories
 
@@ -1291,22 +1309,24 @@ never lists them, and `global_content.group_key`'s check constraint has no group
 | All | Config | `NEXT_PUBLIC_SITE_URL` for canonical and OG URLs | No | No | deployment environment (D8) | No · UI | — | n/a | not seeded |
 | All | Config | Inquiry reference format `RIV-<yyyy>-<sequence>` | No | No | `supabase/migrations/0180…` | No · UI | — | n/a | not seeded |
 
-Nine of these twelve close with one migration: add `UI_CHROME` to the `global_content.group_key`
-check constraint and seed them from `content/seed/global.ts` alongside the other reusable strings.
-That would take Studio-mapped coverage from 97.5% to 99.4%. See §31, open question 1.
+Nine of these close with one migration: add `UI_CHROME` to the `global_content.group_key` check
+constraint and seed them from `content/seed/global.ts` alongside the other reusable strings. That
+takes Studio-mapped coverage from 97.4% to 99.2%. See §31, open question 1. The three configuration
+rows stay where they are by design, and `reading_minutes` (§14.3) stays derived.
 
 ---
 
 ## 29. Media gap register — the Phase 43 brief list
 
-Every `GAP` cell above, with the ratios the slot needs and the existing assets to evaluate **before
-generating anything** (D6: nothing in the manifest may be regenerated, and reuse outranks
-generation).
+The twenty `GAP` cells above, expanded into the twenty-one briefs Phase 43 needs — a hero row covers
+a desktop and a mobile slot, and D6 makes them separate assets rather than two crops of one. Each
+row names the ratios the slot needs and the existing assets to evaluate **before generating
+anything**: nothing in the manifest may be regenerated, and reuse outranks generation.
 
 | # | Slot | Needs | Reuse candidates already in the manifest | If no reuse: Phase 43 brief |
 |---|---|---|---|---|
-| 1 | `/` 01 Hero desktop | 21:9 or 16:9 video + poster | `LARGEFORMAT-DINING-002 (video, 16:9)` + `LARGEFORMAT-DINING-002 (image, 21:9)` | Flagship large-format dining table, slow push-in, house palette, no people |
-| 2 | `/` 01 Hero mobile | 9:16 video + poster | `LARGEFORMAT-DINING-001 (video, 9:16)` + `LARGEFORMAT-DINING-001 (image, 9:16)` | Vertical crop of the same piece, not a re-crop of the desktop frame (D6: separate slots) |
+| 1 | `/` 01 Hero desktop | 21:9 or 16:9 video + poster | `LARGEFORMAT-DINING-005 (video, 16:9)` + `LARGEFORMAT-DINING-002 (image, 21:9)` | Flagship large-format dining table, slow push-in, house palette, no people |
+| 2 | `/` 01 Hero mobile | 9:16 video + poster | `LARGEFORMAT-DINING-004 (video, 9:16)` + `LARGEFORMAT-DINING-001 (image, 9:16)` | Vertical crop of the same piece, not a re-crop of the desktop frame (D6: separate slots) |
 | 3 | `/` `og:image` | 1200×630 share card | any 16:9 large-format still | Generated share card over `LARGEFORMAT-DINING-003` |
 | 4 | `/` 06 Material Palette card 3 — Fabricated Form | 1:1 macro | none — no digital-fabrication macro exists | Extreme macro, digitally fabricated lattice meeting cast resin, same matte charcoal ground and single upper-left key as `MATERIAL-MACRO-016…022` so the four tile as one set |
 | 5 | `/large-format` 03 Conference & Commercial Tables | 16:9 + 4:5 | none — all `largeformat-*` interiors are domestic | Long communal resin-and-timber surface in a neutral commercial interior. **Do not substitute a dining table**: presenting domestic work as commercial capability is the D10 failure |
@@ -1327,7 +1347,7 @@ generation).
 | 20 | `/search` `og:image` | 1200×630 | `noindex` page; lowest priority | — |
 | 21 | `seo_entries` GLOBAL `og:image` | 1200×630 site-wide default | `MATERIAL-MACRO-011 (image, 21:9)` | Brand share card with `social.og_headline` and `social.og_supporting` drawn over it |
 
-**Twelve of the twenty-one have a named reuse candidate.** Working through the reuse column first is
+**Fourteen of the twenty-one have a named reuse candidate.** Working through the reuse column first is
 not an optimisation — it is D6's asset priority ladder, and it is the difference between closing the
 media gap in an afternoon and commissioning a generation run.
 
@@ -1338,26 +1358,28 @@ substitution would be actively harmful rather than merely imperfect.
 
 ## 30. Verification register and the launch publication pass
 
-### 30.1 Nine owner decisions clear all 118 flags
+### 30.1 Ten owner decisions clear all 108 flags
 
 Every `OVR` row in this inventory belongs to exactly one decision. An owner or admin sets
 `owner_verification = 'VERIFIED'` on the rows a decision covers; the
-`enforce_owner_verification_gate` trigger then allows `PUBLISHED`.
+`enforce_owner_verification_gate` trigger then allows `PUBLISHED`. Nothing is counted twice — where
+a row is implicated by two decisions (contact enquiry types, V3 and V6) it sits under V3.
 
-| # | Decision the owner is making | Clears | Consequence of "no" |
-|---|---|---|---|
-| V1 | The phone, WhatsApp number, email and map destination are correct and public | `contact.*` (5), footer contact column (1) | Contact page renders without details; WhatsApp falls back to `NEXT_PUBLIC_WHATSAPP_NUMBER` |
-| V2 | Digital design and 3D fabrication are current production methods, not aspirations | Home 03 card 3, home 06 card 3, home 08 (5 fields), About 02, `3d-resin` category (4), 3D + Resin form template (9), journal 04 | Remove the `3d-resin` category from the menu, unpublish home 08, retitle journal 04. The site still works — it becomes a resin-and-timber studio, which is a coherent position |
-| V3 | Bespoke commissioning is offered as described: dimensions, materials, colour, form, finish, reference-based consultation | Home 07 (6), About 04 (3), Large Format 04 (3), Custom Commissions (13), commission form (2), contact enquiry types (1) | The commission funnel cannot publish. This is the site's primary conversion path — V3 is the highest-value decision on the list |
-| V4 | The seven-step production process is what actually happens | `/process` steps 01–07 (21), home 10 steps (8) | `/process` publishes as hero only; home 10 is hidden |
-| V5 | The large-format range includes conference and commercial tables, sculptural seating and architectural pieces | Large Format 02 (2), Large Format 03 (7) | Delete the unconfirmed entries from the section payload; the other three publish |
-| V6 | Preservation work is offered, and "lasting" is defensible without a duration claim | `preservation` category (4), preservation form template (9), journal 08, contact enquiry types (shared with V3) | Remove the preservation category and form; keep preservation out of the enquiry types |
-| V7 | Limited, one-of-one and ready-stock states are real, when a product uses them | `collectible-design` category description (1), `commerce.ready_stock` (1) | Remove the word *limited* from the collectible-design description; leave `Ready Stock` disabled |
-| V8 | The brand introduction and the manifesto describe real combined capability | `brand.introduction` (1), home 02 (5) | Publish the short descriptors only; home 02 stays hidden |
-| V9 | The ten FAQ answers describe how Rivya actually works | All ten `faqs` rows (10) | `/faq` publishes empty, which SEED §55 forbids — so V9 is a launch blocker for that route |
+| # | Decision the owner is making | Rows | Where they are | Consequence of "no" |
+|---|---|---|---|---|
+| V1 | The phone, WhatsApp number, email, map destination and social channels are correct and public | 10 | §15 (5), §18 footer contact (1) and social (4) | Contact block renders without details; WhatsApp falls back to `NEXT_PUBLIC_WHATSAPP_NUMBER`; the footer shows no social row |
+| V2 | Digital design and 3D fabrication are current production methods, not aspirations | 16 | §6 home 03 card 3, home 06 card 3, home 08 (5); §7 About 02 (2); §10 `3d-resin` (3); §14 journal 04 (1); §22 3D + Resin template (3) | Drop `3d-resin` from the menu, unpublish home 08, retitle journal 04. The site still coheres — it becomes a resin-and-timber studio |
+| V3 | Bespoke commissioning is offered as described: dimensions, materials, colour, form, finish, reference-based consultation | 21 | §6 home 07 (3); §7 About 04 (2); §8 Large Format 04 (2); §10 `gifts` (1); §11 (10); §16 enquiry types (1); §22 commission form (2) | The commission funnel cannot publish. This is the primary conversion path — **V3 is the highest-value decision on the list** |
+| V4 | The production process is what actually happens, step by step | 27 | §12 (21); §6 home 10 (6) | `/process` publishes as hero only; home 10 stays hidden |
+| V5 | The large-format range includes conference and commercial tables, sculptural seating and architectural pieces | 9 | §6 home 03 card 5 (1); §7 About 03 (2); §8 (6) | Delete the unconfirmed entries from the section payload; the other three categories publish |
+| V6 | Preservation work is offered, and "lasting" is defensible without a duration claim | 6 | §10 `preservation` (2); §14 journal 08 (1); §22 preservation template (3) | Remove the preservation category and form template; drop Preservation from the enquiry types |
+| V7 | Limited, one-of-one and ready-stock states are real when a product uses them | 2 | §10 `collectible-design` (1); §21 `commerce.ready_stock` (1) | Remove the word *limited* from the collectible-design description; leave `Ready Stock` disabled |
+| V8 | The brand introduction and the manifesto describe real combined capability | 3 | §2 `brand.introduction` (1); §6 home 02 (2) | Publish the four short descriptors only; home 02 stays hidden |
+| V9 | The ten FAQ answers describe how Rivya actually works | 10 | §17 | `/faq` would publish empty, which SEED §55 forbids — **V9 is a launch blocker for that route** |
+| V10 | The privacy policy and terms text is supplied and approved | 4 | §27 | `/privacy` and `/terms` stay at `notFound()` and their footer links stay disabled |
 
-Counts sum to 118. Nothing is flagged twice; where a row is implicated by two decisions
-(contact enquiry types, V3 and V6) it is counted once, under V3.
+Total: **108**. V3, V4 and V9 together account for 58 of them, so three conversations unblock more
+than half the site.
 
 ### 30.2 The launch publication pass
 
@@ -1367,12 +1389,13 @@ with no `PUBLISHED` page row resolves to `notFound()` — there is no half-built
 not a silent auto-publish:
 
 1. **Review** every `DRAFT → publishable` row in `/studio/content/pages` and
-   `/studio/content/homepage`. 343 rows.
+   `/studio/content/homepage`. 180 rows; a further 126 already seed `PUBLISHED` because the Studio,
+   the error pages and the empty states must work before anything is approved.
 2. **Bulk publish** through `/studio/catalog/bulk` with the content scope. Destructive and
    publication actions require explicit confirmation (FEAT §20); the confirmation names the count
    and the routes affected.
-3. **Verify** the nine decisions in §30.1 in whatever order suits the business. V3 and V9 are the
-   two that materially change what the site can say.
+3. **Verify** the ten decisions in §30.1 in whatever order suits the business. V3, V4 and V9 are the
+   three that materially change what the site can say.
 4. **Publish** the rows each verification unblocks.
 5. **Close the two legal pages** (§27) — until then the footer links render disabled.
 6. **Re-run** `npm run content:inventory`. Every published row's Publication status changes to
@@ -1391,7 +1414,7 @@ Raised, not acted on. Nothing above diverges from `CANONICAL-DECISIONS.md`.
    vocabulary at fourteen values, none of which accepts a pagination label or a skip link. Those
    strings are visitor-facing, so SEED §1 arguably covers them, but they are not marketing copy.
    Suggested amendment: add `UI_CHROME` to the check constraint. Impact: Studio-mapped coverage
-   97.5% → 99.4%.
+   97.4% → 99.2%.
 2. **`customization_forms` holds two forms that customise nothing.** The contact form (§16) and the
    commission form (§11) reuse the form engine because it already provides enable, require, reorder
    and rename per field — exactly what SEED §22 and §15 need. The table name is now narrower than
@@ -1400,10 +1423,14 @@ Raised, not acted on. Nothing above diverges from `CANONICAL-DECISIONS.md`.
 3. **SEED §41 and §44 supply two different social pairs.** This inventory seeds both, into
    `seo_entries.social_*` and `global_content.SOCIAL` respectively (§25). Confirm that both are
    wanted, or drop one.
-4. **`(rivya_asset_id, type)` is the real media key.** D6 says the Rivya asset ID is authoritative;
-   26 ids in the manifest carry both an image and a video. Phases 06–09 already treat the pair as
-   identity. Suggested amendment: state the composite in D6. (Also raised as Phase 09 open
-   question 1.)
+4. **The manifest declares 26 videos and no poster for any of them.** An asset row carries
+   `type`, `aspect_ratio` and dimensions but no poster reference, while `media_usages.role` has a
+   `POSTER` value and D6's naming standard pairs `home-hero-main-video.mp4` with
+   `home-hero-main-poster.webp`. Ten of this inventory's bindings are videos, so ten poster
+   decisions are outstanding: extract a frame during the Phase 06 migration, or bind an existing
+   still from the same family. Suggested amendment: state in D6 that every video asset carries a
+   poster of the same ratio, and record how it is produced. Until then those ten slots render a
+   `MediaSlot` reserved box on first paint.
 5. **The Phase 09 gap list may be over-conservative.** `PHASE-05-09.md` records the homepage hero,
    `/collection`, `/collection/furniture`, `/collection/collectible-design`, `/custom-commissions`,
    `/contact`, `/faq` and `/search` as unbound by design. Twelve of those slots have a named reuse
@@ -1436,6 +1463,7 @@ The generator reads `pages`, `page_sections`, `navigation_items`, `global_conten
 resolves Studio locations from `lib/cms/studio-locations.ts` — the same map the Studio navigation
 uses, so a moved route cannot leave a stale path in this table.
 
-A row appearing here with `Editable? No` fails `tests/e2e/seed-editability.spec.ts` unless its
-`seed_key` is listed in that test's documented exemption set — currently the twelve rows of §28.
-Adding a thirteenth exemption requires editing the test, which is the point.
+A row appearing here with `Editable? No` fails `tests/e2e/seed-editability.spec.ts` unless it is
+listed in that test's documented exemption set — currently thirteen entries: the twelve rows of §28
+plus `journal_articles.reading_minutes` (§14.3). Adding a fourteenth requires editing the test and
+saying why, which is the point.

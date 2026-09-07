@@ -109,9 +109,13 @@ Manager filters on.
 
 | Level | Form | Example |
 |---|---|---|
-| Rivya asset ID (authoritative) | `<FAMILY-UPPER>-<NNN>` | `LARGEFORMAT-DINING-002` |
-| Filename | `<family-lower>-<nnn>-<ratio with x>.<ext>` | `largeformat-dining-002-21x9.webp` |
+| Rivya asset ID — assets that exist | `<FAMILY-UPPER>-<NNN>` | `LARGEFORMAT-DINING-002` |
+| Rivya asset ID — assets that are planned | `<PAGE>-<SECTION>[-<KIND>]-<NNN>` | `LARGE-DINING-CARD-001` |
+| Filename | `<id lower-cased>-<ratio with x>.<ext>` | `largeformat-dining-002-21x9.webp` |
 | Public ID | `<folder>/<filename without extension>` | `rivya/large-format/dining/largeformat-dining-002-21x9` |
+
+The two ID forms share one namespace and must never collide — D6 amendment A1, enforced by
+`scripts/media/check-asset-ids.py`. Ordinals count across image and video together.
 
 **A public ID never carries a file extension.** The extension is a delivery choice — `f_auto`
 negotiates AVIF, WebP or the source format per request from one public ID.
@@ -120,27 +124,24 @@ negotiates AVIF, WebP or the source format per request from one public ID.
 and every URL already in the wild. Treat a replacement as a new public ID and a new
 `media_assets` row; archive the old row, never reuse the ID.
 
-### 3.1 The six shared public IDs are not a collision
+### 3.1 Uniqueness, and why the index still carries `resource_type`
 
-Six public IDs are shared by an image/video pair:
+All 250 `cloudinary_public_id` values are unique, as are all 250 `rivya_asset_id` and `filename`
+values. That was not true of the first manifest build — images and videos were numbered with
+separate counters, so 26 videos took a still's asset ID and six took its public ID with them. The
+generator now shares one counter and asserts uniqueness before writing
+(`HIGGSFIELD_ASSET_STATUS.md` §6, DQ-0).
 
-```
-rivya/collection/decor/decor-001-16x9
-rivya/journal/editorial/editorial-003-16x9
-rivya/large-format/dining/largeformat-dining-001-9x16
-rivya/process/studio/process-studio-002-16x9
-rivya/process/studio/process-studio-003-16x9
-rivya/process/studio/process-studio-004-16x9
-```
-
-Cloudinary namespaces public IDs by `resource_type`, so `image/upload/<id>` and
-`video/upload/<id>` are different objects. The database mirrors this exactly:
+The database index nevertheless stays:
 
 ```sql
 unique (provider, resource_type, public_id)   -- deliberately NOT unique (public_id)
 ```
 
-A Phase 06 unit test inserts all six pairs and asserts twelve distinct rows.
+That is not a leftover. Cloudinary genuinely namespaces public IDs by resource type —
+`image/upload/<id>` and `video/upload/<id>` are different objects — and the index should describe
+Cloudinary's model rather than a property of one particular manifest build. A future asset set,
+or an owner upload, may legitimately pair an image and a video under one name.
 
 ---
 
@@ -329,7 +330,7 @@ Migrated by hand through the Studio uploader's import-by-URL path, to prove the 
 | Asset ID | Type | Ratio | Public ID |
 |---|---|---|---|
 | `PROCESS-STUDIO-001` | image | 4:3 · 4800×3584 | `rivya/process/studio/process-studio-001-4x3` |
-| `LARGEFORMAT-DINING-001` | video | 9:16 · 768×1344 · 6 s | `rivya/large-format/dining/largeformat-dining-001-9x16` |
+| `LARGEFORMAT-DINING-004` | video | 9:16 · 768×1344 · 6 s | `rivya/large-format/dining/largeformat-dining-004-9x16` |
 | `LARGEFORMAT-MONUMENTAL-001` | image | 21:9 · 6336×2688 | `rivya/large-format/architectural/largeformat-monumental-001-21x9` |
 
 The video canary is deliberate: it shares its public ID with an **image** of the same name, so it
@@ -370,10 +371,12 @@ Per asset, in order:
 9.  Increment the counters on the higgsfield_migration_runs row.
 ```
 
-**Idempotency and resumability.** The ledger is keyed by `higgsfield_generation_id`, which is
-unique across all 250. `rivya_asset_id` is **not** — 26 IDs are shared by an image/video pair —
-and using it as the key would silently drop 26 assets. A second full run reports
-`skipped 250, migrated 0` and writes nothing. `--resume` continues from the ledger.
+**Idempotency and resumability.** The ledger is keyed by `higgsfield_generation_id`. Asset IDs
+are unique too, but an asset ID is an ordinal within a family and a manifest rebuild can
+legitimately renumber it — one already has (`HIGGSFIELD_ASSET_STATUS.md` §6, DQ-0). A generation
+id is minted by Higgsfield and never moves, so a ledger keyed on it survives a rebuild that a
+ledger keyed on asset IDs would not. A second full run reports `skipped 250, migrated 0` and
+writes nothing. `--resume` continues from the ledger.
 
 ### 9.4 Field mapping
 
@@ -382,7 +385,7 @@ and using it as the key would silently drop 26 assets. A second full run reports
 | `cloudinary_public_id` | `media_assets.public_id` | Verbatim — the manifest is authoritative (D6) |
 | `cloudinary_folder` | `media_assets.folder` | Verbatim |
 | `filename` | `media_assets.filename` | Unique across all 250; the human key |
-| `rivya_asset_id` | `media_assets.rivya_asset_id` | **Non-unique by design** |
+| `rivya_asset_id` | `media_assets.rivya_asset_id` | Unique across all 250; the authoritative key (D6) |
 | `type` | `resource_type` (`image`/`video`) **and** `kind` (`IMAGE`/`VIDEO`) | |
 | `family` | `tags` (one entry) | |
 | `subject_tags` | `subject_tags` | 14 `editorial` rows have an empty array — expected |
@@ -416,14 +419,20 @@ npm run media:migrate:higgsfield                  # skipped 250, migrated 0
 psql "$DATABASE_URL" -c "select resource_type, count(*) from media_assets
                          where source='HIGGSFIELD' group by 1"      -- image 224, video 26
 
-# 5. The six shared public IDs survived as distinct rows
-psql "$DATABASE_URL" -c "select public_id, count(*) from media_assets
-                         group by 1 having count(*) > 1"            -- 6 rows, each count 2
-
-# 6. The 26 shared asset IDs survived as distinct rows
+# 5. Nothing collapsed on import — every asset ID landed as its own row
 psql "$DATABASE_URL" -c "select rivya_asset_id, count(*) from media_assets
                          where source='HIGGSFIELD'
-                         group by 1 having count(*) > 1"            -- 26 rows, each count 2
+                         group by 1 having count(*) > 1"            -- 0 rows
+
+# 6. …and so did every public ID, and every generation id
+psql "$DATABASE_URL" -c "select public_id, count(*) from media_assets
+                         group by 1 having count(*) > 1"            -- 0 rows
+psql "$DATABASE_URL" -c "select count(*) from (select higgsfield_generation_id
+                         from media_assets where source='HIGGSFIELD'
+                         group by 1 having count(*) > 1) d"         -- 0
+
+# 6b. Planned IDs never leaked into the migrated set
+python scripts/media/check-asset-ids.py                             -- 0 collision(s)
 
 # 7. Governance flags are universal
 psql "$DATABASE_URL" -c "select count(*) from media_assets where source='HIGGSFIELD'
@@ -472,10 +481,12 @@ If a `HIGGSFIELD_MASTER_ASSET_PLAN.md` §6 brief is ever executed:
    `rivya-hf-v2`. The original 250 objects stay byte-identical; `git diff` on the manifest must
    show additions only.
 4. `npm run manifest:verify`.
-5. Add any new folder to `lib/media/folders.ts` **before** the migration run.
-6. `npm run media:migrate:higgsfield -- --resume` — the ledger skips the existing 250 and migrates
+5. `python scripts/media/check-asset-ids.py` — the new IDs must not have borrowed a manifest
+   family prefix (D6 A1).
+6. Add any new folder to `lib/media/folders.ts` **before** the migration run.
+7. `npm run media:migrate:higgsfield -- --resume` — the ledger skips the existing 250 and migrates
    only what is new.
-7. An editor writes real alt text and binds the slot.
+8. An editor writes real alt text and binds the slot.
 
 ---
 

@@ -971,15 +971,46 @@ renders its copy without media until the owner supplies one.
 
 ---
 
+**Exit criteria**
+
+Plus the ten-point phase completion contract in `CANONICAL-DECISIONS.md` D9.
+
+- [ ] `npm run seed:content` completes against an empty database and is **idempotent**: a second
+      run reports zero writes and changes no `updated_at`.
+- [ ] Re-running the seed after an owner edit leaves the edited row untouched — proven by a test
+      that edits a seeded heading, re-seeds, and asserts the edit survives (SEED §4).
+- [ ] `content_seed_version = "rivya-v1"` is recorded, and the seed refuses to run against a
+      database stamped with a newer version.
+- [ ] Every item in SEED §57's definition of done is seeded: homepage, About, Large Format,
+      Collection landing, all seven categories, Custom Commissions, Process, Portfolio landing,
+      Journal landing, Contact, the ten FAQs, navigation, footer, CTA library, commerce labels,
+      inquiry messages, both WhatsApp templates, SEO defaults, the three empty states, and Studio
+      helper copy.
+- [ ] No lorem ipsum, no "Coming Soon" on a primary page, and no fabricated product, project,
+      price, dimension, testimonial or capability claim anywhere in the seed (SEED §55, D10).
+- [ ] Every statement asserting real business capability carries `OWNER_VERIFICATION_REQUIRED`,
+      and none of those rows is `PUBLISHED`.
+- [ ] Portfolio seeds **zero** projects and renders the SEED §28 empty state instead.
+- [ ] The ten journal articles are seeded `DRAFT`; none is published by the seed.
+- [ ] Every seeded field resolves to a Studio control, and
+      `docs/content/INITIAL_CONTENT_INVENTORY.md` reports the achieved percentage against SEED
+      §54's 100% target, naming any shortfall.
+- [ ] Every media binding in the seed resolves to a real `rivya_asset_id` in the manifest or is
+      explicitly marked `GAP`; `python3 scripts/media/check-asset-ids.py` exits 0.
+- [ ] No public component contains a marketing string literal — enforced by the lint rule from
+      Phase 08.
+
 ## Open questions for the canonical decisions
 
 These are raised, not acted on. Nothing above diverges from `CANONICAL-DECISIONS.md`.
 
-1. **D6 asset identity.** D6 says "the Rivya asset ID is authoritative, not the filename". In the
-   manifest, 26 `rivya_asset_id` values are shared by an image/video pair, so the id alone is not
-   a key. Phases 06–07 above treat `(rivya_asset_id, type)` as identity and
-   `higgsfield_generation_id` as the migration key. Suggested amendment: state the composite
-   explicitly in D6.
+1. **D6 asset identity — RESOLVED.** This document was written against a manifest in which 26
+   `rivya_asset_id` values were shared by an image/video pair, because the generator numbered
+   images and videos with separate counters. That was a defect, not a modelling choice: the ID is
+   the authoritative key. `scripts/media/build-higgsfield-manifest.py` now shares one counter
+   namespace and asserts uniqueness before writing, so all 250 IDs are distinct and
+   `rivya_asset_id` alone is a key. `higgsfield_generation_id` remains the migration key, since it
+   is stable across a manifest rebuild. See CANONICAL-DECISIONS amendment A1.
 2. **D4 global content route.** SEED §7 places the CTA library at
    `Website → Global Content → CTA Library`, which has no leaf in the D4 map. Phase 08 mounts it
    at `/studio/content/pages/global` (a reserved page id, not a new route segment) rather than
