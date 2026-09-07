@@ -34,8 +34,7 @@ import { cn } from '@/lib/ui/cn'
  * failure this pairing exists to prevent.
  */
 type TextLinkExternal =
-  | { external?: false; externalHintId?: never }
-  | { external: true; externalHintId: string }
+  { external?: false; externalHintId?: never } | { external: true; externalHintId: string }
 
 export type TextLinkProps = React.AnchorHTMLAttributes<HTMLAnchorElement> & TextLinkExternal
 
