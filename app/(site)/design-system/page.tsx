@@ -25,6 +25,7 @@ import { Grid } from '@/components/primitives/Grid'
 import { AspectBox } from '@/components/primitives/AspectBox'
 import { MediaFrame } from '@/components/primitives/MediaFrame'
 import { Skeleton } from '@/components/primitives/Skeleton'
+import { Reveal } from '@/components/primitives/motion/Reveal'
 
 /**
  * The design-system gallery. Dev-only by an explicit guard, not by accident of routing:
@@ -265,6 +266,21 @@ export default function DesignSystemPage() {
         <div className="w-64">
           <MediaFrame ratio="3:2" fallbackLabel="Image temporarily unavailable" />
         </div>
+      </Specimen>
+
+      <Specimen
+        name="Reveal"
+        note="WOOD class: opacity and translateY only. Under prefers-reduced-motion it renders the final state — not a faster animation."
+      >
+        <Stack gap={3}>
+          {[0, 1, 2].map((i) => (
+            <Reveal key={i} index={i}>
+              <Surface level={1} className="p-4" data-reveal-item="">
+                <Text size="sm">{`Staggered item ${i + 1}`}</Text>
+              </Surface>
+            </Reveal>
+          ))}
+        </Stack>
       </Specimen>
 
       <Specimen name="Colour schemes" note="The same components on all three grounds.">

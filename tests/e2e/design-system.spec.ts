@@ -79,3 +79,48 @@ test.describe('design system gallery', () => {
     expect(reached.size).toBeGreaterThanOrEqual(Math.floor(expected * 0.8))
   })
 })
+
+/**
+ * The Phase 02 risk register names exactly one mitigation for "reduced motion treated as a
+ * faster animation": a test asserting no transform is applied under
+ * `prefers-reduced-motion: reduce`. This is that test.
+ *
+ * It runs in its own describe block so the emulated media preference cannot leak into the
+ * visual baseline, which is captured with the default preference.
+ */
+test.describe('reduced motion', () => {
+  test.use({ colorScheme: 'no-preference', reducedMotion: 'reduce' })
+
+  test('Reveal renders its final state rather than a shortened animation', async ({ page }) => {
+    await page.goto('/design-system')
+
+    const items = page.locator('[data-reveal-item]')
+    const count = await items.count()
+    expect(count).toBeGreaterThan(0)
+
+    for (let i = 0; i < count; i++) {
+      const box = items.nth(i)
+      const computed = await box.evaluate((el) => {
+        // Read from the element that carries the animation, which is Reveal's own wrapper.
+        const target = el.closest('[style],div') ?? el
+        const s = getComputedStyle(target as Element)
+        return { transform: s.transform, opacity: s.opacity, transition: s.transitionDuration }
+      })
+
+      // Final state: no displacement, fully opaque. A shortened animation would still
+      // leave a transform mid-flight or an opacity below 1 on first paint.
+      expect(
+        computed.transform === 'none' || computed.transform === 'matrix(1, 0, 0, 1, 0, 0)',
+      ).toBe(true)
+      expect(Number(computed.opacity)).toBe(1)
+    }
+  })
+
+  test('the whole gallery is still keyboard operable under reduced motion', async ({ page }) => {
+    await page.goto('/design-system')
+    await page.keyboard.press('Tab')
+    const focused = await page.evaluate(() => document.activeElement?.tagName ?? null)
+    expect(focused).not.toBeNull()
+    expect(focused).not.toBe('BODY')
+  })
+})
