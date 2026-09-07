@@ -6,6 +6,60 @@ Every phase adds an entry; see `docs/architecture/CANONICAL-DECISIONS.md` D9 for
 
 ## [Unreleased]
 
+### Phase 02 — Reference UI Audit + Design System — IN PROGRESS
+
+**Added**
+
+- **Toolchain.** Next.js 16 App Router, React 19, TypeScript strict with
+  `noUncheckedIndexedAccess`, Tailwind 4 CSS-first, Vitest, Playwright, ESLint, Prettier, and
+  `.github/workflows/ci.yml` running every gate as a separately visible step.
+- **Token layer.** `app/styles/tokens.css` is the only file permitted a colour literal;
+  `scheme.css` redeclares an identical 28-token semantic set for DEEP, INK and BONE, so a
+  component reads `--rv-ink-secondary` and never asks which ground it is on; `globals.css`
+  carries the Tailwind `@theme` bridge and no values of its own.
+- **32 primitives** and **both motion helpers**, each with behaviour-level tests.
+- **Dev-only gallery** at `/design-system`, plus an eight-width Playwright harness covering
+  visual baselines, axe, keyboard reachability and the reduced-motion contract.
+- **Five gates**, each proved to bite by provoking the failure it exists for:
+  `check-tokens` (colour literals, arbitrary values, and a re-derivation of the neutral ramp
+  from the OKLab rule), `check-utilities` (classes that compile to no CSS),
+  `check-registry` (the two-tier registry contract and licence allowlist), plus the two
+  media gates from amendment A1.
+- **Licence audit of all eleven FEAT §7 sources**: 5 `NOT_ADOPTED`, 6 `REJECTED`, none
+  adopted. Every licence read from a `LICENSE` file or npm metadata at a named ref, because
+  none of the eleven sites was reachable from this environment.
+
+**Verified rather than assumed**
+
+- The palette quartet re-counted against the Higgsfield manifest (114 assets each).
+- The ten-step neutral ramp reproduces exactly from DESIGN_SYSTEM §2.2's OKLab rule — all
+  ten hexes and luminances to four decimal places.
+- Champagne on bone measures 2.52:1 and fails AA at every size, which is why light grounds
+  use champagne-deep at 5.05:1.
+- `/design-system` returns 200 under `next dev` and 404 in a production build, and since the
+  route is in the production manifest the 404 provably comes from the `notFound()` guard.
+
+**Fixed**
+
+- **`Switch` had no accessible name** — a critical axe violation. Its unit tests had hidden
+  it by passing `aria-label` themselves, so the tests were compensating for the gap they
+  existed to expose.
+- **Polymorphic `ref` typing.** Four component groups independently hit the same error: a
+  union of intrinsic elements does not unify its ref types. Fixed once in
+  `lib/ui/polymorphic.ts` and documented as DESIGN_SYSTEM §6.3.
+- **React Bits is not MIT** — its licence is "MIT + Commons Clause License Condition v1.0",
+  read verbatim. Recorded as `REJECTED` rather than assumed.
+- **Four false positives in the gates themselves**: unescaped variant selectors, bare
+  utility roots matching prose, unstripped block comments, and CSS leading-digit escaping.
+  A gate that cries wolf is worse than no gate.
+
+**Known blocker**
+
+GitHub Actions cannot provision a runner for this repository. Every run since the workflow
+was added fails in 2-5 seconds with `runner_id: 0` and zero steps executed, including the
+first — an account-level condition, not a defect in the diff. The full sequence passes
+locally from a clean `npm ci`.
+
 ### Phase 01 — PRD, Architecture & Documentation — COMPLETE
 
 **Added**
