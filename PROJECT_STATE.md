@@ -21,7 +21,8 @@ real, machine-readable inventory of the 250 Higgsfield assets the build will con
 | 04 | Supabase Auth + RBAC + RLS | **PLANNED** | Specified in `docs/project/phases/PHASE-00-04.md`. |
 | 05 | Studio Foundation | **PLANNED** | — |
 | 06 | Cloudinary Media Architecture | **PLANNED** | `docs/media/CLOUDINARY.md` specifies folders and the migration runbook. |
-| 07 | Higgsfield Asset Audit + Initial Asset Plan | **PARTIAL** | **Audit half is done**: 250 assets inventoried and classified in `data/higgsfield/asset-manifest.json` by `scripts/media/build-higgsfield-manifest.py`. The Cloudinary migration and the Studio tracker remain. |
+| 07 | Higgsfield Asset Audit + Initial Asset Plan | **PARTIAL** | **Audit half is done**: 250 assets inventoried and classified in `data/higgsfield/asset-manifest.json` by `scripts/media/build-higgsfield-manifest.py   deterministic classifier
+scripts/media/check-asset-ids.py             gap-ID collision guard`. The Cloudinary migration and the Studio tracker remain. |
 | 08 | CMS / Editable Content System | **PLANNED** | — |
 | 09 | Initial Website Content Seed | **PLANNED** | `docs/content/INITIAL_CONTENT_INVENTORY.md` maps every field to a Studio control; no seed modules written. |
 | 10–46 | Public site, Studio, research, ops, launch | **PLANNED** | Specified in `docs/project/phases/`. |
@@ -32,7 +33,8 @@ real, machine-readable inventory of the 250 Higgsfield assets the build will con
 CLAUDE.md · CONTEXT.md · PROJECT_STATE.md · CHANGELOG.md · README.md
 data/higgsfield/asset-manifest.json      250 assets, machine-readable
 data/higgsfield/raw/{images,videos}.json raw generation history
-scripts/media/build-higgsfield-manifest.py
+scripts/media/build-higgsfield-manifest.py   deterministic classifier
+scripts/media/check-asset-ids.py             gap-ID collision guard
 docs/requirements/                       the two governing specifications
 docs/architecture/ docs/design/ docs/studio/ docs/media/ docs/content/ docs/ops/ docs/project/
 docs/SESSION-STATE.md
@@ -51,6 +53,10 @@ environment variables in CANONICAL-DECISIONS.md D8 are set in this environment.
 - Aspect ratio coverage: 16:9 (121), 4:5 (50), 3:4 (21), 9:16 (16), 3:2 (16), 1:1 (13), 21:9 (9),
   4:3 (4) — desktop, portrait editorial and mobile-hero crops are all present.
 - Node 22.22.2 / npm 10.9.7 available; npm registry reachable.
+- The manifest regenerates byte-identically from the raw history; all 250 asset IDs and Cloudinary
+  public IDs are unique (asserted by the generator); the gap-ID collision guard passes across
+  31 documents.
+- All 47 phases (00–46) are documented, each carrying all 12 required headings.
 
 ## Known risks carried forward
 

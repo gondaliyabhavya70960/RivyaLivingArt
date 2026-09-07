@@ -26,6 +26,22 @@ Every phase adds an entry; see `docs/architecture/CANONICAL-DECISIONS.md` D9 for
 - Session-recovery set: `CLAUDE.md`, `CONTEXT.md`, `PROJECT_STATE.md`, `docs/SESSION-STATE.md`,
   this changelog.
 
+### Fixed
+
+- **Duplicate Rivya asset IDs.** `build-higgsfield-manifest.py` numbered images and videos with
+  separate counters, so 26 image/video pairs sharing a subject family were minted the same
+  `rivya_asset_id`. The ID is the authoritative key, so this was a collision rather than a
+  cosmetic issue. The counter namespace is now shared and the generator asserts that both asset
+  IDs and Cloudinary public IDs are unique before writing.
+- **Colliding planned asset IDs.** Fixing the above exposed a second allocator: the media plan
+  names assets that do not exist yet, and five of those IDs had borrowed a manifest family prefix
+  — three colliding with real videos immediately, two the moment their family grew. Planned IDs
+  now use the `<PAGE>-<SECTION>[-<KIND>]-<NNN>` form, which the family allocator cannot mint.
+  Added `scripts/media/check-asset-ids.py` to enforce the separation; recorded the rule in
+  CANONICAL-DECISIONS D6 with amendment A1.
+- **PHASE 09 missing exit criteria.** The phase document ended on open questions without its exit
+  criteria section. Added, aligned to SEED §57's definition of done.
+
 ### Phase 07 — Higgsfield Asset Audit — PARTIAL (audit complete, migration outstanding)
 
 **Added**
