@@ -166,15 +166,23 @@ export const FocusTrap = React.forwardRef<HTMLDivElement, FocusTrapProps>(functi
       ;(initialFocus?.current ?? first ?? container).focus()
     }
 
+    // Resolved on the way IN, not on the way out. react-hooks warns — correctly, in
+    // general — that a ref read inside a cleanup has probably changed by then. Here that
+    // is the reason to read it now: the override exists for the case where the element
+    // focus should return to is about to disappear (the row a ConfirmDialog just deleted),
+    // so the node is captured while it is still mounted and `isConnected` below decides
+    // whether it can still take focus.
+    const explicitReturn = returnFocusTo?.current ?? null
+
     return () => {
       if (!restoreFocus) return
-      const target = returnFocusTo?.current ?? previouslyFocused
+      const target = explicitReturn ?? previouslyFocused
       // A trigger that was removed while the surface was open cannot take focus back, and
       // focusing <body> instead would drop the keyboard user at the top of the document.
       if (target instanceof HTMLElement && target.isConnected) target.focus()
     }
-    // The two ref props are stable identities; their `.current` is read when it is needed
-    // rather than watched, which is the whole point of passing a ref rather than a node.
+    // Both ref props are stable identities, so listing them costs nothing and keeps the
+    // dependency array honest rather than silenced.
   }, [active, restoreFocus, initialFocus, returnFocusTo])
 
   function handleKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
