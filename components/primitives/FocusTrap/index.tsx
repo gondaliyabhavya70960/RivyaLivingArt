@@ -1,7 +1,6 @@
 'use client'
 
 import * as React from 'react'
-import { cn } from '@/lib/ui/cn'
 
 /**
  * FocusTrap keeps Tab inside its subtree while it is active, and puts focus back where it
