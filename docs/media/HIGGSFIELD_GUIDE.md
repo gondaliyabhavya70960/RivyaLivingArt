@@ -176,11 +176,17 @@ Rules the existing videos observe, and every new one must:
 | Vertical variants declare the safe area | `PROCESS-PIGMENT-002`: "upper third calm and dark as headline safe area" |
 | No audio is briefed, ever | The site plays every inline video muted |
 
-Two video prompts in the library are bookkeeping stubs, not briefs —
-`PROCESS-STUDIO-002` / `-003` read "Workshop bench dolly (720p variant 2)" and `MATERIAL-MACRO-001`
-/ `-006` read "Gold leaf settling on sapphire resin (720p variant)". They are re-renders of an
-earlier prompt at a lower resolution. Treat their `higgsfield_prompt` as provenance, not as a
-model to copy.
+**Six video prompts in the library are bookkeeping stubs, not briefs.** Three pairs, each a
+lower-resolution re-render of an earlier clip, carry a one-line label instead of a prompt:
+
+| Pair | Stub text |
+|---|---|
+| `PROCESS-STUDIO-002` / `-003` | `Workshop bench dolly (720p variant 2)` / `(720p variant)` |
+| `MATERIAL-MACRO-001` / `-006` | `Gold leaf settling on sapphire resin (720p variant 2)` / `(720p variant)` |
+| `EDITORIAL-002` / `-003` | `Sapphire resin pour, high angle (720p variant 2)` / `(720p variant)` |
+
+Treat their `higgsfield_prompt` as provenance, not as a model to copy — and note that all six are
+1280 × 720, which is below the 1920 × 1080 a hero video needs.
 
 ### 2.7 Ratio discipline in the prompt itself
 

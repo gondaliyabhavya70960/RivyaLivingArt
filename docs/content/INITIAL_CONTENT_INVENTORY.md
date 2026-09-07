@@ -1294,3 +1294,148 @@ never lists them, and `global_content.group_key`'s check constraint has no group
 Nine of these twelve close with one migration: add `UI_CHROME` to the `global_content.group_key`
 check constraint and seed them from `content/seed/global.ts` alongside the other reusable strings.
 That would take Studio-mapped coverage from 97.5% to 99.4%. See §31, open question 1.
+
+---
+
+## 29. Media gap register — the Phase 43 brief list
+
+Every `GAP` cell above, with the ratios the slot needs and the existing assets to evaluate **before
+generating anything** (D6: nothing in the manifest may be regenerated, and reuse outranks
+generation).
+
+| # | Slot | Needs | Reuse candidates already in the manifest | If no reuse: Phase 43 brief |
+|---|---|---|---|---|
+| 1 | `/` 01 Hero desktop | 21:9 or 16:9 video + poster | `LARGEFORMAT-DINING-002 (video, 16:9)` + `LARGEFORMAT-DINING-002 (image, 21:9)` | Flagship large-format dining table, slow push-in, house palette, no people |
+| 2 | `/` 01 Hero mobile | 9:16 video + poster | `LARGEFORMAT-DINING-001 (video, 9:16)` + `LARGEFORMAT-DINING-001 (image, 9:16)` | Vertical crop of the same piece, not a re-crop of the desktop frame (D6: separate slots) |
+| 3 | `/` `og:image` | 1200×630 share card | any 16:9 large-format still | Generated share card over `LARGEFORMAT-DINING-003` |
+| 4 | `/` 06 Material Palette card 3 — Fabricated Form | 1:1 macro | none — no digital-fabrication macro exists | Extreme macro, digitally fabricated lattice meeting cast resin, same matte charcoal ground and single upper-left key as `MATERIAL-MACRO-016…022` so the four tile as one set |
+| 5 | `/large-format` 03 Conference & Commercial Tables | 16:9 + 4:5 | none — all `largeformat-*` interiors are domestic | Long communal resin-and-timber surface in a neutral commercial interior. **Do not substitute a dining table**: presenting domestic work as commercial capability is the D10 failure |
+| 6 | `/large-format` 03 Architectural & Statement Pieces mobile | 4:5 or 3:4 | none — `LARGEFORMAT-MONUMENTAL-001` is 21:9 only | Vertical companion to `LARGEFORMAT-MONUMENTAL-001`, same piece and light |
+| 7 | `/collection` 01 Hero desktop + mobile | 21:9 + 4:5 | `GALLERY-SCENE-002 (image, 21:9)` reads as portfolio, not catalogue | Grouped range shot spanning furniture, wall art and smaller objects at one scale |
+| 8 | `/collection` `og:image` | 1200×630 | as 7 | — |
+| 9 | `/collection/furniture` hero | 16:9 or 21:9 | `LARGEFORMAT-DINING-003 (image, 16:9)`, `LARGEFORMAT-SEATING-004 (image, 4:5)` | Only if the owner rejects reuse |
+| 10 | `/collection/collectible-design` hero | 16:9 or 21:9 | none — no collectible-design family exists | Single sculptural functional object on a plinth, gallery light, house palette |
+| 11 | `/custom-commissions` 01 Hero desktop + mobile | 16:9 + 4:5 | `EDITORIAL-005 (image, 3:2)` — sketches, wood samples, consultation table | Brief-in-progress: drawings, a material board and a partly built piece |
+| 12 | `/custom-commissions` 02 Who it is for | 3:2 + 4:5 | `PROCESS-STUDIO-011 (image, 3:2)` | — |
+| 13 | `/custom-commissions` 04 What to share | 3:2 + 3:4 | `PROCESS-STUDIO-015 (image, 3:4)` | — |
+| 14 | `/custom-commissions` 05 How it works | 16:9 + 4:5 | `PROCESS-STUDIO-002 (image, 16:9)` | — |
+| 15 | `/custom-commissions` 06 CTA | 21:9 + 4:5 | `MATERIAL-MACRO-027 (image, 21:9)` | — |
+| 16 | `/custom-commissions` `og:image` | 1200×630 | as 11 | — |
+| 17 | `/contact` 01 Hero desktop + mobile | 16:9 + 4:5 | `PROCESS-STUDIO-005 (image, 16:9)` | Studio entrance or bench, no people, warm side light |
+| 18 | `/contact` `og:image` | 1200×630 | as 17 | — |
+| 19 | `/faq` `og:image` | 1200×630 | any material macro | — |
+| 20 | `/search` `og:image` | 1200×630 | `noindex` page; lowest priority | — |
+| 21 | `seo_entries` GLOBAL `og:image` | 1200×630 site-wide default | `MATERIAL-MACRO-011 (image, 21:9)` | Brand share card with `social.og_headline` and `social.og_supporting` drawn over it |
+
+**Twelve of the twenty-one have a named reuse candidate.** Working through the reuse column first is
+not an optimisation — it is D6's asset priority ladder, and it is the difference between closing the
+media gap in an afternoon and commissioning a generation run.
+
+Gaps 4, 5, 6 and 10 have no candidate and are genuine generation work. Gap 5 is the one where
+substitution would be actively harmful rather than merely imperfect.
+
+---
+
+## 30. Verification register and the launch publication pass
+
+### 30.1 Nine owner decisions clear all 118 flags
+
+Every `OVR` row in this inventory belongs to exactly one decision. An owner or admin sets
+`owner_verification = 'VERIFIED'` on the rows a decision covers; the
+`enforce_owner_verification_gate` trigger then allows `PUBLISHED`.
+
+| # | Decision the owner is making | Clears | Consequence of "no" |
+|---|---|---|---|
+| V1 | The phone, WhatsApp number, email and map destination are correct and public | `contact.*` (5), footer contact column (1) | Contact page renders without details; WhatsApp falls back to `NEXT_PUBLIC_WHATSAPP_NUMBER` |
+| V2 | Digital design and 3D fabrication are current production methods, not aspirations | Home 03 card 3, home 06 card 3, home 08 (5 fields), About 02, `3d-resin` category (4), 3D + Resin form template (9), journal 04 | Remove the `3d-resin` category from the menu, unpublish home 08, retitle journal 04. The site still works — it becomes a resin-and-timber studio, which is a coherent position |
+| V3 | Bespoke commissioning is offered as described: dimensions, materials, colour, form, finish, reference-based consultation | Home 07 (6), About 04 (3), Large Format 04 (3), Custom Commissions (13), commission form (2), contact enquiry types (1) | The commission funnel cannot publish. This is the site's primary conversion path — V3 is the highest-value decision on the list |
+| V4 | The seven-step production process is what actually happens | `/process` steps 01–07 (21), home 10 steps (8) | `/process` publishes as hero only; home 10 is hidden |
+| V5 | The large-format range includes conference and commercial tables, sculptural seating and architectural pieces | Large Format 02 (2), Large Format 03 (7) | Delete the unconfirmed entries from the section payload; the other three publish |
+| V6 | Preservation work is offered, and "lasting" is defensible without a duration claim | `preservation` category (4), preservation form template (9), journal 08, contact enquiry types (shared with V3) | Remove the preservation category and form; keep preservation out of the enquiry types |
+| V7 | Limited, one-of-one and ready-stock states are real, when a product uses them | `collectible-design` category description (1), `commerce.ready_stock` (1) | Remove the word *limited* from the collectible-design description; leave `Ready Stock` disabled |
+| V8 | The brand introduction and the manifesto describe real combined capability | `brand.introduction` (1), home 02 (5) | Publish the short descriptors only; home 02 stays hidden |
+| V9 | The ten FAQ answers describe how Rivya actually works | All ten `faqs` rows (10) | `/faq` publishes empty, which SEED §55 forbids — so V9 is a launch blocker for that route |
+
+Counts sum to 118. Nothing is flagged twice; where a row is implicated by two decisions
+(contact enquiry types, V3 and V6) it is counted once, under V3.
+
+### 30.2 The launch publication pass
+
+The seed writes `DRAFT`. Nothing on the public site renders until an owner publishes, because a path
+with no `PUBLISHED` page row resolves to `notFound()` — there is no half-built shell and no
+"Coming Soon" (SEED §55, `DATA_MODEL.md` §5). The deployment therefore ends with a deliberate pass,
+not a silent auto-publish:
+
+1. **Review** every `DRAFT → publishable` row in `/studio/content/pages` and
+   `/studio/content/homepage`. 343 rows.
+2. **Bulk publish** through `/studio/catalog/bulk` with the content scope. Destructive and
+   publication actions require explicit confirmation (FEAT §20); the confirmation names the count
+   and the routes affected.
+3. **Verify** the nine decisions in §30.1 in whatever order suits the business. V3 and V9 are the
+   two that materially change what the site can say.
+4. **Publish** the rows each verification unblocks.
+5. **Close the two legal pages** (§27) — until then the footer links render disabled.
+6. **Re-run** `npm run content:inventory`. Every published row's Publication status changes to
+   `PUBLISHED`, and the diff is the record of what went live.
+
+The seed never performs steps 2, 4 or 5. It also never demotes a published row back to `DRAFT` on a
+re-run — rule 6 of the idempotency contract.
+
+---
+
+## 31. Open questions for the canonical decisions
+
+Raised, not acted on. Nothing above diverges from `CANONICAL-DECISIONS.md`.
+
+1. **`global_content.group_key` has no home for interface chrome.** `DATA_MODEL.md` §2.1 fixes the
+   vocabulary at fourteen values, none of which accepts a pagination label or a skip link. Those
+   strings are visitor-facing, so SEED §1 arguably covers them, but they are not marketing copy.
+   Suggested amendment: add `UI_CHROME` to the check constraint. Impact: Studio-mapped coverage
+   97.5% → 99.4%.
+2. **`customization_forms` holds two forms that customise nothing.** The contact form (§16) and the
+   commission form (§11) reuse the form engine because it already provides enable, require, reorder
+   and rename per field — exactly what SEED §22 and §15 need. The table name is now narrower than
+   its contents. Suggested amendment: either rename the group to `forms` in a later migration, or
+   record in D5 that `customization_forms` is the general form engine.
+3. **SEED §41 and §44 supply two different social pairs.** This inventory seeds both, into
+   `seo_entries.social_*` and `global_content.SOCIAL` respectively (§25). Confirm that both are
+   wanted, or drop one.
+4. **`(rivya_asset_id, type)` is the real media key.** D6 says the Rivya asset ID is authoritative;
+   26 ids in the manifest carry both an image and a video. Phases 06–09 already treat the pair as
+   identity. Suggested amendment: state the composite in D6. (Also raised as Phase 09 open
+   question 1.)
+5. **The Phase 09 gap list may be over-conservative.** `PHASE-05-09.md` records the homepage hero,
+   `/collection`, `/collection/furniture`, `/collection/collectible-design`, `/custom-commissions`,
+   `/contact`, `/faq` and `/search` as unbound by design. Twelve of those slots have a named reuse
+   candidate in §29, and D6 ranks existing assets above new generation. Confirm whether the gaps are
+   a creative decision (a purpose-shot hero is wanted) or an artefact of family-to-page mapping — the
+   answer changes how much Phase 43 has to generate.
+6. **Category copy has one control, by construction.** §10 resolves the category hero block from
+   `categories.subtitle` and `categories.description` rather than duplicating the §14 copy into
+   `page_sections`. This keeps a single editable control but means a category page's hero cannot be
+   restructured per category without a block change. Confirm the trade is wanted.
+7. **All ten FAQs are flagged, where SEED §23 marks two.** Phase 09's policy already extends the
+   flag to all ten; this inventory keeps that. It means `/faq` cannot publish at all until V9. If a
+   partially populated FAQ page is acceptable, flag only FAQ 01 and 07 and let the other eight
+   publish.
+
+---
+
+## 32. Regenerating this document
+
+```bash
+npm run seed:content -- --dry-run     # decisions only, writes nothing
+npm run seed:content                  # insert / update / skip per the idempotency contract
+npm run content:inventory             # rebuilds this file from the database
+git diff --exit-code docs/content/INITIAL_CONTENT_INVENTORY.md
+```
+
+The generator reads `pages`, `page_sections`, `navigation_items`, `global_content`, `seo_entries`,
+`faqs`, `categories`, `journal_categories`, `journal_articles`, `customization_forms`,
+`customization_form_fields` and `media_assets`, joins `media_usages` for the Media column, and
+resolves Studio locations from `lib/cms/studio-locations.ts` — the same map the Studio navigation
+uses, so a moved route cannot leave a stale path in this table.
+
+A row appearing here with `Editable? No` fails `tests/e2e/seed-editability.spec.ts` unless its
+`seed_key` is listed in that test's documented exemption set — currently the twelve rows of §28.
+Adding a thirteenth exemption requires editing the test, which is the point.
