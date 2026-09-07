@@ -1,4 +1,4 @@
-# PHASES 39–46 — SEO, Performance, Accessibility, Security, Testing, Media Finalisation, Deployment, Polish, Handoff
+# PHASES 39–46 — SEO, Performance, Accessibility, Security, Testing, Media Finalization, Deployment, Polish, Handoff
 
 > Binding parent: `docs/architecture/CANONICAL-DECISIONS.md`. Where this document and the canonical
 > decisions differ, the canonical decisions win and this document is wrong.
@@ -604,8 +604,10 @@ the same surfaces, and because separating them invites one of the two to be defe
   `server-only`; (2) `scripts/security/check-secret-exposure.mjs` greps the built `.next/static`
   output for each server-only name **and** for high-entropy strings matching known key shapes,
   failing the build on a hit (this generalises the Phase 04 check, which covered two names);
-  (3) `lib/logging/redact.ts` runs an allowlist redactor over every log payload and every
-  `audit_log` `before`/`after` blob; (4) `gitleaks` scans history and the diff in CI.
+  (3) Phase 38's `lib/logging/redact.ts` (`redact`, `redactDeep`) runs over every log payload and is
+  **extended here** to cover `audit_log` `before`/`after` blobs and every server-action error path,
+  with the never-expose name list above as its source; (4) `gitleaks` scans history and the diff in
+  CI. This phase does not re-create the redactor — Phase 38 owns it and Phase 41 widens its reach.
 - **Response headers**, set in `middleware.ts` for every response and asserted by e2e:
 
   | Header | Value |
@@ -691,7 +693,7 @@ the same surfaces, and because separating them invites one of the two to be defe
 | Middleware headers | `middleware.ts` | Nonce generation, the header table, preview `noindex` |
 | CSP nonce plumbing | `lib/security/csp.ts` | Nonce per request, propagated to `<Script>` and inline styles |
 | Rate limiter | `lib/security/rate-limit.ts` | Fixed window over Postgres; `ip_hash` helper |
-| Redactor | `lib/logging/redact.ts` | Allowlist; used by logs and `audit_log` |
+| Redactor (extended) | `lib/logging/redact.ts` (Phase 38) | Never-expose name list as its source; coverage widened to `audit_log` blobs and server-action error paths |
 | Upload validation | `lib/media/validate-upload.ts` | Magic bytes, size, SVG rejection, EXIF strip |
 | PII tooling | `lib/inquiries/pii.ts`, `scripts/ops/anonymise-inquiries.ts` | Export, erase, scheduled anonymisation |
 | Focus + contrast guards | `scripts/a11y/{check-focus-styles.mjs,check-contrast.mjs}` | Token matrix; wired into `npm run check` |
@@ -699,7 +701,7 @@ the same surfaces, and because separating them invites one of the two to be defe
 | Gitleaks | `.github/workflows/security.yml`, `.gitleaks.toml` | History + diff scan, `npm audit`, Dependabot |
 | a11y suite | `tests/e2e/a11y/{axe-sweep,landmarks,headings,forms,touch-targets,reduced-motion,zoom-reflow}.spec.ts` | Every public route + 7 Studio routes |
 | a11y exceptions | `tests/e2e/a11y/exceptions.json` | Ships with zero rows |
-| Security tests | `tests/unit/{redaction,rate-limit-window,upload-validation,pii-scope}.test.ts`, `tests/e2e/{security-headers,studio-authz}.spec.ts` | Redaction, limits, sniffing, headers, authz |
+| Security tests | `tests/unit/{rate-limit-window,upload-validation,pii-scope}.test.ts`, `tests/unit/redact.test.ts` (Phase 38, extended), `tests/e2e/{security-headers,studio-authz}.spec.ts` | Limits, sniffing, PII scope, redaction, headers, authz |
 | Docs | `docs/ops/ACCESSIBILITY.md`, `docs/ops/SECURITY.md` | Conformance table, manual pass log, posture, never-expose list, runbooks |
 
 **Database**
@@ -744,7 +746,7 @@ ellipsis), which fails 1.1.1 in spirit even though the field is non-empty. Rewri
 **Verification**
 
 1. `npm run build && node scripts/security/check-secret-exposure.mjs` — exits 0. Add `console.log(process.env.SUPABASE_SERVICE_ROLE_KEY)` to a client component, rebuild, confirm it exits non-zero naming the chunk.
-2. `npm run test:unit -- redaction rate-limit-window upload-validation pii-scope` — green, including: the redactor removes every never-expose name from a nested payload; a fixed window resets correctly at the boundary; a `.png` file with a `.svg` payload is rejected by magic-byte sniffing; no inquiry personal field appears in `search_documents` or `web_vitals_samples`.
+2. `npm run test:unit -- redact rate-limit-window upload-validation pii-scope` — green, including: the redactor removes every never-expose name from a nested payload; a fixed window resets correctly at the boundary; a `.png` file with a `.svg` payload is rejected by magic-byte sniffing; no inquiry personal field appears in `search_documents` or `web_vitals_samples`.
 3. `npm start` then `curl -sI localhost:3000/` — every header in the table present with the exact value; `curl -sI localhost:3000/studio` additionally `private, no-store` and `X-Robots-Tag: noindex, nofollow`.
 4. `npx playwright test tests/e2e/security-headers.spec.ts` — CSP nonce differs per request; no inline script without a nonce; the 3D viewer loads with the flag on and produces zero CSP violations.
 5. `npx playwright test tests/e2e/studio-authz.spec.ts` — as `viewer`, direct POSTs to publish, bulk-apply, media-delete and role-change all return 403 and each writes an `audit_log` row with `result='DENIED'`.
@@ -770,7 +772,7 @@ ellipsis), which fails 1.1.1 in spirit even though the field is non-empty. Rewri
 - [ ] Inquiry personal data is absent from every index, sample, log and audit blob, proved by test; export, erase and scheduled anonymisation all work and are dry-runnable.
 - [ ] Privacy and terms remain `DRAFT` with `OWNER_VERIFICATION_REQUIRED`; no accessibility, compliance or certification claim is published anywhere.
 - [ ] `gitleaks`, `npm audit` and the licence check run in CI and are green.
-- [ ] Phase-specific D9 evidence: docs updated = `ACCESSIBILITY.md`, `SECURITY.md`, `DATA_MODEL.md`, `MEDIA_GUIDE.md`; tests run = four unit suites, seven a11y specs, two security specs; next phase = 42.
+- [ ] Phase-specific D9 evidence: docs updated = `ACCESSIBILITY.md`, `SECURITY.md`, `DATA_MODEL.md`, `MEDIA_GUIDE.md`; tests run = `rate-limit-window`, `upload-validation`, `pii-scope`, the extended `redact` suite, seven a11y specs and two security specs; next phase = 42.
 - [ ] All ten points of the **Shared D9 completion checklist** verified and recorded.
 
 ---
@@ -1605,11 +1607,15 @@ that claims a capability the code does not have is worse than no document.
   value, no private URL, and no claim the code does not support.
   `scripts/docs/check-doc-contract.mjs` (Phase 01) is extended with a **claim check**: a documented
   capability must name the file or route that implements it.
-- **The sanitised documentation viewer.** Phase 38 built `/studio/system/documentation`; Phase 46
-  fixes its allowlist — architecture, studio guide, media guide, scraper guide, deployment,
-  environment, business rules, content guide, component registry, Higgsfield guide (FEAT §30) — and
-  its exclusion rules: never `docs/requirements/**` internals that quote unverified claims, never
-  anything containing an environment value, never `.env*`, never a migration file.
+- **The sanitised documentation viewer, verified rather than rebuilt.** Phase 38 built
+  `/studio/system/documentation` with a key allowlist and `system.docs.read`. Phase 46 confirms that
+  allowlist against the finished documentation set — architecture, studio guide, media guide,
+  scraper guide, deployment, environment, business rules, content guide, component registry,
+  Higgsfield guide (the FEAT §30 ten) — and confirms the exclusions still hold now that Phases 39–45
+  have written a great deal more: never `docs/requirements/**`, never `SECURITY.md`, never
+  `.env*`, never a migration file, never anything containing an environment value. Any document this
+  block promoted from stub to `CURRENT` is checked for a leaked value before the allowlist is
+  re-confirmed.
 - **Deliberate-omission register (FEAT §39).** What was intentionally not built, why, and where the
   seam is if it is ever wanted: online checkout, payment gateway, customer accounts, wishlist,
   reviews and ratings, shipping and returns, AR and room visualisation, advanced configurator
@@ -1652,17 +1658,17 @@ that claims a capability the code does not have is worse than no document.
 | Verification backlog | `scripts/content/build-verification-report.ts` → `docs/content/INITIAL_CONTENT_INVENTORY.md` | Generated section; grouped; with resolution paths |
 | Claim check | `scripts/docs/check-doc-contract.mjs` (extended) | A documented capability must name its implementing file or route |
 | Doc audit | `scripts/docs/audit-docs.mjs` | D7 completeness, front matter, `status`, secret scan, stub detection, and `--claims`: claim-term scan classified by prohibition marker |
-| Viewer allowlist | `lib/docs/allowlist.ts` | The FEAT §30 set and the exclusion rules |
+| Viewer allowlist re-confirmation | `scripts/docs/build-index.ts`, `lib/docs/render.ts` (both Phase 38) | The FEAT §30 ten keys re-checked against the finished docs; exclusions unchanged |
 | Omission register | `docs/project/BUSINESS_RULES.md` → *Deliberately not built* | Thirteen rows with reason and seam |
 | Final state | `docs/SESSION-STATE.md`, `PROJECT_STATE.md`, `docs/project/ROADMAP.md`, `CHANGELOG.md` | Final entries; every phase status real |
 | Recovery proof | `README.md` → *From a clean clone* | The command sequence, elapsed time, manual steps |
 | Support model | `docs/ops/DEPLOYMENT.md` | No on-call, no SLA; what exists instead; incident path |
-| Tests | `tests/unit/docs-audit.test.ts`, `tests/e2e/studio-documentation.spec.ts` | Audit rules; viewer allowlist and exclusions |
+| Tests | `tests/unit/docs-audit.test.ts` (new), `tests/unit/docs-allowlist.test.ts` and `tests/e2e/studio-system.spec.ts` (Phase 38, extended) | D7 completeness and claim rules; allowlist re-confirmed against the finished docs |
 
 **Database** — **None.**
 
-**Studio surface** — **fills** `/studio/system/documentation` with its final allowlist and exclusion
-rules (Phase 38 built the viewer; Phase 46 fixes what it may show). **Extends** `/studio` overview
+**Studio surface** — **no new route.** Re-confirms the Phase 38 allowlist and exclusion rules on
+`/studio/system/documentation` against the finished documentation set. **Extends** `/studio` overview
 with an "Outstanding owner verifications" card linking to the backlog, because a list in a Markdown
 file is not where an owner will look.
 
@@ -1680,7 +1686,7 @@ Cloudinary, and must not contain a real enquirer's personal data or any environm
 | The owner discovers something needs an engineer only when they try it | The capability boundary is dry-run as Phase 45's audit question 8: the owner performs ten routine changes unaided before this phase can pass |
 | The verification backlog is handed over and quietly ignored | It is generated, not hand-maintained; it appears as a card on `/studio` overview; and nothing in it can publish until it is resolved |
 | A screenshot in the runbooks leaks personal data or an environment value | Screenshots are taken against the Phase 42 fixture database on a preview deployment; `audit-docs.mjs` scans `docs/**` for the never-expose names and for value-shaped strings |
-| The documentation viewer exposes a file it should not | The allowlist is code with a unit test; `studio-documentation.spec.ts` asserts that `.env`, migrations and requirement internals are unreachable |
+| The documentation viewer exposes a file it should not, now that Phases 39-45 have added a great deal of prose | The Phase 38 design already takes an allowlist **key**, not a path, and the index is a build artefact; Phase 46 re-runs `docs:index` and the Phase 38 `docs-allowlist.test.ts` against the finished set, asserting `.env*`, `SECURITY.md`, migrations and requirement internals are all 404 |
 | Handover is claimed but never happened | Recorded `OWNER_VERIFICATION_REQUIRED` until the owner confirms — a fact about the world, not a document's assertion (D10) |
 | Recoverability is asserted rather than proved | The clean-clone sequence is executed on a machine with no prior state, timed, and its manual steps recorded; a step that cannot be automated is written down rather than omitted |
 | The omission register becomes a roadmap promise | Each row states the reason and the seam, not a date or an intention; `BUSINESS_RULES.md` says these are decisions, not plans |
@@ -1691,7 +1697,7 @@ Cloudinary, and must not contain a real enquirer's personal data or any environm
 2. `node scripts/docs/check-doc-contract.mjs --claims` — every documented capability names an implementing file or route. Add a sentence claiming an unbuilt feature and confirm it fails.
 3. `npx tsx scripts/content/build-verification-report.ts && git diff --exit-code docs/content/INITIAL_CONTENT_INVENTORY.md` — the generated backlog is current and lists every `OWNER_VERIFICATION_REQUIRED` row with its Studio path.
 4. Open `/studio` as `owner` — the outstanding-verifications card shows a count matching the report.
-5. `npx playwright test tests/e2e/studio-documentation.spec.ts` — the ten FEAT §30 documents render; `.env.example`, any file under `supabase/migrations/`, and any requirement internal are unreachable, returning the seeded not-permitted state rather than a 500.
+5. `npm run docs:index && npm run test:unit -- docs-allowlist && npx playwright test tests/e2e/studio-system.spec.ts` — the ten FEAT §30 documents render from the regenerated index; `.env.example`, `docs/ops/SECURITY.md`, any file under `supabase/migrations/`, an absolute path and a `..` traversal are all unreachable and return 404, not a 500.
 6. The owner performs, unaided and observed, the ten routine changes from the capability table. Record 10 of 10, or list precisely what needed an engineer and why the table was wrong.
 7. **Clean-clone proof** on a machine with no prior state: `git clone` → `nvm use` → `npm ci` → `supabase start` → `npm run db:reset` → `npm run seed:content` → `npm run build` → `npm run check` → `npx playwright test`. All green. Record elapsed time and every manual step in `README.md`.
 8. Read `docs/project/ROADMAP.md`: all 47 phases (00–46) carry a real status; every `PARTIAL` names what remains; `PROJECT_STATE.md` and `docs/SESSION-STATE.md` agree with it.
@@ -1712,7 +1718,7 @@ Cloudinary, and must not contain a real enquirer's personal data or any environm
 - [ ] The support model states plainly that there is no on-call rotation and no SLA, and names the incident path that does exist.
 - [ ] `audit-docs.mjs --claims` reports zero assertions: no document anywhere in `docs/**` (outside `docs/requirements/**`) asserts an award, certification, testimonial, client, delivered project, durability claim or sales figure — occurrences of those words survive only inside an explicit prohibition.
 - [ ] The handover session is recorded `OWNER_VERIFICATION_REQUIRED` until the owner confirms it took place.
-- [ ] Phase-specific D9 evidence: docs updated = every path in D7; tests run = `docs-audit`, `studio-documentation.spec.ts`, and the full suite via the clean-clone proof; next phase = **none — this is the final phase; subsequent work is tracked in `ROADMAP.md` as post-launch backlog**.
+- [ ] Phase-specific D9 evidence: docs updated = every path in D7; tests run = `docs-audit`, the extended `docs-allowlist` and `studio-system.spec.ts`, and the full suite via the clean-clone proof; next phase = **none — this is the final phase; subsequent work is tracked in `ROADMAP.md` as post-launch backlog**.
 - [ ] All ten points of the **Shared D9 completion checklist** verified and recorded.
 
 ---
@@ -1746,11 +1752,16 @@ These are raised, not acted on. Nothing above knowingly diverges from `CANONICAL
    candidates — it should be recorded as an amendment naming the width and the reason, because it
    changes `playwright.config.ts`, the Phase 42 snapshot count, and every prior phase's exit
    criteria that cite "all eight widths".
-2. **`CRON_SECRET` is still absent from D8.** `PHASE-23-30.md` raised this for the research
-   scheduler; Phase 44 needs the same value for the retention and anonymisation crons. Both
-   currently authenticate on Vercel's `x-vercel-cron` header, which is untestable outside Vercel.
-   Suggested amendment: add `CRON_SECRET` to D8's server-only list. Reusing `REVALIDATE_SECRET` was
-   rejected for the same reason it was rejected in Phase 25.
+2. **`CRON_SECRET` is still absent from D8, and two phases now authenticate crons differently.**
+   `PHASE-23-30.md` raised this for the research scheduler, which authenticates on Vercel's
+   `x-vercel-cron` header and 404s otherwise — untestable outside Vercel. `PHASE-31-38.md` instead
+   authenticates its five cron routes (`research-analytics`, `research-score`, `sheets-sync`,
+   `analytics-snapshot`, `log-retention`) with `REVALIDATE_SECRET`, which is testable but widens one
+   secret across two unrelated systems. Phase 44 registers all of them in `vercel.json` and Phase 41
+   adds an anonymisation cron, so the project will soon have seven cron entries under two different
+   auth schemes. Suggested amendment: add `CRON_SECRET` to D8's server-only list and normalise every
+   cron route onto it. Until that decision is taken, Phase 44 registers each route with whichever
+   scheme its owning phase document specifies rather than silently changing one.
 3. **Vercel system variables are not in D8.** `VERCEL_ENV`, `VERCEL_URL`, `VERCEL_GIT_COMMIT_SHA`
    and `VERCEL_GIT_COMMIT_REF` are platform-injected, are not secrets and are not configured by the
    project, but Phase 44 reads all four and the Environment page displays two. D8 fixes the variable

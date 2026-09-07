@@ -110,6 +110,11 @@ Roles: `owner · admin · editor · merchandiser · researcher · viewer`.
 - Cloudinary folders follow the manifest's `cloudinary_folder`.
 - Every media row carries `alt_text`, `is_ai_generated`, `is_concept`.
 - Naming: `<page>-<section>-<variant>.<ext>`; the Rivya asset ID is authoritative, not the filename.
+- **Asset IDs come from two allocators sharing one namespace, and must not collide.**
+  `scripts/media/build-higgsfield-manifest.py` mints `<FAMILY>-<NNN>` for assets that exist.
+  Planned (GAP) assets are named in the `<PAGE>-<SECTION>[-<KIND>]-<NNN>` form and may **never**
+  reuse a manifest family prefix — otherwise the ID collides the moment that family grows.
+  `scripts/media/check-asset-ids.py` enforces this; run it in CI and before any media migration.
 - Desktop/mobile media are separate CMS slots. Available ratios: 21:9, 16:9, 4:3, 3:2, 1:1, 4:5, 3:4, 9:16.
 
 ## D7 — Documentation map (fixed)
@@ -155,4 +160,7 @@ Brand and editorial copy may be written; anything asserting business capability 
 
 ## Amendments
 
-_None yet._
+**2026-09-07 · A1 — asset ID allocation (D6).** The Higgsfield audit exposed two allocators
+minting into one asset-ID namespace: the manifest generator numbering within a family, and the
+media plan naming assets that do not exist yet. Three planned IDs had already collided with real
+videos. D6 now fixes the gap-ID form and `scripts/media/check-asset-ids.py` enforces it.

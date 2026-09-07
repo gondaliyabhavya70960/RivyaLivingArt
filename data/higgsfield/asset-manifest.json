@@ -6789,8 +6789,8 @@
       "cms_placement": null
     },
     {
-      "rivya_asset_id": "LARGEFORMAT-DINING-001",
-      "filename": "largeformat-dining-001-9x16.mp4",
+      "rivya_asset_id": "LARGEFORMAT-DINING-004",
+      "filename": "largeformat-dining-004-9x16.mp4",
       "type": "video",
       "family": "largeformat-dining",
       "subject_tags": [
@@ -6801,7 +6801,7 @@
       "page": "large-format",
       "section": "dining-tables",
       "cloudinary_folder": "rivya/large-format/dining",
-      "cloudinary_public_id": "rivya/large-format/dining/largeformat-dining-001-9x16",
+      "cloudinary_public_id": "rivya/large-format/dining/largeformat-dining-004-9x16",
       "aspect_ratio": "9:16",
       "width": 768,
       "height": 1344,
@@ -6820,8 +6820,8 @@
       "cms_placement": null
     },
     {
-      "rivya_asset_id": "MATERIAL-MACRO-001",
-      "filename": "material-macro-001-16x9.mp4",
+      "rivya_asset_id": "MATERIAL-MACRO-034",
+      "filename": "material-macro-034-16x9.mp4",
       "type": "video",
       "family": "material-macro",
       "subject_tags": [
@@ -6830,7 +6830,7 @@
       "page": "about",
       "section": "material-palette",
       "cloudinary_folder": "rivya/material",
-      "cloudinary_public_id": "rivya/material/material-macro-001-16x9",
+      "cloudinary_public_id": "rivya/material/material-macro-034-16x9",
       "aspect_ratio": "16:9",
       "width": 1280,
       "height": 720,
@@ -6849,8 +6849,8 @@
       "cms_placement": null
     },
     {
-      "rivya_asset_id": "DECOR-001",
-      "filename": "decor-001-16x9.mp4",
+      "rivya_asset_id": "DECOR-018",
+      "filename": "decor-018-16x9.mp4",
       "type": "video",
       "family": "decor",
       "subject_tags": [
@@ -6862,7 +6862,7 @@
       "page": "collection/decor",
       "section": "gallery",
       "cloudinary_folder": "rivya/collection/decor",
-      "cloudinary_public_id": "rivya/collection/decor/decor-001-16x9",
+      "cloudinary_public_id": "rivya/collection/decor/decor-018-16x9",
       "aspect_ratio": "16:9",
       "width": 1344,
       "height": 768,
@@ -6881,8 +6881,8 @@
       "cms_placement": null
     },
     {
-      "rivya_asset_id": "PROCESS-TIMBER-001",
-      "filename": "process-timber-001-16x9.mp4",
+      "rivya_asset_id": "PROCESS-TIMBER-006",
+      "filename": "process-timber-006-16x9.mp4",
       "type": "video",
       "family": "process-timber",
       "subject_tags": [
@@ -6892,7 +6892,7 @@
       "page": "process",
       "section": "timber",
       "cloudinary_folder": "rivya/process/timber",
-      "cloudinary_public_id": "rivya/process/timber/process-timber-001-16x9",
+      "cloudinary_public_id": "rivya/process/timber/process-timber-006-16x9",
       "aspect_ratio": "16:9",
       "width": 1344,
       "height": 768,
@@ -6911,8 +6911,8 @@
       "cms_placement": null
     },
     {
-      "rivya_asset_id": "PROCESS-POUR-001",
-      "filename": "process-pour-001-16x9.mp4",
+      "rivya_asset_id": "PROCESS-POUR-009",
+      "filename": "process-pour-009-16x9.mp4",
       "type": "video",
       "family": "process-pour",
       "subject_tags": [
@@ -6924,7 +6924,7 @@
       "page": "process",
       "section": "pour",
       "cloudinary_folder": "rivya/process/pour",
-      "cloudinary_public_id": "rivya/process/pour/process-pour-001-16x9",
+      "cloudinary_public_id": "rivya/process/pour/process-pour-009-16x9",
       "aspect_ratio": "16:9",
       "width": 1280,
       "height": 720,
@@ -6943,8 +6943,8 @@
       "cms_placement": null
     },
     {
-      "rivya_asset_id": "PROCESS-STUDIO-001",
-      "filename": "process-studio-001-16x9.mp4",
+      "rivya_asset_id": "PROCESS-STUDIO-016",
+      "filename": "process-studio-016-16x9.mp4",
       "type": "video",
       "family": "process-studio",
       "subject_tags": [
@@ -6955,7 +6955,7 @@
       "page": "process",
       "section": "studio",
       "cloudinary_folder": "rivya/process/studio",
-      "cloudinary_public_id": "rivya/process/studio/process-studio-001-16x9",
+      "cloudinary_public_id": "rivya/process/studio/process-studio-016-16x9",
       "aspect_ratio": "16:9",
       "width": 1344,
       "height": 768,
@@ -6974,8 +6974,8 @@
       "cms_placement": null
     },
     {
-      "rivya_asset_id": "PROCESS-POUR-002",
-      "filename": "process-pour-002-16x9.mp4",
+      "rivya_asset_id": "PROCESS-POUR-010",
+      "filename": "process-pour-010-16x9.mp4",
       "type": "video",
       "family": "process-pour",
       "subject_tags": [
@@ -6986,7 +6986,7 @@
       "page": "process",
       "section": "pour",
       "cloudinary_folder": "rivya/process/pour",
-      "cloudinary_public_id": "rivya/process/pour/process-pour-002-16x9",
+      "cloudinary_public_id": "rivya/process/pour/process-pour-010-16x9",
       "aspect_ratio": "16:9",
       "width": 1920,
       "height": 1080,
@@ -7005,8 +7005,8 @@
       "cms_placement": null
     },
     {
-      "rivya_asset_id": "PROCESS-POUR-003",
-      "filename": "process-pour-003-16x9.mp4",
+      "rivya_asset_id": "PROCESS-POUR-011",
+      "filename": "process-pour-011-16x9.mp4",
       "type": "video",
       "family": "process-pour",
       "subject_tags": [
@@ -7018,7 +7018,7 @@
       "page": "process",
       "section": "pour",
       "cloudinary_folder": "rivya/process/pour",
-      "cloudinary_public_id": "rivya/process/pour/process-pour-003-16x9",
+      "cloudinary_public_id": "rivya/process/pour/process-pour-011-16x9",
       "aspect_ratio": "16:9",
       "width": 1920,
       "height": 1080,
@@ -7037,8 +7037,8 @@
       "cms_placement": null
     },
     {
-      "rivya_asset_id": "PROCESS-TIMBER-002",
-      "filename": "process-timber-002-16x9.mp4",
+      "rivya_asset_id": "PROCESS-TIMBER-007",
+      "filename": "process-timber-007-16x9.mp4",
       "type": "video",
       "family": "process-timber",
       "subject_tags": [
@@ -7047,7 +7047,7 @@
       "page": "process",
       "section": "timber",
       "cloudinary_folder": "rivya/process/timber",
-      "cloudinary_public_id": "rivya/process/timber/process-timber-002-16x9",
+      "cloudinary_public_id": "rivya/process/timber/process-timber-007-16x9",
       "aspect_ratio": "16:9",
       "width": 1344,
       "height": 768,
@@ -7066,15 +7066,15 @@
       "cms_placement": null
     },
     {
-      "rivya_asset_id": "EDITORIAL-001",
-      "filename": "editorial-001-9x16.mp4",
+      "rivya_asset_id": "EDITORIAL-017",
+      "filename": "editorial-017-9x16.mp4",
       "type": "video",
       "family": "editorial",
       "subject_tags": [],
       "page": "journal",
       "section": "editorial",
       "cloudinary_folder": "rivya/journal/editorial",
-      "cloudinary_public_id": "rivya/journal/editorial/editorial-001-9x16",
+      "cloudinary_public_id": "rivya/journal/editorial/editorial-017-9x16",
       "aspect_ratio": "9:16",
       "width": 768,
       "height": 1344,
@@ -7093,15 +7093,15 @@
       "cms_placement": null
     },
     {
-      "rivya_asset_id": "EDITORIAL-002",
-      "filename": "editorial-002-16x9.mp4",
+      "rivya_asset_id": "EDITORIAL-018",
+      "filename": "editorial-018-16x9.mp4",
       "type": "video",
       "family": "editorial",
       "subject_tags": [],
       "page": "journal",
       "section": "editorial",
       "cloudinary_folder": "rivya/journal/editorial",
-      "cloudinary_public_id": "rivya/journal/editorial/editorial-002-16x9",
+      "cloudinary_public_id": "rivya/journal/editorial/editorial-018-16x9",
       "aspect_ratio": "16:9",
       "width": 1280,
       "height": 720,
@@ -7120,8 +7120,8 @@
       "cms_placement": null
     },
     {
-      "rivya_asset_id": "MATERIAL-MACRO-002",
-      "filename": "material-macro-002-16x9.mp4",
+      "rivya_asset_id": "MATERIAL-MACRO-035",
+      "filename": "material-macro-035-16x9.mp4",
       "type": "video",
       "family": "material-macro",
       "subject_tags": [
@@ -7131,7 +7131,7 @@
       "page": "about",
       "section": "material-palette",
       "cloudinary_folder": "rivya/material",
-      "cloudinary_public_id": "rivya/material/material-macro-002-16x9",
+      "cloudinary_public_id": "rivya/material/material-macro-035-16x9",
       "aspect_ratio": "16:9",
       "width": 1920,
       "height": 1080,
@@ -7150,8 +7150,8 @@
       "cms_placement": null
     },
     {
-      "rivya_asset_id": "PROCESS-STUDIO-002",
-      "filename": "process-studio-002-16x9.mp4",
+      "rivya_asset_id": "PROCESS-STUDIO-017",
+      "filename": "process-studio-017-16x9.mp4",
       "type": "video",
       "family": "process-studio",
       "subject_tags": [
@@ -7160,7 +7160,7 @@
       "page": "process",
       "section": "studio",
       "cloudinary_folder": "rivya/process/studio",
-      "cloudinary_public_id": "rivya/process/studio/process-studio-002-16x9",
+      "cloudinary_public_id": "rivya/process/studio/process-studio-017-16x9",
       "aspect_ratio": "16:9",
       "width": 1280,
       "height": 720,
@@ -7179,8 +7179,8 @@
       "cms_placement": null
     },
     {
-      "rivya_asset_id": "PROCESS-STUDIO-003",
-      "filename": "process-studio-003-16x9.mp4",
+      "rivya_asset_id": "PROCESS-STUDIO-018",
+      "filename": "process-studio-018-16x9.mp4",
       "type": "video",
       "family": "process-studio",
       "subject_tags": [
@@ -7189,7 +7189,7 @@
       "page": "process",
       "section": "studio",
       "cloudinary_folder": "rivya/process/studio",
-      "cloudinary_public_id": "rivya/process/studio/process-studio-003-16x9",
+      "cloudinary_public_id": "rivya/process/studio/process-studio-018-16x9",
       "aspect_ratio": "16:9",
       "width": 1280,
       "height": 720,
@@ -7208,8 +7208,8 @@
       "cms_placement": null
     },
     {
-      "rivya_asset_id": "PROCESS-MOULD-001",
-      "filename": "process-mould-001-16x9.mp4",
+      "rivya_asset_id": "PROCESS-MOULD-012",
+      "filename": "process-mould-012-16x9.mp4",
       "type": "video",
       "family": "process-mould",
       "subject_tags": [
@@ -7221,7 +7221,7 @@
       "page": "process",
       "section": "mould",
       "cloudinary_folder": "rivya/process/mould",
-      "cloudinary_public_id": "rivya/process/mould/process-mould-001-16x9",
+      "cloudinary_public_id": "rivya/process/mould/process-mould-012-16x9",
       "aspect_ratio": "16:9",
       "width": 1920,
       "height": 1080,
@@ -7240,8 +7240,8 @@
       "cms_placement": null
     },
     {
-      "rivya_asset_id": "PROCESS-PIGMENT-001",
-      "filename": "process-pigment-001-16x9.mp4",
+      "rivya_asset_id": "PROCESS-PIGMENT-012",
+      "filename": "process-pigment-012-16x9.mp4",
       "type": "video",
       "family": "process-pigment",
       "subject_tags": [
@@ -7251,7 +7251,7 @@
       "page": "process",
       "section": "pigment",
       "cloudinary_folder": "rivya/process/pigment",
-      "cloudinary_public_id": "rivya/process/pigment/process-pigment-001-16x9",
+      "cloudinary_public_id": "rivya/process/pigment/process-pigment-012-16x9",
       "aspect_ratio": "16:9",
       "width": 1344,
       "height": 768,
@@ -7270,8 +7270,8 @@
       "cms_placement": null
     },
     {
-      "rivya_asset_id": "PROCESS-PIGMENT-002",
-      "filename": "process-pigment-002-9x16.mp4",
+      "rivya_asset_id": "PROCESS-PIGMENT-013",
+      "filename": "process-pigment-013-9x16.mp4",
       "type": "video",
       "family": "process-pigment",
       "subject_tags": [
@@ -7280,7 +7280,7 @@
       "page": "process",
       "section": "pigment",
       "cloudinary_folder": "rivya/process/pigment",
-      "cloudinary_public_id": "rivya/process/pigment/process-pigment-002-9x16",
+      "cloudinary_public_id": "rivya/process/pigment/process-pigment-013-9x16",
       "aspect_ratio": "9:16",
       "width": 768,
       "height": 1344,
@@ -7299,8 +7299,8 @@
       "cms_placement": null
     },
     {
-      "rivya_asset_id": "PROCESS-STUDIO-004",
-      "filename": "process-studio-004-16x9.mp4",
+      "rivya_asset_id": "PROCESS-STUDIO-019",
+      "filename": "process-studio-019-16x9.mp4",
       "type": "video",
       "family": "process-studio",
       "subject_tags": [
@@ -7312,7 +7312,7 @@
       "page": "process",
       "section": "studio",
       "cloudinary_folder": "rivya/process/studio",
-      "cloudinary_public_id": "rivya/process/studio/process-studio-004-16x9",
+      "cloudinary_public_id": "rivya/process/studio/process-studio-019-16x9",
       "aspect_ratio": "16:9",
       "width": 1920,
       "height": 1080,
@@ -7331,8 +7331,8 @@
       "cms_placement": null
     },
     {
-      "rivya_asset_id": "MATERIAL-MACRO-003",
-      "filename": "material-macro-003-16x9.mp4",
+      "rivya_asset_id": "MATERIAL-MACRO-036",
+      "filename": "material-macro-036-16x9.mp4",
       "type": "video",
       "family": "material-macro",
       "subject_tags": [
@@ -7341,7 +7341,7 @@
       "page": "about",
       "section": "material-palette",
       "cloudinary_folder": "rivya/material",
-      "cloudinary_public_id": "rivya/material/material-macro-003-16x9",
+      "cloudinary_public_id": "rivya/material/material-macro-036-16x9",
       "aspect_ratio": "16:9",
       "width": 1344,
       "height": 768,
@@ -7360,8 +7360,8 @@
       "cms_placement": null
     },
     {
-      "rivya_asset_id": "MATERIAL-MACRO-004",
-      "filename": "material-macro-004-16x9.mp4",
+      "rivya_asset_id": "MATERIAL-MACRO-037",
+      "filename": "material-macro-037-16x9.mp4",
       "type": "video",
       "family": "material-macro",
       "subject_tags": [
@@ -7370,7 +7370,7 @@
       "page": "about",
       "section": "material-palette",
       "cloudinary_folder": "rivya/material",
-      "cloudinary_public_id": "rivya/material/material-macro-004-16x9",
+      "cloudinary_public_id": "rivya/material/material-macro-037-16x9",
       "aspect_ratio": "16:9",
       "width": 1920,
       "height": 1080,
@@ -7389,8 +7389,8 @@
       "cms_placement": null
     },
     {
-      "rivya_asset_id": "MATERIAL-MACRO-005",
-      "filename": "material-macro-005-16x9.mp4",
+      "rivya_asset_id": "MATERIAL-MACRO-038",
+      "filename": "material-macro-038-16x9.mp4",
       "type": "video",
       "family": "material-macro",
       "subject_tags": [
@@ -7400,7 +7400,7 @@
       "page": "about",
       "section": "material-palette",
       "cloudinary_folder": "rivya/material",
-      "cloudinary_public_id": "rivya/material/material-macro-005-16x9",
+      "cloudinary_public_id": "rivya/material/material-macro-038-16x9",
       "aspect_ratio": "16:9",
       "width": 1344,
       "height": 768,
@@ -7419,8 +7419,8 @@
       "cms_placement": null
     },
     {
-      "rivya_asset_id": "MATERIAL-MACRO-006",
-      "filename": "material-macro-006-16x9.mp4",
+      "rivya_asset_id": "MATERIAL-MACRO-039",
+      "filename": "material-macro-039-16x9.mp4",
       "type": "video",
       "family": "material-macro",
       "subject_tags": [
@@ -7429,7 +7429,7 @@
       "page": "about",
       "section": "material-palette",
       "cloudinary_folder": "rivya/material",
-      "cloudinary_public_id": "rivya/material/material-macro-006-16x9",
+      "cloudinary_public_id": "rivya/material/material-macro-039-16x9",
       "aspect_ratio": "16:9",
       "width": 1280,
       "height": 720,
@@ -7448,15 +7448,15 @@
       "cms_placement": null
     },
     {
-      "rivya_asset_id": "EDITORIAL-003",
-      "filename": "editorial-003-16x9.mp4",
+      "rivya_asset_id": "EDITORIAL-019",
+      "filename": "editorial-019-16x9.mp4",
       "type": "video",
       "family": "editorial",
       "subject_tags": [],
       "page": "journal",
       "section": "editorial",
       "cloudinary_folder": "rivya/journal/editorial",
-      "cloudinary_public_id": "rivya/journal/editorial/editorial-003-16x9",
+      "cloudinary_public_id": "rivya/journal/editorial/editorial-019-16x9",
       "aspect_ratio": "16:9",
       "width": 1280,
       "height": 720,
@@ -7475,8 +7475,8 @@
       "cms_placement": null
     },
     {
-      "rivya_asset_id": "GALLERY-SCENE-001",
-      "filename": "gallery-scene-001-16x9.mp4",
+      "rivya_asset_id": "GALLERY-SCENE-005",
+      "filename": "gallery-scene-005-16x9.mp4",
       "type": "video",
       "family": "gallery-scene",
       "subject_tags": [
@@ -7486,7 +7486,7 @@
       "page": "portfolio",
       "section": "gallery",
       "cloudinary_folder": "rivya/portfolio/gallery",
-      "cloudinary_public_id": "rivya/portfolio/gallery/gallery-scene-001-16x9",
+      "cloudinary_public_id": "rivya/portfolio/gallery/gallery-scene-005-16x9",
       "aspect_ratio": "16:9",
       "width": 1920,
       "height": 1080,
@@ -7505,8 +7505,8 @@
       "cms_placement": null
     },
     {
-      "rivya_asset_id": "PROCESS-POUR-004",
-      "filename": "process-pour-004-16x9.mp4",
+      "rivya_asset_id": "PROCESS-POUR-012",
+      "filename": "process-pour-012-16x9.mp4",
       "type": "video",
       "family": "process-pour",
       "subject_tags": [
@@ -7518,7 +7518,7 @@
       "page": "process",
       "section": "pour",
       "cloudinary_folder": "rivya/process/pour",
-      "cloudinary_public_id": "rivya/process/pour/process-pour-004-16x9",
+      "cloudinary_public_id": "rivya/process/pour/process-pour-012-16x9",
       "aspect_ratio": "16:9",
       "width": 1280,
       "height": 720,
@@ -7537,8 +7537,8 @@
       "cms_placement": null
     },
     {
-      "rivya_asset_id": "LARGEFORMAT-DINING-002",
-      "filename": "largeformat-dining-002-16x9.mp4",
+      "rivya_asset_id": "LARGEFORMAT-DINING-005",
+      "filename": "largeformat-dining-005-16x9.mp4",
       "type": "video",
       "family": "largeformat-dining",
       "subject_tags": [
@@ -7549,7 +7549,7 @@
       "page": "large-format",
       "section": "dining-tables",
       "cloudinary_folder": "rivya/large-format/dining",
-      "cloudinary_public_id": "rivya/large-format/dining/largeformat-dining-002-16x9",
+      "cloudinary_public_id": "rivya/large-format/dining/largeformat-dining-005-16x9",
       "aspect_ratio": "16:9",
       "width": 1344,
       "height": 768,

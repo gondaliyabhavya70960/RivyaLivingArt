@@ -251,9 +251,9 @@ sequenceDiagram
   autonumber
   participant V as Visitor
   participant E as Vercel CDN
-  participant N as Next server (RSC)
+  participant N as Next server · RSC
   participant R as lib/supabase/repositories
-  participant DB as Postgres (anon role, RLS)
+  participant DB as Postgres · anon role · RLS
   participant C as Cloudinary CDN
 
   V->>E: GET /large-format
@@ -262,7 +262,7 @@ sequenceDiagram
   else miss or revalidated
     E->>N: render request
     N->>R: getSiteChrome()  (React.cache, once per request)
-    R->>DB: navigation_items · global_content · site settings
+    R->>DB: navigation_items · global_content (incl. group CONTACT)
     DB-->>R: rows where status = 'PUBLISHED'
     N->>R: resolvePage('/large-format')
     R->>DB: pages + page_sections (visible, in publish window)
@@ -293,11 +293,11 @@ Properties that are load-bearing:
 ```mermaid
 sequenceDiagram
   autonumber
-  participant U as Editor (Client Component)
+  participant U as Editor · Client Component
   participant A as Server action
   participant P as lib/cms/publishing.ts
   participant R as Repository
-  participant DB as Postgres (authenticated role)
+  participant DB as Postgres · authenticated role
   participant RV as /api/revalidate
 
   U->>A: publish(sectionId)
@@ -341,8 +341,8 @@ Properties that are load-bearing:
 sequenceDiagram
   autonumber
   participant V as Visitor
-  participant A as submitInquiry (server action)
-  participant DB as Postgres (anon insert policy)
+  participant A as submitInquiry · server action
+  participant DB as Postgres · anon insert policy
   participant W as lib/whatsapp
   participant WA as wa.me
 
@@ -480,7 +480,7 @@ actions) and the reader (`unstable_cache` call sites).
 
 | Tag | Applied to | Invalidated when |
 |---|---|---|
-| `chrome` | Every route through the site layout | Navigation, announcement, footer, global content or site settings changes |
+| `chrome` | Every route through the site layout | A `navigation_items` or `global_content` row changes — announcement, footer, CTA library, commerce labels, contact details |
 | `page:<path>` | The CMS page at that path — for example `page:/`, `page:/large-format` | Any of that page's sections is published, unpublished, reordered or hidden |
 | `seo:<path>` | Metadata for that path | The matching `seo_entries` row changes |
 | `product:<slug>` · `category:<slug>` · `collection:<slug>` · `project:<slug>` · `article:<slug>` | The corresponding detail route | That entity is published, edited or unpublished |
@@ -586,8 +586,9 @@ later phase does not "simplify" them into one table.
 is therefore representable and "SCRAPER errors in the last hour" is one query.
 
 **Redaction is not optional and not per-call-site.** `lib/logging/redact.ts` removes, by name, every
-D8 server-only variable and any key matching `/(secret|token|key|password|credential|authorization|
-cookie)/i`, and, by shape, JWT-like strings, PEM private-key blocks, credentialed Cloudinary URLs and
+D8 server-only variable and any key matching
+`/(secret|token|key|password|credential|authorization|cookie)/i`,
+and, by shape, JWT-like strings, PEM private-key blocks, credentialed Cloudinary URLs and
 `postgres://user:pass@` connection strings. It substitutes a fixed `[redacted]` — never a prefix,
 never a suffix, never a length, never a hash. D8's "never a value, prefix or length" is taken
 literally. Every log write, environment check result and documentation render passes through it.

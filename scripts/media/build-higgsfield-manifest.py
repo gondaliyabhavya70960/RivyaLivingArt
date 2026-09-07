@@ -136,8 +136,13 @@ def alt_draft(prompt: str) -> str:
     return (p[0].upper() + p[1:]) if p else "Rivya Living Art concept still."
 
 
-def build(records, kind):
-    counters = collections.Counter()
+def build(records, kind, counters):
+    """Number within a counter namespace shared across media types.
+
+    Images and videos land in the same subject families, so separate counters
+    would mint the same Rivya asset ID twice. The ID is the authoritative key
+    (filenames are not), so the namespace must be shared.
+    """
     out = []
     for r in sorted(records, key=lambda x: (-(x.get("created") or 0), x["id"])):
         fam, page, section, folder, tags = classify(r["prompt"])
@@ -177,7 +182,17 @@ def build(records, kind):
 def main():
     imgs = json.loads((RAW / "images.json").read_text())
     vids = json.loads((RAW / "videos.json").read_text())
-    assets = build(imgs, "image") + build(vids, "video")
+    counters = collections.Counter()
+    assets = build(imgs, "image", counters) + build(vids, "video", counters)
+
+    ids = [a["rivya_asset_id"] for a in assets]
+    dupes = [i for i, n in collections.Counter(ids).items() if n > 1]
+    if dupes:
+        raise SystemExit(f"duplicate Rivya asset IDs: {sorted(dupes)}")
+    pids = [a["cloudinary_public_id"] for a in assets]
+    dupe_pids = [i for i, n in collections.Counter(pids).items() if n > 1]
+    if dupe_pids:
+        raise SystemExit(f"duplicate Cloudinary public IDs: {sorted(dupe_pids)}")
     manifest = {
         "manifest_version": "rivya-hf-v1",
         "generated_by": "scripts/media/build-higgsfield-manifest.py (Phase 07)",
