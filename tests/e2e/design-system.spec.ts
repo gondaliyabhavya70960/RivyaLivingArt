@@ -124,3 +124,95 @@ test.describe('reduced motion', () => {
     expect(focused).not.toBe('BODY')
   })
 })
+
+/**
+ * The behavioural patterns. Phase 02's verification step 5 is a hand keyboard walkthrough;
+ * these encode the parts of it that a machine can hold, so a regression is caught by the
+ * suite rather than by the next person to try the keyboard.
+ */
+test.describe('behavioural patterns', () => {
+  test('the page renders', async ({ page }) => {
+    await page.goto('/design-system/patterns')
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
+  })
+
+  test('has no critical or serious accessibility violations', async ({ page }) => {
+    await page.goto('/design-system/patterns')
+    const results = await new AxeBuilder({ page })
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+      .analyze()
+    const blocking = results.violations.filter(
+      (v) => v.impact === 'critical' || v.impact === 'serious',
+    )
+    expect(
+      blocking.map((v) => `${v.id} (${v.impact}) — ${v.nodes[0]?.target.join(' ')}`),
+      'critical/serious axe violations',
+    ).toEqual([])
+  })
+
+  test('Dialog traps focus and restores it to the trigger on Escape', async ({ page }) => {
+    await page.goto('/design-system/patterns')
+    const trigger = page.getByRole('button', { name: 'Open dialog' })
+    await trigger.click()
+
+    const dialog = page.getByRole('dialog')
+    await expect(dialog).toBeVisible()
+
+    // Focus must be inside the dialog, not left on the trigger behind the scrim.
+    expect(await dialog.evaluate((el) => el.contains(document.activeElement))).toBe(true)
+
+    // Tab a full cycle; focus must never escape the dialog.
+    for (let i = 0; i < 8; i++) {
+      await page.keyboard.press('Tab')
+      expect(await dialog.evaluate((el) => el.contains(document.activeElement))).toBe(true)
+    }
+
+    await page.keyboard.press('Escape')
+    await expect(dialog).toBeHidden()
+    await expect(trigger).toBeFocused()
+  })
+
+  test('Tabs use a roving tabindex and move on arrow keys', async ({ page }) => {
+    await page.goto('/design-system/patterns')
+    const tabs = page.getByRole('tab')
+    await expect(tabs).toHaveCount(3)
+
+    // Exactly one tab is in the tab order at a time — that is what roving tabindex means.
+    const inOrder = await page
+      .getByRole('tab')
+      .evaluateAll((els) => els.filter((el) => el.getAttribute('tabindex') !== '-1').length)
+    expect(inOrder).toBe(1)
+
+    await tabs.first().focus()
+    await page.keyboard.press('ArrowRight')
+    await expect(tabs.nth(1)).toBeFocused()
+    await page.keyboard.press('End')
+    await expect(tabs.nth(2)).toBeFocused()
+    await page.keyboard.press('Home')
+    await expect(tabs.nth(0)).toBeFocused()
+  })
+
+  test('Accordion headers are real buttons carrying aria-expanded', async ({ page }) => {
+    await page.goto('/design-system/patterns')
+    const header = page.getByRole('button', { name: /custom-size furniture/i })
+    await expect(header).toHaveAttribute('aria-expanded', 'false')
+    await header.press('Enter')
+    await expect(header).toHaveAttribute('aria-expanded', 'true')
+  })
+
+  test('DropdownMenu opens on ArrowDown and Escape restores focus to the trigger', async ({
+    page,
+  }) => {
+    await page.goto('/design-system/patterns')
+    const trigger = page.getByRole('button', { name: 'Row actions' })
+    await trigger.focus()
+    await page.keyboard.press('ArrowDown')
+
+    const menu = page.getByRole('menu')
+    await expect(menu).toBeVisible()
+
+    await page.keyboard.press('Escape')
+    await expect(menu).toBeHidden()
+    await expect(trigger).toBeFocused()
+  })
+})

@@ -153,7 +153,12 @@ export const Drawer = React.forwardRef<HTMLElement, DrawerProps>(function Drawer
   const descriptionId = React.useId()
   const overlayRef = React.useRef<HTMLDivElement | null>(null)
   const panelRef = React.useRef<HTMLElement | null>(null)
-  const visible = useModalSurface({ open, overlayRef, panelRef, enterFrom: ENTER_FROM[side] })
+  const { visible, capturedTrigger } = useModalSurface({
+    open,
+    overlayRef,
+    panelRef,
+    enterFrom: ENTER_FROM[side],
+  })
 
   // One node, two consumers: the entrance needs the element to animate, and the caller
   // still gets the ref it passed. The same shape FocusTrap uses for its own container.
@@ -204,7 +209,7 @@ export const Drawer = React.forwardRef<HTMLElement, DrawerProps>(function Drawer
       />
       <FocusTrap
         initialFocus={initialFocus}
-        returnFocusTo={returnFocusTo}
+        returnFocusTo={returnFocusTo ?? capturedTrigger}
         onKeyDown={handleKeyDown}
         // `relative` so the panel stacks above the absolutely positioned scrim without a
         // second z-index; the trap itself paints nothing.

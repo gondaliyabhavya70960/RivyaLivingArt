@@ -262,12 +262,12 @@ and Phase 10's site shell then reuses it.
 
 | ID | Component | Purpose | Phase | State | Record |
 |---|---|---|---|---|---|
-| RC-201 | `Dialog` | usability | 02 | PLANNED | §7.1 |
-| RC-202 | `Drawer` | usability | 02 | PLANNED | §7.2 |
-| RC-203 | `Tabs` | usability | 02 | PLANNED | §7.3 |
-| RC-204 | `Accordion` | usability | 02 | PLANNED | §7.4 |
-| RC-205 | `Tooltip` | usability | 02 | PLANNED | §7.5 |
-| RC-206 | `Disclosure` | usability | 02 | PLANNED | §7.6 |
+| RC-201 | `Dialog` | usability | 02 | BUILT | §7.1 |
+| RC-202 | `Drawer` | usability | 02 | BUILT | §7.2 |
+| RC-203 | `Tabs` | usability | 02 | BUILT | §7.3 |
+| RC-204 | `Accordion` | usability | 02 | BUILT | §7.4 |
+| RC-205 | `Tooltip` | usability | 02 | BUILT | §7.5 |
+| RC-206 | `Disclosure` | usability | 02 | BUILT | §7.6 |
 | RC-207 | `Reveal` + `useReducedMotion` | brand perception | 02 | BUILT | §7.7 |
 | RC-208 | `SiteHeader` | navigation | 10 | PLANNED | index only — server, no interaction model |
 | RC-209 | `AnnouncementBar` | conversion | 10 | PLANNED | index only |
@@ -292,7 +292,7 @@ and Phase 10's site shell then reuses it.
 | RC-228 | `ModelViewerMount` | product understanding | 21 | PLANNED | §7.22 |
 | RC-229 | `charts/*` (`BarSeries`, `BandStrip`, `Scatter`, `Sparkline`) | usability | 31 | PLANNED | §7.23 |
 | RC-230 | `Breadcrumbs` | navigation | 02 | BUILT | §7.35 |
-| RC-231 | `DropdownMenu` | navigation | 02 | PLANNED | §7.36 |
+| RC-231 | `DropdownMenu` | navigation | 02 | BUILT | §7.36 |
 | RC-232 | `MediaImage` | material understanding | 06 | PLANNED | §7.37 |
 | RC-233 | `MediaVideo` | material understanding | 06 | PLANNED | §7.38 |
 | RC-234 | `Pagination` | navigation | 14 | PLANNED | §7.39 |

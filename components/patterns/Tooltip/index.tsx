@@ -126,6 +126,12 @@ export const Tooltip = React.forwardRef<HTMLSpanElement, TooltipProps>(function 
   // Set by Escape, cleared when the pointer leaves or focus moves: without it the tooltip
   // reopens on the very next hover timer and Escape reads as a 400ms delay.
   const dismissed = React.useRef(false)
+  // Hover and focus are tracked separately because either alone is enough to keep the
+  // tooltip open. Collapsing them into the one `open` flag loses the person who navigates
+  // by keyboard AND owns a mouse: their pointer drifts off the control, `mouseleave` fires
+  // while the control is still focused, and the tooltip they are reading disappears.
+  const hovered = React.useRef(false)
+  const focused = React.useRef(false)
 
   const clearTimer = React.useCallback(() => {
     if (timer.current === null) return
@@ -160,14 +166,19 @@ export const Tooltip = React.forwardRef<HTMLSpanElement, TooltipProps>(function 
       className={cn('relative inline-flex', className)}
       onMouseEnter={(event) => {
         onMouseEnter?.(event)
+        hovered.current = true
         clearTimer()
         if (dismissed.current) return
         timer.current = setTimeout(() => setOpen(true), HOVER_DELAY_MS)
       }}
       onMouseLeave={(event) => {
         onMouseLeave?.(event)
-        clearTimer()
+        hovered.current = false
+        // A new hover may open it again — the latch only survives a pointer that has not
+        // moved, which is what WCAG 1.4.13's "dismissible" asks for.
         dismissed.current = false
+        if (focused.current) return
+        clearTimer()
         timer.current = setTimeout(() => setOpen(false), LEAVE_GRACE_MS)
       }}
       // React's onFocus/onBlur are delegated from focusin/focusout, so they reach the
@@ -175,14 +186,17 @@ export const Tooltip = React.forwardRef<HTMLSpanElement, TooltipProps>(function 
       // user has already committed to the control, and a delay reads as a fault.
       onFocus={(event) => {
         onFocus?.(event)
+        focused.current = true
         clearTimer()
         if (dismissed.current) return
         setOpen(true)
       }}
       onBlur={(event) => {
         onBlur?.(event)
-        clearTimer()
+        focused.current = false
         dismissed.current = false
+        if (hovered.current) return
+        clearTimer()
         setOpen(false)
       }}
       {...rest}

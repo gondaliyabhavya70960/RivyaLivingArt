@@ -9,26 +9,18 @@ import { Tooltip } from './index'
  * event, and the state once the timer has run — because a test that only waited for the
  * settled state would pass just as well against a tooltip with no delays at all.
  *
- * The clock is real. Faking it here means faking it for `userEvent` too, and the two
- * disagree often enough that a hung test would be the most likely failure of this file
- * rather than a broken tooltip.
+ * THE CLOCK IS REAL, and the raised timeout below is the price of that. Faking it here
+ * means faking it for `userEvent` too, and the two disagree often enough that a hung test
+ * would be the most likely failure of this file rather than a broken tooltip. Waiting on
+ * real timers instead makes these tests sensitive to load: on their own they finish well
+ * inside a second, but under the full suite they were pushed past vitest's 5000ms default
+ * and failed as timeouts, looking for all the world like a broken tooltip.
  *
  * A HIDDEN TOOLTIP IS OUT OF THE ACCESSIBLE TREE, so `queryByRole('tooltip')` is `null`
  * while it is closed even though the element never leaves the DOM — which is exactly the
  * state this component wants, and is why the first two tests below still find its words in
  * the trigger's description: an explicit `aria-describedby` reference resolves through a
  * hidden element by design.
- */
-/*
- * These tests wait on REAL timers — §11's 400ms hover delay and 100ms leave grace — which
- * is the deliberate choice explained above. The cost is that they are sensitive to load:
- * the file completes in well under 5s on its own, but running inside the full suite the
- * same tests were pushed past vitest's 5000ms default and failed as timeouts, looking for
- * all the world like a broken tooltip.
- *
- * A generous per-file timeout is the honest fix. The alternative — faking the clock — would
- * have to fake it for `userEvent` too, and the two disagreeing is a worse failure than a
- * slow test.
  */
 vi.setConfig({ testTimeout: 20_000 })
 
@@ -107,6 +99,19 @@ describe('Tooltip', () => {
     expect(shownTooltip()).toBeVisible()
 
     await waitFor(() => expect(shownTooltip()).toBeNull())
+  })
+
+  it('keeps showing while the trigger is focused, even after the pointer leaves', async () => {
+    render(<Fixture />)
+    await userEvent.tab()
+    await userEvent.hover(trigger())
+    expect(shownTooltip()).toBeVisible()
+
+    await userEvent.unhover(trigger())
+
+    // Longer than the 100ms leave grace: focus outranks the pointer, so nothing closes it.
+    await new Promise((resolve) => setTimeout(resolve, 300))
+    expect(shownTooltip()).toBeVisible()
   })
 
   it('is dismissed by Escape while the pointer is still on the trigger (WCAG 1.4.13)', async () => {

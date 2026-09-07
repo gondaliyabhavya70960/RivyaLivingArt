@@ -68,6 +68,20 @@ describe('Dialog', () => {
     expect(dialog).toHaveAccessibleDescription('Products stay in the catalogue.')
   })
 
+  /*
+   * THIS TEST CANNOT PROVE FOCUS RESTORATION ON ITS OWN. jsdom does not implement `inert`'s
+   * focus behaviour: setting `inert` on an ancestor of the focused element leaves it focused
+   * here, while a real browser blurs it to <body>.
+   *
+   * That difference hid a genuine defect. `useModalSurface` marks the rest of the page inert
+   * in a layout effect; `FocusTrap` captured `document.activeElement` in a passive effect,
+   * which runs later. In a browser it therefore captured <body> and correctly refused to
+   * restore to it, so Escape left focus at the top of the document — while this test passed.
+   * The fix captures the trigger before `inert` is applied.
+   *
+   * The binding assertion is in tests/e2e/design-system.spec.ts, which runs in Chromium.
+   * Keep this one, but do not treat it as the guarantee.
+   */
   it('moves focus into itself on open and hands it back to the trigger on close', async () => {
     render(<Harness />)
     const trigger = screen.getByRole('button', { name: 'Delete collection' })

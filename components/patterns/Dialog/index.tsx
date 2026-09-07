@@ -166,13 +166,34 @@ export interface ModalSurfaceOptions {
  * a consumer forwards is merged onto the panel by the component that owns both — one place
  * where a node has two readers, which is the same shape `FocusTrap` uses for its container.
  */
+export interface ModalSurfaceState {
+  visible: boolean
+  /** The trigger to hand back focus to; see the capture note inside the hook. */
+  capturedTrigger: React.RefObject<HTMLElement | null>
+}
+
 export function useModalSurface({
   open,
   overlayRef,
   panelRef,
   enterFrom,
-}: ModalSurfaceOptions): boolean {
+}: ModalSurfaceOptions): ModalSurfaceState {
   const reducedMotion = useReducedMotion()
+
+  /**
+   * The element focus came from, captured BEFORE anything else runs.
+   *
+   * `inertOutside` marks the trigger's ancestors `inert`, and a browser blurs whatever is
+   * focused inside an inert subtree. `FocusTrap` captures `document.activeElement` in a
+   * passive effect, and passive effects run after layout effects — so by the time it looks,
+   * focus is already on `<body>` and it correctly refuses to restore to that. The dialog
+   * then closed leaving focus at the top of the document.
+   *
+   * Capturing here, in the layout effect that applies `inert` and before it does, is the
+   * only place that still sees the real trigger. It is handed to `FocusTrap` as
+   * `returnFocusTo` when the caller has not named one itself.
+   */
+  const capturedTrigger = React.useRef<HTMLElement | null>(null)
 
   // `createPortal` needs a document, and the server has none. `useSyncExternalStore` is how
   // that is asked without a render-phase `typeof window` test: the server snapshot is
@@ -186,6 +207,9 @@ export function useModalSurface({
   // an unmount mid-open safe.
   useIsomorphicLayoutEffect(() => {
     if (!visible) return
+    const active = document.activeElement
+    capturedTrigger.current =
+      active instanceof HTMLElement && active !== document.body ? active : null
     const overlay = overlayRef.current
     const releaseScroll = lockBodyScroll()
     const releaseInert = overlay ? inertOutside(overlay) : null
@@ -226,7 +250,7 @@ export function useModalSurface({
     return () => cancelAnimationFrame(frame)
   }, [visible, reducedMotion, enterFrom, overlayRef, panelRef])
 
-  return visible
+  return { visible, capturedTrigger }
 }
 
 /* -------------------------------------------------------------------------- the glyph */
@@ -309,7 +333,12 @@ export const Dialog = React.forwardRef<HTMLElement, DialogProps>(function Dialog
   const descriptionId = React.useId()
   const overlayRef = React.useRef<HTMLDivElement | null>(null)
   const panelRef = React.useRef<HTMLElement | null>(null)
-  const visible = useModalSurface({ open, overlayRef, panelRef, enterFrom: DIALOG_ENTER_FROM })
+  const { visible, capturedTrigger } = useModalSurface({
+    open,
+    overlayRef,
+    panelRef,
+    enterFrom: DIALOG_ENTER_FROM,
+  })
 
   // One node, two consumers: the entrance needs the element to animate, and the caller
   // still gets the ref it passed. The same shape FocusTrap uses for its own container.
@@ -356,7 +385,7 @@ export const Dialog = React.forwardRef<HTMLElement, DialogProps>(function Dialog
       />
       <FocusTrap
         initialFocus={initialFocus}
-        returnFocusTo={returnFocusTo}
+        returnFocusTo={returnFocusTo ?? capturedTrigger}
         onKeyDown={handleKeyDown}
         // `relative` so the panel stacks above the absolutely positioned scrim without a
         // second z-index; the trap itself paints nothing.
