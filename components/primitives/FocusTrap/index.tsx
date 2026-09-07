@@ -37,11 +37,13 @@ import * as React from 'react'
  *
  * RESTORING. The element that had focus when the trap became active is captured and
  * refocused on the way out, so a dialog opened from a table row's action button returns the
- * keyboard to that row rather than to the top of the document. `returnFocusTo` overrides it
- * for the case where the triggering element is gone by then — a row that was just deleted —
- * and `restoreFocus={false}` is for the caller that will place focus itself. A capture that
- * has since left the document is not refocused: `focus()` on a detached node silently does
- * nothing in a browser, and moving focus to `<body>` is worse than leaving it alone.
+ * keyboard to that row rather than to the top of the document. `returnFocusTo` names a
+ * different element for the case where the trigger will not survive the surface — the row a
+ * ConfirmDialog is about to delete — and is resolved when the trap activates, while that
+ * element is still mounted. `restoreFocus={false}` is for the caller that will place focus
+ * itself. Neither capture is refocused once it has left the document: `focus()` on a
+ * detached node silently does nothing, and moving focus to `<body>` instead is worse than
+ * leaving it where it is.
  *
  * EFFECT ORDER IS LOAD-BEARING. The stray-focus guard is declared BEFORE the focus/restore
  * effect so that on unmount React runs the guard's cleanup first. React tears down effects
@@ -77,6 +79,10 @@ function isTabbable(element: HTMLElement): boolean {
   if (element.hasAttribute('hidden')) return false
   if (element.getAttribute('aria-hidden') === 'true') return false
   if (element.closest('[inert]') !== null) return false
+  // A control inside a disabled fieldset cannot take focus — a drawer form disabled while
+  // it saves (§7.10) is exactly that — and calling focus() on one silently leaves the
+  // keyboard on <body>, outside the trap it was supposed to enter.
+  if (element.closest('fieldset[disabled]') !== null) return false
   const tabindex = element.getAttribute('tabindex')
   if (tabindex !== null && Number.parseInt(tabindex, 10) < 0) return false
   return true

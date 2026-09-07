@@ -3,6 +3,11 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MediaFrame } from './index'
 
+/**
+ * Seeded copy, passed in as a prop the way `global_content` will pass it (SEED §1, §47).
+ * The media is a stand-in: §10.1 reserves the right to emit an <img> to Phase 06's
+ * MediaImage, and MediaFrame is agnostic about what it holds.
+ */
 const FALLBACK = 'Image temporarily unavailable'
 
 describe('MediaFrame', () => {
@@ -29,7 +34,7 @@ describe('MediaFrame', () => {
   it('does not announce a failure when the media is there', () => {
     render(
       <MediaFrame ratio="3:2" fallbackLabel={FALLBACK}>
-        <img src="/river-table.avif" alt="A resin river table in a lit gallery" />
+        <div role="img" aria-label="A resin river table in a lit gallery" />
       </MediaFrame>,
     )
     expect(screen.getByRole('img', { name: 'A resin river table in a lit gallery' })).toBeVisible()
@@ -47,7 +52,7 @@ describe('MediaFrame', () => {
         aria-label="Page hero"
         overlay={<p>Cast in one pour</p>}
       >
-        <img src="/hero.avif" alt="" />
+        <div data-testid="media" />
       </MediaFrame>,
     )
     // The frame exposes exactly the overlay copy — the veil adds no text, no role and no
@@ -66,7 +71,7 @@ describe('MediaFrame', () => {
         fallbackLabel={FALLBACK}
         overlay={<a href="/portfolio/atlas-table">See the full project</a>}
       >
-        <img src="/atlas.avif" alt="" />
+        <div data-testid="media" />
       </MediaFrame>,
     )
     await userEvent.tab()

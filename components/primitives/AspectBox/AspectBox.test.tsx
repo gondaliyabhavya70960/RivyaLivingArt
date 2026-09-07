@@ -3,11 +3,16 @@ import { createRef } from 'react'
 import { render, screen } from '@testing-library/react'
 import { AspectBox } from './index'
 
+/**
+ * The media is a stand-in throughout: §10.1 makes MediaImage and MediaVideo the only
+ * components permitted to emit an <img> or a <video>, and AspectBox reserves the box
+ * whatever ends up inside it.
+ */
 describe('AspectBox', () => {
   it('leaves the media it reserves space for in the accessible tree', () => {
     render(
       <AspectBox ratio="3:2" mobileRatio="4:5">
-        <img src="/river-table.avif" alt="A resin river table lit from one side" />
+        <div role="img" aria-label="A resin river table lit from one side" />
       </AspectBox>,
     )
     expect(
@@ -18,7 +23,7 @@ describe('AspectBox', () => {
   it('can be a figure so a caption can be associated with it', () => {
     render(
       <AspectBox as="figure" ratio="16:9" aria-label="Material sequence, stage three">
-        <img src="/resin-pour.avif" alt="" />
+        <div data-testid="media" />
       </AspectBox>,
     )
     expect(screen.getByRole('figure', { name: 'Material sequence, stage three' })).toBeVisible()

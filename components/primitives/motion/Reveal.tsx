@@ -83,16 +83,19 @@ let observer: IntersectionObserver | null = null
 const settlers = new Map<Element, () => void>()
 
 function observeOnce(node: Element, settle: () => void): () => void {
-  observer ??= new IntersectionObserver((entries) => {
-    for (const entry of entries) {
-      if (!entry.isIntersecting) continue
-      const run = settlers.get(entry.target)
-      // Release first: WOOD runs once, and a target released before its callback cannot
-      // be settled twice by a second entry in the same batch.
-      release(entry.target)
-      run?.()
-    }
-  }, { threshold: THRESHOLD })
+  observer ??= new IntersectionObserver(
+    (entries) => {
+      for (const entry of entries) {
+        if (!entry.isIntersecting) continue
+        const run = settlers.get(entry.target)
+        // Release first: WOOD runs once, and a target released before its callback cannot
+        // be settled twice by a second entry in the same batch.
+        release(entry.target)
+        run?.()
+      }
+    },
+    { threshold: THRESHOLD },
+  )
   settlers.set(node, settle)
   observer.observe(node)
   return () => release(node)

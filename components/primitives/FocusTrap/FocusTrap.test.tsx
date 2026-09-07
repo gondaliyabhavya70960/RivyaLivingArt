@@ -94,6 +94,19 @@ describe('FocusTrap', () => {
     expect(screen.getByRole('button', { name: 'Save changes' })).toHaveFocus()
   })
 
+  it('does not open onto a control inside a disabled fieldset', () => {
+    render(
+      <Harness open>
+        <fieldset disabled>
+          <legend>Dimensions</legend>
+          <input aria-label="Length" />
+        </fieldset>
+        <button type="button">Close</button>
+      </Harness>,
+    )
+    expect(screen.getByRole('button', { name: 'Close' })).toHaveFocus()
+  })
+
   it('holds focus without throwing when there is nothing tabbable inside', async () => {
     render(
       <Harness open>
