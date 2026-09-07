@@ -88,7 +88,10 @@ export const MediaFrame = React.forwardRef<HTMLElement, MediaFrameProps>(functio
         />
       ) : null}
 
-      {overlay ? <div className="absolute inset-0">{overlay}</div> : null}
+      {/* Anchored to the foot of the frame rather than stretched across it: the veil is
+          bottom-weighted for exactly this content, and a full-bleed layer would swallow
+          pointer events over media it does not cover. */}
+      {overlay ? <div className="absolute inset-x-0 bottom-0">{overlay}</div> : null}
     </AspectBox>
   )
 })
