@@ -1,5 +1,6 @@
 import * as React from 'react'
 import { cn } from '@/lib/ui/cn'
+import { asTag } from '@/lib/ui/polymorphic'
 
 /**
  * Text is the body scale (§3.3) plus a tone (§2.5) plus the element it should be. It is
@@ -59,8 +60,7 @@ const TONE: Record<TextTone, string> = {
  * 11px floor, which requires it. `size="2xs"` on its own satisfies neither branch.
  */
 type TextSizing =
-  | { size?: Exclude<TextSize, '2xs'>; uppercase?: boolean }
-  | { size: '2xs'; uppercase: true }
+  { size?: Exclude<TextSize, '2xs'>; uppercase?: boolean } | { size: '2xs'; uppercase: true }
 
 export type TextProps = React.HTMLAttributes<HTMLElement> & {
   /** The element to render. Defaults to a paragraph. */
@@ -74,7 +74,7 @@ export const Text = React.forwardRef<HTMLElement, TextProps>(function Text(
 ) {
   // `as` is a closed union in the public type. It widens here only so the single JSX call
   // site does not have to satisfy eight different intrinsic prop types at once.
-  const Component: React.ElementType = as
+  const Component = asTag(as)
 
   return (
     <Component
