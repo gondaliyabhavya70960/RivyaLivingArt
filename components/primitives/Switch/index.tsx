@@ -70,6 +70,15 @@ export const Switch = React.forwardRef<HTMLButtonElement, SwitchProps>(function 
     onCheckedChange?.(!on)
   }
 
+  // One class per property, resolved here rather than by stacking utilities that would
+  // then fight over the cascade: Tailwind orders by its own stylesheet, not by the order
+  // classes appear in a string, so "disabled" must win by being the only tone emitted.
+  const trackTone = disabled
+    ? 'cursor-not-allowed border-line bg-surface-raised'
+    : on
+      ? 'border-surface-accent bg-surface-accent'
+      : 'border-line-strong bg-surface-raised'
+
   const thumbTone = disabled ? 'bg-ink-disabled' : on ? 'bg-ink-on-accent' : 'bg-line-strong'
 
   return (
@@ -85,8 +94,7 @@ export const Switch = React.forwardRef<HTMLButtonElement, SwitchProps>(function 
           'rv-hit-44 relative inline-flex h-6 w-11 shrink-0 items-center rounded-pill border',
           // LIGHT (§4.2): colour and border only on the track, no layout property.
           'transition-[background-color,border-color] duration-[--rv-duration-fast] ease-standard',
-          on ? 'border-surface-accent bg-surface-accent' : 'border-line-strong bg-surface-raised',
-          disabled && 'cursor-not-allowed border-line bg-surface-raised',
+          trackTone,
         )}
         {...rest}
       >

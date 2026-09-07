@@ -140,49 +140,83 @@ for (const block of recordBlocks) {
   seenIds.set(id, '§7')
 }
 
-// §6 index rows are horizontal: | ID | Component | Purpose | Phase | State |
+// The registry holds three horizontal table shapes, distinguished by their header —
+// not every "| RC-### |" row is an index row. Dispatch on the header rather than on
+// column position, or the rejections ledger (which has no State column) is read as a
+// malformed index row.
+let rejectionRows = 0
 for (let i = 0; i < lines.length; i++) {
-  const line = lines[i]
-  if (!line || !/^\|\s*RC-\d{3}\s*\|/.test(line.trim())) continue
-  const c = cells(line).map(clean)
-  const [id, component, purpose, phase, state] = c
-  if (c.length < 5) {
-    problems.push(`line ${i + 1}: index row ${id} has ${c.length} fields; five are required`)
-    continue
-  }
-  indexRows++
-  for (const [name, v] of [
-    ['Component', component],
-    ['Purpose', purpose],
-    ['Phase', phase],
-    ['State', state],
-  ]) {
-    if (!v || v === '—' || v === '-') problems.push(`line ${i + 1} (${id}): "${name}" is empty`)
-  }
-  if (!/^(PLANNED|BUILT|REJECTED)$/.test(state ?? '')) {
-    problems.push(`line ${i + 1} (${id}): State "${state}" must be PLANNED, BUILT or REJECTED`)
-  }
-  const prior = seenIds.get(id)
-  if (prior && prior !== '§7') {
-    problems.push(
-      `line ${i + 1}: Registry ID ${id} is reused (also ${prior}) — IDs are never reused`,
-    )
-  } else if (!prior) {
-    seenIds.set(id, `line ${i + 1}`)
-  }
-  // §6: a BUILT row must correspond to a file on disk. PLANNED rows are not armed.
-  if (state === 'BUILT' && component) {
-    const name = component.replace(/[`<>]/g, '')
-    const candidates = [
-      `components/primitives/${name}/index.tsx`,
-      `components/patterns/${name}/index.tsx`,
-      `components/primitives/motion/${name}.tsx`,
-      `components/primitives/motion/${name}.ts`,
-    ]
-    if (!candidates.some((p) => existsSync(join(ROOT, p)))) {
+  const header = lines[i]
+  const sep = lines[i + 1]
+  if (!header?.trim().startsWith('|') || !sep || !/^\s*\|[\s:|-]+\|\s*$/.test(sep)) continue
+
+  const cols = cells(header).map((c) => clean(c).toLowerCase())
+  const isIndex = cols.includes('state') && cols.includes('component')
+  const isRejection = cols.some((c) => c.includes('reason for rejection'))
+  if (!isIndex && !isRejection) continue
+
+  const col = (name) => cols.findIndex((c) => c.includes(name))
+  for (let j = i + 2; j < lines.length; j++) {
+    const row = lines[j]
+    if (!row?.trim().startsWith('|')) break
+    const c = cells(row).map(clean)
+    if (!/^RC-\d{3}$/.test(c[0] ?? '')) continue
+    const id = c[0]
+    if (c.length !== cols.length) {
+      problems.push(`line ${j + 1} (${id}): row has ${c.length} cells, header has ${cols.length}`)
+      continue
+    }
+
+    const prior = seenIds.get(id)
+    if (prior && prior !== '§7') {
       problems.push(
-        `line ${i + 1} (${id}): state is BUILT but no file exists at any of: ${candidates.join(', ')}`,
+        `line ${j + 1}: Registry ID ${id} is reused (also ${prior}) — IDs are never reused`,
       )
+    } else if (!prior) {
+      seenIds.set(id, `line ${j + 1}`)
+    }
+
+    if (isRejection) {
+      rejectionRows++
+      // A rejection needs a reason a reviewer can act on; "Reviewed on"/"Reviewer" may
+      // legitimately be unfilled ("—"/UNASSIGNED means the review has not happened, §7).
+      const reason = c[col('reason for rejection')] ?? ''
+      if (!reason || reason === '—') {
+        problems.push(
+          `line ${j + 1} (${id}): rejection has no reason — the row exists so the proposal is not re-argued`,
+        )
+      }
+      continue
+    }
+
+    indexRows++
+    const component = c[col('component')] ?? ''
+    const state = c[col('state')] ?? ''
+    for (const [name, v] of [
+      ['Component', component],
+      ['Purpose', c[col('purpose')] ?? ''],
+      ['Phase', c[col('phase')] ?? ''],
+      ['State', state],
+    ]) {
+      if (!v || v === '—' || v === '-') problems.push(`line ${j + 1} (${id}): "${name}" is empty`)
+    }
+    if (!/^(PLANNED|BUILT|REJECTED)$/.test(state)) {
+      problems.push(`line ${j + 1} (${id}): State "${state}" must be PLANNED, BUILT or REJECTED`)
+    }
+    // A BUILT row must correspond to a file on disk. PLANNED rows are not armed.
+    if (state === 'BUILT' && component) {
+      const name = component.replace(/[`<>]/g, '')
+      const candidates = [
+        `components/primitives/${name}/index.tsx`,
+        `components/patterns/${name}/index.tsx`,
+        `components/primitives/motion/${name}.tsx`,
+        `components/primitives/motion/${name}.ts`,
+      ]
+      if (!candidates.some((pth) => existsSync(join(ROOT, pth)))) {
+        problems.push(
+          `line ${j + 1} (${id}): state is BUILT but no file exists at any of: ${candidates.join(', ')}`,
+        )
+      }
     }
   }
 }
@@ -199,5 +233,6 @@ if (problems.length) {
 }
 console.log(
   `component registry: clean — ${indexRows} index row(s), ${fullRecords} full record(s), ` +
+    `${rejectionRows} rejection(s), ` +
     `all ${SOURCES.length} §7 sources carry an audit outcome`,
 )

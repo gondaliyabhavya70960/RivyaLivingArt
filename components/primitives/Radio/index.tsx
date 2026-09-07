@@ -19,6 +19,12 @@ import { cn } from '@/lib/ui/cn'
  * a real question (§7.7). That wrapper is the consumer's — a radio does not invent one, and
  * every string here is a prop.
  *
+ * Unlike Checkbox, Radio does not read `aria-invalid` to paint a danger border: ARIA 1.2
+ * does not support that state on role `radio`, only on the group, because one option is
+ * never individually wrong. An invalid choice is stated by the group's ErrorText (§7.4) and
+ * by `aria-invalid` on the radiogroup. Anything a consumer does pass still lands on the
+ * <input> untouched through `...rest`; it simply changes no colour here.
+ *
  * `className` styles the row; `id`, `name`, `value`, `aria-*` and `data-*` spread onto the
  * <input>.
  */
@@ -28,13 +34,9 @@ export interface RadioProps extends Omit<React.InputHTMLAttributes<HTMLInputElem
 }
 
 export const Radio = React.forwardRef<HTMLInputElement, RadioProps>(function Radio(
-  { label, className, disabled, 'aria-invalid': ariaInvalid, ...rest },
+  { label, className, disabled, ...rest },
   ref,
 ) {
-  // Read from the ARIA attribute Field already wires, so there is no second source of
-  // truth. The border never carries the error alone — ErrorText does (§7, WCAG 1.4.1).
-  const invalid = ariaInvalid !== undefined && ariaInvalid !== false && ariaInvalid !== 'false'
-
   return (
     <label
       className={cn(
@@ -48,9 +50,8 @@ export const Radio = React.forwardRef<HTMLInputElement, RadioProps>(function Rad
           ref={ref}
           type="radio"
           disabled={disabled}
-          aria-invalid={ariaInvalid}
           className={cn(
-            'peer size-5 appearance-none rounded-pill border bg-surface-raised',
+            'peer size-5 appearance-none rounded-pill border border-line-strong bg-surface-raised',
             'checked:border-surface-accent checked:bg-surface-accent',
             // LIGHT (§4.2): colour and border only. The mark itself is instant
             // (--rv-duration-instant, §4.1) — selection must feel mechanical.
@@ -59,7 +60,6 @@ export const Radio = React.forwardRef<HTMLInputElement, RadioProps>(function Rad
             // control keeps a legible mark instead of fading below the §2.6 exemption.
             'disabled:cursor-not-allowed disabled:border-line',
             'disabled:checked:border-ink-disabled disabled:checked:bg-ink-disabled',
-            invalid ? 'border-state-danger' : 'border-line-strong',
           )}
           {...rest}
         />

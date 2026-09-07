@@ -48,7 +48,10 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(function Inp
         'w-full rounded-sm border border-line-strong bg-surface-raised px-4 text-ink',
         'placeholder:text-ink-tertiary',
         // LIGHT class (§4.2): colour and border only, never a layout property.
-        'transition-[color,background-color,border-color] duration-[--rv-duration-fast] ease-standard',
+        // duration-(--var) is the CSS-variable form; duration-[--var] emits a bare
+        // `transition-duration: --rv-duration-fast`, which is invalid and silently
+        // drops the transition. Do not "tidy" the parentheses into brackets.
+        'transition-[color,background-color,border-color] duration-(--rv-duration-fast) ease-standard',
         'focus:border-ink-accent',
         // Never opacity: 0.5 — that drags the contrast below the disabled exemption.
         'disabled:cursor-not-allowed disabled:border-line disabled:text-ink-disabled',

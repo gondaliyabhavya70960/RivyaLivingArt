@@ -31,7 +31,10 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(fun
         'w-full min-h-30 resize-y field-sizing-content rounded-sm border border-line-strong',
         'bg-surface-raised px-4 py-3 text-base text-ink placeholder:text-ink-tertiary',
         // LIGHT class (§4.2): colour and border only, never a layout property.
-        'transition-[color,background-color,border-color] duration-[--rv-duration-fast] ease-standard',
+        // duration-(--var) is the CSS-variable form; duration-[--var] emits a bare
+        // `transition-duration: --rv-duration-fast`, which is invalid and silently
+        // drops the transition. Do not "tidy" the parentheses into brackets.
+        'transition-[color,background-color,border-color] duration-(--rv-duration-fast) ease-standard',
         'focus:border-ink-accent',
         // Never opacity: 0.5 — that drags the contrast below the disabled exemption.
         'disabled:cursor-not-allowed disabled:border-line disabled:text-ink-disabled',
