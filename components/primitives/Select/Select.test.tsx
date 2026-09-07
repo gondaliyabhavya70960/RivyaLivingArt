@@ -2,6 +2,7 @@ import type { ComponentProps } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { Field } from '@/components/primitives/Field'
 import { Select } from './index'
 
 function renderSelect(props: ComponentProps<typeof Select> = {}) {
@@ -61,6 +62,22 @@ describe('Select', () => {
 
     expect(select).toBeDisabled()
     expect(onChange).not.toHaveBeenCalled()
+  })
+
+  it('lets Field own the id relationships end to end', () => {
+    render(
+      <Field label="Finish" help="Samples ship within three days." error="Choose a finish.">
+        <Select defaultValue="">
+          <option value="">Choose a finish</option>
+          <option value="matte">Matte</option>
+        </Select>
+      </Field>,
+    )
+
+    const select = screen.getByRole('combobox', { name: 'Finish' })
+    expect(select).toHaveAccessibleDescription(/Samples ship within three days\./)
+    expect(select).toHaveAccessibleDescription(/Choose a finish\./)
+    expect(select).toHaveAttribute('aria-invalid', 'true')
   })
 
   it('is reachable by keyboard', async () => {

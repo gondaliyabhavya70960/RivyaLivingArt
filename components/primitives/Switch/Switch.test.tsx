@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { Field } from '@/components/primitives/Field'
 import { Switch } from './index'
 
 describe('Switch', () => {
@@ -99,6 +100,17 @@ describe('Switch', () => {
     expect(control).toBeDisabled()
     expect(control).toHaveAttribute('aria-checked', 'false')
     expect(onCheckedChange).not.toHaveBeenCalled()
+  })
+
+  it('lets Field own the id relationships, even though it is not a native input', () => {
+    render(
+      <Field label="Visible on the public site" help="Takes effect immediately.">
+        <Switch onLabel="On" offLabel="Off" />
+      </Field>,
+    )
+
+    const control = screen.getByRole('switch', { name: 'Visible on the public site' })
+    expect(control).toHaveAccessibleDescription('Takes effect immediately.')
   })
 
   it('starts from the state it is given', () => {

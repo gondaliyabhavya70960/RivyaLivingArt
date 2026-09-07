@@ -38,7 +38,7 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(function 
         aria-invalid={ariaInvalid}
         className={cn(
           'peer w-full appearance-none rounded-sm border bg-surface-raised text-ink',
-          'h-11 pr-10 pl-4 text-base',
+          'h-11 pr-11 pl-4 text-base',
           // LIGHT (§4.2): colour and border only, never a layout property.
           'transition-[color,background-color,border-color] duration-[--rv-duration-fast] ease-standard',
           'focus:border-ink-accent',
@@ -50,7 +50,8 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(function 
       >
         {children}
       </select>
-      {/* Decorative: the <select> announces itself. 20px stroke icon, currentColor (§7.2). */}
+      {/* Decorative: the native <select> announces its own role and value. 20px stroke
+          icon in currentColor, stroke-width 1.5, no icon font and no sprite fetch (§7.2). */}
       <svg
         aria-hidden="true"
         viewBox="0 0 20 20"
@@ -60,7 +61,7 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(function 
         strokeLinecap="round"
         strokeLinejoin="round"
         className={cn(
-          'pointer-events-none absolute top-1/2 right-4 size-4 -translate-y-1/2',
+          'pointer-events-none absolute top-1/2 right-4 size-5 -translate-y-1/2',
           'text-ink-secondary peer-disabled:text-ink-disabled',
         )}
       >
