@@ -150,6 +150,18 @@ test.describe('behavioural patterns', () => {
     ).toEqual([])
   })
 
+  test('matches the visual baseline', async ({ page }) => {
+    await page.goto('/design-system/patterns')
+    await page.waitForLoadState('networkidle')
+    await page.addStyleTag({
+      content: '*,*::before,*::after{animation:none!important;transition:none!important}',
+    })
+    await expect(page).toHaveScreenshot('patterns.png', {
+      fullPage: true,
+      maxDiffPixelRatio: 0.01,
+    })
+  })
+
   test('Dialog traps focus and restores it to the trigger on Escape', async ({ page }) => {
     await page.goto('/design-system/patterns')
     const trigger = page.getByRole('button', { name: 'Open dialog' })
