@@ -358,27 +358,27 @@ No Supabase or Cloudinary credentials are set; Phase 02 needs none.
 out the way a hosted Supabase project is** (`npm run db:check-hosted-layout` — added after the
 Phase 03 set was found to be un-appliable to a real project).
 
-**They have still NEVER been applied to the hosted Supabase project** — this sandbox cannot reach
-`*.supabase.co` (the proxy answers 403 to CONNECT) and Postgres 5432/6543 are blocked outright.
+**APPLIED, 2026-09-08.** All fifteen migrations (`0001`–`0022`) are on the hosted project
+`ccvarsmzickdkryoakdg`, PostgreSQL **17.6**. The Supabase MCP server reached it where ordinary
+egress could not, so neither the `db-migrate.yml` workflow nor a GitHub runner was needed.
 
-**The route is `.github/workflows/db-migrate.yml`** — Actions → *Database migrate (hosted)* →
-Run workflow. A GitHub-hosted runner has ordinary egress; that is the whole reason it exists. It is
-`workflow_dispatch` only, so it costs Actions minutes only when someone runs it deliberately.
+The hosted schema was compared to the local one field by field and every count matches: 14 tables,
+14 with RLS, 55 policies, 63 indexes, 194 columns, 18 check constraints, 9 triggers, 7 functions.
+That is PostgreSQL 17 matching a PostgreSQL 16.13 local cluster exactly.
 
-- Requires the repository secret **`SUPABASE_DB_URL`**, set to the **Session Pooler** string from
-  Supabase → Project Settings → Database.
-- `mode: plan` (the default) reports what would apply and changes nothing. `mode: apply`
-  additionally requires typing the project ref, which is checked against the secret.
+**RLS was verified on the real project**, with a baseline that makes the zeros mean something —
+two products (one PUBLISHED, one DRAFT) and one audit row seeded as the table owner, then read back
+per role, then rolled back:
 
-**Do NOT use `db:reset --allow-remote`**, which earlier revisions of this file suggested. It DROPS
-SCHEMA PUBLIC. The correct script is `db:migrate`, which is forward-only, records a SHA-256 per
-migration, and refuses if a migration was edited after being applied or if the database carries a
-version this repository does not have.
+| | owner | anon | authenticated non-staff |
+|---|---|---|---|
+| `products` | 2 | 1 (PUBLISHED only) | 1 |
+| `audit_logs` · `staff_profiles` · `activity_events` · `content_seed_runs` | seeded | 0 | 0 |
 
-The pooler string is not a preference. `db.<ref>.supabase.co` is IPv6-only and GitHub runners have
-no IPv6 route, so it times out looking like a firewall problem; `scripts/db/migrate.mjs` rejects
-that hostname by name rather than letting anyone spend an afternoon on it. Port 6543 (transaction
-mode) cannot hold the session DDL needs — use 5432.
+That closes **Phase 04 verification step 8** and the database half of **Phase 05's** gap.
+
+`public.schema_migrations` is populated with the repository's own checksums, so
+`npm run db:migrate` reports "0 pending" rather than trying to re-apply.
 
 After a successful apply, still to run against the project: `npm run seed:content` and
 `npm run auth:check-rls`.

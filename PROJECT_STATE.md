@@ -107,12 +107,12 @@ too, and the hosted project cannot be migrated from here by any means.
 
 ## Known risks carried forward
 
-1. **The migration set has never been applied to the hosted Supabase project**, only to a local
-   cluster, because this sandbox cannot reach `*.supabase.co` (the proxy answers 403 to CONNECT)
-   and Postgres 5432/6543 are blocked. `.github/workflows/db-migrate.yml` is built and ready to do
-   it from a runner, which would have ordinary egress — **but Actions cannot provision a runner**,
-   so that route is blocked on the same account-level condition. Until one of the two is resolved
-   the hosted schema stays empty.
+1. ~~The migration set has never been applied to the hosted Supabase project.~~ **RESOLVED
+   2026-09-08.** All fifteen migrations are applied to `ccvarsmzickdkryoakdg` (PostgreSQL 17.6),
+   verified field-by-field against the local schema, with RLS confirmed per role on the real
+   project. Reached through the Supabase MCP server; ordinary egress to `*.supabase.co` is still
+   blocked, and GitHub Actions still cannot provision a runner, so `db-migrate.yml` remains built
+   and undispatched.
 2. **The pasted Supabase secrets are still unrotated.** The service-role key, secret key, JWT
    secret and database password were exposed in a chat transcript on 2026-09-08. Treat them as
    compromised until rotated.

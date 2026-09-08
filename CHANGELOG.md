@@ -6,6 +6,40 @@ Every phase adds an entry; see `docs/architecture/CANONICAL-DECISIONS.md` D9 for
 
 ## [Unreleased]
 
+### The hosted database exists — migrations applied, RLS verified on the real project
+
+**Every migration `0001`–`0022` is applied** to `ccvarsmzickdkryoakdg` (PostgreSQL 17.6). This had
+been blocked for the whole of Phases 03–05: the sandbox cannot reach `*.supabase.co`, and GitHub
+Actions has never provisioned a runner to do it from. The Supabase MCP server reaches it directly.
+
+- **Field-by-field verification, not a "success" reply.** Hosted vs local: 14 tables, 14 with RLS,
+  55 policies, 63 indexes, 194 columns, 18 check constraints, 9 triggers, 7 functions — every count
+  identical. PostgreSQL 17 matching a 16.13 local cluster.
+- **RLS confirmed on the real project**, with a baseline so the zeros mean refusal rather than an
+  empty table: `anon` sees only the PUBLISHED product and nothing of `audit_logs`,
+  `staff_profiles`, `activity_events` or `content_seed_runs`. Closes Phase 04 verification step 8.
+
+**Fixed before it shipped — `0001` would have produced a mixed extension layout**
+
+Checking the real project first showed only `pgcrypto` was installed, in `extensions`. The other
+three did not exist, and `create extension` with no schema installs into the first search-path
+entry — `public`. That would have left `pgcrypto` in one schema and `citext`, `pg_trgm`, `unaccent`
+in another, and tripped Supabase's advisor, which flags extensions in `public` because PostgREST
+exposes it. `0001` now names the schema on all four.
+
+**`0022` — a security finding from a check this project could not previously run**
+
+Supabase's security advisor reported eight warnings. The cause was PostgreSQL's default, not
+anything written here: **every function is created with EXECUTE granted to PUBLIC.** Migration
+0010's explicit grant was redundant, and it hid that the trigger functions had it too — including
+`handle_new_auth_user`, which is `SECURITY DEFINER` and writes `staff_profiles`.
+
+Now revoked from PUBLIC and `anon` everywhere, and from `authenticated` on everything but the three
+RLS helpers. `authenticated` must keep those or every staff policy fails closed and locks the
+Studio out of its own database; each reports a fact about the caller alone and takes no user id.
+**Eight warnings down to three**, and the three are the deliberate ones. All 74 RLS tests still
+pass, which is what proves `anon` never needed the grants.
+
 ### Phase 05 — Studio Foundation — IN PROGRESS
 
 The navigation spine, the shell, the primitives and the palette. Not complete: see *Not done* below.
