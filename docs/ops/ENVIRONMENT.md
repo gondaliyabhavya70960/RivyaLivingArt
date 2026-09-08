@@ -410,3 +410,31 @@ What a visitor and an operator see when each variable is missing or wrong.
    in Site Settings while D8 holds only the WhatsApp number. That split is deliberate and works, but
    it is not stated canonically. Suggested amendment: one line in D8 recording that displayed contact
    details are `global_content`, never environment variables.
+
+
+---
+
+## Network reality in the Claude Code sandbox
+
+Measured 2026-09-08, not assumed. This decides what can be *verified* in this environment
+versus only written, and it is the reason several phases can be built but not tested here.
+
+| Destination | Reachable | Evidence |
+|---|---|---|
+| `registry.npmjs.org`, pypi, crates, Go proxy | **yes** | on the proxy's `noProxy` allowlist |
+| `raw.githubusercontent.com` | **yes** | the Phase 02 licence audit read every LICENSE this way |
+| MCP servers (Cloudinary, Higgsfield, GitHub) | **yes** | routed via `mcp-proxy.anthropic.com`, which is allowlisted |
+| `*.supabase.co` (REST, auth) | **no** | `curl: (56) CONNECT tunnel failed, response 403` |
+| Supabase Postgres `:5432` and `:6543` | **no** | raw TCP refused; npm `:443` open in the same test, so the test is sound |
+| `res.cloudinary.com` (delivery) | **no** | `connect_rejected` from the egress proxy |
+| Higgsfield CDN (`d8j0ntlcm91z4.cloudfront.net`) | **no** | HEAD returns `000` |
+
+**The rule this produces:** anything reachable only over direct HTTPS from the shell cannot be
+exercised here — migrations cannot be applied, the app cannot be run against Supabase, and a
+delivered Cloudinary URL cannot be fetched back to confirm it renders. Anything exposed through
+an **MCP server** can be, which is why the Phase 06 canaries below were uploadable even though
+the shell can reach neither Higgsfield nor Cloudinary: Cloudinary fetched the source itself,
+server to server, with this environment never touching the bytes.
+
+Migrations, seeds and integration checks therefore run from a machine with ordinary egress, or
+from CI once GitHub Actions can provision a runner.

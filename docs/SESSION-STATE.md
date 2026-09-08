@@ -8,7 +8,8 @@
 
 ## Current Phase
 
-**Phase 02 — Reference UI Audit + Design System.**
+**Phase 02 complete and merged** (PR #2, `main` at `6642a6c`). Credentials arrived on
+2026-09-08; the notes below record what they unblocked and what they did not.
 
 ## Status
 
@@ -81,6 +82,28 @@ NODE_ENV=production npm run build && npm start   (route guard)
 - All five gates clean; manifest still regenerates byte-identically; `npm run build` succeeds.
 
 ## Known Issues
+
+**Supabase credentials are configured but UNREACHABLE from this sandbox.** `.env.local` holds
+`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` and a
+direct (5432, non-pooled) `DATABASE_URL`. The egress proxy refuses `*.supabase.co` over HTTPS
+(`CONNECT tunnel failed, 403`) and refuses raw TCP to 5432/6543, while npm:443 stays open in
+the same test. **Phase 03 migrations and the seed can be written here but not applied or
+tested here** — that needs a machine with ordinary egress, or CI. See docs/ops/ENVIRONMENT.md.
+
+**Cloudinary works, through MCP.** Cloud `dhaqpl1kz`, Free plan, 1.04% of credits used. Direct
+HTTPS to `res.cloudinary.com` is blocked like everything else, but the MCP server routes via
+the allowlisted Anthropic proxy, so uploads run server-to-server with this sandbox never
+touching the bytes.
+
+**The Phase 06 migration path is settled, and it is not the obvious one.** Higgsfield's source
+PNGs exceed the plan's 10 MB image cap (a canary was rejected at 20.8 MB). The `_min.webp`
+variant Higgsfield serves alongside each image is *not* a downscale — same 4800×3584, 463 KB.
+`source_min_url` is now in the manifest for all 224 images and is what the bulk run reads.
+
+**SECRETS EXPOSED — rotation requested, not confirmed.** The service-role key, secret key, JWT
+secret and database password were pasted into a chat transcript on 2026-09-08. They must be
+rotated in the Supabase dashboard; `.env.local` needs re-filling afterwards. Until that is
+done, treat these credentials as compromised.
 
 **BLOCKING, and outside this session's reach: GitHub Actions cannot provision a runner.**
 Every CI run since the workflow was added — 12 and counting — fails in 2-5 seconds with
