@@ -61,7 +61,7 @@ import { contentHash, hashRowSubset } from './hash'
 
 const DEFAULT_SEED_VERSION = 'rivya-v1'
 
-type Outcome = 'inserted' | 'updated' | 'skipped_owner_edited' | 'deferred' | 'failed'
+type Outcome = 'inserted' | 'updated' | 'unchanged' | 'skipped_owner_edited' | 'deferred' | 'failed'
 
 type RecordResult = {
   seedKey: string
@@ -154,6 +154,23 @@ async function tableExists(name: string): Promise<boolean> {
  * resolve is a typo, and a media binding that does not resolve names an asset the manifest does
  * not have. Writing either as null would produce content that renders wrong rather than failing.
  */
+/**
+ * Every `seed_key` this run has already decided to write.
+ *
+ * WHY A DRY RUN NEEDS IT. A dry run writes nothing, so a section referencing `page:home` finds no
+ * such page and — without this — fails, even though the very same run would have inserted it a
+ * module earlier. Verification step 1 requires a dry run on an EMPTY database to report inserts
+ * and deferrals only, and the first version of this runner reported 91 failures instead: one per
+ * ref, all of them phantom.
+ *
+ * A real run has no use for this. By the time a section is applied, its page is committed and the
+ * lookup finds it.
+ */
+const plannedKeys = new Set<string>()
+
+/** Stands in for a uuid a dry run never allocates. Never written; the insert branch returns first. */
+const DRY_RUN_PLACEHOLDER = '00000000-0000-4000-8000-000000000000'
+
 async function resolveReferences(record: SeedRecord): Promise<Record<string, string>> {
   const resolved: Record<string, string> = {}
 
@@ -162,7 +179,10 @@ async function resolveReferences(record: SeedRecord): Promise<Record<string, str
       `select id from ${quoteIdent(ref.table)} where seed_key = $1 limit 1`,
       [ref.seedKey],
     )
-    const id = rows[0]?.id
+    let id = rows[0]?.id
+    // The database first, always — a dry run against a database that already holds the row should
+    // resolve to the real one. The planned set is the fallback, and only in dry mode.
+    if (id === undefined && dryRun && plannedKeys.has(ref.seedKey)) id = DRY_RUN_PLACEHOLDER
     if (id === undefined) {
       throw new Error(
         `${record.seedKey}: ${column} references ${ref.table} "${ref.seedKey}", which no seeded ` +
@@ -194,6 +214,10 @@ async function resolveReferences(record: SeedRecord): Promise<Record<string, str
 
 async function applyRecord(record: SeedRecord): Promise<RecordResult> {
   const table = quoteIdent(record.table)
+  // Registered BEFORE the refs are resolved, so a record referencing one earlier in the same
+  // module resolves during a dry run. A deferred record never reaches here, so nothing can
+  // reference a row that will not be written.
+  plannedKeys.add(record.seedKey)
   const references = await resolveReferences(record)
   // The hash covers the module's own declared values, NOT the resolved uuids. Two databases seeded
   // from one module produce different ids for the same content, and hashing those would make every
@@ -288,6 +312,26 @@ async function applyRecord(record: SeedRecord): Promise<RecordResult> {
     }
   }
 
+  /**
+   * --- nothing to do ---
+   *
+   * The row exists, the runner still owns it, the module's content is byte-identical to what is
+   * stored, and the version has not moved. Writing anyway is not harmless: every seeded row would
+   * get a fresh `updated_at` and — because `write_revision` fires on any UPDATE — a new revision,
+   * on every run. A re-seed of this phase would append 231 revisions saying nothing changed, and
+   * the history an editor scrolls through to find a real change would be almost entirely noise.
+   *
+   * REPORTED SEPARATELY FROM `skipped_owner_edited`, not folded into it. The phase document's
+   * verification step 3 calls this outcome "skip", but a skip in that report means "a human owns
+   * this row and the seed stood down" — a state somebody may need to act on. "Nothing changed" is
+   * the opposite: the healthy steady state. Conflating them is the same mistake as counting a
+   * deferral as a skip, and it would make the one number that should be zero unreadable.
+   */
+  const storedVersion = row['content_seed_version'] as string | null
+  if (runnerStillOwnsIt && storedHash === hash && storedVersion === seedVersion) {
+    return { seedKey: record.seedKey, table: record.table, outcome: 'unchanged' }
+  }
+
   // --- rule 4 (or a forced rule 5): update ---
   if (dryRun) {
     return {
@@ -353,17 +397,38 @@ async function main(): Promise<number> {
      * `--force` does not override this. Forcing overwrites an owner's edit, which is a decision a
      * person can make; it cannot conjure a table.
      */
-    const missing: string[] = []
-    for (const required of seedModule.requiresTables ?? []) {
-      if (!(await tableExists(required))) missing.push(required)
+    const missingFor = async (record: SeedRecord): Promise<string[]> => {
+      const required = record.requiresTables ?? seedModule.requiresTables ?? []
+      const missing: string[] = []
+      for (const name of required) {
+        if (!(await tableExists(name))) missing.push(name)
+      }
+      return missing
     }
-    if (missing.length > 0) {
+
+    /**
+     * Resolved per record, not per module, because the two modules that defer are MIXED.
+     * `commissions.ts` writes six sections that can land today and authors three form templates
+     * that cannot; `journal.ts` writes a landing hero and an empty state alongside nineteen
+     * records that cannot. Deferring the whole module would leave `/custom-commissions` and
+     * `/journal` with no copy at all until Phases 18 and 19 — the exact outcome deferral exists
+     * to avoid.
+     */
+    const deferrals = new Map<string, string[]>()
+    for (const record of seedModule.records) {
+      const missing = await missingFor(record)
+      if (missing.length > 0) deferrals.set(record.seedKey, missing)
+    }
+
+    // A module with nothing left to write skips its transaction entirely rather than opening and
+    // committing an empty one.
+    if (deferrals.size === seedModule.records.length) {
       for (const record of seedModule.records) {
         results.push({
           seedKey: record.seedKey,
           table: record.table,
           outcome: 'deferred',
-          detail: `awaiting ${missing.join(', ')}`,
+          detail: `awaiting ${(deferrals.get(record.seedKey) ?? []).join(', ')}`,
         })
       }
       continue
@@ -389,6 +454,16 @@ async function main(): Promise<number> {
        */
       let aborted: string | null = null
       for (const record of seedModule.records) {
+        const missing = deferrals.get(record.seedKey)
+        if (missing !== undefined) {
+          results.push({
+            seedKey: record.seedKey,
+            table: record.table,
+            outcome: 'deferred',
+            detail: `awaiting ${missing.join(', ')}`,
+          })
+          continue
+        }
         if (aborted !== null) {
           results.push({
             seedKey: record.seedKey,
@@ -423,6 +498,7 @@ async function main(): Promise<number> {
   const counts = {
     inserted: results.filter((r) => r.outcome === 'inserted').length,
     updated: results.filter((r) => r.outcome === 'updated').length,
+    unchanged: results.filter((r) => r.outcome === 'unchanged').length,
     skippedOwnerEdited: results.filter((r) => r.outcome === 'skipped_owner_edited').length,
     deferred: results.filter((r) => r.outcome === 'deferred').length,
     failed: results.filter((r) => r.outcome === 'failed').length,
@@ -468,7 +544,8 @@ async function main(): Promise<number> {
         runId,
         seedVersion,
         `Seed ${seedVersion}: ${String(counts.inserted)} inserted, ${String(counts.updated)} updated, ` +
-          `${String(counts.skippedOwnerEdited)} left to their owner, ${String(counts.deferred)} deferred`,
+          `${String(counts.unchanged)} unchanged, ${String(counts.skippedOwnerEdited)} left to ` +
+          `their owner, ${String(counts.deferred)} deferred`,
         JSON.stringify({
           modules: modules.map((m) => m.name),
           counts,
@@ -485,11 +562,14 @@ async function main(): Promise<number> {
   console.log(`\n${label}  (version ${seedVersion}${force ? ', FORCED' : ''})`)
   console.log(`  inserted              ${counts.inserted}`)
   console.log(`  updated               ${counts.updated}`)
+  console.log(`  unchanged             ${counts.unchanged}`)
   console.log(`  skipped (owner edit)  ${counts.skippedOwnerEdited}`)
   console.log(`  deferred              ${counts.deferred}`)
   console.log(`  failed                ${counts.failed}`)
 
-  const notable = results.filter((r) => r.outcome !== 'inserted' && r.outcome !== 'updated')
+  const notable = results.filter(
+    (r) => r.outcome !== 'inserted' && r.outcome !== 'updated' && r.outcome !== 'unchanged',
+  )
   if (notable.length > 0) {
     console.log('\n  not applied:')
     for (const r of notable)

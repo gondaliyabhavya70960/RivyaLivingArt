@@ -18,12 +18,12 @@ import type { SeedModule, SeedRecord } from './types'
  * They are separate rows rather than one menu rendered twice, because the moment the owner wants a
  * shorter mobile menu — which they will — the alternative is a code change.
  *
- * THE FOOTER'S CONTACT COLUMN IS A HEADING WITH NO LINKS. §24 says "Phone / WhatsApp / Email /
- * Location", and every one of those is a real business fact the seed does not have. Seeding
- * `+91 XXXXX` or a placeholder address would be exactly the fabrication D10 forbids, and an empty
- * column that says what belongs in it is more useful to the owner than an invented one. The
- * details themselves are seeded on the contact page as a section carrying
- * OWNER_VERIFICATION_REQUIRED, where the owner fills them in once.
+ * THE FOOTER'S CONTACT COLUMN IS A HEADING WITH NO LINKS, and not because the details are unknown.
+ * §21 supplies a phone number, a WhatsApp number and an email, and `contact.ts` seeds them on the
+ * contact page under OWNER_VERIFICATION_REQUIRED. They are NOT restated here: §21 says "do not
+ * hardcode these values in multiple components", and two rows holding one phone number is the
+ * same failure one step removed — the owner corrects one and the footer keeps the old one. The
+ * footer renders the details from that single section.
  */
 
 type NavOptions = {
@@ -177,7 +177,8 @@ export const navigationSeed: SeedModule = {
      * carries OWNER_VERIFICATION_REQUIRED.
      */
     navRow('FOOTER', 'contact', 'Contact', '#', 40, {
-      description: 'SEED §24 lists Phone / WhatsApp / Email / Location. None is seeded.',
+      description:
+        'SEED §24 lists Phone / WhatsApp / Email / Location. The values live in one place — the contact page section — because §21 forbids hardcoding them in multiple components.',
     }),
   ],
 }

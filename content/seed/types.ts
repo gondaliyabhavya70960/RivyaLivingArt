@@ -20,6 +20,16 @@ export type SeedableTable =
   | 'navigation_items'
   | 'seo_entries'
   | 'faqs'
+  /**
+   * Tables that do not exist yet. A record targeting one is `deferred` — authored now, written
+   * when the phase that creates the table re-runs its module. They are in the union because they
+   * ARE seedable; what they are not is present. `products` is a different case entirely and is
+   * absent permanently, below.
+   */
+  | 'journal_categories' // Phase 18, migration 0160
+  | 'journal_articles' // Phase 18, migration 0160
+  | 'customization_forms' // Phase 19, migration 0170
+  | 'customization_form_fields' // Phase 19, migration 0170
 
 /**
  * `products` IS ABSENT, PERMANENTLY, and the type is the enforcement.
@@ -40,6 +50,10 @@ export const SEEDABLE_TABLES: readonly SeedableTable[] = [
   'navigation_items',
   'seo_entries',
   'faqs',
+  'journal_categories',
+  'journal_articles',
+  'customization_forms',
+  'customization_form_fields',
 ]
 
 /** A column value a module may state directly. Anything relational goes through `refs`. */
@@ -98,6 +112,19 @@ export type SeedRecord = {
   readonly refs?: Record<string, SeedRef>
   /** Columns resolved from `media_assets.rivya_asset_id`. See `SeedMediaRef`. */
   readonly media?: Record<string, SeedMediaRef>
+  /**
+   * Tables this RECORD needs, overriding the module's declaration.
+   *
+   * PER-RECORD, BECAUSE THE TWO MODULES THAT DEFER ARE MIXED. `commissions.ts` writes six sections
+   * that can land today and authors three form templates that cannot; `journal.ts` writes a
+   * landing hero and an empty state and authors nineteen records that cannot. A module-level
+   * declaration alone would defer the sections too, so `/custom-commissions` and `/journal` would
+   * have no copy at all until Phases 18 and 19 — which is precisely the outcome the deferral
+   * mechanism exists to avoid.
+   *
+   * The module-level declaration remains, as the default for records that state none.
+   */
+  readonly requiresTables?: readonly string[]
 }
 
 export type SeedModule = {
