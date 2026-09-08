@@ -88,18 +88,32 @@ export const MANIFEST_PATH = 'data/higgsfield/asset-manifest.json'
  * `is_concept: false`, the honest outcome is a loud parse failure naming the asset — not a silent
  * import of a row that claims Rivya photographed something it generated.
  */
-export function readManifest(path: string = MANIFEST_PATH): Manifest {
-  const parsed = manifestSchema.safeParse(JSON.parse(readFileSync(path, 'utf8')))
+export function parseManifest(value: unknown, source: string = MANIFEST_PATH): Manifest {
+  const parsed = manifestSchema.safeParse(value)
   if (!parsed.success) {
     const first = parsed.error.issues[0]
     throw new Error(
-      `${path} does not match the expected shape: ` +
+      `${source} does not match the expected shape: ` +
         `${first?.path.join('.') ?? '(root)'} — ${first?.message ?? 'unknown issue'}. ` +
         `${parsed.error.issues.length} issue(s) total. The manifest is read-only input; ` +
         'if the builder changed, lib/media/manifest.ts is what needs updating, not the file.',
     )
   }
   return parsed.data
+}
+
+/**
+ * Read and validate the manifest from disk. CLI and test paths only.
+ *
+ * THE STUDIO MUST NOT USE THIS, and the split above is what gives it an alternative. A Server
+ * Component running on Vercel has no reliable working directory and Next.js does not trace a
+ * `readFileSync` on a runtime-computed path into the serverless bundle — the page would build
+ * clean and then 500 in production with ENOENT, which is the worst place to discover it. The
+ * Studio statically imports the JSON (so the bundler includes it) and calls `parseManifest`; a
+ * script that already has a filesystem calls this.
+ */
+export function readManifest(path: string = MANIFEST_PATH): Manifest {
+  return parseManifest(JSON.parse(readFileSync(path, 'utf8')), path)
 }
 
 /**
