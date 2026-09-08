@@ -7,14 +7,17 @@ import {
   isAllowedFolder,
 } from '@/lib/media/folders'
 import {
+  ASPECT_RATIOS,
   PRESETS,
   PRESET_MAP,
+  UnsupportedRatioError,
   WIDTH_LADDER,
   clampDpr,
   heightFor,
+  ratioCrop,
   resolveSpec,
   snapWidth,
-  srcSetWidths,
+  srcSet,
 } from '@/lib/media/transform'
 
 /**
@@ -119,21 +122,21 @@ describe('the width ladder', () => {
   })
 })
 
-describe('srcSetWidths', () => {
+describe('srcSet', () => {
   it('offers up to 2× the box and no further', () => {
     // More rungs than that inflate the attribute on every page for a size no layout picks.
-    const widths = srcSetWidths(640)
+    const widths = srcSet(640)
     expect(widths[0]).toBe(640)
     expect(Math.max(...widths)).toBe(1280)
   })
 
   it('always offers at least one width', () => {
-    expect(srcSetWidths(1).length).toBeGreaterThan(0)
-    expect(srcSetWidths(4000).length).toBeGreaterThan(0)
+    expect(srcSet(1).length).toBeGreaterThan(0)
+    expect(srcSet(4000).length).toBeGreaterThan(0)
   })
 
   it('returns rungs in ascending order, with no duplicates', () => {
-    const widths = srcSetWidths(480)
+    const widths = srcSet(480)
     expect([...widths].sort((a, b) => a - b)).toEqual(widths)
     expect(new Set(widths).size).toBe(widths.length)
   })
@@ -171,28 +174,108 @@ describe('heightFor', () => {
 })
 
 describe('presets', () => {
-  it('names every ratio it uses from the D6 set', () => {
-    const d6 = ['21:9', '16:9', '4:3', '3:2', '1:1', '4:5', '3:4', '9:16']
-    for (const [name, spec] of Object.entries(PRESET_MAP)) {
-      if (spec.ratio === undefined) continue
-      expect(d6, name).toContain(spec.ratio)
+  it('is exactly the six the phase document fixes, under its own names', () => {
+    // Named rather than counted: an earlier draft of transform.ts invented a different set, and
+    // the miss that mattered was `og` — SECURITY.md §7.2 tells the owner what to supply for a
+    // default social card by referring to "the Phase 06 `og` preset's output size".
+    expect(Object.keys(PRESET_MAP).sort()).toEqual(
+      ['card', 'grid', 'hero', 'hero-xl', 'og', 'thumb'].sort(),
+    )
+  })
+
+  it('carries the widths PHASE-05-09.md §06 states, and og carries both dimensions', () => {
+    expect(PRESETS.thumb.width).toBe(160)
+    expect(PRESETS.card.width).toBe(480)
+    expect(PRESETS.grid.width).toBe(768)
+    expect(PRESETS.hero.width).toBe(1600)
+    expect(PRESETS['hero-xl'].width).toBe(2560)
+    // 1200 x 630 is an external specification, which is why it is the one preset with a height.
+    expect(PRESETS.og.width).toBe(1200)
+    expect(PRESETS.og.height).toBe(630)
+  })
+
+  it('pins the og format instead of negotiating it', () => {
+    // A crawler's Accept header cannot be relied on, so f_auto could serve a WebP to a scraper
+    // that wanted JPEG — a social card that silently does not render.
+    expect(PRESETS.og.format).toBe('jpg')
+    for (const name of ['thumb', 'card', 'grid', 'hero', 'hero-xl'] as const) {
+      expect(PRESET_MAP[name].format, name).toBe('auto')
     }
   })
 
-  it('asks for a width that is already a rung', () => {
-    // A preset that snapped would mean the named size and the delivered size differ silently.
+  it('spends eco quality only where quality is not noticed', () => {
+    expect(PRESETS.thumb.quality).toBe('auto:eco')
+    for (const name of ['card', 'grid', 'hero', 'hero-xl', 'og'] as const) {
+      expect(PRESET_MAP[name].quality, name).toBe('auto:good')
+    }
+  })
+
+  it('leaves the ratio to the slot, so one source is never cropped into desktop and mobile both', () => {
+    // D6: desktop and mobile are separate CMS slots. A preset carrying a ratio would make the
+    // component decide the crop, which is exactly the decision that belongs to the editor.
     for (const [name, spec] of Object.entries(PRESET_MAP)) {
-      if (spec.width === undefined) continue
-      expect(WIDTH_LADDER, name).toContain(spec.width)
+      expect(spec.ratio, name).toBeUndefined()
+    }
+  })
+
+  it('does not require preset widths to be rungs — three of the six are not', () => {
+    // The two sets are independent, and an earlier draft wrongly tried to reconcile them. The
+    // ladder is what a RESPONSIVE image offers the browser; a preset is one fixed delivery size
+    // for a box that never negotiates.
+    const offLadder = Object.entries(PRESET_MAP)
+      .filter(([, spec]) => spec.width !== undefined && !WIDTH_LADDER.includes(spec.width as never))
+      .map(([name]) => name)
+    expect(offLadder.sort()).toEqual(['hero', 'og', 'thumb'])
+  })
+
+  it('delivers a preset at exactly its stated width, never snapped', () => {
+    // The regression this guards: routing preset widths through snapWidth turned `hero` into 1920
+    // and `thumb` into 320, so the preset delivered something other than its own table entry.
+    for (const [name, spec] of Object.entries(PRESET_MAP)) {
+      const resolved = resolveSpec(name as keyof typeof PRESET_MAP)
+      expect(resolved.width, name).toBe(spec.width)
     }
   })
 
   it('lets a call site override without editing the preset', () => {
-    expect(resolveSpec('card', { width: 320 })).toMatchObject({ width: 320, ratio: '4:5' })
+    expect(resolveSpec('card', { width: 320 })).toMatchObject({ width: 320, crop: 'fill' })
   })
 
-  it("keeps the editorial preset uncropped, so a photographer's shape survives", () => {
-    expect(PRESETS.editorial.crop).toBe('fit')
-    expect(PRESETS.editorial).not.toHaveProperty('ratio')
+  it('resolves a ratio override into concrete dimensions at the call site', () => {
+    // Resolved here rather than in the provider so a bad ratio throws where it was asked for,
+    // instead of producing a URL nobody checks. 1600 is kept, not snapped to 1920.
+    expect(resolveSpec('hero', { ratio: '21:9' })).toMatchObject({ width: 1600, height: 686 })
+  })
+
+  it('throws on a bad ratio override too, not only through ratioCrop', () => {
+    // @ts-expect-error -- the runtime guard behind the type
+    expect(() => resolveSpec('hero', { ratio: '5:2' })).toThrow(UnsupportedRatioError)
+  })
+})
+
+describe('ratioCrop', () => {
+  it('snaps the width to a rung and derives the height', () => {
+    expect(ratioCrop(700, '16:9')).toEqual({ width: 768, height: 432 })
+    expect(ratioCrop(1024, '1:1')).toEqual({ width: 1024, height: 1024 })
+  })
+
+  it('accepts all eight D6 ratios and nothing else', () => {
+    expect(ASPECT_RATIOS).toHaveLength(8)
+    for (const ratio of ASPECT_RATIOS) {
+      expect(() => ratioCrop(640, ratio), ratio).not.toThrow()
+    }
+  })
+
+  it('throws on an unsupported ratio rather than falling back to the source shape', () => {
+    // Silently keeping the source's shape produces an image that does not fill its box, which
+    // reads as a CSS bug rather than as the bad argument it is.
+    // @ts-expect-error -- the point of the test is the runtime guard behind the type
+    expect(() => ratioCrop(640, '5:2')).toThrow(UnsupportedRatioError)
+  })
+
+  it('does not treat an inherited Object property as a supported ratio', () => {
+    // `ratio in RATIO_VALUE` would accept 'toString' and then divide by undefined.
+    // @ts-expect-error -- deliberately off-contract
+    expect(() => ratioCrop(640, 'toString')).toThrow(UnsupportedRatioError)
   })
 })

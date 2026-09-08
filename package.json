@@ -38,11 +38,13 @@
     "security:check-proxy": "node scripts/security/check-proxy.mjs",
     "db:migrate": "node scripts/db/migrate.mjs",
     "media:check-folders": "node scripts/media/check-folders.mjs",
+    "media:check-provider": "node scripts/media/check-provider-boundary.mjs",
     "check": "npm run typecheck && npm run lint && npm run format:check"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.6",
     "@supabase/supabase-js": "^2.116.0",
+    "cloudinary": "^2.11.0",
     "next": "^16.3.4",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",

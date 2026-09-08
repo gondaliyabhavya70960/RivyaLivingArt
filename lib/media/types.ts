@@ -1,5 +1,7 @@
 import type { AspectRatio } from '@/components/primitives/AspectBox'
 
+import type { UploadKind } from './upload-limits'
+
 /**
  * The media provider contract.
  *
@@ -48,6 +50,19 @@ export type TransformSpec = {
   readonly gravity?: 'auto' | 'center'
   /** Device pixel ratio. Capped in transform.ts — see the note there on why 3 is the ceiling. */
   readonly dpr?: number
+  /**
+   * Explicit height. Set only where an external specification fixes both dimensions — the `og`
+   * preset's 1200 × 630. Everywhere else the height follows from `ratio`, and setting both is a
+   * contradiction the provider resolves in favour of this one.
+   */
+  readonly height?: number
+  /**
+   * `auto` negotiates from the `Accept` header; `jpg` pins the format. Pinning is right exactly
+   * where the fetcher's `Accept` header cannot be trusted — see the `og` preset.
+   */
+  readonly format?: 'auto' | 'jpg'
+  /** `auto:eco` for sizes where quality is not noticed, `auto:good` elsewhere. */
+  readonly quality?: 'auto:eco' | 'auto:good'
 }
 
 export type VideoTransformSpec = TransformSpec & {
@@ -74,7 +89,16 @@ export type SignedUpload = {
 
 export type SignUploadInput = {
   readonly folder: string
-  readonly resourceType: MediaRef['resourceType']
+  /**
+   * The media kind, NOT the Cloudinary resource type.
+   *
+   * The resource type follows from the kind (`upload-limits.ts` maps them), so passing both would
+   * create a pair that can disagree — a `MODEL_3D` signed into the `image` namespace uploads
+   * successfully and is then unreachable, because Cloudinary's resource types are separate
+   * namespaces rather than a hint. Passing the kind alone makes that unrepresentable, and it is
+   * also what the byte ceiling and MIME allowlist are keyed on.
+   */
+  readonly kind: UploadKind
   /** The uploader's id, recorded on the asset so provenance survives the upload. */
   readonly uploadedBy: string
 }
