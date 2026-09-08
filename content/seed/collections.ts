@@ -149,7 +149,11 @@ export const collectionsSeed: SeedModule = {
        */
       payload: {
         columns: 3,
+        // The category's own slug is the card's key: stable, already unique, and the same
+        // identifier the destination uses — so a test addressing a card and a reader following
+        // the link are talking about the same thing.
         cards: CATEGORIES.map((c) => ({
+          key: c.slug,
           title: c.title,
           description: '',
           href: `/collection/${c.slug}`,

@@ -39,6 +39,9 @@ function planned(type: BlockType, label: string, description: string): BlockModu
     schema: plannedSchema,
     defaults: {},
     payloadFields: [],
+    // A planned block declares none: it renders nothing, so it has no entries to withhold. The
+    // module that replaces it names its own.
+    entryArrays: [],
     mediaSlots: [],
     layoutVariants: [],
     allowedPages: null,
@@ -56,44 +59,6 @@ function planned(type: BlockType, label: string, description: string): BlockModu
  * descriptions are the catalogue's own, so they are already right when a block ships.
  */
 export const PLANNED_BLOCKS = {
-  manifesto: planned('manifesto', 'Manifesto', 'The brand statement band with a supporting image.'),
-  'selected-works': planned(
-    'selected-works',
-    'Selected works',
-    'A curated set of pieces pulled from the catalogue.',
-  ),
-  'material-story': planned(
-    'material-story',
-    'Material story',
-    'A single material told at length, with detail media.',
-  ),
-  'material-palette': planned(
-    'material-palette',
-    'Material palette',
-    'Swatches with names and short notes.',
-  ),
-  'commission-cta': planned(
-    'commission-cta',
-    'Commission call to action',
-    'The commissioning prompt with a WhatsApp handoff.',
-  ),
-  'three-d-resin': planned(
-    'three-d-resin',
-    '3D resin viewer',
-    'An interactive resin piece with a static fallback.',
-  ),
-  'portfolio-strip': planned(
-    'portfolio-strip',
-    'Portfolio strip',
-    'A horizontal run of delivered work.',
-  ),
-  'secondary-objects': planned(
-    'secondary-objects',
-    'Secondary objects',
-    'Smaller pieces shown as a secondary grid.',
-  ),
-  'journal-strip': planned('journal-strip', 'Journal strip', 'Recent journal entries as cards.'),
-  'final-cta': planned('final-cta', 'Final call to action', 'The closing band before the footer.'),
   'scale-statement': planned(
     'scale-statement',
     'Scale statement',

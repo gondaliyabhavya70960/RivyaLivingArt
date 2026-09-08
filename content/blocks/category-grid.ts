@@ -1,6 +1,7 @@
 import { z } from 'zod'
 
 import type { BlockModule } from '@/lib/cms/block-module'
+import { entryVerificationSchema } from '@/lib/cms/entry-visibility'
 
 /**
  * Cards, each with its own title, description, link and picture. SEED §10-03.
@@ -22,6 +23,21 @@ const cardSchema = z.object({
   href: z.string(),
   /** Index into `payload.media` entries whose slot is `cards`. Null renders the card textless. */
   media_index: z.number().int().min(0).nullable(),
+  /**
+   * A stable name for this card, independent of its position.
+   *
+   * OPTIONAL IN THE SCHEMA, WRITTEN BY THE SEED. Optional because every card seeded before this
+   * field existed omits it, and `parseBlockPayload` falls back to the DEFAULTS when a payload
+   * fails its schema — so making it required would not surface old rows as an error, it would
+   * empty the grid silently. Written by the seed so that everything shipped from now on has one.
+   *
+   * It is not the array index: an editor reordering the cards shifts every index, and a test
+   * addressed by index then asserts about whatever moved into that slot — which is exactly the
+   * assertion that keeps passing after the thing it was written for has gone.
+   */
+  key: z.string().min(1).optional(),
+  /** Withheld from the public page while `OWNER_VERIFICATION_REQUIRED`. See lib/cms/entry-visibility.ts. */
+  owner_verification: entryVerificationSchema,
 })
 
 const schema = z.object({
@@ -70,7 +86,7 @@ export const categoryGridBlock: BlockModule<CategoryGridPayload> = {
       name: 'cards',
       kind: 'json',
       label: 'Cards',
-      help: 'title, description, href and media_index for each card. media_index counts the media entries below, from 0.',
+      help: 'key, title, description, href and media_index for each card. media_index counts the media entries below, from 0. Set owner_verification to OWNER_VERIFICATION_REQUIRED on a card that claims something not yet confirmed, and it stays off the public page.',
     },
     {
       name: 'media',
@@ -82,6 +98,7 @@ export const categoryGridBlock: BlockModule<CategoryGridPayload> = {
   mediaSlots: [
     { id: 'cards', role: 'GALLERY', repeating: true, desktopRatio: '4:5', mobileRatio: '4:5' },
   ],
+  entryArrays: ['cards'],
   layoutVariants: ['grid', 'carousel'],
   allowedPages: null,
 }

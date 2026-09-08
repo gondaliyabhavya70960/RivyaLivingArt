@@ -27,10 +27,21 @@ import type { SeedModule } from './types'
  *                      actual fabrication capability."
  *   10 PROCESS         §10: "These are draft process statements and require owner verification."
  *
- * A card inside a payload cannot carry its own verification flag — the flag is a column on the
- * section — so a section holding ANY flagged card is flagged whole. That is the safe direction:
- * it means section 03 cannot be published until the owner has read the 3D + Resin and
- * Architectural claims, rather than those two claims going live inside an unflagged section.
+ * A CARD COULD NOT CARRY ITS OWN FLAG WHEN THIS MODULE WAS WRITTEN, so a section holding any
+ * flagged card was flagged whole. That was the safe direction and it was also blunt: sections 03,
+ * 06, 07 and 10 could not publish at all, taking eleven confirmed statements off the site to
+ * withhold four unconfirmed ones.
+ *
+ * PHASE 11 ADDED THE ENTRY-LEVEL FLAG (`lib/cms/entry-visibility.ts`), so the four sections now
+ * publish with the specific claims withheld. Fifteen entries carry
+ * `owner_verification: 'OWNER_VERIFICATION_REQUIRED'` and render nothing until the owner confirms
+ * them; the sections around them are `NOT_REQUIRED` and go live. Two sections stay flagged WHOLE,
+ * because the claim is the whole section rather than an item in it: 02 MANIFESTO, whose body
+ * asserts combining resin with wood, digitally developed structures and finishing, and 08
+ * 3D + RESIN, which §10 says must not publish as a current capability at all.
+ *
+ * Every entry also carries a `key`. It is what the renderer emits as `data-entry-key` and what a
+ * test addresses; the array index is not, because an editor reordering the list would move it.
  *
  * SECTION 04 SEEDS NO PRODUCTS, and section 09 seeds no projects. §10 says so twice ("Do NOT
  * hardcode products", "Do not seed fictional client projects") and §32 makes it a rule. Both
@@ -91,12 +102,15 @@ export const homepageSeed: SeedModule = {
       heading: 'Made for spaces that deserve a point of view.',
       body: "Explore furniture, collectible objects and statement art across Rivya's evolving material language.",
       fact: 'BRAND_COPY',
-      // Flagged whole: two of its five cards assert production capability. See the header.
-      verify: true,
+      // NOT flagged whole any more. Two of its five cards assert production capability and
+      // carry the flag themselves; the section publishes with those two withheld, which is what
+      // `lib/cms/entry-visibility.ts` exists for. Flagging the section would take Tables,
+      // Sculptural Furniture and Statement Art off the homepage to withhold the other two.
       payload: {
         columns: 3,
         cards: [
           {
+            key: 'tables',
             title: 'Tables',
             description:
               'Dining, coffee, console and statement tables where resin, form and material become one composition.',
@@ -104,6 +118,7 @@ export const homepageSeed: SeedModule = {
             media_index: null,
           },
           {
+            key: 'sculptural-furniture',
             title: 'Sculptural Furniture',
             description:
               'Functional pieces developed with an art-object mindset—from seating to experimental forms.',
@@ -111,13 +126,17 @@ export const homepageSeed: SeedModule = {
             media_index: null,
           },
           {
+            key: '3d-resin',
             title: '3D + Resin',
             description:
               'A developing intersection of digitally fabricated form, additive processes and resin craft.',
             href: '/collection/3d-resin',
             media_index: null,
+            // §10: withhold "until exact production capability is verified".
+            owner_verification: 'OWNER_VERIFICATION_REQUIRED',
           },
           {
+            key: 'statement-art',
             title: 'Statement Art',
             description:
               'Large-format resin compositions, sculptural wall pieces and visually immersive surfaces.',
@@ -125,11 +144,14 @@ export const homepageSeed: SeedModule = {
             media_index: null,
           },
           {
+            key: 'architectural-pieces',
             title: 'Architectural Pieces',
             description:
               'Bespoke objects and material-led interventions conceived for distinctive interior environments.',
             href: '/large-format',
             media_index: null,
+            // §10 marks this card explicitly.
+            owner_verification: 'OWNER_VERIFICATION_REQUIRED',
           },
         ],
         media: [],
@@ -167,6 +189,26 @@ export const homepageSeed: SeedModule = {
       ctaLabel: 'Discover Our Process',
       ctaUrl: '/process',
       fact: 'BRAND_COPY',
+      /*
+       * FOUR STAGES, NO LABELS. The words LIQUID, FORM, CRAFT and OBJECT are the heading above and
+       * appear nowhere in this payload: a stage is a media POSITION and an id, so the day an
+       * editor rewords the sequence the stages do not still say the old thing.
+       *
+       * EVERY `media_index` IS NULL, and that is a binding that has not happened rather than a
+       * decision that there should be no picture. `media_assets` holds nothing until
+       * `npm run media:migrate:higgsfield` runs, and naming an asset that does not exist is a hard
+       * seed failure — so the stages ship with their reserved boxes and the seeded SEED §47 label,
+       * and binding `material-macro` to them is one edit to this array.
+       */
+      payload: {
+        stages: [
+          { key: 'liquid', media_index: null },
+          { key: 'form', media_index: null },
+          { key: 'craft', media_index: null },
+          { key: 'object', media_index: null },
+        ],
+        media: [],
+      },
     }),
 
     section({
@@ -176,24 +218,32 @@ export const homepageSeed: SeedModule = {
       position: 6,
       heading: 'Material defines the character of every piece.',
       fact: 'BRAND_COPY',
-      // Flagged for the "Fabricated Form" card, which §10 marks explicitly.
-      verify: true,
+      // The "Fabricated Form" card carries the flag; the section does not. §10 marks the third
+      // statement, not the band, and the other three materials are plainly true of any resin
+      // studio. The renderer lays out at three cards as well as four.
       payload: {
         materials: [
           {
+            key: 'resin',
             title: 'Resin',
             description: 'Depth, transparency, colour and movement become part of the composition.',
           },
           {
+            key: 'wood',
             title: 'Wood',
             description: 'Grain, edge and natural variation introduce warmth and individuality.',
           },
           {
+            key: 'fabricated-form',
             title: 'Fabricated Form',
             description:
               'Digitally developed geometry can introduce structures and silhouettes that traditional construction alone may not easily achieve.',
+            // §10: "Mark third statement OWNER_VERIFICATION_REQUIRED". The renderer must therefore
+            // lay out correctly with three cards as well as four.
+            owner_verification: 'OWNER_VERIFICATION_REQUIRED',
           },
           {
+            key: 'finish',
             title: 'Finish',
             description:
               'Surface finishing brings every material into a deliberate relationship with touch, light and space.',
@@ -213,17 +263,48 @@ export const homepageSeed: SeedModule = {
       ctaLabel: 'Start a Custom Project',
       ctaUrl: '/custom-commissions',
       fact: 'BRAND_COPY',
-      // §10: "Only publish capabilities confirmed by owner." Every item below is an offered
-      // service, so the section carries the flag rather than the list carrying six of them.
-      verify: true,
+      // §10: "Only publish capabilities confirmed by owner." All six carry the flag themselves,
+      // so what publishes is the heading, the body and the CTA — none of which claims a
+      // capability — with the list of six withheld until the owner confirms them.
       payload: {
+        /*
+         * OBJECTS RATHER THAN STRINGS, and the change is what lets §10's rule be obeyed precisely.
+         * "Only publish capabilities confirmed by owner" applied to a `string[]` can only be
+         * enforced by withholding the whole section — which also withholds the heading and the
+         * commission CTA, the two things on this band that assert nothing. As entries, each of the
+         * six carries its own flag and the band publishes around them.
+         */
         capabilities: [
-          'Custom dimensions',
-          'Material direction',
-          'Colour direction',
-          'Form exploration',
-          'Finish selection',
-          'Reference-based consultation',
+          {
+            key: 'custom-dimensions',
+            label: 'Custom dimensions',
+            owner_verification: 'OWNER_VERIFICATION_REQUIRED',
+          },
+          {
+            key: 'material-direction',
+            label: 'Material direction',
+            owner_verification: 'OWNER_VERIFICATION_REQUIRED',
+          },
+          {
+            key: 'colour-direction',
+            label: 'Colour direction',
+            owner_verification: 'OWNER_VERIFICATION_REQUIRED',
+          },
+          {
+            key: 'form-exploration',
+            label: 'Form exploration',
+            owner_verification: 'OWNER_VERIFICATION_REQUIRED',
+          },
+          {
+            key: 'finish-selection',
+            label: 'Finish selection',
+            owner_verification: 'OWNER_VERIFICATION_REQUIRED',
+          },
+          {
+            key: 'reference-consultation',
+            label: 'Reference-based consultation',
+            owner_verification: 'OWNER_VERIFICATION_REQUIRED',
+          },
         ],
       },
     }),
@@ -270,35 +351,52 @@ export const homepageSeed: SeedModule = {
       ctaLabel: 'Explore the Process',
       ctaUrl: '/process',
       fact: 'BRAND_COPY',
-      // §10: "These are draft process statements and require owner verification."
-      verify: true,
+      // §10: "These are draft process statements and require owner verification." All five carry
+      // the flag; the section's own heading claims nothing and publishes.
       payload: {
         numbered: true,
+        /*
+         * ALL FIVE ARE FLAGGED. §10: "These are draft process statements and require owner
+         * verification." Each describes something Rivya does to an object, which is a capability
+         * claim in the plainest sense. The renderer removes withheld steps BEFORE numbering, so
+         * what remains reads 01, 02, 03 rather than 01, 03, 06 — a gapped sequence tells a visitor
+         * something is missing and invites them to wonder what.
+         */
         steps: [
           {
+            key: 'understand',
             title: 'Understand',
             body: 'Define the purpose, dimensions, context and visual direction.',
             media_index: null,
+            owner_verification: 'OWNER_VERIFICATION_REQUIRED',
           },
           {
+            key: 'develop',
             title: 'Develop',
             body: 'Explore proportion, material relationships, colour and structural direction.',
             media_index: null,
+            owner_verification: 'OWNER_VERIFICATION_REQUIRED',
           },
           {
+            key: 'make',
             title: 'Make',
             body: 'Translate the approved direction through the appropriate fabrication and resin processes.',
             media_index: null,
+            owner_verification: 'OWNER_VERIFICATION_REQUIRED',
           },
           {
+            key: 'finish',
             title: 'Finish',
             body: 'Refine surfaces, details and material transitions.',
             media_index: null,
+            owner_verification: 'OWNER_VERIFICATION_REQUIRED',
           },
           {
+            key: 'deliver',
             title: 'Deliver',
             body: 'Prepare the completed work for its final setting.',
             media_index: null,
+            owner_verification: 'OWNER_VERIFICATION_REQUIRED',
           },
         ],
         media: [],
@@ -318,10 +416,17 @@ export const homepageSeed: SeedModule = {
       // which position 11 satisfies — the large-format story is sections 03 through 08.
       payload: {
         cards: [
-          { title: 'Preservation', href: '/collection/preservation' },
-          { title: 'Décor', href: '/collection/decor' },
-          { title: 'Personalised Pieces', href: '/custom-commissions' },
-          { title: 'Gifts', href: '/collection/gifts' },
+          { key: 'preservation', title: 'Preservation', href: '/collection/preservation' },
+          { key: 'decor', title: 'Décor', href: '/collection/decor' },
+          {
+            key: 'personalised-pieces',
+            title: 'Personalised Pieces',
+            href: '/custom-commissions',
+            // A personalisation capability claim, and the one card in this section with no
+            // Higgsfield family of its own — recorded as a gap in the Phase 11 media table.
+            owner_verification: 'OWNER_VERIFICATION_REQUIRED',
+          },
+          { key: 'gifts', title: 'Gifts', href: '/collection/gifts' },
         ],
       },
     }),

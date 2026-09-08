@@ -1,11 +1,21 @@
 import type { BlockType } from '@/lib/cms/block-types'
 
 import { CategoryGridSection } from './CategoryGridSection'
+import { CommissionCtaSection } from './CommissionCtaSection'
 import { DividerSection } from './DividerSection'
 import { EmptyStateSection } from './EmptyStateSection'
+import { FinalCtaSection } from './FinalCtaSection'
 import { HeroSection } from './HeroSection'
+import { JournalStripSection } from './JournalStripSection'
+import { ManifestoSection } from './ManifestoSection'
+import { MaterialPaletteSection } from './MaterialPaletteSection'
+import { MaterialStorySection } from './MaterialStorySection'
+import { PortfolioStripSection } from './PortfolioStripSection'
 import { ProcessStepsSection } from './ProcessStepsSection'
+import { SecondaryObjectsSection } from './SecondaryObjectsSection'
+import { SelectedWorksSection } from './SelectedWorksSection'
 import { StatementSection } from './StatementSection'
+import { ThreeDResinSection } from './ThreeDResinSection'
 import type { SectionRenderer } from './types'
 
 /**
@@ -23,18 +33,18 @@ import type { SectionRenderer } from './types'
  */
 export const SECTION_RENDERERS = {
   hero: HeroSection,
-  manifesto: null,
+  manifesto: ManifestoSection,
   'category-grid': CategoryGridSection,
-  'selected-works': null,
-  'material-story': null,
-  'material-palette': null,
-  'commission-cta': null,
-  'three-d-resin': null,
-  'portfolio-strip': null,
+  'selected-works': SelectedWorksSection,
+  'material-story': MaterialStorySection,
+  'material-palette': MaterialPaletteSection,
+  'commission-cta': CommissionCtaSection,
+  'three-d-resin': ThreeDResinSection,
+  'portfolio-strip': PortfolioStripSection,
   'process-steps': ProcessStepsSection,
-  'secondary-objects': null,
-  'journal-strip': null,
-  'final-cta': null,
+  'secondary-objects': SecondaryObjectsSection,
+  'journal-strip': JournalStripSection,
+  'final-cta': FinalCtaSection,
   statement: StatementSection,
   'scale-statement': null,
   'category-intro': null,

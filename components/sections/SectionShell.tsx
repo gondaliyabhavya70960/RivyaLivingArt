@@ -38,6 +38,15 @@ export type SectionShellProps = {
  * from the heading would change the moment an editor reworded it — quietly breaking every link
  * anyone had shared. A uuid is ugly in a URL and permanent, which is the right trade for an
  * anchor nobody types by hand.
+ *
+ * `data-block-type` IS WHAT MAKES AN ENTRY ADDRESSABLE, and it exists for one specific reason.
+ * `data-entry-key` is unique inside its own payload array and NOT across a page: the homepage's
+ * material palette has a card keyed `finish` and its process band has a step keyed `finish`, one
+ * published and one withheld. A page-wide `[data-entry-key="finish"]` assertion therefore proves
+ * nothing about either. Phase 11's own verification SQL already selects `s.block_type` beside the
+ * entry key, and this attribute is the other half of that pair — so the test asserts what the
+ * query returned, `[data-block-type="process-steps"] [data-entry-key="finish"]`, rather than
+ * something weaker that happens to pass.
  */
 export function SectionShell({
   section,
@@ -52,6 +61,7 @@ export function SectionShell({
   return (
     <Section
       id={`section-${section.id}`}
+      data-block-type={section.block_type}
       scheme={schemeOf(section.theme, defaultScheme)}
       spacing={spacing}
       className={className}

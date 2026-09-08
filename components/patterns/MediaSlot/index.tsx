@@ -161,6 +161,15 @@ export type ResponsiveMediaProps = {
   readonly desktopRatio: AspectRatio
   readonly mobileRatio: AspectRatio
   readonly preset: PresetName
+  /**
+   * How wide the box is at each breakpoint, in `sizes` syntax.
+   *
+   * `100vw` IS THE DEFAULT BECAUSE THE PAIR IS USUALLY FULL-BLEED — a hero, a band — and it is
+   * WRONG for a picture in a two-column section, which is why the prop exists: without it a
+   * half-width portrait downloads the rung sized for the whole viewport, and the page looks
+   * correct while weighing several times what it should.
+   */
+  readonly sizes?: string
   readonly altOverride?: string | null
   readonly strings: SiteStrings
   readonly cloudName: string
@@ -184,6 +193,7 @@ export function ResponsiveMedia({
   desktopRatio,
   mobileRatio,
   preset,
+  sizes = '100vw',
   altOverride = null,
   strings,
   cloudName,
@@ -202,14 +212,14 @@ export function ResponsiveMedia({
           {...shared}
           asset={mobile}
           ratio={mobileRatio}
-          sizes="100vw"
+          sizes={sizes}
           className="md:hidden"
         />
         <BlockImage
           {...shared}
           asset={desktop}
           ratio={desktopRatio}
-          sizes="100vw"
+          sizes={sizes}
           className="hidden md:block"
         />
       </>
@@ -222,7 +232,7 @@ export function ResponsiveMedia({
       asset={desktop ?? mobile}
       ratio={desktopRatio}
       mobileRatio={mobileRatio}
-      sizes="100vw"
+      sizes={sizes}
     />
   )
 }

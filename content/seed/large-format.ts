@@ -62,31 +62,37 @@ export const largeFormatSeed: SeedModule = {
       payload: {
         entries: [
           {
+            key: 'dining-and-statement-tables',
             title: 'Dining & Statement Tables',
             description:
               'Large surfaces create space for resin flow, natural edge, colour and material contrast to unfold at architectural scale.',
           },
           {
+            key: 'coffee-and-centre-tables',
             title: 'Coffee & Centre Tables',
             description:
               'Lower proportions allow sculptural form, base geometry and surface detail to become especially visible.',
           },
           {
+            key: 'consoles-and-side-pieces',
             title: 'Consoles & Side Pieces',
             description:
               'Narrower pieces can act as visual interventions in entrances, living spaces and transitional areas.',
           },
           {
+            key: 'conference-and-commercial-tables',
             title: 'Conference & Commercial Tables',
             description:
               'Larger communal surfaces create opportunities for custom dimensions, material direction and strong visual identity.',
           },
           {
+            key: 'sculptural-seating',
             title: 'Sculptural Seating',
             description:
               'Seating conceived with greater emphasis on silhouette and object character.',
           },
           {
+            key: 'architectural-and-statement-pieces',
             title: 'Architectural & Statement Pieces',
             description:
               'Large wall compositions, feature surfaces and custom objects intended for spatial integration.',

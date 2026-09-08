@@ -5,9 +5,10 @@ import { Heading } from '@/components/primitives/Heading'
 import { Stack } from '@/components/primitives/Stack'
 import { Text } from '@/components/primitives/Text'
 import { categoryGridBlock, type CategoryGridPayload } from '@/content/blocks/category-grid'
+import { visibleEntries } from '@/lib/cms/entry-visibility'
 import { parseBlockPayload } from '@/lib/cms/registry'
 
-import { SectionCopy } from './SectionCopy'
+import { hasSectionCopy, SectionCopy } from './SectionCopy'
 import { BlockImage } from '@/components/patterns/MediaSlot'
 import { SectionShell } from './SectionShell'
 import type { SectionRenderProps } from './types'
@@ -24,6 +25,17 @@ import type { SectionRenderProps } from './types'
  * A CARD WITH NO TITLE IS SKIPPED ENTIRELY. An untitled card is an editor mid-edit, and rendering
  * an anonymous tile that links somewhere is worse than rendering three cards where four were
  * planned.
+ *
+ * SO IS A CARD AWAITING OWNER VERIFICATION, and that is the second withholding mechanism rather
+ * than a variation on the first. The section itself publishes — three of the homepage's five
+ * families are confirmed — while "3D + Resin" and "Architectural Pieces" claim capabilities nobody
+ * has signed off. Withholding the section would take the confirmed three with it; withholding
+ * nothing would put an unverified claim on the front page. `visibleEntries` is the single place
+ * that decides, and `data-entry-key` is what lets a test address the withheld card by name rather
+ * than by a position that shifts when an editor reorders the grid.
+ *
+ * THE GRID MUST THEREFORE LOOK RIGHT AT THREE CARDS AS WELL AS FIVE. `COLUMN_CLASS` is the
+ * editor's choice of maximum, not a promise about how many arrive.
  */
 /** Keyed by the payload's own `2 | 3 | 4` union, so the lookup is total and needs no fallback. */
 const COLUMN_CLASS: Record<CategoryGridPayload['columns'], string> = {
@@ -45,8 +57,14 @@ export function CategoryGridSection({
   cloudName,
 }: SectionRenderProps): React.ReactElement | null {
   const payload = parseBlockPayload(categoryGridBlock, section.payload)
-  const cards = payload.cards.filter((card) => card.title.trim() !== '')
-  if (cards.length === 0) return null
+  const cards = visibleEntries(payload.cards).filter((card) => card.title.trim() !== '')
+  /*
+   * COPY WITHOUT CARDS STILL RENDERS, on the same rule `ProcessStepsSection` states: a heading
+   * that claims nothing is still something the editor wrote, and deleting it to withhold the cards
+   * beneath it withholds more than was flagged. Only a block with neither copy nor a visible card
+   * renders nothing, because that is an unfilled block rather than a withheld one.
+   */
+  if (cards.length === 0 && !hasSectionCopy(section)) return null
 
   const assets = media.slot('cards')
   const columns = payload.columns
@@ -55,48 +73,57 @@ export function CategoryGridSection({
     <SectionShell section={section} spacing="lg">
       <Stack gap={10}>
         <SectionCopy section={section} />
-        <Grid gap={6} className={COLUMN_CLASS[columns]}>
-          {cards.map((card, index) => {
-            const asset = card.media_index === null ? null : (assets[card.media_index] ?? null)
-            const body = (
-              <Stack gap={3}>
-                <BlockImage
-                  asset={asset}
-                  ratio="4:5"
-                  preset="card"
-                  sizes={CARD_SIZES[columns]}
-                  strings={strings}
-                  cloudName={cloudName}
-                />
-                <Heading level={3} size="display-xs">
-                  {card.title}
-                </Heading>
-                {card.description.trim() === '' ? null : (
-                  <Text size="base" tone="secondary">
-                    {card.description}
-                  </Text>
-                )}
-              </Stack>
-            )
+        {cards.length === 0 ? null : (
+          <Grid gap={6} className={COLUMN_CLASS[columns]}>
+            {cards.map((card, index) => {
+              const asset = card.media_index === null ? null : (assets[card.media_index] ?? null)
+              const body = (
+                <Stack gap={3}>
+                  <BlockImage
+                    asset={asset}
+                    ratio="4:5"
+                    preset="card"
+                    sizes={CARD_SIZES[columns]}
+                    strings={strings}
+                    cloudName={cloudName}
+                  />
+                  <Heading level={3} size="display-xs">
+                    {card.title}
+                  </Heading>
+                  {card.description.trim() === '' ? null : (
+                    <Text size="base" tone="secondary">
+                      {card.description}
+                    </Text>
+                  )}
+                </Stack>
+              )
 
-            /**
-             * The whole card is the link when there is a destination, and nothing is a link when
-             * there is not. A "read more" affordance under an unlinked card would be a control
-             * that does nothing — and the label for it would have to be invented here, in JSX.
-             */
-            return card.href.trim() === '' ? (
-              <div key={`${card.title}-${index}`}>{body}</div>
-            ) : (
-              <a
-                key={`${card.title}-${index}`}
-                href={card.href}
-                className="group block focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-(--rv-ink-accent)"
-              >
-                {body}
-              </a>
-            )
-          })}
-        </Grid>
+              /**
+               * The whole card is the link when there is a destination, and nothing is a link when
+               * there is not. A "read more" affordance under an unlinked card would be a control
+               * that does nothing — and the label for it would have to be invented here, in JSX.
+               */
+              // The card's own name when it has one, its title otherwise — never the index, which
+              // moves. A test addresses `[data-entry-key="..."]` and stays correct after a reorder.
+              const entryKey = card.key ?? card.title
+
+              return card.href.trim() === '' ? (
+                <div key={`${card.title}-${index}`} data-entry-key={entryKey}>
+                  {body}
+                </div>
+              ) : (
+                <a
+                  key={`${card.title}-${index}`}
+                  data-entry-key={entryKey}
+                  href={card.href}
+                  className="group block focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-(--rv-ink-accent)"
+                >
+                  {body}
+                </a>
+              )
+            })}
+          </Grid>
+        )}
       </Stack>
     </SectionShell>
   )

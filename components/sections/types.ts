@@ -1,6 +1,7 @@
 import type * as React from 'react'
 
 import type { SectionMedia } from '@/lib/cms/media'
+import type { SectionReference } from '@/lib/cms/references'
 import type { SiteStrings } from '@/lib/cms/strings'
 import type { PageSection } from '@/lib/supabase/schemas'
 
@@ -27,6 +28,15 @@ export type SectionRenderProps = {
   readonly cloudName: string
   /** True for the first section on the page: it alone may load its media eagerly. */
   readonly isFirst: boolean
+  /**
+   * What this section's reference selector found, for the three blocks that have one, and
+   * `undefined` for every other block.
+   *
+   * RESOLVED BEFORE RENDER, LIKE MEDIA, and for the identical reason stated above: a renderer that
+   * fetched its own entities would be a round trip per section, in sequence, inside the render.
+   * `lib/cms/references.ts` runs them in parallel once per page and hands the answers down.
+   */
+  readonly reference?: SectionReference
 }
 
 /**

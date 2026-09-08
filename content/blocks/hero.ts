@@ -64,6 +64,7 @@ export const heroBlock: BlockModule<HeroPayload> = {
     },
     { name: 'scrim', kind: 'number', label: 'Overlay strength', min: 0, max: 100 },
   ],
+  entryArrays: [],
   mediaSlots: [
     { id: 'poster', role: 'POSTER', repeating: false, desktopRatio: '21:9', mobileRatio: '9:16' },
   ],

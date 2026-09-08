@@ -1,4 +1,14 @@
 import { categoryGridBlock } from '@/content/blocks/category-grid'
+import { commissionCtaBlock } from '@/content/blocks/commission-cta'
+import { finalCtaBlock } from '@/content/blocks/final-cta'
+import { journalStripBlock } from '@/content/blocks/journal-strip'
+import { manifestoBlock } from '@/content/blocks/manifesto'
+import { materialPaletteBlock } from '@/content/blocks/material-palette'
+import { materialStoryBlock } from '@/content/blocks/material-story'
+import { portfolioStripBlock } from '@/content/blocks/portfolio-strip'
+import { secondaryObjectsBlock } from '@/content/blocks/secondary-objects'
+import { selectedWorksBlock } from '@/content/blocks/selected-works'
+import { threeDResinBlock } from '@/content/blocks/three-d-resin'
 import { dividerBlock } from '@/content/blocks/divider'
 import { emptyStateBlock } from '@/content/blocks/empty-state'
 import { heroBlock } from '@/content/blocks/hero'
@@ -22,8 +32,18 @@ import { BLOCK_TYPES, type BlockType, isBlockType } from './block-types'
  */
 const BUILT_BLOCKS = {
   hero: heroBlock,
+  manifesto: manifestoBlock,
   'category-grid': categoryGridBlock,
+  'selected-works': selectedWorksBlock,
+  'material-story': materialStoryBlock,
+  'material-palette': materialPaletteBlock,
+  'commission-cta': commissionCtaBlock,
+  'three-d-resin': threeDResinBlock,
+  'portfolio-strip': portfolioStripBlock,
   'process-steps': processStepsBlock,
+  'secondary-objects': secondaryObjectsBlock,
+  'journal-strip': journalStripBlock,
+  'final-cta': finalCtaBlock,
   statement: statementBlock,
   'empty-state': emptyStateBlock,
   divider: dividerBlock,

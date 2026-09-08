@@ -97,7 +97,9 @@ export const processSeed: SeedModule = {
         verify: true,
         payload: {
           numbered: false,
-          steps: [{ title: step.heading, body: step.body, media_index: null }],
+          // The step's own key, which is unique across the seven and does not move when one is
+          // reordered — unlike the array index, which is what a test would otherwise address.
+          steps: [{ key: step.key, title: step.heading, body: step.body, media_index: null }],
           media: [],
         },
       }),
