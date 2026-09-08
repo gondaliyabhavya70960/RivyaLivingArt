@@ -8,8 +8,52 @@
 
 ## Current Phase
 
-**Phase 05 — Studio Foundation. IN PROGRESS.** Phase 04 is closed out (PR #5, plus the close-out in
-PR #7). Phase 03 merged as PR #4.
+**Phase 06 — Cloudinary Media Architecture. SUBSTANTIALLY COMPLETE.** Phase 05 is substantially
+complete with two carried gaps (below). Phase 04 is closed out (PR #5, plus the close-out in PR
+#7). Phase 03 merged as PR #4.
+
+### Phase 06: what is built, and what is not
+
+**Built and verified**
+
+- **The provider seam.** `MediaProvider` in `lib/media/types.ts`; `getMediaProvider()` is the only
+  export the rest of the product uses. `lib/media/providers/cloudinary.ts` is `server-only` and is
+  the ONLY file importing the SDK — `npm run media:check-provider` enforces both halves and was
+  verified to fail on a planted violation, not merely to pass.
+- **`lib/media/url.ts` builds delivery URLs with no SDK**, so a Client Component can render media
+  without the secret-holding module reaching a browser bundle. Parameters are emitted in a fixed
+  order: two spellings of one transformation are two derived assets, two cache entries and two
+  bills for one picture.
+- **The transform policy matches PHASE-05-09.md §06 and CLOUDINARY.md §5 exactly** — six presets
+  (`thumb·card·grid·hero·hero-xl·og`) and the nine-rung srcSet ladder. An earlier draft invented a
+  different set and was corrected; see *Known Issues* for why that mattered.
+- **`0030` + `0031`**, applied to BOTH databases and proved equal by a 515-object signature hash,
+  not by counting. `media_assets` gains 22 columns; `media_usages` is the reverse index.
+- **`app/api/media/sign`** — five gates before the signature: session, `media.write`, Zod, the
+  folder allowlist, then §7.1's MIME allowlist and byte ceiling.
+- **`MediaImage` (RC-232) and `MediaVideo` (RC-233)**, both marked BUILT in the registry. Three
+  perf gates guard their contracts, each verified to fail on a planted violation.
+- **The Studio Media Manager** — six sections from one `MediaLibrary`, the uploader, and the save
+  action. `npm run build` compiles all seven media routes.
+- **All three Phase 06 canaries are uploaded** to the live Cloudinary account (cloud `dhaqpl1kz`,
+  Free plan at 1.08% of 25 credits).
+- **656 unit tests, 60 files, no skips** with `DATABASE_URL` set. 11 e2e cases pass; 7 are
+  `test.fixme` pending a reachable auth server.
+
+**Not built, and deliberately so**
+
+- **`/studio/media/higgsfield`** stays a stub. AI Assets is not a `kind` — it is
+  `source = 'HIGGSFIELD'` across IMAGE and VIDEO — and Phase 07 owns both the page and the import
+  of the remaining 247 assets.
+- **The §8 rate limit on the sign endpoint (20/hour per staff `user_id`) is NOT enforced.** It is a
+  fixed-window counter over `rate_limit_buckets`, and that table belongs to Phase 41
+  (`0390_phase41_security.sql`). Creating it here would take a table out of the phase that owns it.
+  The exposure is bounded but real and is recorded in the route: a session holding `media.write`,
+  or one that has been stolen, can mint signatures as fast as it can ask.
+- **Magic-byte type detection** (`lib/media/validate-upload.ts`) cannot exist at signing time — the
+  bytes do not. The route checks the DECLARED type, which is a different control, not a weaker one.
+- **A detail drawer per asset.** The table shows alt text inline, which is the cheapest review of
+  the field most likely to be wrong; editing it is Phase 08's surface.
 
 ### Phase 05: what is built, and what is not
 
@@ -224,6 +268,38 @@ fresh start, and that is how it was run.
 
 ## Known Issues
 
+### Phase 06 — three things the tests could not have caught, and one they did
+
+**`g_auto` inline on a video is HTTP 400, and every video URL in the product had it.** Found by
+putting the chains `lib/media/url.ts` builds to the live Cloudinary API during the canary run, not
+by reading documentation. Cloudinary answers `"g_auto must be in a transformation component by
+itself"` — but only on the video namespace; inline `g_auto` is perfectly valid on an image. All six
+presets carry `gravity: 'auto'`, so **every video and every derived poster would have 400ed in
+production**. `posterUrl` was hit by the same rule for a reason easy to miss: a poster is an image
+in its output and a video-namespace delivery in its addressing.
+
+Twenty-three unit tests over the URL builder passed throughout. They compared strings; none of them
+sent one anywhere. **A URL builder is only testable against the service that parses the URL.** The
+unit tests remain worth having for the cache-stability properties — parameter ordering, `dpr_1`
+omission — which are ours to decide and cheap to regress. Fixed and re-verified against the live
+API; the chains are tabulated in `CLOUDINARY.md`.
+
+**The transform policy was invented rather than read.** My first `transform.ts` had five presets on
+a ten-rung ladder; the phase document and `CLOUDINARY.md` §5 both fix six presets and a nine-rung
+ladder. The miss that mattered: `SECURITY.md` §7.2 tells the owner what to supply for a default
+social card by referring to "the Phase 06 `og` preset's output size" — and there was no `og`
+preset. A specification other documents already cite is not a starting point to improve on.
+
+**Two gates were missing from `MediaVideo`.** `saveData`/`deviceMemory` and, separately, the 768px
+viewport gate. RC-233's own record names all four; I had implemented one, then three. Both are now
+in and tested, including the `< 4` boundary.
+
+**What the tests DID catch:** `source` being `not null` with no default broke two RLS fixtures
+immediately. One of them was the write-permission probe — where a constraint rejecting the insert
+would have made all four "may not" assertions pass without RLS being involved at all.
+
+### Earlier
+
 **Supabase credentials are configured but UNREACHABLE from this sandbox.** `.env.local` holds
 `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` and a
 direct (5432, non-pooled) `DATABASE_URL`. The egress proxy refuses `*.supabase.co` over HTTPS
@@ -318,9 +394,28 @@ on `/studio` rather than a route segment.
 
 ## Next Exact Action
 
-**Finish Phase 05.** Read `docs/project/phases/PHASE-05-09.md` §PHASE 05, then work the seven
-unbuilt items listed under *Current Phase* above, in that order. Items 1–3 and 5 are unblocked;
-item 4 needs Supabase.
+**Start Phase 07 — Higgsfield Asset Audit + Initial Asset Plan.** Read
+`docs/project/phases/PHASE-05-09.md` §PHASE 07. Phase 06 leaves it a working pipeline and three
+proven canaries; Phase 07 imports the remaining 247 assets and fills `/studio/media/higgsfield`.
+
+Four things it should pick up on the way, each already established rather than guessed:
+
+1. **Read `source_min_url`, never `source_url`.** The Higgsfield originals are 4800×3584-class PNGs
+   past 20 MB and the Free plan caps an image at 10 MB. The `_min.webp` variant is the SAME pixel
+   dimensions webp-compressed — 463 KB for the first canary, a 47× reduction with no loss of
+   resolution. `CLOUDINARY.md` records the rejection that established this.
+2. **Videos have no webp variant and need none.** `LARGEFORMAT-DINING-004` uploaded from its
+   original at 4.6 MB against a 100 MB cap.
+3. **Manifest video dimensions are the generation request, not the stored file.** That canary is
+   recorded as 768×1344 and Cloudinary reports 1080×1920. Anything sizing a video slot must read
+   Cloudinary. Write the probed values, never the manifest's.
+4. **`source` is `not null` with no default.** Every imported row states `HIGGSFIELD` explicitly;
+   there is nothing to fall back to, by design.
+
+Carried from Phase 05 and still open — both now unblocked by the reachable Supabase project, so
+whichever phase gets there first should take them: the per-role RBAC e2e matrix (7 `test.fixme`
+cases in `media-upload.spec.ts` and 4 in `studio-access.spec.ts`), the shell's visual baselines,
+and `dashboard_card_order`, which still has no writer.
 
 Previously recorded as the phase-start list, and still true of the items not yet done:
 

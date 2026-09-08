@@ -20,9 +20,25 @@ owner_verification: NOT_REQUIRED
 **The goal of this document is that "the tests pass" becomes a meaningful sentence.** Read it before
 writing your first test.
 
-**Implementation status.** No tests exist. No `vitest.config.ts`, no `playwright.config.ts`, no CI.
-This is the system Phase 00 scaffolds and Phase 42 completes; every phase between them adds specs
-that must fit these layers.
+**Implementation status (end of Phase 06).** `vitest.config.ts` and `playwright.config.ts` both
+exist. **656 unit tests across 60 files**, and three Playwright specs — `design-system.spec.ts`,
+`studio-access.spec.ts`, `media-upload.spec.ts`. CI does not run them: GitHub Actions has never
+executed a step on this repository (see `docs/SESSION-STATE.md`), so every figure here is from a
+local run. Phase 42 still completes the system; every phase between adds specs that fit these
+layers.
+
+**Two things a first run needs, neither of which is obvious from a failure message:**
+
+- **`DATABASE_URL`, or 74 tests silently skip.** The RLS suites (`tests/unit/rls/`) skip without a
+  reachable PostgreSQL and the run still exits 0 — so `vitest run` alone reports green while
+  proving nothing about row-level security. Two real fixture defects in Phase 06 were invisible
+  until it was set. Point it at the local cluster (`docs/ops/ENVIRONMENT.md`), never at hosted.
+- **`PLAYWRIGHT_CHROMIUM_PATH`, or every browser test fails.** This image ships Chromium at
+  `/opt/pw-browsers/chromium-<build>/chrome-linux/chrome` and sets
+  `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD`, so the build number will not match what a given
+  `@playwright/test` expects. The error says "run `npx playwright install`", which the environment
+  does not permit; `playwright.config.ts` reads this variable instead. API-only specs
+  (`request`-based) pass without it, which makes a partial failure look like a code problem.
 
 **Tooling (D1, fixed):** Vitest for unit and integration, Playwright for e2e and visual. No other
 runner is introduced without an amendment.
