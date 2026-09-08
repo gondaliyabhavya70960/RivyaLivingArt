@@ -259,6 +259,69 @@ a screenshot.
 | `SCRAPER_USER_AGENT` | Server | set | set | set | Engineer |
 | `REVALIDATE_SECRET` | Secret | unique | unique | any | Engineer, 90 d |
 
+### 5.2 Setting these in Vercel — the actual list, as of Phase 06
+
+The matrix above is the full D8 set, including variables whose subsystems do not exist yet. This
+section is narrower on purpose: it is what to paste into the Vercel dashboard **today**, so nobody
+goes hunting for a Google service account that no phase has created.
+
+**No value appears here, in `.env.example`, or in any other committed file.** Copy each from the
+dashboard named in the last column, straight into Vercel. Never through a chat window, a commit, or
+a screenshot — see §7.4.
+
+**Set all six now. The app reads exactly these** (`grep requiredEnv lib/ app/ components/`):
+
+| # | Variable | Vercel type | Environments | Copy it from |
+|---|---|---|---|---|
+| 1 | `NEXT_PUBLIC_SUPABASE_URL` | Plain | Production, Preview, Development | Supabase → Project Settings → **Data API** → Project URL |
+| 2 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Plain | Production, Preview, Development | Supabase → Project Settings → **API Keys** → `anon` / publishable |
+| 3 | `SUPABASE_SERVICE_ROLE_KEY` | **Sensitive** | Production, Preview | Supabase → Project Settings → **API Keys** → `service_role` |
+| 4 | `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME` | Plain | Production, Preview, Development | Cloudinary → Dashboard → Cloud name |
+| 5 | `CLOUDINARY_API_KEY` | **Sensitive** | Production, Preview | Cloudinary → Settings → API Keys |
+| 6 | `CLOUDINARY_API_SECRET` | **Sensitive** | Production, Preview | Cloudinary → Settings → API Keys |
+
+Mark 3, 5 and 6 **Sensitive** in Vercel. That makes them write-only: they cannot be read back out
+of the dashboard afterwards, by anyone, including the account owner. It costs nothing and it is the
+difference between a leaked browser session exposing a build log and exposing the database.
+
+**Two more worth setting at the same time**, though nothing reads them until later phases:
+
+| Variable | Vercel type | Value |
+|---|---|---|
+| `NEXT_PUBLIC_SITE_URL` | Plain | The apex domain in Production; leave unset in Preview so `VERCEL_URL` is used |
+| `REVALIDATE_SECRET` | **Sensitive** | Any long random string you generate — it is a shared secret with nobody but this app (`openssl rand -base64 32`) |
+
+**Do NOT put these in Vercel:**
+
+| Variable | Why not |
+|---|---|
+| `DATABASE_URL` | **The application never uses it.** Reads and writes go through PostgREST over HTTPS via `supabase-js`; only migrations and operations scripts open a direct connection, and those run in CI (§5's matrix says "CI only"). Putting it in Vercel adds the most powerful credential in the system to a place that has no use for it. |
+| `NEXT_PUBLIC_WHATSAPP_NUMBER` | It is the owner's real number, it is `OWNER_VERIFICATION_REQUIRED`, and no page renders it before Phase 10. A real number in a public preview build is a number that gets scraped. |
+| `GOOGLE_SERVICE_ACCOUNT_JSON`, `GOOGLE_SHEETS_SPREADSHEET_ID`, `SCRAPER_USER_AGENT` | The research subsystem is Phase 30-something. No credential exists to paste. |
+
+**One project, two Vercel environments, today.** §5's matrix anticipates `rivya-prod` and
+`rivya-staging`; only one Supabase project exists (`ccvarsmzickdkryoakdg`), so Production and
+Preview point at the same database for now. That is a deliberate temporary state, not a
+misconfiguration — but it means **a preview deployment writes to real data**, which is worth
+knowing before someone tests an upload against it.
+
+**Rotate before you paste, not after.** Four Supabase secrets were exposed in a chat transcript
+earlier in this project and are compromised until rotated (§7.4's rule exists because of it).
+Rotating first means entering each value into Vercel once; rotating afterwards means doing the
+whole list twice.
+
+#### Checking it worked without printing anything
+
+After saving, redeploy — **Vercel does not apply new variables to an existing deployment.** Then:
+
+```
+curl -sS -o /dev/null -w '%{http_code}\n' https://<deployment>/studio/media/all
+```
+
+`307`/`302` to `/studio/login` is correct: the route resolved, the Supabase client constructed, and
+`proxy.ts` found no session. A `500` means a variable is missing or misspelled — the failure is at
+**request** time, not build time, which is why a green Vercel build proves nothing about this.
+
 ### 5.1 Platform-injected variables
 
 `VERCEL_ENV`, `VERCEL_URL`, `VERCEL_GIT_COMMIT_SHA`, `VERCEL_GIT_COMMIT_REF` are injected by the
