@@ -852,7 +852,7 @@ created now or ever; this authentication system exists for staff only.
   shape or carries a deviation documented in this phase and in `DATA_MODEL.md`.
 - `lib/auth/table-permissions.ts`: the single declaration of which permission governs reads and
   writes on each table, so the policy role lists and the permission matrix cannot drift apart.
-- Server-side permission re-checks: middleware redirects, but never authorises.
+- Server-side permission re-checks: `proxy.ts` redirects, but never authorises.
 - `audit_logs`: append-only, insert on every privileged mutation and every denial.
 - The Studio login, sign-out and session-expiry surfaces. `/studio/login` is not in the fixed D4 map
   — amendment **A2·b** (see the preamble) adds it and must be merged before this phase starts.
@@ -883,7 +883,7 @@ created now or ever; this authentication system exists for staff only.
 | Guards | `lib/auth/require.ts` | `requirePermission()`, `withPermission()`, `requireRole()` |
 | Nav visibility | `lib/auth/nav-visibility.ts` | maps a role to the D4 routes it may see; consumed by Phase 05 |
 | Audit writer | `lib/auth/audit.ts` | `writeAudit()` + `withAudit()` server-action wrapper |
-| Middleware | `middleware.ts` | matcher `/studio/:path*` minus `/studio/login`; redirect only |
+| Proxy (A6) | `proxy.ts` | matcher `/studio/:path*` minus `/studio/login`; redirect only |
 | Login page | `app/(studio)/studio/login/page.tsx` | Unauthenticated route, added to the D4 map by amendment **A2·b**. Contains no copy literal — every string resolves through the module below |
 | Studio copy constants | `components/studio/strings.ts` | The `studio.login.*` keys, typed, with the requirement §38 wording as their values. Phase 05 extends the same module for the rest of the Studio chrome; Phase 09 replaces every lookup with a `global_content` row in the `STUDIO_HELP` group, at which point the copy becomes Studio-editable |
 | Sign-out handler | `app/api/auth/sign-out/route.ts` | POST only, clears session, writes audit row |
@@ -1118,7 +1118,7 @@ POST-only with an origin check.
 | Risk | Mitigation |
 |---|---|
 | Service-role key reaches the browser bundle | `lib/supabase/admin.ts` starts with `import 'server-only'`; a post-build script greps `.next/static/**` for the key name and any `service_role` JWT shape and fails the build |
-| Middleware mistaken for authorisation | Middleware only redirects unauthenticated requests; `requirePermission()` in the page body is the authorisation. A lint rule fails any `page.tsx` under `app/(studio)/studio/**` that does not call `requirePermission` or `requireRole` |
+| The proxy mistaken for authorisation | `proxy.ts` only redirects unauthenticated requests; `requirePermission()` in the page body is the authorisation. A lint rule fails any `page.tsx` under `app/(studio)/studio/**` that does not call `requirePermission` or `requireRole` |
 | RLS infinite recursion via `staff_profiles` | Helpers are `security definer` with a pinned `search_path`; `staff_profiles` has its own non-recursive policies (self-select, owner/admin manage) |
 | Permission matrix in code drifts from role checks in SQL | `scripts/auth/gen-role-sql.ts` generates the SQL role list; CI regenerates and diffs |
 | A new table ships without RLS | `scripts/auth/check-rls.ts` runs in CI against the migrated database and fails on `rowsecurity = false` or zero policies |

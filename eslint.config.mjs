@@ -88,7 +88,7 @@ const config = [
   /**
    * EVERY STUDIO PAGE AUTHORISES IN ITS OWN BODY.
    *
-   * `lib/auth/require.ts` says it at length: middleware is not authorisation. It redirects an
+   * `lib/auth/require.ts` says it at length: `proxy.ts` is not authorisation. It redirects an
    * unauthenticated request and knows nothing about which record is being touched, so a page that
    * renders without calling `requirePermission()` or `requireRole()` is relying on a redirect it
    * never saw. RLS would still refuse the query underneath — but only for rows it can reason
@@ -110,7 +110,7 @@ const config = [
           selector: 'Program:not(:has(CallExpression[callee.name=/^require(Permission|Role)$/]))',
           message:
             'A Studio page must authorise server-side: call requirePermission() (preferred) or ' +
-            'requireRole() from @/lib/auth/require in the page body. Middleware and RLS are the ' +
+            'requireRole() from @/lib/auth/require in the page body. proxy.ts and RLS are the ' +
             'other two layers, not a substitute for this one. The sole exemption is ' +
             'app/(studio)/studio/login/page.tsx, which is listed in eslint.config.mjs.',
         },

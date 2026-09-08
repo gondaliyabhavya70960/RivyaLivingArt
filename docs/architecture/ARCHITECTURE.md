@@ -138,7 +138,7 @@ D1 says "Zod at every trust boundary". These are the boundaries, exhaustively.
 
 **RLS is the coarse net**: role-level, in the database, always on, applied to every table in
 `public`. A leaked anon key reads published rows and nothing else. **`requirePermission()` is the
-fine net**: permission-level, in the server, per action. `middleware.ts` matches `/studio/:path*`
+fine net**: permission-level, in the server, per action. `proxy.ts` matches `/studio/:path*`
 and redirects an unauthenticated request — it *never authorises*; every Studio page and every
 mutation re-checks server-side (D4). The role list is generated from `lib/auth/permissions.ts` into
 SQL by `scripts/auth/gen-role-sql.ts` with a CI drift check, so the two nets cannot disagree about
@@ -643,7 +643,7 @@ literally. Every log write, environment check result and documentation render pa
 window increment `occurrence_count` instead of inserting. Retention: `INFO`/`WARNING` 90 days,
 `ERROR`/`SECURITY` 400 days, purged by a daily cron that logs its own summary.
 
-**Correlation.** `middleware.ts` assigns a `request_id` and it is threaded into `audit_logs`,
+**Correlation.** `proxy.ts` assigns a `request_id` and it is threaded into `audit_logs`,
 `system_logs` and every server-action error, so one incident is one query.
 
 **What is never logged:** any secret value, any visitor's raw IP, any WhatsApp message body, any
@@ -661,7 +661,7 @@ to a fixed code.
   default for anything new. Public `select` is restricted to `status = 'PUBLISHED'`. `research_*`
   tables have **no `anon` policy of any kind**.
 - **Server-side permission checks on every Studio route and every mutation**, in addition to RLS.
-  Middleware redirects; it never authorises.
+  `proxy.ts` redirects; it never authorises.
 - **Secrets are server-only and never displayed.** The Environment page reports reachability only —
   never a value, prefix or length (D8, FEAT §29). The documentation browser serves a fixed
   ten-path allowlist, redacted at build time, and can never be pointed at `.env`, a migration or

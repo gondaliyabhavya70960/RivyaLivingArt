@@ -28,8 +28,10 @@ export async function createClient() {
         } catch {
           // A Server Component cannot set a cookie — only a Server Action or Route Handler can.
           // Swallowing this is the documented @supabase/ssr pattern and is safe *provided* session
-          // refresh also happens in middleware, which is where the refreshed cookie actually gets
-          // written. Phase 04 adds that middleware; until then no session exists to refresh.
+          // refresh also happens in `proxy.ts`, which is where the refreshed cookie actually gets
+          // written. It does, for every path its matcher covers. The swallow is therefore only
+          // safe for Studio routes — a Server Component OUTSIDE that matcher which relied on a
+          // refresh here would silently keep an expired token.
         }
       },
     },

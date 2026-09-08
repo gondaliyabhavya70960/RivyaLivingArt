@@ -247,7 +247,7 @@ Phase 04 and builds the Studio chrome itself. Four things it should pick up on t
 3. **`app/(studio)/layout.tsx` does not exist**, so the login page currently renders on the root
    layout's `rv-scheme-deep` ground. It uses only semantic tokens, so it inherits `rv-scheme-bone`
    unchanged once the Studio shell adds that layout.
-4. **`middleware.ts` is deprecated in Next 16** in favour of `proxy.ts`. The rename needs a D2
+4. **`proxy.ts` is deprecated in Next 16** in favour of `proxy.ts`. The rename needs a D2
    amendment, not a silent divergence.
 
 ## Relevant Documentation

@@ -33,7 +33,7 @@ import {
 /**
  * /studio/system/users — who may sign in, as what, and whether they still may.
  *
- * THE FIRST LINE OF THE BODY IS THE AUTHORISATION. Middleware redirects an unauthenticated
+ * THE FIRST LINE OF THE BODY IS THE AUTHORISATION. `proxy.ts` redirects an unauthenticated
  * request and decides nothing else; a Server Action reaches the server without passing through a
  * page matcher at all. So the page checks, every action checks again through withPermission(), and
  * RLS refuses underneath both.

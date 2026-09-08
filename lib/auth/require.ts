@@ -7,7 +7,7 @@ import { writeAudit } from './audit'
 /**
  * The fine net.
  *
- * MIDDLEWARE IS NOT AUTHORISATION. middleware.ts redirects an unauthenticated request to the login
+ * MIDDLEWARE IS NOT AUTHORISATION. proxy.ts redirects an unauthenticated request to the login
  * page and does nothing else — it cannot see which record is being touched, it runs before the
  * page decides anything, and a request that reaches a Server Action never passes through a page's
  * matcher at all. These functions are where "may this person do this" is actually decided, and

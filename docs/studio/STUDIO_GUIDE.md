@@ -54,7 +54,7 @@ Four properties define the workspace:
 1. **Every public sentence is a database row.** No marketing copy lives in a `.tsx` file (D2, SEED
    §1). An editor changing a headline changes `page_sections.heading`; there is no deploy.
 2. **Every mutation is permission-checked twice.** RLS is the coarse net in PostgreSQL;
-   `requirePermission()` in the server action is the fine net. `middleware.ts` only redirects
+   `requirePermission()` in the server action is the fine net. `proxy.ts` only redirects
    unauthenticated requests — it never authorises (D4).
 3. **Every mutation is recorded three ways.** `audit_logs` records who was allowed or refused,
    `activity_events` records what a human did in the Studio, `system_logs` records what the machine

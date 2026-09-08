@@ -65,7 +65,7 @@ verbatim; a path that appears here and in no route map is a defect in this docum
 | Entry point | Auth | Guard chain | Threats |
 |---|---|---|---|
 | `GET app/(site)/**` | None | RLS (`status = 'PUBLISHED'`) → cached render → headers | T4, T7, T8 |
-| `submitInquiry` — `app/(site)/_actions/submit-inquiry.ts` (server action) | None | Origin check → rate limit → Zod (B1) → honeypot → 3 s floor → one transaction → typed result. **There is no `/api/inquiries` route handler and one must never be added** — the limiter runs inside the action because `middleware.ts` has no path to match | T1, T7, T9 |
+| `submitInquiry` — `app/(site)/_actions/submit-inquiry.ts` (server action) | None | Origin check → rate limit → Zod (B1) → honeypot → 3 s floor → one transaction → typed result. **There is no `/api/inquiries` route handler and one must never be added** — the limiter runs inside the action because `proxy.ts` has no path to match | T1, T7, T9 |
 | `POST app/api/inquiries/upload-sign` | **None — the most hostile authenticated-adjacent surface in the product** | Origin check → Zod (B3) → per-`ip_hash` rate limit (10/hour, 3/min) → MIME narrowing (`image/jpeg · image/png · image/webp · image/heic · application/pdf`) → 10 MB and 5-file ceiling → **server-issued** folder `rivya/inquiries/incoming/<uuid v4>`, never client-chosen → short-TTL signature. The response carries no credential; magic-byte sniffing and EXIF stripping happen on ingest (§7) | T1, T6, T7 |
 | `GET app/api/search/suggest` | None | Zod (2–64 chars, ≤ 8 results) → rate limit → **public index only**, never `research_search_documents` → `s-maxage=60` | T5, T7 |
 | `POST app/api/vitals` | None | Zod, rejecting any extra key → rate limit → service-role insert of route **pattern** only | T1, T7 |
@@ -73,7 +73,7 @@ verbatim; a path that appears here and in no route map is a defect in this docum
 | `GET app/api/preview` | Signed token | Token verify → `draftMode().enable()` → redirect to a real public path. Draft mode bypasses every cache layer, so an unsigned or expired token must not reach the redirect; the target is validated as a D3 path, never an open redirect | T4, T8 |
 | `app/api/cron/research` | Platform cron header **only** | `x-vercel-cron` present, else **404** (not 401 — a prober cannot confirm the route exists). Deliberately does **not** reuse `REVALIDATE_SECRET`: this is the one route that contacts third-party hosts, and widening that secret across two unrelated systems was rejected (`SCRAPER.md` §7) | T10, T11 |
 | `app/api/cron/**` (the other six) | `REVALIDATE_SECRET` | Secret → bounded, resumable, idempotent-per-period work. §16 item 2 proposes normalising all seven onto a `CRON_SECRET` | T3, T7 |
-| `GET /studio/**` | Session | Middleware redirect → session resolve → `requirePermission()` **per page** → RLS | T2, T13 |
+| `GET /studio/**` | Session | `proxy.ts` redirect → session resolve → `requirePermission()` **per page** → RLS | T2, T13 |
 | Studio server actions | Session | Origin → Zod (B2) → session → permission → work → audit (success **and** denial) | T2, T9, T14 |
 | `app/api/studio/**` — `search`, `inquiries/export`, `models/inspect` | Session | Session → `requirePermission()` (`research.read`/`catalog.read`, `inquiries.export`, `media.write` respectively) → Zod → work → `private, no-store`; the export is audited and carries no raw IP; `models/inspect` parses the GLB server-side (§7). **No media or competitor-image proxy exists here or anywhere under `app/api/**`** | T1, T2, T5, T6 |
 | `POST app/api/media/sign` | Session | Session → `media.write` → folder allowlist (`lib/media/folders.ts`) → MIME allowlist per kind → byte ceiling per kind → per-user rate limit (20/hour) → signature | T4, T6 |
@@ -84,7 +84,7 @@ verbatim; a path that appears here and in no route map is a defect in this docum
 account and never will (BR-A3). They are separate routes with separate ceilings and separate rate-limit
 keys precisely so the visitor path can be narrowed without narrowing the staff path — see §7.
 
-**Middleware redirects; it never authorises.** A page that relies on navigation not showing a link is
+**`proxy.ts` redirects; it never authorises.** A page that relies on navigation not showing a link is
 unprotected. Every Studio page and every mutation re-checks server-side (D4).
 
 ---
@@ -444,7 +444,7 @@ adding one would be an amendment.
 | Research fetches | Per-source rate limit, delay and concurrency | source |
 
 The inquiry limiter is called from **inside the server action, before the Zod parse** — there is no
-`/api/inquiries` route handler for `middleware.ts` to match, and none may be added.
+`/api/inquiries` route handler for `proxy.ts` to match, and none may be added.
 
 `ip_hash` is `hmac(ip, server_salt)`; the raw address is never stored. A limited request returns
 **429 with `Retry-After`**, renders the seeded form-error copy (SEED §49), and writes a `SECURITY`
@@ -457,7 +457,7 @@ boundary. The threat here is abuse volume, not precision; a sliding window would
 
 ## 9. Response headers
 
-Set in `middleware.ts` for every response and asserted by e2e.
+Set in `proxy.ts` for every response and asserted by e2e.
 
 | Header | Value |
 |---|---|
@@ -498,7 +498,7 @@ role change cannot rewrite history, and stores `before`/`after` blobs **after** 
 (`WORKFLOW · SCRAPER · MEDIA · CONTENT · AUTH · SHEETS · ANALYTICS · SYSTEM`), so "SECURITY events in
 the last hour" is one query.
 
-**Correlation.** `middleware.ts` assigns a `request_id` threaded into `audit_logs`, `system_logs` and
+**Correlation.** `proxy.ts` assigns a `request_id` threaded into `audit_logs`, `system_logs` and
 every server-action error, so one incident is one query.
 
 **Volume control.** Every log call carries a `dedupe_key`; identical events within five minutes

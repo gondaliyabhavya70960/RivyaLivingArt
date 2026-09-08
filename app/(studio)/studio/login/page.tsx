@@ -73,7 +73,7 @@ function redirectTo(path: string): never {
  *
  * The staff check happens here as well as on the destination page for one reason: a person who
  * authenticates but holds no ACTIVE staff profile must not keep a session. Leaving them signed in
- * would give them a cookie that opens nothing, and a redirect loop through middleware to prove it.
+ * would give them a cookie that opens nothing, and a redirect loop through `proxy.ts` to prove it.
  */
 async function signInAction(formData: FormData): Promise<void> {
   'use server'

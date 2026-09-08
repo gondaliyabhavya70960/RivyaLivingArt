@@ -4,12 +4,12 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { publicEnv } from '@/lib/supabase/env'
 
 /**
- * MIDDLEWARE IS NOT AUTHORISATION. It does exactly two things: it refreshes the Supabase session
+ * THIS FILE IS NOT AUTHORISATION. It does exactly two things: it refreshes the Supabase session
  * cookies, and it redirects a request carrying no session to the login page. It reads no role,
  * checks no permission and consults no table.
  *
- * That restriction is amendment A2·b, and it is not stylistic. Middleware cannot see which record
- * a request is about, it runs before the page has resolved anything, and a Server Action invoked
+ * That restriction is amendment A2·b, and it is not stylistic. A proxy cannot see which record a
+ * request is about, it runs before the page has resolved anything, and a Server Action invoked
  * from an already-loaded page never passes through this matcher at all — so a permission decision
  * taken here would be both under-informed and skippable. `requirePermission()` in the page body is
  * the decision, and RLS refuses underneath it if that call is ever forgotten. Anything this file
@@ -18,9 +18,16 @@ import { publicEnv } from '@/lib/supabase/env'
  * It follows that being redirected here proves nothing about an account, and being let through
  * proves nothing either.
  *
- * NEXT 16 NOTE: `middleware.ts` is deprecated in favour of `proxy.ts` (same behaviour, the export
- * renames to `proxy`). The name is kept because D2 and PHASE-00-04 name this file; migrating it is
- * a rename plus a CANONICAL-DECISIONS amendment, not a silent divergence.
+ * WHY `proxy.ts` AND NOT `middleware.ts`: Next 16 deprecated the `middleware` convention and
+ * renamed it to `proxy` — same behaviour, same matcher, the export renames. Adopted under
+ * amendment A6 rather than left on the deprecated name, because a deprecation warning that is
+ * carried for several phases stops being read, and this is the one file in the tree whose failure
+ * mode is "the Studio is open to anonymous requests".
+ *
+ * Next's own note on this convention says not to rely on shared modules or globals here, because a
+ * proxy may be deployed to a CDN edge and run outside the app's main runtime. This file honours
+ * that: it imports `publicEnv` (two strings, both `NEXT_PUBLIC_`) and the Supabase SSR client, and
+ * it holds no module-level mutable state. Every request builds its own client.
  */
 
 const LOGIN_PATH = '/studio/login'
@@ -47,7 +54,7 @@ export const config = {
   matcher: ['/studio', '/studio/((?!login$|login/).*)'],
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   // Read before the client can rewrite or clear it below.
   const hadAuthCookie = request.cookies.getAll().some((cookie) => AUTH_COOKIE.test(cookie.name))
 

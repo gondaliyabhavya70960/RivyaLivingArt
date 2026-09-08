@@ -86,7 +86,7 @@ export const STUDIO_STRINGS = {
     value: 'Please check the highlighted fields and try again.',
     contentKey: 'studio_help.login_error_fields',
   },
-  /** Shown when middleware sent a signed-out request here from a Studio route it could not serve. */
+  /** Shown when `proxy.ts` sent a signed-out request here from a Studio route it could not serve. */
   'studio.login.noticeExpired': {
     value: 'Your session has ended. Sign in again to continue.',
     contentKey: 'studio_help.login_notice_expired',

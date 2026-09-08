@@ -34,7 +34,9 @@
     "auth:gen-policies": "tsx scripts/auth/gen-role-sql.ts",
     "auth:check-policies": "tsx scripts/auth/gen-role-sql.ts --check",
     "auth:check-rls": "tsx scripts/auth/check-rls.ts",
-    "security:check-bundle": "node scripts/security/check-bundle-secrets.mjs"
+    "security:check-bundle": "node scripts/security/check-bundle-secrets.mjs",
+    "security:check-proxy": "node scripts/security/check-proxy.mjs",
+    "db:migrate": "node scripts/db/migrate.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.6",

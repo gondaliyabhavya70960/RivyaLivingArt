@@ -601,7 +601,7 @@ Who was allowed or refused to do what. Written by **every** privileged mutation 
 | `summary` | `text` | |
 | `before` / `after` | `jsonb` | passed through `lib/logging/redact.ts` before the write |
 | `result` | `text not null check (result in ('SUCCESS','DENIED','ERROR'))` | |
-| `request_id` | `text` | assigned in `middleware.ts`; correlates with `system_logs` |
+| `request_id` | `text` | assigned in `proxy.ts`; correlates with `system_logs` |
 | `ip` | `inet` | |
 | `user_agent` | `text` | |
 
