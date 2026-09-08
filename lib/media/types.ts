@@ -48,8 +48,6 @@ export type TransformSpec = {
   readonly crop?: 'fill' | 'fit'
   /** Where to keep the subject when cropping. `auto` asks Cloudinary; see transform.ts. */
   readonly gravity?: 'auto' | 'center'
-  /** Device pixel ratio. Capped in transform.ts — see the note there on why 3 is the ceiling. */
-  readonly dpr?: number
   /**
    * Explicit height. Set only where an external specification fixes both dimensions — the `og`
    * preset's 1200 × 630. Everywhere else the height follows from `ratio`, and setting both is a
@@ -68,6 +66,18 @@ export type TransformSpec = {
 export type VideoTransformSpec = TransformSpec & {
   /** Strip the audio track. Muted autoplay is the only inline video the site plays (FEAT §14). */
   readonly muted?: boolean
+  /**
+   * Device pixel ratio. VIDEO ONLY, and its absence from `TransformSpec` is the point.
+   *
+   * CLOUDINARY.md §5.3: DPR is "handled by the `srcset` width ladder, not by `dpr_auto`. One
+   * mechanism, not two." For an image that is not merely a preference — the two mechanisms
+   * MULTIPLY. A 480px box with `sizes="480px"` already makes a 2x screen pick the 1024 rung; a
+   * `dpr_2` on top of that delivers 2048px for a 480px box.
+   *
+   * A video has no srcset, so the ladder cannot do the job and this is the only mechanism
+   * available. Capped by `clampDpr` — see the note there on why 3 is the ceiling.
+   */
+  readonly dpr?: number
 }
 
 /** What the browser needs to upload directly to the provider, and the limits it must respect. */

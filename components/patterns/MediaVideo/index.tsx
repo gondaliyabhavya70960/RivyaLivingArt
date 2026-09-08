@@ -3,6 +3,7 @@
 import * as React from 'react'
 
 import { useDeliveryConstraints } from '@/components/primitives/motion/useDeliveryConstraints'
+import { useMinViewportWidth } from '@/components/primitives/motion/useMinViewportWidth'
 import { useReducedMotion } from '@/components/primitives/motion/useReducedMotion'
 import { cn } from '@/lib/ui/cn'
 import { mayAutoplayInline, posterUrlFor } from '@/lib/media/poster'
@@ -31,6 +32,14 @@ import { videoUrl } from '@/lib/media/url'
  * editor chose one, the video's own first frame otherwise. So there is no empty state to design
  * and no branch here that renders a hole.
  */
+
+/**
+ * Below this width no video mounts by itself (RC-233, CLOUDINARY.md §6).
+ *
+ * 768px is `--rv-bp-md`, the same breakpoint `AspectBox` switches its ratio at — so the box and
+ * the decision about what goes in it change together rather than at two nearby widths.
+ */
+const INLINE_VIDEO_MIN_WIDTH = 768
 
 export interface MediaVideoProps {
   /** The public cloud name — `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME`. */
@@ -70,6 +79,7 @@ export function MediaVideo({
 }: MediaVideoProps): React.ReactElement {
   const reducedMotion = useReducedMotion()
   const { saveData, lowMemory } = useDeliveryConstraints()
+  const wideEnough = useMinViewportWidth(INLINE_VIDEO_MIN_WIDTH)
 
   /**
    * `activated` means the visitor pressed play, and it is a one-way latch.
@@ -84,22 +94,24 @@ export function MediaVideo({
   const spec = resolveSpec(preset)
   const poster = posterUrlFor(cloudName, { publicId: media.publicId, posterPublicId }, spec)
   /**
-   * All three §4.3 gates, not just the media query.
+   * All FOUR gates, not just the media query.
    *
-   * RC-233's registry record: "Under `prefers-reduced-motion: reduce`, `saveData`, or
-   * `deviceMemory < 4`, no `<video>` element mounts at all." §4.3 gives the reason the other two
-   * exist — "a preference is not the only reason to hold back". Somebody on Data Saver has told
-   * their browser they are paying for bytes, which an ambient background clip spends without ever
-   * being asked for.
+   * RC-233: "Under `prefers-reduced-motion: reduce`, `saveData`, or `deviceMemory < 4`, no
+   * `<video>` element mounts at all", plus its mobile-behaviour row — "Below 768px the poster is
+   * the whole experience unless the visitor presses play; no video element is mounted
+   * speculatively" — which CLOUDINARY.md §6 states as `viewport >= 768px`. DESIGN_SYSTEM §4.3
+   * gives the reason the non-preference gates exist at all: "a preference is not the only reason
+   * to hold back". Somebody on Data Saver has told their browser they are paying for bytes, which
+   * an ambient background clip spends without ever being asked for.
    *
    * They are folded into `prefersReducedMotion` rather than checked separately because the policy
-   * function's question is "may this play by itself", and all three answer it the same way. What
+   * function's question is "may this play by itself", and all four answer it the same way. What
    * they do NOT do is prevent playback: pressing play still works under every one of them, which
    * is the difference between not spending someone's data and deciding for them.
    */
   const autoplayAllowed = mayAutoplayInline({
     durationSeconds,
-    prefersReducedMotion: reducedMotion || saveData || lowMemory,
+    prefersReducedMotion: reducedMotion || saveData || lowMemory || !wideEnough,
   })
 
   // The element mounts when it may play by itself, or once the visitor has asked for it.

@@ -297,7 +297,15 @@ Consequences to accept deliberately:
 - **Editing alt text needs no invalidation at Cloudinary** — alt text is not in the URL — but it
   does need a page revalidation, because it is rendered into the HTML.
 - **`destroy()` is genuinely destructive.** It requires `media.delete`, a `ConfirmDialog`, and is
-  blocked by trigger while any `media_usages` row references the asset.
+  blocked while any `media_usages` row references the asset.
+
+  That block is a **foreign key** (`media_usages.media_id … on delete restrict`, migration `0030`),
+  not the trigger this section originally described. A trigger can be disabled with one statement
+  by anyone who can write a migration, and the guarantee — an asset bound to a live slot cannot
+  vanish out from under the page that renders it — is worth the stricter mechanism. Unbinding
+  first is the correct order anyway. `destroy()` also passes `invalidate: true`, which purges the
+  CDN: without it a deleted asset keeps being served from edge caches for as long as they hold it,
+  which for a takedown is the whole of the problem.
 
 ---
 
@@ -518,9 +526,9 @@ If a `HIGGSFIELD_MASTER_ASSET_PLAN.md` §6 brief is ever executed:
 
 ## Migration: what the Phase 06 canaries established
 
-Run 2026-09-08 against the live account (cloud `dhaqpl1kz`, **Free** plan). Two of the three
-named canaries were uploaded; both succeeded, and the first one failed first in a way worth
-recording.
+Run 2026-09-08 against the live account (cloud `dhaqpl1kz`, **Free** plan). All three named
+canaries are uploaded. The first failed before it succeeded, in a way worth recording — and the
+third run turned up a defect in the URL builder that no unit test could have caught.
 
 ### The source PNGs do not fit, and the webp variants do
 
@@ -545,7 +553,50 @@ and Cloudinary returned an HLS `playback_url` for free.
 | `PROCESS-STUDIO-001` | 20.8 MB PNG | — | **rejected**, over the 10 MB cap |
 | `PROCESS-STUDIO-001` | 463 KB `_min.webp` | 4800×3584 webp | uploaded |
 | `LARGEFORMAT-DINING-004` | 4.6 MB mp4 | 1080×1920 mp4 + HLS | uploaded |
-| `LARGEFORMAT-MONUMENTAL-001` | — | — | not yet run |
+| `LARGEFORMAT-MONUMENTAL-001` | 344 KB `_min.webp` | 6336×2688 webp | uploaded |
+
+### `g_auto` must be its own component on video — and this was a shipping defect
+
+The third canary was uploaded to complete the set, and the delivery URLs `lib/media/url.ts` builds
+were then put to the live API through the explicit endpoint, which validates a chain before
+generating it. Every image chain was accepted. **Every video chain was rejected:**
+
+```
+c_fill,g_auto,q_auto:eco,so_0,w_160
+  -> HTTP 400: "g_auto must be in a transformation component by itself"
+```
+
+The restriction is **per resource type**, and inline `g_auto` is perfectly valid on an image — so
+it is invisible until a video URL is actually requested. Since all six presets carry
+`gravity: 'auto'`, this meant **every video and every derived poster in the product would have
+400ed in production**. `posterUrl` was caught by the same rule for a reason easy to miss: a poster
+is an image in its output and a *video-namespace* delivery in its addressing, and it is the
+namespace the rule applies to.
+
+Twenty-three unit tests over the URL builder passed throughout. They compared strings; none of
+them sent one anywhere. The fix splits the gravity into a trailing component **only on the video
+namespace** — moving it on the image path would change every image URL in the product and
+invalidate every derivative already generated for it.
+
+| Chain | Verdict |
+|---|---|
+| `c_fill,f_auto,g_auto,h_686,q_auto:good,w_1600` (image) | accepted — 1600×686, 91 KB webp |
+| `c_fill,f_jpg,g_auto,h_630,q_auto:good,w_1200` (image, `og`) | accepted — 1200×630, 64 KB jpg |
+| `ac_none,c_fill,f_auto:video,q_auto,vc_auto,w_1600` **+ inline** `g_auto` | **400** |
+| `ac_none,c_fill,f_auto:video,q_auto,vc_auto,w_1600/g_auto` | accepted — 1600×2844 mp4, audio stripped |
+| `c_fill,q_auto:eco,so_0,w_160` **+ inline** `g_auto` (poster) | **400** |
+| `c_fill,q_auto:eco,so_0,w_160/g_auto` (poster) | accepted — 160×284 |
+
+**The lesson generalises past this bug.** A URL builder is only testable against the service that
+parses the URL. `tests/unit/media-url.test.ts` is worth keeping for the cache-stability
+properties — parameter ordering, `dpr_1` omission — which are ours to decide and cheap to
+regress. It cannot tell us whether Cloudinary will accept the result, and a green suite said
+nothing about that.
+
+**One thing to note that is not a defect.** The `hero` preset at 1600 px applied to this
+1080-wide video upscales it (1600×2844 out of 1080×1920). §5.2 covers exactly that: no asset is
+upscaled to close a gap, and the coverage report reports it as a gap instead. The URL is correct;
+the slot-to-asset fit is a separate decision.
 
 ### Two things the canaries corrected
 

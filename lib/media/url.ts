@@ -40,13 +40,34 @@ function encodePublicId(publicId: string): string {
  * Order is deliberate and alphabetical-by-Cloudinary-convention rather than insertion-ordered:
  * `c_fill,w_480` and `w_480,c_fill` are the same transformation but two different URLs, so two
  * cache entries, two derived assets and two bills for one picture.
+ *
+ * `g_auto` ON A VIDEO MUST BE ITS OWN COMPONENT, and this is not a style choice. Cloudinary
+ * rejects it inline on the video namespace:
+ *
+ *     "g_auto must be in a transformation component by itself"  (HTTP 400)
+ *
+ * Found by asking the live API to generate the chains this module emits, not by reading the docs
+ * — every unit test passed, because they compared strings rather than sending them anywhere. The
+ * restriction is per RESOURCE TYPE, so it hits `posterUrl` too: a poster is delivered from the
+ * video namespace, so its `g_auto` was rejected exactly the same way. Before this, every video and
+ * every derived poster in the product would have 400ed in production.
+ *
+ * The split is only applied where it is required. On an image `g_auto` stays inline, because
+ * moving it would change every image URL in the product and therefore invalidate every derivative
+ * already generated for it.
  */
-function transformationSegment(spec: TransformSpec, extra: readonly string[] = []): string {
+function transformationSegment(
+  spec: TransformSpec,
+  extra: readonly string[] = [],
+  dpr?: number,
+  /** True when delivery is from the video namespace — see the `g_auto` note above. */
+  videoNamespace = false,
+): string {
   const parts: string[] = [...extra]
 
   if (spec.crop !== undefined) parts.push(`c_${spec.crop}`)
   if (spec.format !== undefined) parts.push(`f_${spec.format}`)
-  if (spec.gravity !== undefined) parts.push(`g_${spec.gravity}`)
+  if (spec.gravity !== undefined && !videoNamespace) parts.push(`g_${spec.gravity}`)
 
   // Height comes from an explicit `height` when one is set (the `og` preset), otherwise from the
   // ratio. Both at once is a contradiction, and `TransformSpec` says the explicit one wins.
@@ -60,11 +81,23 @@ function transformationSegment(spec: TransformSpec, extra: readonly string[] = [
   if (spec.quality !== undefined) parts.push(`q_${spec.quality}`)
   if (spec.width !== undefined) parts.push(`w_${spec.width}`)
 
+  // Video only, and never for an image — see `VideoTransformSpec.dpr`: on an image the srcset
+  // ladder already answers DPR, and the two mechanisms would multiply rather than agree.
   // dpr_1 is the default and adding it would fork the cache for no effect, so it is omitted.
-  const dpr = clampDpr(spec.dpr)
-  if (dpr !== 1) parts.push(`dpr_${dpr}`)
+  if (dpr !== undefined) {
+    const clamped = clampDpr(dpr)
+    if (clamped !== 1) parts.push(`dpr_${clamped}`)
+  }
 
-  return parts.sort().join(',')
+  const inline = parts.sort().join(',')
+
+  // The gravity component goes LAST, after the sorted chain. Cloudinary applies components in
+  // order, and a trailing gravity is what the API accepted; leading it is untested and there is no
+  // reason to guess when the working form is known.
+  if (videoNamespace && spec.gravity !== undefined) {
+    return inline === '' ? `g_${spec.gravity}` : `${inline}/g_${spec.gravity}`
+  }
+  return inline
 }
 
 function buildUrl(cloudName: string, ref: MediaRef, segment: string, extension?: string): string {
@@ -96,13 +129,13 @@ export function imageUrl(cloudName: string, ref: MediaRef, spec: TransformSpec =
  * (FEAT §14), and shipping an audio track nobody can hear is bytes on a mobile connection.
  */
 export function videoUrl(cloudName: string, ref: MediaRef, spec: VideoTransformSpec = {}): string {
-  const { muted, format, quality, ...rest } = spec
+  const { muted, format, quality, dpr, ...rest } = spec
   const extra = ['f_auto:video', 'q_auto', 'vc_auto', ...(muted === true ? ['ac_none'] : [])]
   // `format` and `quality` are dropped rather than merged: the video policy fixes both, and a
   // spec carrying an image preset's `f_auto`/`q_auto:good` would emit each parameter twice.
   void format
   void quality
-  return buildUrl(cloudName, ref, transformationSegment(rest, extra))
+  return buildUrl(cloudName, ref, transformationSegment(rest, extra, dpr, true))
 }
 
 /**
@@ -120,7 +153,10 @@ export function posterUrl(cloudName: string, ref: MediaRef, spec: TransformSpec 
   return buildUrl(
     cloudName,
     { ...ref, resourceType: 'video' },
-    transformationSegment(rest, ['so_0']),
+    // `true`: a poster is delivered from the VIDEO namespace, so the g_auto restriction applies
+    // here as well. This was the second half of the same bug, and the easier half to miss —
+    // "it is an image" is true of the output and false of the namespace it comes out of.
+    transformationSegment(rest, ['so_0'], undefined, true),
     'jpg',
   )
 }

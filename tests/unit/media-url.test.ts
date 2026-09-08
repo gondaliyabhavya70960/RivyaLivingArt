@@ -54,20 +54,13 @@ describe('imageUrl', () => {
     expect(a).toContain('/c_fill,f_auto,g_auto,q_auto:good,w_480/')
   })
 
-  it('omits dpr_1 rather than forking the cache for the default', () => {
-    const plain = imageUrl(CLOUD, { publicId: 'x', resourceType: 'image' }, { width: 480 })
-    const explicit = imageUrl(
-      CLOUD,
-      { publicId: 'x', resourceType: 'image' },
-      { width: 480, dpr: 1 },
-    )
-    expect(plain).toBe(explicit)
-    expect(plain).not.toContain('dpr_')
-  })
-
-  it('caps dpr at 3 through the same clamp the rest of the product uses', () => {
-    const url = imageUrl(CLOUD, { publicId: 'x', resourceType: 'image' }, { width: 480, dpr: 4 })
-    expect(url).toContain('dpr_3')
+  it('never emits a dpr parameter, because the srcset ladder already answers DPR', () => {
+    // CLOUDINARY.md §5.3: "One mechanism, not two." For an image the two would MULTIPLY — a 480px
+    // box with sizes="480px" already makes a 2x screen pick the 1024 rung, and a dpr_2 on top of
+    // that delivers 2048px for a 480px box. `TransformSpec` therefore has no `dpr` field at all,
+    // so this is enforced by the type; the assertion is here for the URL shape.
+    const url = imageUrl(CLOUD, { publicId: 'x', resourceType: 'image' }, { width: 480 })
+    expect(url).not.toContain('dpr_')
   })
 
   it('derives the height from a ratio, and lets an explicit height win', () => {
@@ -128,6 +121,51 @@ describe('videoUrl', () => {
     expect(url).toContain('ac_none')
   })
 
+  it('is the ONLY path that takes a dpr, because a video has no srcset', () => {
+    // The ladder cannot answer DPR for a video, so this is the only mechanism available — which
+    // is exactly why it belongs on VideoTransformSpec and not on TransformSpec.
+    const url = videoUrl(CLOUD, { publicId: 'x', resourceType: 'video' }, { width: 1280, dpr: 2 })
+    expect(url).toContain('dpr_2')
+  })
+
+  it('caps a video dpr at 3, through the same clamp the rest of the product uses', () => {
+    expect(
+      videoUrl(CLOUD, { publicId: 'x', resourceType: 'video' }, { width: 1280, dpr: 4 }),
+    ).toContain('dpr_3')
+  })
+
+  it('omits dpr_1 rather than forking the cache for the default', () => {
+    const plain = videoUrl(CLOUD, { publicId: 'x', resourceType: 'video' }, { width: 1280 })
+    const explicit = videoUrl(
+      CLOUD,
+      { publicId: 'x', resourceType: 'video' },
+      { width: 1280, dpr: 1 },
+    )
+    expect(plain).toBe(explicit)
+    expect(plain).not.toContain('dpr_')
+  })
+
+  it('puts g_auto in its OWN component, because Cloudinary rejects it inline on video', () => {
+    // Not a style choice. The live API answers HTTP 400 to the inline form:
+    //   "g_auto must be in a transformation component by itself"
+    // Every preset carries gravity: 'auto', so before this every video URL in the product would
+    // have 400ed in production — and every unit test passed, because they compared strings
+    // instead of sending them anywhere.
+    const url = videoUrl(CLOUD, { publicId: 'x', resourceType: 'video' }, resolveSpec('hero'))
+    const path = url.split('/upload/')[1] ?? ''
+    expect(path.startsWith('c_fill,f_auto:video,q_auto,vc_auto,w_1600/g_auto/')).toBe(true)
+    // The chain verified against the live API, verbatim.
+    expect(url).toContain('/c_fill,f_auto:video,q_auto,vc_auto,w_1600/g_auto/')
+  })
+
+  it('keeps g_auto INLINE on an image, where it is accepted', () => {
+    // Applied only where required: moving it on the image path would change every image URL in
+    // the product and invalidate every derivative already generated for it.
+    expect(
+      imageUrl(CLOUD, { publicId: 'x', resourceType: 'image' }, resolveSpec('hero')),
+    ).toContain('/c_fill,f_auto,g_auto,q_auto:good,w_1600/')
+  })
+
   it('does not emit an image preset format or quality alongside the video policy', () => {
     // Passing a preset through would otherwise produce both `f_auto` and `f_auto:video`, and both
     // `q_auto` and `q_auto:good` — a transformation Cloudinary rejects.
@@ -151,6 +189,13 @@ describe('posterUrl', () => {
     // The resource type stays `video`: asking under image/upload is a 404, because Cloudinary's
     // resource types are separate namespaces rather than a hint.
     expect(url).toContain('/video/upload/')
+  })
+
+  it('splits g_auto out too — a poster comes OUT of the video namespace', () => {
+    // The second half of the same bug and the easier half to miss: "it is an image" is true of the
+    // output and false of the namespace it is delivered from, and the restriction is per namespace.
+    const url = posterUrl(CLOUD, { publicId: 'x', resourceType: 'video' }, resolveSpec('thumb'))
+    expect(url).toContain('/c_fill,q_auto:eco,so_0,w_160/g_auto/')
   })
 
   it('stays in the video namespace even when handed an image ref by mistake', () => {

@@ -14,12 +14,21 @@ const MEDIA = { publicId: 'rivya/process/pour', resourceType: 'video' as const }
  */
 let play: () => Promise<void>
 
-function setMatchMedia(reduced: boolean): void {
+/**
+ * `wide` defaults to true because a desktop viewport is the ordinary case these tests describe.
+ * jsdom's own `matchMedia` is absent, so without a stub every query would report false and the
+ * 768px gate would suppress every video — a suite that passed for the wrong reason.
+ */
+function setMatchMedia(reduced: boolean, wide = true): void {
   vi.stubGlobal(
     'matchMedia',
     (query: string): MediaQueryList =>
       ({
-        matches: query.includes('prefers-reduced-motion') ? reduced : false,
+        matches: query.includes('prefers-reduced-motion')
+          ? reduced
+          : query.includes('min-width')
+            ? wide
+            : false,
         media: query,
         addEventListener: () => {},
         removeEventListener: () => {},
@@ -159,6 +168,29 @@ describe('MediaVideo delivery constraints (DESIGN_SYSTEM §4.3)', () => {
     vi.stubGlobal('navigator', { ...navigator, connection: { saveData: true } })
     renderVideo()
     expect(screen.getByRole('button', { name: 'Play' })).toBeTruthy()
+  })
+})
+
+describe('MediaVideo viewport gate', () => {
+  it('mounts no video below 768px, even for a short clip with motion allowed', () => {
+    // RC-233's mobile behaviour: "Below 768px the poster is the whole experience unless the
+    // visitor presses play; no video element is mounted speculatively."
+    setMatchMedia(false, false)
+    renderVideo()
+    expect(document.querySelector('video')).toBeNull()
+    expect(screen.getByRole('button', { name: 'Play' })).toBeTruthy()
+  })
+
+  it('still lets a phone visitor press play', () => {
+    setMatchMedia(false, false)
+    renderVideo()
+    expect(screen.getByRole('button', { name: 'Play' })).toBeTruthy()
+  })
+
+  it('mounts at or above 768px', () => {
+    setMatchMedia(false, true)
+    renderVideo()
+    expect(document.querySelector('video')).not.toBeNull()
   })
 })
 
