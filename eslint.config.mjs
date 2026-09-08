@@ -61,6 +61,12 @@ const config = [
    *                            design, so no signed-in staff member can write the security log or
    *                            bury their own row in noise. The service role is therefore the only
    *                            writer, and this is the only writer that holds it.
+   *   lib/logging/activity.ts  `activity_events` has no insert policy for `authenticated` either,
+   *                            and for a sharper reason than the audit log: the feed is readable by
+   *                            EVERY staff role, so a staff member who could insert could write
+   *                            "editor published X" naming a colleague, into the record their
+   *                            colleagues actually read. Only this file writes it. It reads through
+   *                            the cookie-bound client, so `activity.read` still governs the feed.
    *   lib/auth/provisioning.ts creating an `auth.users` row is possible only through GoTrue's admin
    *                            API, which authenticates with the service-role key. Public sign-up
    *                            is disabled at the project level, so an invitation issued here is
@@ -76,6 +82,7 @@ const config = [
     files: [
       'lib/supabase/admin.ts',
       'lib/auth/audit.ts',
+      'lib/logging/activity.ts',
       'lib/auth/provisioning.ts',
       'scripts/**',
       'tests/**',
