@@ -11,6 +11,7 @@ import {
   pageSectionSchema,
   publishResultSchema,
   reorderResultSchema,
+  scheduleRunResultSchema,
   seoEntrySchema,
   type ContentRevision,
   type Faq,
@@ -19,6 +20,7 @@ import {
   type Page,
   type PageSection,
   type PublishResult,
+  type ScheduleRunResult,
   type SeoEntry,
 } from '../schemas'
 import { parseRow, parseRows, toRepositoryError } from './support'
@@ -284,6 +286,31 @@ export async function reorderSections(
 
   if (error) throw toCmsError(SECTION, 'reorder', pageId, error)
   return parseRow(SECTION, reorderResultSchema, data).count
+}
+
+/**
+ * Run the scheduled publish/unpublish sweep.
+ *
+ * THE WHOLE SWEEP IS ONE CALL, not a due-query followed by N publishes. `cms_run_content_schedule`
+ * holds a row lock with SKIP LOCKED for the length of the run, so a second invocation — a Vercel
+ * retry, a manual trigger, a slow tick overlapping the next one — sees an empty set rather than
+ * publishing the same sections again. Doing the loop here would put every one of those races back.
+ *
+ * `now` IS A PARAMETER so a test can ask what the sweep would do at a given instant without
+ * waiting for it, and so the whole run evaluates against ONE clock rather than a slightly later
+ * one for each row.
+ */
+export async function runContentSchedule(
+  client: Client,
+  options: { now?: Date; maxAttempts?: number } = {},
+): Promise<ScheduleRunResult> {
+  const { data, error } = await client.rpc('cms_run_content_schedule', {
+    p_now: (options.now ?? new Date()).toISOString(),
+    p_max_attempts: options.maxAttempts ?? 3,
+  })
+
+  if (error) throw toCmsError(SECTION, 'schedule', 'sweep', error)
+  return parseRow(SECTION, scheduleRunResultSchema, data)
 }
 
 export async function restoreRevisionRow(

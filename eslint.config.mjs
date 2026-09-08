@@ -62,6 +62,15 @@ const config = [
    */
   {
     files: ['**/*.{ts,tsx,mts,cts}'],
+    /**
+     * The allowlist. Each entry is a file with no session to act on behalf of, so the service role
+     * is not a shortcut past a refusal — it is the only actor there is.
+     *
+     * `app/api/cron/content-schedule/route.ts` runs from Vercel Cron with no user and no cookie.
+     * It authenticates with `CRON_SECRET` and calls `cms_run_content_schedule`, which is granted
+     * to `service_role` alone precisely so a leaked anon key cannot publish content.
+     */
+    ignores: ['app/api/cron/content-schedule/route.ts'],
     rules: {
       'no-restricted-imports': [
         'error',

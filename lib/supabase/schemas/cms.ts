@@ -200,6 +200,32 @@ export const publishResultSchema = z.object({
 
 export type PublishResult = z.infer<typeof publishResultSchema>
 
+/**
+ * What `cms_run_content_schedule` returns.
+ *
+ * `published` REUSES `publishResultSchema` because each entry IS one `cms_publish_section` result —
+ * the sweep is a loop over that function, and giving its entries a looser shape here would let the
+ * two drift apart silently.
+ *
+ * `paths` IS ALREADY DEDUPED AND SORTED BY THE FUNCTION. Two sections on one page produce one path,
+ * because the caller turns each of these into a `revalidatePath` and revalidating the same route
+ * twice in one pass is wasted work on every tick, forever.
+ */
+export const scheduleFailureSchema = z.object({
+  section_id: uuidSchema,
+  target: z.string(),
+  attempts: z.number().int(),
+  state: z.enum(['PENDING', 'BLOCKED']),
+  error: z.string(),
+})
+
+export const scheduleRunResultSchema = z.object({
+  ran_at: timestampSchema,
+  published: z.array(publishResultSchema),
+  failed: z.array(scheduleFailureSchema),
+  paths: z.array(z.string()),
+})
+
 export const reorderResultSchema = z.object({
   page_id: uuidSchema,
   count: z.number().int(),
@@ -234,3 +260,5 @@ export type NavigationItem = z.infer<typeof navigationItemSchema>
 export type GlobalContent = z.infer<typeof globalContentSchema>
 export type SeoEntry = z.infer<typeof seoEntrySchema>
 export type Faq = z.infer<typeof faqSchema>
+export type ScheduleFailure = z.infer<typeof scheduleFailureSchema>
+export type ScheduleRunResult = z.infer<typeof scheduleRunResultSchema>

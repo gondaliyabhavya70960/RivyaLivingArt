@@ -931,8 +931,13 @@ describeDb('cms_restore_revision', () => {
     // A revision records what the CONTENT was, not whether it was live. Restoring copy from last
     // Tuesday must not also change what the public can see.
     const db = await connect()
+    // Explicitly the section that BINDS media: `limit 1` with no order by picked whichever row
+    // the planner returned, and 0054 (a bound asset must name its slot) turned that latent
+    // nondeterminism into a failure the moment it chose the media-less one.
     const { rows: sections } = await db.query<{ id: string }>(
-      `select id from page_sections where page_id = $1 limit 1`,
+      `select id from page_sections
+        where page_id = $1 and media_slot_key is not null
+        order by position limit 1`,
       [PAGE],
     )
     const section = sections[0]!.id
@@ -957,8 +962,13 @@ describeDb('cms_restore_revision', () => {
     // Phase 06 stops the asset being deleted while anything still points at it, which is how my
     // first attempt at this test failed.
     const db = await connect()
+    // Explicitly the section that BINDS media: `limit 1` with no order by picked whichever row
+    // the planner returned, and 0054 (a bound asset must name its slot) turned that latent
+    // nondeterminism into a failure the moment it chose the media-less one.
     const { rows: sections } = await db.query<{ id: string }>(
-      `select id from page_sections where page_id = $1 limit 1`,
+      `select id from page_sections
+        where page_id = $1 and media_slot_key is not null
+        order by position limit 1`,
       [PAGE],
     )
     const section = sections[0]!.id
@@ -979,5 +989,318 @@ describeDb('cms_restore_revision', () => {
     } catch (error) {
       expect((error as { code?: string }).code).toBe('RV007')
     }
+  })
+})
+
+/**
+ * The scheduled sweep (0053).
+ *
+ * EVERY ASSERTION HERE IS AT A FIXED INSTANT, passed as `p_now`. A suite that waited for real time
+ * to pass would be slow and flaky; one that used `now()` could not test "not due yet" at all
+ * without sleeping.
+ */
+describeDb('cms_run_content_schedule', () => {
+  const PAGE_ID = '00000000-0000-4000-8000-0000000000fa'
+  const T0 = '2026-01-01T09:00:00Z'
+  const BEFORE = '2026-01-01T08:00:00Z'
+  const AFTER = '2026-01-01T10:00:00Z'
+
+  type Run = {
+    published: { section_id: string; from: string; to: string }[]
+    failed: { section_id: string; attempts: number; state: string; error: string }[]
+    paths: string[]
+  }
+
+  /** Insert a section already at `status`, walking the state machine the way an editor would. */
+  async function makeSection(
+    position: number,
+    status: 'APPROVED' | 'PUBLISHED',
+    schedule: { publishAt?: string | null; unpublishAt?: string | null },
+    mediaId: string | null = null,
+  ): Promise<string> {
+    const db = await connect()
+    const { rows } = await db.query<{ id: string }>(
+      // `media_slot_key` goes in whenever an asset does. 0054 requires it, and the reason is the
+      // point of the refusal tests below: with a null key `sync_media_usages` writes no reverse-
+      // index row, and cms_publish_section's RV003/RV006 gates join through that table — so an
+      // unapproved asset would sail through and the test would pass while proving the opposite.
+      `insert into page_sections (page_id, block_type, position, status, publish_at, unpublish_at, media_desktop_id, media_slot_key)
+       values ($1, 'statement', $2, 'DRAFT', $3, $4, $5, $6) returning id`,
+      [
+        PAGE_ID,
+        position,
+        schedule.publishAt ?? null,
+        schedule.unpublishAt ?? null,
+        mediaId,
+        mediaId === null ? null : 'home.hero',
+      ],
+    )
+    const id = rows[0]!.id
+    await db.query(`update page_sections set status = 'REVIEW' where id = $1`, [id])
+    await db.query(`update page_sections set status = 'APPROVED' where id = $1`, [id])
+    if (status === 'PUBLISHED') {
+      await db.query(`update page_sections set status = 'PUBLISHED' where id = $1`, [id])
+    }
+    return id
+  }
+
+  async function run(now: string, maxAttempts = 3): Promise<Run> {
+    const db = await connect()
+    const { rows } = await db.query<{ result: Run }>(
+      'select public.cms_run_content_schedule($1::timestamptz, $2::int) as result',
+      [now, maxAttempts],
+    )
+    return rows[0]!.result
+  }
+
+  async function stateOf(id: string) {
+    const db = await connect()
+    const { rows } = await db.query<{
+      status: string
+      schedule_state: string
+      schedule_attempts: number
+      schedule_error: string | null
+    }>(
+      'select status, schedule_state, schedule_attempts, schedule_error from page_sections where id = $1',
+      [id],
+    )
+    return rows[0]!
+  }
+
+  beforeAll(async () => {
+    await loadFixture()
+    const db = await connect()
+    await db.query('delete from page_sections')
+    await db.query('delete from pages where id = $1', [PAGE_ID])
+    await db.query(
+      `insert into pages (id, slug, kind, title, path, status)
+       values ($1, 'schedule', 'PAGE', 'Schedule', '/schedule', 'PUBLISHED')`,
+      [PAGE_ID],
+    )
+  })
+
+  afterAll(disconnect)
+
+  it('publishes an approved section whose moment has passed', async () => {
+    const id = await makeSection(0, 'APPROVED', { publishAt: BEFORE })
+    const result = await run(T0)
+
+    expect(result.published.map((p) => p.section_id)).toContain(id)
+    expect((await stateOf(id)).status).toBe('PUBLISHED')
+    expect(result.paths).toContain('/schedule')
+  })
+
+  it('leaves a section whose moment has not arrived', async () => {
+    const id = await makeSection(1, 'APPROVED', { publishAt: AFTER })
+    const result = await run(T0)
+
+    expect(result.published.map((p) => p.section_id)).not.toContain(id)
+    expect((await stateOf(id)).status).toBe('APPROVED')
+  })
+
+  it('leaves an approved section with no publish_at alone forever', async () => {
+    const id = await makeSection(2, 'APPROVED', {})
+    await run(AFTER)
+    expect((await stateOf(id)).status).toBe('APPROVED')
+  })
+
+  /**
+   * The window is what actually takes a section off the site — `sectionIsLive` stops rendering it
+   * at `unpublish_at` whatever the row says. The sweep's job is to make the STATUS agree, so
+   * Studio does not show a section as PUBLISHED that no visitor can reach.
+   */
+  it('archives a published section whose window has closed', async () => {
+    const id = await makeSection(3, 'PUBLISHED', { unpublishAt: BEFORE })
+    const result = await run(T0)
+
+    expect(result.published.map((p) => p.section_id)).toContain(id)
+    const after = await stateOf(id)
+    expect(after.status).toBe('ARCHIVED')
+    expect(
+      isLive({ status: 'ARCHIVED', publish_at: null, unpublish_at: BEFORE }, new Date(T0)),
+    ).toBe(false)
+  })
+
+  it('is idempotent — a second sweep at the same instant does nothing', async () => {
+    await makeSection(4, 'APPROVED', { publishAt: BEFORE })
+    const first = await run(T0)
+    const second = await run(T0)
+
+    expect(first.published.length).toBeGreaterThan(0)
+    expect(second.published).toHaveLength(0)
+    expect(second.failed).toHaveLength(0)
+  })
+
+  it('deduplicates the paths it reports', async () => {
+    const db = await connect()
+    await db.query('delete from page_sections')
+    await makeSection(0, 'APPROVED', { publishAt: BEFORE })
+    await makeSection(1, 'APPROVED', { publishAt: BEFORE })
+
+    const result = await run(T0)
+    expect(result.published).toHaveLength(2)
+    // Two sections, one page: revalidating the same route twice on every tick is wasted work.
+    expect(result.paths).toEqual(['/schedule'])
+  })
+
+  describe('a refusal', () => {
+    let sectionId = ''
+    const MEDIA = '00000000-0000-4000-8000-0000000000fb'
+
+    beforeAll(async () => {
+      const db = await connect()
+      await db.query('delete from page_sections')
+      await db.query('delete from media_usages where media_id = $1', [MEDIA])
+      await db.query('delete from media_assets where id = $1', [MEDIA])
+      // The real Phase 07 collision: APPROVED, and still asserting an unverified business claim.
+      await db.query(
+        `insert into media_assets (id, provider, resource_type, public_id, folder, kind, alt_text,
+                                   is_ai_generated, is_concept, source, status, owner_verification, rivya_asset_id)
+         values ($1,'cloudinary','image','rivya/test/sched','rivya/test','IMAGE','An unverified asset',
+                 true, false, 'HIGGSFIELD', 'APPROVED', 'OWNER_VERIFICATION_REQUIRED', 'TEST-SCHED-001')`,
+        [MEDIA],
+      )
+      sectionId = await makeSection(0, 'APPROVED', { publishAt: BEFORE }, MEDIA)
+    })
+
+    it('records the reason on the row instead of losing it', async () => {
+      const result = await run(T0)
+
+      expect(result.published).toHaveLength(0)
+      expect(result.failed).toHaveLength(1)
+      const state = await stateOf(sectionId)
+      expect(state.status).toBe('APPROVED')
+      expect(state.schedule_attempts).toBe(1)
+      expect(state.schedule_state).toBe('PENDING')
+      // RV006 is the code cms_publish_section raises for media that is approved but unverified.
+      expect(state.schedule_error).toContain('RV006')
+    })
+
+    it('blocks after the attempt limit rather than retrying forever', async () => {
+      await run(T0)
+      const third = await run(T0)
+
+      expect(third.failed[0]?.state).toBe('BLOCKED')
+      expect((await stateOf(sectionId)).schedule_attempts).toBe(3)
+
+      // And a BLOCKED row is no longer even considered.
+      const fourth = await run(T0)
+      expect(fourth.failed).toHaveLength(0)
+      expect(fourth.published).toHaveLength(0)
+    })
+
+    /**
+     * `reset_schedule_state` un-blocks on a human edit — and a human edit is one that sets
+     * `updated_by`. An UPDATE that leaves it null is not a person, and does not un-block.
+     */
+    it('un-blocks when a person edits the section, and not otherwise', async () => {
+      const db = await connect()
+      await db.query(`update page_sections set heading = 'no actor' where id = $1`, [sectionId])
+      expect((await stateOf(sectionId)).schedule_state).toBe('BLOCKED')
+
+      await db.query(
+        `update page_sections set heading = 'an editor', updated_by = $2 where id = $1`,
+        [sectionId, FIXTURE_USERS.editor],
+      )
+      const after = await stateOf(sectionId)
+      expect(after.schedule_state).toBe('PENDING')
+      expect(after.schedule_attempts).toBe(0)
+      expect(after.schedule_error).toBeNull()
+    })
+
+    it('goes through once the owner verifies the asset', async () => {
+      const db = await connect()
+      await db.query(`update media_assets set owner_verification = 'VERIFIED' where id = $1`, [
+        MEDIA,
+      ])
+      const result = await run(T0)
+
+      expect(result.failed).toHaveLength(0)
+      expect(result.published).toHaveLength(1)
+      expect((await stateOf(sectionId)).status).toBe('PUBLISHED')
+      // The bound asset was promoted with it.
+      const { rows } = await db.query<{ status: string }>(
+        'select status from media_assets where id = $1',
+        [MEDIA],
+      )
+      expect(rows[0]?.status).toBe('PUBLISHED')
+    })
+  })
+
+  it('refuses a nonsensical attempt limit rather than looping', async () => {
+    await expect(run(T0, 0)).rejects.toThrow()
+  })
+})
+
+/**
+ * 0054 — a bound asset must name its slot.
+ *
+ * This is a regression test for a hole that was open and exploited in this repository: a section
+ * with `media_desktop_id` set and `media_slot_key` null produced no `media_usages` row, and
+ * `cms_publish_section`'s RV003 and RV006 gates both join through that table. A DRAFT,
+ * unverified asset therefore reached PUBLISHED with no refusal at all.
+ */
+describeDb('page_sections_media_needs_slot_key', () => {
+  const PAGE_ID = '00000000-0000-4000-8000-0000000000fc'
+  const MEDIA = '00000000-0000-4000-8000-0000000000fd'
+
+  // No loadFixture: this suite asserts a check constraint, which no role can escape, so it needs
+  // no staff users at all.
+  beforeAll(async () => {
+    const db = await connect()
+    await db.query('delete from page_sections')
+    await db.query('delete from media_usages where media_id = $1', [MEDIA])
+    await db.query('delete from media_assets where id = $1', [MEDIA])
+    await db.query('delete from pages where id = $1', [PAGE_ID])
+    await db.query(
+      `insert into pages (id, slug, kind, title, path) values ($1,'slotkey','PAGE','S','/slotkey')`,
+      [PAGE_ID],
+    )
+    await db.query(
+      `insert into media_assets (id, provider, resource_type, public_id, folder, kind, alt_text,
+                                 is_ai_generated, is_concept, source, status, owner_verification, rivya_asset_id)
+       values ($1,'cloudinary','image','rivya/test/slotkey','rivya/test','IMAGE','Never reviewed',
+               true, false, 'HIGGSFIELD', 'DRAFT', 'OWNER_VERIFICATION_REQUIRED', 'TEST-SLOTKEY-001')`,
+      [MEDIA],
+    )
+  })
+
+  afterAll(disconnect)
+
+  async function insertSection(slotKey: string | null, mediaId: string | null, position: number) {
+    const db = await connect()
+    return db.query(
+      `insert into page_sections (page_id, block_type, position, status, media_desktop_id, media_slot_key)
+       values ($1, 'hero', $2, 'DRAFT', $3, $4)`,
+      [PAGE_ID, position, mediaId, slotKey],
+    )
+  }
+
+  it('refuses a bound asset with no slot key', async () => {
+    expect(await codeOf(() => insertSection(null, MEDIA, 0))).toBe(ILLEGAL)
+  })
+
+  it('refuses it on a later UPDATE too, not only on INSERT', async () => {
+    const db = await connect()
+    await insertSection('home.hero', MEDIA, 1)
+    expect(
+      await codeOf(() =>
+        db.query('update page_sections set media_slot_key = null where position = 1'),
+      ),
+    ).toBe(ILLEGAL)
+  })
+
+  it('allows a section with no media and no slot key', async () => {
+    await expect(insertSection(null, null, 2)).resolves.toBeDefined()
+  })
+
+  it('allows a bound asset that names its slot, and then the gate can see it', async () => {
+    const db = await connect()
+    const { rows } = await db.query<{ count: string }>(
+      `select count(*) as count from media_usages where context_type = 'PAGE_SECTION' and media_id = $1`,
+      [MEDIA],
+    )
+    expect(Number(rows[0]?.count ?? 0)).toBeGreaterThan(0)
+    expect(slotKeyOf('home.hero')).toBe('home.hero')
   })
 })

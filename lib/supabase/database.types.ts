@@ -1853,6 +1853,10 @@ export type Database = {
         Args: Record<string, unknown>
         Returns: Json
       }
+      cms_run_content_schedule: {
+        Args: Record<string, unknown>
+        Returns: Json
+      }
       cms_transition_allowed: {
         Args: Record<string, unknown>
         Returns: Json
