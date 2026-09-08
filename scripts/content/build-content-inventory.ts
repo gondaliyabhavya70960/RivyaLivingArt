@@ -172,6 +172,25 @@ async function main(): Promise<number> {
     })
   }
 
+  // Read before the connection closes: everything the seed wrote, by key. Used by the
+  // precondition check below, which is the last thing to run before the file is written.
+  const present = await client.query<{ seed_key: string }>(`
+    select seed_key from pages            where seed_key is not null
+    union all
+    select seed_key from page_sections    where seed_key is not null
+    union all
+    select seed_key from global_content   where seed_key is not null
+    union all
+    select seed_key from navigation_items where seed_key is not null
+    union all
+    select seed_key from seo_entries      where seed_key is not null
+    union all
+    select seed_key from faqs             where seed_key is not null
+    union all
+    select seed_key from categories       where seed_key is not null
+  `)
+  const seededKeys = new Set(present.rows.map((r) => r.seed_key))
+
   await client.end()
 
   const flagged = rows.filter((r) => r.verify === 'Yes').length
@@ -205,6 +224,39 @@ async function main(): Promise<number> {
     ),
     '',
   ].join('\n')
+
+  /**
+   * REFUSE TO WRITE FROM A DATABASE THAT IS NOT FULLY SEEDED.
+   *
+   * This file is committed and diff-checked, and it is generated from the DATABASE rather than
+   * from the modules — deliberately, because what an editor can actually change is a property of
+   * the rows, not of the source. The cost is that it faithfully records whatever state the
+   * database happens to be in, and `npm run test` leaves it in a damaged one: the RLS and
+   * repository suites delete seeded rows as part of their own fixtures. Running the generator
+   * after the tests produced an inventory with 143 rows missing, which looked exactly like a
+   * generated file and passed every gate around it.
+   *
+   * So the generator asserts its own precondition. Every non-deferred record the modules declare
+   * must be present; anything missing means the database is not the seeded one, and the honest
+   * answer is to refuse rather than to write a smaller truth.
+   */
+  const expected = seedModules.flatMap((module) =>
+    module.records.filter((record) => (record.requiresTables ?? []).length === 0),
+  )
+  const missing = expected.filter((record) => !seededKeys.has(record.seedKey))
+  if (missing.length > 0) {
+    console.error(
+      `\ncontent:inventory refused: ${String(missing.length)} of ${String(expected.length)} seeded records are absent from the database.\n` +
+        'The inventory is generated from rows, so writing it now would record a damaged state as\n' +
+        'though it were the seed. `npm run test` deletes seeded rows — re-seed before generating:\n\n' +
+        '    npm run db:reset && npm run seed:content && npm run content:inventory\n\n' +
+        `First missing: ${missing
+          .slice(0, 5)
+          .map((record) => record.seedKey)
+          .join(', ')}\n`,
+    )
+    return 1
+  }
 
   writeFileSync(OUT, md)
   console.log(

@@ -7,8 +7,8 @@ SEED §54’s audit of what the content seed actually put in the database, read 
 database rather than from the seed modules. Its target is §54’s: **100% of intended launch
 copy mapped to a Studio editing control.**
 
-- **189** rows audited
-- **18** await owner verification and cannot be published until it is given
+- **332** rows audited
+- **80** await owner verification and cannot be published until it is given
 - **22** are authored and deferred to a later phase’s tables
 - **0** carry a bound media asset
 
@@ -18,6 +18,149 @@ the phase that creates its table.
 
 | Page | Section | Field | Seeded? | Editable? | Studio location | Verification needed? | Media asset ID | SEO status | Publication status |
 |---|---|---|---|---|---|---|---|---|---|
+| / | home.01.hero | eyebrow | Yes | Yes | `/studio/content/pages/home` | No | — | — | DRAFT |
+| / | home.01.hero | heading | Yes | Yes | `/studio/content/pages/home` | No | — | — | DRAFT |
+| / | home.01.hero | cta_label | Yes | Yes | `/studio/content/pages/home` | No | — | — | DRAFT |
+| / | home.01.hero | supporting | Yes | Yes | `/studio/content/pages/home` | No | — | — | DRAFT |
+| / | home.02.manifesto | body | Yes | Yes | `/studio/content/pages/home` | Yes | — | — | DRAFT |
+| / | home.02.manifesto | eyebrow | Yes | Yes | `/studio/content/pages/home` | Yes | — | — | DRAFT |
+| / | home.02.manifesto | heading | Yes | Yes | `/studio/content/pages/home` | Yes | — | — | DRAFT |
+| / | home.02.manifesto | cta_label | Yes | Yes | `/studio/content/pages/home` | Yes | — | — | DRAFT |
+| / | home.03.signature-collections | body | Yes | Yes | `/studio/content/pages/home` | Yes | — | — | DRAFT |
+| / | home.03.signature-collections | eyebrow | Yes | Yes | `/studio/content/pages/home` | Yes | — | — | DRAFT |
+| / | home.03.signature-collections | heading | Yes | Yes | `/studio/content/pages/home` | Yes | — | — | DRAFT |
+| / | home.04.selected-works | body | Yes | Yes | `/studio/content/pages/home` | No | — | — | DRAFT |
+| / | home.04.selected-works | eyebrow | Yes | Yes | `/studio/content/pages/home` | No | — | — | DRAFT |
+| / | home.04.selected-works | heading | Yes | Yes | `/studio/content/pages/home` | No | — | — | DRAFT |
+| / | home.05.material-story | body | Yes | Yes | `/studio/content/pages/home` | No | — | — | DRAFT |
+| / | home.05.material-story | eyebrow | Yes | Yes | `/studio/content/pages/home` | No | — | — | DRAFT |
+| / | home.05.material-story | heading | Yes | Yes | `/studio/content/pages/home` | No | — | — | DRAFT |
+| / | home.05.material-story | cta_label | Yes | Yes | `/studio/content/pages/home` | No | — | — | DRAFT |
+| / | home.06.material-palette | heading | Yes | Yes | `/studio/content/pages/home` | Yes | — | — | DRAFT |
+| / | home.07.custom-commission | body | Yes | Yes | `/studio/content/pages/home` | Yes | — | — | DRAFT |
+| / | home.07.custom-commission | eyebrow | Yes | Yes | `/studio/content/pages/home` | Yes | — | — | DRAFT |
+| / | home.07.custom-commission | heading | Yes | Yes | `/studio/content/pages/home` | Yes | — | — | DRAFT |
+| / | home.07.custom-commission | cta_label | Yes | Yes | `/studio/content/pages/home` | Yes | — | — | DRAFT |
+| / | home.08.three-d-resin | body | Yes | Yes | `/studio/content/pages/home` | Yes | — | — | DRAFT |
+| / | home.08.three-d-resin | eyebrow | Yes | Yes | `/studio/content/pages/home` | Yes | — | — | DRAFT |
+| / | home.08.three-d-resin | heading | Yes | Yes | `/studio/content/pages/home` | Yes | — | — | DRAFT |
+| / | home.08.three-d-resin | cta_label | Yes | Yes | `/studio/content/pages/home` | Yes | — | — | DRAFT |
+| / | home.09.portfolio | body | Yes | Yes | `/studio/content/pages/home` | No | — | — | DRAFT |
+| / | home.09.portfolio | eyebrow | Yes | Yes | `/studio/content/pages/home` | No | — | — | DRAFT |
+| / | home.09.portfolio | heading | Yes | Yes | `/studio/content/pages/home` | No | — | — | DRAFT |
+| / | home.09.portfolio | cta_label | Yes | Yes | `/studio/content/pages/home` | No | — | — | DRAFT |
+| / | home.10.process | eyebrow | Yes | Yes | `/studio/content/pages/home` | Yes | — | — | DRAFT |
+| / | home.10.process | heading | Yes | Yes | `/studio/content/pages/home` | Yes | — | — | DRAFT |
+| / | home.10.process | cta_label | Yes | Yes | `/studio/content/pages/home` | Yes | — | — | DRAFT |
+| / | home.11.secondary-objects | body | Yes | Yes | `/studio/content/pages/home` | No | — | — | DRAFT |
+| / | home.11.secondary-objects | eyebrow | Yes | Yes | `/studio/content/pages/home` | No | — | — | DRAFT |
+| / | home.11.secondary-objects | heading | Yes | Yes | `/studio/content/pages/home` | No | — | — | DRAFT |
+| / | home.12.journal | body | Yes | Yes | `/studio/content/pages/home` | No | — | — | DRAFT |
+| / | home.12.journal | eyebrow | Yes | Yes | `/studio/content/pages/home` | No | — | — | DRAFT |
+| / | home.12.journal | heading | Yes | Yes | `/studio/content/pages/home` | No | — | — | DRAFT |
+| / | home.12.journal | cta_label | Yes | Yes | `/studio/content/pages/home` | No | — | — | DRAFT |
+| / | home.13.final-cta | body | Yes | Yes | `/studio/content/pages/home` | No | — | — | DRAFT |
+| / | home.13.final-cta | heading | Yes | Yes | `/studio/content/pages/home` | No | — | — | DRAFT |
+| / | home.13.final-cta | cta_label | Yes | Yes | `/studio/content/pages/home` | No | — | — | DRAFT |
+| /about | about.01.hero | body | Yes | Yes | `/studio/content/pages/about` | No | — | — | DRAFT |
+| /about | about.01.hero | eyebrow | Yes | Yes | `/studio/content/pages/about` | No | — | — | DRAFT |
+| /about | about.01.hero | heading | Yes | Yes | `/studio/content/pages/about` | No | — | — | DRAFT |
+| /about | about.02.philosophy | body | Yes | Yes | `/studio/content/pages/about` | No | — | — | DRAFT |
+| /about | about.02.philosophy | eyebrow | Yes | Yes | `/studio/content/pages/about` | No | — | — | DRAFT |
+| /about | about.02.philosophy | heading | Yes | Yes | `/studio/content/pages/about` | No | — | — | DRAFT |
+| /about | about.03.scale | body | Yes | Yes | `/studio/content/pages/about` | Yes | — | — | DRAFT |
+| /about | about.03.scale | heading | Yes | Yes | `/studio/content/pages/about` | Yes | — | — | DRAFT |
+| /about | about.04.bespoke | body | Yes | Yes | `/studio/content/pages/about` | Yes | — | — | DRAFT |
+| /about | about.04.bespoke | heading | Yes | Yes | `/studio/content/pages/about` | Yes | — | — | DRAFT |
+| /about | about.05.closing | body | Yes | Yes | `/studio/content/pages/about` | No | — | — | DRAFT |
+| /about | about.05.closing | heading | Yes | Yes | `/studio/content/pages/about` | No | — | — | DRAFT |
+| /about | about.05.closing | cta_label | Yes | Yes | `/studio/content/pages/about` | No | — | — | DRAFT |
+| /collection | collection.01.hero | body | Yes | Yes | `/studio/content/pages/collection` | No | — | — | DRAFT |
+| /collection | collection.01.hero | eyebrow | Yes | Yes | `/studio/content/pages/collection` | No | — | — | DRAFT |
+| /collection | collection.01.hero | heading | Yes | Yes | `/studio/content/pages/collection` | No | — | — | DRAFT |
+| /collection | collection.02.order | (no copy fields) | Yes | Yes | `/studio/content/pages/collection` | No | — | — | DRAFT |
+| /collection/3d-resin | collection.3d-resin.01.hero | body | Yes | Yes | `/studio/content/pages/collection-3d-resin` | Yes | — | — | DRAFT |
+| /collection/3d-resin | collection.3d-resin.01.hero | eyebrow | Yes | Yes | `/studio/content/pages/collection-3d-resin` | Yes | — | — | DRAFT |
+| /collection/3d-resin | collection.3d-resin.01.hero | heading | Yes | Yes | `/studio/content/pages/collection-3d-resin` | Yes | — | — | DRAFT |
+| /collection/collectible-design | collection.collectible-design.01.hero | body | Yes | Yes | `/studio/content/pages/collection-collectible-design` | Yes | — | — | DRAFT |
+| /collection/collectible-design | collection.collectible-design.01.hero | eyebrow | Yes | Yes | `/studio/content/pages/collection-collectible-design` | Yes | — | — | DRAFT |
+| /collection/collectible-design | collection.collectible-design.01.hero | heading | Yes | Yes | `/studio/content/pages/collection-collectible-design` | Yes | — | — | DRAFT |
+| /collection/decor | collection.decor.01.hero | body | Yes | Yes | `/studio/content/pages/collection-decor` | No | — | — | DRAFT |
+| /collection/decor | collection.decor.01.hero | eyebrow | Yes | Yes | `/studio/content/pages/collection-decor` | No | — | — | DRAFT |
+| /collection/decor | collection.decor.01.hero | heading | Yes | Yes | `/studio/content/pages/collection-decor` | No | — | — | DRAFT |
+| /collection/furniture | collection.furniture.01.hero | body | Yes | Yes | `/studio/content/pages/collection-furniture` | No | — | — | DRAFT |
+| /collection/furniture | collection.furniture.01.hero | eyebrow | Yes | Yes | `/studio/content/pages/collection-furniture` | No | — | — | DRAFT |
+| /collection/furniture | collection.furniture.01.hero | heading | Yes | Yes | `/studio/content/pages/collection-furniture` | No | — | — | DRAFT |
+| /collection/gifts | collection.gifts.01.hero | body | Yes | Yes | `/studio/content/pages/collection-gifts` | No | — | — | DRAFT |
+| /collection/gifts | collection.gifts.01.hero | eyebrow | Yes | Yes | `/studio/content/pages/collection-gifts` | No | — | — | DRAFT |
+| /collection/gifts | collection.gifts.01.hero | heading | Yes | Yes | `/studio/content/pages/collection-gifts` | No | — | — | DRAFT |
+| /collection/preservation | collection.preservation.01.hero | body | Yes | Yes | `/studio/content/pages/collection-preservation` | Yes | — | — | DRAFT |
+| /collection/preservation | collection.preservation.01.hero | eyebrow | Yes | Yes | `/studio/content/pages/collection-preservation` | Yes | — | — | DRAFT |
+| /collection/preservation | collection.preservation.01.hero | heading | Yes | Yes | `/studio/content/pages/collection-preservation` | Yes | — | — | DRAFT |
+| /collection/wall-statement-art | collection.wall-statement-art.01.hero | body | Yes | Yes | `/studio/content/pages/collection-wall-statement-art` | No | — | — | DRAFT |
+| /collection/wall-statement-art | collection.wall-statement-art.01.hero | eyebrow | Yes | Yes | `/studio/content/pages/collection-wall-statement-art` | No | — | — | DRAFT |
+| /collection/wall-statement-art | collection.wall-statement-art.01.hero | heading | Yes | Yes | `/studio/content/pages/collection-wall-statement-art` | No | — | — | DRAFT |
+| /contact | contact.01.hero | body | Yes | Yes | `/studio/content/pages/contact` | No | — | — | DRAFT |
+| /contact | contact.01.hero | eyebrow | Yes | Yes | `/studio/content/pages/contact` | No | — | — | DRAFT |
+| /contact | contact.01.hero | heading | Yes | Yes | `/studio/content/pages/contact` | No | — | — | DRAFT |
+| /contact | contact.02.details | heading | Yes | Yes | `/studio/content/pages/contact` | Yes | — | — | DRAFT |
+| /contact | contact.03.form | heading | Yes | Yes | `/studio/content/pages/contact` | No | — | — | DRAFT |
+| /contact | contact.03.form | supporting | Yes | Yes | `/studio/content/pages/contact` | No | — | — | DRAFT |
+| /custom-commissions | commissions.01.hero | body | Yes | Yes | `/studio/content/pages/custom-commissions` | No | — | — | DRAFT |
+| /custom-commissions | commissions.01.hero | eyebrow | Yes | Yes | `/studio/content/pages/custom-commissions` | No | — | — | DRAFT |
+| /custom-commissions | commissions.01.hero | heading | Yes | Yes | `/studio/content/pages/custom-commissions` | No | — | — | DRAFT |
+| /custom-commissions | commissions.01.hero | cta_label | Yes | Yes | `/studio/content/pages/custom-commissions` | No | — | — | DRAFT |
+| /custom-commissions | commissions.02.who-it-is-for | body | Yes | Yes | `/studio/content/pages/custom-commissions` | Yes | — | — | DRAFT |
+| /custom-commissions | commissions.02.who-it-is-for | heading | Yes | Yes | `/studio/content/pages/custom-commissions` | Yes | — | — | DRAFT |
+| /custom-commissions | commissions.03.starting-points | heading | Yes | Yes | `/studio/content/pages/custom-commissions` | Yes | — | — | DRAFT |
+| /custom-commissions | commissions.04.what-to-share | heading | Yes | Yes | `/studio/content/pages/custom-commissions` | Yes | — | — | DRAFT |
+| /custom-commissions | commissions.05.how-it-works | heading | Yes | Yes | `/studio/content/pages/custom-commissions` | Yes | — | — | DRAFT |
+| /custom-commissions | commissions.06.cta | heading | Yes | Yes | `/studio/content/pages/custom-commissions` | No | — | — | DRAFT |
+| /custom-commissions | commissions.06.cta | cta_label | Yes | Yes | `/studio/content/pages/custom-commissions` | No | — | — | DRAFT |
+| /journal | journal.01.hero | body | Yes | Yes | `/studio/content/pages/journal` | No | — | — | DRAFT |
+| /journal | journal.01.hero | eyebrow | Yes | Yes | `/studio/content/pages/journal` | No | — | — | DRAFT |
+| /journal | journal.01.hero | heading | Yes | Yes | `/studio/content/pages/journal` | No | — | — | DRAFT |
+| /journal | journal.02.empty-state | (no copy fields) | Yes | Yes | `/studio/content/pages/journal` | No | — | — | DRAFT |
+| /large-format | large-format.01.hero | body | Yes | Yes | `/studio/content/pages/large-format` | No | — | — | DRAFT |
+| /large-format | large-format.01.hero | eyebrow | Yes | Yes | `/studio/content/pages/large-format` | No | — | — | DRAFT |
+| /large-format | large-format.01.hero | heading | Yes | Yes | `/studio/content/pages/large-format` | No | — | — | DRAFT |
+| /large-format | large-format.01.hero | cta_label | Yes | Yes | `/studio/content/pages/large-format` | No | — | — | DRAFT |
+| /large-format | large-format.02.category-intro | body | Yes | Yes | `/studio/content/pages/large-format` | No | — | — | DRAFT |
+| /large-format | large-format.02.category-intro | heading | Yes | Yes | `/studio/content/pages/large-format` | No | — | — | DRAFT |
+| /large-format | large-format.03.categories | (no copy fields) | Yes | Yes | `/studio/content/pages/large-format` | Yes | — | — | DRAFT |
+| /large-format | large-format.04.customization | body | Yes | Yes | `/studio/content/pages/large-format` | Yes | — | — | DRAFT |
+| /large-format | large-format.04.customization | heading | Yes | Yes | `/studio/content/pages/large-format` | Yes | — | — | DRAFT |
+| /large-format | large-format.05.cta | body | Yes | Yes | `/studio/content/pages/large-format` | No | — | — | DRAFT |
+| /large-format | large-format.05.cta | heading | Yes | Yes | `/studio/content/pages/large-format` | No | — | — | DRAFT |
+| /large-format | large-format.05.cta | cta_label | Yes | Yes | `/studio/content/pages/large-format` | No | — | — | DRAFT |
+| /portfolio | portfolio.01.hero | body | Yes | Yes | `/studio/content/pages/portfolio` | No | — | — | DRAFT |
+| /portfolio | portfolio.01.hero | eyebrow | Yes | Yes | `/studio/content/pages/portfolio` | No | — | — | DRAFT |
+| /portfolio | portfolio.01.hero | heading | Yes | Yes | `/studio/content/pages/portfolio` | No | — | — | DRAFT |
+| /portfolio | portfolio.02.empty-state | cta_label | Yes | Yes | `/studio/content/pages/portfolio` | No | — | — | DRAFT |
+| /process | process.01.hero | body | Yes | Yes | `/studio/content/pages/process` | No | — | — | DRAFT |
+| /process | process.01.hero | eyebrow | Yes | Yes | `/studio/content/pages/process` | No | — | — | DRAFT |
+| /process | process.01.hero | heading | Yes | Yes | `/studio/content/pages/process` | No | — | — | DRAFT |
+| /process | process.02.brief | body | Yes | Yes | `/studio/content/pages/process` | Yes | — | — | DRAFT |
+| /process | process.02.brief | eyebrow | Yes | Yes | `/studio/content/pages/process` | Yes | — | — | DRAFT |
+| /process | process.02.brief | heading | Yes | Yes | `/studio/content/pages/process` | Yes | — | — | DRAFT |
+| /process | process.03.material-direction | body | Yes | Yes | `/studio/content/pages/process` | Yes | — | — | DRAFT |
+| /process | process.03.material-direction | eyebrow | Yes | Yes | `/studio/content/pages/process` | Yes | — | — | DRAFT |
+| /process | process.03.material-direction | heading | Yes | Yes | `/studio/content/pages/process` | Yes | — | — | DRAFT |
+| /process | process.04.form-development | body | Yes | Yes | `/studio/content/pages/process` | Yes | — | — | DRAFT |
+| /process | process.04.form-development | eyebrow | Yes | Yes | `/studio/content/pages/process` | Yes | — | — | DRAFT |
+| /process | process.04.form-development | heading | Yes | Yes | `/studio/content/pages/process` | Yes | — | — | DRAFT |
+| /process | process.05.fabrication | body | Yes | Yes | `/studio/content/pages/process` | Yes | — | — | DRAFT |
+| /process | process.05.fabrication | eyebrow | Yes | Yes | `/studio/content/pages/process` | Yes | — | — | DRAFT |
+| /process | process.05.fabrication | heading | Yes | Yes | `/studio/content/pages/process` | Yes | — | — | DRAFT |
+| /process | process.06.resin-work | body | Yes | Yes | `/studio/content/pages/process` | Yes | — | — | DRAFT |
+| /process | process.06.resin-work | eyebrow | Yes | Yes | `/studio/content/pages/process` | Yes | — | — | DRAFT |
+| /process | process.06.resin-work | heading | Yes | Yes | `/studio/content/pages/process` | Yes | — | — | DRAFT |
+| /process | process.07.finishing | body | Yes | Yes | `/studio/content/pages/process` | Yes | — | — | DRAFT |
+| /process | process.07.finishing | eyebrow | Yes | Yes | `/studio/content/pages/process` | Yes | — | — | DRAFT |
+| /process | process.07.finishing | heading | Yes | Yes | `/studio/content/pages/process` | Yes | — | — | DRAFT |
+| /process | process.08.final-review | body | Yes | Yes | `/studio/content/pages/process` | Yes | — | — | DRAFT |
+| /process | process.08.final-review | eyebrow | Yes | Yes | `/studio/content/pages/process` | Yes | — | — | DRAFT |
+| /process | process.08.final-review | heading | Yes | Yes | `/studio/content/pages/process` | Yes | — | — | DRAFT |
 | Global content | chrome:action_label.close_menu | ACTION_LABEL.close_menu | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | chrome:action_label.dismiss_announcement | ACTION_LABEL.dismiss_announcement | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | chrome:action_label.open_menu | ACTION_LABEL.open_menu | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
