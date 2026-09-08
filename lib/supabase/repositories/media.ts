@@ -117,6 +117,35 @@ export async function listMediaAssets(
 }
 
 /**
+ * The assets a set of ids refers to, keyed by id.
+ *
+ * ONE QUERY FOR A WHOLE PAGE. A page of 8 sections can reference 20 assets between its
+ * desktop/mobile pairs and its repeating payload slots; fetching them per section is a waterfall
+ * of 20 round trips inside a server render. `lib/cms/media.ts` collects the ids first and calls
+ * this once.
+ *
+ * A MISSING ID IS SIMPLY ABSENT FROM THE MAP, not an error. RLS can legitimately hide an asset
+ * from a visitor that an editor can see, and a public page must render the rest of itself rather
+ * than 500 because one image is not visible to the anon role.
+ *
+ * An empty input short-circuits: PostgREST turns `in.()` into a syntax error rather than an empty
+ * result, so the guard is required, not a micro-optimisation.
+ */
+export async function listMediaAssetsByIds(
+  client: Client,
+  ids: readonly string[],
+): Promise<Map<string, MediaAsset>> {
+  const unique = [...new Set(ids)]
+  if (unique.length === 0) return new Map()
+
+  const { data, error } = await client.from('media_assets').select('*').in('id', unique)
+  if (error) throw toRepositoryError(ENTITY, 'list', 'by-ids', error)
+
+  const assets = parseRows(ENTITY, mediaAssetSchema, data ?? [])
+  return new Map(assets.map((asset) => [asset.id, asset]))
+}
+
+/**
  * What the Studio may set when it records an asset after an upload.
  *
  * NARROWER THAN THE ROW ON PURPOSE. `bytes`, `width`, `height` and `duration_s` are absent:
