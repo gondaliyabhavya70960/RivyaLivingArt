@@ -61,7 +61,17 @@ export function stripCommentsAndStrings(source, options = {}) {
     // Strings and template literals. Templates may nest ${...}, which may contain more strings;
     // the whole template is blanked, expressions included. A checker looking for a call site does
     // not want to match one that was interpolated into a string anyway.
-    if (blankStrings && (ch === '"' || ch === "'" || ch === '`')) {
+    /*
+     * STRINGS ARE ALWAYS SCANNED; `blankStrings` only decides whether they are ERASED.
+     *
+     * Skipping the scan when the caller asked to keep strings was a real defect, and a quiet one:
+     * a `//` inside a string literal — which is every URL ever written — was then read as the start
+     * of a line comment, and the rest of the line was blanked. `check-whatsapp-usage.mjs` was
+     * written against that behaviour and passed a planted `'https://wa.me/...'` while reporting
+     * success, because the stripper had eaten the host and left `'https:`. Phase 06's
+     * `check-video-props.mjs` uses the same option and had the same hole.
+     */
+    if (ch === '"' || ch === "'" || ch === '`') {
       const quote = ch
       let j = i + 1
       let depth = 0
@@ -87,7 +97,8 @@ export function stripCommentsAndStrings(source, options = {}) {
         }
         j++
       }
-      out += blank(source.slice(i, j))
+      const span = source.slice(i, j)
+      out += blankStrings ? blank(span) : span
       i = j
       continue
     }

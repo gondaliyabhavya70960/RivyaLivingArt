@@ -21,6 +21,13 @@ import type { Page as CmsPage } from '@/lib/supabase/schemas'
  * A SYSTEM PAGE HAS NO PATH and says so rather than showing a blank cell. `pages.path` is nullable
  * precisely so the reserved `slug = 'global'` row cannot be served to a visitor — an empty cell
  * would read as missing data rather than as a deliberate absence.
+ *
+ * THE "ON SITE" COLUMN IS PHASE 10's, and it answers the question an editor actually has after
+ * making a change: what does this look like to a visitor? A published page links straight to its
+ * path; an unpublished one goes through `/api/preview`, which checks `content.read` and turns
+ * draft mode on before forwarding. Without the second case the link would be useless on exactly
+ * the pages someone is working on, because every seeded section starts DRAFT and the public route
+ * answers 404 until an editor publishes it.
  */
 export const metadata = studioMetadata('/studio/content/pages')
 
@@ -72,6 +79,31 @@ export default async function Page() {
             id: 'updated',
             header: t('studio.content.pages.colUpdated'),
             cell: (page) => <RelativeTime value={page.updated_at} />,
+          },
+          {
+            id: 'on-site',
+            header: t('studio.content.pages.colOnSite'),
+            cell: (page) =>
+              page.path === null ? null : page.status === 'PUBLISHED' ? (
+                <Link href={page.path as Route} className="underline underline-offset-4">
+                  {t('studio.content.pages.viewLive')}
+                </Link>
+              ) : (
+                /**
+                 * A PLAIN ANCHOR, NOT `Link`. `/api/preview` is a Route Handler whose whole effect
+                 * is the `Set-Cookie` on its response — draft mode IS that cookie — and a
+                 * client-side navigation never issues the document request that would receive it.
+                 * The router would change the URL and the page would show published content, which
+                 * on a draft page means a 404. Same reasoning as `components/studio/content/
+                 * PageEditor.tsx`, and the same shape.
+                 */
+                <a
+                  href={`/api/preview?path=${encodeURIComponent(page.path)}`}
+                  className="underline underline-offset-4"
+                >
+                  {t('studio.content.pages.viewDraft')}
+                </a>
+              ),
           },
         ]}
       />

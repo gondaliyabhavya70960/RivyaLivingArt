@@ -102,9 +102,23 @@ jobs:
 
       # No marketing copy in a public section renderer. The rule is CLAUDE.md's; this parses every
       # file under components/sections/ with the TypeScript compiler and fails on a literal a
-      # visitor would read. Added with the gate in Phase 08.
-      - name: No visitor-readable literals in section renderers
+      # visitor would read. Added with the gate in Phase 08, widened in Phase 10 to cover the site
+      # chrome under components/patterns/ — the header, footer and announcement bar render words a
+      # visitor reads just as a section does.
+      - name: No visitor-readable literals in section renderers or chrome
         run: npm run cms:check-copy
+
+      # --- public site gates (Phase 10) ---
+      #
+      # One 'use client' at the top of a public layout turns the whole site into a client bundle,
+      # and the failure appears three files away from the cause. The WhatsApp gate closes the two
+      # holes a type cannot: a hand-written wa.me href, and buildDirectContactUrl imported onto a
+      # conversion surface where D1 requires the enquiry to be persisted first.
+      - name: Server Components by default on the public site
+        run: npm run site:check-client-boundary
+
+      - name: Every WhatsApp link goes through lib/whatsapp
+        run: npm run site:check-whatsapp
 
       # --- design-system gates (Phase 02) ---
       - name: Token discipline

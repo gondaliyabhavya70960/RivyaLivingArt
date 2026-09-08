@@ -138,6 +138,39 @@ pass before the component is considered delivered.
 | **Pagination / load more** | Real links or buttons; the new result count is announced; focus lands on the first new item, never back at the top | catalogue spec |
 | **Footer** | Landmark `<footer>`; link groups have headings that are real headings, not styled text | landmarks spec |
 
+#### 2.3a As built (Phase 10) — and the two rows that are not met yet
+
+The table above is the standard. Phase 10 built the header, the mega menu, the mobile drawer and
+the footer; this records what holds today and what does not, because a standard nobody has checked
+against the code is a standard that is assumed rather than met.
+
+**Met, and proved by `tests/e2e/navigation-a11y.spec.ts` at all eight FEAT §45 widths.** The skip
+link is the first focusable element and targets the single `<main id="main">`, which carries
+`tabIndex={-1}` so the jump moves focus rather than only the viewport. The header, the category
+panel and the footer are each a `<nav>` with a distinct accessible name from `global_content`, so a
+screen-reader user does not get three regions called "navigation". The mega-menu trigger is a
+`<button>` with `aria-expanded` and `aria-controls`; `Enter` opens, `ArrowDown` opens and moves
+focus into the panel, `Escape` closes and returns focus to the trigger, and focus is not trapped.
+The panel itself is a `<nav>`, not a `<div>` with an `aria-label` that would name nothing. Hover
+opens on a fine pointer only, after a 120 ms intent delay, so a touch device never opens the menu on
+the tap that was meant to activate the trigger. The mobile drawer is `role="dialog"` with focus
+trapped, `Escape` closing it and focus restored to its trigger. Footer column headings are real
+`<h2>` elements. axe reports zero critical or serious violations, menu open and closed.
+
+**Not met: `aria-current="page"` on the current route.** It needs the request's pathname, and a
+Server Component cannot read one without `headers()`, which would opt every public route out of
+static rendering — the whole site made dynamic to mark one link. The alternative is turning the
+header's link list into a client island for `usePathname()`. Phase 10's contract makes the header a
+Server Component and its islands are charged against Phase 11's budget for `/`, so the decision is
+deferred to **Phase 41** with the trade stated rather than taken quietly. It is a 2.4.8 (Location)
+concern, AAA, not a WCAG 2.2 AA failure.
+
+**Not met: a second "skip to navigation" link.** Deliberately not built. That link earns its place
+on a layout where the navigation comes AFTER the content; here the header is the first thing in the
+DOM, so a skip link at the very top that jumps two elements forward adds a control to the tab order
+for no benefit. If a route ever puts navigation below content — a filtered catalogue is the likely
+one — it belongs there, on that route.
+
 ### 2.4 Content and media
 
 | Component | Requirements | Proof |

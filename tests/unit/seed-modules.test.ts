@@ -34,6 +34,11 @@ describe('seed_key identity', () => {
     const prefixes = new Set(RECORDS.map((r) => r.seedKey.split(':')[0]))
     expect([...prefixes].sort()).toEqual([
       'category',
+      // Phase 10. The public shell's own strings — the skip link, the two menu controls, the
+      // announcement dismiss button, and the accessible names of the landmarks. They are not
+      // `global:` because they came from a different phase for a different reason: `global.ts`
+      // holds what the SEED specification supplies, and these are the words a component needed.
+      'chrome',
       'commission-form',
       'faq',
       'global',
@@ -228,8 +233,16 @@ describe('the label library', () => {
   const group = (name: string) =>
     RECORDS.filter((r) => r.table === 'global_content' && r.fields.group_key === name)
 
+  /**
+   * §7 supplies thirteen CTAs. The fourteenth is "Return Home", which §45 and §46 name as the
+   * secondary action on the 404 and error pages — Phase 10 seeded it when it built those surfaces,
+   * because until then no page existed that could show it. Counted separately rather than folded
+   * into the thirteen, so the specification's own number stays legible.
+   */
   it('seeds §7, §30 and §31 in full', () => {
-    expect(group('CTA')).toHaveLength(13)
+    const ctas = group('CTA')
+    expect(ctas.filter((r) => r.seedKey.startsWith('global:'))).toHaveLength(13)
+    expect(ctas.filter((r) => r.seedKey.startsWith('chrome:'))).toHaveLength(1)
     expect(group('COMMERCE_LABEL')).toHaveLength(10)
   })
 

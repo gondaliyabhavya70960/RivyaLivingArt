@@ -269,12 +269,12 @@ and Phase 10's site shell then reuses it.
 | RC-205 | `Tooltip` | usability | 02 | BUILT | §7.5 |
 | RC-206 | `Disclosure` | usability | 02 | BUILT | §7.6 |
 | RC-207 | `Reveal` + `useReducedMotion` | brand perception | 02 | BUILT | §7.7 |
-| RC-208 | `SiteHeader` | navigation | 10 | PLANNED | index only — server, no interaction model |
-| RC-209 | `AnnouncementBar` | conversion | 10 | PLANNED | index only |
-| RC-210 | `MegaMenu` | navigation | 10 | PLANNED | §7.8 |
-| RC-211 | `MobileNav` | navigation | 10 | PLANNED | §7.9 |
-| RC-212 | `SiteFooter` | navigation | 10 | PLANNED | index only — server |
-| RC-213 | `MediaSlot` | material understanding | 10 | PLANNED | §7.10 |
+| RC-208 | `SiteHeader` | navigation | 10 | BUILT | index only — server, no interaction model |
+| RC-209 | `AnnouncementBar` | conversion | 10 | BUILT | index only — server; dismissal is a Server Action, not an island |
+| RC-210 | `MegaMenu` | navigation | 10 | BUILT | §7.8 |
+| RC-211 | `MobileNav` | navigation | 10 | BUILT | §7.9 |
+| RC-212 | `SiteFooter` | navigation | 10 | BUILT | index only — server |
+| RC-213 | `MediaSlot` | material understanding | 10 | BUILT | §7.10 — moved from `components/sections/SectionMedia.tsx`, not written anew |
 | RC-214 | `HeroMotion` | brand perception | 11 | PLANNED | §7.11 |
 | RC-215 | `MaterialSequence` | material understanding | 11 | PLANNED | §7.12 |
 | RC-216 | `ChapterMedia` | storytelling | 12 | PLANNED | index only — composes RC-213/RC-207 |
@@ -509,15 +509,15 @@ time; `—` and `UNASSIGNED` mean the review has not happened, not that it passe
 |---|---|
 | Registry ID | RC-210 |
 | Source | Rivya first-party |
-| Link | `components/patterns/MegaMenu/{index.tsx,MegaMenuPanel.tsx}` |
+| Link | `components/patterns/MegaMenu/index.tsx` — **one file, not two.** The planned `MegaMenuPanel.tsx` was not built: the panel's contents are server-rendered by `SiteHeader` and passed as `children`, which is what lets the category cards use `MediaImage` (a Server Component) inside a panel whose open state is client state. A second client file would have had to receive that markup and pass it straight through |
 | Licence | N/A — first-party |
 | Dependencies | none |
 | Page | all D3 public paths (site header) |
 | Purpose | navigation |
 | Adaptation | Panel content comes from `navigation_items` and `categories.hero_media_id`; no label is hard-coded (SEED §1). Elevation 2, `--rv-radius-lg` |
-| Mobile behaviour | The panel does not exist below 1024px. Categories become a `Disclosure` inside RC-211, so there is no hover-only route to any category |
+| Mobile behaviour | The trigger and panel are `hidden lg:block`; below 1024px RC-211 carries the same items as a nested list, so there is no hover-only route to any category. The panel stays in the DOM at every width — `hidden`, not unmounted — so its server-rendered contents cost no request when it opens |
 | Performance | budget ≤ 3 kB gz, client (unmeasured — PLANNED). The trigger and the header around it stay server-rendered |
-| Accessibility | `aria-expanded` on the trigger, panel `aria-labelledby` the trigger; `ArrowDown` enters, `Tab` traverses in DOM order and exits naturally, `Escape` closes and restores focus. **No focus trap** — a menu is not a dialog. 120ms hover-intent delay on desktop pointers only; touch and keyboard open on activation |
+| Accessibility | `aria-expanded` and `aria-controls` on the trigger; the panel is a `<nav>` with `aria-label` from `UI_LABEL.nav.categories` — **not `aria-labelledby` on a div**, which would name nothing, since `aria-label` applies to a landmark and a bare `div` is not one. `ArrowDown` enters, `Tab` traverses in DOM order and exits naturally, `Escape` closes and restores focus. **No focus trap** — a menu is not a dialog. 120 ms hover-intent delay on a fine pointer only; touch and keyboard open on activation. Proved by `tests/e2e/navigation-a11y.spec.ts` at all eight widths |
 | Reviewed on | — |
 | Reviewer | UNASSIGNED |
 | Verdict | FIRST_PARTY |
@@ -533,10 +533,10 @@ time; `—` and `UNASSIGNED` mean the review has not happened, not that it passe
 | Dependencies | none |
 | Page | all D3 public paths |
 | Purpose | navigation |
-| Adaptation | Composes RC-202 and RC-206; ground `--rv-surface-ground` in the section's scheme, rows ≥ 56px |
+| Adaptation | Composes RC-202. Takes its items as plain `MenuItem[]` data rather than as `children`, unlike RC-210 — nothing in the drawer is a Server Component, so the serialised tree crosses the boundary and the drawer can render the two-level structure itself. The rows are `menu = 'MOBILE'` rows, not the header's: Phase 09 seeded them separately so a shorter mobile menu is an edit rather than a deploy |
 | Mobile behaviour | Full-width below 430px, 420px above; primary CTA pinned above the safe-area inset; nested categories are a disclosure, never a second drawer |
 | Performance | budget ≤ 1 kB gz over RC-202, client (unmeasured — PLANNED) |
-| Accessibility | Inherits RC-202's dialog contract; the trigger is `aria-expanded` + `aria-controls`; route change closes it and moves focus to `#main` |
+| Accessibility | Inherits RC-202's dialog contract — `role="dialog"`, focus trapped, `Escape` closes, focus restored to the trigger via `returnFocusTo`. The trigger carries `aria-expanded` and an `aria-label` from `ACTION_LABEL.open_menu`. Its heading is `titleHidden`: a visible "Menu" above a list of destinations is a caption on a caption, and dropping it entirely would leave an `aria-modal` dialog named nothing. Clicking a link closes the drawer |
 | Reviewed on | — |
 | Reviewer | UNASSIGNED |
 | Verdict | FIRST_PARTY |
@@ -547,12 +547,12 @@ time; `—` and `UNASSIGNED` mean the review has not happened, not that it passe
 |---|---|
 | Registry ID | RC-213 |
 | Source | Rivya first-party |
-| Link | `components/patterns/MediaSlot.tsx` |
+| Link | `components/patterns/MediaSlot/index.tsx` — exports `BlockImage`, `BlockVideo` and `ResponsiveMedia`. It arrived in Phase 08 as `components/sections/SectionMedia.tsx` and MOVED here in Phase 10 rather than being written a second time: the header's category cards need exactly this behaviour, and two ratio-box implementations are how two components come to disagree about what happens when an asset is null |
 | Licence | N/A — first-party |
 | Dependencies | none — Cloudinary URLs are built by `lib/media`, no SDK reaches the client |
 | Page | every route rendering media |
 | Purpose | material understanding |
-| Adaptation | Reserves the D6 aspect box before load; chooses the desktop or mobile asset with `<picture>`/`source` at `--rv-bp-md`, not JavaScript; applies `--rv-media-veil` when text sits over media |
+| Adaptation | Reserves the D6 aspect box before load and applies `--rv-media-veil` when text sits over media. **Two elements, not one `<picture>`:** the desktop and mobile assets are different crops of different subjects chosen by an editor (`media_desktop_id` and `media_mobile_id` are separate columns for that reason) and each carries its own `alt_text`, while `<picture>` has one `alt` for all its sources. Each frame is hidden at the other's breakpoint (`md`, matching `AspectBox`'s own split) so the reserved box and the asset change over at the same width |
 | Mobile behaviour | Mobile is a separate CMS slot per D6, not a crop of the desktop asset. Portrait ratios (4:5, 9:16, 3:4) at 360px |
 | Performance | 0 kB, server. Emits an AVIF/WebP `srcset` ladder; the hero instance is `priority`, everything else lazy |
 | Accessibility | `alt` from `media_assets.alt_text`; `alt=""` only when `is_decorative` is true, never by omission. On failure it paints `--rv-surface-sunken` with the seeded SEED §47 label at the reserved ratio, so nothing collapses and CLS stays inside the 0.05 budget |

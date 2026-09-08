@@ -316,6 +316,59 @@ Properties that are load-bearing:
 - **Draft mode bypasses every cache layer** and is reachable only through `/api/preview` with a
   signed token.
 
+### 4.1a The public shell, as built (Phase 10)
+
+The sequence above is the intent; this is what the code does, and the three places they differ are
+worth stating because each was a decision.
+
+**Two Supabase clients, and the public one reads no cookies.** `lib/supabase/public.ts` is an anon
+client with no cookie handlers at all. `lib/supabase/server.ts` — the cookie-bound one — is wrong
+for a public route twice over: reading a cookie opts the route out of static rendering, so every
+visitor to `/about` would pay for a fresh render; and its `setAll` swallows the write, which is safe
+only because `proxy.ts` performs the session refresh, and `proxy.ts` matches `/studio` and nothing
+else. `renderCmsPage` switches to the cookie-bound client only when `draftMode()` is enabled, which
+is exactly when the staff session has to travel with the query.
+
+**One chrome fetch per request.** `lib/site/chrome.ts` exports `getSiteChrome()`, wrapped in
+`React.cache`. It issues four queries in parallel — `global_content`, `navigation_items`,
+`categories`, and the single `contact-details` section — and the layout is the only caller.
+"One round trip" in the phase document means one call site and one wait, not one statement:
+PostgREST has no cross-table join and supabase-js has no batch, so `Promise.all` makes the cost the
+slowest query rather than their sum.
+
+**The chrome is the same for everyone, draft mode included.** Previewing an unpublished PAGE does
+not mean previewing an unpublished MENU; an editor who saw draft navigation in preview would be
+looking at a site no visitor can reach.
+
+**What the shell renders, in DOM order:** skip link → announcement → header → `<main id="main">` →
+footer. The skip link is first because it exists to get a keyboard user past the header, and the
+`<main>` carries `tabIndex={-1}` so the jump moves focus rather than only the viewport.
+
+**Three client islands, and no more.** `MegaMenu` and `MobileNav` hold open/closed state;
+`SiteErrorCopy` is a context provider that renders `children` unchanged and exists only because
+Next requires `error.tsx` to be a Client Component and a Client Component cannot query the database.
+The announcement bar's dismissal is deliberately **not** an island: it is a `<form>` posting to a
+Server Action, so it works with JavaScript disabled and costs the shell nothing.
+
+**Every visitor-readable string in the chrome is a row.** `navigation_items` for the menus,
+`global_content` for the controls and landmark names, and the one `contact-details` section for the
+studio's phone, WhatsApp and email — SEED §21 supplies those once and forbids restating them.
+`npm run cms:check-copy` scans `components/patterns` as well as `components/sections` and fails the
+build on a literal. The one exception in the product is `app/global-error.tsx`, which fires when the
+root layout itself threw and therefore cannot read anything; its sentence asserts nothing about the
+business.
+
+**A page with no live sections is a 404.** `renderCmsPage` calls `notFound()` when the path has no
+`pages` row, and again when the page has one but no section is live. That is SEED §55 as code: a
+published route with nothing on it renders a header, a footer and a blank middle, which a visitor
+reads as "Coming Soon" and a crawler indexes as a real page. In the seeded state this means every
+CMS path answers 404 — Phase 09 seeds all 53 sections `DRAFT` — and the site becomes visible when an
+editor publishes, which is the Phase 08 workflow rather than something this phase routes around.
+Amendment A10 records what a 404 document actually contains.
+
+**`/search` is the one static route that is not a `renderCmsPage` delegate.** It has no `pages` row
+by Phase 09's decision; amendment A9 records why and what it renders instead.
+
 ### 4.2 Studio publish
 
 ```mermaid
@@ -555,9 +608,32 @@ strategies decay into "everything is dynamic".
 ### The revalidation path
 
 `app/api/revalidate` is the only cache-invalidation entry point. POST only, guarded by
-`REVALIDATE_SECRET`, body Zod-validated to `{ paths?: string[], tags?: string[] }`, and it returns
-`401` without the secret. Its callers are exactly two: `lib/cms/publishing.ts` and the schedule cron.
+`REVALIDATE_SECRET`, body Zod-validated to `{ paths?: string[], tags?: string[], type? }`, and it
+returns `401` without the secret and `503` when the secret is not configured — a deploy that forgot
+the variable is an operations problem needing a different alert from a rejected caller, and treating
+"no secret configured" as "no check required" would leave an open endpoint that lets anyone force a
+full re-render on demand. Its callers are exactly two: `lib/cms/publishing.ts` and the schedule cron.
 Nothing else — no client, no webhook from an external service, no Studio button — invalidates cache.
+
+**Two things about it were found by testing rather than by reading, and both produced a 200 that did
+nothing.** They are recorded here because each looks exactly like a working publish workflow.
+
+1. **`export const revalidate` on the site layout is what makes the endpoint work at all.** Without
+   it every public route builds as a pure static file: no dynamic API is called and no `fetch` is
+   cached, so Next prerenders once and serves that HTML forever, and `revalidatePath` has no cache
+   entry behind the page to invalidate. Observed directly — publish a section, call the endpoint,
+   receive `{"revalidated":…}`, and the page keeps 404ing. The window on
+   `app/(site)/layout.tsx` is `3600`, and it is a backstop rather than the mechanism.
+
+2. **`revalidatePath` must be called with NO `type` for a literal path.** Next's reference says
+   `type` is for a path containing a dynamic segment and to omit it otherwise; passing `'page'`
+   alongside `/about` does not merely add nothing, it fails to match the cache entry. The endpoint
+   defaulted `type` to `'page'` in its first draft and silently invalidated nothing. The fix is two
+   call shapes, and `x-nextjs-cache` flipping `HIT` → `MISS` is what proves it.
+
+Verified end to end on a production build: `/process` 404 → publish its sections → `POST
+/api/revalidate` → `/process` 200, and `sitemap.xml` gaining exactly the two paths with published
+sections and no others.
 
 **Failure mode that is designed for, not hoped about:** if revalidation fails, publication has still
 happened and the page is stale for at most its `revalidate` window. The failure is written to

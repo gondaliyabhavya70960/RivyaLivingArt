@@ -52,4 +52,39 @@ describe('stripCommentsAndStrings', () => {
   it('leaves an unterminated block comment blanked rather than throwing', () => {
     expect(() => stripCommentsAndStrings('/* never closed')).not.toThrow()
   })
+
+  describe('strings: false', () => {
+    it('keeps a string literal', () => {
+      const stripped = stripCommentsAndStrings('const a = "keep me"', { strings: false })
+      expect(stripped).toContain('keep me')
+    })
+
+    it('still removes comments', () => {
+      const stripped = stripCommentsAndStrings('// gone\nconst a = "kept"', { strings: false })
+      expect(stripped).not.toContain('gone')
+      expect(stripped).toContain('kept')
+    })
+
+    /**
+     * THE REGRESSION. `//` inside a string is not a comment, and every URL contains one.
+     *
+     * Before this, keeping strings meant not scanning them at all, so the scanner reached the `//`
+     * of `https://` and blanked the rest of the line as a line comment — leaving `'https:` behind.
+     * `check-whatsapp-usage.mjs` was built on that view and reported success on a planted
+     * `https://wa.me/...` link, which is the exact failure the gate exists to prevent.
+     * `check-video-props.mjs` reads the same view and had the same hole.
+     */
+    it('does not treat // inside a string as the start of a comment', () => {
+      const source = 'const link = "https://wa.me/919999999999"\nconst after = 1'
+      const stripped = stripCommentsAndStrings(source, { strings: false })
+      expect(stripped).toContain('https://wa.me/919999999999')
+      expect(stripped).toContain('const after = 1')
+    })
+
+    it('does not treat /* inside a string as the start of a block comment', () => {
+      const source = 'const a = "/* not a comment"\nconst b = 2'
+      const stripped = stripCommentsAndStrings(source, { strings: false })
+      expect(stripped).toContain('const b = 2')
+    })
+  })
 })
