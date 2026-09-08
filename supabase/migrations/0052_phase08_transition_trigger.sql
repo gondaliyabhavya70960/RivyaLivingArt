@@ -18,6 +18,39 @@
 
 set search_path = public, extensions;
 
+create or replace function public.cms_transition_allowed(
+  p_from content_status,
+  p_to content_status
+)
+returns boolean
+language sql
+immutable
+set search_path = public, extensions
+as $$
+  -- `from = to` is not a transition and is always allowed: an ordinary save must not
+  -- need a status permission.
+  select p_from = p_to or (p_from, p_to) in (
+    ('DRAFT'::content_status, 'REVIEW'::content_status),
+    ('DRAFT'::content_status, 'ARCHIVED'::content_status),
+    ('REVIEW'::content_status, 'DRAFT'::content_status),
+    ('REVIEW'::content_status, 'APPROVED'::content_status),
+    ('REVIEW'::content_status, 'ARCHIVED'::content_status),
+    ('APPROVED'::content_status, 'PUBLISHED'::content_status),
+    ('APPROVED'::content_status, 'REVIEW'::content_status),
+    ('APPROVED'::content_status, 'DRAFT'::content_status),
+    ('APPROVED'::content_status, 'ARCHIVED'::content_status),
+    ('PUBLISHED'::content_status, 'DRAFT'::content_status),
+    ('PUBLISHED'::content_status, 'ARCHIVED'::content_status),
+    ('ARCHIVED'::content_status, 'DRAFT'::content_status)
+  );
+$$;
+
+revoke execute on function public.cms_transition_allowed(content_status, content_status) from public, anon;
+grant execute on function public.cms_transition_allowed(content_status, content_status) to authenticated, service_role;
+
+comment on function public.cms_transition_allowed(content_status, content_status) is
+  'Generated from lib/cms/transitions.ts. The 12 legal edges, queryable — so cms_publish_section can refuse before it writes.';
+
 create or replace function public.enforce_status_transition()
 returns trigger
 language plpgsql

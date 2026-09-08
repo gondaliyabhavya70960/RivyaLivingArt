@@ -673,3 +673,317 @@ revoke execute on function public.clear_media_usages_on_delete() from public, an
 create trigger page_sections_clear_media_usages
   after delete on page_sections
   for each row execute function clear_media_usages_on_delete();
+
+-- ============================================================================================
+-- The cms_* functions
+-- ============================================================================================
+--
+-- ALL FOUR ARE SECURITY DEFINER WITH EXECUTE REVOKED FROM public, anon AND authenticated, GRANTED
+-- TO service_role ALONE. That combination is not belt-and-braces; without it these functions are a
+-- hole straight through every other control in the project.
+--
+-- PostgreSQL grants EXECUTE on a new function to PUBLIC by default, and PostgREST publishes every
+-- function in the `public` schema as an RPC endpoint. So a `create function` with no `revoke` is
+-- reachable by anyone holding the anon key — which is in the browser bundle by design. Combined
+-- with SECURITY DEFINER (which these need, because they write `media_assets` and `activity_events`
+-- across policies that no session role holds), that would let any visitor publish arbitrary
+-- sections and cascade unreviewed concept media to anon-readable.
+--
+-- Granting to service_role alone is also what makes `p_actor` safe as a PARAMETER rather than a
+-- forgery vector. Only server code holding the service key can call these, and authorisation has
+-- already happened in lib/cms/publishing.ts by the time it does.
+--
+-- SQLSTATE RV0xx is a legal implementation-defined class: the standard reserves classes beginning
+-- 0-4 and A-H, and R is neither. Each raise repeats `constraint=...` inside DETAIL because
+-- PostgREST's JSON error body has no `constraint` field, and lib/supabase/repositories/support.ts
+-- regexes over message + details to recover it.
+
+-- --------------------------------------------------------------------------------------------
+-- cms_publish_section — the transition and the media cascade, in one transaction
+-- --------------------------------------------------------------------------------------------
+--
+-- WHY THIS IS A DATABASE FUNCTION AND NOT SERVICE CODE. Publishing a section must promote its bound
+-- media in the SAME transaction as the status write, or a crash between the two leaves a published
+-- page whose images the anon role cannot read — copy with holes, and no error anywhere. supabase-js
+-- has no transaction API: every `.from().update()` is its own statement over PostgREST. A function
+-- is the only place the two writes can be atomic.
+--
+-- REFUSALS HAPPEN BEFORE ANY WRITE, not because a rollback would be incorrect, but because the
+-- error must name what is wrong. A rolled-back cascade reports the constraint that fired last,
+-- which is rarely the thing an editor needs to fix.
+create or replace function public.cms_publish_section(
+  p_section_id uuid,
+  p_to content_status,
+  p_actor uuid,
+  p_change_summary text default null
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public, extensions
+as $$
+declare
+  v_section     page_sections;
+  v_page        pages;
+  v_from        content_status;
+  v_blocking    text[];
+  v_unverified  text[];
+  v_promoted    text[] := array[]::text[];
+  v_revision    int;
+  v_asset       record;
+begin
+  -- FOR UPDATE, so two concurrent publishes of one section serialise rather than both reading
+  -- APPROVED and both cascading.
+  select * into v_section from page_sections where id = p_section_id for update;
+  if not found then
+    raise exception 'no page_section with id %', p_section_id
+      using errcode = 'RV001', detail = 'constraint=cms_section_exists';
+  end if;
+
+  select * into v_page from pages where id = v_section.page_id;
+  v_from := v_section.status;
+
+  -- 1. Is the edge legal? Asked first so an impossible move never promotes anything.
+  if not public.cms_transition_allowed(v_from, p_to) then
+    raise exception 'illegal status transition % -> % on page_sections', v_from, p_to
+      using errcode = 'RV001', detail = 'constraint=content_status_transition';
+  end if;
+
+  -- 2. The section's own owner-verification gate. The check constraint would also catch this, but
+  --    it would report a constraint name; this names the flag an editor has to clear.
+  if p_to = 'PUBLISHED'
+     and v_section.owner_verification = 'OWNER_VERIFICATION_REQUIRED' then
+    raise exception
+      'section % asserts a business claim that has not been verified (owner_verification = OWNER_VERIFICATION_REQUIRED)',
+      p_section_id
+      using errcode = 'RV002', detail = 'constraint=content_owner_verification_gate';
+  end if;
+
+  -- 3. The bound media, if we are going live.
+  if p_to = 'PUBLISHED' then
+    -- Assets an editor has NOT approved. Refused rather than skipped: media that nobody reviewed
+    -- must never reach the public site as a side effect of publishing copy.
+    select array_agg(ma.rivya_asset_id order by ma.rivya_asset_id)
+      into v_blocking
+      from media_usages mu
+      join media_assets ma on ma.id = mu.media_id
+     where mu.context_type = 'PAGE_SECTION'
+       and mu.context_id = p_section_id
+       and ma.status in ('DRAFT', 'REVIEW', 'ARCHIVED');
+
+    if v_blocking is not null then
+      raise exception
+        'cannot publish: % bound asset(s) are not approved: %',
+        array_length(v_blocking, 1), array_to_string(v_blocking, ', ')
+        using errcode = 'RV003', detail = 'constraint=cms_media_not_approved';
+    end if;
+
+    -- Assets that are APPROVED but still carry an unverified business claim. THIS CHECK EXISTS
+    -- BECAUSE OF A COLLISION BETWEEN TWO PHASES: Phase 07 imports all 250 Higgsfield assets as
+    -- APPROVED *and* OWNER_VERIFICATION_REQUIRED, while `media_assets_verified_before_publish`
+    -- (Phase 03, 0005) forbids PUBLISHED while that flag stands. Without this pre-check the
+    -- promotion below raises a bare 23514 naming a constraint, and the person reading it has no
+    -- idea which asset or why. With it, they get the asset ids and can go and verify them.
+    select array_agg(ma.rivya_asset_id order by ma.rivya_asset_id)
+      into v_unverified
+      from media_usages mu
+      join media_assets ma on ma.id = mu.media_id
+     where mu.context_type = 'PAGE_SECTION'
+       and mu.context_id = p_section_id
+       and ma.status = 'APPROVED'
+       and ma.owner_verification = 'OWNER_VERIFICATION_REQUIRED';
+
+    if v_unverified is not null then
+      raise exception
+        'cannot publish: % bound asset(s) still require owner verification: %',
+        array_length(v_unverified, 1), array_to_string(v_unverified, ', ')
+        using errcode = 'RV006', detail = 'constraint=cms_media_unverified';
+    end if;
+
+    -- Promote. Only APPROVED cascades; PUBLISHED is left alone, and everything else was refused
+    -- above, so promotion is always downstream of a human approval in the Media Manager.
+    -- DEDUPED WITH `in (subquery)`, NOT `group by` OR `distinct`. One asset is commonly bound
+    -- twice — desktop and mobile of the same picture — and promoting it twice would write two
+    -- `media.publish.cascade` rows for one event. Neither GROUP BY nor DISTINCT may be combined
+    -- with FOR UPDATE ("FOR UPDATE is not allowed with GROUP BY clause"), and the lock is not
+    -- optional here: two concurrent publishes sharing an asset must serialise.
+    for v_asset in
+      select ma.id, ma.rivya_asset_id
+        from media_assets ma
+       where ma.status = 'APPROVED'
+         and ma.id in (
+           select mu.media_id from media_usages mu
+            where mu.context_type = 'PAGE_SECTION' and mu.context_id = p_section_id
+         )
+       order by ma.rivya_asset_id
+       for update
+    loop
+      update media_assets
+         set status = 'PUBLISHED', updated_by = p_actor, published_at = now(), published_by = p_actor
+       where id = v_asset.id;
+
+      -- check-migrations: allow-insert (a function body writing the activity feed, not a seeded row)
+      insert into activity_events (actor_id, actor_role, action, entity_type, entity_id, entity_label, summary, metadata)
+      values (p_actor, public.current_staff_role(), 'media.publish.cascade', 'media_asset', v_asset.id,
+              v_asset.rivya_asset_id,
+              'Promoted to PUBLISHED because a section binding it was published',
+              jsonb_build_object('section_id', p_section_id, 'page_id', v_section.page_id));
+
+      v_promoted := v_promoted || v_asset.rivya_asset_id;
+    end loop;
+  end if;
+
+  -- 4. The status write. `enforce_status_transition` fires here and re-checks legality and
+  --    permission from inside — this function does not exempt anyone from the state machine, it
+  --    only makes the refusals readable and the cascade atomic.
+  update page_sections
+     set status = p_to,
+         updated_by = p_actor,
+         published_at = case when p_to = 'PUBLISHED' then now() else published_at end,
+         published_by = case when p_to = 'PUBLISHED' then p_actor else published_by end,
+         schedule_state = 'PENDING',
+         schedule_attempts = 0,
+         schedule_error = null
+   where id = p_section_id;
+
+  -- 5. The revision. NOT written here — `write_revision` already fired on the update above, inside
+  --    this same transaction. Inserting one here would make verification step 6 count two per
+  --    mutation, and an audit trail that double-counts is worse than one that under-counts.
+  select max(revision_no) into v_revision
+    from content_revisions
+   where entity_type = 'page_section' and entity_id = p_section_id;
+
+  -- check-migrations: allow-insert (a function body writing the activity feed, not a seeded row)
+  insert into activity_events (actor_id, actor_role, action, entity_type, entity_id, entity_label, summary, metadata)
+  values (p_actor, public.current_staff_role(),
+          case when p_to = 'PUBLISHED' then 'content.section-published'
+               when v_from = 'PUBLISHED' then 'content.section-unpublished'
+               else 'content.section-status-changed' end,
+          'page_section', p_section_id, v_section.block_type,
+          coalesce(p_change_summary, format('%s -> %s', v_from, p_to)),
+          jsonb_build_object('from', v_from, 'to', p_to, 'promoted', to_jsonb(v_promoted)));
+
+  return jsonb_build_object(
+    'section_id', p_section_id,
+    'from', v_from,
+    'to', p_to,
+    'revision_no', v_revision,
+    'promoted', to_jsonb(v_promoted),
+    -- The paths the caller must revalidate. Null for a SYSTEM page, which has none.
+    'paths', case when v_page.path is null then '[]'::jsonb else to_jsonb(array[v_page.path]) end
+  );
+end;
+$$;
+
+revoke execute on function public.cms_publish_section(uuid, content_status, uuid, text) from public, anon, authenticated;
+grant execute on function public.cms_publish_section(uuid, content_status, uuid, text) to service_role;
+
+comment on function public.cms_publish_section(uuid, content_status, uuid, text) is
+  'Transition + bound-media cascade in one transaction. Refuses before writing on an illegal edge, an unverified section, unapproved media (RV003) or unverified media (RV006).';
+
+-- --------------------------------------------------------------------------------------------
+-- cms_unpublish_media_asset — the other half of the asymmetry
+-- --------------------------------------------------------------------------------------------
+--
+-- Unpublishing a SECTION demotes nothing, because an asset may be bound to several sections and
+-- pulling it from under the others would break pages nobody touched. The only way an asset leaves
+-- PUBLISHED is this explicit act, and it is refused while any published section still shows it.
+--
+-- The phase document calls this "the same guard shape as the Phase 06 delete trigger". It is not,
+-- and the difference is worth stating: 0030 made that guard a FOREIGN KEY (`on delete restrict`)
+-- precisely because a foreign key cannot be forgotten. This one cannot be a foreign key — it is a
+-- condition on a STATUS, not on a row's existence — so it is a function, and the function is the
+-- only path the Media Manager offers.
+create or replace function public.cms_unpublish_media_asset(p_media_id uuid, p_actor uuid)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public, extensions
+as $$
+declare
+  v_asset media_assets;
+  v_blockers text[];
+begin
+  select * into v_asset from media_assets where id = p_media_id for update;
+  if not found then
+    raise exception 'no media_asset with id %', p_media_id
+      using errcode = 'RV001', detail = 'constraint=cms_asset_exists';
+  end if;
+
+  -- The schedule window is deliberately NOT considered. A section that is PUBLISHED but outside its
+  -- window will come back into it; demoting the asset now would break that page in the future,
+  -- silently, at a moment nobody is watching.
+  select array_agg(distinct p.slug order by p.slug)
+    into v_blockers
+    from media_usages mu
+    join page_sections ps on ps.id = mu.context_id
+    join pages p on p.id = ps.page_id
+   where mu.context_type = 'PAGE_SECTION'
+     and mu.media_id = p_media_id
+     and ps.status = 'PUBLISHED';
+
+  if v_blockers is not null then
+    raise exception
+      'cannot unpublish %: still used by % published section(s) on: %',
+      v_asset.rivya_asset_id, array_length(v_blockers, 1), array_to_string(v_blockers, ', ')
+      using errcode = 'RV004', detail = 'constraint=cms_media_in_use';
+  end if;
+
+  update media_assets
+     set status = 'APPROVED', updated_by = p_actor
+   where id = p_media_id;
+
+  -- check-migrations: allow-insert (a function body writing the activity feed, not a seeded row)
+  insert into activity_events (actor_id, actor_role, action, entity_type, entity_id, entity_label, summary, metadata)
+  values (p_actor, public.current_staff_role(), 'media.unpublish', 'media_asset', p_media_id,
+          v_asset.rivya_asset_id, 'Demoted to APPROVED', '{}'::jsonb);
+
+  return jsonb_build_object('media_id', p_media_id, 'status', 'APPROVED');
+end;
+$$;
+
+revoke execute on function public.cms_unpublish_media_asset(uuid, uuid) from public, anon, authenticated;
+grant execute on function public.cms_unpublish_media_asset(uuid, uuid) to service_role;
+
+-- --------------------------------------------------------------------------------------------
+-- cms_reorder_sections — one statement, which is why the constraint is deferrable
+-- --------------------------------------------------------------------------------------------
+--
+-- PostgREST cannot give the repository layer a transaction, so a reorder expressed as N updates
+-- would leave the page in a half-reordered state if any one of them failed. Here it is one UPDATE
+-- against `page_sections_unique_position`, which 0050 declared DEFERRABLE INITIALLY DEFERRED so the
+-- transiently duplicated positions are only checked at commit.
+create or replace function public.cms_reorder_sections(p_page_id uuid, p_ids uuid[], p_actor uuid)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public, extensions
+as $$
+declare
+  v_count int;
+  v_total int;
+begin
+  select count(*) into v_total from page_sections where page_id = p_page_id;
+  select count(*) into v_count
+    from page_sections where page_id = p_page_id and id = any(p_ids);
+
+  -- Every id must belong to this page, and the list must name ALL of them. A partial list would
+  -- silently leave the unnamed sections at positions that now collide with the new ordering.
+  if v_count <> array_length(p_ids, 1) or v_count <> v_total then
+    raise exception
+      'reorder must name every section on the page exactly once (% named, % matched, % on the page)',
+      array_length(p_ids, 1), v_count, v_total
+      using errcode = 'RV005', detail = 'constraint=cms_reorder_complete';
+  end if;
+
+  update page_sections ps
+     set position = ordered.new_position, updated_by = p_actor
+    from (select unnest(p_ids) as id, generate_series(0, array_length(p_ids, 1) - 1) as new_position) ordered
+   where ps.id = ordered.id and ps.page_id = p_page_id;
+
+  return jsonb_build_object('page_id', p_page_id, 'count', v_total);
+end;
+$$;
+
+revoke execute on function public.cms_reorder_sections(uuid, uuid[], uuid) from public, anon, authenticated;
+grant execute on function public.cms_reorder_sections(uuid, uuid[], uuid) to service_role;

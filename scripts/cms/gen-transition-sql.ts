@@ -92,6 +92,49 @@ function render(): string {
   lines.push('')
   lines.push('set search_path = public, extensions;')
   lines.push('')
+  // A queryable form of the same edge list, so `cms_publish_section` can refuse an illegal move
+  // with a readable message BEFORE it promotes any media — rather than promoting first and relying
+  // on the trigger to roll the whole transaction back. Emitted from the same array, so the function
+  // and the trigger cannot disagree.
+  lines.push('create or replace function public.cms_transition_allowed(')
+  lines.push('  p_from content_status,')
+  lines.push('  p_to content_status')
+  lines.push(')')
+  lines.push('returns boolean')
+  lines.push('language sql')
+  lines.push('immutable')
+  lines.push('set search_path = public, extensions')
+  lines.push('as $$')
+  lines.push(
+    '  -- `from = to` is not a transition and is always allowed: an ordinary save must not',
+  )
+  lines.push('  -- need a status permission.')
+  lines.push('  select p_from = p_to or (p_from, p_to) in (')
+  lines.push(
+    TRANSITIONS.map((t) => `    ('${t.from}'::content_status, '${t.to}'::content_status)`).join(
+      ',\n',
+    ),
+  )
+  lines.push('  );')
+  lines.push('$$;')
+  lines.push('')
+  // 0022 narrowed EXECUTE on every public function to the roles that need it, after Supabase's
+  // security advisor flagged the PostgreSQL default of granting EXECUTE to PUBLIC. A new function
+  // that leaves the default in place quietly regresses that, and the advisor would flag it again.
+  // This one is a pure predicate over two enum values and leaks nothing, but "harmless" is not the
+  // standard the rest of the schema is held to.
+  lines.push(
+    'revoke execute on function public.cms_transition_allowed(content_status, content_status) from public, anon;',
+  )
+  lines.push(
+    'grant execute on function public.cms_transition_allowed(content_status, content_status) to authenticated, service_role;',
+  )
+  lines.push('')
+  lines.push('comment on function public.cms_transition_allowed(content_status, content_status) is')
+  lines.push(
+    `  'Generated from lib/cms/transitions.ts. The ${String(TRANSITIONS.length)} legal edges, queryable — so cms_publish_section can refuse before it writes.';`,
+  )
+  lines.push('')
   lines.push('create or replace function public.enforce_status_transition()')
   lines.push('returns trigger')
   lines.push('language plpgsql')

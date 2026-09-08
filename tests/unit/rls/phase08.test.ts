@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { slotKeyOf } from '@/lib/media/gaps'
 
-import { FIXTURE_USERS, asUser, connect, disconnect, loadFixture } from './harness'
+import { FIXTURE_USERS, asAnon, asUser, connect, disconnect, loadFixture } from './harness'
 
 /**
  * The in-database half of the status workflow.
@@ -34,6 +34,12 @@ const PAGE = '00000000-0000-4000-8000-0000000000c1'
 /** Postgres error codes, as the trigger raises them. */
 const ILLEGAL = '23514'
 const FORBIDDEN = '42501'
+
+/** A raw read as the anon role — what a visitor's browser can see. */
+async function asSessionAnon<T>(text: string): Promise<{ rows: T }> {
+  const rows = await asAnon((sql) => sql.rows(text))
+  return { rows: rows as T }
+}
 
 async function readStatus(): Promise<string | undefined> {
   const db = await connect()
@@ -465,5 +471,253 @@ describeDb('the trigger set', () => {
       expect(after[0]?.snapshot).toEqual(before[0]?.snapshot)
       expect(after[0]?.snapshot).not.toEqual({})
     })
+  })
+})
+
+describeDb('cms_publish_section — the media cascade', () => {
+  const PAGE_ID = '00000000-0000-4000-8000-0000000000f0'
+  const GOOD = '00000000-0000-4000-8000-0000000000f1'
+  const NOT_APPROVED = '00000000-0000-4000-8000-0000000000f2'
+  const UNVERIFIED = '00000000-0000-4000-8000-0000000000f3'
+  let section = ''
+
+  const asset = async (
+    id: string,
+    ref: string,
+    status: string,
+    verification: string,
+  ): Promise<void> => {
+    const db = await connect()
+    await db.query(
+      `insert into media_assets (id, rivya_asset_id, provider, resource_type, public_id, folder,
+                                 filename, kind, source, alt_text, is_ai_generated, is_concept,
+                                 status, owner_verification)
+       values ($1,$2,'cloudinary','image',$3,'rivya/casc',$4,'IMAGE','HIGGSFIELD','a',true,true,$5,$6)`,
+      [id, ref, `rivya/casc/${ref}`, ref, status, verification],
+    )
+  }
+
+  beforeAll(async () => {
+    const db = await connect()
+    await db.query('delete from page_sections')
+    await db.query(`delete from pages where id = $1`, [PAGE_ID])
+    await db.query(`delete from media_assets where rivya_asset_id like 'CASC-%'`)
+    await db.query(
+      `insert into pages (id, slug, kind, title, path) values ($1,'casc','PAGE','C','/casc')`,
+      [PAGE_ID],
+    )
+    await asset(GOOD, 'CASC-GOOD', 'APPROVED', 'VERIFIED')
+    await asset(NOT_APPROVED, 'CASC-DRAFT', 'DRAFT', 'VERIFIED')
+    await asset(UNVERIFIED, 'CASC-UNVER', 'APPROVED', 'OWNER_VERIFICATION_REQUIRED')
+  })
+
+  afterAll(disconnect)
+
+  /** Walk a fresh section to APPROVED with the given asset bound to BOTH media columns. */
+  const approvedSectionWith = async (mediaId: string): Promise<string> => {
+    const db = await connect()
+    await db.query('delete from page_sections where page_id = $1', [PAGE_ID])
+    const { rows } = await db.query<{ id: string }>(
+      `insert into page_sections (page_id, block_type, position, media_slot_key,
+                                  media_desktop_id, media_mobile_id)
+       values ($1,'hero',0,'home.hero.poster',$2,$2) returning id`,
+      [PAGE_ID, mediaId],
+    )
+    const id = rows[0]!.id
+    await db.query(`update page_sections set status = 'REVIEW' where id = $1`, [id])
+    await db.query(`update page_sections set status = 'APPROVED' where id = $1`, [id])
+    return id
+  }
+
+  it('promotes an APPROVED bound asset and writes one cascade event', async () => {
+    // Verification step 8's first half. The asset is bound to BOTH media columns on purpose: one
+    // asset, two bindings, and still exactly one promotion — an earlier version used GROUP BY to
+    // dedupe, which PostgreSQL refuses alongside FOR UPDATE, and dropping the dedupe would have
+    // written two cascade rows for one event.
+    const db = await connect()
+    section = await approvedSectionWith(GOOD)
+    await db.query(`select cms_publish_section($1,'PUBLISHED',null,'test')`, [section])
+
+    const { rows: after } = await db.query<{ status: string }>(
+      `select status from media_assets where id = $1`,
+      [GOOD],
+    )
+    expect(after[0]?.status).toBe('PUBLISHED')
+
+    const { rows: events } = await db.query<{ n: string }>(
+      `select count(*)::text as n from activity_events
+        where action = 'media.publish.cascade' and entity_id = $1`,
+      [GOOD],
+    )
+    expect(Number(events[0]!.n)).toBe(1)
+  })
+
+  it('makes the promoted asset readable by the anon role', async () => {
+    // The point of the whole cascade. Phase 06's RLS gives anon SELECT on media_assets only where
+    // status = 'PUBLISHED', so without the promotion a published page renders copy with holes and
+    // no error anywhere.
+    const { rows } = await asSessionAnon<{ id: string }[]>(
+      `select id from media_assets where id = '${GOOD}'`,
+    )
+    expect(rows).toHaveLength(1)
+  })
+
+  it('refuses with RV003 naming an unapproved asset', async () => {
+    const db = await connect()
+    const id = await approvedSectionWith(NOT_APPROVED)
+    try {
+      await db.query(`select cms_publish_section($1,'PUBLISHED',null,null)`, [id])
+      throw new Error('the publish was allowed')
+    } catch (error) {
+      const e = error as { code?: string; message?: string }
+      expect(e.code).toBe('RV003')
+      expect(e.message).toContain('CASC-DRAFT')
+    }
+  })
+
+  it('refuses with RV006 naming an unverified asset, not a bare check violation', async () => {
+    /**
+     * THE COLLISION THIS PRE-CHECK EXISTS FOR. Phase 07 imports all 250 Higgsfield assets as
+     * APPROVED *and* OWNER_VERIFICATION_REQUIRED, while `media_assets_verified_before_publish`
+     * (Phase 03) forbids PUBLISHED while that flag stands. Without the pre-check the promotion
+     * raises a bare 23514 naming a constraint, and the person reading it cannot tell which asset
+     * or why. Nothing can go live until those 250 are verified — that is an owner action, and
+     * this error is what tells them so.
+     */
+    const db = await connect()
+    const id = await approvedSectionWith(UNVERIFIED)
+    try {
+      await db.query(`select cms_publish_section($1,'PUBLISHED',null,null)`, [id])
+      throw new Error('the publish was allowed')
+    } catch (error) {
+      const e = error as { code?: string; message?: string }
+      expect(e.code).toBe('RV006')
+      expect(e.message).toContain('CASC-UNVER')
+    }
+  })
+
+  it('demotes nothing when the section is unpublished', async () => {
+    // Deliberately asymmetric: an asset may be bound to several sections, and demoting it would
+    // break the others without warning.
+    const db = await connect()
+    const id = await approvedSectionWith(GOOD)
+    await db.query(`select cms_publish_section($1,'PUBLISHED',null,null)`, [id])
+    await db.query(`select cms_publish_section($1,'DRAFT',null,null)`, [id])
+    const { rows } = await db.query<{ status: string }>(
+      `select status from media_assets where id = $1`,
+      [GOOD],
+    )
+    expect(rows[0]?.status).toBe('PUBLISHED')
+  })
+
+  it('refuses cms_unpublish_media_asset with RV004 while a published section uses it', async () => {
+    const db = await connect()
+    const id = await approvedSectionWith(GOOD)
+    await db.query(`select cms_publish_section($1,'PUBLISHED',null,null)`, [id])
+    try {
+      await db.query(`select cms_unpublish_media_asset($1, null)`, [GOOD])
+      throw new Error('the unpublish was allowed')
+    } catch (error) {
+      expect((error as { code?: string }).code).toBe('RV004')
+    }
+  })
+
+  it('refuses an illegal edge before promoting anything', async () => {
+    // DRAFT -> PUBLISHED. The assertion that matters is not the code but that no promotion
+    // happened: refusals come before writes so the error names the real problem.
+    const db = await connect()
+    await db.query('delete from page_sections where page_id = $1', [PAGE_ID])
+    await db.query(`update media_assets set status = 'APPROVED' where id = $1`, [GOOD])
+    const { rows: created } = await db.query<{ id: string }>(
+      `insert into page_sections (page_id, block_type, position, media_slot_key, media_desktop_id)
+       values ($1,'hero',0,'home.hero.poster',$2) returning id`,
+      [PAGE_ID, GOOD],
+    )
+    try {
+      await db.query(`select cms_publish_section($1,'PUBLISHED',null,null)`, [created[0]!.id])
+      throw new Error('the publish was allowed')
+    } catch (error) {
+      expect((error as { code?: string }).code).toBe('RV001')
+    }
+    const { rows } = await db.query<{ status: string }>(
+      `select status from media_assets where id = $1`,
+      [GOOD],
+    )
+    expect(rows[0]?.status).toBe('APPROVED')
+  })
+})
+
+describeDb('cms_reorder_sections', () => {
+  const PAGE_ID = '00000000-0000-4000-8000-0000000000f9'
+
+  beforeAll(async () => {
+    const db = await connect()
+    await db.query('delete from page_sections')
+    await db.query(`delete from pages where id = $1`, [PAGE_ID])
+    await db.query(
+      `insert into pages (id, slug, kind, title, path) values ($1,'reorder','PAGE','R','/reorder')`,
+      [PAGE_ID],
+    )
+  })
+
+  afterAll(disconnect)
+
+  const three = async (): Promise<string[]> => {
+    const db = await connect()
+    await db.query('delete from page_sections where page_id = $1', [PAGE_ID])
+    const ids: string[] = []
+    for (const [i, type] of ['hero', 'statement', 'divider'].entries()) {
+      const { rows } = await db.query<{ id: string }>(
+        `insert into page_sections (page_id, block_type, position) values ($1,$2,$3) returning id`,
+        [PAGE_ID, type, i],
+      )
+      ids.push(rows[0]!.id)
+    }
+    return ids
+  }
+
+  it('rewrites every position in one statement', async () => {
+    // The deferrable unique constraint is what makes this legal — a reorder transiently duplicates
+    // positions, and PostgREST cannot give the repository layer a transaction to do it in N steps.
+    const db = await connect()
+    const ids = await three()
+    await db.query(`select cms_reorder_sections($1, $2::uuid[], null)`, [
+      PAGE_ID,
+      [ids[2], ids[0], ids[1]],
+    ])
+    const { rows } = await db.query<{ id: string; position: number }>(
+      `select id, position from page_sections where page_id = $1 order by position`,
+      [PAGE_ID],
+    )
+    expect(rows.map((r) => r.id)).toEqual([ids[2], ids[0], ids[1]])
+    expect(rows.map((r) => r.position)).toEqual([0, 1, 2])
+  })
+
+  it('refuses a partial list with RV005', async () => {
+    // A list naming only some sections would leave the unnamed ones at positions that now collide
+    // with the new ordering — and the failure would surface as a constraint violation on some
+    // later, unrelated save.
+    const db = await connect()
+    const ids = await three()
+    try {
+      await db.query(`select cms_reorder_sections($1, $2::uuid[], null)`, [PAGE_ID, [ids[0]]])
+      throw new Error('the partial reorder was allowed')
+    } catch (error) {
+      expect((error as { code?: string }).code).toBe('RV005')
+    }
+  })
+
+  it('refuses an id that belongs to another page', async () => {
+    const db = await connect()
+    const ids = await three()
+    try {
+      await db.query(`select cms_reorder_sections($1, $2::uuid[], null)`, [
+        PAGE_ID,
+        [ids[0], ids[1], '00000000-0000-4000-8000-00000000ffff'],
+      ])
+      throw new Error('the foreign id was accepted')
+    } catch (error) {
+      expect((error as { code?: string }).code).toBe('RV005')
+    }
   })
 })
