@@ -1,6 +1,7 @@
 import { commerceLabelsSeed } from './commerce-labels'
 import { globalSeed } from './global'
 import { globalContentSeed } from './global-content'
+import { homepageSeed } from './homepage'
 import { navigationSeed } from './navigation'
 import { pagesSeed } from './pages'
 import { taxonomySeed } from './taxonomy'
@@ -34,6 +35,7 @@ export const seedModules: readonly SeedModule[] = [
   globalSeed,
   commerceLabelsSeed,
   navigationSeed,
+  homepageSeed,
 ]
 
 /** Every seed key across every module. Used by the runner's duplicate check. */
