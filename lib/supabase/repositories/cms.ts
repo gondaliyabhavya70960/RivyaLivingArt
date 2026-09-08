@@ -285,3 +285,20 @@ export async function reorderSections(
   if (error) throw toCmsError(SECTION, 'reorder', pageId, error)
   return parseRow(SECTION, reorderResultSchema, data).count
 }
+
+export async function restoreRevisionRow(
+  client: Client,
+  entityType: string,
+  entityId: string,
+  revisionNo: number,
+  actorId: string | null,
+): Promise<void> {
+  const { error } = await client.rpc('cms_restore_revision', {
+    p_entity_type: entityType,
+    p_entity_id: entityId,
+    p_revision_no: revisionNo,
+    p_actor: actorId,
+  })
+
+  if (error) throw toCmsError('content revision', 'restore', entityId, error)
+}

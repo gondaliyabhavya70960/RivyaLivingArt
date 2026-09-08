@@ -817,3 +817,167 @@ describeDb('the window means the same thing in SQL and in TypeScript', () => {
     })
   }
 })
+
+describeDb('cms_restore_revision', () => {
+  const PAGE = '00000000-0000-4000-8000-000000000bb1'
+  const A1 = '00000000-0000-4000-8000-000000000bb2'
+  const A2 = '00000000-0000-4000-8000-000000000bb3'
+
+  beforeAll(async () => {
+    const db = await connect()
+    await db.query('delete from page_sections')
+    await db.query(`delete from pages where id = $1`, [PAGE])
+    await db.query(`delete from media_assets where rivya_asset_id like 'REST-%'`)
+    await db.query(
+      `insert into pages (id, slug, kind, title, path) values ($1,'restore','PAGE','R','/restore')`,
+      [PAGE],
+    )
+    for (const [id, ref] of [
+      [A1, 'REST-1'],
+      [A2, 'REST-2'],
+    ] as const) {
+      await db.query(
+        `insert into media_assets (id, rivya_asset_id, provider, resource_type, public_id, folder,
+                                   filename, kind, source, alt_text, is_ai_generated, is_concept)
+         values ($1,$2,'cloudinary','image',$3,'rivya/rest',$4,'IMAGE','HIGGSFIELD','a',true,true)`,
+        [id, ref, `rivya/rest/${ref}`, ref],
+      )
+    }
+  })
+
+  afterAll(disconnect)
+
+  it('re-syncs media_usages, which the mitigation itself could have broken', async () => {
+    /**
+     * THE SUBTLE ONE. `sync_media_usages` fires `after update OF media_desktop_id, ..., payload` —
+     * a column list, which is what stops a status-only publish from rebuilding every usage row.
+     * The cost is that an UPDATE not naming those columns does not re-sync, so a restore that
+     * skipped them would leave media_usages describing the row as it was BEFORE the restore.
+     *
+     * That is the phase document's own "restoring a revision loses the media binding" risk
+     * arriving THROUGH its mitigation. cms_restore_revision names the media columns
+     * unconditionally, even when unchanged, and this is what proves it.
+     */
+    const db = await connect()
+    const { rows: created } = await db.query<{ id: string }>(
+      `insert into page_sections (page_id, block_type, position, heading, media_slot_key, media_desktop_id)
+       values ($1,'hero',0,'Original','home.hero.poster',$2) returning id`,
+      [PAGE, A1],
+    )
+    const section = created[0]!.id
+    const { rows: rev1 } = await db.query<{ n: number }>(
+      `select max(revision_no) as n from content_revisions where entity_id = $1`,
+      [section],
+    )
+
+    // Move to the other asset, then restore.
+    await db.query(
+      `update page_sections set heading = 'Changed', media_desktop_id = $2 where id = $1`,
+      [section, A2],
+    )
+    await db.query(`select cms_restore_revision('page_section', $1, $2, null)`, [
+      section,
+      rev1[0]!.n,
+    ])
+
+    const { rows: usages } = await db.query<{ media_id: string }>(
+      `select media_id from media_usages where context_id = $1`,
+      [section],
+    )
+    expect(usages.map((u) => u.media_id)).toEqual([A1])
+  })
+
+  it('labels the restore RESTORE, and a later edit UPDATE again', async () => {
+    // The GUC must be reset inside the function, or every subsequent write in the same transaction
+    // is mislabelled and the history stops meaning anything.
+    //
+    // Self-contained on purpose. My first version read "the latest revision ordered by
+    // revision_no" across every section — but revision_no is allocated PER ENTITY, so that picks
+    // whichever section happens to have the highest number, not the most recent event. It also
+    // leaned on a section the previous test created.
+    const db = await connect()
+    const { rows: created } = await db.query<{ id: string }>(
+      `insert into page_sections (page_id, block_type, position, heading)
+       values ($1,'statement',40,'v1') returning id`,
+      [PAGE],
+    )
+    const section = created[0]!.id
+    const { rows: first } = await db.query<{ n: number }>(
+      `select min(revision_no) as n from content_revisions where entity_id = $1`,
+      [section],
+    )
+
+    await db.query(`update page_sections set heading = 'v2' where id = $1`, [section])
+    await db.query(`select cms_restore_revision('page_section', $1, $2, null)`, [
+      section,
+      first[0]!.n,
+    ])
+
+    const latest = async () => {
+      const { rows } = await db.query<{ action: string }>(
+        `select action from content_revisions where entity_id = $1
+          order by revision_no desc limit 1`,
+        [section],
+      )
+      return rows[0]?.action
+    }
+    expect(await latest()).toBe('RESTORE')
+
+    await db.query(`update page_sections set heading = 'v3' where id = $1`, [section])
+    expect(await latest()).toBe('UPDATE')
+  })
+
+  it('leaves status alone', async () => {
+    // A revision records what the CONTENT was, not whether it was live. Restoring copy from last
+    // Tuesday must not also change what the public can see.
+    const db = await connect()
+    const { rows: sections } = await db.query<{ id: string }>(
+      `select id from page_sections where page_id = $1 limit 1`,
+      [PAGE],
+    )
+    const section = sections[0]!.id
+    await db.query(`update page_sections set status = 'REVIEW' where id = $1`, [section])
+    const { rows: revs } = await db.query<{ n: number }>(
+      `select min(revision_no) as n from content_revisions where entity_id = $1`,
+      [section],
+    )
+    await db.query(`select cms_restore_revision('page_section', $1, $2, null)`, [
+      section,
+      revs[0]!.n,
+    ])
+    const { rows } = await db.query<{ status: string }>(
+      `select status from page_sections where id = $1`,
+      [section],
+    )
+    expect(rows[0]?.status).toBe('REVIEW')
+  })
+
+  it('refuses with RV007 when the snapshot names media that no longer exists', async () => {
+    // Reachable only once the row itself has moved off the asset — `on delete restrict` from
+    // Phase 06 stops the asset being deleted while anything still points at it, which is how my
+    // first attempt at this test failed.
+    const db = await connect()
+    const { rows: sections } = await db.query<{ id: string }>(
+      `select id from page_sections where page_id = $1 limit 1`,
+      [PAGE],
+    )
+    const section = sections[0]!.id
+    const { rows: revs } = await db.query<{ n: number }>(
+      `select min(revision_no) as n from content_revisions where entity_id = $1`,
+      [section],
+    )
+    await db.query(`update page_sections set media_desktop_id = $2 where id = $1`, [section, A2])
+    await db.query(`delete from media_usages where media_id = $1`, [A1])
+    await db.query(`delete from media_assets where id = $1`, [A1])
+
+    try {
+      await db.query(`select cms_restore_revision('page_section', $1, $2, null)`, [
+        section,
+        revs[0]!.n,
+      ])
+      throw new Error('the restore was allowed')
+    } catch (error) {
+      expect((error as { code?: string }).code).toBe('RV007')
+    }
+  })
+})

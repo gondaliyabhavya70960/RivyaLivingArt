@@ -987,3 +987,126 @@ $$;
 
 revoke execute on function public.cms_reorder_sections(uuid, uuid[], uuid) from public, anon, authenticated;
 grant execute on function public.cms_reorder_sections(uuid, uuid[], uuid) to service_role;
+
+-- --------------------------------------------------------------------------------------------
+-- cms_restore_revision
+-- --------------------------------------------------------------------------------------------
+--
+-- Restoring is an ordinary UPDATE with two twists that are easy to get wrong and invisible when
+-- you do.
+--
+-- 1. IT WRITES THE MEDIA COLUMNS ALWAYS, EVEN WHEN THE SNAPSHOT MATCHES THE CURRENT ROW.
+--    `sync_media_usages` fires `after update OF media_desktop_id, media_mobile_id, media_slot_key,
+--    payload` — a column list, which is what stops a status-only publish from rebuilding every
+--    usage row. The cost is that an UPDATE which does not name those columns does not re-sync, so
+--    a restore that skipped them would leave `media_usages` describing the row as it was BEFORE
+--    the restore. That is the phase document's own "restoring a revision loses the media binding"
+--    risk arriving through its mitigation. Naming them unconditionally is what closes it.
+--
+-- 2. IT NEVER TOUCHES `status`, THE SCHEDULE COLUMNS, OR published_at/published_by. A revision
+--    records what the CONTENT was, not whether it was live. Restoring copy from last Tuesday must
+--    not also un-publish the page, and restoring onto a published page must not silently republish
+--    an older status. Where the revision's own status differs, the current one wins.
+--
+-- The GUC is the same idiom `guard_stage_transition` uses, and it is what makes `write_revision`
+-- label this write RESTORE rather than UPDATE — so the history shows what happened rather than
+-- just that something did.
+create or replace function public.cms_restore_revision(
+  p_entity_type text,
+  p_entity_id uuid,
+  p_revision_no int,
+  p_actor uuid
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public, extensions
+as $$
+declare
+  v_snapshot jsonb;
+  v_missing  text[];
+  v_new_no   int;
+begin
+  select snapshot into v_snapshot
+    from content_revisions
+   where entity_type = p_entity_type and entity_id = p_entity_id and revision_no = p_revision_no;
+
+  if v_snapshot is null then
+    raise exception 'no revision % for % %', p_revision_no, p_entity_type, p_entity_id
+      using errcode = 'RV001', detail = 'constraint=cms_revision_exists';
+  end if;
+
+  if p_entity_type <> 'page_section' then
+    raise exception 'restore is only implemented for page_section, not %', p_entity_type
+      using errcode = 'RV001', detail = 'constraint=cms_restore_supported';
+  end if;
+
+  -- An asset named by the snapshot may have been deleted since. Restoring would fail on the
+  -- foreign key with a message naming a constraint and a uuid; this names the field instead.
+  select array_agg(k)
+    into v_missing
+    from (
+      select k from unnest(array['media_desktop_id', 'media_mobile_id']) as k
+       where v_snapshot ->> k is not null
+         and not exists (select 1 from media_assets where id = (v_snapshot ->> k)::uuid)
+    ) missing;
+
+  if v_missing is not null then
+    raise exception
+      'cannot restore revision %: it names media that no longer exists (%)',
+      p_revision_no, array_to_string(v_missing, ', ')
+      using errcode = 'RV007', detail = 'constraint=cms_restore_media_missing';
+  end if;
+
+  perform set_config('rivya.revision_action', 'RESTORE', true);
+
+  update page_sections
+     set block_type        = coalesce(v_snapshot ->> 'block_type', block_type),
+         is_visible        = coalesce((v_snapshot ->> 'is_visible')::boolean, is_visible),
+         theme             = v_snapshot ->> 'theme',
+         layout_variant    = v_snapshot ->> 'layout_variant',
+         eyebrow           = v_snapshot ->> 'eyebrow',
+         heading           = v_snapshot ->> 'heading',
+         heading_highlight = v_snapshot ->> 'heading_highlight',
+         body              = v_snapshot ->> 'body',
+         supporting        = v_snapshot ->> 'supporting',
+         cta_label         = v_snapshot ->> 'cta_label',
+         cta_url           = v_snapshot ->> 'cta_url',
+         cta_secondary_label = v_snapshot ->> 'cta_secondary_label',
+         cta_secondary_url   = v_snapshot ->> 'cta_secondary_url',
+         media_alt_override  = v_snapshot ->> 'media_alt_override',
+         -- Always named, even when unchanged. See note 1 above.
+         media_desktop_id  = (v_snapshot ->> 'media_desktop_id')::uuid,
+         media_mobile_id   = (v_snapshot ->> 'media_mobile_id')::uuid,
+         media_slot_key    = v_snapshot ->> 'media_slot_key',
+         payload           = coalesce(v_snapshot -> 'payload', '{}'::jsonb),
+         fact_classification = coalesce(
+           (v_snapshot ->> 'fact_classification')::fact_classification, fact_classification),
+         field_classifications = coalesce(v_snapshot -> 'field_classifications', '{}'::jsonb),
+         updated_by        = p_actor
+   where id = p_entity_id;
+
+  if not found then
+    raise exception 'no page_section with id %', p_entity_id
+      using errcode = 'RV001', detail = 'constraint=cms_section_exists';
+  end if;
+
+  -- Reset the GUC so a later write in the same transaction is labelled honestly.
+  perform set_config('rivya.revision_action', '', true);
+
+  select max(revision_no) into v_new_no
+    from content_revisions where entity_type = 'page_section' and entity_id = p_entity_id;
+
+  return jsonb_build_object(
+    'entity_id', p_entity_id,
+    'restored_from', p_revision_no,
+    'revision_no', v_new_no
+  );
+end;
+$$;
+
+revoke execute on function public.cms_restore_revision(text, uuid, int, uuid) from public, anon, authenticated;
+grant execute on function public.cms_restore_revision(text, uuid, int, uuid) to service_role;
+
+comment on function public.cms_restore_revision(text, uuid, int, uuid) is
+  'Restores a page_section snapshot. Always writes the media columns so sync_media_usages re-fires; never touches status, schedule or published_at.';
