@@ -144,10 +144,25 @@ disabled), not a defect in the diff. The full CI sequence passes locally from a 
 
 ## Remaining Work
 
-**None for Phase 02.** Two owner decisions raised in Phase 01 are still open and shape Phase
-09, not this phase: whether the `Place Order` label survives given the no-checkout rule
-(currently seeded disabled and routed to the inquiry flow), and whether a newsletter is in
-scope at all.
+**None for Phase 02.**
+
+**Owner decisions — RESOLVED 2026-09-08**, recorded as CANONICAL-DECISIONS amendment A3:
+
+| Question | Decision |
+|---|---|
+| Does `Place Order` survive the no-checkout rule? | **Renamed.** It is not seeded at all. The action is `Send an Enquiry`; the handoff is `Discuss on WhatsApp`. |
+| Is a newsletter in scope? | **Yes, build it.** Double opt-in; `newsletter_subscribers` in Phase 03; capture, consent, confirmation and unsubscribe in Phase 09. |
+
+**New open question, and it blocks part of Phase 09:** no email service provider exists in
+CANONICAL D1. The newsletter can capture an address and can never send to it, so the
+confirmation email — the thing that makes double opt-in mean anything — cannot ship until one
+is chosen. Adding Resend, Postmark, SES or Mailchimp is a new production dependency and needs
+its own amendment, so it is the owner's call rather than a default taken here. Phase 09 can
+build capture, consent, confirmation-token handling and unsubscribe without it.
+
+Two smaller questions from Phase 01 remain: whether to bless `/studio/content/pages/global` as
+the CTA library's reserved page id or add a D4 route leaf, and whether `analytics` stays a tab
+on `/studio` rather than a route segment.
 
 ## Next Exact Action
 
