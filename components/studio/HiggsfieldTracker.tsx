@@ -6,12 +6,22 @@ import { Heading } from '@/components/primitives/Heading'
 import { Stack } from '@/components/primitives/Stack'
 import { Surface } from '@/components/primitives/Surface'
 import { Text } from '@/components/primitives/Text'
+import { Field } from '@/components/primitives/Field'
+import { Select } from '@/components/primitives/Select'
 import { DataTable, type Column } from '@/components/studio/DataTable'
 import { EmptyState } from '@/components/studio/EmptyState'
+import { FilterBar } from '@/components/studio/FilterBar'
 import { HiggsfieldAssetDrawer, type DrawerAsset } from '@/components/studio/HiggsfieldAssetDrawer'
 import { StatCard } from '@/components/studio/StatCard'
 import { t } from '@/components/studio/strings'
 import type { GapReport, SlotState, SlotStatus } from '@/lib/media/gaps'
+import {
+  activeFilterCount,
+  filterInventory,
+  inventoryFacets,
+  type InventoryEntry,
+  type InventoryFilters,
+} from '@/lib/media/inventory'
 import type { ManifestAsset } from '@/lib/media/manifest'
 
 /**
@@ -133,27 +143,193 @@ function TabNav({ path, tab, label }: { path: string; tab: TrackerTab; label: st
   )
 }
 
-type InventoryRow = {
-  asset: ManifestAsset
-  migrated: boolean
-  href: string
+/** FEAT §34 truncates the prompt in the table and shows it in full in the drawer. */
+const PROMPT_PREVIEW = 90
+
+function truncate(value: string, limit: number): string {
+  return value.length <= limit ? value : `${value.slice(0, limit).trimEnd()}…`
 }
 
-function InventoryPanel({ rows }: { rows: readonly InventoryRow[] }) {
-  const columns: readonly Column<InventoryRow>[] = [
+function InventoryFilterBar({
+  path,
+  tab,
+  filters,
+  facets,
+  label,
+}: {
+  path: string
+  tab: TrackerTab
+  filters: InventoryFilters
+  facets: ReturnType<typeof inventoryFacets>
+  label: string
+}) {
+  // Six selects and no text input: every one of these fields is an enumeration the manifest
+  // already fixes, and a free-text family box would let somebody type a family that cannot exist
+  // and read the empty table as a missing asset.
+  const choices: {
+    name: string
+    label: string
+    value: string
+    options: readonly { value: string; label: string }[]
+  }[] = [
+    {
+      name: 'type',
+      label: t('studio.higgsfield.filterType'),
+      value: filters.type ?? '',
+      options: [
+        { value: 'image', label: t('studio.higgsfield.typeImage') },
+        { value: 'video', label: t('studio.higgsfield.typeVideo') },
+      ],
+    },
+    {
+      name: 'family',
+      label: t('studio.higgsfield.colFamily'),
+      value: filters.family ?? '',
+      options: facets.families.map((f) => ({ value: f, label: f })),
+    },
+    {
+      name: 'page',
+      label: t('studio.higgsfield.colPage'),
+      value: filters.page ?? '',
+      options: facets.pages.map((p) => ({ value: p, label: p })),
+    },
+    {
+      name: 'ratio',
+      label: t('studio.higgsfield.colRatio'),
+      value: filters.ratio ?? '',
+      options: facets.ratios.map((r) => ({ value: r, label: r })),
+    },
+    {
+      name: 'migrated',
+      label: t('studio.higgsfield.colState'),
+      value: filters.migrated === undefined ? '' : filters.migrated ? 'yes' : 'no',
+      options: [
+        { value: 'yes', label: t('studio.higgsfield.stateMigrated') },
+        { value: 'no', label: t('studio.higgsfield.stateUnmigrated') },
+      ],
+    },
+    {
+      name: 'used',
+      label: t('studio.higgsfield.colUsed'),
+      value: filters.used === undefined ? '' : filters.used ? 'yes' : 'no',
+      options: [
+        { value: 'yes', label: t('studio.higgsfield.usedYes') },
+        { value: 'no', label: t('studio.higgsfield.usedNo') },
+      ],
+    },
+  ]
+
+  return (
+    <FilterBar
+      label={label}
+      action={path}
+      applyLabel={t('studio.higgsfield.filterApply')}
+      activeCount={activeFilterCount(filters)}
+      activeLabel={t('studio.higgsfield.filterActive')}
+    >
+      {/* The tab rides along as a hidden field: submitting the form must not throw the reader
+          back to Inventory when they filtered from somewhere else, and GET rebuilds the whole
+          query string from the form's fields alone. */}
+      <input type="hidden" name="tab" value={tab} />
+      {choices.map((choice) => (
+        <Field key={choice.name} label={choice.label}>
+          <Select name={choice.name} defaultValue={choice.value}>
+            <option value="">{t('studio.higgsfield.filterAll')}</option>
+            {choice.options.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </Select>
+        </Field>
+      ))}
+    </FilterBar>
+  )
+}
+
+function InventoryPanel({
+  path,
+  tab,
+  entries,
+  filters,
+  facets,
+}: {
+  path: string
+  tab: TrackerTab
+  entries: readonly InventoryEntry[]
+  filters: InventoryFilters
+  facets: ReturnType<typeof inventoryFacets>
+}) {
+  const rows = filterInventory(entries, filters)
+  const filtered = activeFilterCount(filters) > 0
+
+  /**
+   * FEAT §34's thirteen columns.
+   *
+   * TWO OF ITS NAMES DO NOT SURVIVE INTACT, and the substitution is the phase document's, not an
+   * abbreviation of mine: §34 asks for "Product" and "Collection", and no Higgsfield asset has
+   * either — nothing is bound to a product until Phase 09, and rendering two permanently blank
+   * columns would be worse than useless. Family and Section carry the same "what is this of"
+   * question against data that exists.
+   */
+  const columns: readonly Column<InventoryEntry>[] = [
     {
       id: 'asset',
       header: t('studio.higgsfield.colAsset'),
-      // The id is the link to the drawer: it is the row's identity, so it is the row's control.
+      // The id is the row's identity, so it is the row's control.
       cell: (row) => (
-        <Link href={row.href as Route} className="font-mono">
+        <Link
+          href={
+            `${path}?${new URLSearchParams({ tab, asset: row.asset.rivya_asset_id }).toString()}` as Route
+          }
+          className="font-mono whitespace-nowrap"
+        >
           {row.asset.rivya_asset_id}
         </Link>
       ),
     },
+    {
+      id: 'type',
+      header: t('studio.higgsfield.colType'),
+      cell: (row) =>
+        row.asset.type === 'video'
+          ? t('studio.higgsfield.typeVideo')
+          : t('studio.higgsfield.typeImage'),
+    },
     { id: 'family', header: t('studio.higgsfield.colFamily'), cell: (row) => row.asset.family },
     { id: 'page', header: t('studio.higgsfield.colPage'), cell: (row) => row.asset.page },
-    { id: 'ratio', header: t('studio.higgsfield.colRatio'), cell: (row) => row.asset.aspect_ratio },
+    { id: 'section', header: t('studio.higgsfield.colSection'), cell: (row) => row.asset.section },
+    {
+      id: 'purpose',
+      header: t('studio.higgsfield.colPurpose'),
+      cell: (row) =>
+        row.purpose === null ? (
+          // A family the §2.1 vocabulary does not cover. Said plainly rather than left blank: a
+          // blank cell reads as missing data, this reads as the defect it is.
+          <Text size="xs" tone="tertiary">
+            {t('studio.higgsfield.purposeNone')}
+          </Text>
+        ) : (
+          <Text size="xs" className="font-mono whitespace-nowrap">
+            {row.purpose}
+          </Text>
+        ),
+    },
+    { id: 'source', header: t('studio.higgsfield.colSource'), cell: (row) => row.asset.source },
+    {
+      id: 'model',
+      header: t('studio.higgsfield.colModel'),
+      cell: (row) => row.asset.higgsfield_model,
+    },
+    {
+      id: 'prompt',
+      header: t('studio.higgsfield.colPrompt'),
+      cell: (row) => (
+        <Text size="xs" tone="secondary" className="max-w-prose">
+          {truncate(row.asset.prompt, PROMPT_PREVIEW)}
+        </Text>
+      ),
+    },
     {
       id: 'state',
       header: t('studio.higgsfield.colState'),
@@ -165,20 +341,63 @@ function InventoryPanel({ rows }: { rows: readonly InventoryRow[] }) {
         </Badge>
       ),
     },
+    {
+      id: 'used',
+      header: t('studio.higgsfield.colUsed'),
+      cell: (row) =>
+        row.slotKeys.length > 0 ? t('studio.higgsfield.usedYes') : t('studio.higgsfield.usedNo'),
+    },
+    {
+      id: 'location',
+      header: t('studio.higgsfield.colLocation'),
+      cell: (row) => (
+        <Text size="xs" className="font-mono">
+          {row.asset.cloudinary_public_id}
+        </Text>
+      ),
+    },
+    {
+      id: 'placement',
+      header: t('studio.higgsfield.colPlacement'),
+      cell: (row) =>
+        row.slotKeys.length === 0 ? (
+          <Text size="xs" tone="tertiary">
+            {t('studio.higgsfield.placementNone')}
+          </Text>
+        ) : (
+          <Text size="xs" className="font-mono">
+            {row.slotKeys.join(', ')}
+          </Text>
+        ),
+    },
   ]
 
   return (
-    <DataTable
-      caption={t('studio.higgsfield.inventoryCaption')}
-      columns={columns}
-      rows={rows}
-      rowKey={(row) => row.asset.rivya_asset_id}
-      empty={{
-        reason: 'empty',
-        heading: t('studio.higgsfield.emptyHeading'),
-        body: t('studio.higgsfield.emptyBody'),
-      }}
-    />
+    <Stack gap={4}>
+      <InventoryFilterBar
+        path={path}
+        tab={tab}
+        filters={filters}
+        facets={facets}
+        label={t('studio.higgsfield.filterLabel')}
+      />
+      <DataTable
+        caption={t('studio.higgsfield.inventoryCaption')}
+        columns={columns}
+        rows={rows}
+        rowKey={(row) => row.asset.rivya_asset_id}
+        empty={{
+          // Two different empties. "No assets match this filter" tells a reader to clear it;
+          // "the manifest is empty" tells them to rebuild it. Collapsing them sends people
+          // looking for the wrong problem.
+          reason: filtered ? 'filtered' : 'empty',
+          heading: filtered
+            ? t('studio.higgsfield.filteredHeading')
+            : t('studio.higgsfield.emptyHeading'),
+          body: filtered ? t('studio.higgsfield.filteredBody') : t('studio.higgsfield.emptyBody'),
+        }}
+      />
+    </Stack>
   )
 }
 
@@ -311,28 +530,26 @@ export function HiggsfieldTracker({
   path,
   tab,
   assets,
+  entries,
   report,
-  migratedGenerationIds,
+  filters,
   selected,
 }: {
   path: string
   tab: TrackerTab
   assets: readonly ManifestAsset[]
+  /** The manifest joined against `media_assets` and `media_usages`. See lib/media/inventory.ts. */
+  entries: readonly InventoryEntry[]
   report: GapReport
-  /** `higgsfield_generation_id` values already carrying a `media_assets` row. */
-  migratedGenerationIds: ReadonlySet<string>
+  filters: InventoryFilters
   selected: DrawerAsset | null
 }) {
+  const migratedByAssetId = new Map(entries.map((e) => [e.asset.rivya_asset_id, e.migrated]))
   const isMigrated = (asset: ManifestAsset): boolean =>
-    migratedGenerationIds.has(asset.higgsfield_generation_id)
+    migratedByAssetId.get(asset.rivya_asset_id) ?? false
 
-  const migratedCount = assets.filter(isMigrated).length
-
-  const inventory: InventoryRow[] = assets.map((asset) => ({
-    asset,
-    migrated: isMigrated(asset),
-    href: `${path}?tab=${tab}&asset=${encodeURIComponent(asset.rivya_asset_id)}`,
-  }))
+  const migratedCount = entries.filter((e) => e.migrated).length
+  const facets = inventoryFacets(assets)
 
   const grouped = new Map<string, ManifestAsset[]>()
   for (const asset of assets) {
@@ -401,7 +618,9 @@ export function HiggsfieldTracker({
 
       <TabNav path={path} tab={tab} label={t('studio.nav.media.higgsfield')} />
 
-      {tab === 'inventory' ? <InventoryPanel rows={inventory} /> : null}
+      {tab === 'inventory' ? (
+        <InventoryPanel path={path} tab={tab} entries={entries} filters={filters} facets={facets} />
+      ) : null}
       {tab === 'families' ? <FamiliesPanel rows={families} /> : null}
       {tab === 'gaps' ? <GapsPanel report={report} /> : null}
 

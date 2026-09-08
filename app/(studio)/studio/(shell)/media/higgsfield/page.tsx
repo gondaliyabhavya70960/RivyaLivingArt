@@ -7,6 +7,7 @@ import {
 import type { DrawerAsset } from '@/components/studio/HiggsfieldAssetDrawer'
 import { requirePermission } from '@/lib/auth/require'
 import { computeGaps } from '@/lib/media/gaps'
+import { buildInventory, parseInventoryFilters } from '@/lib/media/inventory'
 import { parseManifest, type ManifestAsset } from '@/lib/media/manifest'
 import { createClient } from '@/lib/supabase/server'
 import manifestJson from '@/data/higgsfield/asset-manifest.json'
@@ -64,24 +65,46 @@ export default async function Page({
 
   const client = await createClient()
 
-  // Only the one column is selected: this is a membership test over 250 ids, and pulling whole
-  // rows to build a Set of one field would move a megabyte to answer a boolean.
-  const { data: migratedRows } = await client
+  // Three columns, not whole rows. `id` is what `media_usages.media_id` points at, the generation
+  // id is the migration key, and `rivya_asset_id` is what the manifest is keyed by — joining the
+  // three in memory over 250 rows is cheaper than a view and keeps the query readable.
+  const { data: assetRows } = await client
     .from('media_assets')
-    .select('higgsfield_generation_id')
+    .select('id, rivya_asset_id, higgsfield_generation_id')
     .not('higgsfield_generation_id', 'is', null)
 
+  const rows = assetRows ?? []
   const migratedGenerationIds = new Set(
-    (migratedRows ?? [])
-      .map((row) => row.higgsfield_generation_id)
-      .filter((id): id is string => id !== null),
+    rows.map((row) => row.higgsfield_generation_id).filter((id): id is string => id !== null),
+  )
+  // `rivya_asset_id` is nullable on `media_assets` — an uploaded asset has no manifest id. A row
+  // without one cannot be matched to a manifest entry, so it is dropped rather than keyed on null.
+  const assetIdByMediaId = new Map(
+    rows
+      .filter((row): row is typeof row & { rivya_asset_id: string } => row.rivya_asset_id !== null)
+      .map((row) => [row.id, row.rivya_asset_id]),
   )
 
-  const { data: usageRows } = await client.from('media_usages').select('slot_key')
+  const { data: usageRows } = await client.from('media_usages').select('media_id, slot_key')
+  const usages = usageRows ?? []
+
+  // FEAT §34's "Used?" and "CMS placement", from `media_usages` rather than from the manifest's
+  // own `used_in_cms`/`cms_placement` fields — those are false and null on all 250 and always
+  // will be, because the manifest records what was generated, not what the CMS does with it.
+  const slotKeysByAssetId = new Map<string, string[]>()
+  for (const usage of usages) {
+    const assetId = assetIdByMediaId.get(usage.media_id)
+    if (assetId === undefined) continue
+    const list = slotKeysByAssetId.get(assetId)
+    if (list) list.push(usage.slot_key)
+    else slotKeysByAssetId.set(assetId, [usage.slot_key])
+  }
+
+  const entries = buildInventory(MANIFEST.assets, migratedGenerationIds, slotKeysByAssetId)
 
   const report = computeGaps({
     assets: MANIFEST.assets,
-    bindings: usageRows ?? [],
+    bindings: usages.map((u) => ({ slot_key: u.slot_key })),
   })
 
   // An `?asset=` naming nothing real resolves to null, which closes the drawer rather than
@@ -99,8 +122,9 @@ export default async function Page({
         path={PATH}
         tab={tab}
         assets={MANIFEST.assets}
+        entries={entries}
         report={report}
-        migratedGenerationIds={migratedGenerationIds}
+        filters={parseInventoryFilters(params)}
         selected={selected}
       />
     </StudioPage>

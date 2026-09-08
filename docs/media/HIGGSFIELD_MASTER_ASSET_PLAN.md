@@ -567,6 +567,7 @@ award or certification badges.
 
 | Field | Value |
 |---|---|
+| Status | `NEW_GENERATION_REQUIRED` |
 | Type | video |
 | Planned family (see §3.1) | `home-hero-video` — the full planned ID prefix, lower-cased |
 | Page · section | `home` · `hero` |
@@ -604,6 +605,7 @@ proportions. Loopable.
 
 | Field | Value |
 |---|---|
+| Status | `NEW_GENERATION_REQUIRED` |
 | Type | image |
 | Planned family (see §3.1) | `home-hero-poster` — the full planned ID prefix, lower-cased |
 | Page · section | `home` · `hero` |
@@ -641,6 +643,7 @@ heavy gold, no generic showroom look.
 
 | Field | Value |
 |---|---|
+| Status | `NEW_GENERATION_REQUIRED` |
 | Type | image |
 | Planned family (see §3.1) | `large-dining-card` — **not** `largeformat-dining` |
 | Page · section | `large-format` · `dining-tables` |
@@ -678,6 +681,7 @@ shallow depth of field; no text, no logos, no watermarks, no faces.
 
 | Field | Value |
 |---|---|
+| Status | `NEW_GENERATION_REQUIRED` |
 | Type | image |
 | Planned family (see §3.1) | `large-coffee-card` — **not** `largeformat-coffee` |
 | Page · section | `large-format` · `coffee-tables` |
@@ -721,6 +725,7 @@ no watermarks, no faces.
 
 | Field | Value |
 |---|---|
+| Status | `NEW_GENERATION_REQUIRED` |
 | Type | image |
 | Planned family (see §3.1) | `large-architectural-card` — **not** `largeformat-monumental` |
 | Page · section | `large-format` · `architectural` |
@@ -757,6 +762,7 @@ no watermarks, no faces.
 
 | Field | Value |
 |---|---|
+| Status | `NEW_GENERATION_REQUIRED` |
 | Type | image · 9:16 · min 1440 × 2560 |
 | Planned family (see §3.1) | `home-hero-poster` — shared with G2, which is the same ID prefix |
 | Cloudinary folder | `rivya/home/hero` |
@@ -785,6 +791,7 @@ daylit room.*
 
 | Field | Value |
 |---|---|
+| Status | `NEW_GENERATION_REQUIRED` |
 | Type | image · 1:1 · min 2048 × 2048, target 4096 × 4096 |
 | Planned family (see §3.1) | `home-material-fabricated` — the full planned ID prefix, lower-cased |
 | Cloudinary folder | `rivya/material` |
@@ -816,6 +823,7 @@ lattice.*
 
 | Field | Value |
 |---|---|
+| Status | `NEW_GENERATION_REQUIRED` |
 | Type | image · 1:1 · min 2048 × 2048, target 4096 × 4096 |
 | Planned family (see §3.1) | `home-material-finish` — the full planned ID prefix, lower-cased |
 | Cloudinary folder | `rivya/material` |
@@ -847,6 +855,7 @@ clear resin.*
 
 | Field | Value |
 |---|---|
+| Status | `NEW_GENERATION_REQUIRED` |
 | Type | image · 16:9 desktop min 1600 × 900 (target 5504 × 3072); 4:5 mobile as `COMMISSION-HERO-002` |
 | Planned family (see §3.1) | `commission-hero` — the full planned ID prefix, lower-cased; `-002` shares it |
 | Cloudinary folder | `rivya/commission` |
@@ -882,6 +891,7 @@ offcuts and cured resin swatches.*
 
 | Field | Value |
 |---|---|
+| Status | `NEW_GENERATION_REQUIRED` |
 | Type | image · 16:9 desktop min 1600 × 900 (target 5504 × 3072) — a category hero, not a full-bleed page hero (§3.5); 4:5 mobile as `FURNITURE-HERO-002`, min 1600 × 2000 (target 3712 × 4608) |
 | Planned family (see §3.1) | `furniture-hero` — the full planned ID prefix, lower-cased; both variants share it |
 | Slot · role | `/collection/furniture` hero `DESKTOP` (`-001`) and `MOBILE` (`-002`); `/collection` landing `card.1` and the mega-menu Furniture tile also bind `-002` |
@@ -929,6 +939,7 @@ quiet daylit room.*
 
 | Field | Value |
 |---|---|
+| Status | `NEW_GENERATION_REQUIRED` |
 | Type | image |
 | Planned family (see §3.1) | `large-seating-card` — **not** `largeformat-seating` |
 | Page · section | `large-format` · `seating` |
@@ -972,6 +983,7 @@ unfinished edge, masking tape`.
 
 | Field | Value |
 |---|---|
+| Status | `NEW_GENERATION_REQUIRED` |
 | Type | image |
 | Planned family (see §3.1) | `large-console-card` — **not** `largeformat-console` or `largeformat-side` |
 | Page · section | `large-format` · `consoles` |

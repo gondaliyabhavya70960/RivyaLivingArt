@@ -82,6 +82,18 @@ jobs:
       - name: No colliding asset IDs
         run: npm run media:check-ids
 
+      # The second asset guard required by Phase 07's exit criteria. It reads the master plan's
+      # briefs and fails if any targets an asset the manifest already holds — the failure that
+      # spends credits regenerating a picture we own.
+      - name: Nothing in the manifest is regenerated
+        run: npm run media:assert-no-regen
+
+      # The status document is generated. A hand-edit, or a manifest rebuild without a
+      # regeneration, shows up here as a diff rather than as a document that quietly stops
+      # describing the library.
+      - name: Asset status document is up to date
+        run: npm run media:check-status
+
       # --- design-system gates (Phase 02) ---
       - name: Token discipline
         run: npm run design:check-tokens

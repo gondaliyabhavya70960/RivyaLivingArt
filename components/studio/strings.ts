@@ -1170,6 +1170,101 @@ export const STUDIO_STRINGS = {
     contentKey: 'studio_help.higgsfield_empty_body',
   },
 
+  // FEAT §34's inventory columns. "Product" and "Collection" from §34 are not here: no Higgsfield
+  // asset is bound to either until Phase 09, and two permanently blank columns would be worse than
+  // the Family/Section substitution PHASE-05-09 §07 makes in their place.
+  'studio.higgsfield.colType': {
+    value: 'Type',
+    contentKey: 'studio_help.higgsfield_col_type',
+  },
+  'studio.higgsfield.colSection': {
+    value: 'Section',
+    contentKey: 'studio_help.higgsfield_col_section',
+  },
+  'studio.higgsfield.colPurpose': {
+    value: 'Purpose',
+    contentKey: 'studio_help.higgsfield_col_purpose',
+  },
+  'studio.higgsfield.colSource': {
+    value: 'Source',
+    contentKey: 'studio_help.higgsfield_col_source',
+  },
+  'studio.higgsfield.colModel': {
+    value: 'Model',
+    contentKey: 'studio_help.higgsfield_col_model',
+  },
+  'studio.higgsfield.colPrompt': {
+    value: 'Prompt',
+    contentKey: 'studio_help.higgsfield_col_prompt',
+  },
+  'studio.higgsfield.colUsed': {
+    value: 'Used',
+    contentKey: 'studio_help.higgsfield_col_used',
+  },
+  'studio.higgsfield.colLocation': {
+    value: 'Cloudinary location',
+    contentKey: 'studio_help.higgsfield_col_location',
+  },
+  'studio.higgsfield.colPlacement': {
+    value: 'CMS placement',
+    contentKey: 'studio_help.higgsfield_col_placement',
+  },
+
+  'studio.higgsfield.typeImage': {
+    value: 'Image',
+    contentKey: 'studio_help.higgsfield_type_image',
+  },
+  'studio.higgsfield.typeVideo': {
+    value: 'Video',
+    contentKey: 'studio_help.higgsfield_type_video',
+  },
+  'studio.higgsfield.usedYes': {
+    value: 'Yes',
+    contentKey: 'studio_help.higgsfield_used_yes',
+  },
+  'studio.higgsfield.usedNo': {
+    value: 'No',
+    contentKey: 'studio_help.higgsfield_used_no',
+  },
+  /** Said plainly rather than left blank: a blank cell reads as missing data, not as a finding. */
+  'studio.higgsfield.purposeNone': {
+    value: 'Unclassified family',
+    contentKey: 'studio_help.higgsfield_purpose_none',
+  },
+  'studio.higgsfield.placementNone': {
+    value: 'Not placed',
+    contentKey: 'studio_help.higgsfield_placement_none',
+  },
+
+  'studio.higgsfield.filterLabel': {
+    value: 'Filter the inventory',
+    contentKey: 'studio_help.higgsfield_filter_label',
+  },
+  'studio.higgsfield.filterApply': {
+    value: 'Apply filters',
+    contentKey: 'studio_help.higgsfield_filter_apply',
+  },
+  'studio.higgsfield.filterAll': {
+    value: 'All',
+    contentKey: 'studio_help.higgsfield_filter_all',
+  },
+  'studio.higgsfield.filterActive': {
+    value: 'Filters applied:',
+    contentKey: 'studio_help.higgsfield_filter_active',
+  },
+  'studio.higgsfield.filterType': {
+    value: 'Type',
+    contentKey: 'studio_help.higgsfield_filter_type',
+  },
+  'studio.higgsfield.filteredHeading': {
+    value: 'No assets match these filters',
+    contentKey: 'studio_help.higgsfield_filtered_heading',
+  },
+  'studio.higgsfield.filteredBody': {
+    value: 'Clear a filter to see more of the library.',
+    contentKey: 'studio_help.higgsfield_filtered_body',
+  },
+
   // --- The asset drawer -------------------------------------------------------------------------
   // There is deliberately NO regenerate control here, and `scripts/media/assert-no-regeneration.ts`
   // keeps it that way. An asset in the manifest already exists; re-generating it spends credits to
