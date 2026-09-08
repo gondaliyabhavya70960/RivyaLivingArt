@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { z } from 'zod'
 
 import type { Database } from '../database.types'
 import { mediaAssetSchema, type MediaAsset } from '../schemas'
@@ -183,4 +184,54 @@ export async function updateMediaAsset(
     .eq('id', id)
 
   if (error) throw toRepositoryError(ENTITY, 'update', id, error)
+}
+
+/**
+ * The three columns the Higgsfield tracker needs to answer "has this been migrated, and where is
+ * it used" over 250 manifest rows.
+ *
+ * A NARROW PROJECTION, NOT `select('*')`, and not `listMediaAssets()`. The tracker joins these
+ * against the manifest in memory; pulling whole rows — 22 media columns including a full
+ * generation prompt — to build a Set of one field would move roughly a megabyte to answer a
+ * boolean, on every render of the page.
+ */
+const higgsfieldStateSchema = z.object({
+  id: z.string().uuid(),
+  /** Nullable: an uploaded asset has no manifest identity. */
+  rivya_asset_id: z.string().nullable(),
+  higgsfield_generation_id: z.string().nullable(),
+})
+
+export type HiggsfieldAssetState = z.infer<typeof higgsfieldStateSchema>
+
+export async function listHiggsfieldAssetState(client: Client): Promise<HiggsfieldAssetState[]> {
+  const { data, error } = await client
+    .from('media_assets')
+    .select('id, rivya_asset_id, higgsfield_generation_id')
+    .not('higgsfield_generation_id', 'is', null)
+
+  if (error) throw toRepositoryError(ENTITY, 'list', 'higgsfield', error)
+  return parseRows(ENTITY, higgsfieldStateSchema, data ?? [])
+}
+
+/**
+ * Every slot binding, as `(media_id, slot_key)`.
+ *
+ * Unfiltered by context on purpose. `computeGaps()` asks "how many rows bind this slot key", and
+ * the answer must span every context — a hero bound through a `PAGE_SECTION` and the same slot
+ * bound through a `CATEGORY` are both bindings. Filtering here would make a bound slot read as a
+ * gap depending on which surface an editor used.
+ */
+const slotBindingSchema = z.object({
+  media_id: z.string().uuid(),
+  slot_key: z.string().min(1),
+})
+
+export type SlotBindingRow = z.infer<typeof slotBindingSchema>
+
+export async function listSlotBindings(client: Client): Promise<SlotBindingRow[]> {
+  const { data, error } = await client.from('media_usages').select('media_id, slot_key')
+
+  if (error) throw toRepositoryError('media usage', 'list', 'all', error)
+  return parseRows('media usage', slotBindingSchema, data ?? [])
 }

@@ -1,0 +1,291 @@
+#!/usr/bin/env node
+/**
+ * media:migrate:higgsfield — move the 250 manifest assets into Cloudinary and `media_assets`.
+ *
+ * THE DECISIONS ARE NOT IN THIS FILE. `lib/media/migration.ts` holds the plan, the ledger rules and
+ * the row mapping, and `tests/unit/higgsfield-migration.test.ts` drives all 250 real manifest rows
+ * through them with a fake uploader and no network. What is here is wiring: arguments, a database
+ * connection, a Cloudinary client, and the console output a human watches for twenty minutes.
+ *
+ * TWO PIECES OF STATE, AND THE SPLIT IS DELIBERATE:
+ *
+ *   `data/higgsfield/migration-log.json`  per ASSET, keyed by higgsfield_generation_id, committed.
+ *                                         This is the resume mechanism. Committed because the
+ *                                         migration must be resumable by somebody who has the repo
+ *                                         and a Cloudinary key but no database yet, and because a
+ *                                         ledger in git is reviewable in a pull request.
+ *   `higgsfield_migration_runs`           per RUN, in the database. The audit record: what was
+ *                                         attempted, when, by which scope, with what outcome.
+ *
+ * ORDER OF OPERATIONS PER ASSET: upload, then write the row. Never the reverse. A row written
+ * first would point at an asset that does not exist, and a broken image in a Studio table is
+ * harder to notice than a missing one.
+ *
+ * THE UPSERT KEY IS `higgsfield_generation_id`, NOT `rivya_asset_id`. Rebuilding the manifest
+ * renumbers a family whose membership changed — `PROCESS-POUR-004` can legitimately become
+ * `PROCESS-POUR-005` — while the generation id names the run that produced the pixels and no
+ * rebuild touches it. Keying on the asset id would re-insert a renumbered family as new rows and
+ * double the library. `media_assets_higgsfield_generation_idx` is the partial unique index that
+ * makes this possible.
+ *
+ * Usage:
+ *   npm run media:migrate:higgsfield -- --dry-run
+ *   npm run media:migrate:higgsfield
+ *   npm run media:migrate:higgsfield -- --family=process-pour
+ *   npm run media:migrate:higgsfield -- --limit=10
+ */
+import { execFileSync } from 'node:child_process'
+import { existsSync, readFileSync, writeFileSync } from 'node:fs'
+
+import pg from 'pg'
+
+import { readManifest, resourceTypeFor, sourceUrlFor } from '../../lib/media/manifest'
+import {
+  EMPTY_LEDGER,
+  cloudinaryTagsFor,
+  contextFor,
+  planRun,
+  recordFailure,
+  recordSuccess,
+  toMediaAssetRow,
+  type AssetUploader,
+  type Ledger,
+  type RunScope,
+} from '../../lib/media/migration'
+import { createCloudinaryUploader } from '../../lib/media/providers/cloudinary-admin'
+
+const LEDGER_PATH = 'data/higgsfield/migration-log.json'
+
+const argv = process.argv.slice(2)
+const dryRun = argv.includes('--dry-run')
+const family = argv.find((a) => a.startsWith('--family='))?.slice('--family='.length)
+const limitRaw = argv.find((a) => a.startsWith('--limit='))?.slice('--limit='.length)
+const limit = limitRaw === undefined ? undefined : Number(limitRaw)
+
+if (limit !== undefined && (!Number.isInteger(limit) || limit <= 0)) {
+  console.error(`--limit must be a positive integer; got ${String(limitRaw)}`)
+  process.exit(1)
+}
+
+const url = process.env.DATABASE_URL
+if (!url) {
+  console.error('DATABASE_URL is not set. See docs/ops/ENVIRONMENT.md.')
+  process.exit(1)
+}
+
+/**
+ * PREFLIGHT, BEFORE ANYTHING ELSE. D6 as amended by A1 requires the ID-collision guard to run
+ * before any media migration, and the phase document makes it verification step 1: a failing run
+ * blocks every step below. It is invoked here rather than left to CI because CI is not what runs
+ * this — a person is, on a machine that may never have run the guard.
+ */
+function preflight(): void {
+  try {
+    const output = execFileSync('python3', ['scripts/media/check-asset-ids.py'], {
+      encoding: 'utf8',
+    })
+    console.log(`▸ preflight: ${output.trim()}`)
+  } catch (error) {
+    console.error(
+      '✗ scripts/media/check-asset-ids.py failed. A planned asset ID reuses a manifest family\n' +
+        '  prefix, which will collide the moment that family grows (D6, amendment A1). Fix the ID\n' +
+        '  before migrating anything.\n' +
+        String((error as { stdout?: string }).stdout ?? error),
+    )
+    process.exit(1)
+  }
+}
+
+function readLedger(manifestVersion: string): Ledger {
+  if (!existsSync(LEDGER_PATH)) return { ...EMPTY_LEDGER, manifestVersion }
+  const parsed = JSON.parse(readFileSync(LEDGER_PATH, 'utf8')) as Ledger
+  return { manifestVersion, entries: parsed.entries ?? {} }
+}
+
+function writeLedger(ledger: Ledger): void {
+  // Pretty-printed and key-sorted: this file is committed, so its diff is read by a person. An
+  // unsorted dump would show every line as changed whenever object key order shifted.
+  const sorted = Object.fromEntries(
+    Object.entries(ledger.entries).sort(([a], [b]) => a.localeCompare(b)),
+  )
+  writeFileSync(LEDGER_PATH, `${JSON.stringify({ ...ledger, entries: sorted }, null, 2)}\n`)
+}
+
+const UPSERT = `
+insert into media_assets (
+  rivya_asset_id, provider, resource_type, public_id, folder, filename, kind, source,
+  alt_text, is_ai_generated, is_concept, status, owner_verification,
+  tags, subject_tags, aspect_ratio, width, height, duration_s, bytes, mime_type,
+  higgsfield_generation_id, higgsfield_model, higgsfield_prompt, manifest_version, migrated_at
+) values (
+  $1,$2,$3,$4,$5,$6,$7,$8, $9,$10,$11,$12,$13, $14,$15,$16,$17,$18,$19,$20,$21,
+  $22,$23,$24,$25, now()
+)
+on conflict (higgsfield_generation_id) where higgsfield_generation_id is not null
+do update set
+  -- Provider-derived and manifest-derived fields are refreshed. alt_text is NOT: it is imported as
+  -- a draft and an editor's rewrite must survive a re-run, exactly as in the canary importer.
+  rivya_asset_id  = excluded.rivya_asset_id,
+  resource_type   = excluded.resource_type,
+  public_id       = excluded.public_id,
+  folder          = excluded.folder,
+  filename        = excluded.filename,
+  kind            = excluded.kind,
+  tags            = excluded.tags,
+  subject_tags    = excluded.subject_tags,
+  aspect_ratio    = excluded.aspect_ratio,
+  width           = excluded.width,
+  height          = excluded.height,
+  duration_s      = excluded.duration_s,
+  bytes           = excluded.bytes,
+  mime_type       = excluded.mime_type,
+  higgsfield_model  = excluded.higgsfield_model,
+  higgsfield_prompt = excluded.higgsfield_prompt,
+  manifest_version  = excluded.manifest_version,
+  migrated_at       = excluded.migrated_at
+`
+
+async function main(): Promise<void> {
+  preflight()
+
+  const manifest = readManifest()
+  const scope: RunScope = {
+    ...(family === undefined ? {} : { family }),
+    ...(limit === undefined ? {} : { limit }),
+  }
+  const ledger = readLedger(manifest.manifest_version)
+  const plan = planRun(manifest.assets, ledger, scope)
+
+  console.log(
+    `▸ manifest ${manifest.manifest_version} · ${String(manifest.assets.length)} assets\n` +
+      `▸ scope ${plan.requestedScope} · attempt ${String(plan.attempt.length)} · ` +
+      `already done ${String(plan.skip.length)}${dryRun ? ' · DRY RUN' : ''}\n`,
+  )
+
+  if (dryRun) {
+    // Reports and writes nothing — not to Cloudinary, not to the ledger, not to the database.
+    // Verification step 2 asserts exactly this shape.
+    console.log(
+      `attempted ${String(plan.attempt.length)}, migrated 0, skipped ${String(plan.skip.length)}, failed 0`,
+    )
+    for (const asset of plan.attempt.slice(0, 5)) {
+      console.log(`    would upload ${asset.rivya_asset_id} -> ${asset.cloudinary_public_id}`)
+    }
+    if (plan.attempt.length > 5) console.log(`    … and ${String(plan.attempt.length - 5)} more`)
+    return
+  }
+
+  const uploader: AssetUploader = createCloudinaryUploader()
+  const client = new pg.Client({ connectionString: url })
+  await client.connect()
+
+  const startedAt = new Date().toISOString()
+  const log: Record<string, string> = {}
+  let current = ledger
+  let migrated = 0
+  let failed = 0
+
+  try {
+    for (const [index, asset] of plan.attempt.entries()) {
+      const position = `[${String(index + 1)}/${String(plan.attempt.length)}]`
+      try {
+        // Already in Cloudinary but missing from the ledger — the case a lost or partial ledger
+        // produces. Adopt it rather than re-uploading: `overwrite: false` would refuse anyway, and
+        // paying for the transfer twice to learn that is not worth it.
+        const existing = await uploader.probe(asset.cloudinary_public_id, resourceTypeFor(asset))
+        const uploaded =
+          existing ??
+          (await uploader.upload({
+            sourceUrl: sourceUrlFor(asset),
+            publicId: asset.cloudinary_public_id,
+            resourceType: resourceTypeFor(asset),
+            tags: cloudinaryTagsFor(asset),
+            context: contextFor(asset),
+          }))
+
+        const row = toMediaAssetRow(asset, uploaded, manifest.manifest_version)
+        await client.query(UPSERT, [
+          row.rivya_asset_id,
+          row.provider,
+          row.resource_type,
+          row.public_id,
+          row.folder,
+          row.filename,
+          row.kind,
+          row.source,
+          row.alt_text,
+          row.is_ai_generated,
+          row.is_concept,
+          row.status,
+          row.owner_verification,
+          row.tags,
+          row.subject_tags,
+          row.aspect_ratio,
+          row.width,
+          row.height,
+          row.duration_s,
+          row.bytes,
+          row.mime_type,
+          row.higgsfield_generation_id,
+          row.higgsfield_model,
+          row.higgsfield_prompt,
+          row.manifest_version,
+        ])
+
+        current = recordSuccess(current, asset, uploaded, new Date().toISOString())
+        migrated += 1
+        log[asset.rivya_asset_id] = existing ? 'adopted' : 'uploaded'
+        console.log(`  ${position} ${existing ? 'adopted ' : 'uploaded'} ${asset.rivya_asset_id}`)
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error)
+        current = recordFailure(current, asset, message, new Date().toISOString())
+        failed += 1
+        log[asset.rivya_asset_id] = `failed: ${message}`
+        console.error(`  ${position} FAILED   ${asset.rivya_asset_id} — ${message}`)
+      }
+
+      // Written after EVERY asset, not at the end. A run interrupted at asset 180 must resume from
+      // 180, and a ledger flushed only on success would lose 180 uploads that were actually paid
+      // for and stored.
+      writeLedger(current)
+    }
+  } finally {
+    await client
+      .query(
+        `insert into higgsfield_migration_runs
+           (started_at, finished_at, manifest_version, requested_scope,
+            attempted, migrated, skipped, failed, dry_run, log)
+         values ($1, now(), $2, $3, $4, $5, $6, $7, false, $8)`,
+        [
+          startedAt,
+          manifest.manifest_version,
+          plan.requestedScope,
+          plan.attempt.length,
+          migrated,
+          plan.skip.length,
+          failed,
+          JSON.stringify(log),
+        ],
+      )
+      .catch((error: unknown) => {
+        // The run record failing must not mask the migration's own outcome, which the ledger and
+        // the exit code already carry.
+        console.error(`  (could not write the run record: ${String(error)})`)
+      })
+    await client.end()
+  }
+
+  console.log(
+    `\nattempted ${String(plan.attempt.length)}, migrated ${String(migrated)}, ` +
+      `skipped ${String(plan.skip.length)}, failed ${String(failed)}`,
+  )
+
+  // Non-zero on any failure, so a CI step or a shell `&&` chain stops. The phase document's
+  // verification step 3 requires `failed 0`.
+  if (failed > 0) process.exit(1)
+}
+
+void main().catch((error: unknown) => {
+  console.error(error instanceof Error ? error.message : String(error))
+  process.exit(1)
+})

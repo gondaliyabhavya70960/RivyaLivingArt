@@ -108,9 +108,43 @@ if (!providerSource.startsWith("import 'server-only'")) {
   )
 }
 
+/**
+ * RULE 3, added in Phase 07: every SDK importer in `providers/` is accounted for.
+ *
+ * The directory used to hold exactly one file, so "the SDK lives behind `server-only`" and "the SDK
+ * lives in one directory" were the same statement. `cloudinary-admin.ts` broke that: it imports the
+ * SDK and is deliberately NOT `server-only`, because `server-only` throws outside a React Server
+ * Component build and would make the migration CLI unrunnable.
+ *
+ * That is a real hole — a second non-server-only SDK importer could appear here and be imported by
+ * a component. Rule 2 above is what actually stops that (nothing outside `lib/media/` may import
+ * this directory at all), and this rule stops the hole WIDENING silently: a new SDK importer here
+ * must be added to the list below, which is a diff a reviewer sees.
+ */
+const NODE_ONLY_PROVIDERS = new Set([`${PROVIDER_DIR}cloudinary-admin.ts`])
+
+const sdkImportersInProviders = files.filter(
+  (file) => file.startsWith(PROVIDER_DIR) && SDK_IMPORT.test(readFileSync(file, 'utf8')),
+)
+
+for (const file of sdkImportersInProviders) {
+  const source = readFileSync(file, 'utf8')
+  const isServerOnly = source.startsWith("import 'server-only'")
+  if (isServerOnly || NODE_ONLY_PROVIDERS.has(file)) continue
+
+  failed = true
+  console.error(
+    `✗ ${file} imports the Cloudinary SDK but is neither \`server-only\` nor a declared\n` +
+      '  Node-only module. Add `server-only` as its first line, or — if it is a CLI path where\n' +
+      '  that import would throw — add it to NODE_ONLY_PROVIDERS here so the exception is visible.',
+  )
+}
+
 if (failed) process.exit(1)
 
 console.log(
-  `✓ provider boundary: the Cloudinary SDK is imported only by ${PROVIDER_DIR}cloudinary.ts, ` +
-    `which is server-only; ${files.length} source files checked`,
+  `✓ provider boundary: the Cloudinary SDK is imported only inside ${PROVIDER_DIR} ` +
+    `(${sdkImportersInProviders.length} file(s): ` +
+    `${sdkImportersInProviders.map((f) => f.slice(PROVIDER_DIR.length)).join(', ')}), ` +
+    `each server-only or declared Node-only; ${files.length} source files checked`,
 )

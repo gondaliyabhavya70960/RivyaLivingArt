@@ -6,6 +6,94 @@ Every phase adds an entry; see `docs/architecture/CANONICAL-DECISIONS.md` D9 for
 
 ## [Unreleased]
 
+### Phase 07 — Higgsfield Asset Audit + Initial Asset Plan
+
+**CODE COMPLETE. The migration has not been run.** Everything below is built, tested and merged;
+moving the 250 assets into Cloudinary is an owner-side action, because this sandbox's proxy refuses
+CONNECT to both `api.cloudinary.com` and the Higgsfield CDN the assets are fetched from. See
+*Remaining Work* in `docs/SESSION-STATE.md` for the exact command.
+
+**The migration.** `scripts/media/migrate-higgsfield.ts` moves each manifest asset from its
+Higgsfield CDN origin into the Cloudinary folder and public id the manifest already assigns, then
+writes a `media_assets` row with full provenance. `--dry-run`, `--family=`, `--limit=`.
+
+The upsert key is `higgsfield_generation_id`, not `rivya_asset_id`. Rebuilding the manifest
+renumbers a family whose membership changed — `PROCESS-POUR-004` can legitimately become `-005` —
+while the generation id names the run that produced the pixels and no rebuild touches it. Keying on
+the asset id would re-insert a renumbered family as new rows and double the library. A unit test
+shifts twelve `process-pour` ids and asserts the run reports 250 skips and zero uploads.
+
+Images upload from `source_min_url`, not `source_url`, and a canary paid for that lesson: the
+originals are 4800×3584 PNGs past 20 MB against Cloudinary's 10 MB image cap. The `_min.webp`
+variant is not a downscale — same pixels, webp-compressed to 463 KB, a 47× reduction. All 26 videos
+carry `source_min_url: null` and need none.
+
+Two pieces of state, split deliberately: `data/higgsfield/migration-log.json` per asset, committed,
+which is the resume mechanism; `higgsfield_migration_runs` per run, in the database, which is the
+audit record.
+
+**The gap engine.** `content/media-slots.ts` declares 26 CMS media slots across the D3 route map,
+each naming the manifest families that could fill it. An empty `fillableBy` is a statement, not an
+omission — it is how a gap is distinguished from a slot that merely has no binding yet, which is a
+distinction the assets alone cannot make.
+
+`lib/media/gaps.ts` joins that against `media_usages`, classifying each slot FILLED / COVERED /
+THIN / GAP and reporting thin families, families no slot can consume, and per-slot missing ratios.
+Against the manifest with nothing bound: 13 coverable, 2 thin, 11 gaps — every page the phase
+document predicted, and `gallery-scene` as the one family no declared surface uses.
+
+A slot also declares whether an unfillable one earns a generation brief or an honest empty state.
+`/portfolio` is the second: a portfolio entry asserts that Rivya delivered a piece to a client, and
+generating an image of one would fabricate exactly the business fact D10 exists to prevent, so
+`briefableGaps()` excludes it by construction rather than by a filter somebody could forget.
+
+**`slot_key` now carries the registry key verbatim.** `MEDIA_GUIDE.md` §6 previously documented
+short section-scoped keys (`media`, `card.3`), which the registry keys do not match — the join
+would have silently found nothing after Phase 09. Neither the schema nor CANONICAL-DECISIONS fixes
+a vocabulary, only non-blank, so the registry supplies one. The alternative would force
+`computeGaps()` to join through `page_sections`, which does not exist until Phase 08 — so the gap
+list could not run until after the phase that works from it. Repeating slots keep the documented
+`[n]` index form; `slotKeyOf()` strips it so four cards count against one declared slot.
+
+**The tracker** at `/studio/media/higgsfield` — Inventory, Families and Gaps, with a
+non-dismissible concept-media banner on all three. Every asset here is `is_concept = true`, and an
+owner who forgot that could send a client a render of a table nobody has built.
+
+Tabs are links rather than the RC-203 widget: the Gaps tab needs its own URL for the phase's
+verification and for the e2e test, 250 inventory rows should not ride along in the payload of a
+six-row gap list, and a control that changes the URL is navigation — `role="tab"` would tell a
+screen reader it stays on the page when it does not.
+
+The asset drawer is read-only and has no regenerate control. Editing alt text and tags belongs to
+the Media Manager, where the asset has a `media_assets` row to write to.
+
+**Two guards, both in CI and in `npm run check`.** `scripts/media/assert-no-regeneration.ts` reads
+the master plan's briefs and fails if any targets an existing `rivya_asset_id`, is unmarked, plans
+an existing family, or if any generation call appears in `app/`, `components/`, `lib/` or
+`content/`. Targets are read from brief headings, never by grepping for asset ids — every brief
+cites existing assets as its justification, and a guard that flagged those would be switched off
+within a week. Verified both ways: passing on the current plan, and exiting 1 on a planted brief
+for `WALL-ART-001`, naming the asset and where it already lives.
+
+`scripts/media/build-asset-status.ts` writes §3 and §4 of `HIGGSFIELD_ASSET_STATUS.md` between
+markers, leaving the hand-written analysis untouched. Manifest-only and deterministic, because CI
+regenerates it and diffs the result; a generator that read the database would produce a different
+document on every machine.
+
+**A real ID collision, caught by a test.** The slot key `large-format.coffee` mints
+`LARGE-FORMAT-COFFEE-001`, which normalises to the same name as the `LARGEFORMAT-COFFEE-001` the
+family allocator will mint once `largeformat-coffee` has a second asset. Different strings, one
+name — a literal comparison passes and a reader cannot tell them apart, which is precisely what D6
+as amended by A1 forbids. The brief skeleton now names the colliding family rather than minting,
+because choosing the replacement is a naming judgement.
+
+**Migration `0040`** adds `higgsfield_migration_runs` with a check constraint that the counts add
+up; **`0041`** is its generated select policy. Both are applied to the local cluster and the hosted
+project, which now records 19 migrations with `0041_rls_policies_phase07.sql` as the latest.
+
+733 unit tests, no skips, with a database reachable. Sixteen static gates and six database gates
+green.
+
 ### Phase 06 — Cloudinary Media Architecture
 
 Media becomes a first-class database entity rather than a URL pasted into a field. Cloudinary is

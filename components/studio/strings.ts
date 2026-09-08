@@ -1011,6 +1011,313 @@ export const STUDIO_STRINGS = {
     value: 'The upload did not finish. Nothing was saved.',
     contentKey: 'studio_help.media_upload_failed',
   },
+  // --- The Higgsfield tracker (Phase 07) ---------------------------------------------------------
+  // The concept banner is the load-bearing string on this surface, not a caption. Every asset here
+  // is `is_concept = true`: AI-generated art direction for a studio whose delivered work has not
+  // been photographed. An owner who forgot that could send a client a render of a table that has
+  // never been built, which is the precise class of fabricated business fact D10 exists to stop —
+  // so the warning sits above the grid on every tab, and is not dismissible.
+  'studio.higgsfield.conceptBanner': {
+    value: 'Concept media. Never presented as completed, delivered Rivya work.',
+    contentKey: 'studio_help.higgsfield_concept_banner',
+  },
+
+  'studio.higgsfield.tabInventory': {
+    value: 'Inventory',
+    contentKey: 'studio_help.higgsfield_tab_inventory',
+  },
+  'studio.higgsfield.tabFamilies': {
+    value: 'Families',
+    contentKey: 'studio_help.higgsfield_tab_families',
+  },
+  'studio.higgsfield.tabGaps': {
+    value: 'Gaps',
+    contentKey: 'studio_help.higgsfield_tab_gaps',
+  },
+
+  'studio.higgsfield.cardTotal': {
+    value: 'In the manifest',
+    contentKey: 'studio_help.higgsfield_card_total',
+  },
+  'studio.higgsfield.cardMigrated': {
+    value: 'Migrated',
+    contentKey: 'studio_help.higgsfield_card_migrated',
+  },
+  'studio.higgsfield.cardPending': {
+    value: 'Not yet migrated',
+    contentKey: 'studio_help.higgsfield_card_pending',
+  },
+  'studio.higgsfield.cardGaps': {
+    value: 'Unfilled slots',
+    contentKey: 'studio_help.higgsfield_card_gaps',
+  },
+
+  'studio.higgsfield.inventoryCaption': {
+    value: 'Higgsfield assets',
+    contentKey: 'studio_help.higgsfield_inventory_caption',
+  },
+  'studio.higgsfield.colAsset': {
+    value: 'Asset ID',
+    contentKey: 'studio_help.higgsfield_col_asset',
+  },
+  'studio.higgsfield.colFamily': {
+    value: 'Family',
+    contentKey: 'studio_help.higgsfield_col_family',
+  },
+  'studio.higgsfield.colPage': {
+    value: 'Page',
+    contentKey: 'studio_help.higgsfield_col_page',
+  },
+  'studio.higgsfield.colRatio': {
+    value: 'Ratio',
+    contentKey: 'studio_help.higgsfield_col_ratio',
+  },
+  'studio.higgsfield.colState': {
+    value: 'State',
+    contentKey: 'studio_help.higgsfield_col_state',
+  },
+  'studio.higgsfield.colCount': {
+    value: 'Assets',
+    contentKey: 'studio_help.higgsfield_col_count',
+  },
+  'studio.higgsfield.colSlot': {
+    value: 'Slot',
+    contentKey: 'studio_help.higgsfield_col_slot',
+  },
+  'studio.higgsfield.colNeeds': {
+    value: 'What is needed',
+    contentKey: 'studio_help.higgsfield_col_needs',
+  },
+
+  /** Shown against a manifest row that has no `media_assets` row yet. */
+  'studio.higgsfield.stateUnmigrated': {
+    value: 'Not migrated',
+    contentKey: 'studio_help.higgsfield_state_unmigrated',
+  },
+  'studio.higgsfield.stateMigrated': {
+    value: 'In the library',
+    contentKey: 'studio_help.higgsfield_state_migrated',
+  },
+
+  'studio.higgsfield.familiesCaption': {
+    value: 'Families in the manifest',
+    contentKey: 'studio_help.higgsfield_families_caption',
+  },
+  'studio.higgsfield.gapsCaption': {
+    value: 'Declared slots by page',
+    contentKey: 'studio_help.higgsfield_gaps_caption',
+  },
+
+  /** The four slot states. Each renders its own word — colour is never the only signal. */
+  'studio.higgsfield.slotFilled': {
+    value: 'Filled',
+    contentKey: 'studio_help.higgsfield_slot_filled',
+  },
+  'studio.higgsfield.slotCovered': {
+    value: 'Coverable',
+    contentKey: 'studio_help.higgsfield_slot_covered',
+  },
+  'studio.higgsfield.slotThin': {
+    value: 'Thin',
+    contentKey: 'studio_help.higgsfield_slot_thin',
+  },
+  'studio.higgsfield.slotGap': {
+    value: 'Gap',
+    contentKey: 'studio_help.higgsfield_slot_gap',
+  },
+
+  /** Why a gap exists, and what closing it would mean. The two are not interchangeable. */
+  'studio.higgsfield.needsGeneration': {
+    value: 'Nothing in the library fits. Needs a new generation.',
+    contentKey: 'studio_help.higgsfield_needs_generation',
+  },
+  'studio.higgsfield.needsEmptyState': {
+    value: 'Deliberately empty until the owner confirms real work. Never generated.',
+    contentKey: 'studio_help.higgsfield_needs_empty_state',
+  },
+  'studio.higgsfield.needsThin': {
+    value: 'Too few assets to fill this surface without repeating one.',
+    contentKey: 'studio_help.higgsfield_needs_thin',
+  },
+  'studio.higgsfield.needsBinding': {
+    value: 'Assets exist. Nothing is bound to this slot yet.',
+    contentKey: 'studio_help.higgsfield_needs_binding',
+  },
+  'studio.higgsfield.needsNothing': {
+    value: 'Bound.',
+    contentKey: 'studio_help.higgsfield_needs_nothing',
+  },
+  'studio.higgsfield.missingRatios': {
+    value: 'No candidate is natively',
+    contentKey: 'studio_help.higgsfield_missing_ratios',
+  },
+
+  'studio.higgsfield.orphanHeading': {
+    value: 'Families no slot uses',
+    contentKey: 'studio_help.higgsfield_orphan_heading',
+  },
+  'studio.higgsfield.orphanBody': {
+    value: 'These assets are in the library and no declared surface shows them.',
+    contentKey: 'studio_help.higgsfield_orphan_body',
+  },
+
+  'studio.higgsfield.emptyHeading': {
+    value: 'The manifest is empty',
+    contentKey: 'studio_help.higgsfield_empty_heading',
+  },
+  'studio.higgsfield.emptyBody': {
+    value: 'Rebuild it with the manifest script, then reload this page.',
+    contentKey: 'studio_help.higgsfield_empty_body',
+  },
+
+  // FEAT §34's inventory columns. "Product" and "Collection" from §34 are not here: no Higgsfield
+  // asset is bound to either until Phase 09, and two permanently blank columns would be worse than
+  // the Family/Section substitution PHASE-05-09 §07 makes in their place.
+  'studio.higgsfield.colType': {
+    value: 'Type',
+    contentKey: 'studio_help.higgsfield_col_type',
+  },
+  'studio.higgsfield.colSection': {
+    value: 'Section',
+    contentKey: 'studio_help.higgsfield_col_section',
+  },
+  'studio.higgsfield.colPurpose': {
+    value: 'Purpose',
+    contentKey: 'studio_help.higgsfield_col_purpose',
+  },
+  'studio.higgsfield.colSource': {
+    value: 'Source',
+    contentKey: 'studio_help.higgsfield_col_source',
+  },
+  'studio.higgsfield.colModel': {
+    value: 'Model',
+    contentKey: 'studio_help.higgsfield_col_model',
+  },
+  'studio.higgsfield.colPrompt': {
+    value: 'Prompt',
+    contentKey: 'studio_help.higgsfield_col_prompt',
+  },
+  'studio.higgsfield.colUsed': {
+    value: 'Used',
+    contentKey: 'studio_help.higgsfield_col_used',
+  },
+  'studio.higgsfield.colLocation': {
+    value: 'Cloudinary location',
+    contentKey: 'studio_help.higgsfield_col_location',
+  },
+  'studio.higgsfield.colPlacement': {
+    value: 'CMS placement',
+    contentKey: 'studio_help.higgsfield_col_placement',
+  },
+
+  'studio.higgsfield.typeImage': {
+    value: 'Image',
+    contentKey: 'studio_help.higgsfield_type_image',
+  },
+  'studio.higgsfield.typeVideo': {
+    value: 'Video',
+    contentKey: 'studio_help.higgsfield_type_video',
+  },
+  'studio.higgsfield.usedYes': {
+    value: 'Yes',
+    contentKey: 'studio_help.higgsfield_used_yes',
+  },
+  'studio.higgsfield.usedNo': {
+    value: 'No',
+    contentKey: 'studio_help.higgsfield_used_no',
+  },
+  /** Said plainly rather than left blank: a blank cell reads as missing data, not as a finding. */
+  'studio.higgsfield.purposeNone': {
+    value: 'Unclassified family',
+    contentKey: 'studio_help.higgsfield_purpose_none',
+  },
+  'studio.higgsfield.placementNone': {
+    value: 'Not placed',
+    contentKey: 'studio_help.higgsfield_placement_none',
+  },
+
+  'studio.higgsfield.filterLabel': {
+    value: 'Filter the inventory',
+    contentKey: 'studio_help.higgsfield_filter_label',
+  },
+  'studio.higgsfield.filterApply': {
+    value: 'Apply filters',
+    contentKey: 'studio_help.higgsfield_filter_apply',
+  },
+  'studio.higgsfield.filterAll': {
+    value: 'All',
+    contentKey: 'studio_help.higgsfield_filter_all',
+  },
+  'studio.higgsfield.filterActive': {
+    value: 'Filters applied:',
+    contentKey: 'studio_help.higgsfield_filter_active',
+  },
+  'studio.higgsfield.filterType': {
+    value: 'Type',
+    contentKey: 'studio_help.higgsfield_filter_type',
+  },
+  'studio.higgsfield.filteredHeading': {
+    value: 'No assets match these filters',
+    contentKey: 'studio_help.higgsfield_filtered_heading',
+  },
+  'studio.higgsfield.filteredBody': {
+    value: 'Clear a filter to see more of the library.',
+    contentKey: 'studio_help.higgsfield_filtered_body',
+  },
+
+  /** The Gaps tab's one action. It copies markdown; it never edits the plan — see CopyBriefButton. */
+  'studio.higgsfield.copyBrief': {
+    value: 'Copy brief to master plan',
+    contentKey: 'studio_help.higgsfield_copy_brief',
+  },
+  'studio.higgsfield.copyBriefDone': {
+    value: 'Copied. Paste it into HIGGSFIELD_MASTER_ASSET_PLAN.md §6.1.',
+    contentKey: 'studio_help.higgsfield_copy_brief_done',
+  },
+  'studio.higgsfield.copyBriefFailed': {
+    value: 'Could not copy. Nothing was placed on the clipboard.',
+    contentKey: 'studio_help.higgsfield_copy_brief_failed',
+  },
+
+  // --- The asset drawer -------------------------------------------------------------------------
+  // There is deliberately NO regenerate control here, and `scripts/media/assert-no-regeneration.ts`
+  // keeps it that way. An asset in the manifest already exists; re-generating it spends credits to
+  // replace something with a different picture, orphans the ledger entry keyed on the old
+  // generation id, and breaks any CMS binding that pointed at it.
+  'studio.higgsfield.drawerClose': {
+    value: 'Close',
+    contentKey: 'studio_help.higgsfield_drawer_close',
+  },
+  'studio.higgsfield.drawerPrompt': {
+    value: 'Generation prompt',
+    contentKey: 'studio_help.higgsfield_drawer_prompt',
+  },
+  'studio.higgsfield.drawerAlt': {
+    value: 'Draft alt text',
+    contentKey: 'studio_help.higgsfield_drawer_alt',
+  },
+  'studio.higgsfield.drawerModel': {
+    value: 'Model',
+    contentKey: 'studio_help.higgsfield_drawer_model',
+  },
+  'studio.higgsfield.drawerGenerationId': {
+    value: 'Generation ID',
+    contentKey: 'studio_help.higgsfield_drawer_generation_id',
+  },
+  'studio.higgsfield.drawerPublicId': {
+    value: 'Cloudinary public ID',
+    contentKey: 'studio_help.higgsfield_drawer_public_id',
+  },
+  'studio.higgsfield.drawerDimensions': {
+    value: 'Requested dimensions',
+    contentKey: 'studio_help.higgsfield_drawer_dimensions',
+  },
+  /** Why the drawer says "requested". See `toMediaAssetRow` — Cloudinary is authoritative for the
+   *  stored file, and the manifest records what was asked for, which differs on several videos. */
+  'studio.higgsfield.drawerDimensionsHelp': {
+    value: 'What the generation was asked for. The stored file may differ.',
+    contentKey: 'studio_help.higgsfield_drawer_dimensions_help',
+  },
 } as const satisfies Record<string, StudioStringEntry>
 
 /** Every key this module resolves. A typo is a compile error, not a blank space on the page. */

@@ -24,6 +24,7 @@ import {
   PHASE_04_POLICIES,
   PHASE_05_POLICIES,
   PHASE_06_POLICIES,
+  PHASE_07_POLICIES,
   TABLE_POLICY_MAP,
   type ManagedTable,
 } from '../../lib/auth/table-permissions'
@@ -67,6 +68,16 @@ const GENERATED: Record<string, { title: string; preamble: string }> = {
 -- has shipped — its table set is fixed. Phase 06 widens the media_assets COLUMN set, which changes
 -- no policy: every policy on that table gates on \`status\` and \`has_role()\`, neither of which is
 -- affected by adding columns.`,
+  },
+  [PHASE_07_POLICIES]: {
+    title: `-- ${PHASE_07_POLICIES} — Phase 07`,
+    preamble: `-- Policies for higgsfield_migration_runs, which migration 0040 creates. Its own file for the
+-- same reason 0031 and 0021 were: a generated policy file is never re-opened once shipped.
+--
+-- ONE POLICY, and the absence of the other three is the point. This table is written by a CLI
+-- migration over DATABASE_URL, which bypasses RLS by role attribute — so an insert policy would
+-- describe a path nothing uses, and reviewing it later would suggest a session can write run
+-- records when none can. Staff read it; nothing else touches it through PostgREST.`,
   },
   [PHASE_05_POLICIES]: {
     title: `-- ${PHASE_05_POLICIES} — Phase 05`,

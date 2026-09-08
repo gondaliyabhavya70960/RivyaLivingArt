@@ -8,9 +8,69 @@
 
 ## Current Phase
 
-**Phase 06 — Cloudinary Media Architecture. SUBSTANTIALLY COMPLETE.** Phase 05 is substantially
-complete with two carried gaps (below). Phase 04 is closed out (PR #5, plus the close-out in PR
-#7). Phase 03 merged as PR #4.
+**Phase 07 — Higgsfield Asset Audit + Initial Asset Plan. CODE COMPLETE; THE MIGRATION HAS NOT
+BEEN RUN.** Everything Phase 07 specifies is built, tested and pushed. Moving the 250 assets into
+Cloudinary is the one step that cannot happen here — the sandbox proxy refuses CONNECT to both
+`api.cloudinary.com` and the Higgsfield CDN the assets are fetched from. It is an owner-side
+command, and it is the first item under *Remaining Work*.
+
+Phase 06 merged as PR #8. Phase 05 is substantially complete with two carried gaps (below).
+Phase 04 is closed out (PR #5, plus the close-out in PR #7). Phase 03 merged as PR #4.
+
+### Phase 07: what is built, and what is not
+
+**Built and verified**
+
+- **`scripts/media/migrate-higgsfield.ts`** — `--dry-run`, `--family=`, `--limit=`, resumable from
+  a committed ledger. The decisions live in `lib/media/migration.ts`, which
+  `tests/unit/higgsfield-migration.test.ts` drives with all 250 real manifest rows and a fake
+  uploader, no network. The upsert key is `higgsfield_generation_id`, which survives a manifest
+  renumbering; a test shifts twelve `process-pour` ids and asserts 250 skips, 0 uploads.
+- **`content/media-slots.ts` and `lib/media/gaps.ts`.** 26 declared slots; against the manifest
+  with nothing bound the report is 13 coverable, 2 thin, 11 gaps — matching the phase document's
+  own gap table, including all seven pages verification step 8 names. `gallery-scene` surfaces as
+  the one family no declared surface can use.
+- **`/studio/media/higgsfield`** — Inventory (all thirteen FEAT §34 columns, six filters),
+  Families, Gaps, with the concept banner on every tab and a read-only drawer with no regenerate
+  control. Each tab is its own URL.
+- **`scripts/media/assert-no-regeneration.ts`** — four rules, in CI and in `npm run check`.
+  Verified to FAIL on a planted brief for `WALL-ART-001`, naming the asset and where it already
+  lives, not merely to pass.
+- **`scripts/media/build-asset-status.ts`** — regenerates §3 and §4 of
+  `HIGGSFIELD_ASSET_STATUS.md` between markers. Manifest-only and deterministic; a second run
+  produces no diff, which is what verification step 10 requires.
+- **`0040` + `0041`** applied to both databases. The hosted project records 19 migrations with
+  `0041_rls_policies_phase07.sql` as the latest, and `higgsfield_migration_runs` exists on both.
+- **733 unit tests, 63 files, no skips** with `DATABASE_URL` set. 6 new e2e routing cases pass.
+
+**Not built, and why**
+
+- **The migration has not run.** 0 rows in `higgsfield_migration_runs` on both databases; the
+  hosted `media_assets` holds the 3 Phase 06 canaries and nothing else. Proxy-blocked, not a
+  defect. Exit criteria 1–5 cannot be ticked until the owner runs it locally.
+- **8 of the 14 tracker e2e cases are `test.fixme`** — they need an authenticated session, the
+  same wall `studio-access.spec.ts` documents. Their subject matter is not unproven in the
+  meantime: the three filter counts and the seven gap pages are asserted against the real manifest
+  in the unit suite, and "no regenerate control" is a build gate rather than a browser assertion.
+- **No "Coverage" or "Concept Placement" tab.** Both are Phase 43 in `HIGGSFIELD_GUIDE.md` §7.
+
+### Phase 07: the 10 verification steps, as actually run
+
+| # | Step | Result |
+|---|---|---|
+| 1 | `check-asset-ids.py` | **PASS** — 31 documents against 250 manifest IDs, 0 collisions |
+| 2 | `migrate-higgsfield --dry-run` | **NOT RUN** — needs `DATABASE_URL` plus Cloudinary reachability |
+| 3 | `migrate-higgsfield` | **NOT RUN** — proxy blocks `api.cloudinary.com` and the CDN origin |
+| 4 | Re-run reports 250 skipped | **NOT RUN** — depends on 3. Proved offline instead: the idempotency test drives all 250 through the real planner with a fake uploader |
+| 5 | 26 video / 224 image rows | **NOT RUN** — depends on 3. The manifest split is asserted in the unit suite |
+| 6 | Three "zero rows" identity queries | **NOT RUN** against imported rows; the manifest itself is proved to have no duplicate in any of the three |
+| 7 | Tracker filters: 39 / 79 / 26 | **PASS, at the predicate** — asserted against the real manifest in `tests/unit/media-inventory.test.ts`. The UI wiring is `test.fixme` |
+| 8 | Gaps tab shows all seven pages | **PASS, at the engine** — `tests/unit/media-gaps.test.ts`. The UI wiring is `test.fixme` |
+| 9 | `media:assert-no-regen`, then plant a `WALL-ART-001` brief | **PASS both ways** — clean run passes; the planted brief exits 1 naming the asset |
+| 10 | `media:build-status && git diff --exit-code` | **PASS** — second run produces no diff |
+
+Steps 2–6 are the migration itself and everything downstream of it. They are the owner-side
+action, not open questions.
 
 ### Phase 06: what is built, and what is not
 
@@ -138,7 +198,11 @@ project with a baseline: 3 rows exist, `anon` sees 0. All three are `DRAFT` and
    nothing reorders dashboard cards. Not an exit criterion; deferred deliberately rather than
    forgotten.
 
-## Status
+## Status *(Phase 04, kept for its verification record)*
+
+> The current phase's status is at the top of this file. The sections from here down are the
+> accumulated record of Phases 02–04, newest first within each; they are kept because they carry
+> verification detail that is still true and still occasionally needed.
 
 **SUBSTANTIALLY COMPLETE — 10 of the 11 verification steps pass against a real database.**
 Everything verifiable in this environment has been verified, against a real PostgreSQL 16.13
@@ -211,6 +275,23 @@ not visible to anon.
 
 ## Files Created
 
+**Phase 07**
+
+```
+content/media-slots.ts · content/asset-purposes.ts
+lib/media/{manifest,migration,gaps,inventory}.ts
+lib/media/providers/cloudinary-admin.ts
+scripts/media/{migrate-higgsfield,assert-no-regeneration,build-asset-status}.ts
+components/studio/{HiggsfieldTracker,HiggsfieldAssetDrawer,CopyBriefButton}.tsx
+app/(studio)/studio/(shell)/media/higgsfield/page.tsx        (was a stub)
+supabase/migrations/{0040_phase07_higgsfield,0041_rls_policies_phase07}.sql
+tests/unit/{higgsfield-migration,media-gaps,media-inventory}.test.ts
+tests/e2e/higgsfield-tracker.spec.ts
+docs/media/HIGGSFIELD_ASSET_STATUS.md                        (now generated between markers)
+```
+
+**Phase 02 (original list)**
+
 ```
 package.json · tsconfig.json · next.config.ts · postcss.config.mjs · eslint.config.mjs
 playwright.config.ts · vitest.config.ts · .prettierrc.json · .github/workflows/ci.yml
@@ -225,6 +306,18 @@ tests/e2e/design-system.spec.ts-snapshots/  (8 baselines)
 ```
 
 ## Database Changes
+
+**Migrations `0040` + `0041` (Phase 07).** `higgsfield_migration_runs` — the per-run audit record,
+with `constraint higgsfield_migration_runs_counts_add_up check (migrated + skipped + failed <=
+attempted)`, because a run that reports more outcomes than attempts is a bug in the script and the
+database is the last place that can say so. `0041` is its generated select policy: readable with
+`media.read`, insertable by the service role only. `db:check-schema` required a tier decision for
+the new table; it is recorded as a §1.4 run-record exemption.
+
+Both applied to the local cluster and to the hosted project, which now records **19 migrations**
+with `0041_rls_policies_phase07.sql` as the latest. Verified 2026-09-08:
+`higgsfield_migration_runs` exists on both, holds **0 rows** on both, and hosted `media_assets`
+holds the 3 Phase 06 canaries — the migration has not been run.
 
 **Migrations `0001`–`0008`** — the whole Phase 03 spine. Applied and verified against a local
 PostgreSQL 16.13 cluster; **never applied to the hosted Supabase project** (see Migration
@@ -261,6 +354,26 @@ npx playwright test                 (8 projects = the FEAT §45 widths)
 
 ## Test Results
 
+**Phase 07 (current).** **733 unit tests across 63 files, no skips**, with a local PostgreSQL
+16.13 cluster reachable. Sixteen static gates and six database gates green. Playwright:
+`higgsfield-tracker.spec.ts` 6 passed, 8 `fixme`.
+
+New this phase: 21 migration tests driving all 250 real manifest rows through the planner with a
+fake uploader; 32 gap-engine tests; 21 inventory tests including the three counts verification
+step 7 asserts through the UI.
+
+Three tests earned their existence by failing first:
+- The Zod schema rejected the real manifest on its first run — `source_min_url` is `null` on the
+  26 videos, not absent. The schema said `.optional()`; it is `.nullable()`.
+- Two transform tests caught a fix that ran preset widths through `snapWidth`, turning `hero`
+  into 1920 and `thumb` into 320.
+- The ID-collision test caught `large-format.coffee` minting `LARGE-FORMAT-COFFEE-001`, the same
+  name as the family allocator's future `LARGEFORMAT-COFFEE-001`.
+
+---
+
+**Phase 03 (original record).**
+
 - Unit: **329 tests across 44 files**, all passing (was 282/41 at the end of Phase 02).
 - All **thirteen** gates pass.
 - Phase 03's nine verification steps, each executed against the real database:
@@ -290,6 +403,35 @@ against the same database yields a count of 3, not 2. Step 4's assertion is only
 fresh start, and that is how it was run.
 
 ## Known Issues
+
+### Phase 07 — four things worth knowing before touching this code
+
+**1. The migration has never executed. Nothing downstream of it is proved end to end.**
+The planner, the ledger rules, the row mapping and the idempotency claim are all exercised over
+all 250 real manifest rows with a fake uploader — but a fake uploader cannot 400. Phase 06's
+canaries are the reason to take that seriously: 23 URL-builder unit tests passed while every video
+URL would have been rejected, and the same phase learned that a 20 MB PNG fails an upload cap that
+no test knew about. Treat the first real run as a source of new information, and run
+`--limit=5` before the full 250.
+
+**2. `slot_key` now carries the registry key, and Phase 08 must honour that.**
+`MEDIA_GUIDE.md` §6 previously documented short section-scoped keys (`media`, `card.3`). Nothing
+enforces the new contract — the database check constraint only requires non-blank — so a Phase 08
+trigger that writes the old form will make the Gaps tab report every slot as unbound, silently and
+plausibly. The reasoning is recorded in three places (the guide, the header of `lib/media/gaps.ts`,
+and this file's *Next Exact Action*) precisely because nothing in code can catch it.
+
+**3. The `EMPTY_STATE` resolution is load-bearing, not a nicety.**
+`/portfolio` is a gap that must never be filled by generation: a portfolio entry asserts Rivya
+delivered a piece to a client. `briefableGaps()` excludes it by construction and the Gaps tab
+shows no "Copy brief" button on it. If a future change filters `report.gaps` directly instead of
+calling `briefableGaps()`, that protection disappears with no test failing — the only thing that
+would notice is a human reading a brief for work nobody has done.
+
+**4. The tracker's `?asset=` drawer trusts nothing and 500s on nothing.**
+An unknown asset id resolves to `null` and closes the drawer; an unknown `?tab=` falls back to
+Inventory. Both are deliberate: these are pasted-link parameters, and a stale link in somebody's
+messages should not take the page down. The e2e suite asserts the tab case.
 
 ### Phase 06 — three things the tests could not have caught, and one they did
 
@@ -395,7 +537,33 @@ push and satisfy D9 from those runs, evidenced in the phase record — never fro
 
 ## Remaining Work
 
-**None for Phase 02.**
+### Owner-side, blocking Phase 07's exit criteria
+
+1. **Run `npm run media:migrate:higgsfield`** on a local machine. Commands and expected output are
+   under *Next Exact Action*. The sandbox proxy refuses CONNECT to `api.cloudinary.com` and to
+   `d8j0ntlcm91z4.cloudfront.net`; this is environmental, not a defect. Exit criteria 1–5 stay
+   unticked until it runs.
+
+2. **Rotate the four secrets** pasted into an earlier chat transcript —
+   `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_SECRET_KEY`, `SUPABASE_JWT_SECRET`, `POSTGRES_PASSWORD`.
+   Treat them as compromised until confirmed rotated. The owner's instruction was to do this once
+   all phase work is finished; it is recorded here so it is not forgotten at that point.
+
+3. **GitHub Actions has still never executed a step.** Every run across every workflow reports
+   `runner_id: 0`, an empty `runner_name`, a two-second created→completed span and 404 logs —
+   including the 6 runs on `main`. Adding a payment method did not change it. Every gate CI would
+   run has been run locally instead, and the results are in this file, but "CI is green" is not a
+   claim anyone can currently make about this repository.
+
+### Carried, and unblocked
+
+- **The per-role RBAC e2e matrix** — 7 `test.fixme` in `media-upload.spec.ts`, 4 in
+  `studio-access.spec.ts`, 8 in `higgsfield-tracker.spec.ts`. All need an authenticated Supabase
+  session, which is now reachable; nobody has taken them.
+- **The Studio shell's visual baselines**, and **`dashboard_card_order`**, which still has no
+  writer.
+
+**None outstanding for Phase 02.**
 
 **Owner decisions — RESOLVED 2026-09-08**, recorded as CANONICAL-DECISIONS amendment A3:
 
@@ -417,46 +585,54 @@ on `/studio` rather than a route segment.
 
 ## Next Exact Action
 
-**Start Phase 07 — Higgsfield Asset Audit + Initial Asset Plan.** Read
-`docs/project/phases/PHASE-05-09.md` §PHASE 07. Phase 06 leaves it a working pipeline and three
-proven canaries; Phase 07 imports the remaining 247 assets and fills `/studio/media/higgsfield`.
+**Run the migration, then start Phase 08.** In that order — Phase 08 builds the CMS that binds
+assets to slots, and binding is easier to reason about against a library that exists.
 
-Four things it should pick up on the way, each already established rather than guessed:
+### 1. Run the migration (owner-side, ~20 minutes)
 
-1. **Read `source_min_url`, never `source_url`.** The Higgsfield originals are 4800×3584-class PNGs
-   past 20 MB and the Free plan caps an image at 10 MB. The `_min.webp` variant is the SAME pixel
-   dimensions webp-compressed — 463 KB for the first canary, a 47× reduction with no loss of
-   resolution. `CLOUDINARY.md` records the rejection that established this.
-2. **Videos have no webp variant and need none.** `LARGEFORMAT-DINING-004` uploaded from its
-   original at 4.6 MB against a 100 MB cap.
-3. **Manifest video dimensions are the generation request, not the stored file.** That canary is
-   recorded as 768×1344 and Cloudinary reports 1080×1920. Anything sizing a video slot must read
-   Cloudinary. Write the probed values, never the manifest's.
-4. **`source` is `not null` with no default.** Every imported row states `HIGGSFIELD` explicitly;
-   there is nothing to fall back to, by design.
+This cannot run in the sandbox: the proxy refuses CONNECT to `api.cloudinary.com` and to
+`d8j0ntlcm91z4.cloudfront.net`, which is where the source files live. On a local machine with
+`.env.local` present:
 
-Carried from Phase 05 and still open — both now unblocked by the reachable Supabase project, so
+```bash
+npm run media:migrate:higgsfield -- --dry-run     # expect: attempted 250, migrated 0, skipped 0, failed 0
+npm run media:migrate:higgsfield -- --limit=5     # a small real run first; check Cloudinary
+npm run media:migrate:higgsfield                  # expect: migrated 245, failed 0
+npm run media:migrate:higgsfield                  # expect: skipped 250, migrated 0
+```
+
+Then verification steps 5 and 6 from `PHASE-05-09.md` §07, and commit
+`data/higgsfield/migration-log.json` — it is the resume mechanism and it belongs in git.
+
+If an upload fails, the run records the failure per asset with its message, continues, and exits
+non-zero. Re-running resumes from the ledger; nothing already uploaded is paid for twice.
+
+### 2. Then Phase 08 — CMS / Editable Content System
+
+Read `docs/project/phases/PHASE-05-09.md` §PHASE 08. Four things it inherits, each established
+rather than guessed:
+
+1. **`media_usages.slot_key` carries the registry key from `content/media-slots.ts` verbatim** —
+   `home.hero.video`, not `media`. Repeating slots take the index form `key[0]`…`[3]`, which
+   `slotKeyOf()` strips. This is a contract Phase 08 must honour or the Gaps tab silently reports
+   everything as unbound; the reasoning is in `MEDIA_GUIDE.md` §6 and the header of
+   `lib/media/gaps.ts`.
+2. **Publishing promotes media explicitly.** §07's *Asset status on migration* specifies it: when
+   a `page_sections` row goes `PUBLISHED`, every `APPROVED` asset reached through its
+   `media_usages` rows is promoted in the same transaction, with an `activity_events` row each.
+   An asset in `DRAFT`, `REVIEW` or `ARCHIVED` refuses the publish and the error names its
+   `rivya_asset_id`. Unpublishing does **not** demote — an asset may serve several sections.
+3. **The 250 land as `APPROVED`, never `PUBLISHED`.** Anon `SELECT` on `media_assets` requires
+   `PUBLISHED` (D5), so without rule 2 Phase 09 would seed sections whose media is unreadable by
+   the public and Phase 10 would render a missing image with no error anywhere.
+4. **Studio copy still lives in `components/studio/strings.ts`.** Every entry declares the
+   `global_content` key it becomes; Phase 08 creates that table and Phase 09 seeds it, at which
+   point `t()` reads a request-scoped map and no call site changes.
+
+Carried from Phase 05 and still open — both unblocked by the reachable Supabase project, so
 whichever phase gets there first should take them: the per-role RBAC e2e matrix (7 `test.fixme`
-cases in `media-upload.spec.ts` and 4 in `studio-access.spec.ts`), the shell's visual baselines,
-and `dashboard_card_order`, which still has no writer.
-
-Previously recorded as the phase-start list, and still true of the items not yet done:
-
-Phase 05 consumes `getStaffSession()`, `requirePermission()` and `lib/auth/nav-visibility.ts` from
-Phase 04 and builds the Studio chrome itself. Four things it should pick up on the way:
-
-1. **Fix the double audit row.** Give `withPermission()` an entity parameter and stop it writing an
-   `ERROR` row for a refusal that already wrote `DENIED`. Verification step 8 of Phase 04 is worded
-   against one row naming the target.
-2. **Un-`fixme` the four authenticated cases in `tests/e2e/studio-access.spec.ts`** once a Supabase
-   project is reachable: a `viewer` sees the page with write controls absent and a direct POST
-   returns 403, a `merchandiser` succeeds, a suspended account is treated as signed out. The file
-   exists and its unauthenticated half passes; only these four are annotated.
-3. **`app/(studio)/layout.tsx` does not exist**, so the login page currently renders on the root
-   layout's `rv-scheme-deep` ground. It uses only semantic tokens, so it inherits `rv-scheme-bone`
-   unchanged once the Studio shell adds that layout.
-4. ~~`middleware.ts` deprecation~~ — **done**, amendment A6. The file is `proxy.ts`, its export is
-   `proxy`, and `npm run security:check-proxy` refuses a return of the old name.
+cases in `media-upload.spec.ts`, 4 in `studio-access.spec.ts`, 8 in `higgsfield-tracker.spec.ts`),
+the shell's visual baselines, and `dashboard_card_order`, which still has no writer.
 
 ## Relevant Documentation
 
