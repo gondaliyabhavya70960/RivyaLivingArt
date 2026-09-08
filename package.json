@@ -36,7 +36,8 @@
     "auth:check-rls": "tsx scripts/auth/check-rls.ts",
     "security:check-bundle": "node scripts/security/check-bundle-secrets.mjs",
     "security:check-proxy": "node scripts/security/check-proxy.mjs",
-    "db:migrate": "node scripts/db/migrate.mjs"
+    "db:migrate": "node scripts/db/migrate.mjs",
+    "media:check-folders": "node scripts/media/check-folders.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.6",
