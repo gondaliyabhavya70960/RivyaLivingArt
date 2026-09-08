@@ -360,6 +360,59 @@ export type Database = {
         }
         Relationships: []
       }
+      higgsfield_migration_runs: {
+        Row: {
+          id: string
+          started_at: string
+          finished_at: string | null
+          manifest_version: string
+          requested_scope: string
+          attempted: number
+          migrated: number
+          skipped: number
+          failed: number
+          dry_run: boolean
+          run_by: string | null
+          log: Json
+        }
+        Insert: {
+          id?: string
+          started_at?: string
+          finished_at?: string | null
+          manifest_version: string
+          requested_scope?: string
+          attempted?: number
+          migrated?: number
+          skipped?: number
+          failed?: number
+          dry_run?: boolean
+          run_by?: string | null
+          log?: Json
+        }
+        Update: {
+          id?: string
+          started_at?: string
+          finished_at?: string | null
+          manifest_version?: string
+          requested_scope?: string
+          attempted?: number
+          migrated?: number
+          skipped?: number
+          failed?: number
+          dry_run?: boolean
+          run_by?: string | null
+          log?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'higgsfield_migration_runs_run_by_fkey'
+            columns: ['run_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       materials: {
         Row: {
           id: string

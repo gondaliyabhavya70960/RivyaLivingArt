@@ -110,6 +110,18 @@ const EXPECTED = {
   product_relations: ['created_at', 'created_by'],
   content_seed_runs: ['started_at', 'finished_at', 'is_dry_run', 'report'],
 
+  // Phase 07. A RUN RECORD, the same §1.4 exemption as content_seed_runs above and deliberately
+  // the same shape: no content_status, no owner_verification, no Tier C. What is being recorded is
+  // an invocation, and an invocation has no publication workflow.
+  higgsfield_migration_runs: [
+    'started_at',
+    'finished_at',
+    'manifest_version',
+    'requested_scope',
+    'dry_run',
+    'log',
+  ],
+
   // Phase 04. Neither carries the content tiers, and both are §1.4 exemptions:
   //   staff_profiles is configuration — Tier A only, plus created_by.
   //   audit_logs is an immutable operational record with its own column set. A content_status on

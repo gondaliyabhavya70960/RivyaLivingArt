@@ -79,6 +79,7 @@ export type TablePolicy = {
 export const PHASE_04_POLICIES = '0011_rls_policies.sql'
 export const PHASE_05_POLICIES = '0021_rls_policies_phase05.sql'
 export const PHASE_06_POLICIES = '0031_rls_policies_phase06.sql'
+export const PHASE_07_POLICIES = '0041_rls_policies_phase07.sql'
 
 export const TABLE_POLICIES = {
   // --- Shape A: content tables ------------------------------------------------------------------
@@ -219,6 +220,20 @@ export const TABLE_POLICIES = {
       'Run record, not content. No anon policy and no authenticated write policy: the seed runner ' +
       'connects over DATABASE_URL and bypasses RLS entirely, so granting a session write access ' +
       'here would add reach without adding capability. DATA_MODEL classifies it RLS-SERVICE.',
+  },
+
+  // --- Phase 07 ---------------------------------------------------------------------------------
+  higgsfield_migration_runs: {
+    policiesIn: PHASE_07_POLICIES,
+    shape: 'C',
+    readPermission: 'media.read',
+    deviation:
+      'Run record, not content — the same shape and the same reasoning as content_seed_runs. No ' +
+      'anon policy, and no authenticated WRITE policy: the migration script connects over ' +
+      'DATABASE_URL and bypasses RLS entirely, so granting a session write access here would add ' +
+      'reach without adding capability. Read is media.read rather than operations.logs.read ' +
+      'because the thing being audited is the media library, and the people who need to ask "did ' +
+      'all 250 land" are the six roles that can already see the assets.',
   },
 
   // --- Phase 05 ---------------------------------------------------------------------------------
