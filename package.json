@@ -37,6 +37,8 @@
     "cms:gen-transitions": "tsx scripts/cms/gen-transition-sql.ts",
     "cms:check-transitions": "tsx scripts/cms/gen-transition-sql.ts --check",
     "cms:check-copy": "tsx scripts/cms/check-section-copy.ts",
+    "content:inventory": "tsx scripts/content/build-content-inventory.ts",
+    "content:check-inventory": "npm run content:inventory && git diff --exit-code docs/content/INITIAL_CONTENT_INVENTORY.md",
     "security:check-bundle": "node scripts/security/check-bundle-secrets.mjs",
     "security:check-proxy": "node scripts/security/check-proxy.mjs",
     "db:migrate": "node scripts/db/migrate.mjs",
