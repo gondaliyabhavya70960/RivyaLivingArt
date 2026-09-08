@@ -9,6 +9,14 @@
 -- name where row tables use `content_seed_version`, because this column records a run rather than
 -- a row (DATA_MODEL.md §1.8 correction C2).
 
+-- Extension objects (citext, unaccent, gin_trgm_ops) are resolved through this search_path.
+-- Supabase installs extensions into the `extensions` schema; a plain cluster installs them into
+-- `public`. Naming both means these migrations apply unmodified to either, which they did NOT
+-- before: with unaccent in `extensions`, 0003 failed at CREATE time with
+--   ERROR: text search dictionary "unaccent" does not exist
+-- and 0004-0006 would have failed the same way on the `citext` type. See docs/ops/ENVIRONMENT.md.
+set search_path = public, extensions;
+
 create table content_seed_runs (
   id                          uuid primary key default gen_random_uuid(),
   seed_version                text not null,

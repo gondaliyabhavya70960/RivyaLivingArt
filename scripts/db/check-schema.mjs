@@ -64,9 +64,11 @@ if (rls.length === 0) problems.push('no tables found in schema public — has db
 for (const line of rls) {
   const [table, enabled, policies] = line.split(' ')
   if (enabled !== 't') problems.push(`${table}: RLS is NOT enabled — the anon key can read it`)
-  if (Number(policies) > 0) {
-    notes.push(`${table}: has ${policies} policy/policies (expected in Phase 04 and later)`)
-  }
+  // Policy COUNT and policy CONTENT are deliberately not asserted here. scripts/auth/check-rls.ts
+  // owns all of that — it compares each staff-select policy's role list against the permission
+  // matrix, which this file has no knowledge of. Splitting the two stops the same rule being
+  // half-enforced in two places and fully enforced in neither.
+  void policies
 }
 
 // --- 2. Common column tiers ----------------------------------------------------------------------
@@ -107,6 +109,13 @@ const EXPECTED = {
   product_media: ['created_at', 'created_by'],
   product_relations: ['created_at', 'created_by'],
   content_seed_runs: ['started_at', 'finished_at', 'is_dry_run', 'report'],
+
+  // Phase 04. Neither carries the content tiers, and both are §1.4 exemptions:
+  //   staff_profiles is configuration — Tier A only, plus created_by.
+  //   audit_logs is an immutable operational record with its own column set. A content_status on
+  //   it would imply a publication workflow for the security log.
+  staff_profiles: ['role', 'status', 'created_at', 'updated_at', 'updated_by'],
+  audit_logs: ['occurred_at', 'actor_user_id', 'actor_role', 'action', 'result'],
 }
 
 const columnRows = q(`

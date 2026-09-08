@@ -24,6 +24,14 @@
 
 -- categories ------------------------------------------------------------------------------------
 -- The Studio's tree view: children of a parent, in order.
+-- Extension objects (citext, unaccent, gin_trgm_ops) are resolved through this search_path.
+-- Supabase installs extensions into the `extensions` schema; a plain cluster installs them into
+-- `public`. Naming both means these migrations apply unmodified to either, which they did NOT
+-- before: with unaccent in `extensions`, 0003 failed at CREATE time with
+--   ERROR: text search dictionary "unaccent" does not exist
+-- and 0004-0006 would have failed the same way on the `citext` type. See docs/ops/ENVIRONMENT.md.
+set search_path = public, extensions;
+
 create index categories_parent_sort_idx on categories (parent_id, sort_order);
 -- The public mega menu: published categories, in order.
 create index categories_status_sort_idx on categories (status, sort_order);

@@ -10,6 +10,14 @@
 
 -- Maintains Tier-A `updated_at`. Attached by each table's own migration, never here, so a
 -- table's triggers are visible in the migration that creates it.
+-- Extension objects (citext, unaccent, gin_trgm_ops) are resolved through this search_path.
+-- Supabase installs extensions into the `extensions` schema; a plain cluster installs them into
+-- `public`. Naming both means these migrations apply unmodified to either, which they did NOT
+-- before: with unaccent in `extensions`, 0003 failed at CREATE time with
+--   ERROR: text search dictionary "unaccent" does not exist
+-- and 0004-0006 would have failed the same way on the `citext` type. See docs/ops/ENVIRONMENT.md.
+set search_path = public, extensions;
+
 create or replace function public.set_updated_at()
 returns trigger
 language plpgsql
@@ -36,7 +44,10 @@ returns text
 language sql
 immutable
 strict
-set search_path = pg_catalog, public
+-- `extensions` is in this list because a function's own pinned search_path OVERRIDES the
+-- session's, so the file header above does not reach here. Without it this CREATE fails outright
+-- on any project where unaccent lives in `extensions` — which is every hosted Supabase project.
+set search_path = pg_catalog, public, extensions
 as $$
   select nullif(
     -- 4. collapse runs of hyphens and trim them from both ends

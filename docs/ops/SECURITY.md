@@ -16,8 +16,10 @@ owner_verification: OWNER_VERIFICATION_REQUIRED
 > `docs/architecture/SCRAPER.md` (the research subsystem's own rules).
 > Owned by Phase 41; the auth section is established by Phase 04 and the redactor by Phase 38.
 
-**Implementation status.** No application code exists. This document is the posture Phase 04, 38 and
-41 implement against, and the evidence a reviewer or a commissioned auditor would examine.
+**Implementation status.** §6 (authentication and authorisation) is **IMPLEMENTED** as of Phase 04
+and verified against a real PostgreSQL cluster — see §6.5 for what was proved and how. Everything
+else in this document remains the posture Phases 38 and 41 implement against, and the evidence a
+reviewer or a commissioned auditor would examine.
 
 **Not claimed anywhere:** that this system is secure, certified, audited or compliant. No ISO, SOC 2
 or PCI claim may be made (PCI is meaningless here — there is no payment surface). A published
@@ -281,6 +283,80 @@ recursion and search-path attacks.
 policies.
 
 ---
+
+### 6.5 As implemented in Phase 04 — and how it was proved
+
+Two enforcement layers, and the reason for each is that neither can do the other's job.
+
+| | RLS — the coarse net | `requirePermission()` — the fine net |
+|---|---|---|
+| Where | In PostgreSQL, per table, always on | In the server, per action |
+| Answers | *may this role see this table at all* | *may this role take this action, now* |
+| Survives | a forgotten permission check, an unexpected query path, a leaked anon key | nothing below it — it is application code |
+| Cannot express | "may publish, as opposed to edit" | anything, once a query reaches the database another way |
+
+**The rule that keeps them in step.** A table's staff-select role list must equal the set of roles
+holding that table's `*.read` permission. It is declared once in `lib/auth/table-permissions.ts`;
+`scripts/auth/gen-role-sql.ts` generates migration `0011` from it, and `scripts/auth/check-rls.ts`
+reads `pg_policies` back out of the migrated database and fails on any difference.
+
+Without that rule the pattern is not merely loose, it is dangerous. `using (is_staff())` copied onto
+`inquiries` in Phase 20 would let a **researcher** — who does not hold `inquiries.read` — read every
+customer name, phone number and email address straight through PostgREST with their own session,
+never touching `requirePermission()`. The same copy onto `audit_logs` hands every role the security
+log. Neither is caught by review; both are caught by the gate.
+
+**Three policy shapes**, and every table matches one or carries a declared deviation with a stated
+reason:
+
+| Shape | Tables | Anon leg |
+|---|---|---|
+| A — content | `categories` `collections` `materials` `products` `media_assets` | `status = 'PUBLISHED'` |
+| B — join | `product_collections` `product_materials` `product_media` `product_relations` | derived from the parent rows (amendment A5·a: **every** named parent must be published, except `product_media`, whose asset is filtered by its own Shape-A policy) |
+| C — staff-only | `staff_profiles` `audit_logs` `content_seed_runs` | none, ever |
+
+**What was proved, against a real database rather than a mock**
+
+- The full six-role read and write matrix, on every table. 62 tests, with the expectations
+  **derived** from `lib/auth/permissions.ts` rather than restated — a test that restates the matrix
+  only proves two hand-written copies agree.
+- An anonymous visitor sees published rows and nothing else; cannot insert; and cannot update or
+  delete anything.
+- A **SUSPENDED** admin sees exactly what an anonymous visitor sees. Suspension is enforced by the
+  database — `current_staff_role()` filters on `status = 'ACTIVE'` — not by hiding a button.
+- A non-manager cannot promote themselves. If this failed, every other policy would be advisory.
+- `audit_logs` cannot be inserted through any session, nor updated or deleted by anyone: `update`
+  and `delete` are revoked at the privilege level, which must be granted back visibly rather than
+  merely re-policied.
+- The last active `owner` cannot be demoted, suspended or deleted — enforced by a deferred
+  constraint trigger, so an atomic hand-over in one statement still works while leaving the project
+  ownerless does not.
+- `check-rls` was shown to fail on five separate failure modes: RLS switched off, a drifted role
+  list, the `is_staff()` shorthand on a table not read by all six roles, an unregistered table, and
+  a policy gating on `auth.role()`.
+
+**Three ways an RLS test lies, and what stops each here.** Recorded because each produces a green
+suite that proves nothing, and two of the three were reproduced on the cluster before the harness
+was written:
+
+1. **Missing grants.** On Supabase, `anon` holds full DML on every table in `public` — GRANT is not
+   the security boundary there, RLS is the whole of it. A local harness that creates the roles but
+   omits the grants turns every deny assertion vacuous: the refusal comes from a missing GRANT that
+   *does not exist in production*, and a table shipped without `enable row level security` looks
+   safe. `assertHarnessIsHonest()` runs before the suite and fails if a table with RLS disabled is
+   not visible to anon.
+2. **Forgetting to switch role.** `DATABASE_URL` connects as `postgres`, which is superuser and
+   table owner — both bypass RLS. Every block asserts `current_user` is the role it asked for.
+3. **Confusing "no error" with "allowed".** An `UPDATE` whose `USING` clause matches nothing affects
+   zero rows and *succeeds*. A test watching only for exceptions reports every role as able to
+   update everything. The suite asks how many rows were affected.
+
+**Still unproved, and honestly so.** The local cluster has no PostgREST, so nothing here tests that
+a visitor cannot forge a `role: service_role` claim — that guarantee lives in PostgREST's JWT
+verification, which is why policies gate on the `TO` grantee list and never on `auth.role()`
+(amendment A5·c). Nor is the HTTP status mapping tested: PostgREST turns a `USING` miss into 204/404
+and a `WITH CHECK` violation into 403, and only an end-to-end test against a hosted project covers
+that seam.
 
 ## 7. Upload safety
 

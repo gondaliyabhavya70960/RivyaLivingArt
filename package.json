@@ -29,7 +29,12 @@
     "db:check-data-layer": "node scripts/db/check-data-layer.mjs",
     "db:check-migrations": "node scripts/db/check-migrations.mjs",
     "seed:content": "tsx scripts/seed/seed-content.ts",
-    "db:check-schema": "node scripts/db/check-schema.mjs"
+    "db:check-schema": "node scripts/db/check-schema.mjs",
+    "db:check-hosted-layout": "node scripts/db/check-hosted-layout.mjs",
+    "auth:gen-policies": "tsx scripts/auth/gen-role-sql.ts",
+    "auth:check-policies": "tsx scripts/auth/gen-role-sql.ts --check",
+    "auth:check-rls": "tsx scripts/auth/check-rls.ts",
+    "security:check-bundle": "node scripts/security/check-bundle-secrets.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.6",

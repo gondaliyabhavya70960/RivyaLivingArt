@@ -11,6 +11,65 @@ export type Json = string | number | boolean | null | { [key: string]: Json | un
 export type Database = {
   public: {
     Tables: {
+      audit_logs: {
+        Row: {
+          id: string
+          occurred_at: string
+          actor_user_id: string | null
+          actor_role: Database['public']['Enums']['user_role'] | null
+          action: string
+          entity_type: string | null
+          entity_id: string | null
+          summary: string | null
+          before: Json | null
+          after: Json | null
+          result: string
+          request_id: string | null
+          ip: unknown | null
+          user_agent: string | null
+        }
+        Insert: {
+          id?: string
+          occurred_at?: string
+          actor_user_id?: string | null
+          actor_role?: Database['public']['Enums']['user_role'] | null
+          action: string
+          entity_type?: string | null
+          entity_id?: string | null
+          summary?: string | null
+          before?: Json | null
+          after?: Json | null
+          result: string
+          request_id?: string | null
+          ip?: unknown | null
+          user_agent?: string | null
+        }
+        Update: {
+          id?: string
+          occurred_at?: string
+          actor_user_id?: string | null
+          actor_role?: Database['public']['Enums']['user_role'] | null
+          action?: string
+          entity_type?: string | null
+          entity_id?: string | null
+          summary?: string | null
+          before?: Json | null
+          after?: Json | null
+          result?: string
+          request_id?: string | null
+          ip?: unknown | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'audit_logs_actor_user_id_fkey'
+            columns: ['actor_user_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       categories: {
         Row: {
           id: string
@@ -762,6 +821,67 @@ export type Database = {
           },
         ]
       }
+      staff_profiles: {
+        Row: {
+          user_id: string
+          email: string | null
+          display_name: string | null
+          role: Database['public']['Enums']['user_role']
+          status: string
+          last_seen_at: string | null
+          created_at: string
+          created_by: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          user_id: string
+          email?: string | null
+          display_name?: string | null
+          role?: Database['public']['Enums']['user_role']
+          status?: string
+          last_seen_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          user_id?: string
+          email?: string | null
+          display_name?: string | null
+          role?: Database['public']['Enums']['user_role']
+          status?: string
+          last_seen_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'staff_profiles_created_by_fkey'
+            columns: ['created_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'staff_profiles_updated_by_fkey'
+            columns: ['updated_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'staff_profiles_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: true
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -782,6 +902,7 @@ export type Database = {
       media_kind: 'IMAGE' | 'VIDEO' | 'MODEL_3D' | 'DOCUMENT' | 'BRAND'
       owner_verification: 'NOT_REQUIRED' | 'OWNER_VERIFICATION_REQUIRED' | 'VERIFIED'
       price_state: 'STARTING_FROM' | 'REQUEST_QUOTE' | 'PRICE_ON_REQUEST'
+      user_role: 'owner' | 'admin' | 'editor' | 'merchandiser' | 'researcher' | 'viewer'
     }
     CompositeTypes: {
       [_ in never]: never
