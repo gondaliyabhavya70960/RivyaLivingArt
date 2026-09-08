@@ -52,29 +52,58 @@ export type TablePolicy = {
    * Exactly one table needs this and it is not a general escape hatch — see staff_profiles.
    */
   extraSelectPolicy?: { name: string; using: string; why: string }
+  /**
+   * A predicate ANDed into EVERY generated policy for this table, narrowing "which staff" to
+   * "which row". `extraSelectPolicy` widens access; this narrows it, and the two are not
+   * interchangeable — a table whose rows belong to individual people needs the narrowing on the
+   * write policies too, where an extra SELECT leg would do nothing.
+   */
+  ownerScope?: { clause: string; why: string }
+  /**
+   * The migration file that defines this table's policies.
+   *
+   * Policy migrations are GENERATED, and a generated file that grows as tables are added would be
+   * rewritten by every later phase — which `db:migrate` correctly refuses, because a migration
+   * edited after it was applied means the database and the repository disagree while every run
+   * reports "0 pending". So each phase's policies get their own file, and each file's table set is
+   * fixed forever once shipped.
+   *
+   * A file the generator does not own (`0012_audit_logs.sql`) is hand-written and skipped here.
+   * `check-rls.ts` still verifies its result against the live database, which is the check that
+   * actually matters.
+   */
+  policiesIn: string
 }
+
+/** Generated policy migrations. One per phase that introduces tables; never re-opened. */
+export const PHASE_04_POLICIES = '0011_rls_policies.sql'
+export const PHASE_05_POLICIES = '0021_rls_policies_phase05.sql'
 
 export const TABLE_POLICIES = {
   // --- Shape A: content tables ------------------------------------------------------------------
   categories: {
+    policiesIn: PHASE_04_POLICIES,
     shape: 'A',
     readPermission: 'catalog.read',
     writePermission: 'catalog.write',
     deletePermission: 'destructive.execute',
   },
   collections: {
+    policiesIn: PHASE_04_POLICIES,
     shape: 'A',
     readPermission: 'catalog.read',
     writePermission: 'catalog.write',
     deletePermission: 'destructive.execute',
   },
   materials: {
+    policiesIn: PHASE_04_POLICIES,
     shape: 'A',
     readPermission: 'catalog.read',
     writePermission: 'catalog.write',
     deletePermission: 'destructive.execute',
   },
   products: {
+    policiesIn: PHASE_04_POLICIES,
     shape: 'A',
     readPermission: 'catalog.read',
     writePermission: 'catalog.write',
@@ -84,6 +113,7 @@ export const TABLE_POLICIES = {
   // permission, and it happens to hold the same two roles. Naming the specific one keeps the
   // policy honest if that ever stops being true.
   media_assets: {
+    policiesIn: PHASE_04_POLICIES,
     shape: 'A',
     readPermission: 'media.read',
     writePermission: 'media.write',
@@ -100,6 +130,7 @@ export const TABLE_POLICIES = {
   // would leak the existence and id of an unannounced DRAFT collection to anonymous visitors
   // through a published product. Resolved in favour of the stricter reading — see amendment A5·a.
   product_collections: {
+    policiesIn: PHASE_04_POLICIES,
     shape: 'B',
     readPermission: 'catalog.read',
     writePermission: 'catalog.write',
@@ -110,6 +141,7 @@ export const TABLE_POLICIES = {
              where c.id = product_collections.collection_id and c.status = 'PUBLISHED')`,
   },
   product_materials: {
+    policiesIn: PHASE_04_POLICIES,
     shape: 'B',
     readPermission: 'catalog.read',
     writePermission: 'catalog.write',
@@ -123,6 +155,7 @@ export const TABLE_POLICIES = {
   // the join is resolved, so an unpublished asset drops out of the gallery rather than leaking.
   // Adding a media_assets leg here would be redundant, and would hide that layering from a reader.
   product_media: {
+    policiesIn: PHASE_04_POLICIES,
     shape: 'B',
     readPermission: 'catalog.read',
     writePermission: 'catalog.write',
@@ -135,6 +168,7 @@ export const TABLE_POLICIES = {
   // resolving that uuid goes through the target table's own policies, which return nothing for an
   // unpublished target.
   product_relations: {
+    policiesIn: PHASE_04_POLICIES,
     shape: 'B',
     readPermission: 'catalog.read',
     writePermission: 'catalog.write',
@@ -145,6 +179,7 @@ export const TABLE_POLICIES = {
 
   // --- Shape C: staff-only, each a declared deviation --------------------------------------------
   staff_profiles: {
+    policiesIn: PHASE_04_POLICIES,
     shape: 'C',
     readPermission: 'system.users.manage',
     writePermission: 'system.users.manage',
@@ -162,6 +197,7 @@ export const TABLE_POLICIES = {
     },
   },
   audit_logs: {
+    policiesIn: '0012_audit_logs.sql',
     shape: 'C',
     readPermission: 'operations.audit.read',
     // No writePermission, deliberately. An `authenticated` insert policy would let any signed-in
@@ -175,12 +211,45 @@ export const TABLE_POLICIES = {
       'writes, via lib/auth/audit.ts.',
   },
   content_seed_runs: {
+    policiesIn: PHASE_04_POLICIES,
     shape: 'C',
     readPermission: 'operations.logs.read',
     deviation:
       'Run record, not content. No anon policy and no authenticated write policy: the seed runner ' +
       'connects over DATABASE_URL and bypasses RLS entirely, so granting a session write access ' +
       'here would add reach without adding capability. DATA_MODEL classifies it RLS-SERVICE.',
+  },
+
+  // --- Phase 05 ---------------------------------------------------------------------------------
+  activity_events: {
+    policiesIn: PHASE_05_POLICIES,
+    shape: 'C',
+    readPermission: 'activity.read',
+    // No writePermission. The feed is written by logActivity() through the service-role client,
+    // for the same reason as audit_logs: a signed-in staff member who can insert here can write
+    // "editor published X" naming somebody else, and the feed is the record people actually read.
+    deviation:
+      'Append-only activity feed. No anon policy — an internal record of who changed what is ' +
+      'never public — and no authenticated write policy: only the service role inserts, through ' +
+      'lib/logging/activity.ts. Update and delete are revoked outright, so a session cannot ' +
+      'rewrite the feed even if a policy is added later by mistake.',
+  },
+  studio_preferences: {
+    policiesIn: PHASE_05_POLICIES,
+    shape: 'C',
+    readPermission: 'studio.access',
+    writePermission: 'studio.access',
+    deviation:
+      'Per-user Studio chrome state, not content. No anon policy. Every role may read and write ' +
+      'it, but ONLY their own row — see ownerScope, which is what makes "every role" safe here.',
+    ownerScope: {
+      clause: 'user_id = (select auth.uid())',
+      why:
+        'Both permissions above are held by all six roles, so without this narrowing any staff ' +
+        "member could read and overwrite everyone else's sidebar state and pinned routes. The " +
+        'scope is what carries the security, not the permission. Wrapped in a sub-select so the ' +
+        'planner evaluates auth.uid() once per statement rather than once per row.',
+    },
   },
 } as const satisfies Record<string, TablePolicy>
 

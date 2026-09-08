@@ -1718,7 +1718,7 @@ local and hosted is isolated to one file that can never be picked up by `supabas
 | Phase | Migrations | Tables created (T) / altered (A) |
 |---|---|---|
 | 04 | `0009`–`0012` | T `staff_profiles`, `audit_logs`; enum `user_role`; RLS helper functions; the four-policy pattern on every Phase 03 table |
-| 05 | `0020` | T `activity_events`, `studio_preferences` |
+| 05 | `0020`–`0021` | T `activity_events`, `studio_preferences`; `0021` is the GENERATED policy file for both (see §1.5). A phase's policies get their own migration because a generated file must never be re-opened once shipped — regenerating it would edit an applied migration |
 | 06 | `0030` | A `media_assets` (full column set, **including** the Higgsfield-provenance columns Phase 07 populates); T `media_usages`; enums `media_kind` (fixed), `media_source`. Three named canary assets only — not the 250 |
 | 07 | `0040` | T `higgsfield_migration_runs`; populates all 250 manifest rows into `media_assets` (§7). **No `media_assets` schema change** — Phase 06 `0030` already declared every column the import writes |
 | 08 | `0050` | T `pages`, `page_sections`, `content_revisions`, `navigation_items`, `global_content`, `seo_entries`, `faqs`; the CMS trigger set |

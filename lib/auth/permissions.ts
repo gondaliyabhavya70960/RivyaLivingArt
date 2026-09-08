@@ -37,6 +37,23 @@ const ALL: readonly Role[] = ROLES
  * union of the actual names instead of `string`.
  */
 export const PERMISSION_ROLES = {
+  // Studio ----------------------------------------------------------------------------------------
+  /**
+   * May enter the Studio at all. Held by every role, and that is the point rather than an
+   * oversight: it is the permission the shell demands, so "is this person staff, active, and
+   * allowed through the front door" is asked in the same vocabulary as every other question, is
+   * refused through the same path, and is recorded in the same audit row shape. A bespoke
+   * `requireStaff()` would be a second answer to a question the matrix already answers.
+   */
+  'studio.access': ALL,
+  /**
+   * May read the Studio activity feed. Every role, because the feed is part of the Overview page
+   * that every role lands on. Distinct from `operations.audit.read` (owner and admin only): that
+   * is the authorisation log, this is "who changed what", and merging them would put the security
+   * log in front of a viewer.
+   */
+  'activity.read': ALL,
+
   // Catalogue -----------------------------------------------------------------------------------
   'catalog.read': ALL,
   'catalog.write': ['owner', 'admin', 'merchandiser'],

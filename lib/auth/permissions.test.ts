@@ -23,8 +23,13 @@ import { redact } from '../logging/redact'
  */
 
 describe('the permission matrix', () => {
-  it('has all 25 permissions', () => {
-    expect(PERMISSIONS).toHaveLength(25)
+  it('has all 27 permissions', () => {
+    // A tripwire, not a specification. Its only job is to make a change to the matrix impossible
+    // to make accidentally: adding or removing a cell fails here and sends the author to read the
+    // assertions below, which are the ones that carry meaning.
+    //
+    // 25 at the end of Phase 04; 27 with Phase 05's `studio.access` and `activity.read`.
+    expect(PERMISSIONS).toHaveLength(27)
   })
 
   it('names exactly the six D5 roles', () => {
@@ -102,10 +107,37 @@ describe('ROLE_PERMISSIONS is derived, not a second copy', () => {
     }
   })
 
-  it('gives the viewer only read-shaped permissions', () => {
+  it('gives the viewer nothing that can change anything', () => {
+    // Asserted by what the permission DOES, not by how its name ends.
+    //
+    // This read `toMatch(/\.read$/)` until Phase 05 added `studio.access` — a permission that
+    // mutates nothing but does not end in `.read`, so it failed a test whose intent it satisfied.
+    // Tightening the rule to name the mutating verbs keeps the regression this guards against (a
+    // viewer quietly gaining `catalog.write`) while no longer failing on a permission that is
+    // read-shaped in every way except spelling.
+    const MUTATING = /\.(write|publish|delete|execute|manage|transfer|confirm)$/
+
     for (const permission of ROLE_PERMISSIONS.viewer) {
-      expect(permission, `viewer holds ${permission}`).toMatch(/\.read$/)
+      expect(permission, `viewer holds ${permission}`).not.toMatch(MUTATING)
     }
+  })
+
+  it('gives the viewer read access without any Studio write permission at all', () => {
+    // The other direction, so the rule above cannot pass by the viewer holding nothing.
+    expect(ROLE_PERMISSIONS.viewer.length).toBeGreaterThan(0)
+    expect(roleHasPermission('viewer', 'catalog.read')).toBe(true)
+    expect(roleHasPermission('viewer', 'studio.access')).toBe(true)
+    expect(roleHasPermission('viewer', 'catalog.write')).toBe(false)
+    expect(roleHasPermission('viewer', 'system.users.manage')).toBe(false)
+  })
+
+  it('keeps the activity feed separate from the security log', () => {
+    // activity.read is every role; operations.audit.read is owner and admin. Merging them is a
+    // recurring temptation because both tables look like "a log", and the merge would put the
+    // authorisation log — including every DENIED row — in front of a viewer.
+    expect(isHeldByEveryRole('activity.read')).toBe(true)
+    expect(roleHasPermission('viewer', 'operations.audit.read')).toBe(false)
+    expect(roleHasPermission('editor', 'operations.audit.read')).toBe(false)
   })
 })
 

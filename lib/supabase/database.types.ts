@@ -11,6 +11,53 @@ export type Json = string | number | boolean | null | { [key: string]: Json | un
 export type Database = {
   public: {
     Tables: {
+      activity_events: {
+        Row: {
+          id: string
+          occurred_at: string
+          actor_id: string | null
+          actor_role: Database['public']['Enums']['user_role'] | null
+          action: string
+          entity_type: string | null
+          entity_id: string | null
+          entity_label: string | null
+          summary: string | null
+          metadata: Json
+        }
+        Insert: {
+          id?: string
+          occurred_at?: string
+          actor_id?: string | null
+          actor_role?: Database['public']['Enums']['user_role'] | null
+          action: string
+          entity_type?: string | null
+          entity_id?: string | null
+          entity_label?: string | null
+          summary?: string | null
+          metadata?: Json
+        }
+        Update: {
+          id?: string
+          occurred_at?: string
+          actor_id?: string | null
+          actor_role?: Database['public']['Enums']['user_role'] | null
+          action?: string
+          entity_type?: string | null
+          entity_id?: string | null
+          entity_label?: string | null
+          summary?: string | null
+          metadata?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'activity_events_actor_id_fkey'
+            columns: ['actor_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       audit_logs: {
         Row: {
           id: string
@@ -875,6 +922,54 @@ export type Database = {
           },
           {
             foreignKeyName: 'staff_profiles_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: true
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      studio_preferences: {
+        Row: {
+          id: string
+          user_id: string
+          sidebar_collapsed: boolean
+          pinned_routes: string[]
+          dashboard_card_order: string[]
+          created_at: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          sidebar_collapsed?: boolean
+          pinned_routes?: string[]
+          dashboard_card_order?: string[]
+          created_at?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          sidebar_collapsed?: boolean
+          pinned_routes?: string[]
+          dashboard_card_order?: string[]
+          created_at?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'studio_preferences_updated_by_fkey'
+            columns: ['updated_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'studio_preferences_user_id_fkey'
             columns: ['user_id']
             isOneToOne: true
             referencedRelation: 'users'

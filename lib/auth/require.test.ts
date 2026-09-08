@@ -83,11 +83,12 @@ describe('withPermission — one row per outcome', () => {
         action: 'system.users.role.change',
         entityType: 'staff profile',
         recordsOwnOutcome: true,
+        entityId: (input: { userId: string }) => input.userId,
       },
-      async () => 'done',
+      async (_session, _input: { userId: string }) => 'done',
     )
 
-    await action({})
+    await action({ userId: 'u-target' })
     expect(rows).toHaveLength(0)
   })
 

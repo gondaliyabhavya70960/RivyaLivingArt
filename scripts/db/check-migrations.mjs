@@ -61,15 +61,53 @@ for (const { file, n } of numbers) {
   seen.set(n, file)
 }
 
-const sorted = [...numbers].sort((a, b) => a.n - b.n)
-sorted.forEach((entry, index) => {
-  const expected = index + 1
-  if (entry.n !== expected) {
-    problems.push(
-      `migration numbering has a gap: expected ${String(expected).padStart(4, '0')}, found ${entry.file}`,
-    )
+/**
+ * Every migration number must be ALLOCATED in DATA_MODEL.md §12.
+ *
+ * This replaces a "numbers must be dense from 0001" rule, which was wrong. Numbering is allocated
+ * in per-phase blocks — Phase 05 takes `0020`, Phase 08 `0050`, Phase 14 `0120`–`0122` — so the
+ * gaps between blocks are the design, and the old rule would have failed every phase from 05
+ * onward. It passed only because Phases 01-04 happened to fill 0001-0012 densely.
+ *
+ * What actually matters is that a number was allocated before it was used. Two migrations landing
+ * on one number from different branches is a merge conflict D5 expects to be resolved by
+ * renumbering; a migration numbered outside its phase's block silently reorders the apply sequence
+ * relative to what every phase document says. Reading the register makes both visible, and has the
+ * side effect that adding a migration without recording it in §12 fails the build — which is the
+ * documentation contract this project keeps trying to enforce by hand.
+ */
+const REGISTER = 'docs/architecture/DATA_MODEL.md'
+const allocated = new Set()
+{
+  const doc = readFileSync(REGISTER, 'utf8')
+  const start = doc.indexOf('## 12. Table register')
+  if (start === -1) {
+    problems.push(`${REGISTER}: could not find "## 12. Table register" — the migration register`)
+  } else {
+    // §12 runs to the next top-level heading. Both forms of allocation appear inside it: a range in
+    // the Phase 03 sub-heading, and one cell per row in the "by arrival" table.
+    const nextHeading = doc.indexOf('\n## ', start + 4)
+    const section = doc.slice(start, nextHeading === -1 ? undefined : nextHeading)
+
+    // `0120`–`0122` (en dash, as the document is written) and bare `0020`.
+    for (const [, from, to] of section.matchAll(/`(\d{4})`\s*[–-]\s*`(\d{4})`/g)) {
+      for (let n = Number(from); n <= Number(to); n += 1) allocated.add(n)
+    }
+    for (const [, one] of section.matchAll(/`(\d{4})`/g)) allocated.add(Number(one))
   }
-})
+}
+
+if (allocated.size > 0) {
+  for (const { file, n } of numbers) {
+    if (!allocated.has(n)) {
+      problems.push(
+        `${file}: migration number ${String(n).padStart(4, '0')} is not allocated in ` +
+          `${REGISTER} §12. Add it to the register (which phase creates it, and what it does) ` +
+          `before adding the file — the register is what stops two phases claiming one number.`,
+      )
+    }
+  }
+}
 
 // --- rule 1: no content inserts ---
 for (const file of files) {
@@ -100,6 +138,8 @@ if (problems.length > 0) {
   process.exit(1)
 }
 
+const highest = numbers.reduce((max, entry) => (entry.n > max ? entry.n : max), 0)
 console.log(
-  `✓ ${files.length} migrations: numbered 0001-${String(sorted.at(-1)?.n ?? 0).padStart(4, '0')}, no content inserts`,
+  `✓ ${files.length} migrations up to ${String(highest).padStart(4, '0')}: every number allocated ` +
+    `in DATA_MODEL §12, none duplicated, no content inserts`,
 )
