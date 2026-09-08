@@ -293,8 +293,8 @@ and Phase 10's site shell then reuses it.
 | RC-229 | `charts/*` (`BarSeries`, `BandStrip`, `Scatter`, `Sparkline`) | usability | 31 | PLANNED | §7.23 |
 | RC-230 | `Breadcrumbs` | navigation | 02 | BUILT | §7.35 |
 | RC-231 | `DropdownMenu` | navigation | 02 | BUILT | §7.36 |
-| RC-232 | `MediaImage` | material understanding | 06 | PLANNED | §7.37 |
-| RC-233 | `MediaVideo` | material understanding | 06 | PLANNED | §7.38 |
+| RC-232 | `MediaImage` | material understanding | 06 | BUILT | §7.37 |
+| RC-233 | `MediaVideo` | material understanding | 06 | BUILT | §7.38 |
 | RC-234 | `Pagination` | navigation | 14 | PLANNED | §7.39 |
 
 `Breadcrumbs` and `DropdownMenu` are Phase 02, not Phase 10. `docs/project/phases/PHASE-00-04.md`
@@ -1100,14 +1100,14 @@ as one of the thirteen strings needing a `UI_CHROME` group before the seed can h
 |---|---|
 | Registry ID | RC-232 |
 | Source | Rivya first-party |
-| Link | `components/patterns/MediaImage.tsx` |
+| Link | `components/patterns/MediaImage/index.tsx` |
 | Licence | N/A — first-party |
 | Dependencies | none — delivery URLs are built by `lib/media`; no Cloudinary SDK reaches the client |
 | Page | every route rendering an image |
 | Purpose | material understanding |
 | Adaptation | The single image renderer behind RC-213. Presets and the width ladder come from `docs/media/CLOUDINARY.md`; `f_auto` is the only format directive permitted, so AVIF/WebP negotiation happens at the CDN and never as a hard-coded extension. It is one of only two components allowed to emit an `<img>` element |
 | Mobile behaviour | Renders the **mobile CMS slot's own asset** — a separate slot per D6, never a crop of the desktop source. The width ladder caps at 2560, so a phone is never sent a full-resolution original |
-| Performance | 0 kB, server. Exactly one `priority` instance per route, asserted by `scripts/perf/check-priority-images.mjs`; every other instance is lazy |
+| Performance | 0 kB, server. `loading="lazy"` by default; `loading="eager"` is opt-in for the one above-the-fold image per route. **Built with a raw `<img>`, not `next/image`** — Next's optimiser in front of Cloudinary is a second resize of an already-resized image and bypasses the preset table and width ladder entirely, so the `@next/next/no-img-element` lint is suppressed locally with that reason. There is therefore no `priority` prop: `check-priority-images.mjs` is a Phase 08 gate, when routes first bind media and "one eager image per route" becomes checkable. `scripts/perf/check-image-props.mjs` enforces `sizes` today |
 | Accessibility | `alt` from `media_assets.alt_text`, or `alt=""` only when `is_decorative` is true — never empty by omission. **`sizes` is required**: the component throws without it in development and `scripts/perf/check-image-props.mjs` fails CI on a usage that omits it. The aspect box is reserved before load, so a failure costs no CLS and the seeded SEED §47 label renders in place |
 | Reviewed on | — |
 | Reviewer | UNASSIGNED |
@@ -1119,7 +1119,7 @@ as one of the thirteen strings needing a `UI_CHROME` group before the seed can h
 |---|---|
 | Registry ID | RC-233 |
 | Source | Rivya first-party |
-| Link | `components/patterns/MediaVideo.tsx` |
+| Link | `components/patterns/MediaVideo/index.tsx` |
 | Licence | N/A — first-party |
 | Dependencies | none — no video player library. The element is a native `<video>` |
 | Page | `/`, `/large-format`, `/about`, `/process`, and any route whose block binds a video slot |
@@ -1127,7 +1127,7 @@ as one of the thirteen strings needing a `UI_CHROME` group before the seed can h
 | Adaptation | The single video renderer behind RC-213 and RC-214. Poster first, muted inline loop. **Autoplay is a runtime decision behind the `DESIGN_SYSTEM.md` §4.3 gates and is never an `autoplay` attribute in markup** — `scripts/perf/check-video-props.mjs` fails CI on one |
 | Mobile behaviour | Below 768px the poster is the whole experience unless the visitor presses play; no video element is mounted speculatively |
 | Performance | budget ≤ 2 kB gz, client (unmeasured — PLANNED). `preload="none"`; the poster is what the route actually paints, and the poster is never the LCP element by accident — RC-213 owns that decision |
-| Accessibility | Never autoplays with sound; a poster is always present; controls are native or fully keyboard-operable. Under `prefers-reduced-motion: reduce`, `saveData`, or `deviceMemory < 4`, **no `<video>` element mounts at all** and the poster renders with a visible play control. Captions or a transcript are required for any video carrying spoken or textual information. Asserted by `tests/e2e/a11y/reduced-motion.spec.ts` and `check-video-props.mjs` |
+| Accessibility | Never autoplays with sound; a poster is always present; controls are native or fully keyboard-operable. Under `prefers-reduced-motion: reduce`, `saveData`, or `deviceMemory < 4`, **no `<video>` element mounts at all** and the poster renders with a visible play control — pressing it still plays, with controls, under every one of the three. The three gates are read through `useReducedMotion` and `useDeliveryConstraints`. Captions or a transcript are required for any video carrying spoken or textual information. Asserted by `components/patterns/MediaVideo/MediaVideo.test.tsx` (14 cases, including each gate and the `< 4` boundary) and `scripts/perf/check-video-props.mjs`; `tests/e2e/a11y/reduced-motion.spec.ts` covers the same contract end-to-end from Phase 08, when a route first renders one |
 | Reviewed on | — |
 | Reviewer | UNASSIGNED |
 | Verdict | FIRST_PARTY |
