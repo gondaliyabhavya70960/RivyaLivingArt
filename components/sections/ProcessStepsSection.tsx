@@ -8,7 +8,7 @@ import { processStepsBlock } from '@/content/blocks/process-steps'
 import { parseBlockPayload } from '@/lib/cms/registry'
 
 import { SectionCopy } from './SectionCopy'
-import { BlockImage } from './SectionMedia'
+import { BlockImage } from '@/components/patterns/MediaSlot'
 import { SectionShell } from './SectionShell'
 import type { SectionRenderProps } from './types'
 

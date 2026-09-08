@@ -10,7 +10,18 @@ import type { PresetName } from '@/lib/media/transform'
 import type { MediaAsset } from '@/lib/supabase/schemas'
 
 /**
- * The two ways a section shows an asset: one picture, or a desktop/mobile pair.
+ * MediaSlot — the two ways any surface shows a CMS-bound asset: one picture, or a desktop/mobile
+ * pair. It reserves the aspect box from the CMS ratio before the asset is known, so a slow image,
+ * a missing one and a failed one all occupy the same space, and it paints the SEED §47 fallback
+ * with its seeded label when nothing resolves.
+ *
+ * IT LIVED AT `components/sections/SectionMedia.tsx` UNTIL PHASE 10 and moved here unchanged. Not
+ * a tidy-up: Phase 10's header needs exactly this behaviour for the mega menu's category cards,
+ * and building a second component beside it — which is what the phase document's deliverable table
+ * would otherwise have produced — is how two ratio-box implementations come to disagree about what
+ * happens when an asset is null. `components/patterns/` is where a component used by more than one
+ * kind of surface belongs; `components/sections/` is for the block renderers themselves.
+ *
  *
  * THE PAIR IS TWO ELEMENTS, NOT ONE `<picture>` WITH TWO SOURCES. A `<picture>` would be smaller
  * markup and the wrong shape: the two assets are different crops of different subjects chosen by
