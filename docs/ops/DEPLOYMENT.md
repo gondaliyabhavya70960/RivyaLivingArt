@@ -170,6 +170,41 @@ It is never part of the build, never part of a request, and never automatic.
 | 5 | Create one `media_assets` row per manifest entry with `source = 'HIGGSFIELD'`, `is_ai_generated = true`, `is_concept = true`, `owner_verification = 'OWNER_VERIFICATION_REQUIRED'`, `alt_text` from `alt_text_draft`, `rivya_asset_id` as identity, `status = 'DRAFT'` | Regenerate anything; rename a `rivya_asset_id`; write a second row for an existing `higgsfield_generation_id` |
 | 6 | Prove idempotency on the real database, not only in tests. A non-empty `skipped_owner_edited` list on a live environment is the healthy outcome | Force-write anything it reports as skipped |
 
+### 5.1.1 Running step 1 against the hosted project
+
+`db:migrate` (`scripts/db/migrate.mjs`) is forward-only. It records a SHA-256 per migration in
+`public.schema_migrations`, applies only what the target has not recorded, and commits each
+migration together with its ledger row in one transaction so a failure leaves neither. It refuses
+outright on two conditions: a migration **edited after it was applied**, and a version present in
+the database but absent from this repository. `--plan` (the default) reports and changes nothing.
+
+**Do not use `db:reset` here.** It drops schema `public`; it exists for development databases and
+refuses a non-loopback host without an explicit flag.
+
+Two ways to run it:
+
+| | |
+|---|---|
+| **From a machine with egress** | `DATABASE_URL=<session pooler string> npm run db:migrate -- --allow-remote` to plan, then add `--apply` |
+| **From GitHub Actions** | Actions → **Database migrate (hosted)** → Run workflow. `workflow_dispatch` only. Needs the repository secret `SUPABASE_DB_URL`. `mode: plan` is the default; `mode: apply` additionally requires typing the project ref, checked against the secret |
+
+**The connection string must be the Session Pooler**, from Supabase → Project Settings → Database:
+
+```
+postgresql://postgres.<project-ref>:<password>@aws-0-<region>.pooler.supabase.com:5432/postgres
+```
+
+Not `db.<ref>.supabase.co` — that endpoint is IPv6-only, and anywhere without an IPv6 route
+(GitHub-hosted runners included) it times out after minutes in a way that reads like a firewall
+problem. Not port 6543 — transaction mode cannot hold the session DDL needs. `migrate.mjs` rejects
+the first mistake by name rather than letting it time out.
+
+Note that `supabase/local/00-auth-shim.sql` is **never** applied to a hosted project. It stands in
+for the `auth` schema, the roles and the grants that Supabase provisions itself; applying it to a
+live project would redefine `auth.uid()` and re-grant roles Supabase manages. `db:migrate` reads
+only `supabase/migrations/`, so it cannot pick the shim up.
+
+
 ### 5.2 Re-running the seed on an environment that already has content
 
 Permitted and expected — that is what idempotency is for. The runner:

@@ -507,7 +507,7 @@ su postgres -c "/usr/lib/postgresql/16/bin/pg_ctl -D $PGROOT/data \
 psql -h 127.0.0.1 -p 5433 -U postgres -c "create database rivya;"
 
 export DATABASE_URL="postgresql://postgres:<password>@127.0.0.1:5433/rivya"
-npm run db:reset      # applies the auth shim, then migrations 0001-0008
+npm run db:reset      # applies the auth shim, then migrations 0001-0012
 npm run db:types      # regenerates lib/supabase/database.types.ts
 npm run seed:content  # applies the taxonomy seed
 ```
@@ -517,6 +517,11 @@ rather than from `.env.local`. That is deliberate: `.env.local` points at the ho
 project, and `db:reset` DROPS EVERY OBJECT in the target schema. `scripts/db/reset.mjs` additionally
 refuses any host that is not loopback unless `--allow-remote` is passed, so a misconfigured shell
 fails loudly instead of destroying a real database.
+
+**`db:reset` is for development databases only, and there is no supported reason to pass it
+`--allow-remote`.** The script for a real database is **`db:migrate`**, which never drops anything:
+it applies only what the target has not recorded, and refuses if a migration was edited after being
+applied or if the database carries a version this repository does not have. See DEPLOYMENT.md §5.1.
 
 ### What the local database is NOT
 

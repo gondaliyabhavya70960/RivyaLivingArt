@@ -1,16 +1,20 @@
 # PROJECT_STATE — what is actually built
 
 > Verified against the repository, not against intent. Update at the end of every phase.
-> Last verified: Phase 04.
+> Last verified: Phase 04 close-out (amendment A6, migration runner).
 
 ## Summary
 
-The design system is built, and the database spine now exists and has been verified against a
-real PostgreSQL. What exists: the toolchain, the token layer, 32 primitives, 2 motion helpers,
-7 behavioural patterns, a dev-only gallery, ten tables with RLS on and no policy yet, generated
-types with a drift gate, a repository layer with Zod at its boundary, an idempotent seed runner
-proved not to overwrite an owner's edit, and ten gates that fail the build on the mistakes they
-were written for. What does not: any product page, any RLS policy, any media delivery.
+The design system is built; the database spine exists, carries RLS policies for all six roles,
+and has been verified against a real PostgreSQL. What exists: the toolchain, the token layer,
+32 primitives, 2 motion helpers, 7 behavioural patterns, a dev-only gallery, **twelve tables with
+RLS on and 51 policies**, generated types with a drift gate, a repository layer with Zod at its
+boundary, an idempotent seed runner proved not to overwrite an owner's edit, the Studio's auth
+surfaces (`proxy.ts`, login, sign-out, user management), a forward-only migration runner, and
+**19 gates** that fail the build on the mistakes they were written for.
+
+What does not exist: any product page, any media delivery, any Studio shell beyond the two pages
+above — and **nothing has ever been applied to the hosted Supabase project.**
 
 ## Phase status
 
@@ -20,7 +24,7 @@ were written for. What does not: any product page, any RLS policy, any media del
 | 01 | PRD, Architecture & Documentation | **COMPLETE** | `docs/architecture/CANONICAL-DECISIONS.md`, `ARCHITECTURE.md`, `DATA_MODEL.md`, `SCRAPER.md`; `docs/project/PRD.md`, `BUSINESS_RULES.md`, `ROADMAP.md`, `phases/`; `docs/ops/*`; session-recovery file set. |
 | 02 | Reference UI Audit + Design System | **COMPLETE** | Toolchain, token layer, 32 primitives, 2 motion helpers, 7 behavioural patterns, dev gallery, 5 gates. 282 unit tests, 104 e2e across the 8 QA widths, 16 visual baselines. |
 | 03 | Supabase Database + Data Layer | **COMPLETE** | Migrations `0001`-`0008` applied and verified against PostgreSQL 16.13. 10 tables, 6 enums, 2 functions, 24 indexes, RLS on everywhere with no policy. Generated types + drift gate, 6 repositories, Zod schemas, seed runner proved idempotent and owner-edit-safe. 5 new gates, 35 new tests. |
-| 04 | Supabase Auth + RBAC + RLS | **SUBSTANTIALLY COMPLETE** | Migrations `0009`-`0012`, 51 RLS policies across 12 tables, the permission matrix as generator input, Studio login/sign-out/user-management, 4 new gates. 11 of 14 exit criteria met; the e2e Studio-access spec and end-to-end audit verification need a reachable Supabase project. |
+| 04 | Supabase Auth + RBAC + RLS | **SUBSTANTIALLY COMPLETE** | Migrations `0009`-`0012`, 51 RLS policies across 12 tables, the permission matrix as generator input, Studio login/sign-out/user-management, 6 new gates. **10 of 11 verification steps pass** against a real PostgreSQL; step 8 (audit trail end to end) and the authenticated half of step 6 need a reachable Supabase project — both are `test.fixme` in the spec, not omitted. |
 | 05 | Studio Foundation | **PLANNED** | — |
 | 06 | Cloudinary Media Architecture | **PLANNED** | `docs/media/CLOUDINARY.md` specifies folders and the migration runbook. |
 | 07 | Higgsfield Asset Audit + Initial Asset Plan | **PARTIAL** | **Audit half is done**: 250 assets inventoried and classified in `data/higgsfield/asset-manifest.json` by `scripts/media/build-higgsfield-manifest.py   deterministic classifier
@@ -44,14 +48,22 @@ docs/SESSION-STATE.md
 
 ## What does NOT exist yet
 
-No product page under `app/(site)` or `app/(studio)` beyond the dev-only gallery, no CMS block
-renderer, no `supabase/migrations/`, no media delivery. No Supabase project or Cloudinary
-account is connected — none of the environment variables in CANONICAL-DECISIONS.md D8 are set
-in this environment.
+No product page under `app/(site)`, no Studio shell or `app/(studio)/layout.tsx`, no CMS block
+renderer, no media delivery. `supabase/migrations/0001`-`0012` DO exist and apply cleanly to a
+local PostgreSQL — but **they have never been applied to the hosted Supabase project**, so the
+hosted schema is still empty.
 
-**CI cannot run.** GitHub Actions has not provisioned a runner for any workflow run: each fails
-in 2-5 seconds with `runner_id: 0` and zero steps executed. The full sequence passes locally
-from a clean `npm ci`. This is an account-level condition and needs the owner.
+**CI still cannot run — 48 runs, none has ever executed a step.** Each job is created with its
+`ubuntu-latest` label intact and dies 2-3 seconds later, unassigned: no `runner_id`, no steps, no
+logs. Run #48 (2026-09-08 05:21 UTC) has the identical signature to run #1, **including after a
+payment method was added to the account**, so the payment method alone did not resolve it. The
+full gate sequence passes locally from a clean `npm ci`; this is an account-level condition and
+only the owner can see the page that explains it.
+
+The consequence is not only that gates go unverified remotely. `.github/workflows/db-migrate.yml`
+exists to apply migrations to hosted Supabase **from a runner**, because a runner has the outbound
+network access this sandbox lacks. Until Actions provisions a runner, that route is unavailable
+too, and the hosted project cannot be migrated from here by any means.
 
 ## Verified facts
 
@@ -71,13 +83,24 @@ from a clean `npm ci`. This is an account-level condition and needs the owner.
 - The seed runner inserts 7 rows on a fresh database, updates 7 and inserts 0 on a second run,
   and after an owner edits one row reports 1 `skipped_owner_edited` with that row's value intact.
   Publishing a row and re-seeding does not un-publish it.
-- 329 unit tests across 44 files. All thirteen gates pass locally.
+- **459 unit and RLS tests**, none skipped with `RLS_TESTS_REQUIRED=1`. All nineteen gates pass
+  locally. E2E Studio access: 13 passed, 4 `test.fixme` (they need a real Supabase session).
+- `scripts/db/migrate.mjs` was verified against a real PostgreSQL: 12 migrations applied from
+  empty, a second run is a no-op, a migration edited after being applied is refused, a deliberately
+  broken migration left no ledger row and no leaked table, and the connection password appears in
+  no output.
+- `proxy.ts` is registered by Next — the production build reports `Proxy (Middleware)` in its
+  route table — and all four refusals in `security:check-proxy` were verified by breaking the
+  file four ways.
 
 ## Known risks carried forward
 
 1. **The migration set has never been applied to the hosted Supabase project**, only to a local
-   cluster, because this sandbox cannot reach `*.supabase.co`. The first application needs a
-   machine with ordinary egress, and until it happens the hosted schema is empty.
+   cluster, because this sandbox cannot reach `*.supabase.co` (the proxy answers 403 to CONNECT)
+   and Postgres 5432/6543 are blocked. `.github/workflows/db-migrate.yml` is built and ready to do
+   it from a runner, which would have ordinary egress — **but Actions cannot provision a runner**,
+   so that route is blocked on the same account-level condition. Until one of the two is resolved
+   the hosted schema stays empty.
 2. **The pasted Supabase secrets are still unrotated.** The service-role key, secret key, JWT
    secret and database password were exposed in a chat transcript on 2026-09-08. Treat them as
    compromised until rotated.
