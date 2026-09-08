@@ -54,11 +54,11 @@ PR #7). Phase 03 merged as PR #4.
    hint and the deployment-environment badge. That last one is absent in production deliberately: a
    badge rendered everywhere becomes furniture, and its absence meaning "this is the real site" only
    works if it is genuinely absent. 9 tests, including that it leaks no deployment configuration.
-4. ~~`studio_preferences` reader/writer~~ — **partly done.** `lib/auth/preferences.ts` reads the
-   chrome and writes `sidebar_collapsed` and `pinned_routes`, and pinning validates the path against
-   the navigation manifest and the role's own permission. **Nothing calls them from the UI yet** —
-   the sidebar has no collapse control and no pinned section, so the writers are reachable only
-   from code. `dashboard_card_order` still has no writer at all.
+4. ~~`studio_preferences` reader/writer~~ — **done except one column.** `lib/auth/preferences.ts`
+   reads the chrome and writes `sidebar_collapsed` and `pinned_routes`; the top bar collapses the
+   navigation, and every page can pin itself. Both are plain `<form>`s posting to Server Actions in
+   `app/(studio)/studio/(shell)/actions.ts`, so they work before hydration.
+   **`dashboard_card_order` still has no writer** — the column exists and nothing reorders cards.
 5. **Verification step 6** (press ⌘K on a Studio page, type `journ`, assert Content → Journal is
    first and Enter navigates) needs a browser with a session. The logic beneath it is covered:
    `searchRoutes('journ', …)` is asserted to return the journal route first.

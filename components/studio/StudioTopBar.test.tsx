@@ -31,7 +31,7 @@ afterEach(() => {
 describe('the environment badge', () => {
   it('is ABSENT in production', () => {
     vi.stubEnv('NEXT_PUBLIC_VERCEL_ENV', 'production')
-    render(<StudioTopBar session={session} />)
+    render(<StudioTopBar session={session} sidebarCollapsed={false} />)
 
     expect(screen.queryByText('Preview')).not.toBeInTheDocument()
     expect(screen.queryByText('Development')).not.toBeInTheDocument()
@@ -39,13 +39,13 @@ describe('the environment badge', () => {
 
   it('is present on preview', () => {
     vi.stubEnv('NEXT_PUBLIC_VERCEL_ENV', 'preview')
-    render(<StudioTopBar session={session} />)
+    render(<StudioTopBar session={session} sidebarCollapsed={false} />)
     expect(screen.getByText('Preview')).toBeInTheDocument()
   })
 
   it('is present in development', () => {
     vi.stubEnv('NEXT_PUBLIC_VERCEL_ENV', 'development')
-    render(<StudioTopBar session={session} />)
+    render(<StudioTopBar session={session} sidebarCollapsed={false} />)
     expect(screen.getByText('Development')).toBeInTheDocument()
   })
 
@@ -53,7 +53,7 @@ describe('the environment badge', () => {
     // Locally there is no VERCEL_ENV. Rendering "Development" on the strength of a missing variable
     // would be inventing a fact about where this is deployed.
     vi.stubEnv('NEXT_PUBLIC_VERCEL_ENV', '')
-    const { container } = render(<StudioTopBar session={session} />)
+    const { container } = render(<StudioTopBar session={session} sidebarCollapsed={false} />)
     expect(container.textContent).not.toContain('Development')
     expect(container.textContent).not.toContain('Preview')
   })
@@ -61,7 +61,7 @@ describe('the environment badge', () => {
   it('leaks no deployment configuration', () => {
     vi.stubEnv('NEXT_PUBLIC_VERCEL_ENV', 'preview')
     vi.stubEnv('NEXT_PUBLIC_VERCEL_URL', 'rivya-abc123.vercel.app')
-    const { container } = render(<StudioTopBar session={session} />)
+    const { container } = render(<StudioTopBar session={session} sidebarCollapsed={false} />)
 
     expect(container.textContent).not.toContain('vercel.app')
     expect(container.textContent).not.toContain('abc123')
@@ -70,34 +70,66 @@ describe('the environment badge', () => {
 
 describe('the identity area', () => {
   it('shows the role, so a missing link has an explanation', () => {
-    render(<StudioTopBar session={session} />)
+    render(<StudioTopBar session={session} sidebarCollapsed={false} />)
     expect(screen.getByText('merchandiser')).toBeInTheDocument()
   })
 
   it('falls back from display name to email, and then to a neutral word', () => {
-    const { rerender } = render(<StudioTopBar session={session} />)
+    const { rerender } = render(<StudioTopBar session={session} sidebarCollapsed={false} />)
     expect(screen.getByText('Asha')).toBeInTheDocument()
 
-    rerender(<StudioTopBar session={{ ...session, displayName: null }} />)
+    rerender(<StudioTopBar session={{ ...session, displayName: null }} sidebarCollapsed={false} />)
     expect(screen.getByText('staff@rivya.test')).toBeInTheDocument()
 
-    rerender(<StudioTopBar session={{ ...session, displayName: null, email: null }} />)
+    rerender(
+      <StudioTopBar
+        session={{ ...session, displayName: null, email: null }}
+        sidebarCollapsed={false}
+      />,
+    )
     expect(screen.getByText('Staff account')).toBeInTheDocument()
   })
 
   it('signs out with a POST, never a link', () => {
     // A GET sign-out can be fired by an <img> tag on any page. The route refuses GET; the form
     // must not offer one either.
-    const { container } = render(<StudioTopBar session={session} />)
-    const form = container.querySelector('form')
+    //
+    // Selected BY ITS ACTION, not as "the first form". It was the first form until the sidebar
+    // collapse control was added above it, at which point this test started asserting the wrong
+    // element — and a Server Action form carries no `method` attribute, so it failed loudly rather
+    // than passing against the wrong thing. A `querySelector('form')` in a component that grows is
+    // a test that quietly changes its subject.
+    const { container } = render(<StudioTopBar session={session} sidebarCollapsed={false} />)
+    const signOut = container.querySelector('form[action="/api/auth/sign-out"]')
 
-    expect(form?.getAttribute('method')?.toLowerCase()).toBe('post')
+    expect(signOut, 'no sign-out form').not.toBeNull()
+    expect(signOut?.getAttribute('method')?.toLowerCase()).toBe('post')
     expect(container.querySelector('a[href*="sign-out"]')).toBeNull()
+  })
+
+  it('offers a control to collapse the navigation, and to bring it back', () => {
+    const { rerender } = render(<StudioTopBar session={session} sidebarCollapsed={false} />)
+    expect(screen.getByRole('button', { name: 'Collapse navigation' })).toBeInTheDocument()
+
+    rerender(<StudioTopBar session={session} sidebarCollapsed />)
+    expect(screen.getByRole('button', { name: 'Show navigation' })).toBeInTheDocument()
+  })
+
+  it('submits the NEXT sidebar state rather than a toggle', () => {
+    // Two fast clicks on a "toggle" race to opposite answers. Submitting the intended state means
+    // they converge on what the person asked for.
+    const { container, rerender } = render(
+      <StudioTopBar session={session} sidebarCollapsed={false} />,
+    )
+    expect(container.querySelector('input[name="collapsed"]')).toHaveValue('true')
+
+    rerender(<StudioTopBar session={session} sidebarCollapsed />)
+    expect(container.querySelector('input[name="collapsed"]')).toHaveValue('false')
   })
 
   it('tells people the keyboard shortcut exists', () => {
     // A shortcut nobody is told about is a shortcut only its author uses.
-    render(<StudioTopBar session={session} />)
+    render(<StudioTopBar session={session} sidebarCollapsed={false} />)
     expect(screen.getByText(/Ctrl-K or Cmd-K/)).toBeInTheDocument()
   })
 })

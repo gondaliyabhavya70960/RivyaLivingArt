@@ -1,9 +1,11 @@
+import { togglePinnedRouteAction } from '@/app/(studio)/studio/(shell)/actions'
 import { Breadcrumbs } from '@/components/primitives/Breadcrumbs'
 import { Heading } from '@/components/primitives/Heading'
 import { Stack } from '@/components/primitives/Stack'
 import { Surface } from '@/components/primitives/Surface'
 import { Text } from '@/components/primitives/Text'
 import { t } from '@/components/studio/strings'
+import { readMyChrome } from '@/lib/auth/preferences'
 import { groupForPath, leafForPath, type StudioNavLeaf } from '@/lib/auth/studio-nav'
 
 /**
@@ -20,7 +22,7 @@ import { groupForPath, leafForPath, type StudioNavLeaf } from '@/lib/auth/studio
  * indistinguishable from one that was never called, so a page that forgot to gate would look
  * identical to one that gated correctly.
  */
-export function StudioPage({
+export async function StudioPage({
   path,
   actions,
   children,
@@ -33,6 +35,7 @@ export function StudioPage({
 }) {
   const leaf = leafForPath(path)
   const group = groupForPath(path)
+  const chrome = await readMyChrome()
 
   // Unreachable through the generated routes, which are produced FROM the manifest. Reachable if
   // somebody hand-writes a page under /studio without adding it — and then the honest thing is a
@@ -68,7 +71,23 @@ export function StudioPage({
         <Heading level={1} size="display-md">
           {t(leaf.labelKey)}
         </Heading>
-        {actions}
+        <div className="flex flex-wrap items-center gap-3">
+          {actions}
+          {/* A form rather than a button with a handler, for the same reason as the collapse
+              control: this page is server-rendered, and a form works before hydration. The action
+              re-validates the path against the manifest — a hidden field is whatever the client
+              chose to send. */}
+          <form action={togglePinnedRouteAction}>
+            <input type="hidden" name="path" value={leaf.href} />
+            <button type="submit" className="rounded-sm underline underline-offset-4">
+              <Text as="span" size="xs" tone="tertiary">
+                {chrome.pinned_routes.includes(leaf.href)
+                  ? t('studio.page.unpin')
+                  : t('studio.page.pin')}
+              </Text>
+            </button>
+          </form>
+        </div>
       </div>
 
       {children ?? <StubNotice leaf={leaf} />}

@@ -1,3 +1,4 @@
+import { collapseSidebarAction } from '@/app/(studio)/studio/(shell)/actions'
 import { Badge } from '@/components/primitives/Badge'
 import { Text } from '@/components/primitives/Text'
 import { t } from '@/components/studio/strings'
@@ -39,12 +40,32 @@ function environmentLabel(): string | null {
   }
 }
 
-export function StudioTopBar({ session }: { session: StaffSession }) {
+export function StudioTopBar({
+  session,
+  sidebarCollapsed,
+}: {
+  session: StaffSession
+  sidebarCollapsed: boolean
+}) {
   const environment = environmentLabel()
 
   return (
     <div className="border-line bg-surface-raised flex flex-wrap items-center justify-between gap-3 border-b px-4 py-2">
       <div className="flex flex-wrap items-center gap-2">
+        {/* A form, not a button with a handler: this renders on the server, and a plain form means
+            the control works before hydration and with JavaScript off. The NEXT state is submitted
+            rather than a toggle, so two fast clicks converge instead of racing. */}
+        <form action={collapseSidebarAction}>
+          <input type="hidden" name="collapsed" value={sidebarCollapsed ? 'false' : 'true'} />
+          <button type="submit" className="rounded-sm underline underline-offset-4">
+            <Text as="span" size="xs">
+              {sidebarCollapsed
+                ? t('studio.shell.expandSidebar')
+                : t('studio.shell.collapseSidebar')}
+            </Text>
+          </button>
+        </form>
+
         {/* A visible affordance for ⌘K. A keyboard shortcut nobody is told about is a shortcut
             only its author uses; this is not a button because the palette is opened by the
             shortcut, and a button that says "press ⌘K" would be a control that does nothing when

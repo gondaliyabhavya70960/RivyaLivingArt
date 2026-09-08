@@ -856,6 +856,26 @@ export const STUDIO_STRINGS = {
     value: 'Development',
     contentKey: 'studio_help.shell_env_development',
   },
+  'studio.shell.collapseSidebar': {
+    value: 'Collapse navigation',
+    contentKey: 'studio_help.shell_collapse_sidebar',
+  },
+  'studio.shell.expandSidebar': {
+    value: 'Show navigation',
+    contentKey: 'studio_help.shell_expand_sidebar',
+  },
+  'studio.shell.pinnedHeading': {
+    value: 'Pinned',
+    contentKey: 'studio_help.shell_pinned_heading',
+  },
+  'studio.page.pin': {
+    value: 'Pin to the sidebar',
+    contentKey: 'studio_help.page_pin',
+  },
+  'studio.page.unpin': {
+    value: 'Unpin',
+    contentKey: 'studio_help.page_unpin',
+  },
 } as const satisfies Record<string, StudioStringEntry>
 
 /** Every key this module resolves. A typo is a compile error, not a blank space on the page. */
