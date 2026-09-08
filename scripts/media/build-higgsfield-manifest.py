@@ -167,6 +167,11 @@ def build(records, kind, counters):
             "higgsfield_generation_id": r["id"],
             "higgsfield_model": r["model"],
             "source_url": r["url"],
+            # The webp variant Higgsfield serves alongside the original. NOT a downscale —
+            # same pixel dimensions, an order of magnitude smaller. It is what Phase 06
+            # migrates: the source PNGs run past 20 MB and the Cloudinary plan caps images
+            # at 10 MB, while the webp of the same asset is under half a megabyte.
+            "source_min_url": r.get("min_url"),
             "prompt": r["prompt"],
             "alt_text_draft": alt_draft(r["prompt"]),
             "is_ai_generated": True,

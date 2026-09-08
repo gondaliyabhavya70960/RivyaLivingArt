@@ -4,6 +4,11 @@ on:
   pull_request:
   push:
     branches: [main]
+  # Manual trigger. Added because there was no way to run CI on demand while
+  # diagnosing an Actions outage — every run had to be provoked by a push or a PR,
+  # which is a slow way to test whether runners are available at all.
+  # Note: GitHub only offers this for workflows present on the default branch.
+  workflow_dispatch:
 
 concurrency:
   group: ci-${{ github.ref }}

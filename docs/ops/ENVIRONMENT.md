@@ -410,3 +410,79 @@ What a visitor and an operator see when each variable is missing or wrong.
    in Site Settings while D8 holds only the WhatsApp number. That split is deliberate and works, but
    it is not stated canonically. Suggested amendment: one line in D8 recording that displayed contact
    details are `global_content`, never environment variables.
+
+
+---
+
+## Network reality in the Claude Code sandbox
+
+Measured 2026-09-08, not assumed. This decides what can be *verified* in this environment
+versus only written, and it is the reason several phases can be built but not tested here.
+
+| Destination | Reachable | Evidence |
+|---|---|---|
+| `registry.npmjs.org`, pypi, crates, Go proxy | **yes** | on the proxy's `noProxy` allowlist |
+| `raw.githubusercontent.com` | **yes** | the Phase 02 licence audit read every LICENSE this way |
+| MCP servers (Cloudinary, Higgsfield, GitHub) | **yes** | routed via `mcp-proxy.anthropic.com`, which is allowlisted |
+| `*.supabase.co` (REST, auth) | **no** | `curl: (56) CONNECT tunnel failed, response 403` |
+| Supabase Postgres `:5432` and `:6543` | **no** | raw TCP refused; npm `:443` open in the same test, so the test is sound |
+| `res.cloudinary.com` (delivery) | **no** | `connect_rejected` from the egress proxy |
+| Higgsfield CDN (`d8j0ntlcm91z4.cloudfront.net`) | **no** | HEAD returns `000` |
+
+**The rule this produces:** anything reachable only over direct HTTPS from the shell cannot be
+exercised here — migrations cannot be applied, the app cannot be run against Supabase, and a
+delivered Cloudinary URL cannot be fetched back to confirm it renders. Anything exposed through
+an **MCP server** can be, which is why the Phase 06 canaries below were uploadable even though
+the shell can reach neither Higgsfield nor Cloudinary: Cloudinary fetched the source itself,
+server to server, with this environment never touching the bytes.
+
+Migrations, seeds and integration checks therefore run from a machine with ordinary egress, or
+from CI once GitHub Actions can provision a runner.
+
+---
+
+## GitHub Actions cannot provision a runner
+
+Measured 2026-09-08. Recorded here so the next session does not re-derive it.
+
+Every run of the `CI` workflow — **40 of 40**, on `main` and on feature branches alike — fails
+about two seconds after it is created, having never been assigned a runner:
+
+| Observation | Value |
+|---|---|
+| `runner_id` / `runner_name` | `0` / empty string |
+| Steps executed | none |
+| Job logs | `HTTP 404` — no log stream is ever opened |
+| Check-run `output` | `title`, `summary` and `text` all empty |
+| Duration | 2 s from `created_at` to `completed_at` |
+
+### What this rules out
+
+- **Not the code.** No step runs, so nothing in the repository executes. All nine gates the
+  workflow would run pass locally, and Vercel builds the same commits successfully.
+- **Not the workflow file.** An unparseable workflow produces a run with *zero* jobs. Here the
+  `verify` job is created with its `ubuntu-latest` label intact and only then dies unassigned,
+  so the YAML is valid and the job was scheduled.
+- **Not Actions permissions.** Settings → Actions → General is set to "Allow all actions and
+  reusable workflows"; runs created after that change fail identically.
+- **Not a flake.** A re-run of the same job reproduced the signature to the second.
+
+### What remains
+
+The repository is **private**, so its Actions minutes are metered against the account's included
+allowance; public repositories get standard runners unmetered. *Run created → job never assigned →
+immediate failure → no logs* is the signature GitHub emits when Actions is refused at the billing
+or account layer — allowance exhausted, spending limit at $0 and reached, payment method failed,
+or the account otherwise restricted.
+
+**Resolution is owner-side, not in this repository.** Check `github.com/settings/billing` (Actions
+section) and any account-level banner; making the repository public would bypass the metering
+entirely. If all three look clean, it is a GitHub Support matter.
+
+### Consequence for phase work
+
+Until a runner can be provisioned, **CI is not a gate we can rely on**. The nine `verify` steps
+must be run locally before every push — `npm run typecheck lint format:check test build`, then
+`manifest:verify`, `media:check-ids`, `design:check-tokens`, `design:check-registry` — and the
+D9 completion contract is satisfied by those local runs, evidenced in the phase record, not by a
+green check on GitHub.

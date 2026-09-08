@@ -512,3 +512,53 @@ If a `HIGGSFIELD_MASTER_ASSET_PLAN.md` §6 brief is ever executed:
 | Transformation count is billable | Every new preset multiplies across the library | Adding a seventh preset is a decision, not a convenience. Justify it in `CHANGELOG.md` |
 | Large source files slow ingest, not delivery | The 6336 px masters are ~10–20 MB each | Migration is I/O bound. Expect the 250-asset run to take minutes, not seconds; it is resumable for exactly this reason |
 | `q_auto` decisions vary by content | A flat abstract macro compresses far harder than a detailed interior | Do not chase a fixed byte budget per image. Chase the LCP number |
+
+
+---
+
+## Migration: what the Phase 06 canaries established
+
+Run 2026-09-08 against the live account (cloud `dhaqpl1kz`, **Free** plan). Two of the three
+named canaries were uploaded; both succeeded, and the first one failed first in a way worth
+recording.
+
+### The source PNGs do not fit, and the webp variants do
+
+`PROCESS-STUDIO-001` was rejected outright:
+
+```
+File size too large. Got 21796736. Maximum is 10485760.
+```
+
+The Higgsfield originals are 4800×3584-class PNGs running past **20 MB**, and the plan caps an
+image at **10 MB**. Higgsfield serves a second URL for every image — the `_min.webp` variant —
+and it is **not a downscale**: same 4800×3584 pixels, webp-compressed to **463 KB**. A 47×
+reduction with no loss of resolution. Uploading that succeeded immediately.
+
+`data/higgsfield/asset-manifest.json` now carries `source_min_url` for all 224 images, and the
+bulk migration reads that field, not `source_url`. Videos have no webp variant and need none:
+`LARGEFORMAT-DINING-004` uploaded from its original at **4.6 MB**, against a 100 MB video cap,
+and Cloudinary returned an HLS `playback_url` for free.
+
+| Canary | Source | Stored | Result |
+|---|---|---|---|
+| `PROCESS-STUDIO-001` | 20.8 MB PNG | — | **rejected**, over the 10 MB cap |
+| `PROCESS-STUDIO-001` | 463 KB `_min.webp` | 4800×3584 webp | uploaded |
+| `LARGEFORMAT-DINING-004` | 4.6 MB mp4 | 1080×1920 mp4 + HLS | uploaded |
+| `LARGEFORMAT-MONUMENTAL-001` | — | — | not yet run |
+
+### Two things the canaries corrected
+
+- **Manifest video dimensions are the generation request, not the stored file.**
+  `LARGEFORMAT-DINING-004` is recorded as 768×1344 because that is what the generation asked
+  for; Cloudinary reports the actual file as **1080×1920**. Anything sizing a video slot must
+  read Cloudinary, not the manifest.
+- **Free-plan headroom is ample at webp sizes.** 0.26 of 25 credits used with 85 stock demo
+  assets present. At ~0.5 MB per image the remaining 224 images land near 110 MB — comfortable.
+  The rejected 20 MB PNGs would not have been.
+
+### Metadata written on upload
+
+Each asset carries its `rivya_asset_id` plus `is_ai_generated`, `is_concept` and
+`owner_verification` as Cloudinary context, so the AI-concept provenance travels with the file
+rather than living only in this repository.

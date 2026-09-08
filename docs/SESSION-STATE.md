@@ -8,7 +8,8 @@
 
 ## Current Phase
 
-**Phase 02 — Reference UI Audit + Design System.**
+**Phase 02 complete and merged** (PR #2, `main` at `6642a6c`). Credentials arrived on
+2026-09-08; the notes below record what they unblocked and what they did not.
 
 ## Status
 
@@ -82,13 +83,46 @@ NODE_ENV=production npm run build && npm start   (route guard)
 
 ## Known Issues
 
+**Supabase credentials are configured but UNREACHABLE from this sandbox.** `.env.local` holds
+`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` and a
+direct (5432, non-pooled) `DATABASE_URL`. The egress proxy refuses `*.supabase.co` over HTTPS
+(`CONNECT tunnel failed, 403`) and refuses raw TCP to 5432/6543, while npm:443 stays open in
+the same test. **Phase 03 migrations and the seed can be written here but not applied or
+tested here** — that needs a machine with ordinary egress, or CI. See docs/ops/ENVIRONMENT.md.
+
+**Cloudinary works, through MCP.** Cloud `dhaqpl1kz`, Free plan, 1.04% of credits used. Direct
+HTTPS to `res.cloudinary.com` is blocked like everything else, but the MCP server routes via
+the allowlisted Anthropic proxy, so uploads run server-to-server with this sandbox never
+touching the bytes.
+
+**The Phase 06 migration path is settled, and it is not the obvious one.** Higgsfield's source
+PNGs exceed the plan's 10 MB image cap (a canary was rejected at 20.8 MB). The `_min.webp`
+variant Higgsfield serves alongside each image is *not* a downscale — same 4800×3584, 463 KB.
+`source_min_url` is now in the manifest for all 224 images and is what the bulk run reads.
+
+**SECRETS EXPOSED — rotation requested, not confirmed.** The service-role key, secret key, JWT
+secret and database password were pasted into a chat transcript on 2026-09-08. They must be
+rotated in the Supabase dashboard; `.env.local` needs re-filling afterwards. Until that is
+done, treat these credentials as compromised.
+
 **BLOCKING, and outside this session's reach: GitHub Actions cannot provision a runner.**
-Every CI run since the workflow was added — 12 and counting — fails in 2-5 seconds with
-`runner_id: 0`, no runner name and **zero steps executed**, including the first. A job that
-dies before a runner picks it up has not run any of this PR's code. This is an account-level
-condition (typically exhausted minutes, a spending limit on a private repository, or Actions
-disabled), not a defect in the diff. The full CI sequence passes locally from a clean
-`npm ci` with `CI=true`. Recorded with evidence on PR #2.
+**40 of 40** runs — on `main` and on feature branches alike, including the very first — fail
+about two seconds after creation with `runner_id: 0`, an empty runner name, **zero steps
+executed** and `HTTP 404` for the job logs. A job that dies before a runner picks it up has
+run none of this repository's code.
+
+Ruled out with evidence: the code (all nine gates pass locally and Vercel builds the same
+commits); the workflow file (an unparseable one yields a run with *zero* jobs, whereas the
+`verify` job is created with its `ubuntu-latest` label intact and only then dies unassigned);
+Actions permissions (set to "Allow all actions and reusable workflows"; runs created after
+that change fail identically); and flakiness (a re-run reproduced the signature to the
+second). What remains is the account layer — the repository is **private**, so its minutes are
+metered, and this signature is what GitHub emits when Actions is refused at billing. Owner
+action: `github.com/settings/billing` → Actions, any account-level banner, or make the
+repository public. Full diagnosis in `docs/ops/ENVIRONMENT.md`; evidence on PR #3.
+
+**Until a runner exists, CI is not a gate.** Run the nine `verify` steps locally before every
+push and satisfy D9 from those runs, evidenced in the phase record — never from a green check.
 
 **Resolved during this phase**, recorded because each was a real defect:
 
@@ -121,10 +155,25 @@ disabled), not a defect in the diff. The full CI sequence passes locally from a 
 
 ## Remaining Work
 
-**None for Phase 02.** Two owner decisions raised in Phase 01 are still open and shape Phase
-09, not this phase: whether the `Place Order` label survives given the no-checkout rule
-(currently seeded disabled and routed to the inquiry flow), and whether a newsletter is in
-scope at all.
+**None for Phase 02.**
+
+**Owner decisions — RESOLVED 2026-09-08**, recorded as CANONICAL-DECISIONS amendment A3:
+
+| Question | Decision |
+|---|---|
+| Does `Place Order` survive the no-checkout rule? | **Renamed.** It is not seeded at all. The action is `Send an Enquiry`; the handoff is `Discuss on WhatsApp`. |
+| Is a newsletter in scope? | **Yes, build it.** Double opt-in; `newsletter_subscribers` in Phase 03; capture, consent, confirmation and unsubscribe in Phase 09. |
+
+**New open question, and it blocks part of Phase 09:** no email service provider exists in
+CANONICAL D1. The newsletter can capture an address and can never send to it, so the
+confirmation email — the thing that makes double opt-in mean anything — cannot ship until one
+is chosen. Adding Resend, Postmark, SES or Mailchimp is a new production dependency and needs
+its own amendment, so it is the owner's call rather than a default taken here. Phase 09 can
+build capture, consent, confirmation-token handling and unsubscribe without it.
+
+Two smaller questions from Phase 01 remain: whether to bless `/studio/content/pages/global` as
+the CTA library's reserved page id or add a D4 route leaf, and whether `analytics` stays a tab
+on `/studio` rather than a route segment.
 
 ## Next Exact Action
 
