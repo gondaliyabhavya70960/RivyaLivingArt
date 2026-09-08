@@ -822,6 +822,14 @@ looks correct at 1440 and broken at 1280 is a failing component, not a failing v
 `margin-inline: auto; padding-inline: var(--rv-gutter)`. Full-bleed media is achieved by a
 `full` container, never by negative margins.
 
+**`--container-full` is deliberately NOT bridged into Tailwind's `@theme`** (amendment A12).
+Tailwind v4 reads the `--container-*` namespace for `w-*` as well as `max-w-*`, so bridging `full`
+redefined `w-full` — a built-in utility meaning `width: 100%` — as 120rem, and every media frame in
+the product was 1920px wide inside whatever column contained it. `prose`, `default` and `wide` stay
+bridged because they collide with no built-in utility. A surface that wants the 120rem bound writes
+`max-w-(--rv-container-full)`; `<Container size="full">` sets it from the raw token as an inline
+style and never depended on the bridge.
+
 ### 5.4 Grid
 
 | Viewport | Columns | Gap |

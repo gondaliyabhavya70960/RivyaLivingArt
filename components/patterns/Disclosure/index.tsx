@@ -102,9 +102,11 @@ export const Disclosure = React.forwardRef<HTMLDivElement, DisclosureProps>(func
 
   return (
     <div ref={ref} className={cn('flex flex-col', className)} {...rest}>
-      {/* `flex` on the wrapper so the button stretches. `w-full` is avoided: with
-          --container-full bridged into @theme, Tailwind emits `width:
-          var(--rv-container-full)` after `width: 100%` and the 120rem wins. */}
+      {/* `flex` on the wrapper so the button stretches, rather than `w-full` on the button.
+          The original reason was a bug — `--container-full` was bridged into @theme, which
+          redefined `w-full` as 120rem — and Phase 11 removed that bridge, so `w-full` means
+          100% again. This stays as it is because a stretched flex child is the better markup
+          either way: it cannot be wider than the row it sits in, whatever `w-full` means. */}
       <div className="flex">
         <button
           type="button"

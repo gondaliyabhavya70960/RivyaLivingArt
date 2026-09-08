@@ -126,7 +126,8 @@ Every surface §45 names has an owning spec, so "check the scraper at 768 px" is
 | §45 surface | Owning spec |
 |---|---|
 | navigation | `tests/e2e/site-shell.spec.ts`, `navigation-a11y.spec.ts` |
-| hero, typography, media crop | `tests/visual/tier-a.visual.spec.ts` |
+| homepage composition | `tests/e2e/homepage.spec.ts` — built in Phase 11. It reads the expected order out of `content/seed/homepage.ts` rather than restating it, skips itself with a reason when `/` has no published sections (every CMS route 404s until an editor publishes), and asserts at all eight widths that the document never scrolls sideways — which is the assertion a visual baseline would have made, and the one that found amendment A12 |
+| hero, typography, media crop | `tests/visual/tier-a.visual.spec.ts` — **and not a homepage baseline yet.** Phase 11 deferred `tests/e2e/homepage.visual.spec.ts`: with `media_assets` empty, every image on `/` is the SEED §47 "media unavailable" well, so a baseline captured now would record a composition that is not the composition and would be thrown away the day `npm run media:migrate:higgsfield` runs. It belongs to the first build with media bound |
 | product cards, product galleries | `tests/e2e/catalogue.spec.ts`, `product-gallery-a11y.spec.ts` |
 | 3D | `tests/e2e/model-viewer.spec.ts` (flag on and off) |
 | motion | `tests/e2e/a11y/reduced-motion.spec.ts`, `homepage-motion.spec.ts` |

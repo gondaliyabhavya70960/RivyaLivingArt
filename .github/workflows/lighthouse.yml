@@ -1,0 +1,54 @@
+# Lighthouse CI for the public routes, against a deployed URL.
+#
+# COST, STATED FIRST BECAUSE IT DECIDES THE SHAPE OF THIS FILE. Manual dispatch only: no `push`,
+# no `pull_request`, no `schedule`. The owner's standing instruction is to stay inside the free
+# Actions tier and to be asked before anything spends beyond it, and `ci.yml` already fails at the
+# account level on every run for want of a spending limit. A performance suite that ran on every
+# pull request would be three Chrome runs per route per push — the single most expensive thing this
+# repository could add — so it runs when somebody asks for it and never on its own.
+#
+# IT MEASURES A DEPLOYMENT, NOT A BUILD IN THE RUNNER. A Lighthouse number from a cold `next start`
+# on a shared runner, against a database three regions away, measures the runner. The budgets in
+# `docs/ops/PERFORMANCE.md` are about what a visitor gets, so this points at a real URL: a Vercel
+# preview, or production. That also means it costs one runner and a few minutes rather than a
+# build, a database service and a seed.
+#
+# THE BUDGET LIVES IN `lighthouserc.json`, beside the repository rather than in this file, so the
+# same assertions can be run locally with `npx lhci autorun --collect.url=...` before anybody
+# spends a minute of CI on them.
+name: Lighthouse
+
+on:
+  workflow_dispatch:
+    inputs:
+      url:
+        description: 'Full URL to audit, e.g. https://example.vercel.app/'
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # `npm ci` is not needed: lhci is invoked with npx and reads only lighthouserc.json.
+      # Skipping it is most of this job's runtime.
+      - name: Audit
+        run: npx --yes @lhci/cli@0.14.x autorun --collect.url="${{ inputs.url }}"
+
+      - name: Keep the reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-report
+          path: .lighthouseci
+          retention-days: 7

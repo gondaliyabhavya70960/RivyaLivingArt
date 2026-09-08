@@ -8,6 +8,93 @@
 
 ## Current Phase
 
+**Phase 11 — Homepage + Material Experience. CODE COMPLETE; NOT MEASURED.** All thirteen SEED §10
+sections render from the CMS in seeded order, the two motion islands are built, and the homepage's
+client budget is measured and enforced. What is not done is the performance MEASUREMENT and the
+visual baseline, and both wait on the same thing: `media_assets` is empty, so every image on the
+page is the SEED §47 fallback well. A Lighthouse run against that would report an LCP for a page
+with no images, and a snapshot would record a composition that is not the composition.
+
+Phase 10 merged as PR #14; Phase 09 as PR #13; Phase 08 as PR #12. Phase 07 remains CODE COMPLETE
+with its Higgsfield migration unrun.
+
+### Phase 11: what is built
+
+**Ten renderers, so sixteen of the twenty-eight blocks are built.** `manifesto`, `selected-works`,
+`material-story`, `material-palette`, `commission-cta`, `three-d-resin`, `portfolio-strip`,
+`secondary-objects`, `journal-strip`, `final-cta`. `components/sections/registry.ts` maps none of
+them to `null` any more, and `tests/unit/cms-sections.test.tsx` asserts the two registries agree in
+both directions.
+
+**Entry-level owner verification** (`lib/cms/entry-visibility.ts`). The section-level column is the
+right mechanism when the claim IS the section and the wrong one when a published band holds one
+unverified item among five. Fifteen entries across five sections now carry the flag themselves;
+each renders as nothing and is addressable in a test by `data-entry-key`. `BlockModule.entryArrays`
+declares which payload arrays are editorial, because inference got it wrong in both directions —
+"any object array" swept in `/contact`'s form fields, "has a `title`" missed the commission band's
+six `label`-carrying capabilities.
+
+**Three reference blocks with an honest empty state.** `lib/cms/selectors/` answers `OK`, `EMPTY`
+or `NOT_YET_BUILT`; `components/patterns/EditorialFallback` renders a seeded `EMPTY_STATE.*`
+sentence inside `data-empty-reason`. Never a skeleton, which says "loading" when nothing is
+loading, and never a placeholder card, which is a product that does not exist.
+
+**`HeroMotion` (RC-214) and `MaterialSequence` (RC-215).** The hero's still is now always the LCP
+element and the clip is a layer over it that mounts after paint behind five gates, or does not
+mount at all. The sequence observes scroll and never captures it; its stages are server-rendered
+and passed in as children, and the dimming is `data-[active=false]`, which matches nothing until
+the island runs.
+
+**An island budget that counts modules, not chunks** (`scripts/site/check-island-budget.mjs`,
+wired into `npm run check`). Five islands on `/`, named, with the fifth recorded as amendment A11.
+It immediately found a real cost: `MediaSlot` — a Server Component nearly every renderer imports —
+was importing `MediaVideo`, so every route with any section carried the video island. `BlockVideo`
+moved into its own module (RC-235).
+
+**Homepage JSON-LD.** One `application/ld+json` block, `WebSite` + `Organization`, a name and a URL
+and nothing else. It renders nothing at all when either is missing.
+
+### Phase 11: what is NOT built, and why
+
+- **`tests/e2e/homepage.visual.spec.ts`.** Deferred, not forgotten. A baseline taken now records a
+  page whose every image is a fallback well; it would be thrown away the day
+  `npm run media:migrate:higgsfield` runs. What a snapshot would actually catch at eight widths —
+  a band that overflows its viewport — is asserted directly in `tests/e2e/homepage.spec.ts`, and
+  that assertion found amendment A12 on its first run.
+- **The Lighthouse numbers.** `lighthouserc.json` and `.github/workflows/lighthouse.yml` exist; the
+  workflow is **manual dispatch only** because of the owner's standing instruction about Actions
+  minutes, and because a run against a media-less page would measure the wrong thing.
+- **Any media binding.** `MEDIA_BINDINGS` is still empty and the hero's `motion-desktop` slot is
+  unbound. An entry naming an asset that does not exist is a hard seed failure, so binding waits on
+  the Higgsfield migration. The four `material-story` stages are seeded with `media_index: null`
+  for the same reason.
+- **The 21:9 hero motion gap.** The manifest holds no 21:9 video at all; the desktop clip is 16:9
+  and plays inside the 21:9 still with `object-fit: cover`. Recorded in `content/media-slots.ts`
+  (`home.hero.video`, resolution `GENERATE`) rather than filled by a new generation.
+
+### Phase 11: verification, as actually run
+
+Against a local PostgREST over the seeded local cluster, with the homepage's sections walked
+DRAFT → REVIEW → APPROVED → PUBLISHED to reach the launch-day state.
+
+| Step | Result |
+|---|---|
+| 1 · `npm run check`, including the new island gate | ✓ 28 gates |
+| 2 · publish all thirteen homepage sections | ✓ 11 published, 2 refused by `page_sections_verified_before_publish` — positions 2 and 8, the two whose claim IS the section |
+| 3 · `homepage.spec.ts` at all eight widths | ✓ 48 assertions: seeded order, one `h1`, no skipped level, zero fabricated cards, one JSON-LD block |
+| 4 · the 15 withheld entry keys, scoped by block type | ✓ zero elements each, and all five parent sections still render |
+| 5 · `homepage-motion.spec.ts`, both branches | ✓ four static stages and no `data-active` under reduced motion; a stage marked active with motion allowed; no `<video>` at any width, no clip being bound |
+| 6 · horizontal overflow at eight widths | ✗ **failed at every width**, and that is amendment A12 — `w-full` meant 1920px product-wide. Fixed, re-run green |
+| 7 · homepage client JS, gzipped, from a production `next start` | ✓ 171.7 kB against a 180 kB budget |
+| 8 · island count | ✓ 5, named, gate proved to fail on a sixth |
+| 9 · `curl /` piped to `grep -c ld+json` | ✓ 1, with no `offers`, `aggregateRating` or `award` |
+| 10 · no-JavaScript HTML | ✓ 11 sections, 4 stages, 1 `h1`, 0 `<video>`, 0 `data-active` |
+
+**924 unit tests**, 80 files, plus 96 e2e assertions on the two new specs across the eight QA
+widths.
+
+---
+
 **Phase 10 — Public Website Foundation. COMPLETE.** Rivya is a website a stranger can load: one
 Server-Component shell, thirteen static routes, the metadata, sitemap and revalidation plumbing, and
 the WhatsApp module. Every visitor-visible string in the chrome is a database row.
@@ -755,6 +842,28 @@ push and satisfy D9 from those runs, evidenced in the phase record — never fro
 
 ## Remaining Work
 
+### Owner-side, from Phase 11
+
+0. **Run `npm run media:migrate:higgsfield`, then bind the homepage's families.** This is the one
+   action that unblocks the most: `media_assets` is empty, so every image on every page is the
+   SEED §47 fallback well, no visual baseline is worth taking, and no Lighthouse number would mean
+   anything. The Phase 11 document's media table names every family and asset id the homepage
+   needs, including the hero pair (`LARGEFORMAT-DINING-002` still 21:9, `-001` mobile 9:16,
+   `-005` desktop motion 16:9, `-004` mobile motion 9:16). Binding is an edit to
+   `content/seed/media-bindings.ts` and a re-seed — but an entry naming an asset that does not
+   exist is a hard seed failure, so it cannot be done before the migration runs.
+
+0a. **Decide about the Lighthouse workflow.** `.github/workflows/lighthouse.yml` is manual dispatch
+   only, deliberately: three Chrome runs per route per push is the most expensive thing this
+   repository could add, and the standing instruction is to stay inside the free Actions tier.
+   Running it on pull requests needs an explicit decision — and the Actions spending limit below
+   fixed first, since no workflow on this repository has ever executed a step.
+
+0b. **The 21:9 hero motion gap.** The manifest holds no 21:9 video at all, so the desktop clip is
+   16:9 played inside the 21:9 still with `object-fit: cover` — accepted, and recorded in
+   `content/media-slots.ts` as `home.hero.video`, resolution `GENERATE`. Filling it is a new
+   generation and needs the owner's approval under D6.
+
 ### Owner-side, from Phase 09
 
 0. **Run `npm run seed:content` against the hosted database.** The schema is current at 27
@@ -866,6 +975,29 @@ the CTA library's reserved page id or add a D4 route leaf, and whether `analytic
 on `/studio` rather than a route segment.
 
 ## Next Exact Action
+
+**Start Phase 12 — the remaining page compositions**, or run the two owner-side actions below,
+which unblock more than any code change can.
+
+Nothing in the repository is waiting on a decision. Phase 11 left two things measured-not-yet
+(`PERFORMANCE.md` §8's LCP/CLS/INP for `/`, and a visual baseline), and both need media before the
+number would mean anything. In order of what they unlock:
+
+1. **`npm run media:migrate:higgsfield`** from a machine whose network reaches Cloudinary. It has
+   never run; `media_assets` is empty on both databases; every image on every page is a fallback
+   well until it does. Then bind the homepage's families in `content/seed/media-bindings.ts` — the
+   Phase 11 document's media table names every family and asset id — re-seed, and the first
+   Lighthouse run is worth taking.
+2. **`npm run seed:content` against hosted.** The schema is current at 28 migrations; the content
+   has only ever been written to the local cluster, so the deployed preview renders a wordless
+   shell and 404s every CMS route.
+
+Then publish. In `/studio/content/pages`, take a page's sections DRAFT → REVIEW → APPROVED →
+PUBLISHED; the route turns 200 the moment one section is live. Twenty-eight of the fifty-three need
+nothing but the workflow; the other twenty-five are refused with RV002 until the owner verifies the
+claim they make.
+
+### Superseded — the Phase 11 plan
 
 **Start Phase 11 — Homepage + Material Experience.** The shell is built and every route answers
 404, so the next phase is the one that gives the homepage something to say: ten of its thirteen

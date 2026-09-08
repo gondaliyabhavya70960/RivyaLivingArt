@@ -195,10 +195,11 @@ export const Accordion = React.forwardRef<HTMLDivElement, AccordionProps>(functi
         const isOpen = open.includes(item.id)
         return (
           <div key={item.id} className="border-b border-line">
-            {/* `flex` on the heading so the button stretches across it. `w-full` is
-                avoided throughout this file: with --container-full bridged into @theme,
-                Tailwind emits `width: var(--rv-container-full)` after `width: 100%` and
-                the 120rem wins. A stretched flex child cannot be ambiguous that way. */}
+            {/* `flex` on the heading so the button stretches across it, rather than `w-full`
+                on the button. The original reason was a bug — `--container-full` was bridged
+                into @theme, which redefined `w-full` as 120rem — and Phase 11 removed that
+                bridge. This stays as it is because a stretched flex child cannot be wider than
+                the row it sits in, whatever `w-full` resolves to. */}
             <HeadingTag className="flex">
               <button
                 ref={(node) => {

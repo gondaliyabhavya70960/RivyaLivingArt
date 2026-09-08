@@ -52,7 +52,7 @@ A rule with no guard is a preference. Each row's guard runs in `npm run check` o
 
 | Rule | Guard | Failure mode |
 |---|---|---|
-| Server Components by default; Client Components only where interaction demands | `scripts/site/check-client-boundary.mjs`, extended by `scripts/perf/count-islands.mjs` to count client roots per route against the budget | CI red, naming the route |
+| Server Components by default; Client Components only where interaction demands | `scripts/site/check-client-boundary.mjs` for the boundary, and `scripts/site/check-island-budget.mjs` for the count — the island counter Phase 11 shipped, at the path its phase document names. **Phase 40 must not build a second one at `scripts/perf/count-islands.mjs`**: two counters with two definitions of "island" is how a route passes one and fails the other | CI red, naming the module |
 | Responsive Cloudinary transformations | `scripts/perf/check-image-props.mjs` — every `MediaImage` declares `sizes`; no raw `<img>` outside `lib/media/**`; no inline transformation string | CI red |
 | AVIF/WebP where appropriate | `f_auto` is the only format directive permitted in `lib/media/transform.ts`; a unit test asserts no hard-coded `f_jpg` outside the `og` preset | Unit test |
 | Optimised video, posters always | `scripts/perf/check-video-props.mjs` — every `MediaVideo` has a poster, `preload="none"`, `muted`, `playsInline`, and **no `autoplay` attribute in markup** (autoplay is a runtime decision behind gates) | CI red |
@@ -218,11 +218,13 @@ mysterious.
 
 | Property | Value |
 |---|---|
-| Where | `.github/workflows/lighthouse.yml`, against a production build |
-| Matrix | Every route in §3, mobile and desktop profiles |
-| Profile | Moto G4 / Slow 4G, the Lighthouse mobile default |
+| Where | `.github/workflows/lighthouse.yml`, **manual dispatch only**, against a deployed URL |
+| Matrix | One URL per run, given as an input. Phase 40 widens it to every route in §3 |
+| Profile | The `desktop` preset in `lighthouserc.json` today; Phase 40 adds the Moto G4 / Slow 4G mobile pass |
 | Runs | Three per URL, median taken |
-| Assertions | From `perf/budgets.json`; `warn` for the first two weeks after Phase 40 lands, then `error` |
+| Assertions | `lighthouserc.json` — LCP ≤ 2.5 s, CLS ≤ 0.05, TBT ≤ 200 ms, script transfer ≤ 180 kB. Phase 40 moves them into `perf/budgets.json` so the guard scripts read the same numbers |
+| Why manual | Actions minutes. The owner's standing instruction is to stay inside the free tier and be asked before anything spends beyond it, and three Chrome runs per route per push is the most expensive thing this repository could add. It runs when somebody asks for it. Locally it needs no CI at all: `npx lhci autorun --collect.url=…` reads the same config |
+| Why a deployed URL and not a build in the runner | A Lighthouse number from a cold `next start` on a shared runner, against a database in another region, measures the runner |
 | Why median-of-three | Lighthouse variance produces flaky reds. A genuine regression shows on all three runs **and** in the bundle diff, which is deterministic |
 
 ### 7.2 Field — first-party, identifier-free
@@ -268,7 +270,7 @@ without updating its row is incomplete.
 
 | Route | LCP (lab, p75) | CLS | INP | First-load JS | Islands | Date | Commit |
 |---|---|---|---|---|---|---|---|
-| `/` | NOT YET MEASURED | — | — | — | — | — | — |
+| `/` | NOT YET MEASURED | NOT YET MEASURED | NOT YET MEASURED | 171.7 kB gz | 5 | 2026-09-08 | Phase 11 |
 | `/about` | NOT YET MEASURED | — | — | — | — | — | — |
 | `/process` | NOT YET MEASURED | — | — | — | — | — | — |
 | `/large-format` | NOT YET MEASURED | — | — | — | — | — | — |
@@ -287,6 +289,19 @@ without updating its row is incomplete.
 | `/search` | NOT YET MEASURED | — | — | — | — | — | — |
 | `/privacy` | NOT YET MEASURED | — | — | — | — | — | — |
 | `/terms` | NOT YET MEASURED | — | — | — | — | — | — |
+
+**What the `/` row is and is not.** The two filled cells were measured, not estimated. **First-load
+JS** is the sum of every `/_next/static/**/*.js` the served HTML references, fetched with gzip from
+a production `next start`: 171.7 kB compressed, 556.6 kB raw — inside Phase 11's 180 kB budget with
+8 kB to spare. **Islands** is `scripts/site/check-island-budget.mjs`'s own count, which is the
+number the gate enforces rather than a reading of a bundle report.
+
+LCP, CLS and INP still read NOT YET MEASURED, and saying so is the point of an empty cell. Running
+Lighthouse against this build would measure a page whose every image is the SEED §47 "media
+unavailable" well — `media_assets` is empty until `npm run media:migrate:higgsfield` runs — so its
+LCP would be a text node and its CLS would be whatever a page with no images does. That number
+would be wrong in the flattering direction, which is worse than no number. The measurement belongs
+to the first deployment with media bound, and the workflow is there for it.
 
 ### 8.2 Studio routes
 

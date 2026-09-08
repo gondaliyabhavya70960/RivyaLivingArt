@@ -166,6 +166,50 @@ Brand and editorial copy may be written; anything asserting business capability 
 
 ## Amendments
 
+**2026-09-08 · A11 — the homepage's island budget is five, and the fifth is `SiteErrorCopyProvider`.**
+
+The Phase 11 document names four client islands for `/` and says "a fifth island fails the build":
+`MegaMenu`, `MobileNav`, `HeroMotion` and `MaterialSequence`. The real count is five, and the extra
+one predates the phase document rather than being added by it.
+
+`app/(site)/error.tsx` MUST be a Client Component — Next requires it, because the boundary takes a
+`reset` callback — and D2 forbids a visitor-readable literal anywhere on the public site. A Client
+Component cannot read `global_content`, so Phase 10 has the layout read the five error strings on
+the server and pass them across the boundary through `SiteErrorCopyProvider`, which renders its
+children unchanged. It has no DOM node, no state and no event handler; it is still a hydration
+boundary, and a gate that excluded it would be measuring something other than what ships.
+
+- `scripts/site/check-island-budget.mjs` names all five in `ALLOWED`, with the reason each one
+  cannot be a Server Component, and fails on a sixth. `BUDGET` is written out rather than derived
+  from `ALLOWED.size`, so listing a new island does not silently raise the budget.
+- An island is a `'use client'` module that a SERVER module imports. `MediaVideo` inside
+  `HeroMotion` is part of that island's bundle, not a boundary of its own.
+- The gate walks `app/layout.tsx`, `app/(site)/layout.tsx` and `app/(site)/page.tsx`. The phase
+  document says "reachable from `app/(site)/page.tsx`" and then that three of the four islands come
+  from the shell, which is the layout; a walk from the page alone would report one island and pass
+  while the shell grew four more.
+
+**2026-09-08 · A12 — `--container-full` is not bridged into Tailwind's theme (DESIGN_SYSTEM §5.3).**
+
+Tailwind v4 reads the `--container-*` namespace for both `max-w-*` and `w-*`. `app/globals.css`
+bridged all four §5.3 container sizes into `@theme`, which redefined `w-full` — a built-in utility
+meaning `width: 100%` — as `width: 120rem`. Every `w-full` in the product therefore meant 1920px.
+
+`AspectBox` is `w-full`, so every media frame on every page was 1920px wide inside whatever column
+contained it. At a 1440px viewport the homepage's document was 2672px across; the design-system
+gallery's own visual baseline had been recording a 2264px-wide page since Phase 02. The symptom was
+known and worked around twice — `Accordion` and `Disclosure` each carry a comment explaining why
+they avoid `w-full` — but the cause was never removed.
+
+- The `full` bridge is gone; `prose`, `default` and `wide` stay, because they name no built-in
+  utility. `Container` was never affected: it sets `max-inline-size` from the raw token as an
+  inline style, which is what its own header says.
+- A surface that wants the 120rem bound writes `max-w-(--rv-container-full)`.
+- Found by `tests/e2e/homepage.spec.ts`, which asserts `document.documentElement.scrollWidth` does
+  not exceed the viewport at each of FEAT §45's eight widths. Nothing had measured horizontal
+  overflow before; every other check was on a property that this bug did not change.
+- The eight design-system baselines were regenerated. The old ones recorded the bug.
+
 **2026-09-08 · A9 — `/search` has a route file but no `pages` row (D3).**
 
 D3 lists `/search` among the thirteen static public paths, and it keeps that address. What changed
