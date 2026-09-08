@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { Heading } from '@/components/primitives/Heading'
 import { Stack } from '@/components/primitives/Stack'
 import { Text } from '@/components/primitives/Text'
+import { StudioTopBar } from '@/components/studio/StudioTopBar'
 import { CommandPalette } from '@/components/studio/command/CommandPalette'
 import { t } from '@/components/studio/strings'
 import { visibleNav } from '@/lib/auth/nav-visibility'
@@ -80,12 +81,6 @@ export function StudioShell({
                   {t('studio.shell.productName')}
                 </Heading>
               </Link>
-              {/* The role is chrome, not a claim: it tells someone why a link is missing before
-                  they conclude the Studio is broken. */}
-              <Text size="xs" tone="tertiary">
-                {session.displayName ?? session.email ?? t('studio.shell.unnamedAccount')} ·{' '}
-                {session.role}
-              </Text>
             </Stack>
 
             <Stack as="ul" gap={5} className="list-none p-0">
@@ -119,23 +114,22 @@ export function StudioShell({
                 </li>
               ))}
             </Stack>
-
-            <form action="/api/auth/sign-out" method="post">
-              <button type="submit" className="rounded-sm">
-                <Text size="sm" tone="secondary">
-                  {t('studio.shell.signOut')}
-                </Text>
-              </button>
-            </form>
           </Stack>
         </nav>
 
-        {/* The PAGE supplies the h1, through StudioPage. A heading here as well would give every
-            Studio surface two h1s, and a screen-reader user navigating by heading would land on the
-            product name rather than on what they opened. */}
-        <main id="studio-main" className="min-w-0 flex-1 p-6">
-          {children}
-        </main>
+        {/* The top bar sits INSIDE the content column, not above both, so it aligns with the
+            content rather than spanning the sidebar — and so the sidebar reaches the full height of
+            the page on desktop. */}
+        <div className="flex min-w-0 flex-1 flex-col">
+          <StudioTopBar session={session} />
+
+          {/* The PAGE supplies the h1, through StudioPage. A heading here as well would give every
+              Studio surface two h1s, and a screen-reader user navigating by heading would land on
+              the product name rather than on what they opened. */}
+          <main id="studio-main" className="min-w-0 flex-1 p-6">
+            {children}
+          </main>
+        </div>
       </div>
     </div>
   )

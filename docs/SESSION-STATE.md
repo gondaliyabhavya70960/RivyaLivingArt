@@ -50,11 +50,15 @@ PR #7). Phase 03 merged as PR #4.
 2. **Visual baselines for the shell.** The unauthenticated Studio surfaces DO pass at all eight
    FEAT §45 widths — `studio-access.spec.ts` runs 104 assertions across them — but the shell itself
    cannot be reached without a session, so its baselines wait on Supabase too.
-3. **The top bar.** The sidebar shows the role as text; the user menu, role badge and
-   deployment-environment badge are not built, and the ⌘K trigger has no visible affordance.
-4. **`studio_preferences` has no reader or writer.** The table, its RLS and its self-scope exist and
-   are verified, but nothing collapses the sidebar or pins a route yet, so `pinned_routes` and
-   `dashboard_card_order` are columns nothing fills.
+3. ~~The top bar~~ — **done.** `StudioTopBar` carries the identity, the role badge, a visible ⌘K
+   hint and the deployment-environment badge. That last one is absent in production deliberately: a
+   badge rendered everywhere becomes furniture, and its absence meaning "this is the real site" only
+   works if it is genuinely absent. 9 tests, including that it leaks no deployment configuration.
+4. ~~`studio_preferences` reader/writer~~ — **partly done.** `lib/auth/preferences.ts` reads the
+   chrome and writes `sidebar_collapsed` and `pinned_routes`, and pinning validates the path against
+   the navigation manifest and the role's own permission. **Nothing calls them from the UI yet** —
+   the sidebar has no collapse control and no pinned section, so the writers are reachable only
+   from code. `dashboard_card_order` still has no writer at all.
 5. **Verification step 6** (press ⌘K on a Studio page, type `journ`, assert Content → Journal is
    first and Enter navigates) needs a browser with a session. The logic beneath it is covered:
    `searchRoutes('journ', …)` is asserted to return the journal route first.

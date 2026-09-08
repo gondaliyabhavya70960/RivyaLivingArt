@@ -840,6 +840,22 @@ export const STUDIO_STRINGS = {
     value: 'Close search',
     contentKey: 'studio_help.command_close',
   },
+  'studio.shell.searchHint': {
+    value: 'Press Ctrl-K or Cmd-K to search',
+    contentKey: 'studio_help.shell_search_hint',
+  },
+  /**
+   * The deployment-environment badge. Rendered for every environment EXCEPT production, so its
+   * ABSENCE means "this is the real site" — a badge that is always there stops being read.
+   */
+  'studio.shell.envPreview': {
+    value: 'Preview',
+    contentKey: 'studio_help.shell_env_preview',
+  },
+  'studio.shell.envDevelopment': {
+    value: 'Development',
+    contentKey: 'studio_help.shell_env_development',
+  },
 } as const satisfies Record<string, StudioStringEntry>
 
 /** Every key this module resolves. A typo is a compile error, not a blank space on the page. */
