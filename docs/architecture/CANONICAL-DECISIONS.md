@@ -163,6 +163,30 @@ Brand and editorial copy may be written; anything asserting business capability 
 
 ## Amendments
 
+**2026-09-08 · A3 — two content decisions the owner has now made (supersedes SEED §25, §31).**
+
+*A3·a — "Place Order" is renamed, not routed.* SEED §31 seeds a `Place Order` action label
+while D1 forbids checkout. The owner's decision is to **drop the label entirely**. The action
+is `Send an Enquiry`, and the WhatsApp handoff is `Discuss on WhatsApp`. Nothing in the product
+may render a label implying a transaction it cannot complete — a visitor who reads "Place
+Order" reasonably expects a cart, a price, a payment and a confirmation, and gets none of them.
+Phase 09 seeds the two replacement labels and does **not** seed `Place Order` at all.
+
+*A3·b — the newsletter IS in scope.* SEED §25 leaves it conditional; the owner has chosen to
+build it. Consequences, recorded because they are not free:
+
+- A new table, `newsletter_subscribers` (DATA_MODEL §Newsletter), lands in Phase 03.
+- It stores **personal data**, which nothing else in this product does at rest — inquiries are
+  handed to WhatsApp, not accumulated as a marketing list. India's DPDP Act 2023 therefore
+  applies: consent must be free, specific, informed and withdrawable, and erasure honoured.
+  Double opt-in is the design, so an address nobody confirmed is never mailable.
+- **OPEN, and blocking the feature's completion: no email service provider is in D1.** The
+  approved stack can collect an address and can never send to it. Adding one — Resend,
+  Postmark, SES, Mailchimp — is a new production dependency and needs its own amendment with
+  the owner's choice, not a default picked here. Until then Phase 09 builds capture, consent,
+  confirmation and unsubscribe, and the confirmation email itself is the one piece that cannot
+  ship.
+
 **2026-09-07 · A2 — two paths the build cannot avoid (D2, D4).** The phase documents raised these
 as proposals rather than taking them silently, which is the required procedure. Both are adopted.
 *A2·a* — D2's `app/` tree enumerated route directories only and named no home for the token layer.

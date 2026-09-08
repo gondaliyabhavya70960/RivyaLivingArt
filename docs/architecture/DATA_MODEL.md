@@ -1814,3 +1814,47 @@ tables. Nothing diverges silently.
     natural key as its primary key; every other table takes the surrogate uuid." Confirm before
     Phase 04 ships `staff_profiles` — that is the only one of the three whose key is load-bearing
     for RLS — or the three gain a surrogate `id` plus a unique constraint on the natural key.
+
+
+---
+
+## Newsletter (amendment A3·b, Phase 03)
+
+The only table in this product that stores personal data at rest. Inquiries are persisted and
+handed to WhatsApp; they are not a marketing list. A newsletter is, which is why this table
+carries consent evidence and an erasure path that nothing else needs.
+
+### `newsletter_subscribers`
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | `uuid pk default gen_random_uuid()` | |
+| `email` | `citext not null unique` | `citext` so `A@b.com` and `a@b.com` cannot both subscribe |
+| `status` | `newsletter_status not null default 'PENDING'` | enum below |
+| `confirmation_token` | `text unique` | single-use, cleared on confirmation |
+| `confirmation_sent_at` | `timestamptz` | |
+| `confirmed_at` | `timestamptz` | null until double opt-in completes |
+| `unsubscribed_at` | `timestamptz` | |
+| `consent_source` | `text not null` | which surface captured it, e.g. `footer`, `journal` |
+| `consent_text_version` | `text not null` | the exact wording consented to, so consent is evidenced rather than asserted |
+| `created_at` / `updated_at` | `timestamptz not null default now()` | |
+
+Enum `newsletter_status`: `PENDING · CONFIRMED · UNSUBSCRIBED · BOUNCED`.
+
+**Double opt-in is the design, not an option.** A row is `PENDING` until the address holder
+clicks a confirmation link; only `CONFIRMED` is mailable. This makes a typo'd or maliciously
+submitted address harmless, and it is what makes the consent record meaningful.
+
+**No IP address is stored.** It is the one consent signal that is both weak evidence and real
+personal data, and `consent_source` plus `consent_text_version` carry more useful proof.
+
+**RLS.** No public `select` at any status — a subscriber list must never be enumerable, and an
+email address is the login identifier for most of the internet. Insert happens through a
+server action with rate limiting, never a client-side `insert`. Confirmation and unsubscribe
+are token-scoped route handlers that look up by `confirmation_token`, not by email, so neither
+endpoint can be used to test whether an address is subscribed. Staff `select` is restricted to
+`owner` and `admin`.
+
+**Erasure.** `DELETE` on request, not a soft flag: DPDP erasure means the row goes. An
+`UNSUBSCRIBED` row is retained only to honour the unsubscribe itself (suppression), which is a
+distinct purpose from marketing and should be explained in the privacy page Phase 09 seeds.
