@@ -163,6 +163,51 @@ Brand and editorial copy may be written; anything asserting business capability 
 
 ## Amendments
 
+**2026-09-08 · A5 — three Phase 04 resolutions, each taking the safer reading of a conflict.**
+
+The phase document and `DATA_MODEL.md` disagreed in ten places about RLS. Seven were wording and are
+corrected in `DATA_MODEL.md` §1.8. Three changed behaviour and are recorded here, because each was
+decided on security grounds rather than on which document was written first.
+
+*A5·a — a join row is public only when EVERY parent it names is published.* The phase document
+requires both parents on `product_collections` and `product_materials`; `DATA_MODEL.md` §6
+generalised the single-parent `product_media` rule across all three. The generalisation leaks: a
+`PUBLISHED` product joined to a `DRAFT` collection would expose that collection's existence and id
+to anonymous visitors, which is exactly what an unannounced exhibition must not do. The stricter
+reading wins. `product_media` stays single-parent deliberately — the asset is filtered by
+`media_assets`' own policy when the join resolves — and `product_relations` stays source-only
+because its target is polymorphic and RLS cannot join a table chosen at runtime.
+
+*A5·b — only the service role writes `audit_logs`.* The phase document's revoke line
+(`revoke update, delete`) left `insert` ambiguous; `DATA_MODEL.md` §1.5 already said "insert by
+trigger or service role". Ambiguity resolved to service-role-only: an `authenticated` insert policy
+would let any signed-in staff member forge entries in the security log, including entries
+implicating someone else, or bury their own actions in noise. `lib/auth/audit.ts` is the sole
+writer. `update` and `delete` are revoked at the privilege level rather than merely left without a
+policy, because a policy can be added by anyone who can write a migration while a revoked privilege
+must be granted back explicitly and visibly.
+
+*A5·c — a policy may never gate on `auth.role()`.* PostgREST decides which PostgreSQL role a request
+runs as by verifying the JWT and issuing `set local role <claim>`, so a policy's `TO anon` /
+`TO authenticated` grantee list is anchored to something that was verified. An
+`auth.role() = '…'` predicate reads the same claim through a channel the database itself does not
+verify; locally the two can be made to disagree outright. `scripts/auth/check-rls.ts` rejects any
+policy whose expression mentions `auth.role()`.
+
+**Also settled here, because both were discovered rather than planned:**
+
+- **`staff_profiles` self-UPDATE is NOT in Phase 04.** `DATA_MODEL.md` §4 says a staff member may
+  update their own row, display name only. That is a column-level grant plus a policy, and there is
+  no profile surface to use it before Phase 05. Deferred to the phase that builds one, rather than
+  shipped as an unused grant (`DATA_MODEL.md` §1.7).
+- **Migrations must name `extensions` in their `search_path`.** Not a Phase 04 decision but a Phase
+  03 defect found while building it: hosted Supabase projects install `citext`, `unaccent` and
+  `pg_trgm` into an `extensions` schema, where `create extension if not exists` is a no-op. Every
+  migration therefore resolved those objects through a path that does not contain them, and the
+  whole Phase 03 set failed at `0003` against a hosted layout. `npm run db:check-hosted-layout`
+  is the standing gate.
+
+
 **2026-09-08 · A4 — the free-tier operating constraint, and three Phase 03 tooling decisions.**
 
 *A4·a — NOTHING IN THIS PROJECT MAY INCUR A CHARGE WITHOUT THE OWNER'S PRIOR APPROVAL.* The owner
