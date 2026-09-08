@@ -64,8 +64,12 @@ PR #7). Phase 03 merged as PR #4.
    `searchRoutes('journ', …)` is asserted to return the journal route first.
    **Step 7 is done** — and the step as written was wrong; see `PHASE-05-09.md`, which now records
    why, and `tests/unit/rls/phase05.test.ts`, which replaces it.
-6. **`docs/architecture/DATA_MODEL.md`** still needs its Phase 05 pass (D9). `CHANGELOG.md` is
-   done.
+6. ~~`DATA_MODEL.md` Phase 05 pass~~ — **done**, and it corrected a divergence: the document said
+   `activity_events.actor_role` was `text`; it is the `user_role` enum, matching
+   `audit_logs.actor_role`. Verified against the live schema.
+7. **`dashboard_card_order` has no writer.** The column exists, the shell reads the chrome, and
+   nothing reorders dashboard cards. Not an exit criterion; deferred deliberately rather than
+   forgotten.
 
 ## Status
 

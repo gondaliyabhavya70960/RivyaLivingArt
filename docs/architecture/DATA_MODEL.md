@@ -612,27 +612,52 @@ Who was allowed or refused to do what. Written by **every** privileged mutation 
 **Never contains** — a secret value, a raw visitor IP for a public form, a WhatsApp message body, or
 inquiry free text.
 
-### `activity_events` — Phase 05 · migration `0020` · RLS-APPEND
+### `activity_events` — Phase 05 · migration `0020`, policies in `0021` · RLS-APPEND
 
 The human-readable Studio feed. Distinct from `audit_logs` (authorisation) and `system_logs`
-(machine); the three are never merged.
+(machine); the three are never merged. Each merge costs something specific: the audit log would
+gain rows a `viewer` may read, the feed would gain rows nobody can act on, and the retention rules
+differ.
+
+Append-only, so it carries **no tier** — §1.2 exempts append-only logs from Tier A, and an
+`updated_at` on a row that must never be updated is a promise the table cannot keep.
 
 | Column | Type |
 |---|---|
 | `id` | `uuid pk` |
-| `actor_id` | `uuid references auth.users(id)` |
-| `actor_role` | `text` |
+| `actor_id` | `uuid references auth.users(id) on delete set null` |
+| `actor_role` | `user_role` |
 | `action`, `entity_type`, `entity_label`, `summary` | `text` |
 | `entity_id` | `uuid` |
 | `metadata` | `jsonb not null default '{}'` |
 | `occurred_at` | `timestamptz not null default now()` |
 
+`actor_role` is the **`user_role` enum, not `text`** — an earlier draft of this section said `text`.
+It matches `audit_logs.actor_role`, and the constraint is worth having: a feed whose role column
+accepts arbitrary strings cannot be filtered or counted by role with any confidence.
+
+`on delete set null` on `actor_id`: an event outlives the account that caused it, and cascading
+would erase the history of what somebody changed when they leave. `actor_role` is stored rather
+than joined for the same reason — it records the role AT THE TIME, which is the only version that
+explains the action.
+
+`entity_label` is denormalised deliberately, so the feed still reads sensibly after a record is
+renamed or deleted.
+
+**Constraint** — `activity_events_action_present`: `action` may not be blank.
 **Indexes** — `(occurred_at desc)`, `(entity_type, entity_id)`, `(actor_id, occurred_at desc)`.
-**RLS** — `select` for any active staff role; `insert` service-role only; no update, no delete.
+**RLS** — `select` under `activity.read` (all six roles); **no `authenticated` insert policy at
+all** — only the service role writes, through `lib/logging/activity.ts`. `update` and `delete` are
+**revoked** rather than merely unpolicied: a policy can be added by anyone who can write a
+migration, a revoked privilege must be granted back explicitly and visibly.
 
-### `studio_preferences` — Phase 05 · migration `0020` · RLS-STAFF (self only)
+The insert restriction is sharper here than on `audit_logs`. This table is readable by EVERY staff
+role, so a staff member who could insert could write "editor published X" naming a colleague, into
+the record their colleagues actually read.
 
-Per-user Studio chrome state. Not content; carries Tier A only.
+### `studio_preferences` — Phase 05 · migration `0020`, policies in `0021` · RLS-STAFF (self only)
+
+Per-user Studio chrome state. Not content; carries Tier A only. Never published, never seeded.
 
 | Column | Type |
 |---|---|
@@ -642,8 +667,23 @@ Per-user Studio chrome state. Not content; carries Tier A only.
 | `pinned_routes` | `text[] not null default '{}'` |
 | `dashboard_card_order` | `text[] not null default '{}'` |
 
+`user_id` is `unique` because the write path is an upsert on it: without the constraint a
+preference write is a read-modify-write that races itself across two tabs, and the loser's change
+is silently discarded. `on delete cascade` because the row is worthless without its account —
+unlike an activity event, nobody needs to know what a departed colleague's sidebar looked like.
+
 **RLS** — a staff member may `select`, `insert` and `update` only the row where
-`user_id = auth.uid()`. No cross-user read.
+`user_id = auth.uid()`. No cross-user read. `delete` is revoked.
+
+**THE SCOPE IS THE SECURITY, NOT THE ROLE LIST.** Both permissions governing this table
+(`studio.access`) are held by all six roles, so the generated role list grants nothing useful on
+its own; `user_id = auth.uid()` is ANDed into every policy and is what stops one staff member
+reading or overwriting another's row. An extra SELECT leg — the `staff_profiles` pattern — would
+not do, because the danger here is overwriting, not reading.
+
+Note what this means for the drift gates: `auth:check-rls` compares ROLE LISTS, so it would still
+pass with the owner scope dropped. `tests/unit/rls/phase05.test.ts` is what catches that, and the
+two checks are complementary rather than redundant.
 
 ---
 

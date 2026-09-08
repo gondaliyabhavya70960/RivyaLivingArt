@@ -50,6 +50,20 @@ export function CommandPalette({
 
   const inFlight = useRef<AbortController | null>(null)
 
+  /**
+   * Where focus lands when the palette opens.
+   *
+   * WITHOUT THIS, ⌘K OPENS THE PALETTE AND YOU CANNOT TYPE. `patterns/Dialog` focuses its own first
+   * focusable element by default, which is the close button — reasonable for a dialog, useless for
+   * a command palette, where typing immediately IS the interaction. A test caught it; nothing about
+   * the rendered markup looks wrong.
+   *
+   * It is also what makes Escape work. Dialog handles Escape via `onKeyDown` on its own container
+   * rather than a document listener — deliberately, so an Escape meant for this dialog cannot also
+   * close whatever is behind it — so the key only reaches it when focus is inside.
+   */
+  const inputRef = useRef<HTMLInputElement>(null)
+
   // ⌘K on macOS, Ctrl-K elsewhere. Capture-phase so it works from inside a form field, and
   // preventDefault because Ctrl-K is "focus the address bar" in some browsers.
   useEffect(() => {
@@ -119,10 +133,12 @@ export function CommandPalette({
       onClose={() => setOpen(false)}
       title={labels.label}
       closeLabel={labels.close}
+      initialFocus={inputRef}
       size="md"
     >
       <Stack gap={3}>
         <Input
+          ref={inputRef}
           type="search"
           role="combobox"
           aria-expanded={results.length > 0}
