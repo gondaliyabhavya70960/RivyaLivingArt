@@ -9,6 +9,7 @@ import { requirePermission } from '@/lib/auth/require'
 import { computeGaps } from '@/lib/media/gaps'
 import { buildInventory, parseInventoryFilters } from '@/lib/media/inventory'
 import { parseManifest, type ManifestAsset } from '@/lib/media/manifest'
+import { listHiggsfieldAssetState, listSlotBindings } from '@/lib/supabase/repositories/media'
 import { createClient } from '@/lib/supabase/server'
 import manifestJson from '@/data/higgsfield/asset-manifest.json'
 
@@ -65,15 +66,12 @@ export default async function Page({
 
   const client = await createClient()
 
-  // Three columns, not whole rows. `id` is what `media_usages.media_id` points at, the generation
-  // id is the migration key, and `rivya_asset_id` is what the manifest is keyed by — joining the
-  // three in memory over 250 rows is cheaper than a view and keeps the query readable.
-  const { data: assetRows } = await client
-    .from('media_assets')
-    .select('id, rivya_asset_id, higgsfield_generation_id')
-    .not('higgsfield_generation_id', 'is', null)
-
-  const rows = assetRows ?? []
+  // Both reads go through the repository layer, which is where the Zod schema and the error
+  // mapping live (`npm run db:check-data-layer` enforces it). Each projects three columns rather
+  // than whole rows: the tracker joins them against the manifest in memory, and pulling 22 media
+  // columns including a full generation prompt to build a Set of one field would move about a
+  // megabyte to answer a boolean.
+  const rows = await listHiggsfieldAssetState(client)
   const migratedGenerationIds = new Set(
     rows.map((row) => row.higgsfield_generation_id).filter((id): id is string => id !== null),
   )
@@ -85,8 +83,7 @@ export default async function Page({
       .map((row) => [row.id, row.rivya_asset_id]),
   )
 
-  const { data: usageRows } = await client.from('media_usages').select('media_id, slot_key')
-  const usages = usageRows ?? []
+  const usages = await listSlotBindings(client)
 
   // FEAT §34's "Used?" and "CMS placement", from `media_usages` rather than from the manifest's
   // own `used_in_cms`/`cms_placement` fields — those are false and null on all 250 and always
