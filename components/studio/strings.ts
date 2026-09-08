@@ -876,6 +876,141 @@ export const STUDIO_STRINGS = {
     value: 'Unpin',
     contentKey: 'studio_help.page_unpin',
   },
+
+  // --- Media Manager (Phase 06) -----------------------------------------------------------------
+  // FEAT §13's six sections. Five are a `kind`; AI Assets is a filter on `source = 'HIGGSFIELD'`
+  // across IMAGE and VIDEO, which is why its page is Phase 07's and has no string here.
+  'studio.media.tableCaption': {
+    value: 'Media assets',
+    contentKey: 'studio_help.media_table_caption',
+  },
+  'studio.media.colPreview': {
+    value: 'Preview',
+    contentKey: 'studio_help.media_col_preview',
+  },
+  'studio.media.colName': {
+    value: 'Name',
+    contentKey: 'studio_help.media_col_name',
+  },
+  'studio.media.colFolder': {
+    value: 'Folder',
+    contentKey: 'studio_help.media_col_folder',
+  },
+  'studio.media.colSource': {
+    value: 'Source',
+    contentKey: 'studio_help.media_col_source',
+  },
+  'studio.media.colStatus': {
+    value: 'Status',
+    contentKey: 'studio_help.media_col_status',
+  },
+  'studio.media.colAdded': {
+    value: 'Added',
+    contentKey: 'studio_help.media_col_added',
+  },
+  'studio.media.emptyHeading': {
+    value: 'No assets here yet',
+    contentKey: 'studio_help.media_empty_heading',
+  },
+  'studio.media.emptyBody': {
+    value: 'Upload one, or import the existing Higgsfield library from the AI Assets page.',
+    contentKey: 'studio_help.media_empty_body',
+  },
+  'studio.media.filteredHeading': {
+    value: 'No assets match this filter',
+    contentKey: 'studio_help.media_filtered_heading',
+  },
+  'studio.media.filteredBody': {
+    value: 'Clear the search to see everything in this section.',
+    contentKey: 'studio_help.media_filtered_body',
+  },
+  'studio.media.searchLabel': {
+    value: 'Search by name',
+    contentKey: 'studio_help.media_search_label',
+  },
+  'studio.media.searchAction': {
+    value: 'Search',
+    contentKey: 'studio_help.media_search_action',
+  },
+
+  // --- The uploader -----------------------------------------------------------------------------
+  // Alt text is required BEFORE the upload, not after. See MediaUploader's header: an asset saved
+  // without one cannot be published, and chasing it later is how a library fills with rows nobody
+  // can use.
+  /** DESIGN_SYSTEM §7.4 marks a required field with the word, never an asterisk alone. */
+  'studio.media.requiredLabel': {
+    value: 'Required',
+    contentKey: 'studio_help.media_required_label',
+  },
+  'studio.media.upload.heading': {
+    value: 'Upload an asset',
+    contentKey: 'studio_help.media_upload_heading',
+  },
+  'studio.media.upload.fileLabel': {
+    value: 'File',
+    contentKey: 'studio_help.media_upload_file_label',
+  },
+  'studio.media.upload.altLabel': {
+    value: 'Alt text',
+    contentKey: 'studio_help.media_upload_alt_label',
+  },
+  'studio.media.upload.altHelp': {
+    value: 'Describe what is visible, for someone who cannot see it. Required before upload.',
+    contentKey: 'studio_help.media_upload_alt_help',
+  },
+  'studio.media.upload.folderLabel': {
+    value: 'Folder',
+    contentKey: 'studio_help.media_upload_folder_label',
+  },
+  'studio.media.upload.sourceLabel': {
+    value: 'Source',
+    contentKey: 'studio_help.media_upload_source_label',
+  },
+  'studio.media.upload.sourceHelp': {
+    value:
+      'Where this asset came from. There is no default — an unstated source would be a claim nobody made.',
+    contentKey: 'studio_help.media_upload_source_help',
+  },
+  'studio.media.upload.action': {
+    value: 'Upload',
+    contentKey: 'studio_help.media_upload_action',
+  },
+  'studio.media.upload.busy': {
+    value: 'Uploading…',
+    contentKey: 'studio_help.media_upload_busy',
+  },
+  'studio.media.upload.progress': {
+    value: 'Upload progress',
+    contentKey: 'studio_help.media_upload_progress',
+  },
+  'studio.media.upload.done': {
+    value: 'Uploaded. The asset is saved as a draft.',
+    contentKey: 'studio_help.media_upload_done',
+  },
+  'studio.media.upload.needAlt': {
+    value: 'Write the alt text before uploading.',
+    contentKey: 'studio_help.media_upload_need_alt',
+  },
+  'studio.media.upload.needFile': {
+    value: 'Choose a file.',
+    contentKey: 'studio_help.media_upload_need_file',
+  },
+  'studio.media.upload.tooLarge': {
+    value: 'That file is larger than this kind allows.',
+    contentKey: 'studio_help.media_upload_too_large',
+  },
+  'studio.media.upload.wrongType': {
+    value: 'That file type is not accepted here.',
+    contentKey: 'studio_help.media_upload_wrong_type',
+  },
+  'studio.media.upload.refused': {
+    value: 'The upload was refused. Nothing was saved.',
+    contentKey: 'studio_help.media_upload_refused',
+  },
+  'studio.media.upload.failed': {
+    value: 'The upload did not finish. Nothing was saved.',
+    contentKey: 'studio_help.media_upload_failed',
+  },
 } as const satisfies Record<string, StudioStringEntry>
 
 /** Every key this module resolves. A typo is a compile error, not a blank space on the page. */
