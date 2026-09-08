@@ -22,6 +22,48 @@ import type { Json } from '../supabase/database.types'
 
 export type AuditResult = 'SUCCESS' | 'DENIED' | 'ERROR'
 
+/**
+ * "This error already wrote its own audit row."
+ *
+ * WHY THIS EXISTS. A refusal used to land TWICE: once as the `DENIED` row written by whoever
+ * recognised the refusal and could name the record, and again as the `ERROR` row written by
+ * `withPermission()` catching the same throw on its way out. Two rows for one event is not a
+ * cosmetic problem in a security log — it inflates every count taken from the table, and the two
+ * rows disagree, because only one of them knows what was actually refused and why.
+ *
+ * The alternative fixes are worse. Having the wrapper suppress `ERROR` for particular error CLASSES
+ * couples it to every domain that might refuse something. Having it suppress rows that "look like"
+ * a recent DENIED means querying the log on the error path, in the one code path that must not
+ * depend on the log being reachable.
+ *
+ * So the thrower states the fact, once, at the point where it is known for certain. An unmarked
+ * error is an unrecorded one, which is the safe default: the failure mode of forgetting to mark is
+ * a duplicate row, not a missing one.
+ *
+ * A registered symbol rather than a property name, so it cannot collide with a field on somebody
+ * else's error object and is not carried across a structured-clone or a JSON round trip — an error
+ * that crossed a serialisation boundary has left the process that wrote the row, and its claim to
+ * have written one should not survive with it.
+ */
+const AUDIT_RECORDED: unique symbol = Symbol.for('rivya.audit.recorded') as never
+
+/** Say that this error's audit row is already written. Returns the error, so it can be thrown inline. */
+export function markAudited<E>(error: E): E {
+  if (typeof error === 'object' && error !== null) {
+    Object.defineProperty(error, AUDIT_RECORDED, {
+      value: true,
+      enumerable: false,
+      configurable: true,
+    })
+  }
+  return error
+}
+
+/** Has this error already been recorded by whoever threw it? */
+export function isAudited(error: unknown): boolean {
+  return typeof error === 'object' && error !== null && AUDIT_RECORDED in error
+}
+
 export type AuditEntry = {
   action: string
   result: AuditResult
@@ -70,11 +112,14 @@ export async function withAudit<T>(
     await writeAudit({ ...entry, result: 'SUCCESS' })
     return result
   } catch (error) {
-    await writeAudit({
-      ...entry,
-      result: 'ERROR',
-      summary: error instanceof Error ? error.message : 'unknown error',
-    })
+    // An error that already recorded itself gets no second row — see markAudited above.
+    if (!isAudited(error)) {
+      await writeAudit({
+        ...entry,
+        result: 'ERROR',
+        summary: error instanceof Error ? error.message : 'unknown error',
+      })
+    }
     throw error
   }
 }

@@ -2,7 +2,7 @@ import 'server-only'
 
 import { getStaffSession, type StaffSession } from './session'
 import { roleHasPermission, type Permission, type Role } from './permissions'
-import { writeAudit } from './audit'
+import { isAudited, markAudited, writeAudit } from './audit'
 
 /**
  * The fine net.
@@ -62,7 +62,9 @@ export async function requirePermission(permission: Permission): Promise<StaffSe
       result: 'DENIED',
       summary: 'unauthenticated request to a permissioned surface',
     })
-    throw new AuthenticationError()
+    // The DENIED row above IS this event's audit row; withPermission must not add an ERROR row
+    // for the same throw.
+    throw markAudited(new AuthenticationError())
   }
 
   if (!roleHasPermission(session.role, permission)) {
@@ -73,7 +75,7 @@ export async function requirePermission(permission: Permission): Promise<StaffSe
       result: 'DENIED',
       summary: `role "${session.role}" attempted an action requiring "${permission}"`,
     })
-    throw new AuthorizationError(permission, session.role)
+    throw markAudited(new AuthorizationError(permission, session.role))
   }
 
   return session
@@ -90,7 +92,7 @@ export async function requireRole(...roles: Role[]): Promise<StaffSession> {
       result: 'DENIED',
       summary: `unauthenticated request to a surface requiring ${roles.join(' or ')}`,
     })
-    throw new AuthenticationError()
+    throw markAudited(new AuthenticationError())
   }
 
   if (!roles.includes(session.role)) {
@@ -101,10 +103,39 @@ export async function requireRole(...roles: Role[]): Promise<StaffSession> {
       result: 'DENIED',
       summary: `role "${session.role}" is not one of ${roles.join(', ')}`,
     })
-    throw new AuthorizationError(roles.join(' or '), session.role)
+    throw markAudited(new AuthorizationError(roles.join(' or '), session.role))
   }
 
   return session
+}
+
+/**
+ * What a wrapped action is, for the permission check and for the audit row.
+ *
+ * `entityId` is a function of the action's own arguments rather than a value, because the wrapper
+ * is built once at module scope and the record is only known per call.
+ */
+export type PermittedAction<Args extends unknown[]> = {
+  /** Checked before the action runs; a refusal is recorded and throws. */
+  permission: Permission
+  /** The audited action name, e.g. `system.users.role-change`. */
+  action: string
+  /** What kind of record this touches. Omit only for actions that touch no single record. */
+  entityType?: string
+  /** Which record, read from the arguments the action was called with. */
+  entityId?: (...args: Args) => string | null
+  /**
+   * Set when the action writes its OWN success row, and it must then actually write one.
+   *
+   * Needed because a rich audit row carries `before` — the state prior to the mutation — and only
+   * the action can read that, since by the time the wrapper regains control it is gone. So for
+   * those actions the wrapper would be adding a second, poorer row describing the same event: the
+   * duplication that made `audit_logs` counts untrustworthy.
+   *
+   * It changes NOTHING about the failure paths. A refusal is still recorded exactly once, by
+   * whoever recognised it, and an unexpected error is still recorded by the wrapper.
+   */
+  recordsOwnOutcome?: boolean
 }
 
 /**
@@ -114,31 +145,57 @@ export async function requireRole(...roles: Role[]): Promise<StaffSession> {
  * The wrapper exists because the alternative — remembering to call requirePermission() at the top
  * of every action — fails silently the one time somebody forgets. Here the permission is part of
  * the action's declaration.
+ *
+ * TWO THINGS IT DOES THAT IT USED NOT TO, both fixing rows that were wrong rather than missing:
+ *
+ * It NAMES THE RECORD. The old signature took no entity, so every row it wrote said what was
+ * attempted and not what it was attempted on — which is the first question anyone reading a
+ * security log asks, and it could not be answered afterwards from the row.
+ *
+ * It does not write a SECOND row for an error that already wrote its own. A refusal recognised
+ * further in — the last-owner rule, say — records a DENIED row naming the record and the rule, and
+ * then throws; this wrapper used to catch that throw and add an ERROR row for the same event. Two
+ * rows, disagreeing, for one refusal. `isAudited()` is how the thrower says it has already been
+ * recorded.
+ *
+ * `entityId` is read inside the try, because a resolver written against the wrong argument shape
+ * throws — and that must fail the action loudly rather than silently producing a row with no
+ * record on it.
  */
 export function withPermission<Args extends unknown[], Result>(
-  permission: Permission,
-  action: string,
+  spec: PermittedAction<Args>,
   fn: (session: StaffSession, ...args: Args) => Promise<Result>,
 ): (...args: Args) => Promise<Result> {
   return async (...args: Args): Promise<Result> => {
-    const session = await requirePermission(permission)
+    const session = await requirePermission(spec.permission)
+    const entity = {
+      entityType: spec.entityType,
+      entityId: spec.entityId?.(...args) ?? undefined,
+    }
+
     try {
       const result = await fn(session, ...args)
-      await writeAudit({
-        actorUserId: session.userId,
-        actorRole: session.role,
-        action,
-        result: 'SUCCESS',
-      })
+      if (!spec.recordsOwnOutcome) {
+        await writeAudit({
+          actorUserId: session.userId,
+          actorRole: session.role,
+          action: spec.action,
+          result: 'SUCCESS',
+          ...entity,
+        })
+      }
       return result
     } catch (error) {
-      await writeAudit({
-        actorUserId: session.userId,
-        actorRole: session.role,
-        action,
-        result: 'ERROR',
-        summary: error instanceof Error ? error.message : 'unknown error',
-      })
+      if (!isAudited(error)) {
+        await writeAudit({
+          actorUserId: session.userId,
+          actorRole: session.role,
+          action: spec.action,
+          result: 'ERROR',
+          summary: error instanceof Error ? error.message : 'unknown error',
+          ...entity,
+        })
+      }
       throw error
     }
   }

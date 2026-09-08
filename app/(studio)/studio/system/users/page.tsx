@@ -16,7 +16,7 @@ import { Surface } from '@/components/primitives/Surface'
 import { Text } from '@/components/primitives/Text'
 import { VisuallyHidden } from '@/components/primitives/VisuallyHidden'
 import { t, type StudioStringKey } from '@/components/studio/strings'
-import { writeAudit } from '@/lib/auth/audit'
+import { markAudited, writeAudit } from '@/lib/auth/audit'
 import { ROLES, roleHasPermission, type Role } from '@/lib/auth/permissions'
 import { inviteStaffMember } from '@/lib/auth/provisioning'
 import { requirePermission, withPermission } from '@/lib/auth/require'
@@ -222,7 +222,11 @@ async function assertMayGrantOwner(
     ...(entityId === undefined ? {} : { entityId }),
     summary: `role "${session.role}" attempted to grant the owner role`,
   })
-  throw new RefusedError('owner-grant', 'granting owner requires system.owner.transfer')
+  // Marked for the same reason as the last-owner refusal: this DENIED row IS the record of the
+  // event, and the wrapper must not add a second one describing it less well.
+  throw markAudited(
+    new RefusedError('owner-grant', 'granting owner requires system.owner.transfer'),
+  )
 }
 
 /**
@@ -232,10 +236,10 @@ async function assertMayGrantOwner(
  * decision the database has already made and gives it words. Left uncaught it is a 500 on a button
  * press, which tells the person neither what happened nor what to do instead.
  *
- * TWO ROWS LAND FOR ONE REFUSAL, DELIBERATELY: the DENIED row below, which names the target and
- * the rule, and withPermission()'s own ERROR row for the action that did not complete. The wrapper
- * takes no entity, so it cannot say which record was involved; until its signature widens, the row
- * that carries that is written here.
+ * ONE ROW LANDS FOR ONE REFUSAL. The DENIED row below names the target and the rule, and the
+ * returned error is marked as already recorded so `withPermission()` does not add a second, poorer
+ * ERROR row for the same event. It used to, and two disagreeing rows for one refusal made every
+ * count taken from `audit_logs` wrong.
  */
 /**
  * Turn a failed staff-profile write into something a person can act on, and record the refusal.
@@ -261,7 +265,9 @@ async function refusalFor(
       entityId,
       summary: 'refused by enforce_last_owner: the project would be left with no active owner',
     })
-    return new RefusedError('last-owner', 'the last active owner cannot be demoted or suspended')
+    return markAudited(
+      new RefusedError('last-owner', 'the last active owner cannot be demoted or suspended'),
+    )
   }
 
   // Deliberately incurious about the detail: a database message can quote the row it refused, and
@@ -279,8 +285,14 @@ async function readProfileState(
 }
 
 const inviteStaff = withPermission(
-  'system.users.manage',
-  'system.users.invite',
+  {
+    permission: 'system.users.manage',
+    action: 'system.users.invite',
+    entityType: ENTITY,
+    // No id to name yet — the account does not exist until the action creates it, so the row the
+    // action writes below is the one that can carry it.
+    recordsOwnOutcome: true,
+  },
   async (
     session,
     input: z.infer<typeof inviteSchema>,
@@ -317,8 +329,13 @@ const inviteStaff = withPermission(
 )
 
 const changeRole = withPermission(
-  'system.users.manage',
-  'system.users.role.change',
+  {
+    permission: 'system.users.manage',
+    action: 'system.users.role.change',
+    entityType: ENTITY,
+    entityId: (input: z.infer<typeof roleChangeSchema>) => input.userId,
+    recordsOwnOutcome: true,
+  },
   async (session, input: z.infer<typeof roleChangeSchema>): Promise<NoticeCode> => {
     const supabase = await createClient()
     const before = await readProfileState(supabase, input.userId)
@@ -353,8 +370,13 @@ const changeRole = withPermission(
 )
 
 const changeStatus = withPermission(
-  'system.users.manage',
-  'system.users.status.change',
+  {
+    permission: 'system.users.manage',
+    action: 'system.users.status.change',
+    entityType: ENTITY,
+    entityId: (input: z.infer<typeof statusChangeSchema>) => input.userId,
+    recordsOwnOutcome: true,
+  },
   async (session, input: z.infer<typeof statusChangeSchema>): Promise<NoticeCode> => {
     const supabase = await createClient()
     const before = await readProfileState(supabase, input.userId)
