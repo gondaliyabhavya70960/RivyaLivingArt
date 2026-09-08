@@ -43,8 +43,16 @@ export function siteStringOrEmpty(strings: SiteStrings, key: string): string {
   return siteString(strings, key) ?? ''
 }
 
+/**
+ * The two media keys, named once.
+ *
+ * THREE COMPONENTS ASK FOR THE PLAY LABEL — `BlockVideo`, `HeroSection` and anything Phase 12 adds
+ * — and a key spelled out at each call site is a key that gets misspelled at one of them. A
+ * missing string renders as nothing at all rather than as an error, so the typo would ship as a
+ * silently unlabelled control.
+ */
+export const MEDIA_FALLBACK_LABEL_KEY = 'ERROR.media_unavailable.label'
+export const MEDIA_PLAY_LABEL_KEY = 'ACTION_LABEL.media.play'
+
 /** The `global_content` keys the section renderers ask for. Studio lists these as expected keys. */
-export const REQUIRED_SITE_STRINGS = [
-  'ERROR.media_unavailable.label',
-  'ACTION_LABEL.media.play',
-] as const
+export const REQUIRED_SITE_STRINGS = [MEDIA_FALLBACK_LABEL_KEY, MEDIA_PLAY_LABEL_KEY] as const

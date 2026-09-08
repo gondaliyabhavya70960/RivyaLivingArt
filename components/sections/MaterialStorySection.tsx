@@ -1,5 +1,6 @@
 import * as React from 'react'
 
+import { MaterialSequence } from '@/components/patterns/MaterialSequence'
 import { BlockImage } from '@/components/patterns/MediaSlot'
 import { Stack } from '@/components/primitives/Stack'
 import { materialStoryBlock } from '@/content/blocks/material-story'
@@ -20,9 +21,15 @@ import type { SectionRenderProps } from './types'
  *
  * EVERY STAGE IS VISIBLE, ALWAYS. This is the static composition the phase requires under reduced
  * motion and with no JavaScript: four stages, four pictures, all rendered, reachable by `Tab`
- * through the ordinary document order. `components/patterns/MaterialSequence.tsx` (Phase 11's
- * second island) wraps this list to HIGHLIGHT whichever stage is in view — it observes scroll and
- * never captures it, so removing the island removes an effect and not a single word or picture.
+ * through the ordinary document order. `MaterialSequence` (RC-215) wraps this list and HIGHLIGHTS
+ * whichever stage is in view — it observes scroll and never captures it, so removing the island
+ * removes an effect and not a single word or picture.
+ *
+ * THE DIMMING IS `data-[active=false]`, WHICH MATCHES NOTHING UNTIL THE ISLAND RUNS. The server
+ * writes no `data-active` attribute, so an unenhanced page renders every stage at full strength;
+ * the island writes `false` on the stages outside the viewport's middle band and `true` on the one
+ * crossing it. Styling the other way round — dim by default, undim when active — would hide three
+ * quarters of the section from anyone whose JavaScript never arrives.
  *
  * AN `<ol>` BECAUSE THE ORDER IS THE ARGUMENT. Liquid before form before craft before object is
  * the sentence the section is making; a stack of divs would leave a screen reader with four
@@ -46,9 +53,13 @@ export function MaterialStorySection({
           <SectionActions section={section} />
         </Stack>
         {stages.length === 0 ? null : (
-          <Stack as="ol" gap={6}>
+          <MaterialSequence>
             {stages.map((stage) => (
-              <li key={stage.key} data-entry-key={stage.key}>
+              <li
+                key={stage.key}
+                data-entry-key={stage.key}
+                className="transition-opacity duration-500 data-[active=false]:opacity-40 motion-reduce:transition-none"
+              >
                 <BlockImage
                   asset={stage.media_index === null ? null : (assets[stage.media_index] ?? null)}
                   ratio="1:1"
@@ -59,7 +70,7 @@ export function MaterialStorySection({
                 />
               </li>
             ))}
-          </Stack>
+          </MaterialSequence>
         )}
       </div>
     </SectionShell>

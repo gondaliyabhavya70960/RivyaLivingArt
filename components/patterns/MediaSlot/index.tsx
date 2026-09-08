@@ -2,10 +2,9 @@ import * as React from 'react'
 
 import { MediaFrame } from '@/components/primitives/MediaFrame'
 import { MediaImage } from '@/components/patterns/MediaImage'
-import { MediaVideo } from '@/components/patterns/MediaVideo'
 import type { AspectRatio } from '@/components/primitives/AspectBox'
 import { altTextOf, mediaRefOf } from '@/lib/cms/media'
-import { siteStringOrEmpty, type SiteStrings } from '@/lib/cms/strings'
+import { MEDIA_FALLBACK_LABEL_KEY, siteStringOrEmpty, type SiteStrings } from '@/lib/cms/strings'
 import type { PresetName } from '@/lib/media/transform'
 import type { MediaAsset } from '@/lib/supabase/schemas'
 
@@ -32,9 +31,6 @@ import type { MediaAsset } from '@/lib/supabase/schemas'
  * The breakpoint is `md` (768px), matching `AspectBox`'s own desktop/mobile split so the reserved
  * box and the asset inside it change over at the same width.
  */
-
-const FALLBACK_KEY = 'ERROR.media_unavailable.label'
-const PLAY_KEY = 'ACTION_LABEL.media.play'
 
 export type BlockImageProps = {
   readonly asset: MediaAsset | null
@@ -85,7 +81,7 @@ export function BlockImage({
     <MediaFrame
       ratio={ratio}
       mobileRatio={mobileRatio}
-      fallbackLabel={siteStringOrEmpty(strings, FALLBACK_KEY)}
+      fallbackLabel={siteStringOrEmpty(strings, MEDIA_FALLBACK_LABEL_KEY)}
       veil={veil && deliverable !== null}
       overlay={overlay}
       className={className}
@@ -102,56 +98,6 @@ export function BlockImage({
         />
       )}
     </MediaFrame>
-  )
-}
-
-export type BlockVideoProps = {
-  readonly asset: MediaAsset
-  readonly poster: MediaAsset | null
-  readonly altOverride?: string | null
-  readonly strings: SiteStrings
-  readonly cloudName: string
-  readonly loop?: boolean
-  readonly className?: string
-}
-
-/**
- * A video, with its poster.
- *
- * THE POSTER IS THE VIDEO'S OWN FRAME OR NOTHING. `posterPublicId` falls back to the asset's
- * `poster_public_id` — the still Cloudinary derived from this video — and never to a related
- * photograph: under reduced motion the poster IS the experience, and showing a different picture
- * there means the visitor who cannot see the video sees something the video never contained.
- */
-export function BlockVideo({
-  asset,
-  poster,
-  altOverride = null,
-  strings,
-  cloudName,
-  loop = true,
-  className,
-}: BlockVideoProps): React.ReactElement | null {
-  /*
-   * NOTHING RATHER THAN A BROKEN PLAYER. With no cloud name `videoUrl` builds a source that
-   * resolves to nothing and a poster that does the same, so the visitor gets a control that plays
-   * an error. `BlockImage`'s well is the right answer for a still because the layout reserved a
-   * box for it; a video the page cannot deliver has nothing to say in that box, and its caller —
-   * `HeroSection` — already falls back to the image branch when there is no video.
-   */
-  if (cloudName === '') return null
-
-  return (
-    <MediaVideo
-      cloudName={cloudName}
-      media={mediaRefOf(asset)}
-      posterPublicId={poster?.public_id ?? asset.poster_public_id}
-      durationSeconds={asset.duration_s}
-      alt={altTextOf(asset, altOverride)}
-      playLabel={siteStringOrEmpty(strings, PLAY_KEY)}
-      loop={loop}
-      className={className}
-    />
   )
 }
 
