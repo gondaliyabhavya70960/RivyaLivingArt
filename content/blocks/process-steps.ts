@@ -43,7 +43,22 @@ export const processStepsBlock: BlockModule<ProcessStepsPayload> = {
   description: 'Ordered stages, each with a heading, copy and an image.',
   sharedFields: ['eyebrow', 'heading', 'body'],
   schema,
-  defaults: { steps: [], numbered: true },
+  defaults: { steps: [], numbered: true, media: [] },
+  payloadFields: [
+    { name: 'numbered', kind: 'boolean', label: 'Number the steps' },
+    {
+      name: 'steps',
+      kind: 'json',
+      label: 'Steps',
+      help: 'title, body and media_index for each step. The order of this list is the order on the page.',
+    },
+    {
+      name: 'media',
+      kind: 'json',
+      label: 'Step images',
+      help: 'One { slot: "steps", role: "GALLERY", media_id } per step image, in order.',
+    },
+  ],
   mediaSlots: [
     { id: 'steps', role: 'GALLERY', repeating: true, desktopRatio: '4:3', mobileRatio: '4:5' },
   ],

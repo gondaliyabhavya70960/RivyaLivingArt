@@ -29,6 +29,19 @@ export const dividerBlock: BlockModule<DividerPayload> = {
   sharedFields: [],
   schema,
   defaults: { spacing: 'normal', rule: true },
+  payloadFields: [
+    {
+      name: 'spacing',
+      kind: 'select',
+      label: 'Spacing',
+      options: [
+        { value: 'tight', label: 'Tight' },
+        { value: 'normal', label: 'Normal' },
+        { value: 'loose', label: 'Loose' },
+      ],
+    },
+    { name: 'rule', kind: 'boolean', label: 'Draw a line' },
+  ],
   mediaSlots: [],
   layoutVariants: [],
   allowedPages: null,

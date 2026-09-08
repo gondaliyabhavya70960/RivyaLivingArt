@@ -28,6 +28,12 @@ const schema = z.object({
   cards: z.array(cardSchema),
   /** How many across at the widest breakpoint. The grid halves below 1024 and stacks below 768. */
   columns: z.union([z.literal(2), z.literal(3), z.literal(4)]),
+  /**
+   * OPTIONAL IN THE SCHEMA, PRESENT IN THE DEFAULTS. Optional so a row written before this key
+   * existed still parses; present in the defaults so a NEW block starts with `[]` rather than an
+   * absent key, which is what lets the editor render the field at all and what keeps
+   * `payloadFields` honest — a field naming a key the defaults do not have writes into nothing.
+   */
   media: z
     .array(
       z.object({
@@ -48,7 +54,31 @@ export const categoryGridBlock: BlockModule<CategoryGridPayload> = {
   description: 'A row of cards, each with a title, description, link and its own image.',
   sharedFields: ['eyebrow', 'heading', 'body'],
   schema,
-  defaults: { cards: [], columns: 3 },
+  defaults: { cards: [], columns: 3, media: [] },
+  payloadFields: [
+    {
+      name: 'columns',
+      kind: 'select',
+      label: 'Columns',
+      options: [
+        { value: '2', label: 'Two' },
+        { value: '3', label: 'Three' },
+        { value: '4', label: 'Four' },
+      ],
+    },
+    {
+      name: 'cards',
+      kind: 'json',
+      label: 'Cards',
+      help: 'title, description, href and media_index for each card. media_index counts the media entries below, from 0.',
+    },
+    {
+      name: 'media',
+      kind: 'json',
+      label: 'Card images',
+      help: 'One { slot: "cards", role: "GALLERY", media_id } per card image, in order.',
+    },
+  ],
   mediaSlots: [
     { id: 'cards', role: 'GALLERY', repeating: true, desktopRatio: '4:5', mobileRatio: '4:5' },
   ],

@@ -124,10 +124,41 @@ describe('the Studio navigation manifest', () => {
   })
 
   it('has no page on disk that the manifest does not name', () => {
-    // The direction that catches a route added by hand: it would be unreachable from the sidebar,
-    // ungoverned by any permission here, and invisible to every other test in this file.
+    /**
+     * The direction that catches a route added by hand: it would be unreachable from the sidebar,
+     * ungoverned by any permission here, and invisible to every other test in this file.
+     *
+     * A DETAIL ROUTE IS EXEMPT, AND ONLY IF ITS PARENT IS A LEAF. `/studio/content/pages/[pageId]`
+     * is not a navigation destination — nothing links to it from the sidebar, because there is no
+     * one page to link to — but it must still be governed, and the way it is governed is by being
+     * reachable only from a leaf that IS in the manifest. So the rule is not "dynamic routes are
+     * fine", which would let anyone add an ungoverned surface by putting brackets in its name; it
+     * is "a dynamic segment must sit directly beneath a route the manifest names".
+     */
     for (const route of disk) {
+      if (route.endsWith(']')) {
+        const parent = route.slice(0, route.lastIndexOf('/'))
+        expect(
+          manifest,
+          `${route} is a detail route whose parent ${parent} is not a leaf`,
+        ).toContain(parent)
+        continue
+      }
       expect(manifest, `${route} exists on disk but is not in the manifest`).toContain(route)
+    }
+  })
+
+  /**
+   * Every detail route still runs its own permission check. `proxy.ts` decides authentication and
+   * nothing else, so a page that forgot `requirePermission` would be reachable by any signed-in
+   * staff member whatever their role — and being nested under a governed leaf would not save it,
+   * because a URL can be typed.
+   */
+  it('gives every detail route its own permission check', () => {
+    for (const route of disk.filter((r) => r.endsWith(']'))) {
+      const file = join(SHELL, route.replace('/studio/', ''), 'page.tsx')
+      const source = readFileSync(file, 'utf8')
+      expect(source, `${route} does not call requirePermission`).toContain('requirePermission(')
     }
   })
 

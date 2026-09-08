@@ -69,8 +69,18 @@ const config = [
      * `app/api/cron/content-schedule/route.ts` runs from Vercel Cron with no user and no cookie.
      * It authenticates with `CRON_SECRET` and calls `cms_run_content_schedule`, which is granted
      * to `service_role` alone precisely so a leaked anon key cannot publish content.
+     *
+     * `app/(studio)/studio/(shell)/content/actions.ts` is the case the rule's own message
+     * describes: a Server Action that has already called `requirePermission()`. It reaches for the
+     * service role only to call the `cms_*` SECURITY DEFINER functions, which are granted to
+     * `service_role` alone BECAUSE they carry the media cascade and the deferrable-constraint
+     * reorder — logic that must not be reachable with an anon key. Its ordinary reads and writes
+     * go through the request-scoped client, so RLS still applies to everything else it does.
      */
-    ignores: ['app/api/cron/content-schedule/route.ts'],
+    ignores: [
+      'app/api/cron/content-schedule/route.ts',
+      'app/(studio)/studio/(shell)/content/actions.ts',
+    ],
     rules: {
       'no-restricted-imports': [
         'error',

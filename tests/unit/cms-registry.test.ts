@@ -97,6 +97,40 @@ describe('every block is well formed', () => {
     }
   })
 
+  /**
+   * A payload field naming a key the block's defaults do not have would render a control that
+   * writes into nothing: the value would round-trip through the form, fail the block's own schema
+   * on save, and be reported as "this block's fields are not valid" with no clue which one.
+   */
+  it('only declares payload fields that exist in its defaults', () => {
+    for (const type of BLOCK_TYPES) {
+      const block = blockModule(type)
+      const keys = Object.keys(block.defaults as Record<string, unknown>)
+      for (const field of block.payloadFields) {
+        expect(keys, `${type}.${field.name}`).toContain(field.name)
+      }
+    }
+  })
+
+  it('gives every select field its options, and no others', () => {
+    for (const type of BLOCK_TYPES) {
+      for (const field of blockModule(type).payloadFields) {
+        if (field.kind === 'select') {
+          expect(field.options?.length ?? 0, `${type}.${field.name}`).toBeGreaterThan(0)
+        } else {
+          expect(field.options, `${type}.${field.name}`).toBeUndefined()
+        }
+      }
+    }
+  })
+
+  it('names each payload field once per block', () => {
+    for (const type of BLOCK_TYPES) {
+      const names = blockModule(type).payloadFields.map((field) => field.name)
+      expect(new Set(names).size, type).toBe(names.length)
+    }
+  })
+
   it('gives every block a label and a description', () => {
     for (const type of BLOCK_TYPES) {
       const block = blockModule(type)
@@ -138,6 +172,7 @@ describe('built and planned', () => {
     for (const type of BLOCK_TYPES.filter((t) => !isBuilt(t))) {
       const block = blockModule(type)
       expect(block.sharedFields, type).toEqual([])
+      expect(block.payloadFields, type).toEqual([])
       expect(block.mediaSlots, type).toEqual([])
       expect(block.layoutVariants, type).toEqual([])
     }

@@ -38,6 +38,7 @@ function planned(type: BlockType, label: string, description: string): BlockModu
     sharedFields: [],
     schema: plannedSchema,
     defaults: {},
+    payloadFields: [],
     mediaSlots: [],
     layoutVariants: [],
     allowedPages: null,

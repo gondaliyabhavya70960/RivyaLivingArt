@@ -43,6 +43,15 @@ export const emptyStateBlock: BlockModule<EmptyStatePayload> = {
   sharedFields: ['cta_label', 'cta_url'],
   schema,
   defaults: { content_key: null, show_cta: false },
+  payloadFields: [
+    {
+      name: 'content_key',
+      kind: 'text',
+      label: 'Message key',
+      help: 'The key in the EMPTY_STATE group of global content. With none, this block renders nothing.',
+    },
+    { name: 'show_cta', kind: 'boolean', label: 'Show the call to action' },
+  ],
   mediaSlots: [],
   layoutVariants: [],
   allowedPages: null,

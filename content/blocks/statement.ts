@@ -21,6 +21,7 @@ export const statementBlock: BlockModule<StatementPayload> = {
   sharedFields: ['eyebrow', 'heading', 'heading_highlight', 'body', 'supporting'],
   schema,
   defaults: {},
+  payloadFields: [],
   mediaSlots: [],
   layoutVariants: ['centred', 'left'],
   allowedPages: null,

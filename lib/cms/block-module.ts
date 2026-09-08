@@ -64,6 +64,35 @@ export type BlockMediaSlot = {
   readonly mobileRatio?: AspectRatio
 }
 
+/**
+ * How one payload key is edited in Studio.
+ *
+ * DECLARED, NOT DERIVED FROM THE ZOD SCHEMA. Introspecting a schema to build a form is possible
+ * and is the wrong trade here: `z.union([z.literal(2), z.literal(3), z.literal(4)])` and
+ * `z.number().int().min(2).max(4)` accept nearly the same values and want completely different
+ * controls, and a `z.array(z.object(...))` says nothing about whether its items are cards, steps
+ * or swatches. A declaration is four lines per field and cannot be subtly wrong about intent.
+ *
+ * `json` IS AN HONEST ADMISSION, not a placeholder. A repeating array of cards needs a repeater
+ * UI with add, remove and reorder — that is Phase 09's work. Until then the array is edited as
+ * JSON, validated on save against the block's own schema, and refused rather than coerced. An
+ * editor sees the real shape and a real error; what they do not see is a form that silently
+ * drops the fields it could not render.
+ */
+export type BlockFieldKind = 'text' | 'textarea' | 'boolean' | 'number' | 'select' | 'json'
+
+export type BlockField = {
+  /** The key in `payload`. `tests/unit/cms-registry.test.ts` asserts it exists in `defaults`. */
+  readonly name: string
+  readonly kind: BlockFieldKind
+  readonly label: string
+  readonly help?: string
+  /** For `select`. The VALUES are compared as strings and coerced back by the field's kind. */
+  readonly options?: readonly { readonly value: string; readonly label: string }[]
+  readonly min?: number
+  readonly max?: number
+}
+
 export type BlockModule<Payload = unknown> = {
   readonly type: BlockType
   readonly state: BlockState
@@ -77,6 +106,8 @@ export type BlockModule<Payload = unknown> = {
   readonly schema: z.ZodType<Payload>
   /** What a newly added block starts with. Must parse against `schema`. */
   readonly defaults: Payload
+  /** The editor for `payload`. Empty for a block whose payload is `z.object({})`. */
+  readonly payloadFields: readonly BlockField[]
   readonly mediaSlots: readonly BlockMediaSlot[]
   /** `layout_variant` values this block accepts. Empty means the column stays null. */
   readonly layoutVariants: readonly string[]

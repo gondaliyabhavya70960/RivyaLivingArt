@@ -1,6 +1,6 @@
 import type { PostgrestError, SupabaseClient } from '@supabase/supabase-js'
 
-import type { Database } from '../database.types'
+import type { Database, Json } from '../database.types'
 import { NotFoundError, ValidationError } from '../errors'
 import {
   contentRevisionSchema,
@@ -237,6 +237,119 @@ export async function getSeoEntry(client: Client, id: string): Promise<SeoEntry>
  * inconvenience: it is what makes `actorId` safe as a parameter rather than a forgery vector.
  * Authorisation happens in `lib/cms/publishing.ts` before this is reached.
  */
+/**
+ * The columns Studio may write on a section.
+ *
+ * NARROWER THAN THE ROW, AND THE OMISSIONS ARE THE POINT. `status` is absent: a status change goes
+ * through `cms_publish_section`, which is the only path that also runs the media cascade and the
+ * verification gates. `owner_edited`, `published_at`, `published_by`, `seed_*` and every schedule
+ * column are absent because they are written by triggers and by the cron — a form that could set
+ * them would let an editor claim a publish that never happened, or reset an attempt counter the
+ * scheduler is using.
+ *
+ * `updated_by` IS REQUIRED, not optional. It is what `set_owner_edited` reads to mark a row as
+ * owner-touched, and what `reset_schedule_state` reads to tell a human edit from the cron's own
+ * write. An update that forgets it is silently a different kind of update.
+ */
+export type SectionWrite = {
+  readonly block_type?: string
+  readonly is_visible?: boolean
+  readonly theme?: string | null
+  readonly layout_variant?: string | null
+  readonly eyebrow?: string | null
+  readonly heading?: string | null
+  readonly heading_highlight?: string | null
+  readonly body?: string | null
+  readonly supporting?: string | null
+  readonly cta_label?: string | null
+  readonly cta_url?: string | null
+  readonly cta_secondary_label?: string | null
+  readonly cta_secondary_url?: string | null
+  readonly media_desktop_id?: string | null
+  readonly media_mobile_id?: string | null
+  readonly media_alt_override?: string | null
+  readonly media_slot_key?: string | null
+  readonly payload?: Json
+  readonly field_classifications?: Json
+  readonly publish_at?: string | null
+  readonly unpublish_at?: string | null
+  readonly fact_classification?: Database['public']['Enums']['fact_classification']
+  readonly owner_verification?: Database['public']['Enums']['owner_verification']
+  readonly updated_by: string | null
+}
+
+/**
+ * Add a block to a page.
+ *
+ * IT ALWAYS INSERTS AS DRAFT and does not accept a status. `enforce_status_transition` refuses
+ * anything else from a session actor anyway (0052), so accepting the argument would only let a
+ * caller discover that by being refused.
+ *
+ * THE POSITION IS COMPUTED HERE, NOT PASSED. `page_sections_unique_position` is deferrable but
+ * still unique, so two editors adding a block to one page in the same second would collide on a
+ * client-chosen index. `coalesce(max(position)) + 1` inside the insert would be a race too; this
+ * reads then writes, and loses that race by failing the unique constraint rather than by
+ * overwriting — which is the right way round.
+ */
+export async function insertSection(
+  client: Client,
+  pageId: string,
+  blockType: string,
+  values: SectionWrite,
+): Promise<PageSection> {
+  const existing = await listSectionsForPage(client, pageId)
+  const position = existing.reduce((max, section) => Math.max(max, section.position), -1) + 1
+
+  const { data, error } = await client
+    .from('page_sections')
+    .insert({ ...values, page_id: pageId, block_type: blockType, position })
+    .select('*')
+    .single()
+
+  if (error) throw toCmsError(SECTION, 'create', blockType, error)
+  return parseRow(SECTION, pageSectionSchema, data)
+}
+
+export async function updateSection(
+  client: Client,
+  sectionId: string,
+  values: SectionWrite,
+): Promise<PageSection> {
+  const { data, error } = await client
+    .from('page_sections')
+    .update(values)
+    .eq('id', sectionId)
+    .select('*')
+    .single()
+
+  if (error) throw toCmsError(SECTION, 'update', sectionId, error)
+  return parseRow(SECTION, pageSectionSchema, data)
+}
+
+/**
+ * Remove a section.
+ *
+ * THE GAP IN `position` IS LEFT BEHIND deliberately. Closing it here would mean rewriting every
+ * later row inside a delete, and `cms_reorder_sections` already exists to renumber a page in one
+ * statement under the deferrable constraint. Ordering reads by `position`, not by contiguity, so a
+ * gap changes nothing a visitor or an editor can see.
+ */
+export async function deleteSection(client: Client, sectionId: string): Promise<void> {
+  const { error } = await client.from('page_sections').delete().eq('id', sectionId)
+  if (error) throw toCmsError(SECTION, 'delete', sectionId, error)
+}
+
+export async function getSection(client: Client, sectionId: string): Promise<PageSection | null> {
+  const { data, error } = await client
+    .from('page_sections')
+    .select('*')
+    .eq('id', sectionId)
+    .maybeSingle()
+
+  if (error) throw toCmsError(SECTION, 'read', sectionId, error)
+  return data === null ? null : parseRow(SECTION, pageSectionSchema, data)
+}
+
 export async function publishSection(
   client: Client,
   input: {

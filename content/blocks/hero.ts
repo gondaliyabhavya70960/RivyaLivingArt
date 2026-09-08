@@ -54,6 +54,16 @@ export const heroBlock: BlockModule<HeroPayload> = {
   ],
   schema,
   defaults: { is_video: false, autoplay: false, scrim: 40 },
+  payloadFields: [
+    { name: 'is_video', kind: 'boolean', label: 'This hero is a video' },
+    {
+      name: 'autoplay',
+      kind: 'boolean',
+      label: 'Play automatically',
+      help: 'Ignored under reduced motion, on a slow connection, and below 768px.',
+    },
+    { name: 'scrim', kind: 'number', label: 'Overlay strength', min: 0, max: 100 },
+  ],
   mediaSlots: [
     { id: 'poster', role: 'POSTER', repeating: false, desktopRatio: '21:9', mobileRatio: '9:16' },
   ],
