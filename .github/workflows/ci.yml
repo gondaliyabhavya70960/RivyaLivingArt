@@ -17,6 +17,38 @@ concurrency:
 jobs:
   verify:
     runs-on: ubuntu-latest
+
+    # The database gates run against a real PostgreSQL, in the SAME job as everything else.
+    #
+    # This is a deliberate cost decision, not an accident of layout. A separate job would pay a
+    # second runner startup and a second `npm ci` — roughly doubling the minutes this workflow
+    # spends — to buy parallelism the run is too short to need. As one job with a service
+    # container, the database adds well under a minute to a run that already takes about three.
+    #
+    # postgres:16 matches the local development version. Supabase hosts a different minor, so this
+    # proves the migrations apply to PostgreSQL 16, not that they apply to a specific Supabase
+    # build; the difference has not mattered for anything in the Phase 03 schema, which uses no
+    # Supabase-specific SQL beyond the auth.users reference the shim provides.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: rivya
+        ports:
+          - 5432:5432
+        # Without this the first migration can race the server's startup.
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      # Loopback, so scripts/db/reset.mjs runs without --allow-remote. It refuses any other host,
+      # which is what stops a misconfigured workflow from resetting a real database.
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/rivya
+
     steps:
       - uses: actions/checkout@v4
 
@@ -59,3 +91,39 @@ jobs:
 
       - name: No dead utility classes
         run: npm run design:check-utilities
+
+      # --- database gates (Phase 03) ---
+      # `psql` is pre-installed on ubuntu-latest, so no apt step is needed.
+      - name: Migrations apply to an empty database
+        run: npm run db:reset
+
+      - name: Migrations are forward-only and carry no content
+        run: npm run db:check-migrations
+
+      - name: Schema invariants (RLS, column tiers, D10 gates)
+        run: npm run db:check-schema
+
+      - name: Generated types match the database
+        run: npm run db:check-types
+
+      # Proves the seeding contract end to end on a fresh database: seven inserts, then seven
+      # updates and no inserts. A regression in the hashing makes the second run insert or skip
+      # instead, which no unit test with a fake client could catch.
+      - name: Seed is idempotent
+        run: |
+          npm run seed:content
+          npm run seed:content 2>&1 | tee /tmp/seed-second.txt
+          grep -q 'inserted              0' /tmp/seed-second.txt
+          grep -q 'updated               7' /tmp/seed-second.txt
+          grep -q 'skipped (owner edit)  0' /tmp/seed-second.txt
+
+      # Proves the rule the whole seed runner exists for: an owner's edit is never overwritten.
+      - name: Seeding does not overwrite an owner edit
+        run: |
+          psql "$DATABASE_URL" -c "update categories set name = 'Owner Edit' where slug = 'furniture';"
+          npm run seed:content 2>&1 | tee /tmp/seed-third.txt
+          grep -q 'skipped (owner edit)  1' /tmp/seed-third.txt
+          test "$(psql "$DATABASE_URL" -Atc "select name from categories where slug='furniture';")" = 'Owner Edit'
+
+      - name: No queries outside the repository layer
+        run: npm run db:check-data-layer

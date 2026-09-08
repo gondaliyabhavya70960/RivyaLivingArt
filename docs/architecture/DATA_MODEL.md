@@ -244,6 +244,10 @@ Recorded here rather than applied silently. Each is also raised in §14.
 | C4 | `research_product_images`, `research_product_snapshots` (assumed by Phases 31–38) | Neither exists. Images are `research_products.image_urls text[]`; versions are `research_product_versions` | `SCRAPER.md` §13.3 — no research image is ever downloaded or re-hosted |
 | C5 | `research_image_hashes.research_image_id` → `research_product_images(id)` | `research_product_id uuid null` + `source_image_url text null` | Consequence of C4; the underlying tension is `SCRAPER.md` open question 3 |
 | C6 | `global_content.group` value list omits brand and error copy | Adds `BRAND` and `ERROR_COPY` | SEED §6 requires Global Content → Brand; SEED §45/§46/§47 require 404, 500 and media-failure copy, and `ARCHITECTURE.md` §7 resolves `publicCopyKey` against `global_content` |
+| C7 | `media_assets.provider_public_id`, `media_assets.storage_folder` (Phase 03 doc) | **`public_id`, `folder`** | The names this document already uses everywhere else — in the `unique (provider, resource_type, public_id)` identity key, in the FEAT §34 inventory mapping, and in the Phase 06/07 migration plan. Renaming later would be a breaking migration bought for nothing |
+| C8 | `media_assets.source text` and `higgsfield_generation_id` are Phase 03 columns | **Both are Phase 06 (`0030`)** | §2 fixes the `media_source` enum's creation at Phase 06, and §7 labels the whole Higgsfield provenance group as added by `0030`. `source` is `not null`; adding it here as `text` and converting it there would be two migrations for one column on a table that ships empty |
+| C9 | `media_assets.resource_type text` (nullable) | **`not null`** | §7 states the identity key as `unique (provider, resource_type, public_id)`. A nullable column cannot carry one: two NULLs never conflict in a unique index, so the same `public_id` could be inserted twice under a null resource type — exactly the duplicate the key exists to prevent |
+| C10 | `product_media.role` allows six values, omitting `process` (Phase 03 doc) | **The seven values in §2.1** | §2.1 names `product_media.role` explicitly and lists seven. It is a check constraint rather than an enum precisely so it can be replaced in place if this turns out wrong |
 
 ---
 
@@ -1665,6 +1669,44 @@ The spine an engineer builds in Phase 03 is small on purpose. Everything else is
 Plus: four extensions (`pgcrypto`, `citext`, `pg_trgm`, `unaccent`), six enums, two shared
 functions (`set_updated_at()`, `rivya_slugify(text)`). RLS is **enabled with no permissive policy**
 — nothing is reachable from an anon or authenticated key until Phase 04 grants it deliberately.
+
+#### As built — what differs from the plan, and why
+
+Phase 03 was implemented on 2026-09-08 and verified against a real PostgreSQL 16.13 cluster. Ten
+tables, six enums, two functions, 24 indexes. Every difference from the phase document is listed
+here; each is also a correction row in §1.8 or a deferral recorded in the migration itself.
+
+| Difference | Where | Why |
+|---|---|---|
+| `media_assets` columns named `public_id` / `folder` | `0005` | §1.8 C7 |
+| `media_assets.source` and `higgsfield_generation_id` NOT created | `0005` | §1.8 C8 — both are Phase 06 `0030` |
+| `media_assets.resource_type` is `not null` | `0005` | §1.8 C9 — the identity key needs it |
+| `product_media.role` allows seven values | `0006` | §1.8 C10 |
+| `categories.hero_media_id` / `collections.hero_media_id` foreign keys added in `0005`, not `0004` | `0005` | `media_assets` does not exist until `0005`, and migrations are forward-only. Both tables are empty, so the constraint validates against nothing |
+| `products` carries the full Tier C column set, not `seed_key` alone | `0006` | So "Tier C" names one set everywhere and can be asserted as one set. `seed_key` stays null on every product row, permanently |
+| `products_listing_idx` and `products_facets_idx` are shorter than §6 states | `0008` | Both name Phase 14 columns (`sort_order`, `availability_state`, `edition_state`). Created in their Phase 03 form; **Phase 14 must DROP AND RECREATE them**, not merely add to them. The target shapes are written into `0008`'s header |
+| `owner_edited` exists but nothing sets it | `0004`, `0006` | Its trigger `set_owner_edited()` is Phase 08 (§8.8). The Phase 03 seed runner does not need it: it detects an owner edit by comparing a content hash (§1.6 rules 4-5), which works from the first seed onward |
+| `products_edition_size_coherent` NOT created | `0006` | It constrains `edition_state`, a Phase 14 column |
+| Constraints §6 lists without a phase marker but which Phase 03 can enforce **are** enforced | `0004`–`0006` | `*_verified_before_publish` is on all five content tables. D10 is a schema rule here, not a review convention, and `scripts/db/check-schema.mjs` fails the build if one is dropped |
+
+**Constraints added beyond those §6 names**, each encoding a rule that would otherwise rely on
+review:
+
+| Constraint | Table | Prevents |
+|---|---|---|
+| `categories_parent_not_self` | `categories` | A category that is its own parent. Deeper cycles are unreachable through the Studio, which offers only primary categories as parents; a recursive check would cost a query per write to guard a shape no surface can produce |
+| `products_currency_shape` | `products` | A currency that is not three upper-case letters. Deliberately a shape check, not a list of real ISO-4217 codes — that list changes without warning and belongs in the application |
+| `media_assets_alt_text_present` | `media_assets` | A present-but-blank `alt_text`, which `not null` alone allows and which tells a screen reader the image carries no information |
+| `media_assets_video_has_duration` | `media_assets` | A video whose player cannot be sized and whose poster cannot be timed |
+| `content_seed_runs_counts_non_negative` | `content_seed_runs` | A run record that reports negative work |
+
+**The `auth.users` reference.** Every `updated_by`, `published_by`, `created_by` and `uploaded_by`
+column references `auth.users(id)`, which Supabase provisions before any migration runs. A plain
+PostgreSQL cluster has no such table, so local and CI verification apply
+`supabase/local/00-auth-shim.sql` first — a two-line stand-in that creates only the column the
+foreign keys point at. The migrations themselves are therefore production-accurate: they are not
+softened to "uuid with no foreign key" in order to be testable, and the whole difference between
+local and hosted is isolated to one file that can never be picked up by `supabase db push`.
 
 ### Everything else, by arrival
 

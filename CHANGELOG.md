@@ -6,6 +6,80 @@ Every phase adds an entry; see `docs/architecture/CANONICAL-DECISIONS.md` D9 for
 
 ## [Unreleased]
 
+### Phase 03 — Supabase Database + Data Layer — COMPLETE
+
+**Added**
+
+- **Migrations `0001`–`0008`**, applied to a real PostgreSQL 16.13 cluster and verified there,
+  not merely written. Four extensions, six enums, two shared functions
+  (`set_updated_at()`, `rivya_slugify(text)`), ten tables, 24 indexes. **RLS is enabled on every
+  table with no permissive policy** — nothing is reachable from an anon or authenticated key
+  until Phase 04 grants it deliberately.
+- **The catalogue spine.** `categories`, `collections`, `materials`, a minimal `media_assets`,
+  `products`, three join tables and `product_relations`, plus `content_seed_runs`. Every content
+  table carries the three column tiers from DATA_MODEL §1.2, written out in full rather than
+  applied by a shared helper — a helper would let a later edit retroactively change what an
+  already-applied migration created.
+- **Constraints that carry business rules**, each proved to reject what it exists for: a
+  quote-only product cannot carry a price, a `STARTING_FROM` product cannot carry zero or a null
+  currency, a blank `alt_text` is refused, a video without a duration is refused, and no content
+  row can reach `PUBLISHED` while `owner_verification = 'OWNER_VERIFICATION_REQUIRED'` — D10 as a
+  schema rule rather than a review convention, on all five content tables.
+- **Generated types and a drift gate.** `lib/supabase/database.types.ts` is produced by
+  `scripts/db/gen-types.mjs`, which introspects `pg_catalog` directly; `npm run db:check-types`
+  regenerates and diffs, so the types cannot lag the migrations. Determinism verified by
+  generating twice and comparing bytes.
+- **The repository layer.** `lib/supabase/{server,browser,admin}.ts`, Zod schemas tied to the
+  generated types by a `satisfies` annotation, six repositories, and a four-class error
+  vocabulary. Schemas validate on the way **out** of the database as well as in: a row that
+  fails means the database holds something the model calls impossible, and passing it through
+  would surface as a blank page instead of a named error.
+- **The idempotent seed runner** and the taxonomy seed (the seven D3 categories: slug, name and
+  order only — no marketing copy). `--dry-run`, `--only`, `--version`, and a `--force` that
+  refuses to run without `--only` because it overwrites human edits.
+- **Five new gates**, each proved to bite: `db:check-data-layer` (no `.from(` outside the
+  repository layer), `db:check-migrations` (forward-only numbering, no content rows in
+  migrations), `db:check-schema` (RLS, column tiers, enum values and D10 gates asserted against
+  the live catalog), `db:check-types`, and an ESLint rule naming the small allowlist permitted to
+  import the RLS-bypassing admin client.
+- **35 new tests** (329 total, from 294), covering the seed content hash, the comment/string
+  stripper the layering gate depends on, and the repository layer's query shapes, error mapping
+  and schema validation.
+
+**Decided**
+
+- **Amendment A4·a — nothing may incur a charge without the owner's prior approval.** Recorded as
+  a general rule after the owner stated it for GitHub Actions. The CI workflow follows it: the
+  database gates run in the same job as everything else, because a second job would pay a second
+  runner startup and a second `npm ci` for parallelism a three-minute run does not need.
+- **Amendment A4·b — `newsletter_subscribers` does not land in Phase 03.** A3·b assigned it here;
+  DATA_MODEL §1.7 forbids creating a production table before the feature that uses it, and Phase
+  03's scope never included it. Corrected rather than built.
+- **Amendment A4·c/d** — the type generator replaces the Docker-dependent Supabase CLI, and the
+  seed runner connects over `DATABASE_URL` because it needs a transaction per module that
+  PostgREST cannot give it.
+- **Corrections C7–C10** in DATA_MODEL §1.8, covering `media_assets` column naming, the columns
+  deferred to Phase 06, a `not null` the identity key requires, and the `product_media.role`
+  vocabulary.
+
+**Deferred, with the instruction written where the next phase will find it**
+
+- `price_state` holds exactly its three Phase 03 values; `FIXED` and `price_minor` arrive together
+  in Phase 14, which must **drop and recreate** the coherence constraint rather than extend it.
+- `products_listing_idx` and `products_facets_idx` are created in their Phase 03 form and must
+  likewise be dropped and recreated in Phase 14, once the columns they name exist.
+- `media_assets.source`, the Higgsfield provenance columns and `tags`/`subject_tags` are Phase 06.
+- `owner_edited` exists; its trigger is Phase 08. The seed runner does not depend on it.
+
+**Known limitation**
+
+- The local database has no PostgREST, so `@supabase/supabase-js` cannot be exercised against it.
+  The schema, every constraint and the whole seeding contract are proved against a real
+  PostgreSQL; the repository layer's query shapes and error mapping are proved with a fake client.
+  RLS *behaviour* is proved by neither and becomes testable in Phase 04, when the first policy
+  exists. The split is documented in `docs/ops/ENVIRONMENT.md`.
+
+
 ### Phase 02 — Reference UI Audit + Design System — COMPLETE
 
 **Added**

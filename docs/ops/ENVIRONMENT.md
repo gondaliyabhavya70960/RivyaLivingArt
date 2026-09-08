@@ -486,3 +486,62 @@ must be run locally before every push — `npm run typecheck lint format:check t
 `manifest:verify`, `media:check-ids`, `design:check-tokens`, `design:check-registry` — and the
 D9 completion contract is satisfied by those local runs, evidenced in the phase record, not by a
 green check on GitHub.
+
+---
+
+## Running a database locally
+
+Phase 03 is verified against a real PostgreSQL, not a mock. Supabase's own CLI is not usable here
+— `supabase start` and `supabase gen types` both require Docker, and no Docker daemon is available
+in this environment — so the local database is a plain PostgreSQL cluster.
+
+PostgreSQL 16.13 is installed in the image, with all four extensions the schema needs
+(`pgcrypto`, `citext`, `pg_trgm`, `unaccent`). To bring one up:
+
+```bash
+PGROOT=/var/lib/postgresql/rivya
+mkdir -p "$PGROOT" && chown postgres:postgres "$PGROOT"
+su postgres -c "/usr/lib/postgresql/16/bin/initdb -D $PGROOT/data --encoding=UTF8 --locale=C.UTF-8"
+su postgres -c "/usr/lib/postgresql/16/bin/pg_ctl -D $PGROOT/data \
+  -o '-p 5433 -c listen_addresses=127.0.0.1' -l $PGROOT/server.log start -w"
+psql -h 127.0.0.1 -p 5433 -U postgres -c "create database rivya;"
+
+export DATABASE_URL="postgresql://postgres:<password>@127.0.0.1:5433/rivya"
+npm run db:reset      # applies the auth shim, then migrations 0001-0008
+npm run db:types      # regenerates lib/supabase/database.types.ts
+npm run seed:content  # applies the taxonomy seed
+```
+
+**`DATABASE_URL` is the only variable these scripts read**, and they read it from the environment
+rather than from `.env.local`. That is deliberate: `.env.local` points at the hosted Supabase
+project, and `db:reset` DROPS EVERY OBJECT in the target schema. `scripts/db/reset.mjs` additionally
+refuses any host that is not loopback unless `--allow-remote` is passed, so a misconfigured shell
+fails loudly instead of destroying a real database.
+
+### What the local database is NOT
+
+It has no PostgREST, so `@supabase/supabase-js` cannot talk to it. That splits Phase 03's
+verification cleanly, and the split is worth knowing before trusting either half:
+
+| Proven against a real database | Proven with a fake client |
+|---|---|
+| Migrations apply to an empty database | Which table each repository queries |
+| Every constraint accepts and rejects what it should | Which filters and ordering it applies |
+| RLS is on with no policy, on every table | PostgREST error code → typed error mapping |
+| Column tiers, enum values, D10 gates | Zod schema rejects a malformed row |
+| The seed runner's whole idempotency contract | |
+
+What NEITHER half proves is that RLS behaves as intended for a given role — no policy exists yet,
+and Phase 04 is where that becomes testable.
+
+### The `auth.users` shim
+
+Every `updated_by`, `published_by`, `created_by` and `uploaded_by` column references
+`auth.users(id)`. Supabase provisions that table before any migration runs; a plain cluster does
+not have it. `supabase/local/00-auth-shim.sql` creates the minimum the foreign keys point at, and
+`db:reset` applies it before migration 0001.
+
+It lives **outside** `supabase/migrations/` so it can never be picked up by `supabase db push`.
+The point of the shim is that the migrations stay production-accurate — they are not weakened to
+"uuid with no foreign key" in order to be testable, and the entire difference between local and
+hosted is one file.
