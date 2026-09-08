@@ -374,7 +374,30 @@ async function main(): Promise<number> {
     // every subsequent run would read that as an owner edit and skip them.
     await client.query('begin')
     try {
+      /**
+       * STOP THE MODULE AT ITS FIRST FAILURE.
+       *
+       * PostgreSQL aborts the whole transaction on any error, so every statement after one
+       * failure returns "current transaction is aborted" — and the report then showed forty
+       * identical, useless lines with the one real message buried at the top. The module is
+       * all-or-nothing anyway, so continuing was never going to write those rows; the only thing
+       * the loop produced after the first error was noise.
+       *
+       * The remaining records are still reported, and still counted as failed, with a reason that
+       * names what actually happened. A record silently absent from the report would be worse
+       * than a useless message.
+       */
+      let aborted: string | null = null
       for (const record of seedModule.records) {
+        if (aborted !== null) {
+          results.push({
+            seedKey: record.seedKey,
+            table: record.table,
+            outcome: 'failed',
+            detail: `not attempted — the module stopped at ${aborted}`,
+          })
+          continue
+        }
         try {
           results.push(await applyRecord(record))
         } catch (error) {
@@ -384,6 +407,7 @@ async function main(): Promise<number> {
             outcome: 'failed',
             detail: error instanceof Error ? error.message : String(error),
           })
+          aborted = record.seedKey
         }
       }
       // A dry run rolls back rather than committing. Nothing above mutates a content row in dry
