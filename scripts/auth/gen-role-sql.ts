@@ -23,6 +23,7 @@ import {
   MANAGED_TABLES,
   PHASE_04_POLICIES,
   PHASE_05_POLICIES,
+  PHASE_06_POLICIES,
   TABLE_POLICY_MAP,
   type ManagedTable,
 } from '../../lib/auth/table-permissions'
@@ -56,6 +57,16 @@ const GENERATED: Record<string, { title: string; preamble: string }> = {
 -- Note what is NOT here: \`force row level security\`. Adding it would also subject the seed runner
 -- and every RLS-SERVICE writer to these policies, which DATA_MODEL deliberately does not intend.
 -- The service role bypasses RLS by role attribute, and that is the designed escape hatch.`,
+  },
+  [PHASE_06_POLICIES]: {
+    title: `-- ${PHASE_06_POLICIES} — Phase 06`,
+    preamble: `-- Policies for media_usages, which migration 0030 creates. Separate from 0021 for the same
+-- reason 0021 was separate from 0011: a generated policy file is never re-opened once shipped.
+--
+-- media_assets' own policies are NOT here. They were generated into 0011 in Phase 04, and that file
+-- has shipped — its table set is fixed. Phase 06 widens the media_assets COLUMN set, which changes
+-- no policy: every policy on that table gates on \`status\` and \`has_role()\`, neither of which is
+-- affected by adding columns.`,
   },
   [PHASE_05_POLICIES]: {
     title: `-- ${PHASE_05_POLICIES} — Phase 05`,

@@ -124,6 +124,21 @@ const EXPECTED = {
   //   seeded, so Tiers B and C would both be fictions.
   activity_events: ['occurred_at', 'actor_id', 'actor_role', 'action', 'metadata'],
   studio_preferences: ['user_id', 'sidebar_collapsed', ...TIER_A],
+
+  // Phase 06. media_usages is an EDGE — the same shape as the Phase 03 join tables, and exempt
+  // from the content tiers for the same reason (§1.4): a binding between a slot and an asset has
+  // no publication lifecycle of its own. It carries created_at/created_by and nothing else,
+  // deliberately: it is rewritten wholesale by the Phase 08 trigger on every save, so an
+  // `updated_at` would only ever record when the page was last saved, which the page already knows.
+  media_usages: [
+    'media_id',
+    'context_type',
+    'context_id',
+    'slot_key',
+    'role',
+    'created_at',
+    'created_by',
+  ],
 }
 
 const columnRows = q(`

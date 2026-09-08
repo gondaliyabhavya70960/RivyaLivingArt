@@ -7,6 +7,7 @@ import {
   contentColumns,
   jsonSchema,
   mediaKindSchema,
+  mediaSourceSchema,
   priceStateSchema,
   seedColumns,
   timestampSchema,
@@ -89,9 +90,77 @@ export const mediaAssetSchema = z.object({
   aspect_ratio: z.string().nullable(),
   duration_s: z.number().nullable(),
   uploaded_by: uuidSchema.nullable(),
+
+  // --- Phase 06 (0030_phase06_media.sql) ---------------------------------------------------------
+  // `source` is the only one of these that is not nullable, and it is not `.optional()` either.
+  // The column carries no default precisely so that provenance cannot be assumed, and a schema
+  // that let it be omitted would hand back the default the migration refused to write.
+  source: mediaSourceSchema,
+  title: z.string().nullable(),
+  caption: z.string().nullable(),
+  tags: z.array(z.string()),
+  subject_tags: z.array(z.string()),
+
+  // Technical metadata. Every one of these is written from `MediaProvider.probe()`, never from a
+  // client, so the schema's job here is to catch a provider response that changed shape — not to
+  // police a form.
+  mime_type: z.string().nullable(),
+  bytes: z.number().int().positive().nullable(),
+  checksum: z.string().nullable(),
+  poster_public_id: z.string().nullable(),
+
+  // 3D (FEAT §13). `model_format` mirrors the database's GLB|GLTF check rather than accepting any
+  // string, so a row that no viewer could load fails here too and not only at the constraint.
+  model_format: z.enum(['GLB', 'GLTF']).nullable(),
+  file_size_bytes: z.number().int().positive().nullable(),
+  poly_count: z.number().int().nonnegative().nullable(),
+  texture_count: z.number().int().nonnegative().nullable(),
+  model_thumbnail_id: uuidSchema.nullable(),
+  model_poster_id: uuidSchema.nullable(),
+  associated_product_id: uuidSchema.nullable(),
+  // Validated as a uuid here even though the database has no foreign key on it until Phase 17.
+  // The two are independent: the column's shape is knowable now, the referent is not.
+  associated_project_id: uuidSchema.nullable(),
+
+  // Higgsfield provenance, filled by the Phase 07 import.
+  higgsfield_generation_id: z.string().nullable(),
+  higgsfield_model: z.string().nullable(),
+  higgsfield_prompt: z.string().nullable(),
+  manifest_version: z.string().nullable(),
+  migrated_at: timestampSchema.nullable(),
+
   ...auditColumns,
   ...contentColumns,
 }) satisfies z.ZodType<Tables<'media_assets'>>
+
+/**
+ * The reverse index from 0030. `context_type` and `role` are Zod enums rather than plain strings
+ * because the database stores them as text under a check constraint: without the enum here, a
+ * typo'd `'THUMBNAIl'` would pass validation and fail at the constraint, which reports the row as
+ * a database error rather than as the field-level mistake it is.
+ */
+export const mediaUsageSchema = z.object({
+  id: uuidSchema,
+  media_id: uuidSchema,
+  context_type: z.enum([
+    'PAGE_SECTION',
+    'PRODUCT',
+    'CATEGORY',
+    'COLLECTION',
+    'PORTFOLIO',
+    'JOURNAL',
+    'GLOBAL',
+    'SEO',
+  ]),
+  context_id: uuidSchema,
+  // Non-empty mirrors `media_usages_slot_key_present`. A blank slot key would bind an asset to
+  // nothing while still counting as "used", which is exactly the state the Missing Media card
+  // exists to detect.
+  slot_key: z.string().min(1),
+  role: z.enum(['DESKTOP', 'MOBILE', 'POSTER', 'THUMBNAIL', 'GALLERY', 'OG']),
+  created_at: timestampSchema,
+  created_by: uuidSchema.nullable(),
+}) satisfies z.ZodType<Tables<'media_usages'>>
 
 export const productSchema = z.object({
   id: uuidSchema,
