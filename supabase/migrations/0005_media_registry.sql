@@ -23,6 +23,14 @@
 -- The table ships with zero rows, so none of the above is reachable before Phase 06 in any case.
 -- The 250 Higgsfield assets are imported by Phase 07, never by a migration.
 
+-- Extension objects (citext, unaccent, gin_trgm_ops) are resolved through this search_path.
+-- Supabase installs extensions into the `extensions` schema; a plain cluster installs them into
+-- `public`. Naming both means these migrations apply unmodified to either, which they did NOT
+-- before: with unaccent in `extensions`, 0003 failed at CREATE time with
+--   ERROR: text search dictionary "unaccent" does not exist
+-- and 0004-0006 would have failed the same way on the `citext` type. See docs/ops/ENVIRONMENT.md.
+set search_path = public, extensions;
+
 create table media_assets (
   id                    uuid primary key default gen_random_uuid(),
 
