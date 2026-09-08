@@ -40,6 +40,7 @@
     "media:check-folders": "node scripts/media/check-folders.mjs",
     "media:check-provider": "node scripts/media/check-provider-boundary.mjs",
     "media:import-canaries": "tsx scripts/media/import-canaries.ts",
+    "media:migrate:higgsfield": "tsx scripts/media/migrate-higgsfield.ts",
     "perf:check-image-props": "node scripts/perf/check-image-props.mjs",
     "perf:check-video-props": "node scripts/perf/check-video-props.mjs",
     "check": "npm run typecheck && npm run lint && npm run format:check"
