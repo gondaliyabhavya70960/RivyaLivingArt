@@ -1,0 +1,287 @@
+import type { PostgrestError, SupabaseClient } from '@supabase/supabase-js'
+
+import type { Database } from '../database.types'
+import { NotFoundError, ValidationError } from '../errors'
+import {
+  contentRevisionSchema,
+  faqSchema,
+  globalContentSchema,
+  navigationItemSchema,
+  pageSchema,
+  pageSectionSchema,
+  publishResultSchema,
+  reorderResultSchema,
+  seoEntrySchema,
+  type ContentRevision,
+  type Faq,
+  type GlobalContent,
+  type NavigationItem,
+  type Page,
+  type PageSection,
+  type PublishResult,
+  type SeoEntry,
+} from '../schemas'
+import { parseRow, parseRows, toRepositoryError } from './support'
+
+type Client = SupabaseClient<Database>
+
+const ENTITY = 'page'
+const SECTION = 'page section'
+
+/**
+ * The CMS data layer — the only module holding `.from()` on the seven Phase 08 tables and the only
+ * one calling the four `cms_*` functions. `npm run db:check-data-layer` enforces both, and it was
+ * widened to see `.rpc(` before the first one here was written.
+ *
+ * READS ARE SEPARATE QUERIES, NEVER POSTGREST EMBEDDING. `select *, page_sections(*)` looks
+ * tidier and is a trap under RLS: when a child row is filtered out by policy, PostgREST returns
+ * the parent with an empty array — indistinguishable from a page that genuinely has no sections.
+ * A page silently missing a section is the hardest class of CMS bug to notice, because the page
+ * still renders. Two queries and a join in memory cost one round trip and cannot lie.
+ */
+
+// --------------------------------------------------------------------------------------------
+// Refusals the database raises that a caller must be able to tell apart
+// --------------------------------------------------------------------------------------------
+
+/**
+ * The `RV0` SQLSTATE class, raised by the `cms_*` functions.
+ *
+ * `RV` is a legal implementation-defined class: the SQL standard reserves classes beginning `0`–`4`
+ * and `A`–`H`, and `R` is neither. Each code names a refusal a person can act on, which is the
+ * point — a bare 23514 tells an editor a constraint fired, not which asset to go and approve.
+ */
+export const CMS_REFUSAL = {
+  /** The row does not exist, or the edge is not in the twelve. */
+  ILLEGAL: 'RV001',
+  /** The section itself carries OWNER_VERIFICATION_REQUIRED. */
+  UNVERIFIED_SECTION: 'RV002',
+  /** Bound media is DRAFT, REVIEW or ARCHIVED. The message names every `rivya_asset_id`. */
+  MEDIA_NOT_APPROVED: 'RV003',
+  /** An asset cannot be unpublished: a PUBLISHED section still shows it. */
+  MEDIA_IN_USE: 'RV004',
+  /** A reorder did not name every section on the page exactly once. */
+  REORDER_INCOMPLETE: 'RV005',
+  /** Bound media is APPROVED but still OWNER_VERIFICATION_REQUIRED. See migration 0050. */
+  MEDIA_UNVERIFIED: 'RV006',
+} as const
+
+export type CmsRefusalCode = (typeof CMS_REFUSAL)[keyof typeof CMS_REFUSAL]
+
+/** A refusal that carries its code, so a Studio action can render the right message. */
+export class CmsRefusalError extends ValidationError {
+  readonly code: CmsRefusalCode
+
+  constructor(code: CmsRefusalCode, message: string, cause?: unknown) {
+    super('cms', [{ path: code, message }], cause)
+    this.code = code
+    this.name = 'CmsRefusalError'
+  }
+}
+
+function isRefusalCode(code: string | undefined): code is CmsRefusalCode {
+  return typeof code === 'string' && Object.values(CMS_REFUSAL).includes(code as CmsRefusalCode)
+}
+
+/**
+ * Map a PostgrestError, recognising the `RV0` class before falling through.
+ *
+ * Everything that is NOT one of ours goes to `toRepositoryError` unchanged — a unique violation is
+ * still a ConflictError, a 42501 is still a PermissionError. This only intercepts the refusals the
+ * `cms_*` functions raise deliberately, because those carry a message an editor should read.
+ */
+export function toCmsError(
+  entity: string,
+  operation: string,
+  identifier: string,
+  error: PostgrestError,
+): Error {
+  if (isRefusalCode(error.code)) {
+    return new CmsRefusalError(error.code, error.message, error)
+  }
+  return toRepositoryError(entity, operation, identifier, error)
+}
+
+export function isCmsRefusal(error: unknown, code?: CmsRefusalCode): error is CmsRefusalError {
+  if (!(error instanceof CmsRefusalError)) return false
+  return code === undefined || error.code === code
+}
+
+// --------------------------------------------------------------------------------------------
+// Reads
+// --------------------------------------------------------------------------------------------
+
+/** By public path. Only ever finds a page with a path, so a SYSTEM row can never be returned. */
+export async function getPageByPath(client: Client, path: string): Promise<Page | null> {
+  const { data, error } = await client.from('pages').select('*').eq('path', path).maybeSingle()
+
+  if (error) throw toCmsError(ENTITY, 'get', path, error)
+  return data === null ? null : parseRow(ENTITY, pageSchema, data)
+}
+
+/**
+ * By uuid OR slug — what `[pageId]` resolves.
+ *
+ * The parameter is looked up as an id when it parses as a uuid and as a slug otherwise. A
+ * uuid-shaped slug would therefore be unreachable, which is why `pages_slug_not_uuid_shaped`
+ * refuses one at the database.
+ */
+export async function getPageByIdOrSlug(client: Client, param: string): Promise<Page | null> {
+  const column = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(param)
+    ? 'id'
+    : 'slug'
+  const { data, error } = await client.from('pages').select('*').eq(column, param).maybeSingle()
+
+  if (error) throw toCmsError(ENTITY, 'get', param, error)
+  return data === null ? null : parseRow(ENTITY, pageSchema, data)
+}
+
+export async function listPages(client: Client): Promise<Page[]> {
+  const { data, error } = await client.from('pages').select('*').order('slug')
+
+  if (error) throw toCmsError(ENTITY, 'list', 'all', error)
+  return parseRows(ENTITY, pageSchema, data ?? [])
+}
+
+/**
+ * A page's sections, in render order.
+ *
+ * `position, created_at, id` — three keys, because two sections CAN share a position: the unique
+ * constraint is deferrable, and a half-applied reorder that failed at commit leaves nothing, but a
+ * seed writing two rows at 0 leaves an order that would otherwise vary between queries. A list
+ * that renders in a different order on refresh is a bug nobody can reproduce.
+ */
+export async function listSectionsForPage(client: Client, pageId: string): Promise<PageSection[]> {
+  const { data, error } = await client
+    .from('page_sections')
+    .select('*')
+    .eq('page_id', pageId)
+    .order('position')
+    .order('created_at')
+    .order('id')
+
+  if (error) throw toCmsError(SECTION, 'list', pageId, error)
+  return parseRows(SECTION, pageSectionSchema, data ?? [])
+}
+
+export async function listRevisions(
+  client: Client,
+  entityType: string,
+  entityId: string,
+  limit = 50,
+): Promise<ContentRevision[]> {
+  // Clamped like listActivityEvents: an unbounded limit from a query string is a way to make the
+  // server assemble an arbitrarily large response.
+  const capped = Math.min(Math.max(Math.trunc(limit), 1), 200)
+  const { data, error } = await client
+    .from('content_revisions')
+    .select('*')
+    .eq('entity_type', entityType)
+    .eq('entity_id', entityId)
+    .order('revision_no', { ascending: false })
+    .limit(capped)
+
+  if (error) throw toCmsError('content revision', 'list', entityId, error)
+  return parseRows('content revision', contentRevisionSchema, data ?? [])
+}
+
+export async function listGlobalContent(client: Client, group?: string): Promise<GlobalContent[]> {
+  let query = client.from('global_content').select('*')
+  if (group !== undefined) query = query.eq('group_key', group)
+
+  const { data, error } = await query.order('group_key').order('key')
+  if (error) throw toCmsError('global content', 'list', group ?? 'all', error)
+  return parseRows('global content', globalContentSchema, data ?? [])
+}
+
+export async function listNavigationItems(
+  client: Client,
+  menu?: string,
+): Promise<NavigationItem[]> {
+  let query = client.from('navigation_items').select('*')
+  if (menu !== undefined) query = query.eq('menu', menu)
+
+  const { data, error } = await query.order('menu').order('position')
+  if (error) throw toCmsError('navigation item', 'list', menu ?? 'all', error)
+  return parseRows('navigation item', navigationItemSchema, data ?? [])
+}
+
+export async function listFaqs(client: Client, category?: string): Promise<Faq[]> {
+  let query = client.from('faqs').select('*')
+  if (category !== undefined) query = query.eq('category', category)
+
+  const { data, error } = await query.order('position')
+  if (error) throw toCmsError('faq', 'list', category ?? 'all', error)
+  return parseRows('faq', faqSchema, data ?? [])
+}
+
+export async function getSeoEntry(client: Client, id: string): Promise<SeoEntry> {
+  const { data, error } = await client.from('seo_entries').select('*').eq('id', id).maybeSingle()
+
+  if (error) throw toCmsError('seo entry', 'get', id, error)
+  if (!data) throw new NotFoundError('seo entry', id)
+  return parseRow('seo entry', seoEntrySchema, data)
+}
+
+// --------------------------------------------------------------------------------------------
+// The privileged calls
+// --------------------------------------------------------------------------------------------
+
+/**
+ * Publish, unpublish or otherwise move a section, promoting its bound media atomically.
+ *
+ * THE CLIENT PASSED IN MUST BE THE SERVICE-ROLE CLIENT. `cms_publish_section` has EXECUTE granted
+ * to `service_role` alone, so a session client gets a 42501 — which is the design, not an
+ * inconvenience: it is what makes `actorId` safe as a parameter rather than a forgery vector.
+ * Authorisation happens in `lib/cms/publishing.ts` before this is reached.
+ */
+export async function publishSection(
+  client: Client,
+  input: {
+    sectionId: string
+    to: Database['public']['Enums']['content_status']
+    actorId: string | null
+    changeSummary?: string | null
+  },
+): Promise<PublishResult> {
+  const { data, error } = await client.rpc('cms_publish_section', {
+    p_section_id: input.sectionId,
+    p_to: input.to,
+    p_actor: input.actorId,
+    p_change_summary: input.changeSummary ?? null,
+  })
+
+  if (error) throw toCmsError(SECTION, 'publish', input.sectionId, error)
+  // Validated like any other boundary. The generated Functions map types every return as `Json`,
+  // so without this the caller reads `.promoted` off an unknown and finds out at render time.
+  return parseRow(SECTION, publishResultSchema, data)
+}
+
+export async function unpublishMediaAsset(
+  client: Client,
+  mediaId: string,
+  actorId: string | null,
+): Promise<void> {
+  const { error } = await client.rpc('cms_unpublish_media_asset', {
+    p_media_id: mediaId,
+    p_actor: actorId,
+  })
+
+  if (error) throw toCmsError('media asset', 'unpublish', mediaId, error)
+}
+
+export async function reorderSections(
+  client: Client,
+  pageId: string,
+  sectionIds: readonly string[],
+  actorId: string | null,
+): Promise<number> {
+  const { data, error } = await client.rpc('cms_reorder_sections', {
+    p_page_id: pageId,
+    p_ids: sectionIds,
+    p_actor: actorId,
+  })
+
+  if (error) throw toCmsError(SECTION, 'reorder', pageId, error)
+  return parseRow(SECTION, reorderResultSchema, data).count
+}
