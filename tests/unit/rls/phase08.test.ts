@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
+import { isLive } from '@/lib/cms/windowing'
 import { slotKeyOf } from '@/lib/media/gaps'
 
 import { FIXTURE_USERS, asAnon, asUser, connect, disconnect, loadFixture } from './harness'
@@ -502,6 +503,13 @@ describeDb('cms_publish_section — the media cascade', () => {
     await db.query('delete from page_sections')
     await db.query(`delete from pages where id = $1`, [PAGE_ID])
     await db.query(`delete from media_assets where rivya_asset_id like 'CASC-%'`)
+    // activity_events is append-only and survives the rows it describes, so a second run of this
+    // suite would count this run's cascade events plus the last one's. A suite that passes once on
+    // a fresh database and fails on every later run is the failure mode harness.ts already warns
+    // about for staff_profiles; this is the same shape, arriving through a different table.
+    await db.query(`delete from activity_events where entity_id = any($1::uuid[])`, [
+      [GOOD, NOT_APPROVED, UNVERIFIED],
+    ])
     await db.query(
       `insert into pages (id, slug, kind, title, path) values ($1,'casc','PAGE','C','/casc')`,
       [PAGE_ID],
@@ -720,4 +728,92 @@ describeDb('cms_reorder_sections', () => {
       expect((error as { code?: string }).code).toBe('RV005')
     }
   })
+})
+
+describeDb('the window means the same thing in SQL and in TypeScript', () => {
+  /**
+   * THE ONE TEST THAT CANNOT BE WRITTEN ON EITHER SIDE ALONE.
+   *
+   * `lib/cms/windowing.ts` predicts what a visitor can see; the RLS `publicClause` on `pages`
+   * decides it. Both encode `[publish_at, unpublish_at)`. If they ever drift, a section is live to
+   * a visitor and invisible to the editor looking at the Studio — reproducible only at the moment
+   * it stops happening, which is the worst kind of bug to be handed.
+   *
+   * So each case below is put to BOTH: the database is asked as the anon role, `isLive` is asked
+   * in process against the same instant, and the two answers must match. A unit test of the
+   * TypeScript proves the TypeScript; only this proves the RULE.
+   */
+  const NOW_SQL = "timestamptz '2026-09-08 12:00:00+00'"
+  const NOW = new Date('2026-09-08T12:00:00.000Z')
+
+  const CASES = [
+    { name: 'both bounds null', publish: null, unpublish: null },
+    { name: 'publish_at exactly now', publish: '2026-09-08 12:00:00+00', unpublish: null },
+    {
+      name: 'publish_at 1ms in the future',
+      publish: '2026-09-08 12:00:00.001+00',
+      unpublish: null,
+    },
+    { name: 'unpublish_at exactly now', publish: null, unpublish: '2026-09-08 12:00:00+00' },
+    { name: 'unpublish_at 1ms away', publish: null, unpublish: '2026-09-08 12:00:00.001+00' },
+    {
+      name: 'inside a two-sided window',
+      publish: '2026-09-08 11:00:00+00',
+      unpublish: '2026-09-08 13:00:00+00',
+    },
+    {
+      name: 'after a two-sided window',
+      publish: '2026-09-01 00:00:00+00',
+      unpublish: '2026-09-02 00:00:00+00',
+    },
+  ] as const
+
+  beforeAll(async () => {
+    const db = await connect()
+    await db.query('delete from page_sections')
+    await db.query(`delete from pages where slug like 'win-%'`)
+    for (const [i, c] of CASES.entries()) {
+      await db.query(
+        `insert into pages (slug, kind, title, path, status, publish_at, unpublish_at)
+         values ($1,'PAGE','W',$2,'DRAFT',$3::timestamptz,$4::timestamptz)`,
+        [`win-${String(i)}`, `/win-${String(i)}`, c.publish, c.unpublish],
+      )
+      // Walk to PUBLISHED: no edge skipping, even in a fixture.
+      for (const s of ['REVIEW', 'APPROVED', 'PUBLISHED']) {
+        await db.query(`update pages set status = $2 where slug = $1`, [`win-${String(i)}`, s])
+      }
+    }
+  })
+
+  afterAll(disconnect)
+
+  for (const [i, c] of CASES.entries()) {
+    it(`agrees on: ${c.name}`, async () => {
+      const db = await connect()
+      // Ask the DATABASE, with the RLS predicate evaluated at the fixed instant rather than at
+      // real `now()` — the same expression the generated policy uses.
+      const { rows } = await db.query<{ visible: boolean }>(
+        `select (status = 'PUBLISHED' and path is not null
+                 and (publish_at is null or publish_at <= ${NOW_SQL})
+                 and (unpublish_at is null or unpublish_at > ${NOW_SQL})) as visible
+           from pages where slug = $1`,
+        [`win-${String(i)}`],
+      )
+      const sqlSays = rows[0]!.visible
+
+      // Ask the TYPESCRIPT, against the same instant.
+      const tsSays = isLive(
+        {
+          status: 'PUBLISHED',
+          publish_at: c.publish === null ? null : new Date(c.publish).toISOString(),
+          unpublish_at: c.unpublish === null ? null : new Date(c.unpublish).toISOString(),
+        },
+        NOW,
+      )
+
+      expect(tsSays, `${c.name}: SQL said ${String(sqlSays)}, TS said ${String(tsSays)}`).toBe(
+        sqlSays,
+      )
+    })
+  }
 })

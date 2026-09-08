@@ -1841,7 +1841,38 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      cms_publish_section: {
+        Args: Record<string, unknown>
+        Returns: Json
+      }
+      cms_reorder_sections: {
+        Args: Record<string, unknown>
+        Returns: Json
+      }
+      cms_transition_allowed: {
+        Args: Record<string, unknown>
+        Returns: Json
+      }
+      cms_unpublish_media_asset: {
+        Args: Record<string, unknown>
+        Returns: Json
+      }
+      current_staff_role: {
+        Args: Record<string, unknown>
+        Returns: Json
+      }
+      has_role: {
+        Args: Record<string, unknown>
+        Returns: Json
+      }
+      is_staff: {
+        Args: Record<string, unknown>
+        Returns: Json
+      }
+      rivya_slugify: {
+        Args: Record<string, unknown>
+        Returns: Json
+      }
     }
     Enums: {
       collection_concept_state: 'DRAFT_COLLECTION_CONCEPT'
