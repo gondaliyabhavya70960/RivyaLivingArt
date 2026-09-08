@@ -43,13 +43,19 @@ export const viewport: Viewport = {
  */
 
 /*
- * The root layout renders no chrome. Phase 10 adds app/(site)/layout.tsx around it;
- * this file exists because Next renders no route at all without a root layout.
- * The default ground is DEEP (§2.4); the Studio layout sets .rv-scheme-bone.
+ * The root layout renders no chrome — `app/(site)/layout.tsx` is the public shell and
+ * `app/(studio)/layout.tsx` is the Studio's. This file exists because Next renders no route at
+ * all without a root layout. The default ground is DEEP (§2.4); the Studio layout sets
+ * .rv-scheme-bone.
+ *
+ * `lang="en-GB"` AND NOT `en`. It is what a screen reader uses to choose a voice and a
+ * pronunciation dictionary, and the seeded copy is British-leaning throughout — "Customise",
+ * "Colour", "Enquiry". Announced in an American voice those are not wrong so much as subtly
+ * mispronounced, and the fix is one attribute rather than a note in a style guide.
  */
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${newsreader.variable} ${inter.variable}`}>
+    <html lang="en-GB" className={`${newsreader.variable} ${inter.variable}`}>
       <body className="rv-scheme-deep">{children}</body>
     </html>
   )

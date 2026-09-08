@@ -1,7 +1,7 @@
 # PROJECT_STATE — what is actually built
 
 > Verified against the repository, not against intent. Update at the end of every phase.
-> Last verified: Phase 09 (Initial Website Content Seed), 2026-09-08.
+> Last verified: Phase 10 (Public Website Foundation), 2026-09-08.
 
 ## Summary
 
@@ -13,7 +13,7 @@ drift gate, a repository layer with Zod at its boundary, an idempotent seed runn
 overwrite an owner's edit, the Studio shell with its ⌘K palette and user management, the media
 layer end to end, the Higgsfield migration, gap engine and tracker, **the CMS engine — pages,
 blocks, the status workflow, media binding, scheduling, revisions and the Studio surfaces that
-drive them** — a forward-only migration runner, and **25 gates** that fail the build on the
+drive them** — a forward-only migration runner, and **27 gates** that fail the build on the
 mistakes they were written for.
 
 **A page can now be built and rendered, and the copy is written.** `/studio/content/pages/[pageId]`
@@ -22,17 +22,28 @@ adds, edits, reorders and removes blocks; `lib/cms/resolve.ts` is the single ser
 real PostgreSQL, parses them with the repository's own schemas and renders the page, so the chain
 from column to markup is proved end to end and not only in fixtures.
 
+**The public website exists.** `app/(site)/` carries a shell — skip link, announcement, header with
+a keyboard-complete mega menu, `<main id="main">`, footer — and thirteen route files, one per D3
+static path. Every string in that chrome is a `navigation_items`, `global_content` or
+`contact-details` row; `npm run cms:check-copy` fails the build on a literal. Twelve routes build
+static and are invalidated by `app/api/revalidate`; `/search` is dynamic because its query is its
+state. Verified on a production build against a local PostgREST: `/process` 404 → publish its
+sections → POST to the endpoint → 200, with `sitemap.xml` gaining exactly that path.
+
 **The content seed is applied.** 20 pages, 53 sections, 10 FAQs, 47 navigation items, 9 SEO
 entries and the global string library — 231 records, every one from the specification verbatim, 22
 more authored and deferred to Phases 18 and 19. `docs/content/INITIAL_CONTENT_INVENTORY.md` audits
-all 316 of them, generated from the database.
+all 332 of them, generated from the database.
 
-What does not exist: **any public page route**. Nothing under `app/(site)/` consumes `resolvePage`
-yet — the copy, the windowing, the media resolution and the renderers all exist and no route calls
-them. That is Phase 10. Twenty-two of the twenty-eight blocks are declared and unbuilt (amendment
-A8), so ten of the homepage's thirteen seeded sections have no renderer; a block with repeating
-items is edited as JSON until a repeater is built. No product rows, and there will be none from a
-seed — `products` is not a member of the `SeedableTable` union.
+What does not exist: **a page a visitor can read**. Every route renders, and every one answers 404,
+because Phase 09 seeds all 53 sections `DRAFT` and `renderCmsPage` refuses to serve a published
+route with nothing on it — SEED §55, as code. Publishing is an editorial act in Studio, and 25 of
+those sections cannot be published at all until the owner verifies what they claim. Twenty-two of
+the twenty-eight blocks are declared and unbuilt (amendment A8), so ten of the homepage's thirteen
+seeded sections have no renderer; a block with repeating items is edited as JSON until a repeater is
+built. No product rows, and there will be none from a seed — `products` is not a member of the
+`SeedableTable` union. No page's finished appearance: Phase 10 proves a page renders, Phases 11–13
+make it good.
 
 **80 seeded rows await owner verification** and cannot be published until it is given — every FAQ
 answer, every process step, and every sentence that asserts what Rivya can physically make.
@@ -44,9 +55,10 @@ because this sandbox's proxy refuses CONNECT to both Cloudinary and the CDN orig
 of those assets is APPROVED *and* `OWNER_VERIFICATION_REQUIRED`, so `cms_publish_section` refuses
 (RV006) any section that binds one. Both are recorded in *Remaining Work*.
 
-**The hosted project is current.** All 27 migrations are applied to `ccvarsmzickdkryoakdg` and recorded in
-`public.schema_migrations` with checksums; the latest is
-`0071_phase09_global_content_brand_group.sql`.
+**The hosted project is current.** All 28 migrations are applied to `ccvarsmzickdkryoakdg` and
+recorded in `public.schema_migrations` with checksums; the latest is
+`0080_phase10_global_content_ui_label_group.sql`. Hosted still carries **no content** — the seed has
+only ever run against the local cluster.
 
 `0050`–`0055` and `0070`–`0071` were applied through the Supabase MCP server rather than by
 `npm run db:migrate`, because the workflow that runs it lives on GitHub Actions, which has never

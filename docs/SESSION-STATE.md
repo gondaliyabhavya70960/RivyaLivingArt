@@ -8,6 +8,117 @@
 
 ## Current Phase
 
+**Phase 10 — Public Website Foundation. COMPLETE.** Rivya is a website a stranger can load: one
+Server-Component shell, thirteen static routes, the metadata, sitemap and revalidation plumbing, and
+the WhatsApp module. Every visitor-visible string in the chrome is a database row.
+
+Phase 09 merged as PR #13; Phase 08 as PR #12. Phase 07 remains CODE COMPLETE with its Higgsfield
+migration unrun.
+
+### Phase 10: what is built
+
+**The shell.** `app/(site)/layout.tsx` — skip link → announcement → header → `<main id="main">` →
+footer. `lib/site/chrome.ts` fetches everything it needs once per request behind `React.cache`
+(four parallel queries: `global_content`, `navigation_items`, `categories`, and the one
+`contact-details` section), and the layout is its only caller.
+
+**Three client islands, and no more.** `MegaMenu` and `MobileNav` hold open/closed state;
+`SiteErrorCopy` is a context provider that renders `children` unchanged and exists only because
+Next requires `error.tsx` to be a Client Component and a Client Component cannot query. The
+announcement bar's dismissal is a `<form>` posting to a Server Action — no JavaScript, no island.
+
+**A cookieless public read client.** `lib/supabase/public.ts`. The cookie-bound client would make
+every route dynamic and would silently hold an expired token outside the `/studio` matcher that
+`proxy.ts` refreshes. All twelve CMS routes build static as a result; `renderCmsPage` switches
+clients only in draft mode.
+
+**Thirteen routes**, one per D3 static path, twelve delegating to `renderCmsPage(path)`.
+`tests/unit/site-routes.test.ts` asserts the file system and `lib/site/routes.ts` agree exactly —
+proved by deleting `terms/page.tsx` and watching it fail.
+
+**Metadata, robots and sitemap.** `lib/seo/metadata.ts` walks the SEED §41 chain — the path's entry,
+the GLOBAL entry, then the `SEO_DEFAULT` strings — and emits `noindex` for a page with no live
+sections whatever its row says. `sitemap.xml` inner-joins the sections so it lists only URLs that
+actually load.
+
+**`app/api/revalidate`**, POST only, `REVALIDATE_SECRET`-guarded with a constant-time compare, 503
+when unconfigured.
+
+**`lib/whatsapp/`** with two builders. `buildHandoffUrl` requires a non-optional `inquiryId` and now
+also refuses a blank one at runtime; `buildDirectContactUrl` takes a closed union of three chrome
+surfaces. Token allowlists in both directions, graceful shortening that never touches the inquiry
+id, and a 1800-character cap.
+
+**Two Studio additions.** An "On site" column on `/studio/content/pages` — a direct link when the
+page is published, the draft-mode preview route when it is not — and `/studio/content/navigation`,
+previously a stub, now listing every menu item with whether its `href` resolves. That second one is
+the compensating control for `NavLink`'s `as Route` cast: a database href cannot be checked at build
+time, so it is checked where it is typed.
+
+**Migration `0080`** — a `UI_LABEL` group for `global_content`. Applied to hosted, which is current
+at 28 migrations.
+
+**Seed module `site-chrome.ts`**, 16 rows: the skip link, the menu controls, the dismiss button, the
+search control, the landmark names, the two §45/§46 error CTAs, and the greeting a chat opens with
+when there is no enquiry to reference.
+
+### Phase 10: what is NOT built, and why
+
+- **A page a visitor can read.** Every route renders and every one answers 404: Phase 09 seeds all
+  53 sections `DRAFT`, and `renderCmsPage` refuses a published route with nothing on it (SEED §55).
+  This is the designed outcome, not a gap. Publishing is an editorial act in Studio, and 25 of those
+  sections cannot be published at all until the owner verifies what they claim.
+- **`aria-current="page"`.** It needs the request pathname, which a Server Component cannot read
+  without `headers()` — that would make every public route dynamic to mark one link. Deferred to
+  Phase 41 with the trade recorded in `ACCESSIBILITY.md` §2.3a. It is a 2.4.8 AAA concern, not an AA
+  failure.
+- **A "skip to navigation" link.** Deliberately not built: the header is the first thing in the DOM,
+  so a link at the top that jumps two elements forward adds a control to the tab order for nobody.
+- **`MegaMenuPanel.tsx`.** The panel's contents are server-rendered by `SiteHeader` and passed as
+  `children`, which is what lets the category cards use `MediaImage`. A second client file would
+  have passed that markup straight through.
+- **Category thumbnails.** `MEDIA_BINDINGS` is still empty and no category has a `hero_media_id`,
+  so every mega-menu card renders text-only. That is Phase 09's recorded gap plus the unrun
+  Higgsfield migration, not a Phase 10 omission.
+
+### The defects the verification steps found
+
+1. **`revalidatePath` was invalidating nothing, and returning 200.** Two independent causes, both
+   invisible: without `export const revalidate` on the site layout every route builds as a pure
+   static file with no cache entry behind it; and `revalidatePath` must be called with **no** `type`
+   for a literal path — passing `'page'` alongside `/about` fails to match. Found by publishing a
+   section and watching the page keep 404ing. `x-nextjs-cache` flipping `HIT` → `MISS` is what
+   proved the fix.
+2. **`stripCommentsAndStrings(source, { strings: false })` did not scan strings**, so the `//` in
+   every URL started a "line comment" and blanked the rest of the line. The new WhatsApp gate was
+   written against that view and passed a planted `https://wa.me/…` while reporting success. Phase
+   06's `check-video-props.mjs` reads the same view and had the same hole. Two regression tests.
+3. **`buildHandoffUrl` did not refuse a missing inquiry id at runtime.** The type stops a
+   TypeScript caller; anything else got a message with an empty Inquiry ID, looking entirely normal
+   and traceable to nothing. Found by writing the test for the type-level guarantee.
+
+### Phase 10: verification, as actually run
+
+Against a local PostgREST (`npm run site:rest`) over the seeded local cluster, because `supabase-js`
+speaks HTTP and a bare Postgres verifies nothing about a page.
+
+| Step | Result |
+|---|---|
+| 1 · `npm run check` incl. both new gates | ✓ 27 gates |
+| 2 · `next build && next start`, `/about` DRAFT → 404, published → 200 | ✓ and the same for `/process` via the endpoint |
+| 3 · `site-shell.spec.ts` at eight widths | ✓ skip link first, one `<h1>`, one `<main>`, distinct landmark names |
+| 4 · `navigation-a11y.spec.ts` keyboard model + axe | ✓ 98 assertions, zero critical/serious |
+| 5 · `grep -rn "wa.me" app components` | ✓ none, and the gate proves it by planting one |
+| 6 · `buildHandoffUrl` without `inquiryId` | ✓ `@ts-expect-error` in the test holds the type; a blank id throws |
+| 7 · `POST /api/revalidate` without / with the secret | ✓ 401 / 200, and the named path refetches |
+| 8 · media failure keeps the ratio box | ✓ `MediaFrame`'s existing behaviour, unchanged by the move |
+| 9 · `curl /sitemap.xml` | ✓ exactly the two paths with published sections |
+| 10 · delete a route file, run the parity test | ✓ fails, naming the missing path |
+
+**1020 unit tests**, 78 files, none skipped, with `RLS_TESTS_REQUIRED=1`.
+
+---
+
 **Phase 09 — Initial Website Content Seed. COMPLETE.** The empty CMS is now a coherent draft
 website: every page, section, navigation item, label, empty state, FAQ, SEO default, WhatsApp
 template and Studio helper string from the specification is in the database as
@@ -756,6 +867,26 @@ on `/studio` rather than a route segment.
 
 ## Next Exact Action
 
+**Start Phase 11 — Homepage + Material Experience.** The shell is built and every route answers
+404, so the next phase is the one that gives the homepage something to say: ten of its thirteen
+seeded sections have block types with no renderer (amendment A8), which is what stands between the
+copy in the database and a page a visitor can read.
+
+The first increment is the four Tier-2 blocks the homepage needs most — `manifesto`,
+`selected-works`, `material-story` and `final-cta` — added to `components/sections/registry.ts`
+against the modules `lib/cms/registry.ts` already declares. Nothing about the shell, the routing or
+the data layer changes: `renderCmsPage` maps a `block_type` to a renderer and returns null for the
+ones that have none, so each renderer added is one more section that appears.
+
+**One owner-side action would make the site visible today, and it is not a code change.** In
+`/studio/content/pages`, take a page's sections DRAFT → REVIEW → APPROVED → PUBLISHED; the route
+turns 200 the moment one section is live. The 25 flagged sections need verification first — the
+database refuses them with RV002 until the claim they make is confirmed — but the other 28 do not.
+The "On site" column added this phase links straight to the result, in draft mode when the page is
+not published.
+
+### Superseded — the Phase 10 plan
+
 **Start Phase 10 — Public Website Foundation.** Everything it needs exists and nothing renders:
 `lib/cms/resolve.ts` is the single read path, `lib/cms/media.ts` hydrates a page's assets in one
 query, `components/sections/` renders six block types, and 231 records of real copy are in the
@@ -763,9 +894,10 @@ database. What is missing is `app/(site)/[[...path]]` — a route that calls `re
 and renders `SectionList`. The first increment is the homepage and `/about`, which between them
 exercise the hero, statement, category-grid and process-steps renderers.
 
-Neither owner-side item blocks it: the seed can be applied to hosted at any point, and the
-verification flags govern PUBLISHING rather than rendering — a draft page previews through
-`/api/preview` without them.
+*Built, with one deviation:* thirteen route files rather than a catch-all segment. A
+`[[...path]]` route would also swallow `/product/x` and every other future path — resolving there,
+finding no `pages` row and answering 404, instead of failing when a later phase forgets to add the
+route. One file per D3 path keeps the map in the file system, and a test asserts they agree.
 
 ### Superseded — the Phase 09 plan
 

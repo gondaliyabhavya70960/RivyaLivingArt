@@ -166,6 +166,47 @@ Brand and editorial copy may be written; anything asserting business capability 
 
 ## Amendments
 
+**2026-09-08 · A9 — `/search` has a route file but no `pages` row (D3).**
+
+D3 lists `/search` among the thirteen static public paths, and it keeps that address. What changed
+is where its content comes from: Phase 09 decided the route gets no `pages` row, because it is a
+query surface with nothing an editor composes — no sections, no blocks — so a row would exist only
+to be empty and to appear in Studio inviting somebody to add content that would never render.
+
+Recorded as an amendment because the Phase 10 document lists `/search` among the routes that
+delegate to `renderCmsPage(path)`, and that would 404 the route outright: `renderCmsPage` resolves
+a path to a `pages` row and answers `notFound()` when there is none. The route file is therefore
+its own page, rendering the search form and SEED §26's no-results state from `global_content`
+alone. It still holds no copy of its own, and it is still one of the thirteen.
+
+- `lib/site/routes.ts` is the declaration; `tests/unit/site-routes.test.ts` asserts the route files
+  and that list agree exactly, so the exception cannot quietly become a missing route.
+- `/search` is `noindex` in its own metadata and absent from `sitemap.xml`. A results URL is not a
+  document; its contents depend on a parameter.
+- The search ENGINE is Phase 23. Until then any query returns the no-results surface, which is
+  honest rather than broken — the form submits, the query survives in the URL, and the page says
+  plainly that nothing matched.
+
+**2026-09-08 · A10 — a `notFound()` page is delivered to the browser, not rendered into the HTML (D3).**
+
+Measured on Next 16.3.4, not inferred: a route that calls `notFound()` returns a correct HTTP 404
+whose HTML `<body>` is empty, with the not-found UI carried in the RSC payload and rendered on the
+client. Verified in Chromium — with JavaScript the page is complete (the seeded eyebrow, heading,
+body and both CTAs, inside the full site chrome); without JavaScript the body is blank. It is not
+caused by anything in this repository: a page whose entire body is `notFound()`, with no `await`
+before it, behaves identically, as does one with no `revalidate` and no `not-found.tsx` of its own.
+
+Recorded rather than worked around. The remedy Next documents is a check in `proxy.ts` that
+rewrites missing paths before the response starts — a database query on every public request, in
+the one file amendment A2·b restricts to session refresh, to improve the page a visitor is not
+meant to reach. What matters is intact: the status is a true 404 rather than a soft one, so
+crawlers and monitoring are correct, and `app/not-found.tsx` — reached by a URL matching no route
+at all — is fully prerendered and renders without JavaScript.
+
+- Phase 39 (SEO) and Phase 41 (accessibility) inherit the decision to revisit.
+- `tests/e2e/site-shell.spec.ts` asserts the 404 STATUS at all eight widths, which is the part that
+  must never regress.
+
 **2026-09-08 · A8 — the CMS block catalogue ships in two tiers, and the registry says which (D9).**
 
 PHASE-05-09 §08 names 28 block types. Phase 08 builds the ENGINE plus six of them; the other 22

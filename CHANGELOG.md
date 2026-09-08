@@ -6,6 +6,71 @@ Every phase adds an entry; see `docs/architecture/CANONICAL-DECISIONS.md` D9 for
 
 ## [Unreleased]
 
+### Phase 10 — Public Website Foundation
+
+Rivya becomes a website a stranger can load. One public shell, thirteen static routes, the
+metadata and revalidation plumbing, and the WhatsApp module — every string in the chrome read from
+the database, so the owner can reorder the navigation or rewrite the footer without a deploy.
+
+**The shell is Server Components with three small islands.** `lib/site/chrome.ts` fetches the
+announcement, both menus, the footer columns, the categories and the contact details once per
+request behind `React.cache`, and the layout is its only caller. `MegaMenu` and `MobileNav` hold
+open/closed state; `SiteErrorCopy` is a context provider that exists solely because Next requires
+`error.tsx` to be a Client Component and a Client Component cannot query the database. The
+announcement bar's dismissal is deliberately not an island — a `<form>` posting to a Server
+Action, so it works with JavaScript disabled and costs the shell nothing.
+
+**A public read client that reads no cookies.** `lib/supabase/public.ts` is the anon client for
+the public site. The cookie-bound one is wrong here twice over: reading a cookie opts the route out
+of static rendering, and its `setAll` swallows the write — safe only because `proxy.ts` refreshes
+the session, and `proxy.ts` matches `/studio` and nothing else. All twelve CMS routes build static
+as a result. `renderCmsPage` switches to the cookie-bound client only in draft mode.
+
+**A page with no live sections is a 404, not an empty shell.** That is SEED §55 as code, and in
+the seeded state it means every CMS path answers 404 — Phase 09 seeds all 53 sections `DRAFT`. The
+site becomes visible when an editor publishes, which is Phase 08's workflow rather than something
+this phase routes around by publishing copy the owner has never read.
+
+**Two revalidation defects found by testing, both of which returned 200 and did nothing.** Without
+`export const revalidate` on the site layout every public route builds as a pure static file and
+`revalidatePath` has no cache entry to invalidate — publish a section, call the endpoint, get a
+success response, and the page keeps 404ing. And `revalidatePath` must be called with **no** `type`
+for a literal path; passing `'page'` alongside `/about` fails to match the cache entry. Both are in
+`ARCHITECTURE.md` §6 with what proved them.
+
+**A defect in a shared gate helper, found the same way.** `stripCommentsAndStrings(source,
+{ strings: false })` did not scan strings at all, so the `//` in every URL was read as the start of
+a line comment and the rest of the line was blanked. The new WhatsApp gate was built on that view
+and passed a planted `https://wa.me/…` while reporting success; Phase 06's `check-video-props.mjs`
+reads the same view and had the same hole. Fixed, with two regression tests.
+
+**The D1 conversion rule, in the type system and then in the runtime.** `buildHandoffUrl` takes a
+non-optional `inquiryId`, so a caller with no persisted row does not compile. Writing the test for
+it showed what happens when the type is bypassed: the template renders with an empty Inquiry ID and
+the customer receives a perfectly ordinary, untraceable message. It now throws as well.
+
+**Migration `0080`** adds a `UI_LABEL` group to `global_content` — the same reason `0055` and
+`0071` exist. "Open menu" is an action and stays in `ACTION_LABEL`; "Primary navigation" is not, and
+filing it under a group named for actions makes it unfindable. Applied to hosted, which is current
+at **28 migrations**.
+
+**Amendments A9 and A10.** `/search` keeps its D3 address but has no `pages` row, so it renders its
+own seeded copy rather than delegating. And a `notFound()` page is delivered in the RSC payload
+rather than rendered into the HTML: the status is a true 404 and the page is complete with
+JavaScript, blank without it. Measured on Next 16.3.4, including against a page whose entire body
+is `notFound()`, and left for Phases 39 and 41 to weigh rather than paid for with a database query
+in `proxy.ts` on every public request.
+
+Two new gates in `npm run check` and CI: `site:check-client-boundary` (no `'use client'` in a
+public route file) and `site:check-whatsapp` (no host literal outside `lib/whatsapp`, and
+`buildDirectContactUrl` importable only by the announcement bar, the footer and `/contact`). Both
+were proved by planting a violation. `cms:check-copy` now scans `components/patterns` too. 1020
+unit tests and 98 e2e assertions across all eight FEAT §45 widths, axe clean.
+
+`scripts/db/local-rest.mjs` runs a local PostgREST against the local cluster, because a bare
+Postgres verifies nothing about a page: `supabase-js` speaks HTTP, so without it no route can be
+requested and no e2e test can run.
+
 ### Phase 09 — Initial Website Content Seed
 
 The empty CMS becomes a coherent draft website. Eighteen seed modules, 231 records

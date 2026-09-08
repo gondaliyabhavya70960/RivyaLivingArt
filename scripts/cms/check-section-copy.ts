@@ -31,7 +31,21 @@ import ts from 'typescript'
  */
 
 const ROOT = process.cwd()
-const TARGET = join(ROOT, 'components', 'sections')
+
+/**
+ * WHAT IS SCANNED, and why it grew in Phase 10.
+ *
+ * `components/sections` are the block renderers — the original target, and the place a headline is
+ * most likely to be typed. `components/patterns` gained the site chrome: the header, the footer,
+ * the announcement bar, the mega menu, the mobile drawer and the two error surfaces. Every one of
+ * those renders words a visitor reads, and Phase 10's exit criteria require them to come from
+ * `navigation_items` or `global_content` — "zero copy literals in components/patterns/Site*".
+ *
+ * The whole of `components/patterns` is scanned rather than a `Site*` glob, because the rule is
+ * about the words, not the filename: `AnnouncementBar.tsx` and `MegaMenu/index.tsx` are chrome
+ * too, and a pattern keyed to the prefix would have exempted them by accident.
+ */
+const TARGETS = [join(ROOT, 'components', 'sections'), join(ROOT, 'components', 'patterns')]
 
 /** Props whose value reaches a visitor. A literal here is copy, wherever it sits in the tree. */
 const SPOKEN_PROPS = new Set([
@@ -131,12 +145,12 @@ function check(file: string): Finding[] {
   return findings
 }
 
-const files = tsxFiles(TARGET)
+const files = TARGETS.flatMap(tsxFiles)
 const findings = files.flatMap(check)
 
 if (findings.length > 0) {
   console.error(
-    `Visitor-readable literals in public section renderers (${findings.length}).\n` +
+    `Visitor-readable literals in public renderers and chrome (${findings.length}).\n` +
       'Every string a visitor reads comes from the CMS: a section field, or `global_content`\n' +
       'via `siteString()`. See CLAUDE.md, "No marketing copy inside JSX".\n',
   )
@@ -148,4 +162,6 @@ if (findings.length > 0) {
   process.exit(1)
 }
 
-console.log(`check-section-copy: ${files.length} renderers, no visitor-readable literals.`)
+console.log(
+  `check-section-copy: ${files.length} renderers and chrome components, no visitor-readable literals.`,
+)

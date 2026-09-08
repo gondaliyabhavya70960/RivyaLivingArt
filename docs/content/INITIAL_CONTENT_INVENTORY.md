@@ -7,7 +7,7 @@ SEED §54’s audit of what the content seed actually put in the database, read 
 database rather than from the seed modules. Its target is §54’s: **100% of intended launch
 copy mapped to a Studio editing control.**
 
-- **316** rows audited
+- **332** rows audited
 - **80** await owner verification and cannot be published until it is given
 - **22** are authored and deferred to a later phase’s tables
 - **0** carry a bound media asset
@@ -161,6 +161,22 @@ the phase that creates its table.
 | /process | process.08.final-review | body | Yes | Yes | `/studio/content/pages/process` | Yes | — | — | DRAFT |
 | /process | process.08.final-review | eyebrow | Yes | Yes | `/studio/content/pages/process` | Yes | — | — | DRAFT |
 | /process | process.08.final-review | heading | Yes | Yes | `/studio/content/pages/process` | Yes | — | — | DRAFT |
+| Global content | chrome:action_label.close_menu | ACTION_LABEL.close_menu | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | chrome:action_label.dismiss_announcement | ACTION_LABEL.dismiss_announcement | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | chrome:action_label.open_menu | ACTION_LABEL.open_menu | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | chrome:action_label.search.submit | ACTION_LABEL.search.submit | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | chrome:action_label.skip_to_content | ACTION_LABEL.skip_to_content | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | chrome:action_label.try_again | ACTION_LABEL.try_again | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | chrome:cta.return_home | CTA.return_home | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | chrome:ui_label.announcement.region | UI_LABEL.announcement.region | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | chrome:ui_label.error.reference | UI_LABEL.error.reference | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | chrome:ui_label.nav.categories | UI_LABEL.nav.categories | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | chrome:ui_label.nav.footer | UI_LABEL.nav.footer | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | chrome:ui_label.nav.mobile | UI_LABEL.nav.mobile | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | chrome:ui_label.nav.primary | UI_LABEL.nav.primary | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | chrome:ui_label.search.heading | UI_LABEL.search.heading | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | chrome:ui_label.search.label | UI_LABEL.search.label | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | chrome:whatsapp_template.direct | WHATSAPP_TEMPLATE.direct | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | global:ACTION_LABEL.ask_about_this_piece | ACTION_LABEL.ask_about_this_piece | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | global:ACTION_LABEL.customize_this_piece | ACTION_LABEL.customize_this_piece | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | global:ACTION_LABEL.discuss_on_whatsapp | ACTION_LABEL.discuss_on_whatsapp | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |

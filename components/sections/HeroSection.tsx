@@ -6,7 +6,7 @@ import { parseBlockPayload } from '@/lib/cms/registry'
 
 import { SectionActions } from './SectionActions'
 import { SectionCopy } from './SectionCopy'
-import { BlockVideo, ResponsiveMedia } from './SectionMedia'
+import { BlockVideo, ResponsiveMedia } from '@/components/patterns/MediaSlot'
 import { SectionShell } from './SectionShell'
 import type { SectionRenderProps } from './types'
 

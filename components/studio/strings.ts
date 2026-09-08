@@ -1371,6 +1371,70 @@ export const STUDIO_STRINGS = {
     value: 'No public address',
     contentKey: 'studio_help.content_pages_system_path',
   },
+  'studio.content.navigation.caption': {
+    value: 'Menu items, with the address each one resolves to.',
+    contentKey: 'studio_help.content_navigation_caption',
+  },
+  'studio.content.navigation.emptyHeading': {
+    value: 'No menu items yet',
+    contentKey: 'studio_help.content_navigation_empty_heading',
+  },
+  'studio.content.navigation.emptyBody': {
+    value: 'The header, mobile and footer menus are seeded by the content seed.',
+    contentKey: 'studio_help.content_navigation_empty_body',
+  },
+  'studio.content.navigation.colMenu': {
+    value: 'Menu',
+    contentKey: 'studio_help.content_navigation_col_menu',
+  },
+  'studio.content.navigation.colLabel': {
+    value: 'Label',
+    contentKey: 'studio_help.content_navigation_col_label',
+  },
+  'studio.content.navigation.colHref': {
+    value: 'Address',
+    contentKey: 'studio_help.content_navigation_col_href',
+  },
+  'studio.content.navigation.colResolves': {
+    value: 'Resolves',
+    contentKey: 'studio_help.content_navigation_col_resolves',
+  },
+  'studio.content.navigation.colStatus': {
+    value: 'Status',
+    contentKey: 'studio_help.content_navigation_col_status',
+  },
+  'studio.content.navigation.resolved': {
+    value: 'Yes',
+    contentKey: 'studio_help.content_navigation_resolved',
+  },
+  'studio.content.navigation.unknown': {
+    value: 'No route',
+    contentKey: 'studio_help.content_navigation_unknown',
+  },
+  'studio.content.navigation.external': {
+    value: 'External',
+    contentKey: 'studio_help.content_navigation_external',
+  },
+  'studio.content.navigation.heading': {
+    value: 'Heading only',
+    contentKey: 'studio_help.content_navigation_heading',
+  },
+  'studio.content.navigation.hidden': {
+    value: 'Hidden',
+    contentKey: 'studio_help.content_navigation_hidden',
+  },
+  'studio.content.pages.colOnSite': {
+    value: 'On site',
+    contentKey: 'studio_help.content_pages_col_on_site',
+  },
+  'studio.content.pages.viewLive': {
+    value: 'View',
+    contentKey: 'studio_help.content_pages_view_live',
+  },
+  'studio.content.pages.viewDraft': {
+    value: 'Preview draft',
+    contentKey: 'studio_help.content_pages_view_draft',
+  },
   'studio.content.page.backLabel': {
     value: 'All pages',
     contentKey: 'studio_help.content_page_back_label',
