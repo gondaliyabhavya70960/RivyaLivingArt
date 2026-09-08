@@ -22,8 +22,8 @@ import type { MediaAsset } from '@/lib/supabase/schemas'
  * box and the asset inside it change over at the same width.
  */
 
-const FALLBACK_KEY = 'error.media_unavailable.label'
-const PLAY_KEY = 'media.play.label'
+const FALLBACK_KEY = 'ERROR.media_unavailable.label'
+const PLAY_KEY = 'ACTION_LABEL.media.play'
 
 export type BlockImageProps = {
   readonly asset: MediaAsset | null

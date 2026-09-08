@@ -112,8 +112,9 @@ function global_(group: string, key: string, value: string, enabled = true): Glo
 }
 
 const STRINGS = siteStrings([
-  global_('error', 'media_unavailable.label', 'Image unavailable'),
-  global_('media', 'play.label', 'Play'),
+  // The groups are `global_content_group_allowed`'s own — a closed list, with ERROR added by 0055.
+  global_('ERROR', 'media_unavailable.label', 'Image unavailable'),
+  global_('ACTION_LABEL', 'media.play', 'Play'),
   global_('EMPTY_STATE', 'portfolio', 'Delivered work will appear here once it is confirmed.'),
   global_('EMPTY_STATE', 'disabled_one', 'Should never render', false),
 ])

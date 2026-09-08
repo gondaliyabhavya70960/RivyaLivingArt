@@ -286,7 +286,13 @@ describeDb('the trigger set', () => {
     const db = await connect()
     await db.query('delete from page_sections')
     await db.query(`delete from pages where id = $1`, [SECTION_PAGE])
-    await db.query(`delete from media_assets where rivya_asset_id like 'TRIG-%'`)
+    // By id as well as by the TRIG- pattern: a row left at one of these ids by any other suite
+    // collides on the primary key, which the pattern delete does not reach.
+    await db.query('delete from media_usages where media_id = any($1::uuid[])', [[...ASSETS]])
+    await db.query(
+      `delete from media_assets where rivya_asset_id like 'TRIG-%' or id = any($1::uuid[])`,
+      [[...ASSETS]],
+    )
     await db.query(
       `insert into pages (id, slug, kind, title, path) values ($1,'trig','PAGE','T','/trig')`,
       [SECTION_PAGE],

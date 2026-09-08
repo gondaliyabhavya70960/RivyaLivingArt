@@ -23,7 +23,7 @@ import { AspectBox, type AspectBoxProps } from '@/components/primitives/AspectBo
  * not borrow a sibling's image: the reserved box stays exactly the size AspectBox reserved
  * and the well carries a label. The label is a required prop and never a literal — SEED §1
  * and D2 put every visitor-readable string in the database, and this one is
- * `error.media_unavailable.label` in `global_content`. Requiring it even on frames that
+ * `ERROR.media_unavailable.label` in `global_content`. Requiring it even on frames that
  * expect to have media is deliberate: a frame that cannot say what happened is a frame
  * that will collapse when something does.
  *
@@ -69,7 +69,7 @@ import { AspectBox, type AspectBoxProps } from '@/components/primitives/AspectBo
 export interface MediaFrameProps extends AspectBoxProps {
   /**
    * The SEED §47 message shown on the well when no media resolves. From `global_content`
-   * (`error.media_unavailable.label`), never a string written in a component.
+   * (`ERROR.media_unavailable.label`), never a string written in a component.
    */
   fallbackLabel: string
   /**

@@ -166,6 +166,53 @@ Brand and editorial copy may be written; anything asserting business capability 
 
 ## Amendments
 
+**2026-09-08 · A8 — the CMS block catalogue ships in two tiers, and the registry says which (D9).**
+
+PHASE-05-09 §08 names 28 block types. Phase 08 builds the ENGINE plus six of them; the other 22
+are declared and explicitly unbuilt. This is an amendment rather than a silent scope cut because
+the phase document reads as though all 28 arrive together, and a reader comparing the document to
+the code needs the difference to be recorded rather than inferred.
+
+*Which six, and why those.* `hero`, `statement`, `category-grid`, `process-steps`, `empty-state`
+and `divider`. They were not chosen for coverage of any page — they were chosen so that between
+them they exercise every payload family the other 22 will need: no payload (`statement`),
+media-only (`hero`), repeating items with indexed media references (`category-grid`,
+`process-steps`), query-and-global (`empty-state`), and the degenerate case of no payload AND no
+copy fields (`divider`). The last is in Tier 1 deliberately: `sharedFields: []` must mean "no copy
+fields" and never "no editor", or a divider would lose its visibility toggle and D9's second exit
+criterion would be false for it.
+
+*How the split is recorded in code, not in prose.* `lib/cms/block-types.ts` lists all 28;
+`lib/cms/registry.ts` is `satisfies Record<BlockType, BlockModule>` so a missing entry fails the
+build; each module declares `state: 'BUILT' | 'PLANNED'`. `components/sections/registry.ts` maps
+the same union to renderers with `null` for planned, and a test asserts the two registries agree.
+A planned block cannot be added in Studio and renders nothing on the public site — not a
+placeholder, not a grey box, which would be a sentence nobody wrote appearing on the page.
+
+*What Phase 09 inherits.* The 22 remaining blocks, and a repeater UI for arrays: a block with
+repeating items is edited as JSON today, validated on save against its own schema and refused
+rather than coerced. That is stated in `block-module.ts` as an admission, not a placeholder.
+
+**2026-09-08 · A7 — two permissions added, and the twelve transition edges fixed (D5, D9).**
+
+The Phase 08 documents describe the status workflow in three places that did not agree: one lists
+eleven edges, another eight, and the permission column names `content.review` and `content.verify`
+— neither of which existed in the matrix. Resolved by taking the UNION of the edges and adding
+both permissions, because every edge either document names is one a real editorial workflow needs,
+and an edge omitted from the machine is a state an editor cannot leave.
+
+- `content.review` → owner, admin, editor. `content.verify` → owner, admin.
+- `content.publish` is UNCHANGED and still includes editor. Narrowing it was tempting and would
+  have been a different decision than the one recorded here; it is left alone deliberately.
+- The twelve edges live in `lib/cms/transitions.ts` as the single source, and
+  `scripts/cms/gen-transition-sql.ts` RENDERS `0052_phase08_transition_trigger.sql` from them.
+  `npm run cms:check-transitions` byte-compares the file against a fresh render, so the trigger
+  and the TypeScript cannot drift.
+- **The trigger's permission arm is currently unreachable**, and that is recorded rather than
+  removed: write, review and publish are held by the same three roles today, so no actor can reach
+  an edge they lack the permission for — RLS refuses the UPDATE first, and an UPDATE matching no
+  policy affects zero rows and SUCCEEDS. The arm is a latch for the day `content.publish` narrows.
+
 **2026-09-08 · A6 — the Studio's auth redirect moves from `proxy.ts` to `proxy.ts` (D2).**
 
 Next 16 deprecated the `middleware` file convention and renamed it to `proxy`. Same matcher, same

@@ -9,7 +9,15 @@
 
 /** The tables a seed module may write to. `products` is absent, permanently: requirement §32
  *  forbids seeded inventory, so the type system does not let a module ask for one. */
-export type SeedableTable = 'categories' | 'collections' | 'materials'
+export type SeedableTable =
+  | 'categories'
+  | 'collections'
+  | 'materials'
+  // Phase 08. `pages` is the route shell and `global_content` the site-wide strings; both are
+  // structure the CMS engine needs before any copy exists. `page_sections` is deliberately ABSENT:
+  // a section is where copy lives, and seeding copy is Phase 09's work through modules of its own.
+  | 'pages'
+  | 'global_content'
 
 /**
  * One seeded row.

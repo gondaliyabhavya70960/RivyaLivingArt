@@ -4,7 +4,7 @@ import type { GlobalContent } from '@/lib/supabase/schemas'
  * Site-wide strings, by `group_key.key`.
  *
  * SEED §1 and D2 put every visitor-readable string in the database. That includes the ones that
- * are not marketing copy — `error.media_unavailable.label`, the empty-state messages, the
+ * are not marketing copy — `ERROR.media_unavailable.label`, the empty-state messages, the
  * WhatsApp button's words — because "it's only chrome" is how a literal gets into JSX and how the
  * owner loses the ability to change it without a deploy.
  *
@@ -44,4 +44,7 @@ export function siteStringOrEmpty(strings: SiteStrings, key: string): string {
 }
 
 /** The `global_content` keys the section renderers ask for. Studio lists these as expected keys. */
-export const REQUIRED_SITE_STRINGS = ['error.media_unavailable.label', 'media.play.label'] as const
+export const REQUIRED_SITE_STRINGS = [
+  'ERROR.media_unavailable.label',
+  'ACTION_LABEL.media.play',
+] as const

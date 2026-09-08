@@ -8,14 +8,60 @@
 
 ## Current Phase
 
-**Phase 07 — Higgsfield Asset Audit + Initial Asset Plan. CODE COMPLETE; THE MIGRATION HAS NOT
-BEEN RUN.** Everything Phase 07 specifies is built, tested and pushed. Moving the 250 assets into
-Cloudinary is the one step that cannot happen here — the sandbox proxy refuses CONNECT to both
-`api.cloudinary.com` and the Higgsfield CDN the assets are fetched from. It is an owner-side
-command, and it is the first item under *Remaining Work*.
+**Phase 08 — Content Management Engine. COMPLETE.** The CMS engine is built, tested against a real
+PostgreSQL, applied to the hosted database and documented. An editor can build a page from typed
+blocks, bind media to it, schedule it, walk it through the status workflow and preview it before it
+is live.
 
-Phase 06 merged as PR #8. Phase 05 is substantially complete with two carried gaps (below).
-Phase 04 is closed out (PR #5, plus the close-out in PR #7). Phase 03 merged as PR #4.
+Phase 07 remains CODE COMPLETE with its migration unrun — moving the 250 Higgsfield assets into
+Cloudinary is still the one owner-side step, and it is still the first item under *Remaining Work*.
+Phase 06 merged as PR #8; Phase 05 is substantially complete with two carried gaps; Phase 04 is
+closed out (PR #5, plus PR #7); Phase 03 merged as PR #4.
+
+### Phase 08: what is built
+
+**The database.** Six migrations, `0050`–`0055`. Seven tables (`pages`, `page_sections`,
+`content_revisions`, `navigation_items`, `global_content`, `seo_entries`, `faqs`), five triggers,
+five `cms_*` SECURITY DEFINER functions, and the generated policy and transition files. All applied
+locally AND to `ccvarsmzickdkryoakdg`, and verified there afterwards rather than assumed: 7 CMS
+tables, all with RLS on, 90 policies matching local exactly, 6 `cms_*` functions, 8 triggers on
+`page_sections`, and `page_sections_media_needs_slot_key` present.
+
+**The blocks.** All 28 catalogue types declared; six built, chosen to exercise every payload family
+(amendment A8). Both registries are `satisfies Record<BlockType, …>`, so an omission is a build
+error — verified by removing one and reading the failure.
+
+**The renderers.** `components/sections/`, synchronous and pure: `lib/cms/resolve.ts` decided what
+is live, `lib/cms/media.ts` resolved every asset for the page in one query, `siteStrings` supplied
+the chrome copy. `npm run cms:check-copy` parses each file with the TypeScript compiler and fails
+on any literal a visitor would read.
+
+**Studio.** `/studio/content/pages` and `/studio/content/pages/[pageId]` — add, edit, reorder,
+remove, and only the status transitions the caller's role can actually take. A `MediaPicker` that
+says at the moment of choosing whether an asset would block a publish.
+
+**Scheduling and preview.** `cms_run_content_schedule` under `for update skip locked`, BLOCKING a
+section after three refusals rather than retrying forever; `/api/preview` using the staff session
+as its credential, with `draftMode()` correctly awaited.
+
+**The seed.** Two modules — 12 route shells and 5 global strings, the latter carrying SEED §27–§29
+verbatim. Applied locally; **not yet applied to hosted** (see *Remaining Work*).
+
+### Phase 08: what is NOT built
+
+- **22 of the 28 blocks.** Declared `PLANNED`, unaddable in Studio, rendering nothing publicly.
+- **A repeater UI.** A block with repeating items is edited as JSON, validated on save against its
+  own schema and refused rather than coerced.
+- **Any section copy.** The engine is built and nothing is written into it. That is Phase 09.
+- **Any public page route.** `app/(site)/[...]` does not consume `resolvePage` yet.
+
+### The defect Phase 08 found in itself
+
+`sync_media_usages` only writes a `media_usages` row when `media_slot_key` is present, and
+`cms_publish_section`'s RV003 and RV006 gates are **both joins through that table**. A section
+binding an asset with a null slot key therefore published with no media check at all. Reproduced: a
+DRAFT, `OWNER_VERIFICATION_REQUIRED` asset went live and stayed DRAFT, invisible to the gap tracker
+too. Migration `0054` closes it; re-verified after.
 
 ### Phase 07: what is built, and what is not
 
@@ -549,6 +595,26 @@ push and satisfy D9 from those runs, evidenced in the phase record — never fro
 
 ## Remaining Work
 
+### Owner-side, from Phase 08
+
+0. **Run `npm run seed:content` against the hosted database.** The schema is there; the content is
+   not. This writes 12 `pages` route shells and 5 `global_content` strings. It must be the RUNNER,
+   not hand-written SQL: the runner stores a `seed_content_hash` per row, which is how it later
+   tells its own writes from an edit a person made. Rows inserted without it would be treated as
+   owner-edited and skipped by every future run. One command, from any machine whose
+   `DATABASE_URL` can reach the pooler.
+
+0b. **Verify the 250 Higgsfield assets in the Media Manager.** Every one is `APPROVED` *and*
+   `OWNER_VERIFICATION_REQUIRED`, which is exactly what `cms_publish_section` refuses with RV006.
+   Until they are verified, **no section that binds one can be published** — so the site cannot go
+   live on Higgsfield media at all. This is the design working: the assets are AI-generated and
+   assert things about Rivya's work that only the owner can confirm.
+
+0c. **Decide the Vercel cron cadence.** `vercel.json` schedules the content sweep once a day at
+   03:00 UTC, because the Hobby plan permits daily crons only. A section scheduled for 09:00
+   therefore publishes at 03:00 the next day. Hourly or finer needs a paid plan; nothing has been
+   changed that would incur a charge.
+
 ### Owner-side, blocking Phase 07's exit criteria
 
 1. **Add `CLOUDINARY_API_KEY` and `CLOUDINARY_API_SECRET` to `.env.local`, then run
@@ -623,10 +689,29 @@ on `/studio` rather than a route segment.
 
 ## Next Exact Action
 
-**Run the migration, then start Phase 08.** In that order — Phase 08 builds the CMS that binds
-assets to slots, and binding is easier to reason about against a library that exists.
+**Start Phase 09 — Initial Content Seed.** The engine is built and empty; Phase 09 writes the copy
+into it. Nothing in Phase 09 is blocked by the two owner-side items below, and both should happen
+alongside it rather than before it:
 
-### 1. Run the migration (owner-side, ~20 minutes)
+- `npm run seed:content` against hosted, which puts the route shells and the five global strings
+  there. Phase 09's own modules extend the same runner, so doing this first means each later run is
+  an increment rather than a first import.
+- Verifying the 250 Higgsfield assets. Phase 09 can write and review every section without it;
+  what it cannot do is PUBLISH one that binds an asset, because RV006 refuses. So the copy can be
+  written, reviewed and approved in parallel, and the site goes live when the verification does.
+
+Phase 09's first increment is the section modules for `/` and `/about`: `content/seed/sections/`,
+one module per page, each record carrying its own `fact_classification` and — where it asserts
+business capability — `OWNER_VERIFICATION_REQUIRED`, which is what makes D10 a schema rule here
+rather than a review convention.
+
+### Still outstanding from Phase 07
+
+**Run the Higgsfield migration.** In this order relative to Phase 09 it no longer blocks: the CMS
+binds assets by id, and `computeGaps()` already reports which slots the manifest could fill, so
+sections can be written against slots whose assets have not landed yet.
+
+#### The migration command (owner-side, ~20 minutes)
 
 This cannot run in the sandbox: the proxy refuses CONNECT to `api.cloudinary.com` and to
 `d8j0ntlcm91z4.cloudfront.net`, which is where the source files live. On a local machine with
