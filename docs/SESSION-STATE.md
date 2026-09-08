@@ -8,7 +8,43 @@
 
 ## Current Phase
 
-**Phase 04 — Supabase Auth + RBAC + RLS.** Merged as PR #5. Phase 03 merged as PR #4.
+**Phase 05 — Studio Foundation. IN PROGRESS.** Phase 04 is closed out (PR #5, plus the close-out in
+PR #7). Phase 03 merged as PR #4.
+
+### Phase 05: what is built, and what is not
+
+**Built and verified**
+
+- **`lib/auth/studio-nav.ts` — the D4 map, once.** 8 groups, 58 leaves, each with a label *key*, a
+  read permission, a write permission where one applies, and its owning phases. `nav-visibility.ts`
+  now derives from it instead of holding a second copy, and the 58 `page.tsx` files are generated
+  from it.
+- **`tests/unit/studio-nav.test.ts`** asserts D4 ↔ manifest ↔ disk. D4 is *parsed* out of
+  CANONICAL-DECISIONS rather than transcribed. Both failure directions were provoked and confirmed,
+  including a page on disk the manifest does not name — an unreachable, ungoverned route.
+- **The shell.** `app/(studio)/layout.tsx` (bone ground — the Phase 04 carry-forward) and
+  `app/(studio)/studio/(shell)/layout.tsx`. `(shell)` is a route group so `/studio/login` stays
+  outside the permission check; a layout at `studio/layout.tsx` would gate the sign-in page behind
+  being signed in.
+- **`/studio` Overview** with the three D4 tabs as query parameters, not client state. Activity
+  reads real rows; Analytics says Phase 37 and shows no figure.
+- **Migration `0020`** (`activity_events`, `studio_preferences`) and **`0021`**, generated.
+- **`withPermission` writes exactly one audit row** and names the record — the Phase 04
+  carry-forward, with nine tests and both regressions confirmed against the old behaviour.
+
+**Not built yet, and Phase 05 is not complete without them**
+
+1. **The command palette** (⌘K) and its provider registry.
+2. **Ten of the twelve Studio primitives**: `DataTable`, `FilterBar`, `StatCard`, `StatusPill`,
+   `EmptyState`, `ConfirmDialog`, `DrawerForm`, `FormField`, `PermissionGate`, `RelativeTime`,
+   `ActorChip`. Only `StudioPage` and the shell exist.
+3. **`app/api/studio/search/route.ts`.**
+4. **`tests/e2e/studio-rbac.spec.ts`** — the per-role route matrix. Blocked on the same thing as
+   Phase 04 step 6: it needs real sessions, so it needs a reachable Supabase project.
+5. **`loading.tsx` / `error.tsx` / `not-found.tsx`** for the Studio.
+6. **The visual QA matrix** at the eight FEAT §45 widths.
+7. **`logActivity()` has no callers yet** — the writer, the table and the feed exist, but no
+   mutation calls it, so the feed is empty by construction rather than by circumstance.
 
 ## Status
 
@@ -257,7 +293,11 @@ on `/studio` rather than a route segment.
 
 ## Next Exact Action
 
-**Phase 05 — Studio Foundation.** Read `docs/project/phases/PHASE-05-09.md` §PHASE 05.
+**Finish Phase 05.** Read `docs/project/phases/PHASE-05-09.md` §PHASE 05, then work the seven
+unbuilt items listed under *Current Phase* above, in that order. Items 1–3 and 5 are unblocked;
+item 4 needs Supabase.
+
+Previously recorded as the phase-start list, and still true of the items not yet done:
 
 Phase 05 consumes `getStaffSession()`, `requirePermission()` and `lib/auth/nav-visibility.ts` from
 Phase 04 and builds the Studio chrome itself. Four things it should pick up on the way:
