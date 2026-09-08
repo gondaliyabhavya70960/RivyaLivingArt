@@ -6,6 +6,80 @@ Every phase adds an entry; see `docs/architecture/CANONICAL-DECISIONS.md` D9 for
 
 ## [Unreleased]
 
+### Phase 09 — Initial Website Content Seed
+
+The empty CMS becomes a coherent draft website. Eighteen seed modules, 231 records
+applied and 22 authored-and-deferred, every string taken from the specification
+verbatim. Two migrations, `0070` and `0071`.
+
+**Most of `0070` was already done**, and the migration says so rather than shipping
+a shorter file silently: `content_seed_version` has been the column name on all ten
+seedable tables since Phase 03, so there was no rename, and `owner_edited` already
+existed. What was missing: `content_seed_runs.deferred_count`; the seed lookup
+indexes — seven of ten tables had no `seed_key` index and *none* had one on the
+version column, including the six Phase 08 tables this phase writes hundreds of rows
+into; and `set_owner_edited` hardened to SECURITY DEFINER. `0071` adds a `BRAND`
+group, because SEED §6 names "Global Content → Brand" as a Studio location and the
+closed group list had no member that meant it.
+
+**The runner gained two outcomes and a guard.** `deferred` is a declaration, not a
+try/catch: a record names the tables it needs, and if any is absent it is counted and
+listed rather than written or failed. It had to become per-*record*, because the two
+modules that defer are mixed — `commissions.ts` writes six sections and authors three
+form templates; `journal.ts` writes two sections and authors nineteen records. A
+module-level declaration would have left `/custom-commissions` and `/journal` with no
+copy until Phases 18 and 19, which is the outcome deferral exists to avoid.
+
+`unchanged` is the other. A no-op re-run was UPDATEing all 231 rows, and
+`write_revision` fires on any update — so each re-seed appended 231 revisions saying
+nothing changed, and the history an editor scrolls to find a real change would be
+almost entirely noise. It is reported separately from `skipped (owner edit)`: a skip
+means a human owns the row and somebody may need to act, while unchanged is the
+healthy steady state.
+
+The third guard is a status promotion — the row a person reviewed and shipped without
+changing a character, which hashes identically to what the seed wrote. It is *not* a
+bare `status = 'PUBLISHED'` check: route shells and global labels seed published on
+purpose, so the question is whether the row is published beyond what the module asked
+for. Written the naive way it ate the runner's own output and skipped all 25 Phase 08
+records on the very next run.
+
+**Three defects the verification steps found**, each invisible without running them:
+
+- A dry run on an empty database reported 91 failures, one per reference: it writes no
+  pages, so every section's `page_id` resolved to nothing. Phantom failures on a run
+  whose entire job is to report what *would* happen.
+- Then 31 rows reported themselves owner-edited on a clean re-run. PostgreSQL stores
+  jsonb keys by length then bytewise, not in insertion order, so a payload written as
+  `{is_video, autoplay, scrim}` reads back reordered — identical data, different hash.
+  `contentHash` now canonicalises nested keys. Arrays are deliberately not sorted: a
+  `steps` array's order *is* the content.
+- The generated inventory embedded page UUIDs, which change on every `db:reset`. A
+  committed, diff-checked file cannot contain per-database values or the gate has to be
+  turned off.
+
+**What the seed will not do.** No products — `products` is not a member of the
+`SeedableTable` union, so a module targeting it does not compile. No portfolio projects
+and no testimonials; `/portfolio` ships §28's empty state and nothing else. No
+placeholder media: a slot with no asset is left null and reported as a gap, while a
+binding naming an asset that is not in `media_assets` fails the run, because those are
+different mistakes. No invented business facts — §21's contact details are seeded
+because the owner supplied them, in one place because §21 forbids hardcoding them in
+several, and flagged; the location link §21 mentions but does not supply is null.
+
+**80 inventory rows await owner verification and cannot be published until it is
+given** — `cms_publish_section` refuses with RV002 and a check constraint refuses
+underneath it. All ten FAQ answers, every process step, About's scale and bespoke
+sections, three category descriptions, five homepage sections, the announcement bar,
+the brand introduction, `Ready Stock` and the contact details.
+
+`docs/content/INITIAL_CONTENT_INVENTORY.md` is generated from the **database**, not the
+modules — §54 asks what is actually there, which is the only version of the question
+worth answering after a run that skipped rows. 316 rows. `content:check-inventory`
+regenerates and diffs, wired into CI.
+
+23 tables, 90 policies, 27 migrations, 951 tests, 25 gates.
+
 ### Phase 08 — Content Management Engine
 
 The CMS: pages, a typed block catalogue, the status workflow, media binding, scheduling, revisions
