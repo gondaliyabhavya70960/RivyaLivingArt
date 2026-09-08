@@ -163,6 +163,47 @@ Brand and editorial copy may be written; anything asserting business capability 
 
 ## Amendments
 
+**2026-09-08 · A4 — the free-tier operating constraint, and three Phase 03 tooling decisions.**
+
+*A4·a — NOTHING IN THIS PROJECT MAY INCUR A CHARGE WITHOUT THE OWNER'S PRIOR APPROVAL.* The owner
+has stated this for GitHub Actions specifically and it is recorded here as a general rule, because
+it governs every paid surface the stack touches — Actions minutes, Supabase, Cloudinary, Vercel and
+any service a later phase proposes adding. Concretely:
+
+- Work within the free tier of every service in D1.
+- Before doing anything that would exceed a free tier, **stop and ask**, with the estimated cost.
+  Proceed only after the owner approves.
+- Design for frugality by default. Where a choice exists between a cheaper and a more convenient
+  arrangement, take the cheaper one and record why. The CI workflow follows this: the database
+  gates run in the **same job** as everything else, because a second job would pay a second runner
+  startup and a second `npm ci` to buy parallelism a three-minute run does not need.
+- Adding a paid dependency requires its own amendment, not a default chosen during a phase.
+
+*A4·b — `newsletter_subscribers` does NOT land in Phase 03. A3·b is corrected.* A3·b assigned the
+table to Phase 03; Phase 03's own scope never included it, and `DATA_MODEL.md` §1.7 forbids
+creating a production table before the feature that uses it — "an empty table is not preparation;
+it is an unvalidated schema plus an unmaintained RLS surface." The table lands with the phase that
+builds newsletter capture, alongside its RLS policies and its double opt-in flow. Nothing else in
+A3·b changes, including the still-open blocker: **no email service provider exists in D1**, so the
+confirmation email cannot ship until one is chosen by amendment.
+
+*A4·c — generated database types come from `scripts/db/gen-types.mjs`, not the Supabase CLI.* The
+CLI's `gen types` shells out to a Docker image even when handed `--db-url`, so it cannot run where
+Docker is unavailable, and it would make the CI drift check depend on pulling a container image on
+every run — which A4·a argues against on its own. The replacement introspects `pg_catalog` over an
+ordinary PostgreSQL connection and emits the same `Database` shape `@supabase/supabase-js` is typed
+against. It is deterministic by construction (every catalog query explicitly ordered, output run
+through Prettier), which is what `npm run db:check-types` depends on. `lib/supabase/database.types.ts`
+remains generated-only; hand edits are reverted by the next run and rejected in review.
+
+*A4·d — the seed runner connects over `DATABASE_URL`, not through `@supabase/supabase-js`.* It is
+an operations script in the same family as a migration, not application code: it needs one
+transaction per module — a half-applied seed leaves rows whose stored hashes disagree with the
+module, and every later run reads that as an owner edit and skips them — and PostgREST cannot give
+it one. Application reads and writes still go through `lib/supabase/repositories/**`, and
+`scripts/db/check-data-layer.mjs` still fails the build on any `.from(` outside that directory.
+
+
 **2026-09-08 · A3 — two content decisions the owner has now made (supersedes SEED §25, §31).**
 
 *A3·a — "Place Order" is renamed, not routed.* SEED §31 seeds a `Place Order` action label

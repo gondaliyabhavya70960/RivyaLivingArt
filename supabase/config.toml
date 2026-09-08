@@ -1,0 +1,28 @@
+# Supabase project configuration.
+#
+# WHAT THIS FILE IS AND IS NOT USED FOR, because the answer is not the usual one:
+#
+# It is NOT how the database is run during development here. `supabase start` requires Docker,
+# which is unavailable in this project's environment, so local development uses a plain PostgreSQL
+# cluster and `npm run db:reset` — see docs/ops/ENVIRONMENT.md. Type generation likewise uses
+# scripts/db/gen-types.mjs rather than `supabase gen types`, for the same reason
+# (CANONICAL-DECISIONS.md amendment A4·c).
+#
+# It IS what `supabase link` and `supabase db push` read, which is the documented path for applying
+# supabase/migrations/** to the hosted project from a machine with ordinary network egress. Keeping
+# it accurate costs nothing and means that path works when someone takes it.
+
+project_id = "rivya-living-art"
+
+[db]
+# The port `supabase start` would use. Unused here; recorded so it does not collide with the
+# 5433 the local cluster listens on (docs/ops/ENVIRONMENT.md).
+port = 54322
+# Match the hosted project's major version before running `db push`.
+major_version = 16
+
+[db.seed]
+# Seeding is a script, not a database seed file. content/seed/** holds the records and
+# scripts/seed/seed-content.ts applies them idempotently — it must never overwrite an owner's
+# edit, which a plain seed.sql replayed on reset would do every time.
+enabled = false

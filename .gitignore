@@ -27,3 +27,6 @@ tsconfig.tsbuildinfo
 **/*probe*.mjs
 scratch-*.mjs
 scratch-*.ts
+
+# Supabase CLI scratch
+supabase/.temp/

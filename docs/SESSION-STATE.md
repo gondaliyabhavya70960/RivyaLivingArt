@@ -8,14 +8,21 @@
 
 ## Current Phase
 
-**Phase 02 complete and merged** (PR #2, `main` at `6642a6c`). Credentials arrived on
-2026-09-08; the notes below record what they unblocked and what they did not.
+**Phase 03 — Supabase Database + Data Layer.** Phase 02 is complete and merged (PR #2); the
+Phase 02 credential/Cloudinary work merged as PR #3.
 
 ## Status
 
-**COMPLETE.** Every exit criterion in `docs/project/phases/PHASE-00-04.md` §PHASE 02 is met
-and was verified rather than assumed. The full local CI sequence passes from a clean
-`npm ci`; only GitHub Actions itself cannot run (see Known Issues).
+**COMPLETE.** Every exit criterion in `docs/project/phases/PHASE-00-04.md` §PHASE 03 is met and
+was **verified against a real PostgreSQL 16.13 cluster**, not asserted. All thirteen gates pass
+locally; 329 unit tests across 44 files.
+
+The phase document assumed `supabase start`, which needs Docker — unavailable here. PostgreSQL
+16.13 is installed in the image with all four required extensions, so the migrations were applied
+and asserted against a genuine database instead of being written and left untested. That changed
+Phase 03 from a writable-but-unverifiable phase into a fully verified one. See
+`docs/ops/ENVIRONMENT.md` for how to bring the cluster up and for exactly what the local database
+does and does not prove.
 
 ## Completed
 
@@ -57,29 +64,68 @@ tests/e2e/design-system.spec.ts-snapshots/  (8 baselines)
 
 ## Database Changes
 
-**None.** Phase 02 touches no data. The schema lands in Phase 03.
+**Migrations `0001`–`0008`** — the whole Phase 03 spine. Applied and verified against a local
+PostgreSQL 16.13 cluster; **never applied to the hosted Supabase project** (see Migration
+Requirements).
+
+| Migration | Contents |
+|---|---|
+| `0001_extensions.sql` | `pgcrypto`, `citext`, `pg_trgm`, `unaccent` |
+| `0002_enums.sql` | `content_status`, `owner_verification`, `fact_classification`, `media_kind`, `price_state` (three values — no `FIXED` until Phase 14), `collection_concept_state` |
+| `0003_shared_functions.sql` | `set_updated_at()`, `rivya_slugify(text)` (IMMUTABLE, accent-folding) |
+| `0004_taxonomy.sql` | `categories`, `collections`, `materials` |
+| `0005_media_registry.sql` | `media_assets` (minimal), plus the two `hero_media_id` foreign keys `0004` could not declare |
+| `0006_catalog.sql` | `products`, `product_collections`, `product_materials`, `product_media`, `product_relations` |
+| `0007_seed_bookkeeping.sql` | `content_seed_runs` |
+| `0008_indexes.sql` | 24 performance indexes |
+
+RLS is enabled on all ten tables with **zero policies** — the intended state until Phase 04.
+
+**Seed data:** the seven D3 categories, slug/name/order only. `3d-resin` is seeded
+`OWNER_VERIFICATION_REQUIRED` because the name asserts a fabrication capability nobody has
+confirmed; the `categories_verified_before_publish` constraint makes that row unpublishable until
+an owner clears the flag. `products` has zero rows and always will under seed policy.
 
 ## Tests Run
 
 ```
-npx tsc --noEmit · npx eslint . · npx prettier --check .
-npx vitest run
-npx playwright test            (8 projects = the FEAT §45 widths)
-node scripts/design/check-tokens.mjs · check-utilities.mjs · check-registry.mjs
-npm run manifest:verify · npm run media:check-ids
-NODE_ENV=production npm run build && npm start   (route guard)
+npm run typecheck · lint · format:check · test · build
+npm run manifest:verify · media:check-ids
+npm run design:check-tokens · design:check-registry · design:check-utilities
+npm run db:reset · db:check-migrations · db:check-schema · db:check-types · db:check-data-layer
+npm run seed:content -- --dry-run   then twice for real, then after an owner edit, then --force
+npx playwright test                 (8 projects = the FEAT §45 widths)
 ```
 
 ## Test Results
 
-- Unit: **282 tests across 41 files**, all passing.
-- E2E: **120 tests across the 8 QA widths** (115 pass, 5 correctly skipped — the touch-target
-  check does not apply on a fine pointer), all passing — rendering, 16 visual baselines,
-  axe, keyboard reachability, the reduced-motion contract, and the pattern keyboard
-  walkthrough (Dialog trap and restore, Tabs roving tabindex, Accordion aria-expanded,
-  DropdownMenu Escape).
-- Zero critical or serious axe violations on either gallery page.
-- All five gates clean; manifest still regenerates byte-identically; `npm run build` succeeds.
+- Unit: **329 tests across 44 files**, all passing (was 282/41 at the end of Phase 02).
+- All **thirteen** gates pass.
+- Phase 03's nine verification steps, each executed against the real database:
+
+  | # | Step | Result |
+  |---|---|---|
+  | 1 | Migrations apply to an empty database | 8/8, no error |
+  | 2 | `db:types` then diff | no diff; two runs byte-identical |
+  | 3 | Dry run on a fresh database | 7 inserted, 0 updated, 0 skipped |
+  | 4 | Two real runs | 7 inserted; then 0 inserted, 7 updated, 0 skipped; `content_seed_runs` = 2 |
+  | 5 | Owner edit, then re-seed | 1 `skipped_owner_edited`; `name` still `Owner Edit` |
+  | 6 | `REQUEST_QUOTE` with price 0 | rejected by `products_price_state_coherent` |
+  | 7 | `price_state` values / `FIXED` insert | exactly the three values; `FIXED` rejected as an invalid enum input |
+  | 8 | `check-data-layer` | exits 0; exits 1 when a `.from(` is added to a component |
+  | 9 | `vitest run tests/unit/repositories` | 19 tests pass |
+
+- Every constraint was additionally probed with a value it must reject **and** one it must accept.
+  The media identity key was confirmed to allow the same `public_id` under a different
+  `resource_type` while rejecting a true duplicate — the behaviour DATA_MODEL §7 says the wider
+  key exists for.
+- Each of the five new gates was proved to bite by provoking the failure it exists for, and the
+  layering gate was additionally proved **not** to fire on `.from(` inside a comment or a string.
+
+**Step 4 sequencing note.** Verification steps 3 and 4 each begin from a fresh database. A dry run
+writes a `content_seed_runs` row (that is what `is_dry_run` is for), so running step 3 and step 4
+against the same database yields a count of 3, not 2. Step 4's assertion is only true from a
+fresh start, and that is how it was run.
 
 ## Known Issues
 
@@ -177,16 +223,25 @@ on `/studio` rather than a route segment.
 
 ## Next Exact Action
 
-**Begin Phase 03 — Supabase Database + Data Layer.** Read
-`docs/project/phases/PHASE-00-04.md` §PHASE 03 and `docs/architecture/DATA_MODEL.md`, then
-write the first migrations under `supabase/migrations/`, the typed client in
-`lib/supabase/`, and the idempotent content-seed harness
-(`content_seed_version = "rivya-v1"`, which must never overwrite an owner edit).
+**Phase 04 — Supabase Auth + RBAC + RLS.** Read `docs/project/phases/PHASE-00-04.md` §PHASE 04 and
+`docs/architecture/DATA_MODEL.md` §1.5 (the six RLS profiles) and §4 (`staff_profiles`,
+`audit_logs`).
 
-**Phase 03 is blocked until a Supabase project exists and the D8 variables are set.** The
-migrations and data layer can be written against `DATA_MODEL.md` without credentials, but
-nothing can be applied or tested end to end until the owner provisions the project. Phase 04
-(Auth/RBAC/RLS) depends on the same credentials; Phase 06 (Cloudinary) on its own.
+Phase 04 is where the database stops being unreachable. Every table currently has RLS enabled with
+**no policy**, so anon and authenticated read nothing; Phase 04 adds `user_role`, `staff_profiles`,
+`audit_logs`, the RLS helper functions (`current_staff_role()`, `has_role()`) and the four-policy
+pattern on each Phase 03 table.
+
+Three things Phase 03 leaves for it specifically:
+
+1. **RLS behaviour is proved by nothing yet.** The local database has no PostgREST, so the anon
+   and authenticated paths cannot be exercised here at all. Phase 04's verification must include a
+   test that an anon client sees only `PUBLISHED` rows — and that test needs either a hosted
+   Supabase project or a local PostgREST, neither of which this sandbox can reach today.
+2. **`scripts/db/check-schema.mjs` currently treats any policy as a note, not a failure.** Once
+   Phase 04 lands, that check should assert the *expected* policy set per table instead.
+3. **The `auth.users` shim** (`supabase/local/00-auth-shim.sql`) creates only `id`. Phase 04 will
+   need more of that table's shape locally — at minimum whatever `current_staff_role()` reads.
 
 ## Relevant Documentation
 
@@ -202,4 +257,21 @@ No Supabase or Cloudinary credentials are set; Phase 02 needs none.
 
 ## Migration Requirements
 
-**None.** `supabase/migrations/` does not exist until Phase 03.
+`supabase/migrations/0001`–`0008` exist and apply cleanly to an empty database.
+
+**They have NEVER been applied to the hosted Supabase project** — this sandbox cannot reach
+`*.supabase.co` or Postgres 5432/6543. The first application needs a machine with ordinary egress:
+
+```bash
+export DATABASE_URL="<the hosted project's direct 5432 URL>"
+npm run db:reset -- --allow-remote     # DROPS EVERYTHING — only correct on an empty project
+npm run seed:content
+```
+
+`db:reset` refuses a non-loopback host without `--allow-remote`, deliberately: it drops every
+object in the schema. On a project that already holds data, apply the migrations individually with
+`psql` instead.
+
+Phase 14 must **drop and recreate** (not extend) `products_price_state_coherent`,
+`products_listing_idx` and `products_facets_idx` — the reasons are written into
+`0006_catalog.sql` and `0008_indexes.sql`.

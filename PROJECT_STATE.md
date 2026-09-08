@@ -1,15 +1,16 @@
 # PROJECT_STATE — what is actually built
 
 > Verified against the repository, not against intent. Update at the end of every phase.
-> Last verified: Phase 02.
+> Last verified: Phase 03.
 
 ## Summary
 
-The design system is built and the application scaffold runs. What exists: the toolchain, the
-token layer, 32 primitives, 2 motion helpers, 7 behavioural patterns, a dev-only gallery, and
-five gates that fail the build on the mistakes they were written for. What does not: any
-product page, any database, any media delivery. Phases 03 and 06 remain blocked on Supabase
-and Cloudinary credentials.
+The design system is built, and the database spine now exists and has been verified against a
+real PostgreSQL. What exists: the toolchain, the token layer, 32 primitives, 2 motion helpers,
+7 behavioural patterns, a dev-only gallery, ten tables with RLS on and no policy yet, generated
+types with a drift gate, a repository layer with Zod at its boundary, an idempotent seed runner
+proved not to overwrite an owner's edit, and ten gates that fail the build on the mistakes they
+were written for. What does not: any product page, any RLS policy, any media delivery.
 
 ## Phase status
 
@@ -18,7 +19,7 @@ and Cloudinary credentials.
 | 00 | Repository Audit & Baseline | **COMPLETE** | Audit performed on an empty repo (single initial commit, README only). Requirements captured to `docs/requirements/`. `.gitignore` added. |
 | 01 | PRD, Architecture & Documentation | **COMPLETE** | `docs/architecture/CANONICAL-DECISIONS.md`, `ARCHITECTURE.md`, `DATA_MODEL.md`, `SCRAPER.md`; `docs/project/PRD.md`, `BUSINESS_RULES.md`, `ROADMAP.md`, `phases/`; `docs/ops/*`; session-recovery file set. |
 | 02 | Reference UI Audit + Design System | **COMPLETE** | Toolchain, token layer, 32 primitives, 2 motion helpers, 7 behavioural patterns, dev gallery, 5 gates. 282 unit tests, 104 e2e across the 8 QA widths, 16 visual baselines. |
-| 03 | Supabase Database + Data Layer | **PLANNED** | `docs/architecture/DATA_MODEL.md` specifies the schema; no migrations written. |
+| 03 | Supabase Database + Data Layer | **COMPLETE** | Migrations `0001`-`0008` applied and verified against PostgreSQL 16.13. 10 tables, 6 enums, 2 functions, 24 indexes, RLS on everywhere with no policy. Generated types + drift gate, 6 repositories, Zod schemas, seed runner proved idempotent and owner-edit-safe. 5 new gates, 35 new tests. |
 | 04 | Supabase Auth + RBAC + RLS | **PLANNED** | Specified in `docs/project/phases/PHASE-00-04.md`. |
 | 05 | Studio Foundation | **PLANNED** | — |
 | 06 | Cloudinary Media Architecture | **PLANNED** | `docs/media/CLOUDINARY.md` specifies folders and the migration runbook. |
@@ -63,12 +64,24 @@ from a clean `npm ci`. This is an account-level condition and needs the owner.
   public IDs are unique (asserted by the generator); the gap-ID collision guard passes across
   31 documents.
 - All 47 phases (00–46) are documented, each carrying all 12 required headings.
+- Migrations `0001`-`0008` apply cleanly to an empty PostgreSQL 16.13 database; all ten tables
+  have `relrowsecurity = true` and zero policies; `price_state` holds exactly
+  `STARTING_FROM REQUEST_QUOTE PRICE_ON_REQUEST`; the type generator produces byte-identical
+  output across runs.
+- The seed runner inserts 7 rows on a fresh database, updates 7 and inserts 0 on a second run,
+  and after an owner edits one row reports 1 `skipped_owner_edited` with that row's value intact.
+  Publishing a row and re-seeding does not un-publish it.
+- 329 unit tests across 44 files. All thirteen gates pass locally.
 
 ## Known risks carried forward
 
-1. No Supabase or Cloudinary credentials in this environment — Phases 03 and 06 cannot be
-   executed until the owner provisions them.
-2. Every seeded statement about fabrication capability is unverified and carries
+1. **The migration set has never been applied to the hosted Supabase project**, only to a local
+   cluster, because this sandbox cannot reach `*.supabase.co`. The first application needs a
+   machine with ordinary egress, and until it happens the hosted schema is empty.
+2. **The pasted Supabase secrets are still unrotated.** The service-role key, secret key, JWT
+   secret and database password were exposed in a chat transcript on 2026-09-08. Treat them as
+   compromised until rotated.
+3. Every seeded statement about fabrication capability is unverified and carries
    `OWNER_VERIFICATION_REQUIRED`. The site cannot publish those claims until the owner confirms.
-3. Competitor scraping (Phases 25–35) needs a per-source legal/ToS review before any source is
+4. Competitor scraping (Phases 25–35) needs a per-source legal/ToS review before any source is
    enabled; the plan records the requirement but the review itself is an owner decision.

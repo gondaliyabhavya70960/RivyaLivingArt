@@ -24,6 +24,48 @@ const config = [
     ],
   },
   ...next,
+
+  /**
+   * The service-role client bypasses Row Level Security entirely, so importing it is a decision
+   * rather than a convenience. This rule names the small set of files allowed to make it.
+   *
+   * `lib/supabase/admin.ts` already starts with `import 'server-only'`, which turns a Client
+   * Component import into a build error. This is the earlier, louder layer: it fails in the
+   * editor, it names the rule, and it also catches a SERVER file that reaches for the admin client
+   * to get around an RLS refusal — which `server-only` would happily allow.
+   */
+  {
+    files: ['**/*.{ts,tsx,mts,cts}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['**/supabase/admin', '**/supabase/admin.ts', '@/lib/supabase/admin'],
+              message:
+                'lib/supabase/admin.ts bypasses RLS. Import it only from a server action that has ' +
+                'already called requirePermission(), or from a script. Add the file to the ' +
+                'allowlist in eslint.config.mjs if it genuinely needs the service role.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+
+  /**
+   * The allowlist. Every entry is a file that legitimately holds the service role:
+   *   lib/supabase/admin.ts  defines it
+   *   scripts/**             operations tooling; runs with DATABASE_URL and no user session
+   *   tests/**               exercises RLS by comparing an anon client against a privileged one
+   */
+  {
+    files: ['lib/supabase/admin.ts', 'scripts/**', 'tests/**'],
+    rules: {
+      'no-restricted-imports': 'off',
+    },
+  },
 ]
 
 export default config

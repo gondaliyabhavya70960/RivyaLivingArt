@@ -1,0 +1,800 @@
+// GENERATED FILE — DO NOT EDIT BY HAND.
+//
+// Produced by `npm run db:types`, which introspects a live database. Every hand edit is reverted
+// by the next run, and CI fails the build on any difference between this file and a fresh
+// generation (`npm run db:check-types`). If a type here is wrong, the migration is wrong.
+//
+// Source of truth: supabase/migrations/**.
+
+export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
+
+export type Database = {
+  public: {
+    Tables: {
+      categories: {
+        Row: {
+          id: string
+          slug: string
+          parent_id: string | null
+          name: string
+          subtitle: string | null
+          description: string | null
+          sort_order: number
+          is_primary: boolean
+          hero_media_id: string | null
+          seo_title: string | null
+          seo_description: string | null
+          created_at: string
+          updated_at: string
+          updated_by: string | null
+          status: Database['public']['Enums']['content_status']
+          owner_verification: Database['public']['Enums']['owner_verification']
+          fact_classification: Database['public']['Enums']['fact_classification'] | null
+          published_at: string | null
+          published_by: string | null
+          seed_key: string | null
+          content_seed_version: string | null
+          seed_content_hash: string | null
+          seed_last_applied_at: string | null
+          owner_edited: boolean
+        }
+        Insert: {
+          id?: string
+          slug: string
+          parent_id?: string | null
+          name: string
+          subtitle?: string | null
+          description?: string | null
+          sort_order?: number
+          is_primary?: boolean
+          hero_media_id?: string | null
+          seo_title?: string | null
+          seo_description?: string | null
+          created_at?: string
+          updated_at?: string
+          updated_by?: string | null
+          status?: Database['public']['Enums']['content_status']
+          owner_verification?: Database['public']['Enums']['owner_verification']
+          fact_classification?: Database['public']['Enums']['fact_classification'] | null
+          published_at?: string | null
+          published_by?: string | null
+          seed_key?: string | null
+          content_seed_version?: string | null
+          seed_content_hash?: string | null
+          seed_last_applied_at?: string | null
+          owner_edited?: boolean
+        }
+        Update: {
+          id?: string
+          slug?: string
+          parent_id?: string | null
+          name?: string
+          subtitle?: string | null
+          description?: string | null
+          sort_order?: number
+          is_primary?: boolean
+          hero_media_id?: string | null
+          seo_title?: string | null
+          seo_description?: string | null
+          created_at?: string
+          updated_at?: string
+          updated_by?: string | null
+          status?: Database['public']['Enums']['content_status']
+          owner_verification?: Database['public']['Enums']['owner_verification']
+          fact_classification?: Database['public']['Enums']['fact_classification'] | null
+          published_at?: string | null
+          published_by?: string | null
+          seed_key?: string | null
+          content_seed_version?: string | null
+          seed_content_hash?: string | null
+          seed_last_applied_at?: string | null
+          owner_edited?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'categories_hero_media_id_fkey'
+            columns: ['hero_media_id']
+            isOneToOne: false
+            referencedRelation: 'media_assets'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'categories_parent_id_fkey'
+            columns: ['parent_id']
+            isOneToOne: false
+            referencedRelation: 'categories'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'categories_published_by_fkey'
+            columns: ['published_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'categories_updated_by_fkey'
+            columns: ['updated_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      collections: {
+        Row: {
+          id: string
+          slug: string
+          name: string
+          statement: string | null
+          concept_state: Database['public']['Enums']['collection_concept_state']
+          hero_media_id: string | null
+          sort_order: number
+          created_at: string
+          updated_at: string
+          updated_by: string | null
+          status: Database['public']['Enums']['content_status']
+          owner_verification: Database['public']['Enums']['owner_verification']
+          fact_classification: Database['public']['Enums']['fact_classification'] | null
+          published_at: string | null
+          published_by: string | null
+          seed_key: string | null
+          content_seed_version: string | null
+          seed_content_hash: string | null
+          seed_last_applied_at: string | null
+          owner_edited: boolean
+        }
+        Insert: {
+          id?: string
+          slug: string
+          name: string
+          statement?: string | null
+          concept_state?: Database['public']['Enums']['collection_concept_state']
+          hero_media_id?: string | null
+          sort_order?: number
+          created_at?: string
+          updated_at?: string
+          updated_by?: string | null
+          status?: Database['public']['Enums']['content_status']
+          owner_verification?: Database['public']['Enums']['owner_verification']
+          fact_classification?: Database['public']['Enums']['fact_classification'] | null
+          published_at?: string | null
+          published_by?: string | null
+          seed_key?: string | null
+          content_seed_version?: string | null
+          seed_content_hash?: string | null
+          seed_last_applied_at?: string | null
+          owner_edited?: boolean
+        }
+        Update: {
+          id?: string
+          slug?: string
+          name?: string
+          statement?: string | null
+          concept_state?: Database['public']['Enums']['collection_concept_state']
+          hero_media_id?: string | null
+          sort_order?: number
+          created_at?: string
+          updated_at?: string
+          updated_by?: string | null
+          status?: Database['public']['Enums']['content_status']
+          owner_verification?: Database['public']['Enums']['owner_verification']
+          fact_classification?: Database['public']['Enums']['fact_classification'] | null
+          published_at?: string | null
+          published_by?: string | null
+          seed_key?: string | null
+          content_seed_version?: string | null
+          seed_content_hash?: string | null
+          seed_last_applied_at?: string | null
+          owner_edited?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'collections_hero_media_id_fkey'
+            columns: ['hero_media_id']
+            isOneToOne: false
+            referencedRelation: 'media_assets'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'collections_published_by_fkey'
+            columns: ['published_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'collections_updated_by_fkey'
+            columns: ['updated_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      content_seed_runs: {
+        Row: {
+          id: string
+          seed_version: string
+          started_at: string
+          finished_at: string | null
+          actor: string | null
+          is_dry_run: boolean
+          inserted_count: number
+          updated_count: number
+          skipped_owner_edited_count: number
+          failed_count: number
+          report: Json
+        }
+        Insert: {
+          id?: string
+          seed_version: string
+          started_at?: string
+          finished_at?: string | null
+          actor?: string | null
+          is_dry_run?: boolean
+          inserted_count?: number
+          updated_count?: number
+          skipped_owner_edited_count?: number
+          failed_count?: number
+          report?: Json
+        }
+        Update: {
+          id?: string
+          seed_version?: string
+          started_at?: string
+          finished_at?: string | null
+          actor?: string | null
+          is_dry_run?: boolean
+          inserted_count?: number
+          updated_count?: number
+          skipped_owner_edited_count?: number
+          failed_count?: number
+          report?: Json
+        }
+        Relationships: []
+      }
+      materials: {
+        Row: {
+          id: string
+          slug: string
+          name: string
+          family: string
+          description: string | null
+          created_at: string
+          updated_at: string
+          updated_by: string | null
+          status: Database['public']['Enums']['content_status']
+          owner_verification: Database['public']['Enums']['owner_verification']
+          fact_classification: Database['public']['Enums']['fact_classification'] | null
+          published_at: string | null
+          published_by: string | null
+          seed_key: string | null
+          content_seed_version: string | null
+          seed_content_hash: string | null
+          seed_last_applied_at: string | null
+          owner_edited: boolean
+        }
+        Insert: {
+          id?: string
+          slug: string
+          name: string
+          family: string
+          description?: string | null
+          created_at?: string
+          updated_at?: string
+          updated_by?: string | null
+          status?: Database['public']['Enums']['content_status']
+          owner_verification?: Database['public']['Enums']['owner_verification']
+          fact_classification?: Database['public']['Enums']['fact_classification'] | null
+          published_at?: string | null
+          published_by?: string | null
+          seed_key?: string | null
+          content_seed_version?: string | null
+          seed_content_hash?: string | null
+          seed_last_applied_at?: string | null
+          owner_edited?: boolean
+        }
+        Update: {
+          id?: string
+          slug?: string
+          name?: string
+          family?: string
+          description?: string | null
+          created_at?: string
+          updated_at?: string
+          updated_by?: string | null
+          status?: Database['public']['Enums']['content_status']
+          owner_verification?: Database['public']['Enums']['owner_verification']
+          fact_classification?: Database['public']['Enums']['fact_classification'] | null
+          published_at?: string | null
+          published_by?: string | null
+          seed_key?: string | null
+          content_seed_version?: string | null
+          seed_content_hash?: string | null
+          seed_last_applied_at?: string | null
+          owner_edited?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'materials_published_by_fkey'
+            columns: ['published_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'materials_updated_by_fkey'
+            columns: ['updated_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      media_assets: {
+        Row: {
+          id: string
+          provider: string
+          resource_type: string
+          public_id: string
+          folder: string
+          filename: string | null
+          rivya_asset_id: string | null
+          kind: Database['public']['Enums']['media_kind']
+          alt_text: string
+          is_ai_generated: boolean
+          is_concept: boolean
+          width: number | null
+          height: number | null
+          aspect_ratio: string | null
+          duration_s: number | null
+          uploaded_by: string | null
+          created_at: string
+          updated_at: string
+          updated_by: string | null
+          status: Database['public']['Enums']['content_status']
+          owner_verification: Database['public']['Enums']['owner_verification']
+          fact_classification: Database['public']['Enums']['fact_classification'] | null
+          published_at: string | null
+          published_by: string | null
+        }
+        Insert: {
+          id?: string
+          provider?: string
+          resource_type: string
+          public_id: string
+          folder: string
+          filename?: string | null
+          rivya_asset_id?: string | null
+          kind: Database['public']['Enums']['media_kind']
+          alt_text: string
+          is_ai_generated: boolean
+          is_concept: boolean
+          width?: number | null
+          height?: number | null
+          aspect_ratio?: string | null
+          duration_s?: number | null
+          uploaded_by?: string | null
+          created_at?: string
+          updated_at?: string
+          updated_by?: string | null
+          status?: Database['public']['Enums']['content_status']
+          owner_verification?: Database['public']['Enums']['owner_verification']
+          fact_classification?: Database['public']['Enums']['fact_classification'] | null
+          published_at?: string | null
+          published_by?: string | null
+        }
+        Update: {
+          id?: string
+          provider?: string
+          resource_type?: string
+          public_id?: string
+          folder?: string
+          filename?: string | null
+          rivya_asset_id?: string | null
+          kind?: Database['public']['Enums']['media_kind']
+          alt_text?: string
+          is_ai_generated?: boolean
+          is_concept?: boolean
+          width?: number | null
+          height?: number | null
+          aspect_ratio?: string | null
+          duration_s?: number | null
+          uploaded_by?: string | null
+          created_at?: string
+          updated_at?: string
+          updated_by?: string | null
+          status?: Database['public']['Enums']['content_status']
+          owner_verification?: Database['public']['Enums']['owner_verification']
+          fact_classification?: Database['public']['Enums']['fact_classification'] | null
+          published_at?: string | null
+          published_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'media_assets_published_by_fkey'
+            columns: ['published_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'media_assets_updated_by_fkey'
+            columns: ['updated_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'media_assets_uploaded_by_fkey'
+            columns: ['uploaded_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      product_collections: {
+        Row: {
+          product_id: string
+          collection_id: string
+          sort_order: number
+          created_at: string
+          created_by: string | null
+        }
+        Insert: {
+          product_id: string
+          collection_id: string
+          sort_order?: number
+          created_at?: string
+          created_by?: string | null
+        }
+        Update: {
+          product_id?: string
+          collection_id?: string
+          sort_order?: number
+          created_at?: string
+          created_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'product_collections_collection_id_fkey'
+            columns: ['collection_id']
+            isOneToOne: false
+            referencedRelation: 'collections'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'product_collections_created_by_fkey'
+            columns: ['created_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'product_collections_product_id_fkey'
+            columns: ['product_id']
+            isOneToOne: false
+            referencedRelation: 'products'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      product_materials: {
+        Row: {
+          product_id: string
+          material_id: string
+          note: string | null
+          created_at: string
+          created_by: string | null
+        }
+        Insert: {
+          product_id: string
+          material_id: string
+          note?: string | null
+          created_at?: string
+          created_by?: string | null
+        }
+        Update: {
+          product_id?: string
+          material_id?: string
+          note?: string | null
+          created_at?: string
+          created_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'product_materials_created_by_fkey'
+            columns: ['created_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'product_materials_material_id_fkey'
+            columns: ['material_id']
+            isOneToOne: false
+            referencedRelation: 'materials'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'product_materials_product_id_fkey'
+            columns: ['product_id']
+            isOneToOne: false
+            referencedRelation: 'products'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      product_media: {
+        Row: {
+          product_id: string
+          media_asset_id: string
+          role: string | null
+          sort_order: number | null
+          created_at: string
+          created_by: string | null
+        }
+        Insert: {
+          product_id: string
+          media_asset_id: string
+          role?: string | null
+          sort_order?: number | null
+          created_at?: string
+          created_by?: string | null
+        }
+        Update: {
+          product_id?: string
+          media_asset_id?: string
+          role?: string | null
+          sort_order?: number | null
+          created_at?: string
+          created_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'product_media_created_by_fkey'
+            columns: ['created_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'product_media_media_asset_id_fkey'
+            columns: ['media_asset_id']
+            isOneToOne: false
+            referencedRelation: 'media_assets'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'product_media_product_id_fkey'
+            columns: ['product_id']
+            isOneToOne: false
+            referencedRelation: 'products'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      product_relations: {
+        Row: {
+          id: string
+          source_product_id: string
+          target_type: string
+          target_id: string
+          relation_type: string
+          sort_order: number
+          created_at: string
+          created_by: string | null
+        }
+        Insert: {
+          id?: string
+          source_product_id: string
+          target_type: string
+          target_id: string
+          relation_type: string
+          sort_order?: number
+          created_at?: string
+          created_by?: string | null
+        }
+        Update: {
+          id?: string
+          source_product_id?: string
+          target_type?: string
+          target_id?: string
+          relation_type?: string
+          sort_order?: number
+          created_at?: string
+          created_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'product_relations_created_by_fkey'
+            columns: ['created_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'product_relations_source_product_id_fkey'
+            columns: ['source_product_id']
+            isOneToOne: false
+            referencedRelation: 'products'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      products: {
+        Row: {
+          id: string
+          slug: string
+          sku: string | null
+          title: string | null
+          subtitle: string | null
+          summary: string | null
+          description: string | null
+          category_id: string | null
+          price_state: Database['public']['Enums']['price_state']
+          price_from_minor: number | null
+          currency: string | null
+          is_large_format: boolean
+          dimensions: Json | null
+          hero_media_id: string | null
+          model_media_id: string | null
+          seo_title: string | null
+          seo_description: string | null
+          publication_readiness: Json
+          created_at: string
+          updated_at: string
+          updated_by: string | null
+          status: Database['public']['Enums']['content_status']
+          owner_verification: Database['public']['Enums']['owner_verification']
+          fact_classification: Database['public']['Enums']['fact_classification'] | null
+          published_at: string | null
+          published_by: string | null
+          seed_key: string | null
+          content_seed_version: string | null
+          seed_content_hash: string | null
+          seed_last_applied_at: string | null
+          owner_edited: boolean
+        }
+        Insert: {
+          id?: string
+          slug: string
+          sku?: string | null
+          title?: string | null
+          subtitle?: string | null
+          summary?: string | null
+          description?: string | null
+          category_id?: string | null
+          price_state: Database['public']['Enums']['price_state']
+          price_from_minor?: number | null
+          currency?: string | null
+          is_large_format?: boolean
+          dimensions?: Json | null
+          hero_media_id?: string | null
+          model_media_id?: string | null
+          seo_title?: string | null
+          seo_description?: string | null
+          publication_readiness?: Json
+          created_at?: string
+          updated_at?: string
+          updated_by?: string | null
+          status?: Database['public']['Enums']['content_status']
+          owner_verification?: Database['public']['Enums']['owner_verification']
+          fact_classification?: Database['public']['Enums']['fact_classification'] | null
+          published_at?: string | null
+          published_by?: string | null
+          seed_key?: string | null
+          content_seed_version?: string | null
+          seed_content_hash?: string | null
+          seed_last_applied_at?: string | null
+          owner_edited?: boolean
+        }
+        Update: {
+          id?: string
+          slug?: string
+          sku?: string | null
+          title?: string | null
+          subtitle?: string | null
+          summary?: string | null
+          description?: string | null
+          category_id?: string | null
+          price_state?: Database['public']['Enums']['price_state']
+          price_from_minor?: number | null
+          currency?: string | null
+          is_large_format?: boolean
+          dimensions?: Json | null
+          hero_media_id?: string | null
+          model_media_id?: string | null
+          seo_title?: string | null
+          seo_description?: string | null
+          publication_readiness?: Json
+          created_at?: string
+          updated_at?: string
+          updated_by?: string | null
+          status?: Database['public']['Enums']['content_status']
+          owner_verification?: Database['public']['Enums']['owner_verification']
+          fact_classification?: Database['public']['Enums']['fact_classification'] | null
+          published_at?: string | null
+          published_by?: string | null
+          seed_key?: string | null
+          content_seed_version?: string | null
+          seed_content_hash?: string | null
+          seed_last_applied_at?: string | null
+          owner_edited?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'products_category_id_fkey'
+            columns: ['category_id']
+            isOneToOne: false
+            referencedRelation: 'categories'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'products_hero_media_id_fkey'
+            columns: ['hero_media_id']
+            isOneToOne: false
+            referencedRelation: 'media_assets'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'products_model_media_id_fkey'
+            columns: ['model_media_id']
+            isOneToOne: false
+            referencedRelation: 'media_assets'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'products_published_by_fkey'
+            columns: ['published_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'products_updated_by_fkey'
+            columns: ['updated_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      [_ in never]: never
+    }
+    Enums: {
+      collection_concept_state: 'DRAFT_COLLECTION_CONCEPT'
+      content_status: 'DRAFT' | 'REVIEW' | 'APPROVED' | 'PUBLISHED' | 'ARCHIVED'
+      fact_classification:
+        | 'BRAND_COPY'
+        | 'EDITORIAL_COPY'
+        | 'VERIFIED_BUSINESS_FACT'
+        | 'PRODUCT_FACT'
+        | 'SEO_COPY'
+        | 'LEGAL_COPY'
+      media_kind: 'IMAGE' | 'VIDEO' | 'MODEL_3D' | 'DOCUMENT' | 'BRAND'
+      owner_verification: 'NOT_REQUIRED' | 'OWNER_VERIFICATION_REQUIRED' | 'VERIFIED'
+      price_state: 'STARTING_FROM' | 'REQUEST_QUOTE' | 'PRICE_ON_REQUEST'
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
+}
+
+type PublicSchema = Database['public']
+
+export type Tables<T extends keyof PublicSchema['Tables']> = PublicSchema['Tables'][T]['Row']
+export type TablesInsert<T extends keyof PublicSchema['Tables']> =
+  PublicSchema['Tables'][T]['Insert']
+export type TablesUpdate<T extends keyof PublicSchema['Tables']> =
+  PublicSchema['Tables'][T]['Update']
+export type Enums<T extends keyof PublicSchema['Enums']> = PublicSchema['Enums'][T]
+export type TableName = keyof PublicSchema['Tables']
