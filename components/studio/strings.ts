@@ -814,6 +814,32 @@ export const STUDIO_STRINGS = {
     value: 'Back to the Overview',
     contentKey: 'studio_help.state_back_to_overview',
   },
+  /* ------------------------------------------------------------ command palette (Phase 05) */
+  'studio.command.groupRoutes': {
+    value: 'Go to',
+    contentKey: 'studio_help.command_group_routes',
+  },
+  'studio.command.label': {
+    value: 'Search the Studio',
+    contentKey: 'studio_help.command_label',
+  },
+  'studio.command.placeholder': {
+    value: 'Type to search',
+    contentKey: 'studio_help.command_placeholder',
+  },
+  'studio.command.noResults': {
+    value: 'Nothing matched that.',
+    contentKey: 'studio_help.command_no_results',
+  },
+  /** Shown when a provider hit its time budget, so results are not presented as complete. */
+  'studio.command.incomplete': {
+    value: 'Some results are missing — a search took too long.',
+    contentKey: 'studio_help.command_incomplete',
+  },
+  'studio.command.close': {
+    value: 'Close search',
+    contentKey: 'studio_help.command_close',
+  },
 } as const satisfies Record<string, StudioStringEntry>
 
 /** Every key this module resolves. A typo is a compile error, not a blank space on the page. */

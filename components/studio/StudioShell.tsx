@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { Heading } from '@/components/primitives/Heading'
 import { Stack } from '@/components/primitives/Stack'
 import { Text } from '@/components/primitives/Text'
+import { CommandPalette } from '@/components/studio/command/CommandPalette'
 import { t } from '@/components/studio/strings'
 import { visibleNav } from '@/lib/auth/nav-visibility'
 import type { StaffSession } from '@/lib/auth/session'
@@ -42,6 +43,19 @@ export function StudioShell({
 
   return (
     <div className="flex min-h-screen flex-col">
+      {/* Copy is resolved HERE and passed down: the palette is a Client Component, and `t()` reads
+          the server-side string map that Phase 09 will back with `global_content`. Importing `t`
+          into a client bundle would ship the whole map to the browser and break that swap. */}
+      <CommandPalette
+        labels={{
+          label: t('studio.command.label'),
+          placeholder: t('studio.command.placeholder'),
+          noResults: t('studio.command.noResults'),
+          incomplete: t('studio.command.incomplete'),
+          close: t('studio.command.close'),
+        }}
+      />
+
       {/* First focusable element on the page. Without it a keyboard user tabs through every
           sidebar link on every navigation before reaching the content they asked for. */}
       <a
