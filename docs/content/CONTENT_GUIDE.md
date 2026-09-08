@@ -187,24 +187,112 @@ rather than quietly rewinding.
 
 ## 8. Seeding
 
-`npm run seed:content` applies `content/seed/**` idempotently. Phase 08 adds two modules:
+`npm run seed:content` applies `content/seed/**` idempotently. Eighteen modules, ~231 records,
+every string taken from `docs/requirements/02-INITIAL-CONTENT-SEED-SYSTEM.md` verbatim.
 
-- **`pages`** — one row per static D3 route, plus the reserved SYSTEM row. Structure only: no
-  sections, therefore no copy.
-- **`global-content`** — the strings the renderers require. The media chrome is written here; the
-  three empty states are SEED §27, §28 and §29 **verbatim**.
+```
+npm run seed:content -- --dry-run      decide everything, write nothing
+npm run seed:content                   apply
+npm run seed:content -- --report       apply, and write a line to the Studio activity feed
+npm run seed:content -- --only=faq     one module
+npm run seed:content -- --force --only=faq   overwrite owner edits in that module only
+```
 
-**Re-seeding never overwrites something a human typed.** The runner hashes what it wrote; if the
-row's current values no longer match that hash, a person edited it and the row is skipped. It also
-never changes `status` on an existing row, so a page an editor archived stays archived.
+### The five verdicts
+
+Per record, per run:
+
+| Verdict | When | What happens |
+|---|---|---|
+| `inserted` | No row with that `seed_key` | Written, hash stored, version stamped |
+| `updated` | The runner still owns it and the module's copy changed | Rewritten, new hash stored |
+| `unchanged` | The runner owns it and nothing differs | **Nothing.** No write, no `updated_at`, no revision |
+| `skipped (owner edit)` | A person owns it — see below | Nothing, and the `seed_key` is listed |
+| `deferred` | Its target table does not exist yet | Nothing, counted, and the `seed_key` is listed |
+
+`unchanged` is not cosmetic. `write_revision` fires on any UPDATE, so a runner that rewrote every
+row on every run would append ~231 revisions per re-seed and the history an editor scrolls through
+to find a real change would be almost entirely noise.
+
+`deferred` is not a skip. A skip means a human owns the row and somebody may need to act; a
+deferral means the runner *wants* to write and cannot yet. Folding them into one number would hide
+a record authored and never applied — which is the specific failure the mechanism exists to
+prevent.
+
+### Three guards, any one decisive
+
+Re-seeding never overwrites something a person did. Three independent tests, covering different
+things:
+
+- **`seed_content_hash`** — the row's current values no longer match what the seed last wrote.
+  This is the only guard that catches an edit made *outside* the application: a direct `psql`
+  update, a restore, a bulk import. Such a write sets no `updated_by`, so no trigger fires.
+- **`owner_edited`** — set by a trigger whenever a write carries `updated_by`, which every Studio
+  save does. One-way by design: nothing clears it, so a seed run cannot un-mark a human edit.
+- **A status promotion** — the row is `PUBLISHED` and the module did not ask for that. Catches the
+  row a person reviewed and shipped without changing a character, which hashes identically.
+
+The published test is *not* a bare `status = 'PUBLISHED'` check. Route shells and global labels are
+seeded published on purpose — a route that arrived `DRAFT` would 404 the whole site — so the
+question is whether the row is published *beyond* what the module asked for.
+
+### What is deferred, and to where
+
+22 records are authored now and written later. They live in **one** module each; a test asserts
+`seed_key` uniqueness across every module, so a later phase cannot restate them.
+
+| Records | Waiting for | Applied by |
+|---|---|---|
+| 9 journal categories, 10 article drafts | `journal_categories`, `journal_articles` | Phase 18, `0160` |
+| 3 customization form templates | `customization_forms`, `customization_form_fields` | Phase 19, `0170` |
+
+Each is written unchanged when that phase runs `npm run seed:content -- --only=<module>`.
+
+### What the seed will not do
+
+- **No products, ever.** `products` is not a member of the `SeedableTable` union, so a module
+  targeting it does not compile. SEED §32: live products come from owner entry, an approved import
+  or the confirmed-product workflow.
+- **No portfolio projects and no testimonials.** `/portfolio` ships §28's empty state and nothing
+  else.
+- **No placeholder media.** A slot with no asset is left null and reported as a gap. A binding
+  naming an asset that is not in `media_assets` *fails the run* — that is a typo, which is a
+  different thing from a gap.
+- **No invented business facts.** The contact details in `contact.ts` are the ones §21 supplies,
+  seeded in one place because §21 forbids hardcoding them in several, and flagged for the owner.
+  The location link §21 mentions but does not supply is left null.
+
+### Owner verification
+
+80 seeded rows carry `OWNER_VERIFICATION_REQUIRED` and **cannot be published until the owner clears
+them** — `cms_publish_section` refuses with RV002 and a check constraint refuses underneath it.
+That is D10 as a schema rule rather than a review convention.
+
+All ten FAQ answers, every process step, the About scale and bespoke sections, three category
+descriptions, the homepage's manifesto, material palette, commission, 3D + resin and process
+sections, the announcement bar, the brand introduction, `Ready Stock`, and the contact details.
+`docs/content/INITIAL_CONTENT_INVENTORY.md` lists every one.
+
+### The inventory
+
+`npm run content:inventory` regenerates SEED §54's audit **from the database**, not from the
+modules — the question is what is actually there, not what the seed intended.
+`npm run content:check-inventory` regenerates and diffs, so a seed that changed the database
+without updating the file fails the build.
 
 ---
 
-## 9. What Phase 09 inherits
+## 9. What Phase 10 inherits
 
-- The 22 unbuilt blocks.
-- A repeater UI. A block with repeating items is edited as JSON today — validated on save against
-  its own schema and refused rather than coerced. An honest admission, not a placeholder.
-- Section copy for all twelve pages, each carrying its own classification and verification flag.
-- `t()` in `components/studio/strings.ts` reading from `global_content` instead of its constants.
-  Every entry already declares the row it becomes, so nothing in `app/(studio)/**` changes.
+- **The 22 unbuilt blocks.** Ten of the homepage's thirteen sections are seeded against block types
+  that have no renderer yet, so the copy is in the database and the page shows three of them. That
+  is the split amendment A8 records; Phases 10–13 build the rest.
+- **A repeater UI.** A block with repeating items is edited as JSON today — validated on save
+  against its own schema and refused rather than coerced. An honest admission, not a placeholder.
+- **The `t()` swap.** `components/studio/strings.ts` still serves Studio copy from constants, and
+  `studio-help.ts` now seeds the same strings into `global_content` under the keys each constant
+  declares. Making `t()` read the database with the constant as its fallback is the remaining half;
+  it was deliberately not done in the same commit that first wrote the rows, because the login page
+  would then depend on a seed having been run against that environment.
+- **The public routes.** Nothing under `app/(site)/` consumes `resolvePage` yet. The copy, the
+  windowing, the media resolution and the renderers all exist; no route calls them.

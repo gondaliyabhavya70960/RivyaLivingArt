@@ -1,7 +1,7 @@
 # PROJECT_STATE — what is actually built
 
 > Verified against the repository, not against intent. Update at the end of every phase.
-> Last verified: Phase 08 (Content Management Engine), 2026-09-08.
+> Last verified: Phase 09 (Initial Website Content Seed), 2026-09-08.
 
 ## Summary
 
@@ -13,19 +13,30 @@ drift gate, a repository layer with Zod at its boundary, an idempotent seed runn
 overwrite an owner's edit, the Studio shell with its ⌘K palette and user management, the media
 layer end to end, the Higgsfield migration, gap engine and tracker, **the CMS engine — pages,
 blocks, the status workflow, media binding, scheduling, revisions and the Studio surfaces that
-drive them** — a forward-only migration runner, and **23 gates** that fail the build on the
+drive them** — a forward-only migration runner, and **25 gates** that fail the build on the
 mistakes they were written for.
 
-**A page can now be built and rendered.** `/studio/content/pages/[pageId]` adds, edits, reorders
-and removes blocks; `lib/cms/resolve.ts` is the single server read path; `components/sections/`
-renders six of the twenty-eight catalogue blocks. A test takes rows out of a real PostgreSQL,
-parses them with the repository's own schemas and renders the page, so the chain from column to
-markup is proved end to end and not only in fixtures.
+**A page can now be built and rendered, and the copy is written.** `/studio/content/pages/[pageId]`
+adds, edits, reorders and removes blocks; `lib/cms/resolve.ts` is the single server read path;
+`components/sections/` renders six of the twenty-eight catalogue blocks. A test takes rows out of a
+real PostgreSQL, parses them with the repository's own schemas and renders the page, so the chain
+from column to markup is proved end to end and not only in fixtures.
 
-What does not exist: any public page route, any product page, and no section copy. The engine is
-built and nothing is written into it — twelve `pages` rows exist as route shells, with no sections.
-Twenty-two of the twenty-eight blocks are declared and unbuilt (amendment A8), and a block with
-repeating items is edited as JSON until Phase 09 builds a repeater.
+**The content seed is applied.** 20 pages, 53 sections, 10 FAQs, 47 navigation items, 9 SEO
+entries and the global string library — 231 records, every one from the specification verbatim, 22
+more authored and deferred to Phases 18 and 19. `docs/content/INITIAL_CONTENT_INVENTORY.md` audits
+all 316 of them, generated from the database.
+
+What does not exist: **any public page route**. Nothing under `app/(site)/` consumes `resolvePage`
+yet — the copy, the windowing, the media resolution and the renderers all exist and no route calls
+them. That is Phase 10. Twenty-two of the twenty-eight blocks are declared and unbuilt (amendment
+A8), so ten of the homepage's thirteen seeded sections have no renderer; a block with repeating
+items is edited as JSON until a repeater is built. No product rows, and there will be none from a
+seed — `products` is not a member of the `SeedableTable` union.
+
+**80 seeded rows await owner verification** and cannot be published until it is given — every FAQ
+answer, every process step, and every sentence that asserts what Rivya can physically make.
+`cms_publish_section` refuses them with RV002. That is D10 as a schema rule.
 
 **Two things block the site going live, both owner-side.** The 250 Higgsfield assets are still on
 the Higgsfield CDN — the migration that moves them is written and tested but has never executed,
@@ -33,9 +44,18 @@ because this sandbox's proxy refuses CONNECT to both Cloudinary and the CDN orig
 of those assets is APPROVED *and* `OWNER_VERIFICATION_REQUIRED`, so `cms_publish_section` refuses
 (RV006) any section that binds one. Both are recorded in *Remaining Work*.
 
-**The hosted project is current.** All 25 migrations are applied to `ccvarsmzickdkryoakdg` and
-recorded in `public.schema_migrations` with checksums; the latest is
-`0055_phase08_global_content_error_group.sql`.
+**The hosted project is current.** All 27 migrations are applied to `ccvarsmzickdkryoakdg` and recorded in
+`public.schema_migrations` with checksums; the latest is
+`0071_phase09_global_content_brand_group.sql`.
+
+`0050`–`0055` and `0070`–`0071` were applied through the Supabase MCP server rather than by
+`npm run db:migrate`, because the workflow that runs it lives on GitHub Actions, which has never
+executed a step on this repository, and this sandbox's proxy refuses a Postgres connection to the
+pooler. The ledger rows carry the same per-file SHA-256 the runner computes, so a run from a
+machine that can reach the database sees them as applied and unedited.
+
+Verified after applying, not assumed: `deferred_count` present, ten `content_seed_version` indexes,
+`set_owner_edited` running as SECURITY DEFINER, and `BRAND` in the group constraint.
 
 `0050`–`0055` were applied through the Supabase MCP server rather than by `npm run db:migrate`,
 because the workflow that runs it lives on GitHub Actions, which has never executed a step on this
@@ -48,11 +68,11 @@ with RLS on, 90 policies (identical to local), 6 `cms_*` functions, 8 triggers o
 and `page_sections_media_needs_slot_key` present. The only difference between the two schemas is
 `public.schema_migrations` itself, which `db:reset` does not create locally.
 
-**Hosted carries no content yet.** The Phase 08 seed — 12 route shells and 5 global strings — has
-been applied locally only. It is one command from a machine that can reach the database:
-`npm run seed:content`. Hand-inserting those rows here would have written them without the
-`seed_content_hash` the runner uses to tell its own writes from an owner's edit, which would make
-every future run skip them permanently.
+**Hosted carries no content yet.** The whole seed — 231 records — has been applied locally only.
+It is one command from a machine that can reach the database: `npm run seed:content`.
+Hand-inserting those rows here would have written them without the `seed_content_hash` the runner
+uses to tell its own writes from an owner's edit, which would make every future run skip them
+permanently. The schema is ready for them; nothing else is needed.
 
 **GitHub Actions has still never executed a step** on this repository — 57 runs, every one dead in
 2–3 seconds with a 404 on its logs, unchanged after a payment method was added. Vercel builds the

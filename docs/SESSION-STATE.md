@@ -8,15 +8,64 @@
 
 ## Current Phase
 
-**Phase 08 — Content Management Engine. COMPLETE.** The CMS engine is built, tested against a real
-PostgreSQL, applied to the hosted database and documented. An editor can build a page from typed
-blocks, bind media to it, schedule it, walk it through the status workflow and preview it before it
-is live.
+**Phase 09 — Initial Website Content Seed. COMPLETE.** The empty CMS is now a coherent draft
+website: every page, section, navigation item, label, empty state, FAQ, SEO default, WhatsApp
+template and Studio helper string from the specification is in the database as
+`content_seed_version = 'rivya-v1'`, and re-running the seed is safe forever after.
 
-Phase 07 remains CODE COMPLETE with its migration unrun — moving the 250 Higgsfield assets into
-Cloudinary is still the one owner-side step, and it is still the first item under *Remaining Work*.
-Phase 06 merged as PR #8; Phase 05 is substantially complete with two carried gaps; Phase 04 is
-closed out (PR #5, plus PR #7); Phase 03 merged as PR #4.
+Phase 08 (Content Management Engine) is complete and open as PR #12. Phase 07 remains CODE
+COMPLETE with its Higgsfield migration unrun. Phase 06 merged as PR #8; Phase 04 closed out in
+PR #5 and #7; Phase 03 merged as PR #4.
+
+### Phase 09: what is built
+
+**Two migrations, `0070` and `0071`.** Most of what the phase document assigned to `0070` was
+already done by earlier phases, and the file says so: `content_seed_version` has been the column
+name since Phase 03, so there was no rename. What was missing — and is now there —
+`content_seed_runs.deferred_count`, the seed lookup indexes (seven of ten tables had no `seed_key`
+index and none had a version index), and `set_owner_edited` hardened to SECURITY DEFINER. `0071`
+adds a `BRAND` group, because SEED §6 names it as a Studio location.
+
+**Eighteen seed modules, 231 records applied and 22 deferred.** Every string is the
+specification's, verbatim. The homepage's 13 sections, about, large-format with its six category
+entries, the /collection landing and seven category pages (created by that module, taking `pages`
+to 20), commissions, seven process steps, portfolio, journal, contact, ten FAQs, SEO, the label
+library and Studio help.
+
+**Five verdicts, three guards.** `inserted`, `updated`, `unchanged`, `skipped (owner edit)`,
+`deferred`. `unchanged` exists because a no-op re-run was rewriting all 231 rows and
+`write_revision` fires on any update — 231 revisions per re-seed saying nothing changed. `deferred`
+is per-RECORD, not per-module, because the two deferring modules are mixed.
+
+**The §54 inventory**, generated from the database rather than the modules: 316 rows, 80 awaiting
+owner verification, 22 deferred. `content:check-inventory` regenerates and diffs, wired into CI.
+
+### Phase 09: what is NOT built
+
+- **Any public route.** Nothing under `app/(site)/` consumes `resolvePage`. The copy, the
+  windowing, the media resolution and the renderers all exist; no route calls them. Phase 10.
+- **Ten of the homepage's thirteen renderers.** Amendment A8's split: the copy is seeded against
+  block types that have no renderer, so the page would show three sections today.
+- **The `t()` swap.** `studio-help.ts` seeds the Studio strings into `global_content` under the
+  keys `components/studio/strings.ts` already declares; making `t()` read them with the constant as
+  its fallback is the remaining half, deliberately not done in the same commit that first wrote the
+  rows.
+- **Any media binding.** `content/seed/media-bindings.ts` is empty and says why: the Higgsfield
+  migration has never run, so `media_assets` holds no Higgsfield rows and every binding would fail
+  the run rather than bind. The bindings the phase plans are listed in that file.
+
+### The three defects the verification steps found
+
+Each was invisible without running the step that caught it.
+
+1. A dry run on an empty database reported **91 failures**, one per reference — it writes no pages,
+   so every section's `page_id` resolved to nothing. Phantom failures on a run whose whole job is
+   to report what *would* happen.
+2. Then **31 rows** reported themselves owner-edited on a clean re-run. PostgreSQL stores jsonb
+   keys by length then bytewise, not insertion order, so a payload written as
+   `{is_video, autoplay, scrim}` reads back reordered: identical data, different hash.
+3. The generated inventory embedded **page UUIDs**, which change on every `db:reset` — a committed,
+   diff-checked file cannot contain per-database values.
 
 ### Phase 08: what is built
 
@@ -595,6 +644,24 @@ push and satisfy D9 from those runs, evidenced in the phase record — never fro
 
 ## Remaining Work
 
+### Owner-side, from Phase 09
+
+0. **Run `npm run seed:content` against the hosted database.** The schema is current at 27
+   migrations; the content is local only. 231 records. It must be the RUNNER, not hand-written
+   SQL: the runner stores a `seed_content_hash` per row, which is how it later tells its own
+   writes from an edit a person made. Rows inserted without it would be treated as owner-edited
+   and skipped by every future run.
+
+0a. **Verify the 80 flagged rows in Studio.** Every FAQ answer, every process step, and every
+   sentence asserting what Rivya can physically make. None of them can be published until the
+   owner clears the flag — `cms_publish_section` refuses with RV002.
+   `docs/content/INITIAL_CONTENT_INVENTORY.md` lists all of them.
+
+0b. **Supply the Google Maps location for the contact page.** SEED §21 refers to an "existing
+   supplied Google Maps destination" and supplies none, so the field is seeded null rather than
+   guessed. Everything else on that section — phone, WhatsApp, email — is seeded from §21 and needs
+   only confirming.
+
 ### Owner-side, from Phase 08
 
 0. **Run `npm run seed:content` against the hosted database.** The schema is there; the content is
@@ -688,6 +755,19 @@ the CTA library's reserved page id or add a D4 route leaf, and whether `analytic
 on `/studio` rather than a route segment.
 
 ## Next Exact Action
+
+**Start Phase 10 — Public Website Foundation.** Everything it needs exists and nothing renders:
+`lib/cms/resolve.ts` is the single read path, `lib/cms/media.ts` hydrates a page's assets in one
+query, `components/sections/` renders six block types, and 231 records of real copy are in the
+database. What is missing is `app/(site)/[[...path]]` — a route that calls `resolvePage`, hydrates,
+and renders `SectionList`. The first increment is the homepage and `/about`, which between them
+exercise the hero, statement, category-grid and process-steps renderers.
+
+Neither owner-side item blocks it: the seed can be applied to hosted at any point, and the
+verification flags govern PUBLISHING rather than rendering — a draft page previews through
+`/api/preview` without them.
+
+### Superseded — the Phase 09 plan
 
 **Start Phase 09 — Initial Content Seed.** The engine is built and empty; Phase 09 writes the copy
 into it. Nothing in Phase 09 is blocked by the two owner-side items below, and both should happen

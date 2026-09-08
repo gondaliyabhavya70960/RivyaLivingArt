@@ -12,11 +12,36 @@ import { createHash } from 'node:crypto'
 export type SeedFieldValue = string | number | boolean | null
 
 /**
+ * Sort every object key, at every depth.
+ *
+ * THE HASH IS COMPARED ACROSS A `jsonb` ROUND TRIP, which is where this earns its place.
+ * PostgreSQL does not store a jsonb object's keys in the order it received them — it stores them
+ * by length then bytewise — so a module writing `{is_video, autoplay, scrim}` reads back as
+ * `{scrim, autoplay, is_video}`. Identical data, different `JSON.stringify` output, different
+ * hash. Without this, every section carrying a payload reported itself owner-edited on the very
+ * next run and the seed stopped applying to 31 of them.
+ *
+ * Arrays are NOT sorted, and must not be: a `steps` array's order is the content — step 01 before
+ * step 02 — so reordering it IS a change and has to hash differently.
+ */
+function canonicalise(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(canonicalise)
+  if (value !== null && typeof value === 'object') {
+    const source = value as Record<string, unknown>
+    const out: Record<string, unknown> = {}
+    for (const key of Object.keys(source).sort()) out[key] = canonicalise(source[key])
+    return out
+  }
+  return value
+}
+
+/**
  * sha256 over the seedable fields, and nothing else.
  *
- * Keys are sorted, so the hash does not depend on the order a module happened to write its object
- * literal — otherwise swapping two lines in a seed file would look like an owner edit and every
- * row in that module would start being skipped.
+ * Top-level keys are sorted, so the hash does not depend on the order a module happened to write
+ * its object literal — otherwise swapping two lines in a seed file would look like an owner edit
+ * and every row in that module would start being skipped. Nested keys are sorted for the sharper
+ * reason above.
  *
  * Values go through JSON, so the number 10 and the string "10" cannot hash alike, and `null` stays
  * distinguishable from a missing key.
@@ -25,7 +50,7 @@ export function contentHash(fields: Record<string, unknown>): string {
   const canonical = JSON.stringify(
     Object.keys(fields)
       .sort()
-      .map((key) => [key, fields[key] ?? null]),
+      .map((key) => [key, canonicalise(fields[key] ?? null)]),
   )
   return createHash('sha256').update(canonical).digest('hex')
 }

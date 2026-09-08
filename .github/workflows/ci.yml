@@ -157,6 +157,12 @@ jobs:
           test "$second_updated" = "$first_inserted"
           grep -q 'skipped (owner edit)  0' /tmp/seed-second.txt
 
+      # SEED §54's audit, generated from the database. A seed that changed what is in there and did
+      # not regenerate this shows up as a diff rather than as a document that quietly stopped
+      # describing reality — the same shape as media:check-status, for the same reason.
+      - name: Content inventory is up to date
+        run: npm run content:check-inventory
+
       # Proves the rule the whole seed runner exists for: an owner's edit is never overwritten.
       - name: Seeding does not overwrite an owner edit
         run: |

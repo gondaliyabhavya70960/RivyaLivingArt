@@ -375,6 +375,7 @@ export type Database = {
           skipped_owner_edited_count: number
           failed_count: number
           report: Json
+          deferred_count: number
         }
         Insert: {
           id?: string
@@ -388,6 +389,7 @@ export type Database = {
           skipped_owner_edited_count?: number
           failed_count?: number
           report?: Json
+          deferred_count?: number
         }
         Update: {
           id?: string
@@ -401,6 +403,7 @@ export type Database = {
           skipped_owner_edited_count?: number
           failed_count?: number
           report?: Json
+          deferred_count?: number
         }
         Relationships: []
       }
