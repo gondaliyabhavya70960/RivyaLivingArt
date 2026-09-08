@@ -217,8 +217,20 @@ export async function loadFixture(): Promise<void> {
   const u = FIXTURE_USERS
   const f = FIXTURE_IDS
 
-  await db.query('delete from staff_profiles where user_id = any($1::uuid[])', [Object.values(u)])
-  await db.query('delete from auth.users where id = any($1::uuid[])', [Object.values(u)])
+  // The last-owner constraint trigger refuses any change leaving the project with no active owner
+  // — including wiping the fixture, since one of these rows IS the owner. That rule is right in
+  // production and wrong for a teardown, so the triggers come off for the wipe and go straight back
+  // on. Without this the suite passes once on a fresh database and then fails on every later run,
+  // reporting 62 SKIPPED — a security suite that stops running while still looking green.
+  await db.query('alter table staff_profiles disable trigger staff_profiles_last_owner_update')
+  await db.query('alter table staff_profiles disable trigger staff_profiles_last_owner_delete')
+  try {
+    await db.query('delete from staff_profiles where user_id = any($1::uuid[])', [Object.values(u)])
+    await db.query('delete from auth.users where id = any($1::uuid[])', [Object.values(u)])
+  } finally {
+    await db.query('alter table staff_profiles enable trigger staff_profiles_last_owner_update')
+    await db.query('alter table staff_profiles enable trigger staff_profiles_last_owner_delete')
+  }
 
   await db.query(
     `insert into auth.users (id, email) values

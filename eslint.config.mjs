@@ -56,14 +56,77 @@ const config = [
 
   /**
    * The allowlist. Every entry is a file that legitimately holds the service role:
-   *   lib/supabase/admin.ts  defines it
-   *   scripts/**             operations tooling; runs with DATABASE_URL and no user session
-   *   tests/**               exercises RLS by comparing an anon client against a privileged one
+   *   lib/supabase/admin.ts    defines it
+   *   lib/auth/audit.ts        `audit_logs` has no insert policy for `authenticated` at all — by
+   *                            design, so no signed-in staff member can write the security log or
+   *                            bury their own row in noise. The service role is therefore the only
+   *                            writer, and this is the only writer that holds it.
+   *   lib/auth/provisioning.ts creating an `auth.users` row is possible only through GoTrue's admin
+   *                            API, which authenticates with the service-role key. Public sign-up
+   *                            is disabled at the project level, so an invitation issued here is
+   *                            the single route to a Studio account. Kept out of
+   *                            `app/(studio)/**` on purpose: a page that renders is a page where a
+   *                            service-role client is one careless query away from bypassing RLS on
+   *                            something unrelated. Every caller runs
+   *                            `withPermission('system.users.manage', …)` first.
+   *   scripts/**               operations tooling; runs with DATABASE_URL and no user session
+   *   tests/**                 exercises RLS by comparing an anon client against a privileged one
    */
   {
-    files: ['lib/supabase/admin.ts', 'scripts/**', 'tests/**'],
+    files: [
+      'lib/supabase/admin.ts',
+      'lib/auth/audit.ts',
+      'lib/auth/provisioning.ts',
+      'scripts/**',
+      'tests/**',
+    ],
     rules: {
       'no-restricted-imports': 'off',
+    },
+  },
+
+  /**
+   * EVERY STUDIO PAGE AUTHORISES IN ITS OWN BODY.
+   *
+   * `lib/auth/require.ts` says it at length: middleware is not authorisation. It redirects an
+   * unauthenticated request and knows nothing about which record is being touched, so a page that
+   * renders without calling `requirePermission()` or `requireRole()` is relying on a redirect it
+   * never saw. RLS would still refuse the query underneath — but only for rows it can reason
+   * about, and only after the page has already decided to render.
+   *
+   * The omission is invisible in review: a Studio page that forgot the call looks exactly like one
+   * that did not need it. This rule makes the absence loud.
+   *
+   * The selector matches the FILE, not a call — `Program` with no matching `CallExpression`
+   * anywhere beneath it. `no-restricted-syntax` reports whatever the selector matches, so the
+   * report lands on line 1, which is the right place for "this file is missing something".
+   */
+  {
+    files: ['app/(studio)/studio/**/page.tsx'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: 'Program:not(:has(CallExpression[callee.name=/^require(Permission|Role)$/]))',
+          message:
+            'A Studio page must authorise server-side: call requirePermission() (preferred) or ' +
+            'requireRole() from @/lib/auth/require in the page body. Middleware and RLS are the ' +
+            'other two layers, not a substitute for this one. The sole exemption is ' +
+            'app/(studio)/studio/login/page.tsx, which is listed in eslint.config.mjs.',
+        },
+      ],
+    },
+  },
+
+  /**
+   * The one unauthenticated Studio route (D4, amendment A2·b). It renders the sign-in form, so it
+   * cannot demand a session it exists to create. Every other route under `app/(studio)/studio/**`
+   * is covered by the rule above.
+   */
+  {
+    files: ['app/(studio)/studio/login/page.tsx'],
+    rules: {
+      'no-restricted-syntax': 'off',
     },
   },
 ]

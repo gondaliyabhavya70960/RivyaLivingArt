@@ -1,7 +1,8 @@
 import 'server-only'
 
 import { createClient } from '../supabase/server'
-import { ROLES, type Role } from './permissions'
+import { findStaffProfile } from '../supabase/repositories/staff'
+import { type Role } from './permissions'
 
 /**
  * Who is making this request?
@@ -42,21 +43,19 @@ export async function getStaffSession(): Promise<StaffSession | null> {
 
   if (userError || !user) return null
 
-  const { data, error } = await supabase
-    .from('staff_profiles')
-    .select('user_id, email, display_name, role, status')
-    .eq('user_id', user.id)
-    .maybeSingle()
+  // Through the repository, like every other read in the system: it is the layer that validates
+  // the row against its schema and maps a PostgREST error onto something a caller can act on.
+  // `scripts/db/check-data-layer.mjs` enforces that there is no second way to do this.
+  const profile = await findStaffProfile(supabase, user.id)
 
-  if (error || !data) return null
-  if (data.status !== 'ACTIVE') return null
-  if (!(ROLES as readonly string[]).includes(data.role)) return null
+  if (!profile) return null
+  if (profile.status !== 'ACTIVE') return null
 
   return {
-    userId: data.user_id,
-    email: data.email,
-    displayName: data.display_name,
-    role: data.role as Role,
+    userId: profile.user_id,
+    email: profile.email,
+    displayName: profile.display_name,
+    role: profile.role,
     status: 'ACTIVE',
   }
 }

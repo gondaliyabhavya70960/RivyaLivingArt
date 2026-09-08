@@ -77,6 +77,7 @@ security definer
 set search_path = public, pg_temp
 as $$
 begin
+  -- check-migrations: allow-insert (a trigger body, not a seeded row — inserts nothing at migration time)
   insert into public.staff_profiles (user_id, email, status, role)
   values (new.id, new.email, 'INVITED', 'viewer')
   -- An invite re-sent, or a user deleted and recreated with the same id, must not fail the whole
@@ -114,9 +115,13 @@ begin
    where role = 'owner' and status = 'ACTIVE';
 
   if active_owners = 0 then
+    -- CONSTRAINT is set so the refusal carries a stable identifier, not just prose. The Studio has
+    -- to tell this refusal apart from any other failed write in order to show an actionable
+    -- message, and matching on the sentence would break the moment anyone reworded it.
     raise exception
       'refusing to leave the project with no active owner'
       using errcode = 'check_violation',
+            constraint = 'staff_profiles_last_owner',
             hint = 'Promote another staff member to owner first, then demote or suspend this one.';
   end if;
 

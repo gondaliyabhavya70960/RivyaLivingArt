@@ -1,8 +1,10 @@
 import 'server-only'
 
 import { createAdminClient } from '../supabase/admin'
+import { insertAuditLog } from '../supabase/repositories/audit'
 import { redact } from '../logging/redact'
 import type { Role } from './permissions'
+import type { Json } from '../supabase/database.types'
 
 /**
  * The audit writer.
@@ -38,7 +40,7 @@ export type AuditEntry = {
 export async function writeAudit(entry: AuditEntry): Promise<void> {
   try {
     const admin = createAdminClient()
-    await admin.from('audit_logs').insert({
+    await insertAuditLog(admin, {
       action: entry.action,
       result: entry.result,
       actor_user_id: entry.actorUserId ?? null,
@@ -46,8 +48,8 @@ export async function writeAudit(entry: AuditEntry): Promise<void> {
       entity_type: entry.entityType ?? null,
       entity_id: entry.entityId ?? null,
       summary: entry.summary ?? null,
-      before: entry.before === undefined ? null : (redact(entry.before) as never),
-      after: entry.after === undefined ? null : (redact(entry.after) as never),
+      before: entry.before === undefined ? null : (redact(entry.before) as Json),
+      after: entry.after === undefined ? null : (redact(entry.after) as Json),
       request_id: entry.requestId ?? null,
       ip: entry.ip ?? null,
       user_agent: entry.userAgent ?? null,
