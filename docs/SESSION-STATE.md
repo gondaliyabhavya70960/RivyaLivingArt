@@ -91,7 +91,33 @@ DRAFT → REVIEW → APPROVED → PUBLISHED to reach the launch-day state.
 | 10 · no-JavaScript HTML | ✓ 11 sections, 4 stages, 1 `h1`, 0 `<video>`, 0 `data-active` |
 
 **924 unit tests**, 80 files, plus 96 e2e assertions on the two new specs across the eight QA
-widths.
+widths, and zero critical/serious axe violations on `/` at 390px and 1440px.
+
+The whole e2e suite was run twice at 1440px and 390px after the A12 fix — 147 passed, 55 skipped
+(the skips are the fixtures that need a reachable Supabase project). One run had a single failure,
+`DropdownMenu opens on ArrowDown`, which passed alone, passed with its own spec at both widths, and
+passed in the second full run: a flake under parallel load against `next dev`, recorded rather than
+re-run until quiet. It is not related to A12 — that change moved widths, not focus.
+
+The eight design-system visual baselines were regenerated. **The old ones recorded the bug**: at a
+1440px viewport the gallery's baseline was 2264px wide.
+
+### Phase 11 against D9's ten points
+
+Eight hold outright: tests run, no known scope-breaking error, documentation updated
+(`COMPONENT_REGISTRY.md`, `PERFORMANCE.md`, `TESTING.md`, `CONTENT_GUIDE.md`, `DESIGN_SYSTEM.md`,
+`HIGGSFIELD_ASSET_STATUS.md` and two amendments), CHANGELOG updated, PROJECT_STATE updated,
+SESSION-STATE updated, remaining issues documented, next phase identified, repository recoverable
+(three commits, pushed, PR #15 open).
+
+**Point 1 — scope implemented — is the one that does not, and it is media rather than code.** The
+phase's media table binds each section to a Higgsfield family; `media_assets` is empty on both
+databases because `npm run media:migrate:higgsfield` has never run, and a seeded entry naming an
+asset that does not exist is a hard seed failure. So no binding was written, the four material
+stages carry `media_index: null`, the hero's motion slots are declared and unbound, and two exit
+criteria — the Lighthouse numbers and the eight-width visual baseline — wait on the same thing.
+Everything that does not depend on an asset is done and verified. That is why the phase reads CODE
+COMPLETE rather than COMPLETE.
 
 ---
 
