@@ -14,6 +14,7 @@ import { pagesSeed } from './pages'
 import { portfolioSeed } from './portfolio'
 import { processSeed } from './process'
 import { seoSeed } from './seo'
+import { siteChromeSeed } from './site-chrome'
 import { studioHelpSeed } from './studio-help'
 import { taxonomySeed } from './taxonomy'
 import type { SeedModule } from './types'
@@ -48,6 +49,8 @@ export const seedModules: readonly SeedModule[] = [
   globalSeed,
   commerceLabelsSeed,
   studioHelpSeed,
+  // Phase 10's shell strings. Reference nothing, so they sit with the other global modules.
+  siteChromeSeed,
   navigationSeed,
   seoSeed,
   // Page content: every section references a page by seed_key.

@@ -225,6 +225,117 @@ export async function getSeoEntry(client: Client, id: string): Promise<SeoEntry>
   return parseRow('seo entry', seoEntrySchema, data)
 }
 
+/**
+ * The SEO row for a public path, or null.
+ *
+ * NULL IS AN ORDINARY ANSWER, not an error — which is why this returns it rather than throwing the
+ * way `getSeoEntry` does. Phase 09 seeds nine `seo_entries` rows against thirteen static paths, so
+ * a path with no row is the common case today, and `lib/seo/metadata.ts` answers it with the
+ * SEED §41 fallbacks. Throwing here would turn a page with no bespoke title into a 500.
+ *
+ * SCOPE IS PART OF THE MATCH. `seo_entries` holds three shapes: `PATH` rows keyed by a public
+ * path, the single `GLOBAL` row carrying the site-wide defaults, and the `entity` rows Phases 15
+ * and 18 will key by `entity_type` + `entity_id`. The last two both have `path = null`, so
+ * matching on path alone is ambiguous the moment an entity row exists. Naming the scope states
+ * which shape is wanted rather than relying on the others being absent.
+ */
+export async function getSeoEntryByPath(client: Client, path: string): Promise<SeoEntry | null> {
+  const { data, error } = await client
+    .from('seo_entries')
+    .select('*')
+    .eq('scope', 'PATH')
+    .eq('path', path)
+    .maybeSingle()
+
+  if (error) throw toCmsError('seo entry', 'get', path, error)
+  return data === null ? null : parseRow('seo entry', seoEntrySchema, data)
+}
+
+/**
+ * The single `GLOBAL` row: the site-wide title template, description and social defaults.
+ *
+ * Null when it is absent or unpublished, for the same reason as above — the SEED §41 fallbacks in
+ * `lib/seo/metadata.ts` are what stand in, and they are literals in a `lib/seo` module rather than
+ * in JSX precisely so this can fail without a page failing with it.
+ */
+/**
+ * The paths a crawler may be told about: published pages that actually have something on them.
+ *
+ * THE INNER JOIN IS THE POINT. `pages` alone would list every published route, including the ones
+ * whose sections are all still `DRAFT` — and `renderCmsPage` answers those with a 404. A sitemap
+ * that lists URLs which 404 is worse than one that omits them: it teaches a crawler that the site
+ * lies about its own contents. `page_sections!inner(...)` makes PostgREST emit an inner join, so a
+ * page with no readable section is not returned at all.
+ *
+ * RLS APPLIES TO THE EMBEDDED TABLE TOO, which is what makes this correct without a status filter
+ * in the query: under the anonymous client `page_sections_select_public` admits only published,
+ * visible, in-window rows whose page is also live. The predicate is stated once, in the policy,
+ * rather than restated here where it could drift.
+ *
+ * ONE ROW PER SECTION COMES BACK, so paths are deduplicated on the way out.
+ */
+export async function listPublicPagePaths(
+  client: Client,
+): Promise<{ path: string; updatedAt: string }[]> {
+  const { data, error } = await client
+    .from('pages')
+    .select('path, updated_at, page_sections!inner(id)')
+    .not('path', 'is', null)
+    .order('path')
+
+  if (error) throw toCmsError(ENTITY, 'list', 'public paths', error)
+
+  const seen = new Map<string, string>()
+  for (const row of data ?? []) {
+    const path = row.path
+    if (path === null) continue
+    if (!seen.has(path)) seen.set(path, row.updated_at)
+  }
+  return [...seen].map(([path, updatedAt]) => ({ path, updatedAt }))
+}
+
+/**
+ * The one section on the site that holds the studio's contact details, or null.
+ *
+ * WHY THE FOOTER READS A PAGE SECTION AND NOT A SETTINGS TABLE. SEED §21 supplies a phone number,
+ * a WhatsApp number and an email address, and says in as many words not to hardcode them in
+ * several components. Phase 09 put them in exactly one row — the `contact-details` section on
+ * `/contact` — so the footer's contact column, the contact page and any later surface all read the
+ * same value and the owner corrects it once. A `site_settings` table holding a second copy would
+ * be the same failure with a schema around it.
+ *
+ * IT RETURNS NULL FOR MOST OF THIS PHASE'S LIFE, AND THAT IS CORRECT. The row is
+ * `OWNER_VERIFICATION_REQUIRED` and therefore `DRAFT`, so `page_sections_select_public` does not
+ * admit it: until the owner confirms the number is right, the footer shows the contact heading and
+ * no details. A wrong phone number in the footer of every page is paid for by a customer who
+ * cannot reach anyone, so silence is the better failure.
+ *
+ * `maybeSingle()` RATHER THAN `single()`: zero rows is the expected answer, not an error.
+ */
+export async function getContactDetailsSection(client: Client): Promise<PageSection | null> {
+  const { data, error } = await client
+    .from('page_sections')
+    .select('*')
+    .eq('block_type', 'contact-details')
+    .order('position')
+    .limit(1)
+    .maybeSingle()
+
+  if (error) throw toCmsError(SECTION, 'get', 'contact-details', error)
+  return data === null ? null : parseRow(SECTION, pageSectionSchema, data)
+}
+
+export async function getGlobalSeoEntry(client: Client): Promise<SeoEntry | null> {
+  const { data, error } = await client
+    .from('seo_entries')
+    .select('*')
+    .eq('scope', 'GLOBAL')
+    .maybeSingle()
+
+  if (error) throw toCmsError('seo entry', 'get', 'GLOBAL', error)
+  return data === null ? null : parseRow('seo entry', seoEntrySchema, data)
+}
+
 // --------------------------------------------------------------------------------------------
 // The privileged calls
 // --------------------------------------------------------------------------------------------
