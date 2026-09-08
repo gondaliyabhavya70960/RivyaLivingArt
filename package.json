@@ -36,11 +36,18 @@
     "auth:check-rls": "tsx scripts/auth/check-rls.ts",
     "security:check-bundle": "node scripts/security/check-bundle-secrets.mjs",
     "security:check-proxy": "node scripts/security/check-proxy.mjs",
-    "db:migrate": "node scripts/db/migrate.mjs"
+    "db:migrate": "node scripts/db/migrate.mjs",
+    "media:check-folders": "node scripts/media/check-folders.mjs",
+    "media:check-provider": "node scripts/media/check-provider-boundary.mjs",
+    "media:import-canaries": "tsx scripts/media/import-canaries.ts",
+    "perf:check-image-props": "node scripts/perf/check-image-props.mjs",
+    "perf:check-video-props": "node scripts/perf/check-video-props.mjs",
+    "check": "npm run typecheck && npm run lint && npm run format:check"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.6",
     "@supabase/supabase-js": "^2.116.0",
+    "cloudinary": "^2.11.0",
     "next": "^16.3.4",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",

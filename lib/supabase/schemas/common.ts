@@ -43,6 +43,19 @@ export const mediaKindSchema = z.enum([
   'BRAND',
 ]) satisfies z.ZodType<Enums<'media_kind'>>
 
+/**
+ * D6's asset-priority ladder, in D6's order. See supabase/migrations/0030_phase06_media.sql —
+ * the column is `not null` with no default, so this schema has no `.optional()` either: an asset
+ * whose provenance nobody stated is a row this codebase declines to construct.
+ */
+export const mediaSourceSchema = z.enum([
+  'REAL',
+  'USER_UPLOAD',
+  'HIGGSFIELD',
+  'RENDER',
+  'FALLBACK',
+]) satisfies z.ZodType<Enums<'media_source'>>
+
 /** No FIXED until Phase 14. See supabase/migrations/0006_catalog.sql. */
 export const priceStateSchema = z.enum([
   'STARTING_FROM',

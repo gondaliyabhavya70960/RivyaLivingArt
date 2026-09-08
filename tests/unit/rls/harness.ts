@@ -289,11 +289,14 @@ export async function loadFixture(): Promise<void> {
        ($2,'rls-drf-mat','Draft Material','timber','DRAFT')`,
     [f.publishedMaterial, f.draftMaterial],
   )
+  // `source` is stated rather than defaulted because 0030 gives the column no default: an insert
+  // that omits it fails outright. FALLBACK is the honest value for a synthetic fixture — it is not
+  // real Rivya media, not a user upload, not a Higgsfield asset and not a render.
   await db.query(
     `insert into media_assets (id, resource_type, public_id, folder, kind, alt_text,
-                               is_ai_generated, is_concept, status) values
-       ($1,'image','rls-pub','rivya/test','IMAGE','published asset',true,true,'PUBLISHED'),
-       ($2,'image','rls-drf','rivya/test','IMAGE','draft asset',true,true,'DRAFT')`,
+                               is_ai_generated, is_concept, status, source) values
+       ($1,'image','rls-pub','rivya/test','IMAGE','published asset',true,true,'PUBLISHED','FALLBACK'),
+       ($2,'image','rls-drf','rivya/test','IMAGE','draft asset',true,true,'DRAFT','FALLBACK')`,
     [f.publishedAsset, f.draftAsset],
   )
 

@@ -1,22 +1,12 @@
 /**
- * Reading the D8 environment variables, with one rule: a missing variable fails loudly at the
- * point of use, and no error message ever contains a value, a prefix or a length (CLAUDE.md).
+ * The Supabase half of the D8 environment variables.
  *
  * The names here are fixed by CANONICAL-DECISIONS.md D8. Adding one requires a D8 amendment, not
- * an edit to this file.
+ * an edit to this file. `requiredEnv` carries the rule that no error message may contain a value,
+ * a prefix or a length; it moved to `lib/env.ts` in Phase 06 when Cloudinary needed it too.
  */
 
-function required(name: string): string {
-  const value = process.env[name]
-  if (value === undefined || value === '') {
-    // The name only. Never `value.slice(0, 4)`, never `value.length` — both leak key material
-    // into logs that are far less protected than the environment itself.
-    throw new Error(
-      `Missing required environment variable ${name}. See .env.example and docs/ops/ENVIRONMENT.md.`,
-    )
-  }
-  return value
-}
+import { requiredEnv as required } from '../env'
 
 /** Public, browser-visible. Safe to embed in a client bundle. */
 export const publicEnv = {

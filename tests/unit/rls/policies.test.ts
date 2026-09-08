@@ -185,10 +185,13 @@ describeDb('RLS policies', () => {
       const mayWriteMedia = mediaWriters.includes(role)
       it(`${role} ${mayWriteMedia ? 'may' : 'may not'} insert a media asset`, async () => {
         await asUser(FIXTURE_USERS[role], async (sql) => {
+          // Every not-null column is supplied, `source` included. The point of this probe is that
+          // the ONLY thing which can reject the insert is the policy: if a constraint could reject
+          // it too, the four "may not" cases would pass without RLS being involved at all.
           const result = await sql.attempt(
             `insert into media_assets (resource_type, public_id, folder, kind, alt_text,
-                                       is_ai_generated, is_concept)
-             values ('image', 'rls-${role}', 'f', 'IMAGE', 'alt', true, true)`,
+                                       is_ai_generated, is_concept, source)
+             values ('image', 'rls-${role}', 'f', 'IMAGE', 'alt', true, true, 'FALLBACK')`,
           )
           expect(result.ok, result.error ?? '').toBe(mayWriteMedia)
         })

@@ -358,6 +358,44 @@ verification, which is why policies gate on the `TO` grantee list and never on `
 and a `WITH CHECK` violation into 403, and only an end-to-end test against a hosted project covers
 that seam.
 
+### 6.6 The two standing advisor findings on the hosted project, and why they stay
+
+Supabase's database linter reports two things against `ccvarsmzickdkryoakdg`. Both are deliberate.
+They are written down here because an unexplained WARN gets "fixed" by the next reader, and one of
+these two fixes takes the whole Studio down.
+
+**`authenticated` can execute `current_staff_role()`, `is_staff()` and `has_role()` (WARN, ×3).**
+The linter's point is that all three are `security definer` and therefore reachable as PostgREST
+RPC at `/rest/v1/rpc/<name>`. The grant is not removable: a policy expression is evaluated with the
+*caller's* privileges, so every policy that calls `has_role()` needs `authenticated` to hold
+EXECUTE on it. That is not a deduction from the manual — it was run:
+
+```
+begin;
+revoke execute on function public.has_role(variadic user_role[]) from authenticated;
+set local role authenticated;
+select count(*) from media_usages;   -- ERROR: permission denied for function has_role
+rollback;
+```
+
+Note the failure mode. It is not a quiet denial that returns zero rows; it is a hard error, so
+revoking the grant does not tighten the Studio, it breaks every read in it.
+
+What is left, then, is whether the RPC exposure leaks anything — and it does not, for a reason
+visible in the signatures: **none of the three takes a user identifier.** All three resolve the
+subject from `auth.uid()` alone (0010). So the most a caller can learn by invoking them is their
+own role, their own staff status, and whether their own role is in a list they supplied — three
+facts they necessarily already hold. There is no argument that would let them ask about somebody
+else. Moving the functions out of the exposed schema would close the RPC route, but the policies in
+0011, 0021 and 0031 reference them as `public.has_role(...)`, and those files have shipped.
+
+**`public.schema_migrations` has RLS enabled and no policy (INFO).** Correct as it stands: that is
+the migration ledger `db:migrate` maintains, it exists only on hosted projects, and RLS on with no
+policy is precisely the state that makes it invisible to `anon` and `authenticated` while
+`service_role` keeps working. Adding a policy — the linter's suggested remediation — would publish
+the project's migration history. The finding is INFO rather than WARN because the linter cannot
+tell a deliberately unreachable table from a forgotten one.
+
 ## 7. Upload safety
 
 Two signing routes, one contract. Both apply the same controls; they differ only in who may call them

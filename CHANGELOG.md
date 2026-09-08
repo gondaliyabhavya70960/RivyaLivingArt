@@ -6,6 +6,107 @@ Every phase adds an entry; see `docs/architecture/CANONICAL-DECISIONS.md` D9 for
 
 ## [Unreleased]
 
+### Phase 06 — Cloudinary Media Architecture
+
+Media becomes a first-class database entity rather than a URL pasted into a field. Cloudinary is
+reachable only through `lib/media/`; no other module imports the SDK, and a build gate proves it.
+
+**The provider seam.** `MediaProvider` is an interface; `getMediaProvider()` is the only export the
+rest of the product uses. `lib/media/providers/cloudinary.ts` is `server-only` and the sole SDK
+importer. URL construction lives in `lib/media/url.ts` and needs no SDK, so a Client Component can
+render media without the secret-holding module reaching a browser bundle.
+
+**Migrations `0030` and `0031`**, applied to the local cluster AND the hosted project, then proved
+equal by hashing a signature over all 515 objects in `public` — columns, constraints, indexes,
+policies, RLS flags, enum labels, function ACLs and triggers. `media_assets` gains 22 columns;
+`media_usages` is the reverse index that makes "which slot uses this asset" and "which assets are
+unused" answerable without scanning every block payload.
+
+`media_assets.source` is `not null` **with no default**. A default would be worse than an omission:
+a forgotten value would silently become a provenance claim nobody made, which is what D6's ladder
+and D10's no-fabrication rule exist to prevent.
+
+`media_usages.media_id` is `on delete restrict` — a foreign key rather than the trigger
+`CLOUDINARY.md` §7 previously described. A trigger can be disabled with one statement by anyone who
+can write a migration.
+
+**`app/api/media/sign`** mints a credential; the bytes never touch this server. All five gates
+therefore run BEFORE the signature: session, `media.write`, Zod, the folder allowlist, then
+SECURITY.md §7.1's MIME allowlist and byte ceiling.
+
+**`MediaImage` and `MediaVideo`** (RC-232, RC-233 — both now BUILT). Every srcset candidate is built
+from the same resolved spec with only the width replaced; a spec fixing both dimensions (`og`) gets
+no srcset at all. `MediaVideo` mounts no `<video>` element under any of the four §4.3 gates — not a
+paused one — and pressing play still works under all of them.
+
+**The Studio Media Manager**: six sections from one component, the uploader, and the save action.
+Alt text is demanded before the upload rather than after, because an uploader that asks afterwards
+produces a library full of rows somebody meant to come back to.
+
+**Five new gates**, each verified to fail on a planted violation rather than merely to pass:
+`media:check-provider`, `perf:check-image-props`, `perf:check-video-props`, plus the existing
+`media:check-folders` and the `check` aggregate.
+
+#### The defect the unit tests could not have found
+
+All three Phase 06 canaries were uploaded to the live account, and the delivery URLs `url.ts`
+builds were then put to the API that parses them. Every image chain was accepted. **Every video
+chain was rejected** — `"g_auto must be in a transformation component by itself"`, HTTP 400. The
+restriction is per resource type and inline `g_auto` is valid on an image, so it is invisible until
+a video URL is requested; all six presets carry `gravity: 'auto'`, so every video and every derived
+poster would have 400ed in production. Twenty-three unit tests passed throughout, because they
+compared strings without sending one anywhere. Fixed, and both forms re-verified against the API.
+
+#### Two corrections to work already committed
+
+- **The transform policy had been invented rather than read.** `PHASE-05-09.md` §06 and
+  `CLOUDINARY.md` §5 fix six presets and a nine-rung ladder; my first version had five different
+  presets on a different ladder, and no `og` — which `SECURITY.md` §7.2 already cites by name when
+  telling the owner what to supply for a social card.
+- **`MediaVideo` was missing two of its four gates.** `saveData`/`deviceMemory` and the 768px
+  viewport gate, both named in RC-233's own record.
+
+#### Deliberately not built
+
+`/studio/media/higgsfield` stays a stub — AI Assets is a filter on `source = 'HIGGSFIELD'`, not a
+kind, and Phase 07 owns it with the remaining 247 assets. The §8 rate limit on the sign endpoint is
+not enforced: it needs `rate_limit_buckets`, which belongs to Phase 41. Both are recorded in the
+code rather than omitted silently.
+
+### The hosted database exists — migrations applied, RLS verified on the real project
+
+**Every migration `0001`–`0022` is applied** to `ccvarsmzickdkryoakdg` (PostgreSQL 17.6). This had
+been blocked for the whole of Phases 03–05: the sandbox cannot reach `*.supabase.co`, and GitHub
+Actions has never provisioned a runner to do it from. The Supabase MCP server reaches it directly.
+
+- **Field-by-field verification, not a "success" reply.** Hosted vs local: 14 tables, 14 with RLS,
+  55 policies, 63 indexes, 194 columns, 18 check constraints, 9 triggers, 7 functions — every count
+  identical. PostgreSQL 17 matching a 16.13 local cluster.
+- **RLS confirmed on the real project**, with a baseline so the zeros mean refusal rather than an
+  empty table: `anon` sees only the PUBLISHED product and nothing of `audit_logs`,
+  `staff_profiles`, `activity_events` or `content_seed_runs`. Closes Phase 04 verification step 8.
+
+**Fixed before it shipped — `0001` would have produced a mixed extension layout**
+
+Checking the real project first showed only `pgcrypto` was installed, in `extensions`. The other
+three did not exist, and `create extension` with no schema installs into the first search-path
+entry — `public`. That would have left `pgcrypto` in one schema and `citext`, `pg_trgm`, `unaccent`
+in another, and tripped Supabase's advisor, which flags extensions in `public` because PostgREST
+exposes it. `0001` now names the schema on all four.
+
+**`0022` — a security finding from a check this project could not previously run**
+
+Supabase's security advisor reported eight warnings. The cause was PostgreSQL's default, not
+anything written here: **every function is created with EXECUTE granted to PUBLIC.** Migration
+0010's explicit grant was redundant, and it hid that the trigger functions had it too — including
+`handle_new_auth_user`, which is `SECURITY DEFINER` and writes `staff_profiles`.
+
+Now revoked from PUBLIC and `anon` everywhere, and from `authenticated` on everything but the three
+RLS helpers. `authenticated` must keep those or every staff policy fails closed and locks the
+Studio out of its own database; each reports a fact about the caller alone and takes no user id.
+**Eight warnings down to three**, and the three are the deliberate ones. All 74 RLS tests still
+pass, which is what proves `anon` never needed the grants.
+
 ### Phase 05 — Studio Foundation — IN PROGRESS
 
 The navigation spine, the shell, the primitives and the palette. Not complete: see *Not done* below.

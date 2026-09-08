@@ -1,20 +1,47 @@
 import { StudioPage, studioMetadata } from '@/components/studio/StudioPage'
+import { MediaLibrary } from '@/components/studio/MediaLibrary'
 import { requirePermission } from '@/lib/auth/require'
+import { requiredEnv } from '@/lib/env'
+import { listMediaAssets } from '@/lib/supabase/repositories/media'
+import { createClient } from '@/lib/supabase/server'
 
 /**
- * /studio/media/all
+ * /studio/media/all — every asset, unfiltered by kind.
  *
- * A route stub. It exists so navigation never dead-ends — the sidebar shows this leaf to any role
- * holding `media.read`, and a link that 404s is worse than a page saying it is not built.
- *
- * THE PERMISSION CHECK IS REAL, not a placeholder. It runs before anything renders, writes a DENIED
- * audit row when it refuses, and is the same call the finished surface will make. Phase 06
- * replaces the body below; it does not add the gate, because a gate added later is a gate that was
- * missing in between.
+ * The only section whose query passes no `kind`, which is what makes it the place to answer "where
+ * did this asset go" when somebody uploaded a PDF into an image section by mistake.
  */
 export const metadata = studioMetadata('/studio/media/all')
 
-export default async function Page() {
+const PATH = '/studio/media/all'
+
+export default async function Page({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}) {
+  // First line of the body, before anything renders. `proxy.ts` redirects an unauthenticated
+  // request and decides nothing else, and this page is reachable by a role that holds
+  // `studio.access` without holding `media.read`.
   await requirePermission('media.read')
-  return <StudioPage path="/studio/media/all" />
+
+  const params = await searchParams
+  const q = params.q
+  const search = typeof q === 'string' ? q : ''
+
+  const client = await createClient()
+  const assets = await listMediaAssets(client, {
+    search,
+  })
+
+  return (
+    <StudioPage path={PATH}>
+      <MediaLibrary
+        path={PATH}
+        assets={assets}
+        cloudName={requiredEnv('NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME')}
+        search={search}
+      />
+    </StudioPage>
+  )
 }

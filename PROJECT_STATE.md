@@ -1,20 +1,31 @@
 # PROJECT_STATE — what is actually built
 
 > Verified against the repository, not against intent. Update at the end of every phase.
-> Last verified: Phase 05 (Studio Foundation), 2026-09-08.
+> Last verified: Phase 06 (Cloudinary Media Architecture), 2026-09-08.
 
 ## Summary
 
-The design system is built; the database spine exists, carries RLS policies for all six roles,
-and has been verified against a real PostgreSQL. What exists: the toolchain, the token layer,
-32 primitives, 2 motion helpers, 7 behavioural patterns, a dev-only gallery, **twelve tables with
-RLS on and 51 policies**, generated types with a drift gate, a repository layer with Zod at its
-boundary, an idempotent seed runner proved not to overwrite an owner's edit, the Studio's auth
-surfaces (`proxy.ts`, login, sign-out, user management), a forward-only migration runner, and
-**19 gates** that fail the build on the mistakes they were written for.
+The design system is built; the database spine exists, carries RLS policies for all six roles, and
+has been verified against a real PostgreSQL **and against the hosted Supabase project, proved
+identical by a 515-object signature hash**. What exists: the toolchain, the token layer, 32
+primitives, 3 motion helpers, 7 behavioural patterns, a dev-only gallery, **fifteen tables with RLS
+on and 58 policies**, generated types with a drift gate, a repository layer with Zod at its
+boundary, an idempotent seed runner proved not to overwrite an owner's edit, the Studio shell with
+its ⌘K palette and user management, the **media layer end to end** — provider seam, signed uploads,
+the two render patterns and the six-section Media Manager — a forward-only migration runner, and
+**24 gates** that fail the build on the mistakes they were written for.
 
-What does not exist: any product page, any media delivery, any Studio shell beyond the two pages
-above — and **nothing has ever been applied to the hosted Supabase project.**
+What does not exist: any product page, any CMS, and no content bound to a media slot. The Media
+Manager can upload and list; nothing on the public site renders from it yet, because no public page
+exists to render.
+
+**The hosted project is current.** All 17 migrations are applied to `ccvarsmzickdkryoakdg` and
+recorded in `public.schema_migrations` with checksums.
+
+**GitHub Actions has still never executed a step** on this repository — 57 runs, every one dead in
+2–3 seconds with a 404 on its logs, unchanged after a payment method was added. Vercel builds the
+same commits successfully, which isolates the fault to Actions at the account layer. Every figure
+in this document is from a local run.
 
 ## Phase status
 
@@ -26,9 +37,8 @@ above — and **nothing has ever been applied to the hosted Supabase project.**
 | 03 | Supabase Database + Data Layer | **COMPLETE** | Migrations `0001`-`0008` applied and verified against PostgreSQL 16.13. 10 tables, 6 enums, 2 functions, 24 indexes, RLS on everywhere with no policy. Generated types + drift gate, 6 repositories, Zod schemas, seed runner proved idempotent and owner-edit-safe. 5 new gates, 35 new tests. |
 | 04 | Supabase Auth + RBAC + RLS | **SUBSTANTIALLY COMPLETE** | Migrations `0009`-`0012`, 51 RLS policies across 12 tables, the permission matrix as generator input, Studio login/sign-out/user-management, 6 new gates. **10 of 11 verification steps pass** against a real PostgreSQL; step 8 (audit trail end to end) and the authenticated half of step 6 need a reachable Supabase project — both are `test.fixme` in the spec, not omitted. |
 | 05 | Studio Foundation | **SUBSTANTIALLY COMPLETE** | The D4 route map as one manifest (58 leaves + `/studio`), the shell and top bar, the Overview with all three tabs, migrations `0020`/`0021`, 15 Studio primitives, the ⌘K palette with its provider registry and search endpoint, per-user chrome. 8 of 10 D9 points; the two gaps are the per-role e2e matrix and the shell's visual baselines, both needing a reachable Supabase project. |
-| 06 | Cloudinary Media Architecture | **PLANNED** | `docs/media/CLOUDINARY.md` specifies folders and the migration runbook. |
-| 07 | Higgsfield Asset Audit + Initial Asset Plan | **PARTIAL** | **Audit half is done**: 250 assets inventoried and classified in `data/higgsfield/asset-manifest.json` by `scripts/media/build-higgsfield-manifest.py   deterministic classifier
-scripts/media/check-asset-ids.py             gap-ID collision guard`. The Cloudinary migration and the Studio tracker remain. |
+| 06 | Cloudinary Media Architecture | **SUBSTANTIALLY COMPLETE** | `MediaProvider` behind `getMediaProvider()`, with a build gate proving `lib/media/providers/cloudinary.ts` is the only SDK importer. Migrations `0022`/`0030`/`0031` applied to both databases. Six presets and the srcSet ladder matching `CLOUDINARY.md` §5. `app/api/media/sign` with five gates before the signature. `MediaImage` + `MediaVideo` (RC-232/233, both BUILT). Six Media Manager sections from one component. **All three canaries uploaded to the live account**, which is how the `g_auto` defect was found. 5 new gates, 656 unit tests. The §8 rate limit is Phase 41's table and is not enforced; `/studio/media/higgsfield` is Phase 07's. |
+| 07 | Higgsfield Asset Audit + Initial Asset Plan | **PARTIAL** | **Audit half is done**: 250 assets inventoried and classified in `data/higgsfield/asset-manifest.json` by `scripts/media/build-higgsfield-manifest.py`, with `check-asset-ids.py` guarding gap-ID collisions. Phase 06 proved the pipeline with 3 canaries; the remaining **247 assets**, `/studio/media/higgsfield`, and the Studio tracker remain. |
 | 08 | CMS / Editable Content System | **PLANNED** | — |
 | 09 | Initial Website Content Seed | **PLANNED** | `docs/content/INITIAL_CONTENT_INVENTORY.md` maps every field to a Studio control; no seed modules written. |
 | 10–46 | Public site, Studio, research, ops, launch | **PLANNED** | Specified in `docs/project/phases/`. |
@@ -107,12 +117,12 @@ too, and the hosted project cannot be migrated from here by any means.
 
 ## Known risks carried forward
 
-1. **The migration set has never been applied to the hosted Supabase project**, only to a local
-   cluster, because this sandbox cannot reach `*.supabase.co` (the proxy answers 403 to CONNECT)
-   and Postgres 5432/6543 are blocked. `.github/workflows/db-migrate.yml` is built and ready to do
-   it from a runner, which would have ordinary egress — **but Actions cannot provision a runner**,
-   so that route is blocked on the same account-level condition. Until one of the two is resolved
-   the hosted schema stays empty.
+1. ~~The migration set has never been applied to the hosted Supabase project.~~ **RESOLVED
+   2026-09-08.** All fifteen migrations are applied to `ccvarsmzickdkryoakdg` (PostgreSQL 17.6),
+   verified field-by-field against the local schema, with RLS confirmed per role on the real
+   project. Reached through the Supabase MCP server; ordinary egress to `*.supabase.co` is still
+   blocked, and GitHub Actions still cannot provision a runner, so `db-migrate.yml` remains built
+   and undispatched.
 2. **The pasted Supabase secrets are still unrotated.** The service-role key, secret key, JWT
    secret and database password were exposed in a chat transcript on 2026-09-08. Treat them as
    compromised until rotated.

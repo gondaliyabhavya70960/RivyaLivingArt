@@ -78,6 +78,7 @@ export type TablePolicy = {
 /** Generated policy migrations. One per phase that introduces tables; never re-opened. */
 export const PHASE_04_POLICIES = '0011_rls_policies.sql'
 export const PHASE_05_POLICIES = '0021_rls_policies_phase05.sql'
+export const PHASE_06_POLICIES = '0031_rls_policies_phase06.sql'
 
 export const TABLE_POLICIES = {
   // --- Shape A: content tables ------------------------------------------------------------------
@@ -250,6 +251,22 @@ export const TABLE_POLICIES = {
         'scope is what carries the security, not the permission. Wrapped in a sub-select so the ' +
         'planner evaluates auth.uid() once per statement rather than once per row.',
     },
+  },
+
+  // --- Phase 06 ---------------------------------------------------------------------------------
+  media_usages: {
+    policiesIn: PHASE_06_POLICIES,
+    shape: 'C',
+    readPermission: 'media.read',
+    writePermission: 'media.write',
+    deviation:
+      'Reverse index, not content. No anon policy — and that is the interesting decision here, ' +
+      'because it might look like one is needed: a public page renders an asset, so surely the ' +
+      'binding must be public too? No. The page resolves its media from its own block payload, ' +
+      'which already carries the asset id; this table answers the opposite question — "what uses ' +
+      'this asset" — which is a Studio question. Exposing it to anon would publish the shape of ' +
+      'every unpublished page: which slots exist, how many gallery items a draft has, which ' +
+      'entities reference an asset nobody has seen.',
   },
 } as const satisfies Record<string, TablePolicy>
 

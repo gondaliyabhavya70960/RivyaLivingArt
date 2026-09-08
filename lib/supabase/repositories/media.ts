@@ -73,3 +73,114 @@ export async function listConceptMediaAssets(client: Client): Promise<MediaAsset
   if (error) throw toRepositoryError(ENTITY, 'list', 'concept', error)
   return parseRows(ENTITY, mediaAssetSchema, data ?? [])
 }
+
+/**
+ * The Media Manager's list query — one function behind all six pages.
+ *
+ * KIND IS A FILTER, NOT A PAGE. FEAT §13's six sections are Images, Videos, 3D Models, Documents,
+ * AI Assets and Brand Assets, and five of those are a `kind`. The sixth is not: AI Assets is
+ * `source = 'HIGGSFIELD'` across IMAGE and VIDEO, which is why the enum has no AI value and why
+ * this takes both filters rather than one. Modelling AI as a kind would have made an asset either
+ * an image or AI-generated, when every Higgsfield asset is both.
+ */
+export type MediaListFilters = {
+  readonly kind?: MediaAsset['kind']
+  readonly source?: MediaAsset['source']
+  /** Matches filename or title. Trigram-indexed on filename (0008). */
+  readonly search?: string
+  readonly limit?: number
+}
+
+export async function listMediaAssets(
+  client: Client,
+  filters: MediaListFilters = {},
+): Promise<MediaAsset[]> {
+  let query = client.from('media_assets').select('*')
+
+  if (filters.kind !== undefined) query = query.eq('kind', filters.kind)
+  if (filters.source !== undefined) query = query.eq('source', filters.source)
+  if (filters.search !== undefined && filters.search.trim() !== '') {
+    // `%` and `,` are PostgREST's own separators inside an `or` filter, so a search containing one
+    // would change the shape of the query rather than the value being matched. Escaped, not
+    // rejected: an editor searching for "50%" is asking a reasonable question.
+    const term = filters.search.trim().replace(/[%,]/g, '\\$&')
+    query = query.or(`filename.ilike.%${term}%,title.ilike.%${term}%`)
+  }
+
+  const { data, error } = await query
+    .order('created_at', { ascending: false })
+    .limit(filters.limit ?? 200)
+
+  if (error) throw toRepositoryError(ENTITY, 'list', filters.kind ?? 'all', error)
+  return parseRows(ENTITY, mediaAssetSchema, data ?? [])
+}
+
+/**
+ * What the Studio may set when it records an asset after an upload.
+ *
+ * NARROWER THAN THE ROW ON PURPOSE. `bytes`, `width`, `height` and `duration_s` are absent:
+ * those come from `MediaProvider.probe()` and are written by the caller from the provider's
+ * answer, never from a form. A client that uploaded a 40 MB file can report 2 MB, and the row
+ * would then assert something false about an asset an owner is making a decision about.
+ *
+ * `source` is required with no default here for the same reason it is `not null` with no default
+ * in the database (0030): a forgotten value would become a provenance claim nobody made.
+ */
+export type NewMediaAsset = {
+  readonly public_id: string
+  readonly folder: string
+  readonly resource_type: MediaAsset['resource_type']
+  readonly kind: MediaAsset['kind']
+  readonly source: MediaAsset['source']
+  readonly alt_text: string
+  readonly is_ai_generated: boolean
+  readonly is_concept: boolean
+  readonly filename?: string | null
+  readonly title?: string | null
+  readonly mime_type?: string | null
+  readonly bytes?: number | null
+  readonly width?: number | null
+  readonly height?: number | null
+  readonly duration_s?: number | null
+  readonly uploaded_by?: string | null
+}
+
+export async function insertMediaAsset(client: Client, asset: NewMediaAsset): Promise<MediaAsset> {
+  const { data, error } = await client
+    .from('media_assets')
+    .insert({ ...asset, provider: 'cloudinary', status: 'DRAFT' })
+    .select('*')
+    .single()
+
+  if (error) throw toRepositoryError(ENTITY, 'insert', asset.public_id, error)
+  return parseRow(ENTITY, mediaAssetSchema, data)
+}
+
+/**
+ * Edit the descriptive fields.
+ *
+ * `alt_text` is here and may not be cleared: the column is `not null` and non-empty in the
+ * database, so an empty string would be refused there anyway — but refusing it in the type means
+ * the failure is a compile error rather than a round trip.
+ */
+export type MediaAssetEdit = {
+  readonly alt_text?: string
+  readonly title?: string | null
+  readonly caption?: string | null
+  readonly tags?: string[]
+  readonly subject_tags?: string[]
+}
+
+export async function updateMediaAsset(
+  client: Client,
+  id: string,
+  edit: MediaAssetEdit,
+  updatedBy: string,
+): Promise<void> {
+  const { error } = await client
+    .from('media_assets')
+    .update({ ...edit, updated_by: updatedBy })
+    .eq('id', id)
+
+  if (error) throw toRepositoryError(ENTITY, 'update', id, error)
+}

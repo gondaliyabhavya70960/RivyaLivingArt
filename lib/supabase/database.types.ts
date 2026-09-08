@@ -464,6 +464,28 @@ export type Database = {
           fact_classification: Database['public']['Enums']['fact_classification'] | null
           published_at: string | null
           published_by: string | null
+          source: Database['public']['Enums']['media_source']
+          title: string | null
+          caption: string | null
+          tags: string[]
+          subject_tags: string[]
+          mime_type: string | null
+          bytes: number | null
+          checksum: string | null
+          poster_public_id: string | null
+          model_format: string | null
+          file_size_bytes: number | null
+          poly_count: number | null
+          texture_count: number | null
+          model_thumbnail_id: string | null
+          model_poster_id: string | null
+          associated_product_id: string | null
+          associated_project_id: string | null
+          higgsfield_generation_id: string | null
+          higgsfield_model: string | null
+          higgsfield_prompt: string | null
+          manifest_version: string | null
+          migrated_at: string | null
         }
         Insert: {
           id?: string
@@ -490,6 +512,28 @@ export type Database = {
           fact_classification?: Database['public']['Enums']['fact_classification'] | null
           published_at?: string | null
           published_by?: string | null
+          source: Database['public']['Enums']['media_source']
+          title?: string | null
+          caption?: string | null
+          tags?: string[]
+          subject_tags?: string[]
+          mime_type?: string | null
+          bytes?: number | null
+          checksum?: string | null
+          poster_public_id?: string | null
+          model_format?: string | null
+          file_size_bytes?: number | null
+          poly_count?: number | null
+          texture_count?: number | null
+          model_thumbnail_id?: string | null
+          model_poster_id?: string | null
+          associated_product_id?: string | null
+          associated_project_id?: string | null
+          higgsfield_generation_id?: string | null
+          higgsfield_model?: string | null
+          higgsfield_prompt?: string | null
+          manifest_version?: string | null
+          migrated_at?: string | null
         }
         Update: {
           id?: string
@@ -516,8 +560,51 @@ export type Database = {
           fact_classification?: Database['public']['Enums']['fact_classification'] | null
           published_at?: string | null
           published_by?: string | null
+          source?: Database['public']['Enums']['media_source']
+          title?: string | null
+          caption?: string | null
+          tags?: string[]
+          subject_tags?: string[]
+          mime_type?: string | null
+          bytes?: number | null
+          checksum?: string | null
+          poster_public_id?: string | null
+          model_format?: string | null
+          file_size_bytes?: number | null
+          poly_count?: number | null
+          texture_count?: number | null
+          model_thumbnail_id?: string | null
+          model_poster_id?: string | null
+          associated_product_id?: string | null
+          associated_project_id?: string | null
+          higgsfield_generation_id?: string | null
+          higgsfield_model?: string | null
+          higgsfield_prompt?: string | null
+          manifest_version?: string | null
+          migrated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: 'media_assets_associated_product_id_fkey'
+            columns: ['associated_product_id']
+            isOneToOne: false
+            referencedRelation: 'products'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'media_assets_model_poster_id_fkey'
+            columns: ['model_poster_id']
+            isOneToOne: false
+            referencedRelation: 'media_assets'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'media_assets_model_thumbnail_id_fkey'
+            columns: ['model_thumbnail_id']
+            isOneToOne: false
+            referencedRelation: 'media_assets'
+            referencedColumns: ['id']
+          },
           {
             foreignKeyName: 'media_assets_published_by_fkey'
             columns: ['published_by']
@@ -537,6 +624,54 @@ export type Database = {
             columns: ['uploaded_by']
             isOneToOne: false
             referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      media_usages: {
+        Row: {
+          id: string
+          media_id: string
+          context_type: string
+          context_id: string
+          slot_key: string
+          role: string
+          created_at: string
+          created_by: string | null
+        }
+        Insert: {
+          id?: string
+          media_id: string
+          context_type: string
+          context_id: string
+          slot_key: string
+          role: string
+          created_at?: string
+          created_by?: string | null
+        }
+        Update: {
+          id?: string
+          media_id?: string
+          context_type?: string
+          context_id?: string
+          slot_key?: string
+          role?: string
+          created_at?: string
+          created_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'media_usages_created_by_fkey'
+            columns: ['created_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'media_usages_media_id_fkey'
+            columns: ['media_id']
+            isOneToOne: false
+            referencedRelation: 'media_assets'
             referencedColumns: ['id']
           },
         ]
@@ -995,6 +1130,7 @@ export type Database = {
         | 'SEO_COPY'
         | 'LEGAL_COPY'
       media_kind: 'IMAGE' | 'VIDEO' | 'MODEL_3D' | 'DOCUMENT' | 'BRAND'
+      media_source: 'REAL' | 'USER_UPLOAD' | 'HIGGSFIELD' | 'RENDER' | 'FALLBACK'
       owner_verification: 'NOT_REQUIRED' | 'OWNER_VERIFICATION_REQUIRED' | 'VERIFIED'
       price_state: 'STARTING_FROM' | 'REQUEST_QUOTE' | 'PRICE_ON_REQUEST'
       user_role: 'owner' | 'admin' | 'editor' | 'merchandiser' | 'researcher' | 'viewer'

@@ -12,10 +12,22 @@
  * against each of them rather than assumed correct.
  *
  * Replaced spans keep their newlines, so reported line numbers still match the original file.
+ *
+ * STRINGS ARE OPTIONAL, COMMENTS ARE NOT. Phase 06's `check-video-props.mjs` needs a view with
+ * comments gone but string literals intact, because the rule it enforces is about an attribute's
+ * VALUE (`preload="none"`) while the false positives it must avoid come from doc comments that
+ * quote the markup they forbid. Blanking strings there would erase the thing being checked. The
+ * option is on this function rather than a second implementation because the hard part — nested
+ * template expressions, escapes, regex literals — is what a copy would get wrong.
  */
 
-/** @param {string} source @returns {string} */
-export function stripCommentsAndStrings(source) {
+/**
+ * @param {string} source
+ * @param {{ strings?: boolean }} [options] `strings: false` keeps string literals; comments always go.
+ * @returns {string}
+ */
+export function stripCommentsAndStrings(source, options = {}) {
+  const blankStrings = options.strings !== false
   let out = ''
   let i = 0
   const n = source.length
@@ -49,7 +61,7 @@ export function stripCommentsAndStrings(source) {
     // Strings and template literals. Templates may nest ${...}, which may contain more strings;
     // the whole template is blanked, expressions included. A checker looking for a call site does
     // not want to match one that was interpolated into a string anyway.
-    if (ch === '"' || ch === "'" || ch === '`') {
+    if (blankStrings && (ch === '"' || ch === "'" || ch === '`')) {
       const quote = ch
       let j = i + 1
       let depth = 0

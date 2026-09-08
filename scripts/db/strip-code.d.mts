@@ -5,4 +5,7 @@
  * Node runs directly with no build step. This file gives the same module a type for the unit test
  * and for `npm run typecheck`, which covers scripts/ and tests/ as well as application code.
  */
-export declare function stripCommentsAndStrings(source: string): string
+export declare function stripCommentsAndStrings(
+  source: string,
+  options?: { strings?: boolean },
+): string

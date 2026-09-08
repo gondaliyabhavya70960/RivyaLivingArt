@@ -11,19 +11,37 @@
 --   unaccent  rivya_slugify() folds accented characters before slugging, so "Résine" and
 --             "Resine" cannot produce two different slugs for one material.
 --
--- Supabase installs extensions into the `extensions` schema on hosted projects and puts that
--- schema on the search path. Creating them without an explicit schema therefore works on both
--- a hosted project and a plain PostgreSQL cluster, which is what the local verification uses.
-
--- Extension objects (citext, unaccent, gin_trgm_ops) are resolved through this search_path.
--- Supabase installs extensions into the `extensions` schema; a plain cluster installs them into
--- `public`. Naming both means these migrations apply unmodified to either, which they did NOT
--- before: with unaccent in `extensions`, 0003 failed at CREATE time with
+-- WHERE THEY ARE INSTALLED, AND WHY IT IS SPELLED OUT
+--
+-- `with schema extensions` on every one, rather than letting the search path decide.
+--
+-- An earlier version of this file omitted it, on the belief that Supabase had already installed
+-- all four into `extensions` so `if not exists` would be a harmless no-op. Checking the real
+-- project before applying showed otherwise: **only `pgcrypto` was installed.** The other three did
+-- not exist at all, and `create extension` with no schema installs into the first entry of the
+-- search path — `public`.
+--
+-- That would have produced a MIXED layout on the live project: `pgcrypto` in `extensions`, and
+-- `citext`, `pg_trgm` and `unaccent` in `public`. Worse than either consistent choice. It also
+-- trips Supabase's own security advisor, which flags extensions in `public` because that schema is
+-- exposed through PostgREST.
+--
+-- Naming the schema works in both places. Hosted, Supabase creates `extensions`; locally,
+-- `supabase/local/00-auth-shim.sql` creates it, and the `create schema if not exists` below makes
+-- this migration self-sufficient for any other plain cluster. On hosted that line is a no-op, so
+-- it takes no ownership of a schema Supabase manages.
+--
+-- The search_path below still names both schemas, because every LATER migration resolves extension
+-- objects (the `citext` type, `gin_trgm_ops`, the `unaccent` dictionary) through it. Removing it
+-- reproduces the failure this project already hit once:
 --   ERROR: text search dictionary "unaccent" does not exist
--- and 0004-0006 would have failed the same way on the `citext` type. See docs/ops/ENVIRONMENT.md.
+-- See docs/ops/ENVIRONMENT.md.
+
+create schema if not exists extensions;
+
 set search_path = public, extensions;
 
-create extension if not exists pgcrypto;
-create extension if not exists citext;
-create extension if not exists pg_trgm;
-create extension if not exists unaccent;
+create extension if not exists pgcrypto with schema extensions;
+create extension if not exists citext   with schema extensions;
+create extension if not exists pg_trgm  with schema extensions;
+create extension if not exists unaccent with schema extensions;
