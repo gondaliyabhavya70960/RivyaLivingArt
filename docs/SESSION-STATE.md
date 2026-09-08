@@ -32,19 +32,32 @@ PR #7). Phase 03 merged as PR #4.
 - **`withPermission` writes exactly one audit row** and names the record — the Phase 04
   carry-forward, with nine tests and both regressions confirmed against the old behaviour.
 
+- **All fifteen Studio primitives** in `components/studio/**`, each built around the distinction it
+  exists to preserve rather than around rendering. Documented in `STUDIO_GUIDE.md` §4.1 with the
+  reason each one is shaped the way it is. 20 tests.
+- **The ⌘K command palette**, its provider registry (20 results / 200 ms per provider, enforced by
+  the registry rather than trusted to providers), the route provider, and
+  `app/api/studio/search/route.ts`. 13 tests, including that a provider is skipped *before* it runs
+  when the role lacks its permission.
+- **`loading.tsx` / `error.tsx` / `not-found.tsx`** for the Studio. The error boundary never renders
+  `error.message` — only the digest.
+- **`logActivity()` has three real callers**: all three user-management mutations.
+
 **Not built yet, and Phase 05 is not complete without them**
 
-1. **The command palette** (⌘K) and its provider registry.
-2. **Ten of the twelve Studio primitives**: `DataTable`, `FilterBar`, `StatCard`, `StatusPill`,
-   `EmptyState`, `ConfirmDialog`, `DrawerForm`, `FormField`, `PermissionGate`, `RelativeTime`,
-   `ActorChip`. Only `StudioPage` and the shell exist.
-3. **`app/api/studio/search/route.ts`.**
-4. **`tests/e2e/studio-rbac.spec.ts`** — the per-role route matrix. Blocked on the same thing as
+1. **`tests/e2e/studio-rbac.spec.ts`** — the per-role route matrix. Blocked on the same thing as
    Phase 04 step 6: it needs real sessions, so it needs a reachable Supabase project.
-5. **`loading.tsx` / `error.tsx` / `not-found.tsx`** for the Studio.
-6. **The visual QA matrix** at the eight FEAT §45 widths.
-7. **`logActivity()` has no callers yet** — the writer, the table and the feed exist, but no
-   mutation calls it, so the feed is empty by construction rather than by circumstance.
+2. **The visual QA matrix** at the eight FEAT §45 widths (exit criterion), and Playwright visual
+   baselines for the shell.
+3. **The top bar.** The sidebar shows the role as text; the user menu, role badge and
+   deployment-environment badge are not built, and the ⌘K trigger has no visible affordance.
+4. **`studio_preferences` has no reader or writer.** The table, its RLS and its self-scope exist and
+   are verified, but nothing collapses the sidebar or pins a route yet, so `pinned_routes` and
+   `dashboard_card_order` are columns nothing fills.
+5. **Verification steps 6 and 7** of Phase 05 (⌘K from a Studio page; `activity_events` refused to
+   anon in `psql`) have not been run against a browser and a live role — step 7 is checkable
+   locally and should be done next.
+6. **`docs/DATA_MODEL.md` and `CHANGELOG.md`** are not yet updated for Phase 05 (D9 requires both).
 
 ## Status
 

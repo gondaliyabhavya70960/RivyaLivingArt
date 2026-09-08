@@ -16,6 +16,7 @@ import { Text } from '@/components/primitives/Text'
 import { VisuallyHidden } from '@/components/primitives/VisuallyHidden'
 import { t, type StudioStringKey } from '@/components/studio/strings'
 import { markAudited, writeAudit } from '@/lib/auth/audit'
+import { logActivity } from '@/lib/logging/activity'
 import { ROLES, roleHasPermission, type Role } from '@/lib/auth/permissions'
 import { inviteStaffMember } from '@/lib/auth/provisioning'
 import { requirePermission, withPermission } from '@/lib/auth/require'
@@ -314,6 +315,19 @@ const inviteStaff = withPermission(
       after: { role: input.role, status: 'INVITED' },
     })
 
+    // The feed, which is a different record for a different reader. audit_logs answers "was this
+    // allowed" and is owner/admin only; this is "who changed what", visible to every staff role.
+    // No email here either — the audit row above already declines to hold a second copy of it.
+    await logActivity({
+      action: 'staff.invited',
+      actorId: session.userId,
+      actorRole: session.role,
+      entityType: ENTITY,
+      entityId: result.userId,
+      entityLabel: input.displayName === '' ? null : input.displayName,
+      summary: `Invited a new staff member as ${input.role}`,
+    })
+
     return 'invited'
   },
 )
@@ -355,6 +369,18 @@ const changeRole = withPermission(
       after: { role: input.role },
     })
 
+    await logActivity({
+      action: 'staff.role-changed',
+      actorId: session.userId,
+      actorRole: session.role,
+      entityType: ENTITY,
+      entityId: input.userId,
+      summary:
+        before === null
+          ? `Set the role to ${input.role}`
+          : `Changed the role from ${before.role} to ${input.role}`,
+    })
+
     return 'role-changed'
   },
 )
@@ -386,6 +412,18 @@ const changeStatus = withPermission(
       entityId: input.userId,
       ...(before === null ? {} : { before: { status: before.status } }),
       after: { status: input.status },
+    })
+
+    await logActivity({
+      action: 'staff.status-changed',
+      actorId: session.userId,
+      actorRole: session.role,
+      entityType: ENTITY,
+      entityId: input.userId,
+      summary:
+        before === null
+          ? `Set the status to ${input.status}`
+          : `Changed the status from ${before.status} to ${input.status}`,
     })
 
     return input.status === 'ACTIVE' ? 'activated' : 'suspended'

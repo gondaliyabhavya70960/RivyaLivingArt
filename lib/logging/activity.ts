@@ -55,9 +55,13 @@ export type ActivityEntry = {
   /**
    * The record's name AS IT IS NOW. Stored rather than joined, because the feed must still read
    * sensibly after the thing is renamed or deleted — a join would show today's name, or nothing.
+   *
+   * `null` is accepted as well as absent, because the column is nullable and callers usually have
+   * a `string | null` from the record itself. Forcing every one of them to write `?? undefined` to
+   * satisfy a narrower type would be ceremony that says nothing.
    */
-  entityLabel?: string
-  summary?: string
+  entityLabel?: string | null
+  summary?: string | null
   metadata?: Record<string, unknown>
 }
 

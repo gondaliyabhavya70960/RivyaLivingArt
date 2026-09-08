@@ -181,8 +181,24 @@ tabs). Stubbed with an owning-phase notice: every leaf under `/studio/catalog`,
    result and `Enter` navigates there.
 6. Run any server action that calls `logActivity()` (a `studio_preferences` write is enough);
    assert a row appears in `activity_events` and in the Activity tab within one reload.
-7. `psql "$DATABASE_URL" -c "select count(*) from activity_events"` as the anon role — expect a
-   permission error, proving RLS.
+7. ~~`psql "$DATABASE_URL" -c "select count(*) from activity_events"` as the anon role — expect a
+   permission error, proving RLS.~~ **CORRECTED — this step cannot pass as written, and is replaced
+   by `tests/unit/rls/phase05.test.ts`.**
+
+   There is no permission error. RLS denial is ZERO ROWS, not an exception: Supabase grants `anon`
+   full DML on every table in `public`, so the grant is present and the policy simply matches
+   nothing. Run as written, the command returns `0`, and someone then has to decide whether that
+   counts as a pass.
+
+   Worse, `0` on an empty table is the same `0`. The step as written is satisfied identically by a
+   correctly-locked table, an empty table, and a table with RLS switched off — the vacuous pass
+   this project has already been bitten by once (`DATA_MODEL` §1.5, and the Phase 04 harness note).
+
+   The replacement seeds a row as the table owner FIRST and proves it is visible, so a role seeing
+   zero means refused rather than absent. It also covers what the original could not: that all six
+   staff roles CAN read the feed, that a suspended one cannot, that a staff insert is refused
+   (the feed is readable by every role, so a forged "editor published X" would land in the record
+   colleagues read), and that update and delete are refused at the privilege level.
 
 **Exit criteria**
 
