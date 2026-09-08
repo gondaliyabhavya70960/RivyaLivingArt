@@ -1,5 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
+import { slotKeyOf } from '@/lib/media/gaps'
+
 import { FIXTURE_USERS, asUser, connect, disconnect, loadFixture } from './harness'
 
 /**
@@ -261,6 +263,207 @@ describeDb('the status-transition trigger', () => {
         [PAGE],
       )
       expect(await readStatus()).toBe('DRAFT')
+    })
+  })
+})
+
+describeDb('the trigger set', () => {
+  const SECTION_PAGE = '00000000-0000-4000-8000-0000000000d1'
+  const ASSETS = [
+    '00000000-0000-4000-8000-0000000000e1',
+    '00000000-0000-4000-8000-0000000000e2',
+    '00000000-0000-4000-8000-0000000000e3',
+  ] as const
+
+  beforeAll(async () => {
+    const db = await connect()
+    await db.query('delete from page_sections')
+    await db.query(`delete from pages where id = $1`, [SECTION_PAGE])
+    await db.query(`delete from media_assets where rivya_asset_id like 'TRIG-%'`)
+    await db.query(
+      `insert into pages (id, slug, kind, title, path) values ($1,'trig','PAGE','T','/trig')`,
+      [SECTION_PAGE],
+    )
+    for (const [i, id] of ASSETS.entries()) {
+      await db.query(
+        `insert into media_assets (id, rivya_asset_id, provider, resource_type, public_id, folder,
+                                   filename, kind, source, alt_text, is_ai_generated, is_concept)
+         values ($1, $2, 'cloudinary', 'image', $3, 'rivya/trig', $4, 'IMAGE', 'HIGGSFIELD', 'a', true, true)`,
+        [id, `TRIG-${String(i)}`, `rivya/trig/a${String(i)}`, `a${String(i)}`],
+      )
+    }
+  })
+
+  afterAll(disconnect)
+
+  const gallery = (order: readonly string[]) =>
+    JSON.stringify({
+      media: order.map((id) => ({ slot: 'gallery', role: 'GALLERY', media_id: id })),
+    })
+
+  describe('sync_media_usages and the Phase 07 slot_key contract', () => {
+    it('writes gallery[0..2] with role GALLERY for a three-image payload', async () => {
+      // Verification step 9, verbatim.
+      const db = await connect()
+      const { rows: created } = await db.query<{ id: string }>(
+        `insert into page_sections (page_id, block_type, position, payload)
+         values ($1, 'category-grid', 0, $2::jsonb) returning id`,
+        [SECTION_PAGE, gallery(ASSETS)],
+      )
+      const section = created[0]!.id
+
+      const { rows } = await db.query<{ slot_key: string; role: string }>(
+        `select slot_key, role from media_usages where context_id = $1 order by slot_key`,
+        [section],
+      )
+      expect(rows.map((r) => r.slot_key)).toEqual(['gallery[0]', 'gallery[1]', 'gallery[2]'])
+      expect(new Set(rows.map((r) => r.role))).toEqual(new Set(['GALLERY']))
+    })
+
+    it('round-trips through slotKeyOf, which is what closes the contract', async () => {
+      // The whole point of the bracket form: lib/media/gaps.ts must be able to map every usage row
+      // back to the declared slot it belongs to. If this drifted, the Gaps tab would report a bound
+      // slot as unbound — silently, and plausibly.
+      const db = await connect()
+      const { rows } = await db.query<{ slot_key: string }>(
+        `select slot_key from media_usages where slot_key like 'gallery%'`,
+      )
+      expect(rows.length).toBeGreaterThan(0)
+      for (const row of rows) {
+        expect(slotKeyOf(row.slot_key)).toBe('gallery')
+      }
+    })
+
+    it('renumbers in place on a payload reorder without colliding', async () => {
+      const db = await connect()
+      const { rows: found } = await db.query<{ id: string }>(
+        `select id from page_sections where page_id = $1 limit 1`,
+        [SECTION_PAGE],
+      )
+      const section = found[0]!.id
+      const reordered = [ASSETS[2], ASSETS[0], ASSETS[1]]
+      await db.query(`update page_sections set payload = $2::jsonb where id = $1`, [
+        section,
+        gallery(reordered),
+      ])
+
+      const { rows } = await db.query<{ slot_key: string; media_id: string }>(
+        `select slot_key, media_id from media_usages where context_id = $1 order by slot_key`,
+        [section],
+      )
+      expect(rows).toHaveLength(3)
+      expect(rows[0]?.media_id).toBe(ASSETS[2])
+    })
+
+    it('gives the desktop/mobile pair one slot_key split by role', async () => {
+      // Legal because the unique key is (context_type, context_id, slot_key, role) — the role is
+      // what distinguishes them, not a second key.
+      const db = await connect()
+      const { rows: found } = await db.query<{ id: string }>(
+        `select id from page_sections where page_id = $1 limit 1`,
+        [SECTION_PAGE],
+      )
+      await db.query(
+        `update page_sections set media_slot_key = 'home.intro',
+                                  media_desktop_id = $2, media_mobile_id = $3 where id = $1`,
+        [found[0]!.id, ASSETS[0], ASSETS[1]],
+      )
+      const { rows } = await db.query<{ role: string }>(
+        `select role from media_usages where context_id = $1 and slot_key = 'home.intro' order by role`,
+        [found[0]!.id],
+      )
+      expect(rows.map((r) => r.role)).toEqual(['DESKTOP', 'MOBILE'])
+    })
+
+    it('clears usages when the section is deleted', async () => {
+      // context_id is polymorphic so no foreign key can cascade it. Stranded rows would keep
+      // refusing to let an asset be deleted, and nobody finds that by looking.
+      const db = await connect()
+      const { rows: found } = await db.query<{ id: string }>(
+        `select id from page_sections where page_id = $1 limit 1`,
+        [SECTION_PAGE],
+      )
+      const section = found[0]!.id
+      await db.query(`delete from page_sections where id = $1`, [section])
+      const { rows } = await db.query(`select 1 from media_usages where context_id = $1`, [section])
+      expect(rows).toHaveLength(0)
+    })
+  })
+
+  describe('write_revision', () => {
+    it('appends exactly one revision per mutation', async () => {
+      // Verification step 6. "Exactly one" is the assertion that matters: cms_publish_section must
+      // never insert a revision itself, because the trigger already fires inside its transaction.
+      const db = await connect()
+      const { rows: created } = await db.query<{ id: string }>(
+        `insert into page_sections (page_id, block_type, position)
+         values ($1, 'statement', 50) returning id`,
+        [SECTION_PAGE],
+      )
+      const section = created[0]!.id
+      const count = async () => {
+        const { rows } = await db.query<{ n: string }>(
+          `select count(*)::text as n from content_revisions
+            where entity_type = 'page_section' and entity_id = $1`,
+          [section],
+        )
+        return Number(rows[0]!.n)
+      }
+      expect(await count()).toBe(1)
+      await db.query(`update page_sections set heading = 'one' where id = $1`, [section])
+      expect(await count()).toBe(2)
+      await db.query(`update page_sections set heading = 'two' where id = $1`, [section])
+      expect(await count()).toBe(3)
+    })
+
+    it('labels a status change STATUS_CHANGE and an edit UPDATE', async () => {
+      const db = await connect()
+      const { rows: created } = await db.query<{ id: string }>(
+        `insert into page_sections (page_id, block_type, position)
+         values ($1, 'divider', 51) returning id`,
+        [SECTION_PAGE],
+      )
+      const section = created[0]!.id
+      await db.query(`update page_sections set heading = 'x' where id = $1`, [section])
+      await db.query(`update page_sections set status = 'REVIEW' where id = $1`, [section])
+      const { rows } = await db.query<{ action: string }>(
+        `select action from content_revisions where entity_type = 'page_section' and entity_id = $1
+          order by revision_no`,
+        [section],
+      )
+      expect(rows.map((r) => r.action)).toEqual(['CREATE', 'UPDATE', 'STATUS_CHANGE'])
+    })
+
+    it('numbers revisions per entity, starting at 1', async () => {
+      // Not a global sequence: a section's history should read 1, 2, 3, not 47, 112, 3809.
+      const db = await connect()
+      const { rows: created } = await db.query<{ id: string }>(
+        `insert into page_sections (page_id, block_type, position)
+         values ($1, 'quote', 52) returning id`,
+        [SECTION_PAGE],
+      )
+      const { rows } = await db.query<{ revision_no: number }>(
+        `select revision_no from content_revisions where entity_id = $1`,
+        [created[0]!.id],
+      )
+      expect(rows[0]?.revision_no).toBe(1)
+    })
+
+    it('refuses an UPDATE to the history, even as staff', async () => {
+      // Verification step 6's second half. content_revisions has no update policy at all, so this
+      // matches zero rows rather than raising — the assertion is that nothing changed.
+      const db = await connect()
+      const { rows: before } = await db.query<{ snapshot: unknown }>(
+        `select snapshot from content_revisions limit 1`,
+      )
+      await asUser(FIXTURE_USERS.owner, (sql) =>
+        sql.rows(`update content_revisions set snapshot = '{}'::jsonb`),
+      )
+      const { rows: after } = await db.query<{ snapshot: unknown }>(
+        `select snapshot from content_revisions limit 1`,
+      )
+      expect(after[0]?.snapshot).toEqual(before[0]?.snapshot)
+      expect(after[0]?.snapshot).not.toEqual({})
     })
   })
 })

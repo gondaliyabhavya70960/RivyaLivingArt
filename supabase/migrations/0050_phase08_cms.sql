@@ -485,3 +485,191 @@ $$;
 create trigger page_sections_reset_schedule_state
   before update on page_sections
   for each row execute function reset_schedule_state();
+
+-- --------------------------------------------------------------------------------------------
+-- write_revision() — the audit trail
+-- --------------------------------------------------------------------------------------------
+--
+-- SECURITY DEFINER, and that is forced rather than chosen: `content_revisions` is shape C with no
+-- write policy for any session role (0051), which is what guarantees the history cannot be edited
+-- by the people it records. An invoker-rights trigger would therefore insert zero rows and succeed
+-- — RLS does not raise on a non-matching INSERT, it just discards it — and the audit trail would
+-- be silently empty while every mutation appeared to work.
+--
+-- `revision_no` IS ALLOCATED UNDER AN ADVISORY LOCK, not by a sequence. A sequence would be
+-- global; these numbers are per entity, so `content_revisions` for one section reads 1, 2, 3 and
+-- not 47, 112, 3809. `max(...) + 1` alone races: two concurrent updates to one row both read the
+-- same max and one loses on the unique constraint. The lock is transaction-scoped and keyed on the
+-- entity, so it serialises writers to ONE row without touching any other.
+--
+-- The unique constraint stays anyway. A lock is a convention; the constraint is the guarantee.
+create or replace function public.write_revision()
+returns trigger
+language plpgsql
+security definer
+set search_path = public, extensions
+as $$
+declare
+  v_entity_type text := tg_argv[0];
+  v_action      text;
+  v_next        int;
+  v_snapshot    jsonb;
+begin
+  -- The GUC lets cms_restore_revision() label its own write RESTORE rather than UPDATE, using the
+  -- same idiom guard_stage_transition uses. `true` as the second argument means "missing is null",
+  -- not "raise".
+  v_action := nullif(current_setting('rivya.revision_action', true), '');
+
+  if v_action is null then
+    if tg_op = 'INSERT' then
+      v_action := 'CREATE';
+    elsif old.status is distinct from new.status then
+      v_action := 'STATUS_CHANGE';
+    else
+      v_action := 'UPDATE';
+    end if;
+  end if;
+
+  perform pg_advisory_xact_lock(hashtextextended(v_entity_type || ':' || new.id::text, 0));
+
+  select coalesce(max(revision_no), 0) + 1
+    into v_next
+    from content_revisions
+   where entity_type = v_entity_type and entity_id = new.id;
+
+  -- `updated_at` and `seed_last_applied_at` are removed because they change on every write by
+  -- definition. Leaving them in would make two otherwise identical revisions differ, so a diff
+  -- between them would show a timestamp and nothing else — noise in the one place a reader is
+  -- trying to see what actually changed.
+  v_snapshot := to_jsonb(new) - 'updated_at' - 'seed_last_applied_at';
+
+  -- check-migrations: allow-insert (a trigger body, not a seeded row — this is the audit trail)
+  insert into content_revisions (entity_type, entity_id, revision_no, action, snapshot, created_by)
+  values (v_entity_type, new.id, v_next, v_action, v_snapshot, new.updated_by);
+
+  return new;
+end;
+$$;
+
+revoke execute on function public.write_revision() from public, anon, authenticated;
+
+comment on function public.write_revision() is
+  'Appends an immutable snapshot per mutation. SECURITY DEFINER because content_revisions has no write policy for any session role — an invoker-rights trigger would insert zero rows and succeed.';
+
+create trigger pages_write_revision            after insert or update on pages            for each row execute function write_revision('page');
+create trigger page_sections_write_revision    after insert or update on page_sections    for each row execute function write_revision('page_section');
+create trigger navigation_items_write_revision after insert or update on navigation_items for each row execute function write_revision('navigation_item');
+create trigger global_content_write_revision   after insert or update on global_content   for each row execute function write_revision('global_content');
+create trigger faqs_write_revision             after insert or update on faqs             for each row execute function write_revision('faq');
+
+-- --------------------------------------------------------------------------------------------
+-- sync_media_usages() — the Phase 07 slot_key contract, in the database
+-- --------------------------------------------------------------------------------------------
+--
+-- `media_usages` is the reverse index: which slot, on which entity, uses which asset. Phase 06
+-- built it; Phase 07 fixed what `slot_key` must contain — the `content/media-slots.ts` REGISTRY KEY
+-- VERBATIM (`home.hero.video`), with repeating slots as `key[0]`, `key[1]`. `lib/media/gaps.ts`
+-- joins on exactly that, and `slotKeyOf()` strips the index. Write anything else here and the
+-- Studio Gaps tab reports every slot unbound, plausibly, with no error anywhere.
+--
+-- SECURITY DEFINER, for a sharper reason than write_revision's. `media_usages` is shape C with NO
+-- DELETE POLICY FOR ANY SESSION ROLE, and a DELETE matching no policy affects zero rows and
+-- SUCCEEDS. An invoker-rights trigger would therefore delete nothing on the way in and reinsert on
+-- top, so every save would accumulate stale bindings until the unique constraint finally rejected
+-- one — long after the wrong data was written.
+--
+-- THE COLUMN LIST ON THE TRIGGER IS LOAD-BEARING. Without `of media_desktop_id, ...` a status-only
+-- publish tears down and rebuilds every usage row for the section, which churns the index, and —
+-- because `media_assets.id` is `on delete restrict` from here — briefly drops the protection that
+-- stops an asset being deleted while a live page uses it.
+create or replace function public.sync_media_usages()
+returns trigger
+language plpgsql
+security definer
+set search_path = public, extensions
+as $$
+begin
+  delete from media_usages
+   where context_type = 'PAGE_SECTION' and context_id = new.id;
+
+  -- The desktop/mobile pair. Both take the section's own media_slot_key; the ROLE is what
+  -- distinguishes them, which is legal because the unique key is
+  -- (context_type, context_id, slot_key, role).
+  if new.media_slot_key is not null then
+    if new.media_desktop_id is not null then
+      -- check-migrations: allow-insert (a trigger body maintaining a reverse index)
+      insert into media_usages (media_id, context_type, context_id, slot_key, role, created_by)
+      values (new.media_desktop_id, 'PAGE_SECTION', new.id, new.media_slot_key, 'DESKTOP', new.updated_by);
+    end if;
+    if new.media_mobile_id is not null then
+      -- check-migrations: allow-insert (a trigger body maintaining a reverse index)
+      insert into media_usages (media_id, context_type, context_id, slot_key, role, created_by)
+      values (new.media_mobile_id, 'PAGE_SECTION', new.id, new.media_slot_key, 'MOBILE', new.updated_by);
+    end if;
+  end if;
+
+  -- `payload->'media'` is a RESERVED KEY: a jsonb array of {slot, role, media_id}. Every block that
+  -- carries repeating media writes it, so this one query covers galleries, card decks and process
+  -- steps alike rather than needing a branch per block type.
+  --
+  -- The index comes from row_number() over the array's own ordinality, partitioned by (slot, role)
+  -- — so a gallery of three yields gallery[0], gallery[1], gallery[2], and reordering the payload
+  -- renumbers them in place rather than colliding. Delete-then-reinsert above is what makes a
+  -- reorder safe: there is never a moment where the old and new numbering coexist.
+  if jsonb_typeof(new.payload -> 'media') = 'array' then
+    -- check-migrations: allow-insert (a trigger body maintaining a reverse index)
+    insert into media_usages (media_id, context_type, context_id, slot_key, role, created_by)
+    select
+      (m.value ->> 'media_id')::uuid,
+      'PAGE_SECTION',
+      new.id,
+      (m.value ->> 'slot') || '[' ||
+        (row_number() over (partition by m.value ->> 'slot', m.value ->> 'role' order by m.ord) - 1)::text
+        || ']',
+      coalesce(m.value ->> 'role', 'GALLERY'),
+      new.updated_by
+    from jsonb_array_elements(new.payload -> 'media') with ordinality as m(value, ord)
+    where m.value ->> 'media_id' is not null;
+  end if;
+
+  return new;
+end;
+$$;
+
+revoke execute on function public.sync_media_usages() from public, anon, authenticated;
+
+comment on function public.sync_media_usages() is
+  'Maintains media_usages for a section. slot_key carries the content/media-slots.ts registry key verbatim; repeating slots take the key[n] form lib/media/gaps.ts slotKeyOf() strips.';
+
+create trigger page_sections_sync_media_usages
+  after insert or update of media_desktop_id, media_mobile_id, media_slot_key, payload
+  on page_sections
+  for each row execute function sync_media_usages();
+
+-- --------------------------------------------------------------------------------------------
+-- clear_media_usages_on_delete()
+-- --------------------------------------------------------------------------------------------
+--
+-- `media_usages.context_id` is polymorphic — it points at a page section, a product or a category
+-- depending on `context_type` — so no foreign key can cascade it. Without this trigger, deleting a
+-- section strands its usage rows, and because `media_id` is `on delete restrict` those stranded
+-- rows keep refusing to let an asset be deleted forever. Nobody finds that by looking; they find it
+-- by wondering why an asset nothing uses cannot be removed.
+create or replace function public.clear_media_usages_on_delete()
+returns trigger
+language plpgsql
+security definer
+set search_path = public, extensions
+as $$
+begin
+  delete from media_usages
+   where context_type = 'PAGE_SECTION' and context_id = old.id;
+  return old;
+end;
+$$;
+
+revoke execute on function public.clear_media_usages_on_delete() from public, anon, authenticated;
+
+create trigger page_sections_clear_media_usages
+  after delete on page_sections
+  for each row execute function clear_media_usages_on_delete();
