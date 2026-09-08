@@ -38,6 +38,21 @@ export type TablePolicy = {
   /** Governs DELETE. Absent means no delete policy — nobody may delete through an ordinary session. */
   deletePermission?: Permission
   /**
+   * The anon/authenticated SELECT predicate for a shape-A table, when `status = 'PUBLISHED'` is
+   * not the whole story.
+   *
+   * Three of the Phase 08 tables need one and the reasons are different in kind. `pages` and
+   * `page_sections` carry a SCHEDULE, so a published row with a future `publish_at` is not yet
+   * public — leaving it out would make scheduling decorative, because the row would be readable
+   * the moment its status changed. `pages` additionally requires `path is not null`: the reserved
+   * `slug = 'global'` SYSTEM row has no public address, and without this clause it becomes
+   * anon-readable the instant it is published. `global_content` has `is_enabled`, which is how an
+   * editor turns a CTA off without unpublishing it.
+   *
+   * Omitting it is the common case and keeps the default.
+   */
+  publicClause?: string
+  /**
    * Shape B only: the SQL predicate making a join row public. Written out per table rather than
    * generated, because which parents must be published is a judgement, not a pattern.
    */
@@ -80,6 +95,7 @@ export const PHASE_04_POLICIES = '0011_rls_policies.sql'
 export const PHASE_05_POLICIES = '0021_rls_policies_phase05.sql'
 export const PHASE_06_POLICIES = '0031_rls_policies_phase06.sql'
 export const PHASE_07_POLICIES = '0041_rls_policies_phase07.sql'
+export const PHASE_08_POLICIES = '0051_phase08_cms_rls.sql'
 
 export const TABLE_POLICIES = {
   // --- Shape A: content tables ------------------------------------------------------------------
@@ -120,6 +136,80 @@ export const TABLE_POLICIES = {
     readPermission: 'media.read',
     writePermission: 'media.write',
     deletePermission: 'media.delete',
+  },
+
+  // --- Phase 08: the CMS -------------------------------------------------------------------------
+  //
+  // Six shape-A content tables and one shape-C record. Three carry a `publicClause` because
+  // "published" is not the whole condition for them; see the field's own comment.
+  //
+  // DELETE IS `destructive.execute` (owner/admin), NOT `content.write`. §1.5's RLS-PUBLIC profile
+  // fixes the delete leg at owner/admin and every shipped shape-A content table honours it. An
+  // editor removes a block from a page by setting `is_visible = false`, which is what that column
+  // is for — deleting the row destroys its revision history, and history that an editor can delete
+  // is not an audit trail.
+  pages: {
+    policiesIn: PHASE_08_POLICIES,
+    shape: 'A',
+    readPermission: 'content.read',
+    writePermission: 'content.write',
+    deletePermission: 'destructive.execute',
+    publicClause:
+      "status = 'PUBLISHED' and path is not null\n      and (publish_at is null or publish_at <= now())\n      and (unpublish_at is null or unpublish_at > now())",
+  },
+  // The section's OWN window and its page's, both. A published section on an unpublished page must
+  // not be readable — otherwise a page scheduled for next week leaks section by section to anyone
+  // who queries the table directly, which is exactly what an anon key can do.
+  page_sections: {
+    policiesIn: PHASE_08_POLICIES,
+    shape: 'A',
+    readPermission: 'content.read',
+    writePermission: 'content.write',
+    deletePermission: 'destructive.execute',
+    publicClause:
+      "status = 'PUBLISHED' and is_visible\n      and (publish_at is null or publish_at <= now())\n      and (unpublish_at is null or unpublish_at > now())\n      and exists (select 1 from pages p\n                  where p.id = page_sections.page_id\n                    and p.status = 'PUBLISHED' and p.path is not null\n                    and (p.publish_at is null or p.publish_at <= now())\n                    and (p.unpublish_at is null or p.unpublish_at > now()))",
+  },
+  navigation_items: {
+    policiesIn: PHASE_08_POLICIES,
+    shape: 'A',
+    readPermission: 'content.read',
+    writePermission: 'content.write',
+    deletePermission: 'destructive.execute',
+  },
+  // `is_enabled` is how an editor turns a CTA or an announcement off without unpublishing it —
+  // the row keeps its status, its history and its place in the group, and simply stops rendering.
+  global_content: {
+    policiesIn: PHASE_08_POLICIES,
+    shape: 'A',
+    readPermission: 'content.read',
+    writePermission: 'content.write',
+    deletePermission: 'destructive.execute',
+    publicClause: "status = 'PUBLISHED' and is_enabled",
+  },
+  seo_entries: {
+    policiesIn: PHASE_08_POLICIES,
+    shape: 'A',
+    readPermission: 'content.read',
+    writePermission: 'content.write',
+    deletePermission: 'destructive.execute',
+  },
+  faqs: {
+    policiesIn: PHASE_08_POLICIES,
+    shape: 'A',
+    readPermission: 'content.read',
+    writePermission: 'content.write',
+    deletePermission: 'destructive.execute',
+  },
+  // Shape C, and the deviation is the point of the table.
+  content_revisions: {
+    policiesIn: PHASE_08_POLICIES,
+    shape: 'C',
+    readPermission: 'content.read',
+    deviation:
+      'No write policy for any session role, and no UPDATE or DELETE policy at all. Rows are ' +
+      'written solely by write_revision(), a SECURITY DEFINER trigger, so the history cannot be ' +
+      'edited by the people it records. A revision an editor can rewrite is not an audit trail, ' +
+      'and verification step 6 asserts exactly this by attempting an UPDATE as staff.',
   },
 
   // --- Shape B: join tables ---------------------------------------------------------------------
