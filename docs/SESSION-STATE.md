@@ -106,12 +106,23 @@ rotated in the Supabase dashboard; `.env.local` needs re-filling afterwards. Unt
 done, treat these credentials as compromised.
 
 **BLOCKING, and outside this session's reach: GitHub Actions cannot provision a runner.**
-Every CI run since the workflow was added — 12 and counting — fails in 2-5 seconds with
-`runner_id: 0`, no runner name and **zero steps executed**, including the first. A job that
-dies before a runner picks it up has not run any of this PR's code. This is an account-level
-condition (typically exhausted minutes, a spending limit on a private repository, or Actions
-disabled), not a defect in the diff. The full CI sequence passes locally from a clean
-`npm ci` with `CI=true`. Recorded with evidence on PR #2.
+**40 of 40** runs — on `main` and on feature branches alike, including the very first — fail
+about two seconds after creation with `runner_id: 0`, an empty runner name, **zero steps
+executed** and `HTTP 404` for the job logs. A job that dies before a runner picks it up has
+run none of this repository's code.
+
+Ruled out with evidence: the code (all nine gates pass locally and Vercel builds the same
+commits); the workflow file (an unparseable one yields a run with *zero* jobs, whereas the
+`verify` job is created with its `ubuntu-latest` label intact and only then dies unassigned);
+Actions permissions (set to "Allow all actions and reusable workflows"; runs created after
+that change fail identically); and flakiness (a re-run reproduced the signature to the
+second). What remains is the account layer — the repository is **private**, so its minutes are
+metered, and this signature is what GitHub emits when Actions is refused at billing. Owner
+action: `github.com/settings/billing` → Actions, any account-level banner, or make the
+repository public. Full diagnosis in `docs/ops/ENVIRONMENT.md`; evidence on PR #3.
+
+**Until a runner exists, CI is not a gate.** Run the nine `verify` steps locally before every
+push and satisfy D9 from those runs, evidenced in the phase record — never from a green check.
 
 **Resolved during this phase**, recorded because each was a real defect:
 

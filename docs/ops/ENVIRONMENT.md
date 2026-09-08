@@ -438,3 +438,51 @@ server to server, with this environment never touching the bytes.
 
 Migrations, seeds and integration checks therefore run from a machine with ordinary egress, or
 from CI once GitHub Actions can provision a runner.
+
+---
+
+## GitHub Actions cannot provision a runner
+
+Measured 2026-09-08. Recorded here so the next session does not re-derive it.
+
+Every run of the `CI` workflow — **40 of 40**, on `main` and on feature branches alike — fails
+about two seconds after it is created, having never been assigned a runner:
+
+| Observation | Value |
+|---|---|
+| `runner_id` / `runner_name` | `0` / empty string |
+| Steps executed | none |
+| Job logs | `HTTP 404` — no log stream is ever opened |
+| Check-run `output` | `title`, `summary` and `text` all empty |
+| Duration | 2 s from `created_at` to `completed_at` |
+
+### What this rules out
+
+- **Not the code.** No step runs, so nothing in the repository executes. All nine gates the
+  workflow would run pass locally, and Vercel builds the same commits successfully.
+- **Not the workflow file.** An unparseable workflow produces a run with *zero* jobs. Here the
+  `verify` job is created with its `ubuntu-latest` label intact and only then dies unassigned,
+  so the YAML is valid and the job was scheduled.
+- **Not Actions permissions.** Settings → Actions → General is set to "Allow all actions and
+  reusable workflows"; runs created after that change fail identically.
+- **Not a flake.** A re-run of the same job reproduced the signature to the second.
+
+### What remains
+
+The repository is **private**, so its Actions minutes are metered against the account's included
+allowance; public repositories get standard runners unmetered. *Run created → job never assigned →
+immediate failure → no logs* is the signature GitHub emits when Actions is refused at the billing
+or account layer — allowance exhausted, spending limit at $0 and reached, payment method failed,
+or the account otherwise restricted.
+
+**Resolution is owner-side, not in this repository.** Check `github.com/settings/billing` (Actions
+section) and any account-level banner; making the repository public would bypass the metering
+entirely. If all three look clean, it is a GitHub Support matter.
+
+### Consequence for phase work
+
+Until a runner can be provisioned, **CI is not a gate we can rely on**. The nine `verify` steps
+must be run locally before every push — `npm run typecheck lint format:check test build`, then
+`manifest:verify`, `media:check-ids`, `design:check-tokens`, `design:check-registry` — and the
+D9 completion contract is satisfied by those local runs, evidenced in the phase record, not by a
+green check on GitHub.
