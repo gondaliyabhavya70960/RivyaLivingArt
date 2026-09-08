@@ -8,6 +8,7 @@ import {
 } from '@/lib/media/folders'
 import {
   PRESETS,
+  PRESET_MAP,
   WIDTH_LADDER,
   clampDpr,
   heightFor,
@@ -172,7 +173,7 @@ describe('heightFor', () => {
 describe('presets', () => {
   it('names every ratio it uses from the D6 set', () => {
     const d6 = ['21:9', '16:9', '4:3', '3:2', '1:1', '4:5', '3:4', '9:16']
-    for (const [name, spec] of Object.entries(PRESETS)) {
+    for (const [name, spec] of Object.entries(PRESET_MAP)) {
       if (spec.ratio === undefined) continue
       expect(d6, name).toContain(spec.ratio)
     }
@@ -180,7 +181,7 @@ describe('presets', () => {
 
   it('asks for a width that is already a rung', () => {
     // A preset that snapped would mean the named size and the delivered size differ silently.
-    for (const [name, spec] of Object.entries(PRESETS)) {
+    for (const [name, spec] of Object.entries(PRESET_MAP)) {
       if (spec.width === undefined) continue
       expect(WIDTH_LADDER, name).toContain(spec.width)
     }

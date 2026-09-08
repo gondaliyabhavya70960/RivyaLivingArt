@@ -56,6 +56,18 @@ export const PRESETS = {
 export type PresetName = keyof typeof PRESETS
 
 /**
+ * The same presets, widened to `TransformSpec`.
+ *
+ * `PRESETS` is `as const satisfies`, which keeps the KEYS literal — that is what makes `PresetName`
+ * a union of real names rather than `string`. The cost is that each entry's type is its own literal
+ * shape, so `editorial` (which has no `ratio`) genuinely has no such property and a consumer
+ * iterating the presets cannot read one uniformly.
+ *
+ * The same trade-off, and the same fix, as `TABLE_POLICY_MAP` in lib/auth/table-permissions.ts.
+ */
+export const PRESET_MAP: Record<PresetName, TransformSpec> = PRESETS
+
+/**
  * Snap a requested width UP to the nearest rung.
  *
  * Up rather than down, and never past the top: serving 480px into a 500px box is a visibly soft
