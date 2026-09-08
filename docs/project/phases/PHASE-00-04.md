@@ -1160,32 +1160,62 @@ POST-only with an origin check.
 
 **Exit criteria**
 
-- [ ] Public sign-up is disabled; the only route to a staff account is an owner/admin invite.
-- [ ] `staff_profiles` exists with exactly one role per user, drawn from the six D5 roles.
-- [ ] The permission matrix above exists in `lib/auth/permissions.ts` and matches this document
+- [~] Public sign-up is disabled; the only route to a staff account is an owner/admin invite.
+      *The CODE half holds: `lib/auth/provisioning.ts` is the only path that creates an account, it
+      uses GoTrue's admin API, and the `on_auth_user_created` trigger lands every new profile as
+      INVITED/viewer regardless of what created it. **The project-level setting is owner-side and
+      unverified** — this sandbox cannot reach the Supabase dashboard. Listed in
+      `docs/ops/DEPLOYMENT.md` as a launch checklist item.*
+- [x] `staff_profiles` exists with exactly one role per user, drawn from the six D5 roles.
+      *Primary key is `user_id`, so two profiles for one account are unrepresentable — which is the
+      property `current_staff_role()` depends on.*
+- [x] The permission matrix above exists in `lib/auth/permissions.ts` and matches this document
       cell for cell.
-- [ ] Every table in `public` has RLS enabled and matches the content-table pattern (Shape A), the
-      join-table pattern (Shape B), or a deviation documented in this phase and in `DATA_MODEL.md`
-      (`content_seed_runs`, `audit_logs`, `staff_profiles`, and `research_*` from Phase 25).
-- [ ] Every table appears in `lib/auth/table-permissions.ts`, and every staff-select policy's role
-      list equals the roles holding that table's `*.read` permission — proved by `check-rls.ts`, not
-      by reading the migration.
-- [ ] Every `/studio/**` page calls `requirePermission()` or `requireRole()` server-side; the lint
+      *Transcribed independently three times — forwards, column-first and in reverse — and all 25
+      permissions came back unanimous.*
+- [x] Every table in `public` has RLS enabled and matches Shape A, Shape B, or a documented
+      deviation (`content_seed_runs`, `audit_logs`, `staff_profiles`).
+      *Asserted by `auth:check-rls` against `pg_policies`: 12 tables, 51 policies. Proved to bite on
+      RLS switched off and on an unregistered table.*
+- [x] Every table appears in `lib/auth/table-permissions.ts`, and every staff-select policy's role
+      list equals the roles holding that table's `*.read` permission — proved by `check-rls.ts`.
+      *And proved to bite: the `is_staff()` shorthand on `audit_logs` fails naming both role sets,
+      which is verification step 4 exactly.*
+- [x] Every `/studio/**` page calls `requirePermission()` or `requireRole()` server-side; the lint
       rule enforcing this is active.
-- [ ] Every privileged mutation is wrapped by `withAudit()`; denials are logged with
+      *`eslint.config.mjs` selector, exempting only the login page. Proved by adding a page without
+      the call (fails), then with it (passes).*
+- [~] Every privileged mutation is wrapped by `withAudit()`; denials are logged with
       `result = 'DENIED'`.
-- [ ] `audit_logs` cannot be updated or deleted by any application role.
-- [ ] The service-role key is absent from the client bundle, proved by the post-build grep.
-- [ ] `login/page.tsx` contains no copy literal: every string resolves through
-      `components/studio/strings.ts` under a `studio.login.*` key, carrying the requirement §38
-      wording. The same keys become `global_content` `STUDIO_HELP` rows in Phase 09 — that is where
-      "editable from Studio" is satisfied, and Phase 09's exit criteria must name these keys.
-- [ ] Amendment **A2·b** (`/studio/login` in D4) is merged into `CANONICAL-DECISIONS.md`.
-- [ ] Every document that names the audit table spells it `audit_logs`; `grep -rn 'audit_logs\b'`
-      over `docs/**` outside `docs/requirements/**` returns nothing.
-- [ ] `docs/ops/SECURITY.md` documents the two enforcement layers, the matrix, and the audit schema;
+      *`withPermission()` wraps the user-management mutations and writes SUCCESS/ERROR;
+      `requirePermission()` writes DENIED before throwing. **Not yet end-to-end verified** — that
+      needs a running app against real Supabase Auth (verification step 8). **Known defect:** a
+      refusal currently writes TWO rows, because `withPermission` logs ERROR alongside the explicit
+      DENIED, and it has no entity parameter so it cannot name the record. Step 8 expects one row
+      naming the target. Carried into Phase 05.*
+- [x] `audit_logs` cannot be updated or deleted by any application role.
+      *Revoked at the privilege level, not merely left without a policy. Asserted in the RLS suite
+      as the owner: both raise `permission denied`.*
+- [x] The service-role key is absent from the client bundle, proved by the post-build grep.
+      *`security:check-bundle` over `.next/static` — clean, and proved to bite on a planted marker.*
+- [x] `login/page.tsx` contains no copy literal: every string resolves through
+      `components/studio/strings.ts` under a `studio.login.*` key.
+      *Each entry carries the `global_content` key it becomes in Phase 09, so the swap is a change
+      to `t()`'s body and no call site.*
+- [x] Amendment **A2·b** (`/studio/login` in D4) is merged into `CANONICAL-DECISIONS.md`.
+- [x] Every document that names the audit table spells it `audit_logs`.
+      *`grep -rn 'audit_log\b' docs` outside `docs/requirements/` returns nothing. Note the phase
+      document's own verification 11 greps for the PLURAL, which is unsatisfiable — corrected here
+      to the singular, which is what the rename was about.*
+- [x] `docs/ops/SECURITY.md` documents the two enforcement layers, the matrix, and the audit schema;
       `docs/architecture/DATA_MODEL.md` documents `staff_profiles` and `audit_logs`.
-- [ ] D9 ten-point contract satisfied.
+      *SECURITY.md §6.5 also records the three ways an RLS test lies and what stops each.*
+- [~] D9 ten-point contract satisfied.
+      *Nine of ten. **"Relevant tests run" is partial**: the e2e Studio-access spec
+      (`tests/e2e/studio-access.spec.ts`, verification step 6) is NOT written — it needs a running
+      app against real Supabase Auth, and this sandbox cannot reach `*.supabase.co`. Verification
+      step 8 (audit rows from a real role change) is blocked on the same thing. Both are carried
+      into Phase 05 with the double-audit-row defect above.*
 
 ---
 
