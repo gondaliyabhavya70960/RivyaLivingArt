@@ -253,6 +253,26 @@ describe('presets', () => {
   })
 })
 
+describe('the 2560 delivery cap, against the real canary sources', () => {
+  // PHASE-05-09.md §06 verification step 4 asserts this of PROCESS-STUDIO-001 specifically. The
+  // library masters run to 6336px wide and nobody needs 6336px of a hero; serving it is the
+  // easiest single way to fail Core Web Vitals (CLOUDINARY.md §5).
+  it.each([
+    ['PROCESS-STUDIO-001', 4800],
+    ['LARGEFORMAT-MONUMENTAL-001', 6336],
+  ])('offers no candidate above 2560 for %s (%ipx source)', (_id, sourceWidth) => {
+    for (const width of srcSet(sourceWidth)) {
+      expect(width).toBeLessThanOrEqual(2560)
+    }
+    expect(snapWidth(sourceWidth)).toBe(2560)
+  })
+
+  it('still offers at least one candidate for a source far above the cap', () => {
+    // The cap must not empty the srcset — a source wider than every rung still needs serving.
+    expect(srcSet(6336).length).toBeGreaterThan(0)
+  })
+})
+
 describe('ratioCrop', () => {
   it('snaps the width to a rung and derives the height', () => {
     expect(ratioCrop(700, '16:9')).toEqual({ width: 768, height: 432 })

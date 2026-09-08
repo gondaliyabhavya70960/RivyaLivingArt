@@ -55,6 +55,29 @@ complete with two carried gaps (below). Phase 04 is closed out (PR #5, plus the 
 - **A detail drawer per asset.** The table shows alt text inline, which is the cheapest review of
   the field most likely to be wrong; editing it is Phase 08's surface.
 
+### Phase 06: the 8 verification steps, as actually run
+
+| # | Step | Result |
+|---|---|---|
+| 1 | Presets, srcset, ratio-crop rejection, poster derivation | **PASS** — 37 cases in `media-transform.test.ts`, incl. `UnsupportedRatioError` on a non-D6 ratio and on an inherited `Object` property (`'toString'`, which a naive `in` check would accept) |
+| 2 | Sign endpoint: no session → 401; bad folder with a session → 422 | **PASS (401) / CODE CORRECT (422)** — the 401 is asserted in `media-upload.spec.ts`. The route returned 400 for a disallowed folder and now returns the specified 422; the authenticated assertion is `test.fixme` |
+| 3 | Upload a JPEG through `/studio/media/images`, assert the row and the folder | **BLOCKED** — needs a browser session, and the sandbox cannot reach `*.supabase.co`. Same blocker as Phase 04 step 6's authenticated half |
+| 4 | Import the three canaries and assert their rows | **PASS** — `npm run media:import-canaries`. `LARGEFORMAT-DINING-004` stores `resource_type = 'video'`, `duration_s = 6.041667`, `aspect_ratio = '9:16'`; all three carry `is_ai_generated`, `is_concept` and `source = 'HIGGSFIELD'`. The `so_0` poster derivative exists on Cloudinary. "No candidate above 2560" is asserted for both 4800px and 6336px sources |
+| 5 | `rivya_asset_id` still unique after `0030` | **PASS** — on the hosted project: `media_assets_rivya_asset_id_key UNIQUE (rivya_asset_id)` alongside `media_assets_provider_identity UNIQUE (provider, resource_type, public_id)` |
+| 6 | `MODEL_3D` without `model_format` → refused | **PASS** — `media_assets_model_format_present` rejects it; the same insert WITH `'GLB'` is accepted, so the check is not vacuous |
+| 7 | Delete an asset a `media_usages` row references → refused | **PASS** — `media_usages_media_id_fkey` refuses it; unbinding first then deleting succeeds |
+| 8 | Playwright at 390px: chosen candidate ≤ 1024px, `content-type` avif/webp | **BLOCKED** — needs a public page rendering `MediaImage` (none exists until Phase 10) AND network access to `res.cloudinary.com`, which the sandbox proxy denies with a 403 on CONNECT |
+
+**Two steps are blocked by the environment, not by the code, and neither is hidden.** Step 3 and
+step 8 are the same two blockers that have run through Phases 04–06: no browser-reachable auth
+server, and no egress to the CDN. What step 8 would have proved about URL correctness was instead
+proved *better* — by asking Cloudinary's own API to generate every chain this codebase emits, which
+is how the `g_auto` defect surfaced.
+
+**The canary rows are on both databases**, identical, and RLS was re-confirmed against the hosted
+project with a baseline: 3 rows exist, `anon` sees 0. All three are `DRAFT` and
+`OWNER_VERIFICATION_REQUIRED`, so the D10 gate keeps them unpublishable until an owner decides.
+
 ### Phase 05: what is built, and what is not
 
 **Built and verified**

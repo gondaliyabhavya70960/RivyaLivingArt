@@ -91,7 +91,12 @@ export async function POST(request: Request): Promise<NextResponse> {
       })
       // The folder is echoed because it came from our own Studio client and naming it is what
       // makes the failure diagnosable by whoever hit it.
-      return NextResponse.json({ error: 'disallowed-folder', folder }, { status: 400 })
+      //
+      // 422, not 400, and the phase document specifies it. The distinction is real: 400 means the
+      // request could not be understood, 422 means it was understood and refused. A client that
+      // cannot tell those apart retries a malformed body forever and gives up on a policy refusal
+      // it should surface to the person.
+      return NextResponse.json({ error: 'disallowed-folder', folder }, { status: 422 })
     }
     throw error
   }
@@ -113,13 +118,15 @@ export async function POST(request: Request): Promise<NextResponse> {
     // The limits are returned with the refusal so the uploader can say "PNG or JPEG, up to 5 MB"
     // rather than "rejected", which is the difference between a message somebody can act on and
     // one they have to ask about.
+    // 422 for the same reason as the folder: the request was understood, and refused on policy.
+    // 400 is kept for a body that could not be parsed or did not match the schema.
     return NextResponse.json(
       {
         error: rejection.reason,
         allowedFormats: UPLOAD_LIMITS[kind].mimeTypes,
         maxBytes: UPLOAD_LIMITS[kind].maxBytes,
       },
-      { status: 400 },
+      { status: 422 },
     )
   }
 

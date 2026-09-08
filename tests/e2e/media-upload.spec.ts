@@ -127,16 +127,22 @@ test.describe('POST /api/media/sign, as staff', () => {
     // PermissionGate, and this is the assertion that hiding it was a courtesy and not the control.
   })
 
-  test.fixme('a disallowed folder is refused with 400 and writes a DENIED audit row', async () => {
-    // The one request shape that looks like somebody probing for a writable path in the account.
+  test.fixme('a disallowed folder is refused with 422 and writes a DENIED audit row', async () => {
+    // 422, not 400: the request was understood and refused on policy. The one request shape that
+    // looks like somebody probing for a writable path in the account.
   })
 
-  test.fixme('an SVG is refused with 400 and writes a DENIED audit row', async () => {
+  test.fixme('an SVG is refused with 422 and writes a DENIED audit row', async () => {
     // Including for an owner. The ban is unconditional (SECURITY.md §7.2).
   })
 
-  test.fixme('a file over the kind ceiling is refused with 400', async () => {
+  test.fixme('a file over the kind ceiling is refused with 422', async () => {
     // 25 MB for IMAGE, 5 MB for BRAND. The client checks first as a courtesy; this is the control.
+  })
+
+  test.fixme('a body that does not parse is 400, not 422', async () => {
+    // The pair is the assertion: a client that cannot tell "I could not understand you" from
+    // "I understood and refused" retries the first forever and swallows the second.
   })
 
   test.fixme('the uploader will not submit without alt text', async () => {
