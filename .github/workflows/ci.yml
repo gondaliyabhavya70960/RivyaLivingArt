@@ -94,6 +94,12 @@ jobs:
       - name: Asset status document is up to date
         run: npm run media:check-status
 
+      # The twelve status edges live in lib/cms/transitions.ts and the trigger is rendered from
+      # them. This fails if the SQL and the TypeScript disagree — which matters because the SQL is
+      # the copy an API caller actually hits, and the one nobody opens.
+      - name: CMS status transitions match their SQL
+        run: npm run cms:check-transitions
+
       # --- design-system gates (Phase 02) ---
       - name: Token discipline
         run: npm run design:check-tokens
