@@ -6,6 +6,75 @@ Every phase adds an entry; see `docs/architecture/CANONICAL-DECISIONS.md` D9 for
 
 ## [Unreleased]
 
+### Phase 04 — Supabase Auth + RBAC + RLS — SUBSTANTIALLY COMPLETE
+
+Eleven of fourteen exit criteria met, three partial. The gaps are named under *Not done* below
+rather than glossed: two need a running app against real Supabase Auth, which this environment
+cannot reach.
+
+**Added**
+
+- **Migrations `0009`–`0012`.** The six D5 roles as an enum, `staff_profiles`, three `security
+  definer` helpers with pinned search paths, 51 RLS policies across 12 tables, and an append-only
+  `audit_logs`.
+- **RLS became testable here**, which Phase 03 concluded it would not be. Supabase's policies rest
+  on ordinary Postgres roles plus `auth.uid()` reading a per-transaction setting; the local shim now
+  reproduces the roles, **Supabase's grants**, and the claim readers, so a policy is exercised
+  exactly as PostgREST would exercise it.
+- **The permission matrix as the single source.** `lib/auth/permissions.ts` holds it,
+  `lib/auth/table-permissions.ts` maps it onto tables, and migration `0011` is GENERATED from both.
+  Two drift gates: `auth:check-policies` proves the migration matches the matrix, `auth:check-rls`
+  proves the database does.
+- **Studio auth surfaces**: middleware that only redirects, a login page with no copy literal in its
+  JSX, a POST-only sign-out with an Origin check, and user management where every mutation is
+  permission-wrapped and audited.
+- **Four new gates**, each proved to bite: `auth:check-policies`, `auth:check-rls`,
+  `security:check-bundle`, and an ESLint rule failing any Studio page that does not authorise in its
+  own body.
+- **143 new tests** (459 total, from 316 at the end of Phase 03): 62 RLS against the real database,
+  36 open-redirect attacks, 25 matrix/nav/redaction, 7 refusal-predicate, plus repository coverage.
+
+**Fixed — a Phase 03 blocker found while building this**
+
+- **The migration set could not be applied to a hosted Supabase project at all.** Hosted projects
+  keep `citext`/`unaccent`/`pg_trgm` in an `extensions` schema where `create extension if not
+  exists` is a no-op, so `0003` failed at CREATE time with `text search dictionary "unaccent" does
+  not exist`. Every local check passed throughout. `db:check-hosted-layout` is the standing gate.
+
+**Fixed — three defects the full gate run exposed, each passing individually**
+
+- **Seven queries sat outside the repository layer, two of them mine.** Fixed with real `staff` and
+  `audit` repositories rather than by widening the allowlist.
+- **The RLS suite had stopped running.** The fixture wipe tripped the last-owner trigger, so it
+  passed once on a fresh database and then reported *62 skipped* — a security suite going quietly
+  green. CI now sets `RLS_TESTS_REQUIRED=1`, which turns a missing database into a failure.
+- **The last-owner refusal was detected by matching prose.** The trigger now raises with
+  `constraint = 'staff_profiles_last_owner'`, and the predicate is extracted and tested.
+
+**Decided — amendment A5, each taking the safer reading of a conflict**
+
+- A join row is public only when **every** parent it names is published. The looser reading would
+  have exposed an unannounced `DRAFT` collection's existence and id to anonymous visitors.
+- Only the service role writes `audit_logs`. An `authenticated` insert policy lets any signed-in
+  staff member forge entries implicating someone else.
+- No policy may gate on `auth.role()` — it reads a channel the database does not verify.
+
+Plus corrections **C11–C15** in DATA_MODEL §1.8, and `staff_profiles` self-update deferred to the
+phase that builds a profile surface.
+
+**Not done, and why**
+
+- **`tests/e2e/studio-access.spec.ts` does not exist** (verification step 6). It needs a running app
+  against real Supabase Auth; this sandbox cannot reach `*.supabase.co`.
+- **The audit trail is not verified end to end** (step 8), blocked on the same thing.
+- **A refusal writes two audit rows.** `withPermission()` logs ERROR alongside the explicit DENIED,
+  and it takes no entity parameter so it cannot name the record. Step 8 expects one row naming the
+  target. Carried into Phase 05.
+- **Project-level sign-up disablement is unverified** — an owner-side dashboard setting.
+- **`middleware.ts` is deprecated in Next 16** in favour of `proxy.ts`. Kept under the name D2 and
+  the phase document use; the rename wants an amendment rather than a silent divergence.
+
+
 ### Phase 03 — Supabase Database + Data Layer — COMPLETE
 
 **Added**

@@ -8,21 +8,31 @@
 
 ## Current Phase
 
-**Phase 03 — Supabase Database + Data Layer.** Phase 02 is complete and merged (PR #2); the
-Phase 02 credential/Cloudinary work merged as PR #3.
+**Phase 04 — Supabase Auth + RBAC + RLS.** Merged as PR #5. Phase 03 merged as PR #4.
 
 ## Status
 
-**COMPLETE.** Every exit criterion in `docs/project/phases/PHASE-00-04.md` §PHASE 03 is met and
-was **verified against a real PostgreSQL 16.13 cluster**, not asserted. All thirteen gates pass
-locally; 329 unit tests across 44 files.
+**SUBSTANTIALLY COMPLETE — 11 of 14 exit criteria met, 3 partial.** Everything that can be verified
+in this environment has been, against a real PostgreSQL 16.13 cluster: 17 gates green, 459 tests.
 
-The phase document assumed `supabase start`, which needs Docker — unavailable here. PostgreSQL
-16.13 is installed in the image with all four required extensions, so the migrations were applied
-and asserted against a genuine database instead of being written and left untested. That changed
-Phase 03 from a writable-but-unverifiable phase into a fully verified one. See
-`docs/ops/ENVIRONMENT.md` for how to bring the cluster up and for exactly what the local database
-does and does not prove.
+**The three gaps, stated plainly so nobody has to rediscover them:**
+
+1. **`tests/e2e/studio-access.spec.ts` does not exist** (verification step 6). It needs a running
+   app signing in against real Supabase Auth. This sandbox cannot reach `*.supabase.co`.
+2. **The audit trail is not verified end to end** (step 8), blocked on the same thing.
+3. **A refusal writes TWO audit rows.** `withPermission()` logs `ERROR` alongside the explicit
+   `DENIED` written by the last-owner handler, and it takes no entity parameter so it cannot name
+   the record touched. Step 8 expects one row naming the target. This is a known defect, not an
+   unknown — fix it in Phase 05 when the Studio shell gives `withPermission` a place to learn the
+   entity from.
+
+**RLS became testable here, contrary to what Phase 03 concluded.** Supabase's policies rest on
+ordinary Postgres roles plus `auth.uid()` reading a per-transaction GUC, all reproducible on a plain
+cluster. `supabase/local/00-auth-shim.sql` does it. **The grants in that file are load-bearing**:
+on Supabase, `anon` holds full DML on every table in `public` — GRANT is not the security boundary
+there, RLS is the whole of it — so a shim without them makes every deny assertion pass for the wrong
+reason. `assertHarnessIsHonest()` runs before the suite and fails if a table with RLS disabled is
+not visible to anon.
 
 ## Completed
 
@@ -223,25 +233,22 @@ on `/studio` rather than a route segment.
 
 ## Next Exact Action
 
-**Phase 04 — Supabase Auth + RBAC + RLS.** Read `docs/project/phases/PHASE-00-04.md` §PHASE 04 and
-`docs/architecture/DATA_MODEL.md` §1.5 (the six RLS profiles) and §4 (`staff_profiles`,
-`audit_logs`).
+**Phase 05 — Studio Foundation.** Read `docs/project/phases/PHASE-05-09.md` §PHASE 05.
 
-Phase 04 is where the database stops being unreachable. Every table currently has RLS enabled with
-**no policy**, so anon and authenticated read nothing; Phase 04 adds `user_role`, `staff_profiles`,
-`audit_logs`, the RLS helper functions (`current_staff_role()`, `has_role()`) and the four-policy
-pattern on each Phase 03 table.
+Phase 05 consumes `getStaffSession()`, `requirePermission()` and `lib/auth/nav-visibility.ts` from
+Phase 04 and builds the Studio chrome itself. Four things it should pick up on the way:
 
-Three things Phase 03 leaves for it specifically:
-
-1. **RLS behaviour is proved by nothing yet.** The local database has no PostgREST, so the anon
-   and authenticated paths cannot be exercised here at all. Phase 04's verification must include a
-   test that an anon client sees only `PUBLISHED` rows — and that test needs either a hosted
-   Supabase project or a local PostgREST, neither of which this sandbox can reach today.
-2. **`scripts/db/check-schema.mjs` currently treats any policy as a note, not a failure.** Once
-   Phase 04 lands, that check should assert the *expected* policy set per table instead.
-3. **The `auth.users` shim** (`supabase/local/00-auth-shim.sql`) creates only `id`. Phase 04 will
-   need more of that table's shape locally — at minimum whatever `current_staff_role()` reads.
+1. **Fix the double audit row.** Give `withPermission()` an entity parameter and stop it writing an
+   `ERROR` row for a refusal that already wrote `DENIED`. Verification step 8 of Phase 04 is worded
+   against one row naming the target.
+2. **Write `tests/e2e/studio-access.spec.ts`** once a Supabase project is reachable: anonymous
+   `/studio/catalog/products` redirects to `/studio/login?next=…`, a `viewer` sees the page with
+   write controls absent and a direct POST returns 403, a `merchandiser` succeeds.
+3. **`app/(studio)/layout.tsx` does not exist**, so the login page currently renders on the root
+   layout's `rv-scheme-deep` ground. It uses only semantic tokens, so it inherits `rv-scheme-bone`
+   unchanged once the Studio shell adds that layout.
+4. **`middleware.ts` is deprecated in Next 16** in favour of `proxy.ts`. The rename needs a D2
+   amendment, not a silent divergence.
 
 ## Relevant Documentation
 
@@ -257,21 +264,24 @@ No Supabase or Cloudinary credentials are set; Phase 02 needs none.
 
 ## Migration Requirements
 
-`supabase/migrations/0001`–`0008` exist and apply cleanly to an empty database.
+`supabase/migrations/0001`–`0012` exist and apply cleanly to an empty database, **and to one laid
+out the way a hosted Supabase project is** (`npm run db:check-hosted-layout` — added after the
+Phase 03 set was found to be un-appliable to a real project).
 
-**They have NEVER been applied to the hosted Supabase project** — this sandbox cannot reach
-`*.supabase.co` or Postgres 5432/6543. The first application needs a machine with ordinary egress:
+**They have still NEVER been applied to the hosted Supabase project** — this sandbox cannot reach
+`*.supabase.co` or Postgres 5432/6543. From a machine with ordinary egress:
 
 ```bash
 export DATABASE_URL="<the hosted project's direct 5432 URL>"
 npm run db:reset -- --allow-remote     # DROPS EVERYTHING — only correct on an empty project
 npm run seed:content
+npm run auth:check-rls                 # proves the policies landed as the matrix says
 ```
 
-`db:reset` refuses a non-loopback host without `--allow-remote`, deliberately: it drops every
-object in the schema. On a project that already holds data, apply the migrations individually with
-`psql` instead.
+Note `supabase/local/00-auth-shim.sql` is applied by `db:reset` and is LOCAL ONLY — it stands in for
+roles, grants and `auth.uid()` that Supabase provisions itself. Applying it to a hosted project would
+be wrong; it lives outside `supabase/migrations/` so `supabase db push` cannot pick it up.
 
 Phase 14 must **drop and recreate** (not extend) `products_price_state_coherent`,
-`products_listing_idx` and `products_facets_idx` — the reasons are written into
-`0006_catalog.sql` and `0008_indexes.sql`.
+`products_listing_idx` and `products_facets_idx` — reasons in `0006_catalog.sql` and
+`0008_indexes.sql`.

@@ -127,3 +127,33 @@ jobs:
 
       - name: No queries outside the repository layer
         run: npm run db:check-data-layer
+
+      # The migration set must apply where it is actually going, not only where it was written.
+      # Hosted Supabase projects keep citext/unaccent/pg_trgm in an `extensions` schema, where
+      # `create extension if not exists` is a no-op — which made the whole Phase 03 set fail at
+      # 0003 against a real project while every local check passed.
+      - name: Migrations apply under the hosted extension layout
+        run: npm run db:check-hosted-layout
+
+      # --- auth and RLS gates (Phase 04) ---
+      # Two drift gates, asking different questions. The first proves the MIGRATION matches the
+      # permission matrix; the second proves the DATABASE does. A migration can be correct and
+      # never applied, and a database can drift from the migration that made it.
+      - name: RLS policies match the permission matrix
+        run: npm run auth:check-policies
+
+      - name: The database's policies match the matrix
+        run: npm run auth:check-rls
+
+      # RLS_TESTS_REQUIRED turns "no database" into a hard failure rather than a skip. A silently
+      # skipped security suite reports success while proving nothing — which is exactly what
+      # happened once during Phase 04, when a fixture wipe tripped the last-owner trigger and the
+      # suite reported 62 skipped for several runs while still looking green.
+      - name: RLS behaves as the matrix says, per role
+        run: npm run test
+        env:
+          RLS_TESTS_REQUIRED: '1'
+
+      # Runs after the build, on the real output. .next/static is what ships to browsers.
+      - name: No service-role key in the client bundle
+        run: npm run security:check-bundle
