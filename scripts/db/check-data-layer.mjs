@@ -2,7 +2,7 @@
 /**
  * db:check-data-layer — the query layering gate.
  *
- * RULE: `.from(` may appear only inside lib/supabase/repositories/**.
+ * RULE: `.from(` and `.rpc(` may appear only inside lib/supabase/repositories/**.
  *
  * WHY: a `.from('products')` in a component is a query with no Zod validation at its boundary, no
  * mapping from PostgREST error codes to something a caller can act on, and no single place to fix
@@ -77,7 +77,17 @@ const BUILT_IN_FROM = new Set([
 ])
 
 /** Captures the receiver so it can be checked against BUILT_IN_FROM. */
-const CALL_PATTERN = /([A-Za-z_$][\w$.]*)?\.from\s*\(/g
+/**
+ * `.from(` and `.rpc(` alike.
+ *
+ * `.rpc(` JOINED THIS GATE IN PHASE 08, before the first one was written. An rpc call is a WIDER
+ * trust boundary than a `.from(` chain, not a narrower one: `cms_publish_section` is SECURITY
+ * DEFINER, writes `media_assets` and `activity_events` across policies no session role holds, and
+ * takes the actor as a parameter. Its arguments are an unvalidated object going straight into a
+ * privileged function. Leaving the phase's most privileged call invisible to the gate that exists
+ * to keep queries behind Zod would invert the rule.
+ */
+const CALL_PATTERN = /([A-Za-z_$][\w$.]*)?\.(from|rpc)\s*\(/g
 
 const violations = []
 
@@ -112,4 +122,4 @@ if (violations.length > 0) {
   process.exit(1)
 }
 
-console.log('✓ no .from( outside lib/supabase/repositories/**')
+console.log('✓ no .from( or .rpc( outside lib/supabase/repositories/**')

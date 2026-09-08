@@ -25,6 +25,7 @@ import {
   PHASE_05_POLICIES,
   PHASE_06_POLICIES,
   PHASE_07_POLICIES,
+  PHASE_08_POLICIES,
   TABLE_POLICY_MAP,
   type ManagedTable,
 } from '../../lib/auth/table-permissions'
@@ -78,6 +79,25 @@ const GENERATED: Record<string, { title: string; preamble: string }> = {
 -- migration over DATABASE_URL, which bypasses RLS by role attribute — so an insert policy would
 -- describe a path nothing uses, and reviewing it later would suggest a session can write run
 -- records when none can. Staff read it; nothing else touches it through PostgREST.`,
+  },
+  [PHASE_08_POLICIES]: {
+    title: `-- ${PHASE_08_POLICIES} — Phase 08`,
+    preamble: `-- Policies for the seven tables migration 0050 creates. Its own file for the same reason 0021,
+-- 0031 and 0041 were: a generated policy file is never re-opened once shipped.
+--
+-- THREE TABLES CARRY A CUSTOM PUBLIC CLAUSE, and each one is load-bearing rather than a
+-- refinement. \`pages\` and \`page_sections\` add the SCHEDULE WINDOW: without it a row scheduled
+-- for next week is readable the instant its status changes, and scheduling is decorative.
+-- \`pages\` also requires \`path is not null\`, which is what keeps the reserved slug='global'
+-- SYSTEM row off the public site — it has no address, and an application-level filter is a
+-- promise a refactor can break, while a null in the predicate cannot be. \`global_content\` adds
+-- \`is_enabled\`, the switch that turns a CTA off without unpublishing it.
+--
+-- page_sections tests its PAGE's window as well as its own. A published section on an
+-- unpublished page must not be readable, or a page scheduled for next week leaks section by
+-- section to anyone querying the table directly — which is precisely what an anon key can do.
+--
+-- content_revisions is shape C with no write policy of any kind. See its declared deviation.`,
   },
   [PHASE_05_POLICIES]: {
     title: `-- ${PHASE_05_POLICIES} — Phase 05`,
@@ -133,8 +153,15 @@ function policiesFor(table: ManagedTable): string {
 
   // --- policy 1: the public leg -----------------------------------------------------------------
   if (policy.shape === 'A') {
+    // `status = 'PUBLISHED'` is the default and stays the default, so every file generated before
+    // `publicClause` existed re-renders byte-identically. A table overrides it only when
+    // "published" is not the whole condition — a scheduling window, an `is_enabled` flag, or a
+    // null `path` that means "this row has no public address at all".
+    const publicClause = policy.publicClause ?? "status = 'PUBLISHED'"
     out.push(`create policy ${table}_select_public on ${table} for select`)
-    out.push(`  to anon, authenticated using (status = 'PUBLISHED');`)
+    // Single line for the default so every file generated before `publicClause` existed
+    // re-renders byte-identically; a multi-line override indents its own continuation lines.
+    out.push(`  to anon, authenticated using (${publicClause});`)
     out.push('')
   } else if (policy.shape === 'B') {
     out.push(`create policy ${table}_select_public on ${table} for select`)

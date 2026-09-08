@@ -75,6 +75,32 @@ const enums = query(`
   order by t.typname, e.enumsortorder;
 `)
 
+/**
+ * The `public` functions PostgREST publishes as RPC endpoints.
+ *
+ * WITHOUT THIS, `Functions` WAS `{ [_ in never]: never }` AND NO RPC NAME TYPECHECKED AT ALL —
+ * `client.rpc(name)` takes `name: keyof Schema['Functions']`, which is `never`, so every call was
+ * a type error and the only way to write one was a cast. Casting past the type system for
+ * `cms_publish_section` — SECURITY DEFINER, promotes media, takes the actor as a parameter — is
+ * the wrong place to start making exceptions.
+ *
+ * Trigger functions are excluded: they return `trigger`, are never callable over PostgREST, and
+ * listing them would invite somebody to try. Ordered by name so two runs agree byte for byte.
+ */
+const functions = query(`
+  select p.proname,
+         pg_get_function_arguments(p.oid),
+         t.typname,
+         t.typtype
+  from pg_proc p
+  join pg_namespace n on n.oid = p.pronamespace
+  join pg_type t on t.oid = p.prorettype
+  where n.nspname = '${SCHEMA}'
+    and t.typname <> 'trigger'
+    and p.prokind = 'f'
+  order by p.proname;
+`)
+
 const columns = query(`
   select c.table_name,
          c.column_name,
@@ -262,6 +288,33 @@ for (const name of [...enumsByName.keys()].sort()) {
   enumBody += `      ${name}: ${enumsByName.get(name).map(q).join(' | ')}\n`
 }
 
+/**
+ * `Args` is deliberately `Record<string, unknown>` rather than a per-parameter shape.
+ *
+ * Rendering the real argument types would be a lie with a type on it: the repository layer builds
+ * these objects, and a name/type pair here would be checked against what the CALLER wrote, not
+ * against what the function accepts — PostgREST matches arguments by NAME at runtime, and a
+ * misspelled key is a 404 from the server, not a compile error. What this map genuinely buys is
+ * that the function NAME is checked, which is what `rpc()` needs and what was missing entirely.
+ * The arguments stay Zod's job, at the repository boundary where every other input is validated.
+ */
+let functionBody = ''
+{
+  const seen = new Set()
+  for (const [name] of functions) {
+    // Overloads collapse to one entry: `rpc()` cares about the name, and TypeScript cannot express
+    // two members with one key anyway.
+    if (seen.has(name)) continue
+    seen.add(name)
+    functionBody +=
+      `      ${name}: {\n` +
+      `        Args: Record<string, unknown>\n` +
+      `        Returns: Json\n` +
+      `      }\n`
+  }
+  if (functionBody === '') functionBody = '      [_ in never]: never\n'
+}
+
 const file = `// GENERATED FILE — DO NOT EDIT BY HAND.
 //
 // Produced by \`npm run db:types\`, which introspects a live database. Every hand edit is reverted
@@ -280,8 +333,7 @@ ${body}    }
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
-    }
+${functionBody}    }
     Enums: {
 ${enumBody}    }
     CompositeTypes: {
@@ -306,4 +358,7 @@ writeFileSync(OUT, file)
 // Prettier last, so formatting can never be what makes the drift check fail.
 execFileSync('npx', ['prettier', '--write', OUT], { stdio: 'ignore' })
 
-console.log(`✓ ${OUT} — ${tables.size} tables, ${enumsByName.size} enums`)
+console.log(
+  `✓ ${OUT} — ${tables.size} tables, ${enumsByName.size} enums, ` +
+    `${new Set(functions.map(([n]) => n)).size} callable functions`,
+)

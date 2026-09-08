@@ -94,6 +94,18 @@ jobs:
       - name: Asset status document is up to date
         run: npm run media:check-status
 
+      # The twelve status edges live in lib/cms/transitions.ts and the trigger is rendered from
+      # them. This fails if the SQL and the TypeScript disagree — which matters because the SQL is
+      # the copy an API caller actually hits, and the one nobody opens.
+      - name: CMS status transitions match their SQL
+        run: npm run cms:check-transitions
+
+      # No marketing copy in a public section renderer. The rule is CLAUDE.md's; this parses every
+      # file under components/sections/ with the TypeScript compiler and fails on a literal a
+      # visitor would read. Added with the gate in Phase 08.
+      - name: No visitor-readable literals in section renderers
+        run: npm run cms:check-copy
+
       # --- design-system gates (Phase 02) ---
       - name: Token discipline
         run: npm run design:check-tokens
@@ -118,15 +130,31 @@ jobs:
       - name: Generated types match the database
         run: npm run db:check-types
 
-      # Proves the seeding contract end to end on a fresh database: seven inserts, then seven
-      # updates and no inserts. A regression in the hashing makes the second run insert or skip
-      # instead, which no unit test with a fake client could catch.
+      # Proves the seeding contract end to end on a fresh database: every record inserts, then
+      # every record updates and none inserts. A regression in the hashing makes the second run
+      # insert or skip instead, which no unit test with a fake client could catch.
+      #
+      # THE COUNTS ARE DERIVED, NOT WRITTEN DOWN. This step used to grep for `updated  7`, the
+      # number of taxonomy records at the time. Phase 08 added two seed modules and took the total
+      # to 25, so the literal became wrong the moment the seed grew — a green-looking assertion
+      # that would have failed for a reason unrelated to the contract it exists to prove. What is
+      # actually invariant is that the second run updates exactly what the first run inserted, and
+      # inserts nothing; that survives every future module.
       - name: Seed is idempotent
         run: |
-          npm run seed:content
+          set -euo pipefail
+          npm run seed:content 2>&1 | tee /tmp/seed-first.txt
           npm run seed:content 2>&1 | tee /tmp/seed-second.txt
-          grep -q 'inserted              0' /tmp/seed-second.txt
-          grep -q 'updated               7' /tmp/seed-second.txt
+
+          first_inserted=$(sed -n 's/^  inserted  *\([0-9][0-9]*\)$/\1/p' /tmp/seed-first.txt)
+          second_inserted=$(sed -n 's/^  inserted  *\([0-9][0-9]*\)$/\1/p' /tmp/seed-second.txt)
+          second_updated=$(sed -n 's/^  updated  *\([0-9][0-9]*\)$/\1/p' /tmp/seed-second.txt)
+
+          # Guards the parser itself: an output shape change that made every capture empty would
+          # otherwise compare '' to '' and pass while proving nothing.
+          test -n "$first_inserted" && test "$first_inserted" -gt 0
+          test "$second_inserted" = '0'
+          test "$second_updated" = "$first_inserted"
           grep -q 'skipped (owner edit)  0' /tmp/seed-second.txt
 
       # Proves the rule the whole seed runner exists for: an owner's edit is never overwritten.

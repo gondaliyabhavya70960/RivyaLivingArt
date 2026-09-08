@@ -1318,6 +1318,284 @@ export const STUDIO_STRINGS = {
     value: 'What the generation was asked for. The stored file may differ.',
     contentKey: 'studio_help.higgsfield_drawer_dimensions_help',
   },
+  // -------------------------------------------------------------------------------------------
+  // Phase 08 — the content editor.
+  //
+  // EVERY ONE OF THESE IS INTERFACE MECHANICS, not marketing copy: labels, column headings, the
+  // wording of a refusal. None asserts a business fact, so none is seeded
+  // `OWNER_VERIFICATION_REQUIRED`. The public section renderers get their strings from
+  // `global_content` instead (`lib/cms/strings.ts`) and ship no fallbacks at all — Studio chrome
+  // has to render before any content exists, and the public site has no such excuse.
+  // -------------------------------------------------------------------------------------------
+  'studio.content.pages.title': {
+    value: 'Pages',
+    contentKey: 'studio_help.content_pages_title',
+  },
+  'studio.content.pages.description': {
+    value: 'Every page on the site, and the blocks each one is built from.',
+    contentKey: 'studio_help.content_pages_description',
+  },
+  'studio.content.pages.emptyHeading': {
+    value: 'No pages yet',
+    contentKey: 'studio_help.content_pages_empty_heading',
+  },
+  'studio.content.pages.emptyBody': {
+    value: 'Pages arrive with the content seed. Run it, or add one here.',
+    contentKey: 'studio_help.content_pages_empty_body',
+  },
+  'studio.content.pages.colPath': {
+    value: 'Path',
+    contentKey: 'studio_help.content_pages_col_path',
+  },
+  'studio.content.pages.colTitle': {
+    value: 'Title',
+    contentKey: 'studio_help.content_pages_col_title',
+  },
+  'studio.content.pages.colStatus': {
+    value: 'Status',
+    contentKey: 'studio_help.content_pages_col_status',
+  },
+  'studio.content.pages.colKind': {
+    value: 'Kind',
+    contentKey: 'studio_help.content_pages_col_kind',
+  },
+  'studio.content.pages.colUpdated': {
+    value: 'Updated',
+    contentKey: 'studio_help.content_pages_col_updated',
+  },
+  'studio.content.pages.caption': {
+    value: 'Pages, with their status and address.',
+    contentKey: 'studio_help.content_pages_caption',
+  },
+  'studio.content.pages.systemPath': {
+    value: 'No public address',
+    contentKey: 'studio_help.content_pages_system_path',
+  },
+  'studio.content.page.backLabel': {
+    value: 'All pages',
+    contentKey: 'studio_help.content_page_back_label',
+  },
+  'studio.content.page.previewLabel': {
+    value: 'Preview',
+    contentKey: 'studio_help.content_page_preview_label',
+  },
+  'studio.content.page.sectionsHeading': {
+    value: 'Sections',
+    contentKey: 'studio_help.content_page_sections_heading',
+  },
+  'studio.content.page.emptyHeading': {
+    value: 'This page has no blocks yet',
+    contentKey: 'studio_help.content_page_empty_heading',
+  },
+  'studio.content.page.emptyBody': {
+    value: 'Add a block to start building the page.',
+    contentKey: 'studio_help.content_page_empty_body',
+  },
+  'studio.content.page.addLabel': {
+    value: 'Add a block',
+    contentKey: 'studio_help.content_page_add_label',
+  },
+  'studio.content.page.addHeading': {
+    value: 'Which block?',
+    contentKey: 'studio_help.content_page_add_heading',
+  },
+  'studio.content.page.plannedHeading': {
+    value: 'Not built yet',
+    contentKey: 'studio_help.content_page_planned_heading',
+  },
+  'studio.content.page.plannedBody': {
+    value: 'These blocks are in the catalogue but have no renderer, so they cannot be added.',
+    contentKey: 'studio_help.content_page_planned_body',
+  },
+  'studio.content.section.editLabel': {
+    value: 'Edit',
+    contentKey: 'studio_help.content_section_edit_label',
+  },
+  'studio.content.section.deleteLabel': {
+    value: 'Remove',
+    contentKey: 'studio_help.content_section_delete_label',
+  },
+  'studio.content.section.deleteConfirmTitle': {
+    value: 'Remove this block?',
+    contentKey: 'studio_help.content_section_delete_confirm_title',
+  },
+  'studio.content.section.deleteConfirmBody': {
+    value:
+      'The block and its copy come off the page. Its history is kept, but the block is not put back by restoring it.',
+    contentKey: 'studio_help.content_section_delete_confirm_body',
+  },
+  'studio.content.section.moveUpLabel': {
+    value: 'Move up',
+    contentKey: 'studio_help.content_section_move_up_label',
+  },
+  'studio.content.section.moveDownLabel': {
+    value: 'Move down',
+    contentKey: 'studio_help.content_section_move_down_label',
+  },
+  'studio.content.section.hiddenLabel': {
+    value: 'Hidden',
+    contentKey: 'studio_help.content_section_hidden_label',
+  },
+  'studio.content.section.noRenderer': {
+    value: 'No renderer in this build — the public site skips this block.',
+    contentKey: 'studio_help.content_section_no_renderer',
+  },
+  'studio.content.section.saveLabel': {
+    value: 'Save',
+    contentKey: 'studio_help.content_section_save_label',
+  },
+  'studio.content.section.cancelLabel': {
+    value: 'Cancel',
+    contentKey: 'studio_help.content_section_cancel_label',
+  },
+  'studio.content.section.closeLabel': {
+    value: 'Close',
+    contentKey: 'studio_help.content_section_close_label',
+  },
+  'studio.content.section.copyHeading': {
+    value: 'Copy',
+    contentKey: 'studio_help.content_section_copy_heading',
+  },
+  'studio.content.section.mediaHeading': {
+    value: 'Media',
+    contentKey: 'studio_help.content_section_media_heading',
+  },
+  'studio.content.section.blockHeading': {
+    value: 'Block settings',
+    contentKey: 'studio_help.content_section_block_heading',
+  },
+  'studio.content.section.scheduleHeading': {
+    value: 'Visibility and schedule',
+    contentKey: 'studio_help.content_section_schedule_heading',
+  },
+  'studio.content.section.provenanceHeading': {
+    value: 'Provenance',
+    contentKey: 'studio_help.content_section_provenance_heading',
+  },
+  'studio.content.section.visibleLabel': {
+    value: 'Show this block',
+    contentKey: 'studio_help.content_section_visible_label',
+  },
+  'studio.content.section.themeLabel': {
+    value: 'Theme',
+    contentKey: 'studio_help.content_section_theme_label',
+  },
+  'studio.content.section.themeInherit': {
+    value: 'Page default',
+    contentKey: 'studio_help.content_section_theme_inherit',
+  },
+  'studio.content.section.layoutLabel': {
+    value: 'Layout',
+    contentKey: 'studio_help.content_section_layout_label',
+  },
+  'studio.content.section.publishAtLabel': {
+    value: 'Publish at',
+    contentKey: 'studio_help.content_section_publish_at_label',
+  },
+  'studio.content.section.unpublishAtLabel': {
+    value: 'Remove at',
+    contentKey: 'studio_help.content_section_unpublish_at_label',
+  },
+  'studio.content.section.scheduleHelp': {
+    value:
+      'Times are UTC. A section stops rendering the moment its removal time passes, whatever its status says.',
+    contentKey: 'studio_help.content_section_schedule_help',
+  },
+  'studio.content.section.factLabel': {
+    value: 'What kind of claim is this?',
+    contentKey: 'studio_help.content_section_fact_label',
+  },
+  'studio.content.section.verificationLabel': {
+    value: 'Owner verification',
+    contentKey: 'studio_help.content_section_verification_label',
+  },
+  'studio.content.section.verificationHelp': {
+    value:
+      'A block asserting an unverified business claim cannot be published until the owner confirms it.',
+    contentKey: 'studio_help.content_section_verification_help',
+  },
+  'studio.content.section.slotKeyLabel': {
+    value: 'Media slot',
+    contentKey: 'studio_help.content_section_slot_key_label',
+  },
+  'studio.content.section.slotKeyHelp': {
+    value:
+      'Required whenever an image is chosen: the approval and verification checks find the binding through it.',
+    contentKey: 'studio_help.content_section_slot_key_help',
+  },
+  'studio.content.section.altOverrideLabel': {
+    value: 'Alt text for this placement',
+    contentKey: 'studio_help.content_section_alt_override_label',
+  },
+  'studio.content.section.altOverrideHelp': {
+    value: "Leave blank to use the asset's own description.",
+    contentKey: 'studio_help.content_section_alt_override_help',
+  },
+  'studio.content.section.desktopLabel': {
+    value: 'Desktop image',
+    contentKey: 'studio_help.content_section_desktop_label',
+  },
+  'studio.content.section.mobileLabel': {
+    value: 'Mobile image',
+    contentKey: 'studio_help.content_section_mobile_label',
+  },
+  'studio.content.section.statusHeading': {
+    value: 'Status',
+    contentKey: 'studio_help.content_section_status_heading',
+  },
+  'studio.content.section.revisionsHeading': {
+    value: 'History',
+    contentKey: 'studio_help.content_section_revisions_heading',
+  },
+  'studio.content.section.restoreLabel': {
+    value: 'Restore',
+    contentKey: 'studio_help.content_section_restore_label',
+  },
+  'studio.content.section.noRevisions': {
+    value: 'No history yet.',
+    contentKey: 'studio_help.content_section_no_revisions',
+  },
+  'studio.content.section.scheduleBlocked': {
+    value:
+      "This block's scheduled publish was refused and has stopped retrying. Edit it to try again.",
+    contentKey: 'studio_help.content_section_schedule_blocked',
+  },
+  'studio.content.media.chooseLabel': {
+    value: 'Choose',
+    contentKey: 'studio_help.content_media_choose_label',
+  },
+  'studio.content.media.clearLabel': {
+    value: 'Clear',
+    contentKey: 'studio_help.content_media_clear_label',
+  },
+  'studio.content.media.pickerHeading': {
+    value: 'Choose an image',
+    contentKey: 'studio_help.content_media_picker_heading',
+  },
+  'studio.content.media.searchLabel': {
+    value: 'Search',
+    contentKey: 'studio_help.content_media_search_label',
+  },
+  'studio.content.media.noneChosen': {
+    value: 'No image chosen',
+    contentKey: 'studio_help.content_media_none_chosen',
+  },
+  'studio.content.media.emptyHeading': {
+    value: 'No assets match',
+    contentKey: 'studio_help.content_media_empty_heading',
+  },
+  'studio.content.media.emptyBody': {
+    value: 'Try a different search, or upload one in the Media Manager.',
+    contentKey: 'studio_help.content_media_empty_body',
+  },
+  'studio.content.media.unapprovedNote': {
+    value: 'Not approved — a section bound to it cannot be published.',
+    contentKey: 'studio_help.content_media_unapproved_note',
+  },
+  'studio.content.media.unverifiedNote': {
+    value: 'Awaiting owner verification — a section bound to it cannot be published.',
+    contentKey: 'studio_help.content_media_unverified_note',
+  },
 } as const satisfies Record<string, StudioStringEntry>
 
 /** Every key this module resolves. A typo is a compile error, not a blank space on the page. */

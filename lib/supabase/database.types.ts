@@ -318,6 +318,50 @@ export type Database = {
           },
         ]
       }
+      content_revisions: {
+        Row: {
+          id: string
+          entity_type: string
+          entity_id: string
+          revision_no: number
+          action: string
+          snapshot: Json
+          change_summary: string | null
+          created_at: string
+          created_by: string | null
+        }
+        Insert: {
+          id?: string
+          entity_type: string
+          entity_id: string
+          revision_no: number
+          action: string
+          snapshot: Json
+          change_summary?: string | null
+          created_at?: string
+          created_by?: string | null
+        }
+        Update: {
+          id?: string
+          entity_type?: string
+          entity_id?: string
+          revision_no?: number
+          action?: string
+          snapshot?: Json
+          change_summary?: string | null
+          created_at?: string
+          created_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'content_revisions_created_by_fkey'
+            columns: ['created_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       content_seed_runs: {
         Row: {
           id: string
@@ -359,6 +403,168 @@ export type Database = {
           report?: Json
         }
         Relationships: []
+      }
+      faqs: {
+        Row: {
+          id: string
+          question: string
+          answer: string
+          category: string | null
+          position: number
+          status: Database['public']['Enums']['content_status']
+          owner_verification: Database['public']['Enums']['owner_verification']
+          fact_classification: Database['public']['Enums']['fact_classification']
+          seed_key: string | null
+          content_seed_version: string | null
+          seed_content_hash: string | null
+          seed_last_applied_at: string | null
+          owner_edited: boolean
+          created_at: string
+          updated_at: string
+          updated_by: string | null
+          published_at: string | null
+          published_by: string | null
+        }
+        Insert: {
+          id?: string
+          question: string
+          answer: string
+          category?: string | null
+          position?: number
+          status?: Database['public']['Enums']['content_status']
+          owner_verification?: Database['public']['Enums']['owner_verification']
+          fact_classification?: Database['public']['Enums']['fact_classification']
+          seed_key?: string | null
+          content_seed_version?: string | null
+          seed_content_hash?: string | null
+          seed_last_applied_at?: string | null
+          owner_edited?: boolean
+          created_at?: string
+          updated_at?: string
+          updated_by?: string | null
+          published_at?: string | null
+          published_by?: string | null
+        }
+        Update: {
+          id?: string
+          question?: string
+          answer?: string
+          category?: string | null
+          position?: number
+          status?: Database['public']['Enums']['content_status']
+          owner_verification?: Database['public']['Enums']['owner_verification']
+          fact_classification?: Database['public']['Enums']['fact_classification']
+          seed_key?: string | null
+          content_seed_version?: string | null
+          seed_content_hash?: string | null
+          seed_last_applied_at?: string | null
+          owner_edited?: boolean
+          created_at?: string
+          updated_at?: string
+          updated_by?: string | null
+          published_at?: string | null
+          published_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'faqs_published_by_fkey'
+            columns: ['published_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'faqs_updated_by_fkey'
+            columns: ['updated_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      global_content: {
+        Row: {
+          id: string
+          group_key: string
+          key: string
+          label: string | null
+          value: string
+          description: string | null
+          is_enabled: boolean
+          fact_classification: Database['public']['Enums']['fact_classification']
+          owner_verification: Database['public']['Enums']['owner_verification']
+          status: Database['public']['Enums']['content_status']
+          seed_key: string | null
+          content_seed_version: string | null
+          seed_content_hash: string | null
+          seed_last_applied_at: string | null
+          owner_edited: boolean
+          created_at: string
+          updated_at: string
+          updated_by: string | null
+          published_at: string | null
+          published_by: string | null
+        }
+        Insert: {
+          id?: string
+          group_key: string
+          key: string
+          label?: string | null
+          value: string
+          description?: string | null
+          is_enabled?: boolean
+          fact_classification?: Database['public']['Enums']['fact_classification']
+          owner_verification?: Database['public']['Enums']['owner_verification']
+          status?: Database['public']['Enums']['content_status']
+          seed_key?: string | null
+          content_seed_version?: string | null
+          seed_content_hash?: string | null
+          seed_last_applied_at?: string | null
+          owner_edited?: boolean
+          created_at?: string
+          updated_at?: string
+          updated_by?: string | null
+          published_at?: string | null
+          published_by?: string | null
+        }
+        Update: {
+          id?: string
+          group_key?: string
+          key?: string
+          label?: string | null
+          value?: string
+          description?: string | null
+          is_enabled?: boolean
+          fact_classification?: Database['public']['Enums']['fact_classification']
+          owner_verification?: Database['public']['Enums']['owner_verification']
+          status?: Database['public']['Enums']['content_status']
+          seed_key?: string | null
+          content_seed_version?: string | null
+          seed_content_hash?: string | null
+          seed_last_applied_at?: string | null
+          owner_edited?: boolean
+          created_at?: string
+          updated_at?: string
+          updated_by?: string | null
+          published_at?: string | null
+          published_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'global_content_published_by_fkey'
+            columns: ['published_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'global_content_updated_by_fkey'
+            columns: ['updated_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
       }
       higgsfield_migration_runs: {
         Row: {
@@ -729,6 +935,365 @@ export type Database = {
           },
         ]
       }
+      navigation_items: {
+        Row: {
+          id: string
+          menu: string
+          parent_id: string | null
+          label: string
+          href: string
+          position: number
+          is_visible: boolean
+          target: string
+          status: Database['public']['Enums']['content_status']
+          owner_verification: Database['public']['Enums']['owner_verification']
+          fact_classification: Database['public']['Enums']['fact_classification']
+          seed_key: string | null
+          content_seed_version: string | null
+          seed_content_hash: string | null
+          seed_last_applied_at: string | null
+          owner_edited: boolean
+          created_at: string
+          updated_at: string
+          updated_by: string | null
+          published_at: string | null
+          published_by: string | null
+        }
+        Insert: {
+          id?: string
+          menu: string
+          parent_id?: string | null
+          label: string
+          href: string
+          position: number
+          is_visible?: boolean
+          target?: string
+          status?: Database['public']['Enums']['content_status']
+          owner_verification?: Database['public']['Enums']['owner_verification']
+          fact_classification?: Database['public']['Enums']['fact_classification']
+          seed_key?: string | null
+          content_seed_version?: string | null
+          seed_content_hash?: string | null
+          seed_last_applied_at?: string | null
+          owner_edited?: boolean
+          created_at?: string
+          updated_at?: string
+          updated_by?: string | null
+          published_at?: string | null
+          published_by?: string | null
+        }
+        Update: {
+          id?: string
+          menu?: string
+          parent_id?: string | null
+          label?: string
+          href?: string
+          position?: number
+          is_visible?: boolean
+          target?: string
+          status?: Database['public']['Enums']['content_status']
+          owner_verification?: Database['public']['Enums']['owner_verification']
+          fact_classification?: Database['public']['Enums']['fact_classification']
+          seed_key?: string | null
+          content_seed_version?: string | null
+          seed_content_hash?: string | null
+          seed_last_applied_at?: string | null
+          owner_edited?: boolean
+          created_at?: string
+          updated_at?: string
+          updated_by?: string | null
+          published_at?: string | null
+          published_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'navigation_items_parent_id_fkey'
+            columns: ['parent_id']
+            isOneToOne: false
+            referencedRelation: 'navigation_items'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'navigation_items_published_by_fkey'
+            columns: ['published_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'navigation_items_updated_by_fkey'
+            columns: ['updated_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      page_sections: {
+        Row: {
+          id: string
+          page_id: string
+          block_type: string
+          position: number
+          is_visible: boolean
+          theme: string | null
+          layout_variant: string | null
+          eyebrow: string | null
+          heading: string | null
+          heading_highlight: string | null
+          body: string | null
+          supporting: string | null
+          cta_label: string | null
+          cta_url: string | null
+          cta_secondary_label: string | null
+          cta_secondary_url: string | null
+          media_desktop_id: string | null
+          media_mobile_id: string | null
+          media_alt_override: string | null
+          media_slot_key: string | null
+          payload: Json
+          fact_classification: Database['public']['Enums']['fact_classification']
+          field_classifications: Json
+          owner_verification: Database['public']['Enums']['owner_verification']
+          status: Database['public']['Enums']['content_status']
+          publish_at: string | null
+          unpublish_at: string | null
+          schedule_state: string
+          schedule_attempts: number
+          schedule_error: string | null
+          schedule_last_attempt_at: string | null
+          seed_key: string | null
+          content_seed_version: string | null
+          seed_content_hash: string | null
+          seed_last_applied_at: string | null
+          owner_edited: boolean
+          created_at: string
+          updated_at: string
+          updated_by: string | null
+          published_at: string | null
+          published_by: string | null
+        }
+        Insert: {
+          id?: string
+          page_id: string
+          block_type: string
+          position: number
+          is_visible?: boolean
+          theme?: string | null
+          layout_variant?: string | null
+          eyebrow?: string | null
+          heading?: string | null
+          heading_highlight?: string | null
+          body?: string | null
+          supporting?: string | null
+          cta_label?: string | null
+          cta_url?: string | null
+          cta_secondary_label?: string | null
+          cta_secondary_url?: string | null
+          media_desktop_id?: string | null
+          media_mobile_id?: string | null
+          media_alt_override?: string | null
+          media_slot_key?: string | null
+          payload?: Json
+          fact_classification?: Database['public']['Enums']['fact_classification']
+          field_classifications?: Json
+          owner_verification?: Database['public']['Enums']['owner_verification']
+          status?: Database['public']['Enums']['content_status']
+          publish_at?: string | null
+          unpublish_at?: string | null
+          schedule_state?: string
+          schedule_attempts?: number
+          schedule_error?: string | null
+          schedule_last_attempt_at?: string | null
+          seed_key?: string | null
+          content_seed_version?: string | null
+          seed_content_hash?: string | null
+          seed_last_applied_at?: string | null
+          owner_edited?: boolean
+          created_at?: string
+          updated_at?: string
+          updated_by?: string | null
+          published_at?: string | null
+          published_by?: string | null
+        }
+        Update: {
+          id?: string
+          page_id?: string
+          block_type?: string
+          position?: number
+          is_visible?: boolean
+          theme?: string | null
+          layout_variant?: string | null
+          eyebrow?: string | null
+          heading?: string | null
+          heading_highlight?: string | null
+          body?: string | null
+          supporting?: string | null
+          cta_label?: string | null
+          cta_url?: string | null
+          cta_secondary_label?: string | null
+          cta_secondary_url?: string | null
+          media_desktop_id?: string | null
+          media_mobile_id?: string | null
+          media_alt_override?: string | null
+          media_slot_key?: string | null
+          payload?: Json
+          fact_classification?: Database['public']['Enums']['fact_classification']
+          field_classifications?: Json
+          owner_verification?: Database['public']['Enums']['owner_verification']
+          status?: Database['public']['Enums']['content_status']
+          publish_at?: string | null
+          unpublish_at?: string | null
+          schedule_state?: string
+          schedule_attempts?: number
+          schedule_error?: string | null
+          schedule_last_attempt_at?: string | null
+          seed_key?: string | null
+          content_seed_version?: string | null
+          seed_content_hash?: string | null
+          seed_last_applied_at?: string | null
+          owner_edited?: boolean
+          created_at?: string
+          updated_at?: string
+          updated_by?: string | null
+          published_at?: string | null
+          published_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'page_sections_media_desktop_id_fkey'
+            columns: ['media_desktop_id']
+            isOneToOne: false
+            referencedRelation: 'media_assets'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'page_sections_media_mobile_id_fkey'
+            columns: ['media_mobile_id']
+            isOneToOne: false
+            referencedRelation: 'media_assets'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'page_sections_page_id_fkey'
+            columns: ['page_id']
+            isOneToOne: false
+            referencedRelation: 'pages'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'page_sections_published_by_fkey'
+            columns: ['published_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'page_sections_updated_by_fkey'
+            columns: ['updated_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      pages: {
+        Row: {
+          id: string
+          slug: string
+          path: string | null
+          kind: string
+          title: string
+          status: Database['public']['Enums']['content_status']
+          publish_at: string | null
+          unpublish_at: string | null
+          seo_entry_id: string | null
+          is_system: boolean
+          seed_key: string | null
+          content_seed_version: string | null
+          seed_content_hash: string | null
+          seed_last_applied_at: string | null
+          owner_edited: boolean
+          owner_verification: Database['public']['Enums']['owner_verification']
+          fact_classification: Database['public']['Enums']['fact_classification']
+          created_at: string
+          updated_at: string
+          updated_by: string | null
+          published_at: string | null
+          published_by: string | null
+        }
+        Insert: {
+          id?: string
+          slug: string
+          path?: string | null
+          kind?: string
+          title: string
+          status?: Database['public']['Enums']['content_status']
+          publish_at?: string | null
+          unpublish_at?: string | null
+          seo_entry_id?: string | null
+          is_system?: boolean
+          seed_key?: string | null
+          content_seed_version?: string | null
+          seed_content_hash?: string | null
+          seed_last_applied_at?: string | null
+          owner_edited?: boolean
+          owner_verification?: Database['public']['Enums']['owner_verification']
+          fact_classification?: Database['public']['Enums']['fact_classification']
+          created_at?: string
+          updated_at?: string
+          updated_by?: string | null
+          published_at?: string | null
+          published_by?: string | null
+        }
+        Update: {
+          id?: string
+          slug?: string
+          path?: string | null
+          kind?: string
+          title?: string
+          status?: Database['public']['Enums']['content_status']
+          publish_at?: string | null
+          unpublish_at?: string | null
+          seo_entry_id?: string | null
+          is_system?: boolean
+          seed_key?: string | null
+          content_seed_version?: string | null
+          seed_content_hash?: string | null
+          seed_last_applied_at?: string | null
+          owner_edited?: boolean
+          owner_verification?: Database['public']['Enums']['owner_verification']
+          fact_classification?: Database['public']['Enums']['fact_classification']
+          created_at?: string
+          updated_at?: string
+          updated_by?: string | null
+          published_at?: string | null
+          published_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'pages_published_by_fkey'
+            columns: ['published_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'pages_seo_entry_id_fkey'
+            columns: ['seo_entry_id']
+            isOneToOne: false
+            referencedRelation: 'seo_entries'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'pages_updated_by_fkey'
+            columns: ['updated_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       product_collections: {
         Row: {
           product_id: string
@@ -1056,6 +1621,112 @@ export type Database = {
           },
         ]
       }
+      seo_entries: {
+        Row: {
+          id: string
+          scope: string
+          path: string | null
+          entity_type: string | null
+          entity_id: string | null
+          title: string | null
+          description: string | null
+          social_title: string | null
+          social_description: string | null
+          og_media_id: string | null
+          canonical_url: string | null
+          robots: string | null
+          status: Database['public']['Enums']['content_status']
+          owner_verification: Database['public']['Enums']['owner_verification']
+          fact_classification: Database['public']['Enums']['fact_classification']
+          seed_key: string | null
+          content_seed_version: string | null
+          seed_content_hash: string | null
+          seed_last_applied_at: string | null
+          owner_edited: boolean
+          created_at: string
+          updated_at: string
+          updated_by: string | null
+          published_at: string | null
+          published_by: string | null
+        }
+        Insert: {
+          id?: string
+          scope: string
+          path?: string | null
+          entity_type?: string | null
+          entity_id?: string | null
+          title?: string | null
+          description?: string | null
+          social_title?: string | null
+          social_description?: string | null
+          og_media_id?: string | null
+          canonical_url?: string | null
+          robots?: string | null
+          status?: Database['public']['Enums']['content_status']
+          owner_verification?: Database['public']['Enums']['owner_verification']
+          fact_classification?: Database['public']['Enums']['fact_classification']
+          seed_key?: string | null
+          content_seed_version?: string | null
+          seed_content_hash?: string | null
+          seed_last_applied_at?: string | null
+          owner_edited?: boolean
+          created_at?: string
+          updated_at?: string
+          updated_by?: string | null
+          published_at?: string | null
+          published_by?: string | null
+        }
+        Update: {
+          id?: string
+          scope?: string
+          path?: string | null
+          entity_type?: string | null
+          entity_id?: string | null
+          title?: string | null
+          description?: string | null
+          social_title?: string | null
+          social_description?: string | null
+          og_media_id?: string | null
+          canonical_url?: string | null
+          robots?: string | null
+          status?: Database['public']['Enums']['content_status']
+          owner_verification?: Database['public']['Enums']['owner_verification']
+          fact_classification?: Database['public']['Enums']['fact_classification']
+          seed_key?: string | null
+          content_seed_version?: string | null
+          seed_content_hash?: string | null
+          seed_last_applied_at?: string | null
+          owner_edited?: boolean
+          created_at?: string
+          updated_at?: string
+          updated_by?: string | null
+          published_at?: string | null
+          published_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'seo_entries_og_media_id_fkey'
+            columns: ['og_media_id']
+            isOneToOne: false
+            referencedRelation: 'media_assets'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'seo_entries_published_by_fkey'
+            columns: ['published_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'seo_entries_updated_by_fkey'
+            columns: ['updated_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       staff_profiles: {
         Row: {
           user_id: string
@@ -1170,7 +1841,46 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      cms_publish_section: {
+        Args: Record<string, unknown>
+        Returns: Json
+      }
+      cms_reorder_sections: {
+        Args: Record<string, unknown>
+        Returns: Json
+      }
+      cms_restore_revision: {
+        Args: Record<string, unknown>
+        Returns: Json
+      }
+      cms_run_content_schedule: {
+        Args: Record<string, unknown>
+        Returns: Json
+      }
+      cms_transition_allowed: {
+        Args: Record<string, unknown>
+        Returns: Json
+      }
+      cms_unpublish_media_asset: {
+        Args: Record<string, unknown>
+        Returns: Json
+      }
+      current_staff_role: {
+        Args: Record<string, unknown>
+        Returns: Json
+      }
+      has_role: {
+        Args: Record<string, unknown>
+        Returns: Json
+      }
+      is_staff: {
+        Args: Record<string, unknown>
+        Returns: Json
+      }
+      rivya_slugify: {
+        Args: Record<string, unknown>
+        Returns: Json
+      }
     }
     Enums: {
       collection_concept_state: 'DRAFT_COLLECTION_CONCEPT'

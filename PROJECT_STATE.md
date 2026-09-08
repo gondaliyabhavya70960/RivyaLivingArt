@@ -1,29 +1,58 @@
 # PROJECT_STATE — what is actually built
 
 > Verified against the repository, not against intent. Update at the end of every phase.
-> Last verified: Phase 07 (Higgsfield Asset Audit + Initial Asset Plan), 2026-09-08.
+> Last verified: Phase 08 (Content Management Engine), 2026-09-08.
 
 ## Summary
 
 The design system is built; the database spine exists, carries RLS policies for all six roles, and
 has been verified against a real PostgreSQL **and against the hosted Supabase project**. What
 exists: the toolchain, the token layer, 32 primitives, 3 motion helpers, 7 behavioural patterns, a
-dev-only gallery, **sixteen tables, all with RLS on, and 59 policies**, generated types with a
+dev-only gallery, **twenty-three tables, all with RLS on, and 90 policies**, generated types with a
 drift gate, a repository layer with Zod at its boundary, an idempotent seed runner proved not to
-overwrite an owner's edit, the Studio shell with its ⌘K palette and user management, the **media
-layer end to end** — provider seam, signed uploads, the two render patterns and the six-section
-Media Manager — **the Higgsfield migration, gap engine and tracker**, a forward-only migration
-runner, and **20 gates** that fail the build on the mistakes they were written for.
+overwrite an owner's edit, the Studio shell with its ⌘K palette and user management, the media
+layer end to end, the Higgsfield migration, gap engine and tracker, **the CMS engine — pages,
+blocks, the status workflow, media binding, scheduling, revisions and the Studio surfaces that
+drive them** — a forward-only migration runner, and **23 gates** that fail the build on the
+mistakes they were written for.
 
-What does not exist: any product page, any CMS, and no content bound to a media slot. The Media
-Manager can upload and list; nothing on the public site renders from it yet, because no public page
-exists to render. **And the 250 Higgsfield assets are still on the Higgsfield CDN** — the migration
-that moves them is written and tested but has never executed, because this sandbox's proxy refuses
-CONNECT to both Cloudinary and the CDN origin. That is the one owner-side step Phase 07 needs.
+**A page can now be built and rendered.** `/studio/content/pages/[pageId]` adds, edits, reorders
+and removes blocks; `lib/cms/resolve.ts` is the single server read path; `components/sections/`
+renders six of the twenty-eight catalogue blocks. A test takes rows out of a real PostgreSQL,
+parses them with the repository's own schemas and renders the page, so the chain from column to
+markup is proved end to end and not only in fixtures.
 
-**The hosted project is current.** All 19 migrations are applied to `ccvarsmzickdkryoakdg` and
+What does not exist: any public page route, any product page, and no section copy. The engine is
+built and nothing is written into it — twelve `pages` rows exist as route shells, with no sections.
+Twenty-two of the twenty-eight blocks are declared and unbuilt (amendment A8), and a block with
+repeating items is edited as JSON until Phase 09 builds a repeater.
+
+**Two things block the site going live, both owner-side.** The 250 Higgsfield assets are still on
+the Higgsfield CDN — the migration that moves them is written and tested but has never executed,
+because this sandbox's proxy refuses CONNECT to both Cloudinary and the CDN origin. And every one
+of those assets is APPROVED *and* `OWNER_VERIFICATION_REQUIRED`, so `cms_publish_section` refuses
+(RV006) any section that binds one. Both are recorded in *Remaining Work*.
+
+**The hosted project is current.** All 25 migrations are applied to `ccvarsmzickdkryoakdg` and
 recorded in `public.schema_migrations` with checksums; the latest is
-`0041_rls_policies_phase07.sql`.
+`0055_phase08_global_content_error_group.sql`.
+
+`0050`–`0055` were applied through the Supabase MCP server rather than by `npm run db:migrate`,
+because the workflow that runs it lives on GitHub Actions, which has never executed a step on this
+repository, and this sandbox's proxy refuses a Postgres connection to the pooler. The ledger rows
+carry the same SHA-256 of each FILE that `scripts/db/migrate.mjs` computes, so a future run from a
+machine that can reach the database sees them as applied and unedited rather than re-applying them.
+
+**Verified after applying, not assumed from six success replies.** Hosted reports 7 CMS tables, all
+with RLS on, 90 policies (identical to local), 6 `cms_*` functions, 8 triggers on `page_sections`,
+and `page_sections_media_needs_slot_key` present. The only difference between the two schemas is
+`public.schema_migrations` itself, which `db:reset` does not create locally.
+
+**Hosted carries no content yet.** The Phase 08 seed — 12 route shells and 5 global strings — has
+been applied locally only. It is one command from a machine that can reach the database:
+`npm run seed:content`. Hand-inserting those rows here would have written them without the
+`seed_content_hash` the runner uses to tell its own writes from an owner's edit, which would make
+every future run skip them permanently.
 
 **GitHub Actions has still never executed a step** on this repository — 57 runs, every one dead in
 2–3 seconds with a 404 on its logs, unchanged after a payment method was added. Vercel builds the

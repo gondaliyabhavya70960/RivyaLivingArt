@@ -24,7 +24,7 @@ import { redact } from '../logging/redact'
  */
 
 describe('the permission matrix', () => {
-  it('has all 29 permissions', () => {
+  it('has all 31 permissions', () => {
     // A tripwire, not a specification. Its only job is to make a change to the matrix impossible
     // to make accidentally: adding or removing a cell fails here and sends the author to read the
     // assertions below, which are the ones that carry meaning.
@@ -32,7 +32,7 @@ describe('the permission matrix', () => {
     // 25 at the end of Phase 04. Phase 05 adds four: `studio.access` and `activity.read` for its
     // own surfaces, and `system.environment.read` / `system.docs.read` because every D4 leaf needs
     // a real permission to be gated by, including the ones later phases fill.
-    expect(PERMISSIONS).toHaveLength(29)
+    expect(PERMISSIONS).toHaveLength(31)
   })
 
   it('names exactly the six D5 roles', () => {
@@ -118,7 +118,10 @@ describe('ROLE_PERMISSIONS is derived, not a second copy', () => {
     // Tightening the rule to name the mutating verbs keeps the regression this guards against (a
     // viewer quietly gaining `catalog.write`) while no longer failing on a permission that is
     // read-shaped in every way except spelling.
-    const MUTATING = /\.(write|publish|delete|execute|manage|transfer|confirm)$/
+    // `review` and `verify` join the list at Phase 08. Both change state — one moves a section
+    // between statuses, the other asserts a business claim is true — so a viewer holding either
+    // would defeat the whole point of this test.
+    const MUTATING = /\.(write|publish|review|verify|delete|execute|manage|transfer|confirm)$/
 
     for (const permission of ROLE_PERMISSIONS.viewer) {
       expect(permission, `viewer holds ${permission}`).not.toMatch(MUTATING)

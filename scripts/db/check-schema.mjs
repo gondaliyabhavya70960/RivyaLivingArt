@@ -122,6 +122,24 @@ const EXPECTED = {
     'log',
   ],
 
+  // Phase 08 — the CMS. Six content tables carrying the full A+B+C set, because Phase 09 seeds
+  // every one of them and the seed runner needs Tier C to tell its own writes from a human's.
+  pages: [...TIER_A, ...TIER_B, ...TIER_C],
+  page_sections: [...TIER_A, ...TIER_B, ...TIER_C],
+  navigation_items: [...TIER_A, ...TIER_B, ...TIER_C],
+  global_content: [...TIER_A, ...TIER_B, ...TIER_C],
+  seo_entries: [...TIER_A, ...TIER_B, ...TIER_C],
+  faqs: [...TIER_A, ...TIER_B, ...TIER_C],
+
+  // `content_revisions` is the §1.4 exemption of the set, and for the same reason `audit_logs` is:
+  // it is an IMMUTABLE RECORD OF SOMETHING THAT HAPPENED, not content. A `status` on it would imply
+  // a revision can be drafted and published; an `updated_at` would imply it can be edited, when the
+  // whole guarantee is that it cannot — there is no UPDATE or DELETE policy for any session role.
+  // It carries `created_at`/`created_by` rather than §1.4's `occurred_at` shorthand because the row
+  // IS the event, so its creation time is the event time and a second column would be a lie waiting
+  // to diverge.
+  content_revisions: ['created_at', 'created_by'],
+
   // Phase 04. Neither carries the content tiers, and both are §1.4 exemptions:
   //   staff_profiles is configuration — Tier A only, plus created_by.
   //   audit_logs is an immutable operational record with its own column set. A content_status on
@@ -207,7 +225,27 @@ if (priceStates !== EXPECTED_PRICE_STATES) {
 
 // --- 4. Every content table refuses to publish an unverified row ---------------------------------
 // D10 as a constraint rather than a review convention.
-const CONTENT_TABLES = ['categories', 'collections', 'materials', 'products', 'media_assets']
+// Every table whose rows can be PUBLISHED and can therefore carry an unverified business claim to
+// the public site. The six Phase 08 additions matter as much as the Phase 03 five: `faqs` answers
+// questions about lead times and materials, `global_content` holds the CTA library, and
+// `page_sections` is where most seeded copy will live.
+//
+// `content_revisions` is absent deliberately — a revision is a record of what a row WAS, and
+// gating it on verification would refuse to record the history of an unverified claim, which is
+// the opposite of what an audit trail is for.
+const CONTENT_TABLES = [
+  'categories',
+  'collections',
+  'materials',
+  'products',
+  'media_assets',
+  'pages',
+  'page_sections',
+  'navigation_items',
+  'global_content',
+  'seo_entries',
+  'faqs',
+]
 const gates = q(`
   select conrelid::regclass::text
   from pg_constraint

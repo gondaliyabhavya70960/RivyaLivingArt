@@ -6,6 +6,74 @@ Every phase adds an entry; see `docs/architecture/CANONICAL-DECISIONS.md` D9 for
 
 ## [Unreleased]
 
+### Phase 08 — Content Management Engine
+
+The CMS: pages, a typed block catalogue, the status workflow, media binding, scheduling, revisions
+and the Studio surfaces that drive them. Seven tables, six migrations, six blocks of twenty-eight.
+
+**Three contradictions in the phase documents, resolved rather than picked between.** They named
+eleven transition edges in one place and eight in another, and a permission column citing
+`content.review` and `content.verify` — neither of which was in the matrix. The union of the edges
+is twelve, both permissions are added, and `content.publish` is left alone; amendment A7 records
+why. `lib/cms/transitions.ts` is now the single source and
+`scripts/cms/gen-transition-sql.ts` renders the trigger from it, byte-compared by
+`npm run cms:check-transitions`.
+
+The fourth contradiction is not resolvable in code: all 250 imported Higgsfield assets are APPROVED
+*and* `OWNER_VERIFICATION_REQUIRED`, which collides with Phase 03's
+`media_assets_verified_before_publish`. Nothing binding one can be published until the owner
+verifies it. That is the design working, and it means the site cannot go live on Higgsfield media
+alone.
+
+**A media gate that was open, found by testing the scheduler.** `sync_media_usages` only writes a
+`media_usages` row when `media_slot_key` is present, and `cms_publish_section`'s RV003 and RV006
+gates are both joins through that table. A section binding an asset with a null slot key therefore
+published with **no media check at all** — verified: a DRAFT, unverified asset went live and stayed
+DRAFT, invisible to the gap tracker too. Migration `0054` makes the slot key required whenever an
+asset is bound; verified again after.
+
+**Blocks in two tiers (amendment A8).** All 28 catalogue types are declared; six are built, chosen
+so that between them they exercise every payload family: none, media-only, repeating items with
+indexed media references, query-and-global, and the degenerate case of no payload *and* no copy
+fields. Both registries are `satisfies Record<BlockType, …>`, so a missing entry fails the build —
+proved by removing one and reading the error. A planned block cannot be added in Studio and renders
+nothing at all on the public site, rather than a placeholder that would be a sentence nobody wrote.
+
+**Copy cannot get into the renderers.** `npm run cms:check-copy` parses every file under
+`components/sections/` with the TypeScript compiler and fails on a literal a visitor would read — a
+JSX text node, or one given to `alt`, `title`, `aria-label`. Class names and `sizes` values are
+literals too and are fine; what makes a literal copy is its position, which a regex cannot see.
+Verified by planting a headline and a hard-coded `alt`.
+
+**Scheduling.** `cms_run_content_schedule` (`0053`) sweeps due sections under `for update skip
+locked`, so an overlapping invocation sees an empty set rather than double-publishing. A refusal is
+recorded on the row and the section goes BLOCKED after three attempts — a permanently
+unpublishable section retrying every tick forever is indistinguishable from one that worked. A
+human edit un-blocks it. `CRON_SECRET` is compared after hashing both sides, because
+`timingSafeEqual` throws on a length mismatch and the difference between a 500 and a 401 leaks the
+secret's length.
+
+**Preview** uses the staff session as its credential rather than a token in the query string, which
+would land in browser history and in the `Referer` of every asset the previewed page loads.
+`draftMode()` is awaited — it is async in Next 16, and written synchronously it still compiles
+while `enable()` does nothing.
+
+**Seeding.** Two modules: `pages` (one row per static D3 route, structure only) and
+`global-content` (the strings the renderers require, with SEED §27–§29 verbatim). The renderers
+ship no fallback copy, so those rows are load-bearing rather than cosmetic. Migration `0055` adds
+an `ERROR` group for the media fallback label, which `MediaFrame` has named in its header since
+Phase 05 and which the closed group list had no home for.
+
+**Also fixed:** `sectionMediaFor` compacted its slot array, so a card holding `media_index: 2` drew
+a different picture for visitors whose RLS hid an earlier asset. A guard written as
+`const copy = <SectionCopy/>; if (copy === null)` could never fire, because a JSX element is always
+truthy. `loadFixture()` could not delete a fixture user once any suite had attributed a revision to
+them. Two RLS suites collided on the same fixed uuids and on cleanup patterns that missed each
+other's rows.
+
+23 tables, 90 policies, 25 migrations. 930 tests pass with `RLS_TESTS_REQUIRED=1`, none skipped.
+23 gates.
+
 ### Phase 07 — Higgsfield Asset Audit + Initial Asset Plan
 
 **CODE COMPLETE. The migration has not been run.** Everything below is built, tested and merged;

@@ -34,6 +34,9 @@
     "auth:gen-policies": "tsx scripts/auth/gen-role-sql.ts",
     "auth:check-policies": "tsx scripts/auth/gen-role-sql.ts --check",
     "auth:check-rls": "tsx scripts/auth/check-rls.ts",
+    "cms:gen-transitions": "tsx scripts/cms/gen-transition-sql.ts",
+    "cms:check-transitions": "tsx scripts/cms/gen-transition-sql.ts --check",
+    "cms:check-copy": "tsx scripts/cms/check-section-copy.ts",
     "security:check-bundle": "node scripts/security/check-bundle-secrets.mjs",
     "security:check-proxy": "node scripts/security/check-proxy.mjs",
     "db:migrate": "node scripts/db/migrate.mjs",
@@ -46,7 +49,7 @@
     "media:check-status": "npm run media:build-status && git diff --exit-code docs/media/HIGGSFIELD_ASSET_STATUS.md",
     "perf:check-image-props": "node scripts/perf/check-image-props.mjs",
     "perf:check-video-props": "node scripts/perf/check-video-props.mjs",
-    "check": "npm run typecheck && npm run lint && npm run format:check && npm run media:check-ids && npm run media:assert-no-regen"
+    "check": "npm run typecheck && npm run lint && npm run format:check && npm run media:check-ids && npm run media:assert-no-regen && npm run cms:check-transitions && npm run cms:check-copy"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.6",

@@ -226,6 +226,16 @@ export async function loadFixture(): Promise<void> {
   await db.query('alter table staff_profiles disable trigger staff_profiles_last_owner_delete')
   try {
     await db.query('delete from staff_profiles where user_id = any($1::uuid[])', [Object.values(u)])
+    // `content_revisions.created_by` references auth.users with no ON DELETE action, and the table
+    // is append-only by design — nothing ever removes a revision in production. So any suite that
+    // attributes a write to a fixture user (an editor saving a section, say) leaves a row that
+    // makes the NEXT loadFixture() fail on a foreign key, in a different file, for a reason that
+    // has nothing to do with what that file is testing. Detaching them rather than deleting keeps
+    // the trail intact and lets the user go.
+    await db.query(
+      'update content_revisions set created_by = null where created_by = any($1::uuid[])',
+      [Object.values(u)],
+    )
     await db.query('delete from auth.users where id = any($1::uuid[])', [Object.values(u)])
   } finally {
     await db.query('alter table staff_profiles enable trigger staff_profiles_last_owner_update')
