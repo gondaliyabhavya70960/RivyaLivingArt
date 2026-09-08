@@ -1,0 +1,138 @@
+# Apply the migration set to the HOSTED Supabase project.
+#
+# WHY THIS EXISTS. Development happens against a local PostgreSQL, and every gate in ci.yml runs
+# there. Nothing had ever applied `supabase/migrations/**` to the real project, and the assumption
+# that "it works locally, so it works there" had already been wrong once: migration 0003 failed
+# against hosted Supabase because it keeps `citext`/`unaccent`/`pg_trgm` in an `extensions` schema
+# that is not on the default search path. `db:check-hosted-layout` now catches that class locally,
+# but a check that simulates the target is not the target.
+#
+# It is a workflow rather than something run from a developer's machine because a GitHub-hosted
+# runner has ordinary outbound network access, and the environments this project is developed in
+# may not. The runner is the connection, not a convenience.
+#
+# WHAT IT WILL NOT DO. It never drops anything. `db:reset` — the script that does — refuses any
+# non-loopback host without an explicit flag, and is not invoked here. `db:migrate` only moves
+# forward: it applies files this database has not recorded, and refuses outright if a migration was
+# edited after being applied or if the database carries a migration this repository does not have.
+#
+# COST. Manual dispatch only: no push, pull_request or schedule trigger. It consumes Actions
+# minutes only when somebody deliberately runs it, and a `plan` run costs the same as an `apply`.
+
+name: Database migrate (hosted)
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'plan = report only, change nothing. apply = write to the database.'
+        type: choice
+        options: [plan, apply]
+        default: plan
+        required: true
+      confirm_project_ref:
+        description: 'Required for apply: type the Supabase project ref exactly. Ignored for plan.'
+        type: string
+        default: ''
+        required: false
+
+# Two applies must never overlap: both would read the same pending list and try to apply the same
+# DDL. cancel-in-progress is deliberately false — cancelling mid-apply is worse than queueing.
+concurrency:
+  group: db-migrate-hosted
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    # Least privilege: this job reads the repository and talks to Supabase. It writes nothing back
+    # to GitHub, so it is given no write scope to take advantage of.
+    permissions:
+      contents: read
+
+    env:
+      # SUPABASE_DB_URL must be the SESSION POOLER string:
+      #   postgresql://postgres.<ref>:<password>@aws-0-<region>.pooler.supabase.com:5432/postgres
+      # NOT db.<ref>.supabase.co — that endpoint is IPv6-only and GitHub runners have no IPv6
+      # route, so it times out after several minutes looking like a firewall problem.
+      # NOT port 6543 — transaction mode cannot hold the session DDL migrations need.
+      # scripts/db/migrate.mjs rejects both mistakes by name rather than letting them time out.
+      DATABASE_URL: ${{ secrets.SUPABASE_DB_URL }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Before anything else, and before npm ci spends a minute, so a missing secret fails in
+      # seconds rather than at the end.
+      - name: The connection secret is present
+        run: |
+          if [ -z "${DATABASE_URL}" ]; then
+            echo "::error::SUPABASE_DB_URL is not set."
+            echo "Add it under Settings → Secrets and variables → Actions → New repository secret."
+            echo "Use the Session Pooler string from Supabase → Project Settings → Database."
+            exit 1
+          fi
+          echo "Secret is present."
+
+      # The typed confirmation. The input is compared against the project ref carried in the secret
+      # so that dispatching 'apply' against the wrong project fails before any SQL runs.
+      #
+      # The ref itself is not secret — it is the subdomain of NEXT_PUBLIC_SUPABASE_URL, which ships
+      # in the browser bundle. The PASSWORD in the same string is, so the parse happens in shell
+      # from the environment and neither value is ever echoed.
+      - name: Confirm the target before applying
+        if: ${{ inputs.mode == 'apply' }}
+        env:
+          TYPED: ${{ inputs.confirm_project_ref }}
+        run: |
+          ref="${DATABASE_URL#*://}"        # strip scheme
+          ref="${ref%%:*}"                  # username, i.e. postgres.<ref>
+          ref="${ref#postgres.}"            # <ref>
+          # A ref never contains whitespace, and a value pasted out of the Supabase dashboard
+          # often carries a trailing space. Refusing that would be a confusing false negative on
+          # a correct instruction, so it is trimmed rather than treated as a mismatch.
+          TYPED="$(printf '%s' "$TYPED" | tr -d '[:space:]')"
+          if [ -z "$ref" ] || [ "$ref" = "postgres" ]; then
+            echo "::error::Could not read a project ref from SUPABASE_DB_URL."
+            echo "It does not look like a Session Pooler string (expected user 'postgres.<ref>')."
+            exit 1
+          fi
+          if [ "$TYPED" != "$ref" ]; then
+            echo "::error::confirm_project_ref does not match the project in SUPABASE_DB_URL."
+            echo "Re-run and type the project ref exactly as it appears in your Supabase URL."
+            exit 1
+          fi
+          echo "Confirmed: the typed ref matches the configured project."
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # The same gate CI runs. If the migration set would not survive the hosted extension layout,
+      # that is worth discovering against a local throwaway rather than against the real project.
+      - name: Migrations still apply under the hosted extension layout
+        run: npm run db:check-hosted-layout
+
+      # Always runs, for both modes: an apply that was never planned is an apply nobody read.
+      # The output lists exactly which files are pending.
+      - name: Plan
+        run: npm run db:migrate -- --allow-remote
+
+      - name: Apply
+        if: ${{ inputs.mode == 'apply' }}
+        run: npm run db:migrate -- --allow-remote --apply
+
+      # Reports what the database now holds. Table and policy COUNTS only — no data, and no row
+      # from any application table is read.
+      - name: What the database holds now
+        run: |
+          psql "$DATABASE_URL" --no-psqlrc --quiet --set ON_ERROR_STOP=1 -c "
+            select
+              (select count(*) from pg_tables where schemaname='public')                as tables,
+              (select count(*) from pg_tables where schemaname='public' and rowsecurity) as rls_enabled,
+              (select count(*) from pg_policies where schemaname='public')              as policies,
+              (select count(*) from public.schema_migrations)                           as migrations_recorded;
+          "

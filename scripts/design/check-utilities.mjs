@@ -91,6 +91,28 @@ for (const file of SCAN.flatMap((d) => walk(join(ROOT, d)))) {
     for (const m of line.matchAll(/(['"`])((?:[^\\\n]|\\.)*?)\1/g)) {
       const value = m[2]
       if (!value || value.length > 400) continue
+
+      /**
+       * Skip a string that is an OBJECT KEY.
+       *
+       * `{ 'content-type': 'application/json' }` was reported as a dead utility: `content` is a
+       * real Tailwind prefix (content-center, content-between), so `content-type` matches the
+       * candidate shape while being an HTTP header. This gate's own header says a false positive
+       * is worse than a miss, because it trains people to ignore the gate.
+       *
+       * BOTH HALVES OF THE TEST ARE LOAD-BEARING. "Followed by a colon" alone also matches the
+       * first branch of a ternary — `open ? 'translate-y-0 opacity-100' : 'translate-y-2'` — which
+       * is where a great many real classes live. Requiring the literal to be OPENED by `{` or `,`
+       * (or to start the line) excludes ternaries, whose branch is preceded by `?`.
+       *
+       * Measured rather than assumed: across every file this gate scans, the rule drops exactly
+       * one token — `content-type` — and no other candidate is lost. A restriction to
+       * `className=` lines was tried first and rejected: 161 real classes live in lookup tables
+       * like Badge's tone map, and it would have gutted the gate.
+       */
+      const before = line.slice(0, m.index).trimEnd()
+      const after = line.slice(m.index + m[0].length)
+      if (/^\s*:/.test(after) && (before === '' || /[{,]$/.test(before))) continue
       for (const tok of value.split(/\s+/)) {
         if (!tok || tok.length > 60) continue
         // Arbitrary values are rejected by check-tokens.mjs; skipping them here keeps

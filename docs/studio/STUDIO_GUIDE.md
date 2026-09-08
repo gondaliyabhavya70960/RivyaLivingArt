@@ -54,7 +54,7 @@ Four properties define the workspace:
 1. **Every public sentence is a database row.** No marketing copy lives in a `.tsx` file (D2, SEED
    §1). An editor changing a headline changes `page_sections.heading`; there is no deploy.
 2. **Every mutation is permission-checked twice.** RLS is the coarse net in PostgreSQL;
-   `requirePermission()` in the server action is the fine net. `middleware.ts` only redirects
+   `requirePermission()` in the server action is the fine net. `proxy.ts` only redirects
    unauthenticated requests — it never authorises (D4).
 3. **Every mutation is recorded three ways.** `audit_logs` records who was allowed or refused,
    `activity_events` records what a human did in the Studio, `system_logs` records what the machine
@@ -148,23 +148,40 @@ cites it.
 | `system.users.manage` | ✓ | ✓ | — | — | — | — |
 | `system.owner.transfer` | ✓ | — | — | — | — | — |
 
-**Permissions this guide needs that the Phase 04 matrix does not yet list.** Each is required by a
-route documented below. They are proposed here with the role set the owning phase implies, and raised
-in §18 rather than assumed settled.
+**Permissions added after the Phase 04 matrix.** Each is required by a route documented below.
+Phase 05 added the four its own routes could not be gated without — a stub with no permission is a
+route nobody has decided the audience for, and it would have to be invented again by the phase that
+fills it. The remaining two are still proposals, raised in §18.
 
-| Permission | Needed by | Proposed holders | Source |
+| Permission | Needed by | Holders | Status |
 |---|---|---|---|
-| `studio.access` | `app/(studio)/studio/layout.tsx` | every active staff role | Phase 05 |
-| `content.review` | the `REVIEW → APPROVED` transition | owner, admin, editor | Phase 08 |
-| `system.environment.read` | `/studio/system/environment` | owner, admin | Phase 38 |
-| `system.docs.read` | `/studio/system/documentation` | owner, admin, editor, merchandiser, researcher | Phase 38 |
-| `operations.logs.export` | log CSV export | owner, admin | Phase 38 |
+| `studio.access` | the shell, and `/studio/system/flags` | every active staff role | **Added, Phase 05** |
+| `activity.read` | `activity_events` and the Activity tab | every active staff role | **Added, Phase 05** |
+| `system.environment.read` | `/studio/system/environment` | owner, admin | **Added, Phase 05** |
+| `system.docs.read` | `/studio/system/documentation` | owner, admin, editor, merchandiser, researcher | **Added, Phase 05** |
+| `content.review` | the `REVIEW → APPROVED` transition | owner, admin, editor | Proposed — Phase 08 |
+| `operations.logs.export` | log CSV export | owner, admin | Proposed — Phase 38 |
+
+`activity.read` is deliberately distinct from `studio.access` even though both are held by all six
+roles today. They answer different questions — "may this person enter the Studio" and "may this
+person read the activity feed" — and `activity_events` needs a table read permission, which
+"access the Studio" is the wrong shape for. It is equally deliberately distinct from
+`operations.audit.read` (owner and admin only): merging the activity feed with the authorisation
+log would put every `DENIED` row in front of a viewer.
+
+The matrix now holds **29** permissions. `lib/auth/permissions.test.ts` asserts that count as a
+tripwire, so a change to the matrix cannot be made without someone reading the assertions.
 
 ### 2.4 Navigation visibility is computed per leaf, not per group
 
 `lib/auth/studio-nav.ts` is the single declarative manifest of the D4 route map — the only place in
 the repository where a Studio route path is written down — and `lib/auth/nav-visibility.ts` filters it
-for the session role. Two rules keep the sidebar honest:
+for the session role. **Built in Phase 05**, and the claim is enforced rather than asserted:
+`tests/unit/studio-nav.test.ts` PARSES the D4 block out of `CANONICAL-DECISIONS.md` and requires it
+to equal the manifest, and requires the manifest to equal the `page.tsx` files on disk. Both
+directions fail — a leaf with no page, and a page the manifest does not name. The second is the one
+that matters: a hand-added route would be unreachable from the sidebar and governed by no permission
+here. Two rules keep the sidebar honest:
 
 1. **A leaf is shown when the role holds its read permission.** Not when a hand-written group matrix
    says so. A role that can reach a route by typing its URL and get a `200` must be able to see it in
@@ -298,10 +315,26 @@ a bare 404, never an empty page, and never the words "Coming Soon" (SEED §55).
 
 ## 4. The shell
 
-`app/(studio)/studio/layout.tsx` is a Server Component. It calls `requirePermission('studio.access')`,
-resolves the navigation manifest for the session role, and renders: skip link → sidebar → top bar
-(breadcrumb trail, global search trigger, user menu, role badge, deployment-environment badge) →
-`<main id="main">`.
+**Built in Phase 05.** `app/(studio)/studio/(shell)/layout.tsx` is a Server Component. It calls
+`requirePermission('studio.access')`, and `components/studio/StudioShell.tsx` resolves the
+navigation manifest for the session role and renders: skip link → sidebar → `<main id="studio-main">`.
+
+**Why `(shell)` and not `studio/layout.tsx`,** which is what earlier drafts of this section said.
+`/studio/login` is a child of `/studio` in the URL, so a layout at `studio/layout.tsx` wraps the
+sign-in page — putting a permission check in front of signing in, which is a redirect loop that
+presents to the user as "my password is wrong". A route group adds a layout without adding a URL
+segment, so `(shell)/page.tsx` is still `/studio` and login is simply not a member.
+
+`app/(studio)/layout.tsx` sits above both and carries the `rv-scheme-bone` ground for the whole
+group, login included. It authorises nothing, for the reason above.
+
+**The h1 belongs to the page, not the shell.** `StudioPage` renders it, from the navigation
+manifest. A heading in the shell as well would give every Studio surface two, and a screen-reader
+user navigating by heading would land on the product name rather than on what they opened.
+
+**Not yet built:** the top bar. The breadcrumb trail lives on the page (through `StudioPage`), and
+the user menu, role badge and deployment-environment badge are not built — the role is shown as
+text in the sidebar instead. The ⌘K trigger is a keyboard shortcut with no visible affordance yet.
 
 ### 4.1 Studio primitives
 
@@ -324,6 +357,50 @@ or a confirmation is a review failure.
 | `CommandPalette` | The ⌘K overlay (§6) |
 | `MediaUploader` | Signed direct-to-Cloudinary upload; cannot save without alt text |
 | `CoverageBadge` | `n`, denominator and as-of date on every analytics figure |
+
+**Built in Phase 05:** `StudioPage`, `PageHeader`, `Toolbar`, `DataTable`, `FilterBar`, `StatCard`,
+`StatusPill`, `EmptyState`, `ConfirmDialog`, `DrawerForm`, `FormField`, `PermissionGate`,
+`RelativeTime`, `ActorChip`, `CommandPalette`. `MediaUploader` belongs to Phase 06 and
+`CoverageBadge` to Phase 31.
+
+#### What these primitives are actually for
+
+Each exists to preserve a distinction that a careless implementation collapses — always into the
+most reassuring reading, which is why the collapse is not noticed. These are the ones worth knowing
+before using them, because a call site that ignores them re-introduces the bug:
+
+- **`StatCard` has three states, not a number with a default.** A number, `unavailable` (the table
+  does not exist yet — shows the owning phase), and `unreadable` (the query failed). A default is
+  precisely how a zero gets back in, and "Open enquiries: 0" reads as "nobody has enquired" when the
+  truth is that enquiries do not exist until Phase 20. That is a fabricated business fact under D10,
+  and the owner has no way to detect it.
+- **`EmptyState` takes a reason, not a boolean.** `empty`, `filtered`, `unreadable`. Telling somebody
+  "no products" while a status filter is on is how people conclude their records have been deleted.
+- **`DataTable` requires an empty reason** for the same purpose, and is a real `<table>` — row and
+  column position announced by the element, find-in-page working, "navigate by table" working.
+- **`ActorChip` renders a null actor as "System", never "Unknown".** A null actor is the seed runner
+  or a migration (DATA_MODEL §1.6); "Unknown" sends somebody looking for a colleague who does not
+  exist.
+- **`RelativeTime` says "just now" under an hour** rather than a minute count. It renders on the
+  server and never ticks, so a number is false within a minute. The exact instant is always in
+  `datetime` and `title`. A future timestamp is a clock problem, not "in 2 hours".
+- **`StatusPill` renders the state as a word as well as a tone** (WCAG 1.4.1), and
+  `OWNER_VERIFICATION_REQUIRED` is **warning**, not neutral: it is the D10 gate, the one state an
+  owner must act on, and quiet grey would make it the least visible thing on the row.
+- **`PermissionGate` protects nothing.** It removes a button. The Server Action behind it is an HTTP
+  endpoint reachable with `curl` and a session cookie; `withPermission` and RLS are what refuse it.
+  It is a component rather than an inline `&&` so that this sentence has somewhere to live.
+- **`FilterBar` submits with `GET`**, so the browser builds the query string. That is why it works
+  with JavaScript off, and why a filtered view can be linked, reloaded and reached with Back.
+- **`ConfirmDialog` has two strengths.** `typeToConfirm` requires typing an exact phrase and is for
+  actions that destroy something unrecoverable; the point is to break the muscle memory of clicking
+  through a dialog, which a plain "Are you sure?" acquires by the tenth showing.
+
+`ConfirmDialog`, `DrawerForm` and `CommandPalette` compose `components/patterns/{Dialog,Drawer}`
+rather than rebuilding them: the focus trap, Escape, focus restoration, scroll lock and labelling
+contract were solved and tested in Phase 02, and a second implementation is a second set of those
+bugs.
+
 
 ### 4.2 Per-user state
 

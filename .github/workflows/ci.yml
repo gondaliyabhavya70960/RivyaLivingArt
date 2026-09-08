@@ -125,6 +125,46 @@ jobs:
           grep -q 'skipped (owner edit)  1' /tmp/seed-third.txt
           test "$(psql "$DATABASE_URL" -Atc "select name from categories where slug='furniture';")" = 'Owner Edit'
 
+      # db:migrate is the script that will touch the REAL project (db-migrate.yml). db:reset never
+      # will — it drops schema public. They are different code paths, so proving reset works proves
+      # nothing about migrate, and migrate's failure modes are the expensive ones.
+      #
+      # Runs against its own throwaway database because the one above has already been reset: a
+      # forward-only runner meeting a fully-built schema with no ledger would try to re-create
+      # every object, which tests nothing that could happen in production.
+      - name: The forward-only migration runner works, and refuses what it should
+        env:
+          BOOTSTRAP_URL: postgresql://postgres:postgres@127.0.0.1:5432/rivya
+          DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/rivya_migrate_check
+        run: |
+          set -euo pipefail
+          psql "$BOOTSTRAP_URL" -q -c 'create database rivya_migrate_check;'
+          # The auth shim, because a bare PostgreSQL has no auth.users. Hosted Supabase does, which
+          # is why db:migrate itself never applies this.
+          psql "$DATABASE_URL" -q --set ON_ERROR_STOP=1 -f supabase/local/00-auth-shim.sql
+
+          echo '--- plan must not change anything ---'
+          npm run db:migrate
+          test "$(psql "$DATABASE_URL" -Atc "select count(*) from pg_tables where schemaname='public';")" = '1'
+
+          echo '--- apply ---'
+          npm run db:migrate -- --apply
+
+          echo '--- second run must be a no-op ---'
+          npm run db:migrate -- --apply | tee /tmp/migrate-2.txt
+          grep -q 'nothing to do' /tmp/migrate-2.txt
+
+          echo '--- an edited migration must be refused, not silently ignored ---'
+          printf '\n-- edited after apply\n' >> supabase/migrations/0004_taxonomy.sql
+          if npm run --silent db:migrate -- --apply > /tmp/migrate-drift.txt 2>&1; then
+            echo 'FAIL: an edited migration was accepted'; cat /tmp/migrate-drift.txt; exit 1
+          fi
+          grep -q 'EDITED AFTER BEING APPLIED' /tmp/migrate-drift.txt
+          git checkout -- supabase/migrations/0004_taxonomy.sql
+
+          echo '--- the proxy convention is intact ---'
+          npm run security:check-proxy
+
       - name: No queries outside the repository layer
         run: npm run db:check-data-layer
 

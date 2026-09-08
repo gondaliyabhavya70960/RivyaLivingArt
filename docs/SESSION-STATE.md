@@ -8,23 +8,108 @@
 
 ## Current Phase
 
-**Phase 04 — Supabase Auth + RBAC + RLS.** Merged as PR #5. Phase 03 merged as PR #4.
+**Phase 05 — Studio Foundation. IN PROGRESS.** Phase 04 is closed out (PR #5, plus the close-out in
+PR #7). Phase 03 merged as PR #4.
+
+### Phase 05: what is built, and what is not
+
+**Built and verified**
+
+- **`lib/auth/studio-nav.ts` — the D4 map, once.** 8 groups, 58 leaves, each with a label *key*, a
+  read permission, a write permission where one applies, and its owning phases. `nav-visibility.ts`
+  now derives from it instead of holding a second copy, and the 58 `page.tsx` files are generated
+  from it.
+- **`tests/unit/studio-nav.test.ts`** asserts D4 ↔ manifest ↔ disk. D4 is *parsed* out of
+  CANONICAL-DECISIONS rather than transcribed. Both failure directions were provoked and confirmed,
+  including a page on disk the manifest does not name — an unreachable, ungoverned route.
+- **The shell.** `app/(studio)/layout.tsx` (bone ground — the Phase 04 carry-forward) and
+  `app/(studio)/studio/(shell)/layout.tsx`. `(shell)` is a route group so `/studio/login` stays
+  outside the permission check; a layout at `studio/layout.tsx` would gate the sign-in page behind
+  being signed in.
+- **`/studio` Overview** with the three D4 tabs as query parameters, not client state. Activity
+  reads real rows; Analytics says Phase 37 and shows no figure.
+- **Migration `0020`** (`activity_events`, `studio_preferences`) and **`0021`**, generated.
+- **`withPermission` writes exactly one audit row** and names the record — the Phase 04
+  carry-forward, with nine tests and both regressions confirmed against the old behaviour.
+
+- **All fifteen Studio primitives** in `components/studio/**`, each built around the distinction it
+  exists to preserve rather than around rendering. Documented in `STUDIO_GUIDE.md` §4.1 with the
+  reason each one is shaped the way it is. 20 tests.
+- **The ⌘K command palette**, its provider registry (20 results / 200 ms per provider, enforced by
+  the registry rather than trusted to providers), the route provider, and
+  `app/api/studio/search/route.ts`. 13 tests, including that a provider is skipped *before* it runs
+  when the role lacks its permission.
+- **`loading.tsx` / `error.tsx` / `not-found.tsx`** for the Studio. The error boundary never renders
+  `error.message` — only the digest.
+- **`logActivity()` has three real callers**: all three user-management mutations.
+
+**Not built yet, and Phase 05 is not complete without them**
+
+1. **`tests/e2e/studio-rbac.spec.ts`** — the per-role route matrix. Blocked on the same thing as
+   Phase 04 step 6: it needs real sessions, so it needs a reachable Supabase project.
+2. **Visual baselines for the shell.** The unauthenticated Studio surfaces DO pass at all eight
+   FEAT §45 widths — `studio-access.spec.ts` runs 104 assertions across them — but the shell itself
+   cannot be reached without a session, so its baselines wait on Supabase too.
+3. ~~The top bar~~ — **done.** `StudioTopBar` carries the identity, the role badge, a visible ⌘K
+   hint and the deployment-environment badge. That last one is absent in production deliberately: a
+   badge rendered everywhere becomes furniture, and its absence meaning "this is the real site" only
+   works if it is genuinely absent. 9 tests, including that it leaks no deployment configuration.
+4. ~~`studio_preferences` reader/writer~~ — **done except one column.** `lib/auth/preferences.ts`
+   reads the chrome and writes `sidebar_collapsed` and `pinned_routes`; the top bar collapses the
+   navigation, and every page can pin itself. Both are plain `<form>`s posting to Server Actions in
+   `app/(studio)/studio/(shell)/actions.ts`, so they work before hydration.
+   **`dashboard_card_order` still has no writer** — the column exists and nothing reorders cards.
+5. **Verification step 6** (press ⌘K on a Studio page, type `journ`, assert Content → Journal is
+   first and Enter navigates) needs a browser with a session. The logic beneath it is covered:
+   `searchRoutes('journ', …)` is asserted to return the journal route first.
+   **Step 7 is done** — and the step as written was wrong; see `PHASE-05-09.md`, which now records
+   why, and `tests/unit/rls/phase05.test.ts`, which replaces it.
+6. ~~`DATA_MODEL.md` Phase 05 pass~~ — **done**, and it corrected a divergence: the document said
+   `activity_events.actor_role` was `text`; it is the `user_role` enum, matching
+   `audit_logs.actor_role`. Verified against the live schema.
+7. **`dashboard_card_order` has no writer.** The column exists, the shell reads the chrome, and
+   nothing reorders dashboard cards. Not an exit criterion; deferred deliberately rather than
+   forgotten.
 
 ## Status
 
-**SUBSTANTIALLY COMPLETE — 11 of 14 exit criteria met, 3 partial.** Everything that can be verified
-in this environment has been, against a real PostgreSQL 16.13 cluster: 17 gates green, 459 tests.
+**SUBSTANTIALLY COMPLETE — 10 of the 11 verification steps pass against a real database.**
+Everything verifiable in this environment has been verified, against a real PostgreSQL 16.13
+cluster: 19 gates green, 459 unit/RLS tests (none skipped — `RLS_TESTS_REQUIRED=1`), e2e 13 passed
+and 4 `fixme`.
 
-**The three gaps, stated plainly so nobody has to rediscover them:**
+### The 11 verification steps, as actually run
 
-1. **`tests/e2e/studio-access.spec.ts` does not exist** (verification step 6). It needs a running
-   app signing in against real Supabase Auth. This sandbox cannot reach `*.supabase.co`.
-2. **The audit trail is not verified end to end** (step 8), blocked on the same thing.
-3. **A refusal writes TWO audit rows.** `withPermission()` logs `ERROR` alongside the explicit
-   `DENIED` written by the last-owner handler, and it takes no entity parameter so it cannot name
-   the record touched. Step 8 expects one row naming the target. This is a known defect, not an
-   unknown — fix it in Phase 05 when the Studio shell gives `withPermission` a place to learn the
-   entity from.
+| # | Result | Note |
+|---|--------|------|
+| 1 | PASS | `db:reset` then `check-rls` exits 0; 12 tables, all `rowsecurity`, 51 policies |
+| 2 | PASS | Six roles × five tables, allow/deny matches the matrix |
+| 3 | PASS | Shape B verified on all four join tables; a Shape-A policy pasted on does fail with `column "status" does not exist` |
+| 4 | PASS | The tampered `0011` was rejected by `check-rls` naming the table and both role sets; reverted |
+| 5 | PASS | anon sees `PUBLISHED` only; insert refused; `staff_profiles` / `content_seed_runs` / `audit_logs` return zero rows |
+| 6 | **PARTIAL** | The unauthenticated half passes (13 tests). The authenticated half is `test.fixme` — see below |
+| 7 | PASS | Zero hits for `service_role` / `SUPABASE_SERVICE_ROLE_KEY` in `.next/static` |
+| 8 | **BLOCKED** | Needs a real session in the Studio UI. See below |
+| 9 | PASS | The sole owner cannot be demoted — the trigger raises with `constraint = staff_profiles_last_owner`, and `isLastOwnerRefusal()` is unit-tested against both error shapes |
+| 10 | PASS | `update audit_logs` as `authenticated` is refused at the privilege level, not merely unpolicied |
+| 11 | PASS | No stale `audit_logs` references outside `docs/requirements/` |
+
+**Why 6 and 8 are not closed, precisely.** Both need a *real Supabase session*. A forged cookie is
+refused by `getUser()` — which is the reason `getUser()` is used rather than `getSession()`, so this
+is the guard working, not an obstacle to route around. No amount of local PostgreSQL substitutes for
+the auth server. The four unproved cases are `test.fixme` in the spec rather than omitted, so they
+appear in every test report instead of only in this file.
+
+What those cases would prove IS proved one layer down: the six-role matrix is exercised by the RLS
+suite against a real PostgreSQL. What is unproved is the seam between a browser session and that
+layer — not the layer.
+
+### Carried into Phase 05
+
+**A refusal writes TWO audit rows.** `withPermission()` logs `ERROR` alongside the explicit `DENIED`
+written by the last-owner handler, and it takes no entity parameter so it cannot name the record
+touched. Step 8 is worded against one row naming the target. A known defect, not an unknown — fix it
+in Phase 05, when the Studio shell gives `withPermission` somewhere to learn the entity from.
 
 **RLS became testable here, contrary to what Phase 03 concluded.** Supabase's policies rest on
 ordinary Postgres roles plus `auth.uid()` reading a per-transaction GUC, all reproducible on a plain
@@ -233,7 +318,11 @@ on `/studio` rather than a route segment.
 
 ## Next Exact Action
 
-**Phase 05 — Studio Foundation.** Read `docs/project/phases/PHASE-05-09.md` §PHASE 05.
+**Finish Phase 05.** Read `docs/project/phases/PHASE-05-09.md` §PHASE 05, then work the seven
+unbuilt items listed under *Current Phase* above, in that order. Items 1–3 and 5 are unblocked;
+item 4 needs Supabase.
+
+Previously recorded as the phase-start list, and still true of the items not yet done:
 
 Phase 05 consumes `getStaffSession()`, `requirePermission()` and `lib/auth/nav-visibility.ts` from
 Phase 04 and builds the Studio chrome itself. Four things it should pick up on the way:
@@ -241,14 +330,15 @@ Phase 04 and builds the Studio chrome itself. Four things it should pick up on t
 1. **Fix the double audit row.** Give `withPermission()` an entity parameter and stop it writing an
    `ERROR` row for a refusal that already wrote `DENIED`. Verification step 8 of Phase 04 is worded
    against one row naming the target.
-2. **Write `tests/e2e/studio-access.spec.ts`** once a Supabase project is reachable: anonymous
-   `/studio/catalog/products` redirects to `/studio/login?next=…`, a `viewer` sees the page with
-   write controls absent and a direct POST returns 403, a `merchandiser` succeeds.
+2. **Un-`fixme` the four authenticated cases in `tests/e2e/studio-access.spec.ts`** once a Supabase
+   project is reachable: a `viewer` sees the page with write controls absent and a direct POST
+   returns 403, a `merchandiser` succeeds, a suspended account is treated as signed out. The file
+   exists and its unauthenticated half passes; only these four are annotated.
 3. **`app/(studio)/layout.tsx` does not exist**, so the login page currently renders on the root
    layout's `rv-scheme-deep` ground. It uses only semantic tokens, so it inherits `rv-scheme-bone`
    unchanged once the Studio shell adds that layout.
-4. **`middleware.ts` is deprecated in Next 16** in favour of `proxy.ts`. The rename needs a D2
-   amendment, not a silent divergence.
+4. ~~`middleware.ts` deprecation~~ — **done**, amendment A6. The file is `proxy.ts`, its export is
+   `proxy`, and `npm run security:check-proxy` refuses a return of the old name.
 
 ## Relevant Documentation
 
@@ -269,14 +359,29 @@ out the way a hosted Supabase project is** (`npm run db:check-hosted-layout` —
 Phase 03 set was found to be un-appliable to a real project).
 
 **They have still NEVER been applied to the hosted Supabase project** — this sandbox cannot reach
-`*.supabase.co` or Postgres 5432/6543. From a machine with ordinary egress:
+`*.supabase.co` (the proxy answers 403 to CONNECT) and Postgres 5432/6543 are blocked outright.
 
-```bash
-export DATABASE_URL="<the hosted project's direct 5432 URL>"
-npm run db:reset -- --allow-remote     # DROPS EVERYTHING — only correct on an empty project
-npm run seed:content
-npm run auth:check-rls                 # proves the policies landed as the matrix says
-```
+**The route is `.github/workflows/db-migrate.yml`** — Actions → *Database migrate (hosted)* →
+Run workflow. A GitHub-hosted runner has ordinary egress; that is the whole reason it exists. It is
+`workflow_dispatch` only, so it costs Actions minutes only when someone runs it deliberately.
+
+- Requires the repository secret **`SUPABASE_DB_URL`**, set to the **Session Pooler** string from
+  Supabase → Project Settings → Database.
+- `mode: plan` (the default) reports what would apply and changes nothing. `mode: apply`
+  additionally requires typing the project ref, which is checked against the secret.
+
+**Do NOT use `db:reset --allow-remote`**, which earlier revisions of this file suggested. It DROPS
+SCHEMA PUBLIC. The correct script is `db:migrate`, which is forward-only, records a SHA-256 per
+migration, and refuses if a migration was edited after being applied or if the database carries a
+version this repository does not have.
+
+The pooler string is not a preference. `db.<ref>.supabase.co` is IPv6-only and GitHub runners have
+no IPv6 route, so it times out looking like a firewall problem; `scripts/db/migrate.mjs` rejects
+that hostname by name rather than letting anyone spend an afternoon on it. Port 6543 (transaction
+mode) cannot hold the session DDL needs — use 5432.
+
+After a successful apply, still to run against the project: `npm run seed:content` and
+`npm run auth:check-rls`.
 
 Note `supabase/local/00-auth-shim.sql` is applied by `db:reset` and is LOCAL ONLY — it stands in for
 roles, grants and `auth.uid()` that Supabase provisions itself. Applying it to a hosted project would

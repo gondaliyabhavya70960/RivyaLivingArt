@@ -852,7 +852,7 @@ created now or ever; this authentication system exists for staff only.
   shape or carries a deviation documented in this phase and in `DATA_MODEL.md`.
 - `lib/auth/table-permissions.ts`: the single declaration of which permission governs reads and
   writes on each table, so the policy role lists and the permission matrix cannot drift apart.
-- Server-side permission re-checks: middleware redirects, but never authorises.
+- Server-side permission re-checks: `proxy.ts` redirects, but never authorises.
 - `audit_logs`: append-only, insert on every privileged mutation and every denial.
 - The Studio login, sign-out and session-expiry surfaces. `/studio/login` is not in the fixed D4 map
   — amendment **A2·b** (see the preamble) adds it and must be merged before this phase starts.
@@ -883,7 +883,7 @@ created now or ever; this authentication system exists for staff only.
 | Guards | `lib/auth/require.ts` | `requirePermission()`, `withPermission()`, `requireRole()` |
 | Nav visibility | `lib/auth/nav-visibility.ts` | maps a role to the D4 routes it may see; consumed by Phase 05 |
 | Audit writer | `lib/auth/audit.ts` | `writeAudit()` + `withAudit()` server-action wrapper |
-| Middleware | `middleware.ts` | matcher `/studio/:path*` minus `/studio/login`; redirect only |
+| Proxy (A6) | `proxy.ts` | matcher `/studio/:path*` minus `/studio/login`; redirect only |
 | Login page | `app/(studio)/studio/login/page.tsx` | Unauthenticated route, added to the D4 map by amendment **A2·b**. Contains no copy literal — every string resolves through the module below |
 | Studio copy constants | `components/studio/strings.ts` | The `studio.login.*` keys, typed, with the requirement §38 wording as their values. Phase 05 extends the same module for the rest of the Studio chrome; Phase 09 replaces every lookup with a `global_content` row in the `STUDIO_HELP` group, at which point the copy becomes Studio-editable |
 | Sign-out handler | `app/api/auth/sign-out/route.ts` | POST only, clears session, writes audit row |
@@ -1118,7 +1118,7 @@ POST-only with an origin check.
 | Risk | Mitigation |
 |---|---|
 | Service-role key reaches the browser bundle | `lib/supabase/admin.ts` starts with `import 'server-only'`; a post-build script greps `.next/static/**` for the key name and any `service_role` JWT shape and fails the build |
-| Middleware mistaken for authorisation | Middleware only redirects unauthenticated requests; `requirePermission()` in the page body is the authorisation. A lint rule fails any `page.tsx` under `app/(studio)/studio/**` that does not call `requirePermission` or `requireRole` |
+| The proxy mistaken for authorisation | `proxy.ts` only redirects unauthenticated requests; `requirePermission()` in the page body is the authorisation. A lint rule fails any `page.tsx` under `app/(studio)/studio/**` that does not call `requirePermission` or `requireRole` |
 | RLS infinite recursion via `staff_profiles` | Helpers are `security definer` with a pinned `search_path`; `staff_profiles` has its own non-recursive policies (self-select, owner/admin manage) |
 | Permission matrix in code drifts from role checks in SQL | `scripts/auth/gen-role-sql.ts` generates the SQL role list; CI regenerates and diffs |
 | A new table ships without RLS | `scripts/auth/check-rls.ts` runs in CI against the migrated database and fails on `rowsecurity = false` or zero policies |
@@ -1211,11 +1211,32 @@ POST-only with an origin check.
       `docs/architecture/DATA_MODEL.md` documents `staff_profiles` and `audit_logs`.
       *SECURITY.md §6.5 also records the three ways an RLS test lies and what stops each.*
 - [~] D9 ten-point contract satisfied.
-      *Nine of ten. **"Relevant tests run" is partial**: the e2e Studio-access spec
-      (`tests/e2e/studio-access.spec.ts`, verification step 6) is NOT written — it needs a running
-      app against real Supabase Auth, and this sandbox cannot reach `*.supabase.co`. Verification
-      step 8 (audit rows from a real role change) is blocked on the same thing. Both are carried
-      into Phase 05 with the double-audit-row defect above.*
+      *Nine of ten. **"Relevant tests run" is partial.** `tests/e2e/studio-access.spec.ts` now
+      exists and its unauthenticated half passes — 13 tests covering the redirect from six Studio
+      paths, the login page without JavaScript, the open-redirect guard and the sign-out route's
+      method and origin checks. The four cases needing a real session are `test.fixme`, so they are
+      reported by every run rather than recorded only in a document. Verification step 8 (audit rows
+      from a real role change) is blocked on the same thing. Both carry into Phase 05 with the
+      double-audit-row defect above.*
+
+**Verification run, 2026-09-08.** Ten of the eleven steps pass against a real PostgreSQL 16.13
+cluster. Step 6 is partial and step 8 is blocked, both on the same cause: a real Supabase session
+cannot be obtained without the auth server, and a forged cookie is refused by `getUser()` — which
+is why `getUser()` is used rather than `getSession()`, so this is the guard working rather than an
+obstacle to route around. The per-role authorisation those steps would cover is proved one layer
+down by the 62 RLS tests; what is unproved is the seam between a browser session and that layer.
+
+Two corrections to the results as first recorded, both mine rather than the code's:
+
+- **Step 6's open-redirect assertion was wrong.** It asserted `evil.example` was absent from the
+  page. Next serialises the request URL into its RSC flight payload, so the string is present
+  whatever the application does with it — the framework echoing the request, not the application
+  trusting it. The hidden `next` field the form would submit read `/studio`, i.e. the guard had
+  collapsed the hostile value correctly the whole time. The test now asserts that field, and a
+  companion case proves a legitimate path survives untouched: a guard that rejects everything looks
+  identical to a working one if only hostile input is tested.
+- **Step 1's `db:reset` is not the script for a real database.** It drops schema `public`.
+  `npm run db:migrate` (added at close-out) is the forward-only path — see DEPLOYMENT.md §5.1.1.
 
 ---
 

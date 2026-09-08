@@ -6,6 +6,120 @@ Every phase adds an entry; see `docs/architecture/CANONICAL-DECISIONS.md` D9 for
 
 ## [Unreleased]
 
+### Phase 05 — Studio Foundation — IN PROGRESS
+
+The navigation spine, the shell, the primitives and the palette. Not complete: see *Not done* below.
+
+**Added**
+
+- **`lib/auth/studio-nav.ts` — the D4 route map, written down once.** 8 groups, 58 leaves, each with
+  a label *key*, a read permission, a write permission where one applies, and the phases that build
+  it. `nav-visibility.ts` derives from it; the 58 `page.tsx` files are generated from it.
+  `tests/unit/studio-nav.test.ts` **parses** the D4 block out of `CANONICAL-DECISIONS.md` and
+  requires manifest ↔ contract ↔ disk to agree, in both directions. A page on disk the manifest does
+  not name fails — that one would be unreachable from the sidebar and governed by no permission.
+- **The shell.** `app/(studio)/layout.tsx` (the bone ground, a Phase 04 carry-forward) and
+  `app/(studio)/studio/(shell)/layout.tsx`. `(shell)` is a route group because `/studio/login` is a
+  child of `/studio`: a layout at `studio/layout.tsx` would put a permission check in front of
+  signing in, which is a redirect loop that reads as "my password is wrong".
+- **`/studio` Overview** with D4's three tabs as query parameters rather than client state, so a tab
+  can be linked, reloaded and reached with Back.
+- **Migrations `0020` and `0021`** — `activity_events`, `studio_preferences`, and their generated
+  policies. Policy migrations are now **one file per phase**: a single growing file would be
+  rewritten by every later phase, which `db:migrate` refuses.
+- **Fifteen Studio primitives**, each built around the distinction it exists to preserve. Documented
+  in `STUDIO_GUIDE.md` §4.1.
+- **The ⌘K palette**, its provider registry (20 results / 200 ms per provider, enforced by the
+  registry) and `app/api/studio/search/route.ts`.
+- **`no-unused-vars`.** Found three dead bindings, one of which documented a rejected approach next
+  to the code that replaced it, then caught a fourth within the hour.
+
+**Fixed**
+
+- **`withPermission` wrote TWO audit rows per outcome**, and names the record now. Phase 04
+  verification step 8 is worded against one row; it could not be run, and while it could not be run
+  the wrapper was writing two of each.
+- **`check-migrations` demanded dense numbering** and would have failed every phase from 05 onward.
+  DATA_MODEL §12 allocates numbers in per-phase blocks. It now checks that a number is *allocated*.
+- **`check-utilities` reported `content-type` as a dead utility.** Two candidate fixes were measured
+  and rejected before the third shipped — the first would have gutted the gate.
+
+**Corrected in the specification**
+
+- **Phase 05 verification step 7 cannot pass as written.** It expects a permission error from
+  `select count(*) from activity_events` as anon. RLS denial is zero rows, not an exception, and `0`
+  on an empty table is the same `0` — so the step is satisfied identically by a locked table, an
+  empty table, and a table with RLS off. Replaced by `tests/unit/rls/phase05.test.ts`, which seeds a
+  row first so that zero means *refused*.
+
+**Not done**
+
+- `tests/e2e/studio-rbac.spec.ts` — the per-role route matrix. Needs real sessions, so it needs a
+  reachable Supabase project, exactly as Phase 04 step 6 does.
+- The top bar (user menu, role badge, environment badge) and a visible ⌘K affordance.
+- `studio_preferences` has no reader or writer: the table and its self-scope are verified, but
+  nothing collapses a sidebar or pins a route yet.
+- Visual baselines for the shell. The unauthenticated Studio surfaces pass at all eight FEAT §45
+  widths (104 assertions); the shell itself cannot be reached without a session.
+
+### Phase 04 close-out — the proxy convention, and a runner that can touch a real database
+
+**Changed**
+
+- **`middleware.ts` is now `proxy.ts` (amendment A6).** Next 16 deprecated the `middleware` file
+  convention. Taken now rather than carried, because Next no longer *reads* `middleware.ts` and
+  does not warn about a file it never opens: restoring one from an older document or a stale branch
+  would leave every Studio route reachable with no session, a green build, and nothing saying so.
+  The export renames; the matcher, the behaviour and A2·b are unchanged. Next's build output now
+  reports `Proxy (Middleware)` in its route table, which is what confirms the file is registered.
+- Every document naming the file is corrected, **including the unbuilt Phase 41 plans** that put
+  response headers and the `request_id` there. Leaving those would plant the trap rather than
+  describe it. `docs/requirements/**` stays read-only history.
+
+**Added**
+
+- **`scripts/db/migrate.mjs` (`npm run db:migrate`) — forward-only, and safe to point at a real
+  database.** `db:reset` drops schema `public`, so nothing in the repository could migrate the
+  hosted project without destroying it. The new runner records a SHA-256 per migration and refuses
+  two things outright: a migration **edited after it was applied** (the database holds the old
+  definition while the repository shows the new one, and every run reports "0 pending"), and a
+  version present in the database but absent from the repository. Each migration and its ledger row
+  commit in **one transaction**, so a failure leaves neither.
+  It deliberately does **not** apply `supabase/local/**` — that shim redefines `auth.uid()` and
+  re-grants roles Supabase manages, which on a live project would replace real authentication with
+  a local imitation.
+- **`.github/workflows/db-migrate.yml`** applies it to hosted Supabase from a GitHub runner, which
+  has the outbound network access this sandbox lacks. `workflow_dispatch` only — no push, PR or
+  schedule trigger — so it spends Actions minutes only when someone runs it deliberately. Mode
+  defaults to `plan`; `apply` additionally requires typing the project ref, compared against the ref
+  parsed from the secret so a dispatch at the wrong project fails before any SQL runs.
+- **`scripts/security/check-proxy.mjs` (`npm run security:check-proxy`)** refuses a
+  `middleware.{ts,js}` anywhere Next would once have found one, an export still named `middleware`,
+  and a missing `config`. All four refusals verified by breaking the file four ways.
+- Two CI steps: the migration runner is exercised against its own throwaway database (plan changes
+  nothing → apply → second run is a no-op → an edited migration is refused), and the proxy
+  convention is checked.
+
+**Fixed**
+
+- **The open-redirect e2e assertion was wrong, not the guard.** It asserted `evil.example` was
+  absent from the page; Next serialises the request URL into its RSC flight payload, so the string
+  is present whatever the app does with it. That is the framework echoing the request, not the
+  application trusting it. The test now asserts the hidden `next` field the form would submit, and
+  a companion test proves a legitimate path passes through untouched — a guard that rejects
+  everything looks identical to a working one if only hostile input is tested.
+- `lib/supabase/server.ts` claimed "Phase 04 adds that middleware", which had been true and no
+  longer was.
+
+**Still blocked, and now blocked twice over**
+
+- The hosted Supabase project has **still never been migrated**. This sandbox cannot reach it
+  (the proxy answers 403 to CONNECT; 5432/6543 are blocked). The workflow above was built to do it
+  from a runner instead — but **GitHub Actions has still never provisioned one**: 48 runs, each
+  created with its `ubuntu-latest` label and dead 2–3 seconds later with no steps and no logs. Run
+  #48 has the same signature as run #1, *after* a payment method was added, so the payment method
+  alone did not resolve it.
+
 ### Phase 04 — Supabase Auth + RBAC + RLS — SUBSTANTIALLY COMPLETE
 
 Eleven of fourteen exit criteria met, three partial. The gaps are named under *Not done* below
@@ -25,7 +139,7 @@ cannot reach.
   `lib/auth/table-permissions.ts` maps it onto tables, and migration `0011` is GENERATED from both.
   Two drift gates: `auth:check-policies` proves the migration matches the matrix, `auth:check-rls`
   proves the database does.
-- **Studio auth surfaces**: middleware that only redirects, a login page with no copy literal in its
+- **Studio auth surfaces**: a redirect-only `proxy.ts`, a login page with no copy literal in its
   JSX, a POST-only sign-out with an Origin check, and user management where every mutation is
   permission-wrapped and audited.
 - **Four new gates**, each proved to bite: `auth:check-policies`, `auth:check-rls`,
@@ -64,15 +178,15 @@ phase that builds a profile surface.
 
 **Not done, and why**
 
-- **`tests/e2e/studio-access.spec.ts` does not exist** (verification step 6). It needs a running app
-  against real Supabase Auth; this sandbox cannot reach `*.supabase.co`.
+- **The authenticated half of verification step 6.** The spec now exists and its unauthenticated
+  half passes (13 tests); the four cases needing a real session are `test.fixme`, so they appear in
+  every test report rather than only here. A forged cookie is refused by `getUser()` — that is the
+  guard working, not an obstacle to route around.
 - **The audit trail is not verified end to end** (step 8), blocked on the same thing.
 - **A refusal writes two audit rows.** `withPermission()` logs ERROR alongside the explicit DENIED,
   and it takes no entity parameter so it cannot name the record. Step 8 expects one row naming the
   target. Carried into Phase 05.
 - **Project-level sign-up disablement is unverified** — an owner-side dashboard setting.
-- **`middleware.ts` is deprecated in Next 16** in favour of `proxy.ts`. Kept under the name D2 and
-  the phase document use; the rename wants an amendment rather than a silent divergence.
 
 
 ### Phase 03 — Supabase Database + Data Layer — COMPLETE

@@ -37,6 +37,23 @@ const ALL: readonly Role[] = ROLES
  * union of the actual names instead of `string`.
  */
 export const PERMISSION_ROLES = {
+  // Studio ----------------------------------------------------------------------------------------
+  /**
+   * May enter the Studio at all. Held by every role, and that is the point rather than an
+   * oversight: it is the permission the shell demands, so "is this person staff, active, and
+   * allowed through the front door" is asked in the same vocabulary as every other question, is
+   * refused through the same path, and is recorded in the same audit row shape. A bespoke
+   * `requireStaff()` would be a second answer to a question the matrix already answers.
+   */
+  'studio.access': ALL,
+  /**
+   * May read the Studio activity feed. Every role, because the feed is part of the Overview page
+   * that every role lands on. Distinct from `operations.audit.read` (owner and admin only): that
+   * is the authorisation log, this is "who changed what", and merging them would put the security
+   * log in front of a viewer.
+   */
+  'activity.read': ALL,
+
   // Catalogue -----------------------------------------------------------------------------------
   'catalog.read': ALL,
   'catalog.write': ['owner', 'admin', 'merchandiser'],
@@ -84,6 +101,20 @@ export const PERMISSION_ROLES = {
   'operations.logs.read': ['owner', 'admin'],
 
   // System --------------------------------------------------------------------------------------
+  /**
+   * Two READ permissions for System surfaces, added in Phase 05 because every D4 leaf needs one to
+   * be gated by — a stub with no permission is a route nobody has decided the audience for, and it
+   * would have to be invented again when Phase 38 fills it.
+   *
+   * Both are proposed with these exact role sets in STUDIO_GUIDE §2.3. Note the asymmetry, which is
+   * deliberate: the environment page reports reachability of production services, so it stays with
+   * owner and admin, while the documentation viewer is how everyone else finds out how the system
+   * works and would be useless restricted to the two roles least likely to need it. `viewer` holds
+   * neither — it sees System only for the feature-flag register, under `studio.access`.
+   */
+  'system.environment.read': ['owner', 'admin'],
+  'system.docs.read': ['owner', 'admin', 'editor', 'merchandiser', 'researcher'],
+
   'system.settings.write': ['owner', 'admin'],
   'system.flags.write': ['owner', 'admin'],
   'system.users.manage': ['owner', 'admin'],

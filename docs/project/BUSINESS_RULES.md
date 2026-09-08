@@ -146,7 +146,7 @@ seeded copy — never a raw status page.
 
 | | |
 |---|---|
-| Enforced by | **Server guard:** `lib/security/rate-limit.ts`† over `rate_limit_buckets`, called from inside `app/(site)/_actions/submit-inquiry.ts` **before** the Zod parse. Inquiry submission is a server action, not a route handler, so there is no `/api/inquiries` path for `middleware.ts` to match and the limiter returns a typed result the action turns into the SEED §49 form error |
+| Enforced by | **Server guard:** `lib/security/rate-limit.ts`† over `rate_limit_buckets`, called from inside `app/(site)/_actions/submit-inquiry.ts` **before** the Zod parse. Inquiry submission is a server action, not a route handler, so there is no `/api/inquiries` path for `proxy.ts` to match and the limiter returns a typed result the action turns into the SEED §49 form error |
 | Test | Six submissions in ten minutes: the first five persist, the sixth returns 429 with `Retry-After` and writes a `SECURITY` system log |
 
 † `lib/security/` is **not** one of the ten `lib/` domains D2 fixes, and it is not among the eight
@@ -542,7 +542,7 @@ the reverse.
 
 | | |
 |---|---|
-| Enforced by | **RLS** (coarse, role-level, in the database) **and** `requirePermission()` (fine, per action, in the server). Middleware redirects; it never authorises |
+| Enforced by | **RLS** (coarse, role-level, in the database) **and** `requirePermission()` (fine, per action, in the server). `proxy.ts` redirects; it never authorises |
 | Test | `tests/unit/rls/*.test.ts` — one authenticated client per role asserting allow/deny per table; `tests/e2e/studio-authz.spec.ts` — as `viewer`, direct POSTs to publish, bulk-apply, media-delete and role-change all return 403; a drift test asserts the generated SQL and the TypeScript union name the same permission set |
 
 ### BR-G2 — Every Studio page and every mutation re-checks server-side

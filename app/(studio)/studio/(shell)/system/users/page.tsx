@@ -2,7 +2,6 @@ import type { Metadata } from 'next'
 import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { z } from 'zod'
-import type { PostgrestError } from '@supabase/supabase-js'
 
 import { Badge, type BadgeTone } from '@/components/primitives/Badge'
 import { Button } from '@/components/primitives/Button'
@@ -16,7 +15,8 @@ import { Surface } from '@/components/primitives/Surface'
 import { Text } from '@/components/primitives/Text'
 import { VisuallyHidden } from '@/components/primitives/VisuallyHidden'
 import { t, type StudioStringKey } from '@/components/studio/strings'
-import { writeAudit } from '@/lib/auth/audit'
+import { markAudited, writeAudit } from '@/lib/auth/audit'
+import { logActivity } from '@/lib/logging/activity'
 import { ROLES, roleHasPermission, type Role } from '@/lib/auth/permissions'
 import { inviteStaffMember } from '@/lib/auth/provisioning'
 import { requirePermission, withPermission } from '@/lib/auth/require'
@@ -33,7 +33,7 @@ import {
 /**
  * /studio/system/users — who may sign in, as what, and whether they still may.
  *
- * THE FIRST LINE OF THE BODY IS THE AUTHORISATION. Middleware redirects an unauthenticated
+ * THE FIRST LINE OF THE BODY IS THE AUTHORISATION. `proxy.ts` redirects an unauthenticated
  * request and decides nothing else; a Server Action reaches the server without passing through a
  * page matcher at all. So the page checks, every action checks again through withPermission(), and
  * RLS refuses underneath both.
@@ -56,15 +56,6 @@ const ENTITY = 'staff_profiles'
 /** `staff_profiles.status` is text plus a check constraint, so the allowed set lives here too. */
 const STATUSES = ['INVITED', 'ACTIVE', 'SUSPENDED'] as const
 type StaffStatus = (typeof STATUSES)[number]
-
-/**
- * SQLSTATE for the `enforce_last_owner` refusal (migration 0009 raises `check_violation`).
- *
- * The only other check constraint on this table is `staff_profiles_status_allowed`, and no input
- * that fails it survives the schemas below — so a 23514 arriving here is the owner rule, and
- * turning it into its own sentence is safe rather than a guess.
- */
-const LAST_OWNER_CODE = '23514'
 
 const ROLE_LABEL: Record<Role, StudioStringKey> = {
   owner: 'studio.users.roleOwner',
@@ -222,7 +213,11 @@ async function assertMayGrantOwner(
     ...(entityId === undefined ? {} : { entityId }),
     summary: `role "${session.role}" attempted to grant the owner role`,
   })
-  throw new RefusedError('owner-grant', 'granting owner requires system.owner.transfer')
+  // Marked for the same reason as the last-owner refusal: this DENIED row IS the record of the
+  // event, and the wrapper must not add a second one describing it less well.
+  throw markAudited(
+    new RefusedError('owner-grant', 'granting owner requires system.owner.transfer'),
+  )
 }
 
 /**
@@ -232,10 +227,10 @@ async function assertMayGrantOwner(
  * decision the database has already made and gives it words. Left uncaught it is a 500 on a button
  * press, which tells the person neither what happened nor what to do instead.
  *
- * TWO ROWS LAND FOR ONE REFUSAL, DELIBERATELY: the DENIED row below, which names the target and
- * the rule, and withPermission()'s own ERROR row for the action that did not complete. The wrapper
- * takes no entity, so it cannot say which record was involved; until its signature widens, the row
- * that carries that is written here.
+ * ONE ROW LANDS FOR ONE REFUSAL. The DENIED row below names the target and the rule, and the
+ * returned error is marked as already recorded so `withPermission()` does not add a second, poorer
+ * ERROR row for the same event. It used to, and two disagreeing rows for one refusal made every
+ * count taken from `audit_logs` wrong.
  */
 /**
  * Turn a failed staff-profile write into something a person can act on, and record the refusal.
@@ -261,7 +256,9 @@ async function refusalFor(
       entityId,
       summary: 'refused by enforce_last_owner: the project would be left with no active owner',
     })
-    return new RefusedError('last-owner', 'the last active owner cannot be demoted or suspended')
+    return markAudited(
+      new RefusedError('last-owner', 'the last active owner cannot be demoted or suspended'),
+    )
   }
 
   // Deliberately incurious about the detail: a database message can quote the row it refused, and
@@ -279,8 +276,14 @@ async function readProfileState(
 }
 
 const inviteStaff = withPermission(
-  'system.users.manage',
-  'system.users.invite',
+  {
+    permission: 'system.users.manage',
+    action: 'system.users.invite',
+    entityType: ENTITY,
+    // No id to name yet — the account does not exist until the action creates it, so the row the
+    // action writes below is the one that can carry it.
+    recordsOwnOutcome: true,
+  },
   async (
     session,
     input: z.infer<typeof inviteSchema>,
@@ -312,13 +315,31 @@ const inviteStaff = withPermission(
       after: { role: input.role, status: 'INVITED' },
     })
 
+    // The feed, which is a different record for a different reader. audit_logs answers "was this
+    // allowed" and is owner/admin only; this is "who changed what", visible to every staff role.
+    // No email here either — the audit row above already declines to hold a second copy of it.
+    await logActivity({
+      action: 'staff.invited',
+      actorId: session.userId,
+      actorRole: session.role,
+      entityType: ENTITY,
+      entityId: result.userId,
+      entityLabel: input.displayName === '' ? null : input.displayName,
+      summary: `Invited a new staff member as ${input.role}`,
+    })
+
     return 'invited'
   },
 )
 
 const changeRole = withPermission(
-  'system.users.manage',
-  'system.users.role.change',
+  {
+    permission: 'system.users.manage',
+    action: 'system.users.role.change',
+    entityType: ENTITY,
+    entityId: (input: z.infer<typeof roleChangeSchema>) => input.userId,
+    recordsOwnOutcome: true,
+  },
   async (session, input: z.infer<typeof roleChangeSchema>): Promise<NoticeCode> => {
     const supabase = await createClient()
     const before = await readProfileState(supabase, input.userId)
@@ -348,13 +369,30 @@ const changeRole = withPermission(
       after: { role: input.role },
     })
 
+    await logActivity({
+      action: 'staff.role-changed',
+      actorId: session.userId,
+      actorRole: session.role,
+      entityType: ENTITY,
+      entityId: input.userId,
+      summary:
+        before === null
+          ? `Set the role to ${input.role}`
+          : `Changed the role from ${before.role} to ${input.role}`,
+    })
+
     return 'role-changed'
   },
 )
 
 const changeStatus = withPermission(
-  'system.users.manage',
-  'system.users.status.change',
+  {
+    permission: 'system.users.manage',
+    action: 'system.users.status.change',
+    entityType: ENTITY,
+    entityId: (input: z.infer<typeof statusChangeSchema>) => input.userId,
+    recordsOwnOutcome: true,
+  },
   async (session, input: z.infer<typeof statusChangeSchema>): Promise<NoticeCode> => {
     const supabase = await createClient()
     const before = await readProfileState(supabase, input.userId)
@@ -374,6 +412,18 @@ const changeStatus = withPermission(
       entityId: input.userId,
       ...(before === null ? {} : { before: { status: before.status } }),
       after: { status: input.status },
+    })
+
+    await logActivity({
+      action: 'staff.status-changed',
+      actorId: session.userId,
+      actorRole: session.role,
+      entityType: ENTITY,
+      entityId: input.userId,
+      summary:
+        before === null
+          ? `Set the status to ${input.status}`
+          : `Changed the status from ${before.status} to ${input.status}`,
     })
 
     return input.status === 'ACTIVE' ? 'activated' : 'suspended'

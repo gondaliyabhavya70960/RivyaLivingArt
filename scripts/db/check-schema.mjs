@@ -116,6 +116,14 @@ const EXPECTED = {
   //   it would imply a publication workflow for the security log.
   staff_profiles: ['role', 'status', 'created_at', 'updated_at', 'updated_by'],
   audit_logs: ['occurred_at', 'actor_user_id', 'actor_role', 'action', 'result'],
+
+  // Phase 05.
+  //   activity_events is append-only, so §1.2 exempts it from Tier A outright: an `updated_at` on
+  //   a row that must never be updated is a promise the table cannot keep.
+  //   studio_preferences is Tier A only. It is per-user chrome state, never published and never
+  //   seeded, so Tiers B and C would both be fictions.
+  activity_events: ['occurred_at', 'actor_id', 'actor_role', 'action', 'metadata'],
+  studio_preferences: ['user_id', 'sidebar_collapsed', ...TIER_A],
 }
 
 const columnRows = q(`

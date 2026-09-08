@@ -14,7 +14,7 @@ import { Text } from '@/components/primitives/Text'
 import { writeAudit } from '@/lib/auth/audit'
 import { getStaffSession } from '@/lib/auth/session'
 import { createClient } from '@/lib/supabase/server'
-import { resolveNextPath, STUDIO_HOME } from '@/lib/auth/next-path'
+import { resolveNextPath } from '@/lib/auth/next-path'
 
 /**
  * The only unauthenticated Studio route (D4, amendment A2·b).
@@ -73,7 +73,7 @@ function redirectTo(path: string): never {
  *
  * The staff check happens here as well as on the destination page for one reason: a person who
  * authenticates but holds no ACTIVE staff profile must not keep a session. Leaving them signed in
- * would give them a cookie that opens nothing, and a redirect loop through middleware to prove it.
+ * would give them a cookie that opens nothing, and a redirect loop through `proxy.ts` to prove it.
  */
 async function signInAction(formData: FormData): Promise<void> {
   'use server'

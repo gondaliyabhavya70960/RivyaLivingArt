@@ -160,7 +160,7 @@ feature flags, system logs).
   | Draft preview routes | none — `noindex, nofollow` and blocked in `robots.txt` |
   | An entity with an owner-set `seo_entries.canonical_url` | that value, absolute, validated as same-origin |
 
-- **Robots directives by route class.** `X-Robots-Tag` is set in `middleware.ts` for whole
+- **Robots directives by route class.** `X-Robots-Tag` is set in `proxy.ts` for whole
   subtrees; per-page `robots` fields come from `seo_entries.robots`.
 
   | Route class | Directive | Reason |
@@ -227,7 +227,7 @@ feature flags, system logs).
   | resin preservation | `/collection/preservation` | |
   | custom furniture India · resin furniture India | `/contact` | **OWNER_VERIFICATION_REQUIRED** — geography |
 
-- **Redirects without middleware cost.** `seo_redirects` holds `from_path`, `to_path`, `status_code`
+- **Redirects without proxy cost.** `seo_redirects` holds `from_path`, `to_path`, `status_code`
   (301/308), `reason`, `created_by`. `renderCmsPage` and each dynamic route consult it **only on the
   path that would otherwise call `notFound()`**, so the happy path pays nothing. A slug change in
   Studio offers "create a redirect from the old slug" pre-ticked. Loop and chain detection runs at
@@ -657,7 +657,7 @@ the same surfaces, and because separating them invites one of the two to be defe
   **extended here** to cover `audit_logs` `before`/`after` blobs and every server-action error path,
   with the never-expose name list above as its source; (4) `gitleaks` scans history and the diff in
   CI. This phase does not re-create the redactor — Phase 38 owns it and Phase 41 widens its reach.
-- **Response headers**, set in `middleware.ts` for every response and asserted by e2e:
+- **Response headers**, set in `proxy.ts` for every response and asserted by e2e:
 
   | Header | Value |
   |---|---|
@@ -697,8 +697,8 @@ the same surfaces, and because separating them invites one of the two to be defe
   the code the previous phases specify. **Inquiry submission has no route handler**: it is the server
   action `app/(site)/_actions/submit-inquiry.ts` (`PHASE-16-22.md`, "the only public write path"), so
   `lib/security/rate-limit.ts` is called from inside the action *before* the Zod parse rather than
-  from `middleware.ts`, and the limiter returns a typed result the action turns into the SEED §49
-  form error — there is no `/api/inquiries` for `middleware.ts` to match. **The Studio signing route
+  from `proxy.ts`, and the limiter returns a typed result the action turns into the SEED §49
+  form error — there is no `/api/inquiries` for `proxy.ts` to match. **The Studio signing route
   is `app/api/media/sign`** (`PHASE-05-09.md` deliverable; `ARCHITECTURE.md`), not
   `/api/uploads/sign`, which appears three times in `docs/ops/SECURITY.md` and once each in
   `docs/ops/ENVIRONMENT.md` and `docs/ops/DEPLOYMENT.md`. Phase 41 corrects the three `SECURITY.md`
@@ -772,7 +772,7 @@ the same surfaces, and because separating them invites one of the two to be defe
 | Artefact | Path | Notes |
 |---|---|---|
 | Migrations | `supabase/migrations/0390_phase41_security.sql`, `0391_phase41_a11y.sql` | `rate_limit_buckets`, `media_assets.is_decorative`, retention job metadata |
-| Middleware headers | `middleware.ts` | Nonce generation, the header table, preview `noindex` |
+| Proxy headers (A6) | `proxy.ts` | Nonce generation, the header table, preview `noindex` |
 | CSP nonce plumbing | `lib/security/csp.ts` | Nonce per request, propagated to `<Script>` and inline styles |
 | Rate limiter | `lib/security/rate-limit.ts` | Fixed window over Postgres; `ip_hash` helper |
 | Redactor (extended) | `lib/logging/redact.ts` (Phase 38) | Never-expose name list as its source; coverage widened to `audit_logs` blobs and server-action error paths |
@@ -841,7 +841,7 @@ size of the job visible.
 3. `npm start` then `curl -sI localhost:3000/` — every header in the table present with the exact value; `curl -sI localhost:3000/studio` additionally `private, no-store` and `X-Robots-Tag: noindex, nofollow`.
 4. `npx playwright test tests/e2e/security-headers.spec.ts` — CSP nonce differs per request; no inline script without a nonce; the 3D viewer loads with the flag on and produces zero CSP violations.
 5. `npx playwright test tests/e2e/studio-authz.spec.ts` — as `viewer`, direct POSTs to publish, bulk-apply, media-delete and role-change all return 403 and each writes an `audit_logs` row with `result='DENIED'`.
-6. Submit the contact form six times in ten minutes from one client, exercising the `app/(site)/_actions/submit-inquiry.ts` server action → the sixth is refused with the SEED §49 rate-limit copy and its `Retry-After` interval, and writes a `SECURITY` system log; the first five persist as `inquiries` rows. Confirm with `curl` that no `/api/inquiries` route exists (404) — the limiter lives inside the action, not in `middleware.ts`. Then POST `/api/media/sign` twenty-one times in an hour as one staff user → the twenty-first returns 429.
+6. Submit the contact form six times in ten minutes from one client, exercising the `app/(site)/_actions/submit-inquiry.ts` server action → the sixth is refused with the SEED §49 rate-limit copy and its `Retry-After` interval, and writes a `SECURITY` system log; the first five persist as `inquiries` rows. Confirm with `curl` that no `/api/inquiries` route exists (404) — the limiter lives inside the action, not in `proxy.ts`. Then POST `/api/media/sign` twenty-one times in an hour as one staff user → the twenty-first returns 429.
 7. Upload an SVG through `/studio/media/all` → rejected with a stated reason. Upload a 30 MB JPEG → rejected on size. Upload a JPEG renamed `.glb` → rejected on sniffing. Upload an SVG logo through `/studio/media/brand` → rejected with the **brand-mark format copy**, which names PNG (logo, wordmark), ICO or 512 px PNG (favicon) and 1200 × 630 PNG/JPEG (default OG); upload a 2048 px PNG logo → accepted.
 8. `npx playwright test tests/e2e/a11y/` — the full sweep: zero critical and zero serious axe violations on every public route and the seven Studio routes at 1440 px and 390 px; heading order valid on every route; every interactive target ≥ 44 × 44 at 390 px; `exceptions.json` has zero rows.
 9. `node scripts/a11y/check-contrast.mjs` — every permitted token pair meets its ratio. Darken one body-text token by 10 % and confirm failure naming the pair.
@@ -1347,7 +1347,7 @@ undone in under five minutes without data loss"**.
 **Depends on** — Phase 00 (CI, `npm run check`, `.env.example` with D8 names only), 01
 (`docs/ops/DEPLOYMENT.md` and `ENVIRONMENT.md` stubs, doc contract), 03 (migrations), 04 (auth,
 sign-up disablement), 25 (the research cron route), 38 (Environment page, system logs, retention
-crons), 39–43 (everything being deployed), 41 (headers, which are set in middleware and must be
+crons), 39–43 (everything being deployed), 41 (headers, which are set in `proxy.ts` and must be
 verified on the platform), 42 (the suite that gates a deploy).
 
 **Scope**

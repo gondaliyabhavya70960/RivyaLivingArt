@@ -307,7 +307,7 @@ foreign key, so the graph cannot be walked from a public table into research dat
 ```
 
 **Studio routes — exactly D4, no more.** Navigation is role-aware and **every page re-checks
-permission server-side**; middleware redirects but never authorises.
+permission server-side**; `proxy.ts` redirects but never authorises.
 
 ```
 /studio                       overview · analytics · activity

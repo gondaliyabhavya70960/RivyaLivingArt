@@ -181,21 +181,79 @@ tabs). Stubbed with an owning-phase notice: every leaf under `/studio/catalog`,
    result and `Enter` navigates there.
 6. Run any server action that calls `logActivity()` (a `studio_preferences` write is enough);
    assert a row appears in `activity_events` and in the Activity tab within one reload.
-7. `psql "$DATABASE_URL" -c "select count(*) from activity_events"` as the anon role — expect a
-   permission error, proving RLS.
+7. ~~`psql "$DATABASE_URL" -c "select count(*) from activity_events"` as the anon role — expect a
+   permission error, proving RLS.~~ **CORRECTED — this step cannot pass as written, and is replaced
+   by `tests/unit/rls/phase05.test.ts`.**
 
-**Exit criteria**
+   There is no permission error. RLS denial is ZERO ROWS, not an exception: Supabase grants `anon`
+   full DML on every table in `public`, so the grant is present and the policy simply matches
+   nothing. Run as written, the command returns `0`, and someone then has to decide whether that
+   counts as a pass.
 
-- [ ] Every D4 leaf resolves; no stub renders a bare 404 or an empty page.
-- [ ] `lib/auth/studio-nav.ts` is the only place any Studio route path is written down.
-- [ ] All six roles verified against the access matrix, in e2e, not by inspection.
-- [ ] All twelve primitives exist, are used by at least the Overview page, and are documented in `docs/studio/STUDIO_GUIDE.md`.
-- [ ] Every FEAT §17 card is present in the registry with an owning phase; none displays a number it cannot source.
-- [ ] Command palette is reachable by keyboard, closes on `Esc`, traps focus, and is announced to screen readers.
-- [ ] `activity_events` insert path is service-role only; feed reads are permission-gated.
-- [ ] Visual QA matrix (FEAT §45) passes for the shell at 1920/1440/1280/1024/768/430/390/360.
-- [ ] Phase-specific D9 evidence: docs updated = `STUDIO_GUIDE.md`, `DATA_MODEL.md`; tests run = `test:unit`, `studio-rbac.spec.ts`; next phase = 06; known issues logged in `docs/SESSION-STATE.md`.
-- [ ] All ten points of the **Shared D9 completion checklist** verified and recorded.
+   Worse, `0` on an empty table is the same `0`. The step as written is satisfied identically by a
+   correctly-locked table, an empty table, and a table with RLS switched off — the vacuous pass
+   this project has already been bitten by once (`DATA_MODEL` §1.5, and the Phase 04 harness note).
+
+   The replacement seeds a row as the table owner FIRST and proves it is visible, so a role seeing
+   zero means refused rather than absent. It also covers what the original could not: that all six
+   staff roles CAN read the feed, that a suspended one cannot, that a staff insert is refused
+   (the feed is readable by every role, so a forged "editor published X" would land in the record
+   colleagues read), and that update and delete are refused at the privilege level.
+
+**Exit criteria** — recorded 2026-09-08. `[x]` where there is evidence to point at, `[~]` where
+there is not.
+
+- [x] Every D4 leaf resolves; no stub renders a bare 404 or an empty page.
+      *58 leaves plus `/studio`, all generated from `lib/auth/studio-nav.ts`. A stub renders
+      `StudioPage` with the owning phase — never "Coming Soon" (SEED §55).*
+- [x] `lib/auth/studio-nav.ts` is the only place any Studio route path is written down.
+      *`nav-visibility.ts` derives from it rather than holding its own prefix table, and the 58
+      `page.tsx` files are generated from it. `tests/unit/studio-nav.test.ts` parses the D4 block
+      out of `CANONICAL-DECISIONS.md` and requires manifest ↔ contract ↔ disk to agree. Both
+      failure directions were provoked; a page on disk the manifest does not name fails.*
+- [~] All six roles verified against the access matrix, in e2e, not by inspection.
+      *NOT DONE. `tests/e2e/studio-rbac.spec.ts` needs a real session per role, so it needs a
+      reachable Supabase project — the same blocker as Phase 04 verification step 6. The matrix
+      itself IS verified one layer down: the RLS suite exercises all six roles against a real
+      PostgreSQL, and `visibleNav` is unit-tested per role. What is unproved is the seam between a
+      browser session and those layers.*
+- [x] All twelve primitives exist, are used by at least the Overview page, and are documented in
+      `docs/studio/STUDIO_GUIDE.md`.
+      *Fifteen, including `CommandPalette`. §4.1 documents what each is FOR — the distinction it
+      exists to preserve — rather than only listing them.*
+- [x] Every FEAT §17 card is present in the registry with an owning phase; none displays a number
+      it cannot source.
+      *All twenty, asserted by `studio-nav.test.ts`. A card whose table does not exist renders
+      "available from phase NN", and a failed count renders "could not be read" — never `0`, which
+      would assert a business fact D10 forbids.*
+- [x] Command palette is reachable by keyboard, closes on `Esc`, traps focus, and is announced to
+      screen readers.
+      *14 tests. **This one was broken and the tests found it**: `initialFocus` was never passed,
+      so ⌘K opened the palette with focus on the close button — untypable — and Escape did not
+      reach the dialog, which listens on its own container by design. Removing the fix fails three
+      tests.*
+- [x] `activity_events` insert path is service-role only; feed reads are permission-gated.
+      *`tests/unit/rls/phase05.test.ts`, against a real PostgreSQL: a staff INSERT is refused, all
+      six roles can read, a suspended one cannot, anon sees nothing, and update/delete are refused
+      at the privilege level.*
+- [~] Visual QA matrix (FEAT §45) passes for the shell at 1920/1440/1280/1024/768/430/390/360.
+      *PARTIAL. The unauthenticated Studio surfaces pass at all eight widths — `studio-access.spec.ts`
+      runs 104 assertions across them. The SHELL cannot be reached without a session, so its
+      baselines wait on the same blocker.*
+- [x] Phase-specific D9 evidence: docs updated = `STUDIO_GUIDE.md`, `DATA_MODEL.md`; next phase =
+      06; known issues logged in `docs/SESSION-STATE.md`.
+      *`DATA_MODEL.md` §4 corrected a divergence while doing this: it described
+      `activity_events.actor_role` as `text`; it is the `user_role` enum. Checked against the live
+      schema, not against the migration.*
+- [~] All ten points of the **Shared D9 completion checklist** verified and recorded.
+      *Eight of ten. "Relevant tests run" is partial for the two `[~]` rows above, and CI has never
+      executed — GitHub Actions has not provisioned a runner for any of 56 runs, so every gate
+      result recorded here comes from a local run against a real PostgreSQL 16.13 from a clean
+      `npm ci`, never from a green check.*
+
+**Phase 05 is therefore SUBSTANTIALLY COMPLETE, not complete.** The two gaps have one cause between
+them, and it is the same cause as Phase 04's: no reachable Supabase project. `dashboard_card_order`
+also has no writer — deferred deliberately, not an exit criterion.
 
 ---
 

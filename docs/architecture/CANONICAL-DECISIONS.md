@@ -29,7 +29,7 @@ gateway, no customer accounts. Conversion terminates in a persisted inquiry then
 app/
   (site)/                    public website route group
   (studio)/studio/           authenticated Studio route group
-  (studio)/studio/login/     unauthenticated sign-in surface (middleware redirect target)
+  (studio)/studio/login/     unauthenticated sign-in surface (proxy redirect target)
   api/                       route handlers (webhooks, cron, media sign)
   styles/                    tokens.css, base.css — shared by both route groups
 components/
@@ -53,6 +53,9 @@ data/higgsfield/             asset manifest + raw generation history
 docs/                        see D7
 tests/                       unit + e2e
 ```
+
+Plus, at the repository root, `proxy.ts` — the Studio's redirect-only request filter
+(amendment A6; Next 16's replacement for `proxy.ts`).
 
 **Rule:** public marketing copy never lives in JSX. Components render
 `section.heading`, never a literal headline.
@@ -162,6 +165,39 @@ Brand and editorial copy may be written; anything asserting business capability 
 `OWNER_VERIFICATION_REQUIRED`. Empty states are used instead of invented projects.
 
 ## Amendments
+
+**2026-09-08 · A6 — the Studio's auth redirect moves from `proxy.ts` to `proxy.ts` (D2).**
+
+Next 16 deprecated the `middleware` file convention and renamed it to `proxy`. Same matcher, same
+request object, same responses; the file name changes and the export renames from `middleware` to
+`proxy`.
+
+Adopted rather than deferred, for one reason: **Next does not read `proxy.ts` any more, and
+does not warn about a file it was never going to open.** That makes this the rare deprecation whose
+failure mode is silent and total — a `proxy.ts` restored from an older document or a stale
+branch leaves every Studio route reachable with no session, a green build, and no message anywhere
+saying so. Carrying the deprecated name through several more phases would have meant carrying that
+trap alongside it.
+
+- The file is `proxy.ts` at the repository root and its export is `proxy`. D2's tree is updated.
+- A2·b is unchanged and still governs: this file may only redirect. Nothing about the rename
+  loosens it, and `lib/auth/require.ts` remains the authorisation decision.
+- `scripts/security/check-proxy.mjs` (npm `security:check-proxy`, wired into CI) refuses a
+  `middleware.{ts,js}` anywhere Next would once have found one, an export still named `middleware`,
+  and a missing `config`. Behaviour is proved separately by `tests/e2e/studio-access.spec.ts`, which
+  walks six real Studio paths — the script checks the convention, the spec checks the redirect.
+- Every document naming the file is corrected, including the **unbuilt** plans in
+  `PHASE-39-46.md` that put response headers and the `request_id` there. Leaving those would plant
+  the trap rather than describe it: whoever implements Phase 41 reads the plan, creates
+  `proxy.ts`, and ships headers that are never set. `docs/requirements/**` is the one
+  exception — CLAUDE.md makes it read-only history, and it is superseded by this amendment, not
+  edited.
+
+The word "middleware" is corrected in prose too, not only in filenames. That is not tidying: Next
+renamed the convention *because* the term makes people reach for Express semantics, and a codebase
+that keeps saying "middleware redirects" sends the next reader looking for a `middleware.ts` that
+must not exist. The two places the old word survives on purpose are amendment **A2·b** below, which
+is a dated record of what was decided and when, and `docs/requirements/**`.
 
 **2026-09-08 · A5 — three Phase 04 resolutions, each taking the safer reading of a conflict.**
 

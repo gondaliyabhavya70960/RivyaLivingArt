@@ -10,7 +10,8 @@ import {
   rolesWithPermission,
   type Role,
 } from './permissions'
-import { canSeeRoute, visibleRoutes, ROUTE_PERMISSIONS } from './nav-visibility'
+import { canSeeRoute, visibleNav, visibleRoutes } from './nav-visibility'
+import { STUDIO_LEAVES } from './studio-nav'
 import { redact } from '../logging/redact'
 
 /**
@@ -23,8 +24,15 @@ import { redact } from '../logging/redact'
  */
 
 describe('the permission matrix', () => {
-  it('has all 25 permissions', () => {
-    expect(PERMISSIONS).toHaveLength(25)
+  it('has all 29 permissions', () => {
+    // A tripwire, not a specification. Its only job is to make a change to the matrix impossible
+    // to make accidentally: adding or removing a cell fails here and sends the author to read the
+    // assertions below, which are the ones that carry meaning.
+    //
+    // 25 at the end of Phase 04. Phase 05 adds four: `studio.access` and `activity.read` for its
+    // own surfaces, and `system.environment.read` / `system.docs.read` because every D4 leaf needs
+    // a real permission to be gated by, including the ones later phases fill.
+    expect(PERMISSIONS).toHaveLength(29)
   })
 
   it('names exactly the six D5 roles', () => {
@@ -102,10 +110,37 @@ describe('ROLE_PERMISSIONS is derived, not a second copy', () => {
     }
   })
 
-  it('gives the viewer only read-shaped permissions', () => {
+  it('gives the viewer nothing that can change anything', () => {
+    // Asserted by what the permission DOES, not by how its name ends.
+    //
+    // This read `toMatch(/\.read$/)` until Phase 05 added `studio.access` — a permission that
+    // mutates nothing but does not end in `.read`, so it failed a test whose intent it satisfied.
+    // Tightening the rule to name the mutating verbs keeps the regression this guards against (a
+    // viewer quietly gaining `catalog.write`) while no longer failing on a permission that is
+    // read-shaped in every way except spelling.
+    const MUTATING = /\.(write|publish|delete|execute|manage|transfer|confirm)$/
+
     for (const permission of ROLE_PERMISSIONS.viewer) {
-      expect(permission, `viewer holds ${permission}`).toMatch(/\.read$/)
+      expect(permission, `viewer holds ${permission}`).not.toMatch(MUTATING)
     }
+  })
+
+  it('gives the viewer read access without any Studio write permission at all', () => {
+    // The other direction, so the rule above cannot pass by the viewer holding nothing.
+    expect(ROLE_PERMISSIONS.viewer.length).toBeGreaterThan(0)
+    expect(roleHasPermission('viewer', 'catalog.read')).toBe(true)
+    expect(roleHasPermission('viewer', 'studio.access')).toBe(true)
+    expect(roleHasPermission('viewer', 'catalog.write')).toBe(false)
+    expect(roleHasPermission('viewer', 'system.users.manage')).toBe(false)
+  })
+
+  it('keeps the activity feed separate from the security log', () => {
+    // activity.read is every role; operations.audit.read is owner and admin. Merging them is a
+    // recurring temptation because both tables look like "a log", and the merge would put the
+    // authorisation log — including every DENIED row — in front of a viewer.
+    expect(isHeldByEveryRole('activity.read')).toBe(true)
+    expect(roleHasPermission('viewer', 'operations.audit.read')).toBe(false)
+    expect(roleHasPermission('editor', 'operations.audit.read')).toBe(false)
   })
 })
 
@@ -140,9 +175,41 @@ describe('nav visibility', () => {
   })
 
   it('governs every declared route by a real permission', () => {
-    for (const [route, permission] of Object.entries(ROUTE_PERMISSIONS)) {
-      expect(PERMISSIONS, route).toContain(permission)
+    for (const leaf of STUDIO_LEAVES) {
+      expect(PERMISSIONS, leaf.href).toContain(leaf.permission)
+      if (leaf.writePermission !== undefined) {
+        expect(PERMISSIONS, `${leaf.href} (write)`).toContain(leaf.writePermission)
+      }
     }
+  })
+
+  it('shows a group when ANY leaf in it is visible, not when all are', () => {
+    // The merchandiser case, which a group-level matrix gets wrong. Operations holds `audit` and
+    // `logs` (owner/admin only) alongside `data-quality`, `imports` and `exports`, which they hold.
+    const operations = visibleNav('merchandiser').find((group) => group.id === 'operations')
+
+    expect(operations, 'merchandiser cannot see Operations at all').toBeDefined()
+    const hrefs = operations?.leaves.map((leaf) => leaf.href) ?? []
+    expect(hrefs).toContain('/studio/operations/imports')
+    expect(hrefs).toContain('/studio/operations/data-quality')
+    expect(hrefs).not.toContain('/studio/operations/audit')
+    expect(hrefs).not.toContain('/studio/operations/logs')
+  })
+
+  it('never returns a group with no leaves', () => {
+    for (const role of ROLES) {
+      for (const group of visibleNav(role)) {
+        expect(group.leaves.length, `${role} sees an empty ${group.id}`).toBeGreaterThan(0)
+      }
+    }
+  })
+
+  it('shows the viewer System only for the feature-flag register', () => {
+    // STUDIO_GUIDE §2.2 records this explicitly, and records that narrowing the flags read
+    // permission was REJECTED: the register of what is switched on must not be invisible to the
+    // role most likely to be told "that feature is off".
+    const system = visibleNav('viewer').find((group) => group.id === 'system')
+    expect(system?.leaves.map((leaf) => leaf.href)).toEqual(['/studio/system/flags'])
   })
 
   it('refuses a path outside the Studio', () => {

@@ -86,7 +86,7 @@ export const STUDIO_STRINGS = {
     value: 'Please check the highlighted fields and try again.',
     contentKey: 'studio_help.login_error_fields',
   },
-  /** Shown when middleware sent a signed-out request here from a Studio route it could not serve. */
+  /** Shown when `proxy.ts` sent a signed-out request here from a Studio route it could not serve. */
   'studio.login.noticeExpired': {
     value: 'Your session has ended. Sign in again to continue.',
     contentKey: 'studio_help.login_notice_expired',
@@ -316,6 +316,565 @@ export const STUDIO_STRINGS = {
   'studio.users.noticeInvalid': {
     value: 'That request was not valid. Check the email address and the role, then try again.',
     contentKey: 'studio_help.users_notice_invalid',
+  },
+
+  /* ---------------------------------------------------------------- navigation (Phase 05) */
+  /**
+   * Sidebar labels, one per D4 group and leaf.
+   *
+   * These are interface mechanics, not marketing copy: they name a destination. They live here
+   * for the same reason as everything above — so Phase 09 can move them into `global_content`
+   * without touching `lib/auth/studio-nav.ts`, which holds the route map and must never hold
+   * wording. The manifest refers to them by key only.
+   */
+  'studio.nav.overview': {
+    value: 'Overview',
+    contentKey: 'studio_help.nav_overview',
+  },
+  'studio.nav.catalog': {
+    value: 'Catalog',
+    contentKey: 'studio_help.nav_catalog',
+  },
+  'studio.nav.catalog.products': {
+    value: 'Products',
+    contentKey: 'studio_help.nav_catalog_products',
+  },
+  'studio.nav.catalog.categories': {
+    value: 'Categories',
+    contentKey: 'studio_help.nav_catalog_categories',
+  },
+  'studio.nav.catalog.collections': {
+    value: 'Collections',
+    contentKey: 'studio_help.nav_catalog_collections',
+  },
+  'studio.nav.catalog.materials': {
+    value: 'Materials',
+    contentKey: 'studio_help.nav_catalog_materials',
+  },
+  'studio.nav.catalog.relationships': {
+    value: 'Relationships',
+    contentKey: 'studio_help.nav_catalog_relationships',
+  },
+  'studio.nav.catalog.customization-forms': {
+    value: 'Customization forms',
+    contentKey: 'studio_help.nav_catalog_customization_forms',
+  },
+  'studio.nav.catalog.bulk': {
+    value: 'Bulk',
+    contentKey: 'studio_help.nav_catalog_bulk',
+  },
+  'studio.nav.merchandising': {
+    value: 'Merchandising',
+    contentKey: 'studio_help.nav_merchandising',
+  },
+  'studio.nav.merchandising.homepage': {
+    value: 'Homepage',
+    contentKey: 'studio_help.nav_merchandising_homepage',
+  },
+  'studio.nav.merchandising.store': {
+    value: 'Store',
+    contentKey: 'studio_help.nav_merchandising_store',
+  },
+  'studio.nav.merchandising.featured': {
+    value: 'Featured',
+    contentKey: 'studio_help.nav_merchandising_featured',
+  },
+  'studio.nav.merchandising.scheduling': {
+    value: 'Scheduling',
+    contentKey: 'studio_help.nav_merchandising_scheduling',
+  },
+  'studio.nav.content': {
+    value: 'Content',
+    contentKey: 'studio_help.nav_content',
+  },
+  'studio.nav.content.pages': {
+    value: 'Pages',
+    contentKey: 'studio_help.nav_content_pages',
+  },
+  'studio.nav.content.homepage': {
+    value: 'Homepage',
+    contentKey: 'studio_help.nav_content_homepage',
+  },
+  'studio.nav.content.portfolio': {
+    value: 'Portfolio',
+    contentKey: 'studio_help.nav_content_portfolio',
+  },
+  'studio.nav.content.journal': {
+    value: 'Journal',
+    contentKey: 'studio_help.nav_content_journal',
+  },
+  'studio.nav.content.testimonials': {
+    value: 'Testimonials',
+    contentKey: 'studio_help.nav_content_testimonials',
+  },
+  'studio.nav.content.faqs': {
+    value: 'FAQs',
+    contentKey: 'studio_help.nav_content_faqs',
+  },
+  'studio.nav.content.navigation': {
+    value: 'Navigation',
+    contentKey: 'studio_help.nav_content_navigation',
+  },
+  'studio.nav.content.footer': {
+    value: 'Footer',
+    contentKey: 'studio_help.nav_content_footer',
+  },
+  'studio.nav.content.seo': {
+    value: 'SEO',
+    contentKey: 'studio_help.nav_content_seo',
+  },
+  'studio.nav.media': {
+    value: 'Media',
+    contentKey: 'studio_help.nav_media',
+  },
+  'studio.nav.media.all': {
+    value: 'All media',
+    contentKey: 'studio_help.nav_media_all',
+  },
+  'studio.nav.media.images': {
+    value: 'Images',
+    contentKey: 'studio_help.nav_media_images',
+  },
+  'studio.nav.media.videos': {
+    value: 'Videos',
+    contentKey: 'studio_help.nav_media_videos',
+  },
+  'studio.nav.media.models': {
+    value: '3D models',
+    contentKey: 'studio_help.nav_media_models',
+  },
+  'studio.nav.media.documents': {
+    value: 'Documents',
+    contentKey: 'studio_help.nav_media_documents',
+  },
+  'studio.nav.media.higgsfield': {
+    value: 'Higgsfield',
+    contentKey: 'studio_help.nav_media_higgsfield',
+  },
+  'studio.nav.media.brand': {
+    value: 'Brand',
+    contentKey: 'studio_help.nav_media_brand',
+  },
+  'studio.nav.inquiries': {
+    value: 'Inquiries',
+    contentKey: 'studio_help.nav_inquiries',
+  },
+  'studio.nav.inquiries.all': {
+    value: 'All enquiries',
+    contentKey: 'studio_help.nav_inquiries_all',
+  },
+  'studio.nav.inquiries.product': {
+    value: 'Product',
+    contentKey: 'studio_help.nav_inquiries_product',
+  },
+  'studio.nav.inquiries.commission': {
+    value: 'Commission',
+    contentKey: 'studio_help.nav_inquiries_commission',
+  },
+  'studio.nav.inquiries.consultation': {
+    value: 'Consultation',
+    contentKey: 'studio_help.nav_inquiries_consultation',
+  },
+  'studio.nav.inquiries.quote': {
+    value: 'Quote',
+    contentKey: 'studio_help.nav_inquiries_quote',
+  },
+  'studio.nav.research': {
+    value: 'Research',
+    contentKey: 'studio_help.nav_research',
+  },
+  'studio.nav.research.dashboard': {
+    value: 'Dashboard',
+    contentKey: 'studio_help.nav_research_dashboard',
+  },
+  'studio.nav.research.sources': {
+    value: 'Sources',
+    contentKey: 'studio_help.nav_research_sources',
+  },
+  'studio.nav.research.scrape': {
+    value: 'Scrape',
+    contentKey: 'studio_help.nav_research_scrape',
+  },
+  'studio.nav.research.jobs': {
+    value: 'Jobs',
+    contentKey: 'studio_help.nav_research_jobs',
+  },
+  'studio.nav.research.runs': {
+    value: 'Runs',
+    contentKey: 'studio_help.nav_research_runs',
+  },
+  'studio.nav.research.changes': {
+    value: 'Changes',
+    contentKey: 'studio_help.nav_research_changes',
+  },
+  'studio.nav.research.explorer': {
+    value: 'Explorer',
+    contentKey: 'studio_help.nav_research_explorer',
+  },
+  'studio.nav.research.large-format': {
+    value: 'Large format',
+    contentKey: 'studio_help.nav_research_large_format',
+  },
+  'studio.nav.research.compare': {
+    value: 'Compare',
+    contentKey: 'studio_help.nav_research_compare',
+  },
+  'studio.nav.research.similarity': {
+    value: 'Similarity',
+    contentKey: 'studio_help.nav_research_similarity',
+  },
+  'studio.nav.research.opportunities': {
+    value: 'Opportunities',
+    contentKey: 'studio_help.nav_research_opportunities',
+  },
+  'studio.nav.research.shortlist': {
+    value: 'Shortlist',
+    contentKey: 'studio_help.nav_research_shortlist',
+  },
+  'studio.nav.research.confirmed': {
+    value: 'Confirmed',
+    contentKey: 'studio_help.nav_research_confirmed',
+  },
+  'studio.nav.research.sheets': {
+    value: 'Sheets',
+    contentKey: 'studio_help.nav_research_sheets',
+  },
+  'studio.nav.operations': {
+    value: 'Operations',
+    contentKey: 'studio_help.nav_operations',
+  },
+  'studio.nav.operations.workflows': {
+    value: 'Workflows',
+    contentKey: 'studio_help.nav_operations_workflows',
+  },
+  'studio.nav.operations.data-quality': {
+    value: 'Data quality',
+    contentKey: 'studio_help.nav_operations_data_quality',
+  },
+  'studio.nav.operations.imports': {
+    value: 'Imports',
+    contentKey: 'studio_help.nav_operations_imports',
+  },
+  'studio.nav.operations.exports': {
+    value: 'Exports',
+    contentKey: 'studio_help.nav_operations_exports',
+  },
+  'studio.nav.operations.audit': {
+    value: 'Audit log',
+    contentKey: 'studio_help.nav_operations_audit',
+  },
+  'studio.nav.operations.logs': {
+    value: 'System logs',
+    contentKey: 'studio_help.nav_operations_logs',
+  },
+  'studio.nav.system': {
+    value: 'System',
+    contentKey: 'studio_help.nav_system',
+  },
+  'studio.nav.system.users': {
+    value: 'Users',
+    contentKey: 'studio_help.nav_system_users',
+  },
+  'studio.nav.system.settings': {
+    value: 'Settings',
+    contentKey: 'studio_help.nav_system_settings',
+  },
+  'studio.nav.system.integrations': {
+    value: 'Integrations',
+    contentKey: 'studio_help.nav_system_integrations',
+  },
+  'studio.nav.system.environment': {
+    value: 'Environment',
+    contentKey: 'studio_help.nav_system_environment',
+  },
+  'studio.nav.system.documentation': {
+    value: 'Documentation',
+    contentKey: 'studio_help.nav_system_documentation',
+  },
+  'studio.nav.system.flags': {
+    value: 'Feature flags',
+    contentKey: 'studio_help.nav_system_flags',
+  },
+
+  /* --------------------------------------------------------------------- shell (Phase 05) */
+  'studio.shell.productName': {
+    value: 'Rivya Studio',
+    contentKey: 'studio_help.shell_product_name',
+  },
+  'studio.shell.skipToContent': {
+    value: 'Skip to content',
+    contentKey: 'studio_help.shell_skip_to_content',
+  },
+  'studio.shell.primaryNavLabel': {
+    value: 'Studio sections',
+    contentKey: 'studio_help.shell_primary_nav_label',
+  },
+  'studio.shell.signOut': {
+    value: 'Sign out',
+    contentKey: 'studio_help.shell_sign_out',
+  },
+  /** Shown in place of a name for an account that has neither a display name nor an email. */
+  'studio.shell.unnamedAccount': {
+    value: 'Staff account',
+    contentKey: 'studio_help.shell_unnamed_account',
+  },
+  /* ---------------------------------------------------------------- stub notice (Phase 05) */
+  /**
+   * The words a not-yet-built surface shows.
+   *
+   * NEVER "Coming Soon" — SEED §55 forbids it, and rightly: it promises a date nobody has set. The
+   * notice names the phase that will build the surface, which is a checkable statement about this
+   * project rather than a reassurance.
+   */
+  'studio.stub.heading': {
+    value: 'Not built yet',
+    contentKey: 'studio_help.stub_heading',
+  },
+  'studio.stub.body': {
+    value:
+      'This section of the Studio has a route and a permission, so navigation never dead-ends, but nothing reads or writes here yet.',
+    contentKey: 'studio_help.stub_body',
+  },
+  /** Interpolated with the phase number by StudioPage. */
+  'studio.stub.owningPhase': {
+    value: 'Built in phase',
+    contentKey: 'studio_help.stub_owning_phase',
+  },
+  /** A page under /studio that is not in the navigation manifest. Should be unreachable. */
+  'studio.stub.unregisteredRoute': {
+    value:
+      'This route is not in the Studio navigation manifest, so nothing can link to it and no permission governs it.',
+    contentKey: 'studio_help.stub_unregistered_route',
+  },
+  'studio.shell.breadcrumbLabel': {
+    value: 'Breadcrumb',
+    contentKey: 'studio_help.shell_breadcrumb_label',
+  },
+
+  /* ------------------------------------------------------------ dashboard cards (Phase 05) */
+  'studio.card.products': {
+    value: 'Products',
+    contentKey: 'studio_help.card_products',
+  },
+  'studio.card.productsPublished': {
+    value: 'Published products',
+    contentKey: 'studio_help.card_products_published',
+  },
+  'studio.card.productsDraft': {
+    value: 'Draft products',
+    contentKey: 'studio_help.card_products_draft',
+  },
+  'studio.card.collections': {
+    value: 'Collections',
+    contentKey: 'studio_help.card_collections',
+  },
+  'studio.card.mediaAssets': {
+    value: 'Media assets',
+    contentKey: 'studio_help.card_media_assets',
+  },
+  'studio.card.productsLargeFormat': {
+    value: 'Large-format products',
+    contentKey: 'studio_help.card_products_large_format',
+  },
+  'studio.card.portfolioProjects': {
+    value: 'Portfolio projects',
+    contentKey: 'studio_help.card_portfolio_projects',
+  },
+  'studio.card.journalArticles': {
+    value: 'Journal articles',
+    contentKey: 'studio_help.card_journal_articles',
+  },
+  'studio.card.inquiriesOpen': {
+    value: 'Open enquiries',
+    contentKey: 'studio_help.card_inquiries_open',
+  },
+  'studio.card.inquiriesCommission': {
+    value: 'Commission enquiries',
+    contentKey: 'studio_help.card_inquiries_commission',
+  },
+  'studio.card.scraperRuns': {
+    value: 'Scraper runs',
+    contentKey: 'studio_help.card_scraper_runs',
+  },
+  'studio.card.competitorProductsNew': {
+    value: 'New competitor products',
+    contentKey: 'studio_help.card_competitor_products_new',
+  },
+  'studio.card.competitorProductsChanged': {
+    value: 'Changed competitor products',
+    contentKey: 'studio_help.card_competitor_products_changed',
+  },
+  'studio.card.productsAwaitingReview': {
+    value: 'Awaiting review',
+    contentKey: 'studio_help.card_products_awaiting_review',
+  },
+  'studio.card.productsShortlisted': {
+    value: 'Shortlisted products',
+    contentKey: 'studio_help.card_products_shortlisted',
+  },
+  'studio.card.productsConfirmed': {
+    value: 'Confirmed products',
+    contentKey: 'studio_help.card_products_confirmed',
+  },
+  'studio.card.mediaMissing': {
+    value: 'Missing media',
+    contentKey: 'studio_help.card_media_missing',
+  },
+  'studio.card.higgsfieldPending': {
+    value: 'Higgsfield assets pending',
+    contentKey: 'studio_help.card_higgsfield_pending',
+  },
+  'studio.card.dataQualityErrors': {
+    value: 'Data quality errors',
+    contentKey: 'studio_help.card_data_quality_errors',
+  },
+  'studio.card.systemHealth': {
+    value: 'System health',
+    contentKey: 'studio_help.card_system_health',
+  },
+  /* --------------------------------------------------------------- overview page (Phase 05) */
+  'studio.overview.tabOverview': {
+    value: 'Overview',
+    contentKey: 'studio_help.overview_tab_overview',
+  },
+  'studio.overview.tabAnalytics': {
+    value: 'Analytics',
+    contentKey: 'studio_help.overview_tab_analytics',
+  },
+  'studio.overview.tabActivity': {
+    value: 'Activity',
+    contentKey: 'studio_help.overview_tab_activity',
+  },
+  'studio.overview.tabsLabel': {
+    value: 'Overview sections',
+    contentKey: 'studio_help.overview_tabs_label',
+  },
+  /** Shown on a card whose table exists but whose count could not be read. Never rendered as 0. */
+  'studio.card.unreadable': {
+    value: 'Could not be read',
+    contentKey: 'studio_help.card_unreadable',
+  },
+  /** Shown on a card whose table does not exist yet, followed by the phase number. */
+  'studio.card.unavailable': {
+    value: 'Available from phase',
+    contentKey: 'studio_help.card_unavailable',
+  },
+  'studio.activity.empty': {
+    value: 'Nothing has been changed in the Studio yet.',
+    contentKey: 'studio_help.activity_empty',
+  },
+  'studio.activity.failed': {
+    value: 'The activity feed could not be read. This is not the same as nothing having happened.',
+    contentKey: 'studio_help.activity_failed',
+  },
+  'studio.analytics.stub': {
+    value: 'Analytics arrives in phase 37. Nothing is measured here yet, so no figure is shown.',
+    contentKey: 'studio_help.analytics_stub',
+  },
+  'studio.activity.emptyHeading': {
+    value: 'No activity yet',
+    contentKey: 'studio_help.activity_empty_heading',
+  },
+  'studio.activity.failedHeading': {
+    value: 'The feed could not be read',
+    contentKey: 'studio_help.activity_failed_heading',
+  },
+  /* ------------------------------------------------------- page states (Phase 05, SEED 45/46) */
+  'studio.state.loading': {
+    value: 'Loading',
+    contentKey: 'studio_help.state_loading',
+  },
+  'studio.state.notFoundHeading': {
+    value: 'That page is not here',
+    contentKey: 'studio_help.state_not_found_heading',
+  },
+  'studio.state.notFoundBody': {
+    value:
+      'The link may be out of date, or the record may have been removed. Nothing has been changed.',
+    contentKey: 'studio_help.state_not_found_body',
+  },
+  'studio.state.errorHeading': {
+    value: 'Something interrupted this page',
+    contentKey: 'studio_help.state_error_heading',
+  },
+  'studio.state.errorBody': {
+    value: 'The page could not be loaded. Nothing you were doing has been saved or changed.',
+    contentKey: 'studio_help.state_error_body',
+  },
+  /** Precedes the error digest, which is what correlates this screen with the server log. */
+  'studio.state.errorReference': {
+    value: 'Reference',
+    contentKey: 'studio_help.state_error_reference',
+  },
+  'studio.state.tryAgain': {
+    value: 'Try again',
+    contentKey: 'studio_help.state_try_again',
+  },
+  'studio.state.backToOverview': {
+    value: 'Back to the Overview',
+    contentKey: 'studio_help.state_back_to_overview',
+  },
+  /* ------------------------------------------------------------ command palette (Phase 05) */
+  'studio.command.groupRoutes': {
+    value: 'Go to',
+    contentKey: 'studio_help.command_group_routes',
+  },
+  'studio.command.label': {
+    value: 'Search the Studio',
+    contentKey: 'studio_help.command_label',
+  },
+  'studio.command.placeholder': {
+    value: 'Type to search',
+    contentKey: 'studio_help.command_placeholder',
+  },
+  'studio.command.noResults': {
+    value: 'Nothing matched that.',
+    contentKey: 'studio_help.command_no_results',
+  },
+  /** Shown when a provider hit its time budget, so results are not presented as complete. */
+  'studio.command.incomplete': {
+    value: 'Some results are missing — a search took too long.',
+    contentKey: 'studio_help.command_incomplete',
+  },
+  'studio.command.close': {
+    value: 'Close search',
+    contentKey: 'studio_help.command_close',
+  },
+  'studio.shell.searchHint': {
+    value: 'Press Ctrl-K or Cmd-K to search',
+    contentKey: 'studio_help.shell_search_hint',
+  },
+  /**
+   * The deployment-environment badge. Rendered for every environment EXCEPT production, so its
+   * ABSENCE means "this is the real site" — a badge that is always there stops being read.
+   */
+  'studio.shell.envPreview': {
+    value: 'Preview',
+    contentKey: 'studio_help.shell_env_preview',
+  },
+  'studio.shell.envDevelopment': {
+    value: 'Development',
+    contentKey: 'studio_help.shell_env_development',
+  },
+  'studio.shell.collapseSidebar': {
+    value: 'Collapse navigation',
+    contentKey: 'studio_help.shell_collapse_sidebar',
+  },
+  'studio.shell.expandSidebar': {
+    value: 'Show navigation',
+    contentKey: 'studio_help.shell_expand_sidebar',
+  },
+  'studio.shell.pinnedHeading': {
+    value: 'Pinned',
+    contentKey: 'studio_help.shell_pinned_heading',
+  },
+  'studio.page.pin': {
+    value: 'Pin to the sidebar',
+    contentKey: 'studio_help.page_pin',
+  },
+  'studio.page.unpin': {
+    value: 'Unpin',
+    contentKey: 'studio_help.page_unpin',
   },
 } as const satisfies Record<string, StudioStringEntry>
 
