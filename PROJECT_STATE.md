@@ -143,9 +143,11 @@ too, and the hosted project cannot be migrated from here by any means.
    project. Reached through the Supabase MCP server; ordinary egress to `*.supabase.co` is still
    blocked, and GitHub Actions still cannot provision a runner, so `db-migrate.yml` remains built
    and undispatched.
-2. **The pasted Supabase secrets are still unrotated.** The service-role key, secret key, JWT
-   secret and database password were exposed in a chat transcript on 2026-09-08. Treat them as
-   compromised until rotated.
+2. **Six pasted secrets are still unrotated.** The Supabase service-role key, secret key, JWT
+   secret and database password, plus the Cloudinary API key and API secret, were exposed in chat
+   transcripts on 2026-09-08. Treat all six as compromised until rotated; `docs/SESSION-STATE.md`
+   carries the list and what each one grants. Names only are recorded — no value, prefix or length
+   is written anywhere in this repository.
 3. **The Higgsfield migration has never executed.** The planner, ledger and row mapping are
    exercised over all 250 real manifest rows — but with a fake uploader, and a fake uploader
    cannot 400. Phase 06 is the precedent worth remembering: 23 URL-builder tests passed while

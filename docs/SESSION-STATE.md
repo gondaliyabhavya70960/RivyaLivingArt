@@ -565,10 +565,27 @@ push and satisfy D9 from those runs, evidenced in the phase record — never fro
    `api.cloudinary.com` and `d8j0ntlcm91z4.cloudfront.net`, which its own README says to report
    rather than route around. Exit criteria 1–5 stay unticked until the run happens.
 
-2. **Rotate the four secrets** pasted into an earlier chat transcript —
-   `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_SECRET_KEY`, `SUPABASE_JWT_SECRET`, `POSTGRES_PASSWORD`.
-   Treat them as compromised until confirmed rotated. The owner's instruction was to do this once
-   all phase work is finished; it is recorded here so it is not forgotten at that point.
+2. **Rotate six secrets, all exposed in a chat transcript on 2026-09-08.** Names only below; no
+   value, prefix or length is recorded anywhere in this repository.
+
+   | Secret | What it grants if leaked |
+   |---|---|
+   | `SUPABASE_SERVICE_ROLE_KEY` | Full read/write on every table, bypassing RLS entirely |
+   | `SUPABASE_SECRET_KEY` | Same class of access |
+   | `SUPABASE_JWT_SECRET` | Ability to MINT a valid session for any role, including `owner` |
+   | `POSTGRES_PASSWORD` | Direct `psql` access to the hosted database |
+   | `CLOUDINARY_API_KEY` | Paired with the secret below |
+   | `CLOUDINARY_API_SECRET` | Upload, overwrite, transform and **delete** any asset in the account, and sign the browser upload endpoint |
+
+   The four Supabase values were pasted earlier; the Cloudinary pair was pasted while working
+   through the migration. Treat all six as compromised until confirmed rotated. The owner's
+   instruction was to rotate once all phase work is finished, which is why this is a standing
+   record rather than a blocker.
+
+   **Rotating the Cloudinary pair does not disturb anything already delivered.** Delivery URLs are
+   unsigned and keyed on the cloud name; only uploads and the sign endpoint use these credentials.
+   Rotate in the Cloudinary console → Settings → API Keys, then update `.env.local` and the Vercel
+   environment (`ENVIRONMENT.md` §5.2 lists which variables Vercel needs).
 
 3. **GitHub Actions has still never executed a step.** Every run across every workflow reports
    `runner_id: 0`, an empty `runner_name`, a two-second created→completed span and 404 logs —
