@@ -406,12 +406,24 @@ fresh start, and that is how it was run.
 
 ### Phase 07 — four things worth knowing before touching this code
 
-**1. The migration has never executed. Nothing downstream of it is proved end to end.**
-The planner, the ledger rules, the row mapping and the idempotency claim are all exercised over
-all 250 real manifest rows with a fake uploader — but a fake uploader cannot 400. Phase 06's
-canaries are the reason to take that seriously: 23 URL-builder unit tests passed while every video
-URL would have been rejected, and the same phase learned that a 20 MB PNG fails an upload cap that
-no test knew about. Treat the first real run as a source of new information, and run
+**1. The migration has never executed, and the first attempt to run it found two defects in
+thirty seconds.** Neither was in the logic the 21 offline tests cover — both were in the wiring
+around it, which is exactly where a fake uploader cannot look:
+
+- **`.env.local` was never loaded.** Next.js loads it for the app; a `tsx` CLI is not Next.js and
+  nothing was loading it here. Every asset failed with "Missing required environment variable
+  NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME" while that variable sat in the file the whole time. Fixed with
+  `process.loadEnvFile` (built into Node 22, no dependency). It does not override an
+  already-exported variable — verified, because `db:reset` depends on that property.
+- **A missing credential was recorded as 250 asset failures.** `configure()` is lazy, so the first
+  upload threw inside the per-asset `try/catch`, which dutifully wrote a ledger entry and moved on.
+  The result was a committed file describing a problem that was never about the assets. Now checked
+  once, before anything is written.
+
+The planner, ledger rules, row mapping and idempotency claim remain exercised over all 250 real
+manifest rows — but with a fake uploader, and a fake uploader cannot 400. Phase 06 is the precedent:
+23 URL-builder tests passed while every video URL would have been rejected, and a 20 MB PNG failed
+an upload cap no test knew about. Treat the first real run as a source of new information, and run
 `--limit=5` before the full 250.
 
 **2. `slot_key` now carries the registry key, and Phase 08 must honour that.**
@@ -539,10 +551,19 @@ push and satisfy D9 from those runs, evidenced in the phase record — never fro
 
 ### Owner-side, blocking Phase 07's exit criteria
 
-1. **Run `npm run media:migrate:higgsfield`** on a local machine. Commands and expected output are
-   under *Next Exact Action*. The sandbox proxy refuses CONNECT to `api.cloudinary.com` and to
-   `d8j0ntlcm91z4.cloudfront.net`; this is environmental, not a defect. Exit criteria 1–5 stay
-   unticked until it runs.
+1. **Add `CLOUDINARY_API_KEY` and `CLOUDINARY_API_SECRET` to `.env.local`, then run
+   `npm run media:migrate:higgsfield`.** Both names are already in `.env.example` and documented in
+   `ENVIRONMENT.md` §5; the working `.env.local` carries `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME` but
+   not those two. Phase 06's canaries hid this — they were uploaded through the Cloudinary MCP
+   server, which carries its own credentials, so nothing had ever exercised the script's own
+   authentication path. The script now checks all three before it uploads anything and names what
+   is missing.
+
+   Commands and expected output are under *Next Exact Action*. Verification step 2 (`--dry-run`)
+   **has now been run here and passes**: `attempted 250, migrated 0, skipped 0, failed 0`. Steps 3
+   onward still need Cloudinary: the sandbox proxy answers 403 to CONNECT for both
+   `api.cloudinary.com` and `d8j0ntlcm91z4.cloudfront.net`, which its own README says to report
+   rather than route around. Exit criteria 1–5 stay unticked until the run happens.
 
 2. **Rotate the four secrets** pasted into an earlier chat transcript —
    `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_SECRET_KEY`, `SUPABASE_JWT_SECRET`, `POSTGRES_PASSWORD`.
@@ -594,12 +615,25 @@ This cannot run in the sandbox: the proxy refuses CONNECT to `api.cloudinary.com
 `d8j0ntlcm91z4.cloudfront.net`, which is where the source files live. On a local machine with
 `.env.local` present:
 
+First add the two missing credentials to `.env.local` — the script refuses to start without them
+and names them:
+
+```
+CLOUDINARY_API_KEY=...        # Cloudinary console → Settings → API Keys
+CLOUDINARY_API_SECRET=...
+```
+
+Then:
+
 ```bash
 npm run media:migrate:higgsfield -- --dry-run     # expect: attempted 250, migrated 0, skipped 0, failed 0
 npm run media:migrate:higgsfield -- --limit=5     # a small real run first; check Cloudinary
 npm run media:migrate:higgsfield                  # expect: migrated 245, failed 0
 npm run media:migrate:higgsfield                  # expect: skipped 250, migrated 0
 ```
+
+The script loads `.env.local` itself, so no `export` is needed — but an exported variable still
+wins over the file, so a `DATABASE_URL` pointing at a local cluster is respected.
 
 Then verification steps 5 and 6 from `PHASE-05-09.md` §07, and commit
 `data/higgsfield/migration-log.json` — it is the resume mechanism and it belongs in git.
