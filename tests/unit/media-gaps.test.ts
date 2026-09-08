@@ -1,7 +1,14 @@
 import { describe, expect, it } from 'vitest'
 
 import { MEDIA_SLOTS, type MediaSlot } from '@/content/media-slots'
-import { briefableGaps, computeGaps, type SlotBinding } from '@/lib/media/gaps'
+import {
+  briefSkeleton,
+  briefableGaps,
+  collidingFamily,
+  computeGaps,
+  suggestedAssetId,
+  type SlotBinding,
+} from '@/lib/media/gaps'
 import { readManifest, type ManifestAsset } from '@/lib/media/manifest'
 
 /**
@@ -15,6 +22,7 @@ import { readManifest, type ManifestAsset } from '@/lib/media/manifest'
  */
 
 const MANIFEST = readManifest()
+const FAMILIES = [...new Set(MANIFEST.assets.map((a) => a.family))]
 
 function slot(overrides: Partial<MediaSlot> = {}): MediaSlot {
   return {
@@ -104,6 +112,24 @@ describe('classification', () => {
     const status = report.pages[0]!.slots[0]!
     expect(status.state).toBe('COVERED')
     expect(status.boundCount).toBe(1)
+  })
+
+  it('counts the repeating-slot index form against the one declared slot', () => {
+    // `(context_type, context_id, slot_key, role)` is unique, so a slot needing four cards mints
+    // `key[0]`…`key[3]`. Without stripping the index the slot would read as unbound while four
+    // rows pointed at it — the exact failure that would make the Gaps tab lie after Phase 09.
+    const report = computeGaps({
+      assets: [],
+      bindings: [
+        { slot_key: 'test.slot[0]' },
+        { slot_key: 'test.slot[1]' },
+        { slot_key: 'test.slot[2]' },
+        { slot_key: 'test.slot[3]' },
+      ],
+      slots: [slot({ minAssets: 4 })],
+    })
+    expect(report.pages[0]!.slots[0]!.boundCount).toBe(4)
+    expect(report.pages[0]!.slots[0]!.state).toBe('FILLED')
   })
 
   it('ignores a binding whose slot_key matches no declared slot', () => {
@@ -267,5 +293,69 @@ describe('bindings from a later phase', () => {
     const status = report.pages.flatMap((p) => p.slots).find((s) => s.slot.key === 'contact.hero')!
     expect(status.state).toBe('FILLED')
     expect(status.candidateCount).toBe(0)
+  })
+})
+
+describe('brief skeletons', () => {
+  const report = computeGaps({ assets: MANIFEST.assets, bindings: [] })
+
+  it('mints the IDs the phase document names', () => {
+    const home = MEDIA_SLOTS.find((s) => s.key === 'home.hero.video')!
+    const poster = MEDIA_SLOTS.find((s) => s.key === 'home.hero.poster')!
+    expect(suggestedAssetId(home)).toBe('HOME-HERO-VIDEO-001')
+    expect(suggestedAssetId(poster)).toBe('HOME-HERO-POSTER-001')
+  })
+
+  it('detects a collision that differs only by a dash', () => {
+    /**
+     * THE CASE THAT EARNS `collidingFamily` ITS EXISTENCE, and it is a real one: the slot key
+     * `large-format.coffee` mints `LARGE-FORMAT-COFFEE-001`, while the family allocator will mint
+     * `LARGEFORMAT-COFFEE-001` for `largeformat-coffee` the moment that family gains a second
+     * asset. Different strings, one name — a literal comparison passes and a reader cannot tell
+     * them apart. D6 as amended by A1 forbids exactly this.
+     */
+    expect(collidingFamily('LARGE-FORMAT-COFFEE-001', ['largeformat-coffee'])).toBe(
+      'largeformat-coffee',
+    )
+    expect(collidingFamily('HOME-HERO-VIDEO-001', FAMILIES)).toBeNull()
+  })
+
+  it('refuses to mint a colliding ID, naming the family instead', () => {
+    const coffee = MEDIA_SLOTS.find((s) => s.key === 'large-format.coffee')!
+    const status = report.pages.flatMap((p) => p.slots).find((s) => s.slot === coffee)!
+    const skeleton = briefSkeleton(status, FAMILIES)
+
+    expect(skeleton).toContain('**TODO**')
+    expect(skeleton).toContain('largeformat-coffee')
+  })
+
+  it('mints a clean ID for every slot the Gaps tab offers a brief button on', () => {
+    // The button renders only on a GAP whose resolution is GENERATE. Those are the ones a person
+    // will actually paste, so those are the ones that must not need a rename.
+    for (const gap of briefableGaps(report)) {
+      expect(collidingFamily(suggestedAssetId(gap.slot), FAMILIES), gap.slot.key).toBeNull()
+    }
+  })
+
+  it('never collides with an existing asset ID', () => {
+    const existing = new Set(MANIFEST.assets.map((a) => a.rivya_asset_id))
+    for (const slot of MEDIA_SLOTS) {
+      expect(existing.has(suggestedAssetId(slot)), slot.key).toBe(false)
+    }
+  })
+
+  it('marks the skeleton NEW_GENERATION_REQUIRED so the guard accepts it', () => {
+    // A pasted brief has to pass `assert-no-regeneration.ts` rule 2 unchanged, or every use of
+    // the button produces a brief that fails CI.
+    const gap = briefableGaps(report)[0]!
+    expect(briefSkeleton(gap, FAMILIES)).toContain('`NEW_GENERATION_REQUIRED`')
+  })
+
+  it('leaves the judgements blank', () => {
+    // Prompt, gate answers and alt text are a person's call. A prefilled plausible prompt is how
+    // a brief gets approved without anyone asking whether something existing already fits.
+    const skeleton = briefSkeleton(briefableGaps(report)[0]!, FAMILIES)
+    expect(skeleton).toContain('Q1 ? · Q2 ? · Q3 ? · Q4 ?')
+    expect(skeleton).toContain('TODO')
   })
 })

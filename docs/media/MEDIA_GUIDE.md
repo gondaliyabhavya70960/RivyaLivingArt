@@ -172,15 +172,27 @@ the string "AI", and anything under 15 characters.
 
 ## 6. Slots, roles and bindings
 
-A slot is declared in `content/media-slots.ts` — page, section, slot key, allowed roles, required
-ratios, minimum long edge. A binding is a `media_usages` row.
+A slot is declared in `content/media-slots.ts` — key, page, label, kind, desktop and mobile
+ratios, the manifest families that could fill it, how many assets it needs, and whether an
+unfillable one earns a generation brief or an honest empty state. A binding is a `media_usages`
+row.
 
 | Field | Vocabulary |
 |---|---|
 | `context_type` | `PAGE_SECTION · PRODUCT · CATEGORY · COLLECTION · PORTFOLIO · JOURNAL · GLOBAL · SEO` |
-| `slot_key` | `media` · `video` · `card.<n>` · `og` — unique within its context |
+| `slot_key` | The registry key verbatim — `home.hero.video`, `collection.decor.hero`. Repeating slots take the index form `collection.decor.hero[0]`…`[3]` |
 | `role` | `DESKTOP · MOBILE · POSTER · THUMBNAIL · GALLERY · OG` |
 | Key | `unique (context_type, context_id, slot_key, role)` |
+
+**Why `slot_key` carries the registry key rather than a short section-scoped name.** The
+alternative — `media`, `card.3`, unique only within its context — was the original sketch, and it
+would force `computeGaps()` to join through `page_sections` to learn which declared slot a binding
+belongs to. That table does not exist until Phase 08, so the gap report could not run until Phase
+08 shipped, which is the wrong way round: the gap list is what Phase 08 works *from*. Writing the
+registry key makes the reverse index directly queryable, which is also what FEAT §17's "Missing
+Media" card needs. The index form survives because
+`(context_type, context_id, slot_key, role)` is unique — four cards in one role would otherwise
+collide on one key — and `slotKeyOf()` strips it so they count against the one declared slot.
 
 Maintained by the `sync_media_usages` trigger, never written by hand. It earns its keep three ways:
 

@@ -384,18 +384,87 @@ vocabulary, `#RRGGBB`, a trailing ellipsis, the string "AI", and anything under 
 
 | Tab | Shows | Acts |
 |---|---|---|
-| **Inventory** | All 250 rows with the FEAT §34 columns; filters on family, page, ratio, type, migration status, used/unused | Open drawer, edit alt text, edit tags, bind to a slot |
-| **Families** | 24 families with counts, image/video split, ratios present, max long edge | Filter the inventory |
-| **Gaps** | `computeGaps()` output grouped by page | "Copy brief to master plan" |
+| **Inventory** | All 250 rows with the FEAT §34 columns; filters on type, family, page, ratio, migration status and used/unused | Open the asset drawer |
+| **Families** | 24 families with counts, image/video split, ratios present | Filter the inventory to a family |
+| **Gaps** | `computeGaps()` output grouped by page, plus thin families and families no slot uses | "Copy brief to master plan" |
 | **Coverage** (Phase 43) | Every declared slot, its disposition, its bound asset, ratio fit, resolution fit | Change a disposition, open the crop editor |
 | **Concept Placement** (Phase 43) | Every concept asset bound to a published slot | Audit; unbind |
 
-**There is no generate control on any tab.** That is deliberate and permanent. Generation runs
-from a script, after a written brief, after the guard passes.
+Each tab is its own URL (`?tab=gaps`), so a filtered view or a single asset can be linked to a
+colleague and survives a reload. That is why the tracker uses links rather than the RC-203 tab
+widget — see the header of `components/studio/HiggsfieldTracker.tsx`.
 
-The asset drawer shows the full prompt, the model, the generation id and the Higgsfield CDN
-`source_url` as provenance. `source_url` is **never** a delivery URL — the public site serves
-from Cloudinary only.
+**There is no generate control on any tab.** That is deliberate and permanent. Generation runs
+from a script, after a written brief, after the guard passes, in Phase 43.
+`scripts/media/assert-no-regeneration.ts` rule 4 fails the build if a generation call appears
+anywhere in `app/`, `components/`, `lib/` or `content/`, so this is enforced rather than agreed.
+
+**The asset drawer is read-only.** It shows the family, ratio, migration state, page, model,
+generation id, Cloudinary public id, requested dimensions, the draft alt text and the full prompt.
+It has no regenerate control and no edit control of any kind. Editing alt text and tags belongs to
+the Media Manager (`/studio/media/all`), where the asset has a `media_assets` row to write to;
+binding an asset to a slot is Phase 09, through the CMS. A drawer that could do all three would be
+a second, divergent editing surface for rows the Media Manager already owns.
+
+Two of the drawer's fields need reading carefully:
+
+- **Requested dimensions** are the manifest's — what the generation was ASKED for. Cloudinary is
+  authoritative for what is actually stored, and the two differ on several videos
+  (`LARGEFORMAT-DINING-004` is recorded 768×1344 and stored 1080×1920). The migration writes the
+  Cloudinary values to `media_assets`; the drawer labels its own as requested and says so.
+- **The Higgsfield CDN `source_url`** is provenance, never a delivery URL. The public site serves
+  from Cloudinary only.
+
+---
+
+### 7.1 How a gap is decided
+
+`lib/media/gaps.ts` joins two things that come from opposite directions: `content/media-slots.ts`,
+which DECLARES what the site needs, and `media_usages` plus the manifest, which record what exists.
+Neither alone can answer the question — an absent slot and an unfilled slot look identical from the
+asset side, which is why the registry exists at all.
+
+Every declared slot lands in one of four states:
+
+| State | Meaning | What to do |
+|---|---|---|
+| `FILLED` | Enough `media_usages` rows bind assets to it | Nothing |
+| `COVERED` | Nothing bound yet, but the library holds enough candidates | Bind it (Phase 09) |
+| `THIN` | Candidates exist but too few; the surface would repeat one image | Brief the shortfall |
+| `GAP` | Nothing in the library can fill it | Brief it, or accept an empty state |
+
+A slot also declares a **resolution**: `GENERATE` or `EMPTY_STATE`. The distinction is not
+cosmetic. `/portfolio` is a `GAP` with resolution `EMPTY_STATE`, and `briefableGaps()` excludes it
+by construction — a portfolio entry asserts that Rivya delivered a piece to a client, and
+generating an image of one would fabricate exactly the business fact D10 exists to prevent. The
+Gaps tab therefore shows no "Copy brief" button on it, and the master plan must never carry a
+brief for it.
+
+The report also names two things that are not slots:
+
+- **Thin families** — a family too small for the slots it is supposed to serve.
+  `largeformat-coffee` and `largeformat-monumental` hold one asset each.
+- **Families no slot uses** — the inverse of a gap: assets that were generated, migrated and paid
+  for that no declared surface can show. `gallery-scene` (5 assets) is the only one, and the
+  honest fix there may be to declare a slot rather than to generate anything.
+
+### 7.2 Copying a brief
+
+The Gaps tab's "Copy brief to master plan" puts a markdown skeleton on the clipboard. It copies;
+it does not write the document — `HIGGSFIELD_MASTER_ASSET_PLAN.md` lives in git and is reviewed in
+a pull request, and that review is what makes a brief a decision rather than a form submission.
+
+The skeleton fills in what is derivable — a compliant asset ID, the declared ratios, how many
+candidates the library already holds — and leaves the prompt, the four gate answers and the alt
+text as `TODO`. Those are the judgements a person is supposed to make; prefilling them with
+something plausible is how a brief gets approved without anyone having answered *"does something
+existing already fit?"*, which is the only question the gate exists to ask.
+
+Where the slot key would mint an ID that collides with a manifest family, the skeleton refuses and
+names the family instead of guessing. `large-format.coffee` is the live example: it would mint
+`LARGE-FORMAT-COFFEE-001`, which is the same name as the `LARGEFORMAT-COFFEE-001` the family
+allocator will mint once `largeformat-coffee` has a second asset. Different strings, one name.
+The plan's own brief solves this by hand, calling it `LARGE-COFFEE-CARD-001`.
 
 ---
 
@@ -416,3 +485,8 @@ from Cloudinary only.
 | Can I generate a 3D model? | No. A model is a product specification |
 | Is the draft alt text usable? | No. All 250 are rewritten in Phase 43 |
 | Where does the public site load these from? | Cloudinary. Never the Higgsfield CDN |
+| Which CMS slots have nothing behind them? | The Gaps tab, or `computeGaps()`. 11 gaps, 2 thin families, 1 family no slot uses |
+| How do I write a brief for one? | Copy the skeleton from the Gaps tab, fill in the four gate answers and the prompt, paste into `HIGGSFIELD_MASTER_ASSET_PLAN.md` §6.1 |
+| What keeps a brief from targeting an existing asset? | `npm run media:assert-no-regen`, in CI and in `npm run check` |
+| Who writes `HIGGSFIELD_ASSET_STATUS.md`? | `npm run media:build-status`, between its markers. CI diffs it |
+| Can the Studio edit an asset's alt text? | Not from this tracker. The Media Manager owns editing; this drawer is read-only |

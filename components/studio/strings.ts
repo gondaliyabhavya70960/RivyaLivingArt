@@ -1265,6 +1265,20 @@ export const STUDIO_STRINGS = {
     contentKey: 'studio_help.higgsfield_filtered_body',
   },
 
+  /** The Gaps tab's one action. It copies markdown; it never edits the plan — see CopyBriefButton. */
+  'studio.higgsfield.copyBrief': {
+    value: 'Copy brief to master plan',
+    contentKey: 'studio_help.higgsfield_copy_brief',
+  },
+  'studio.higgsfield.copyBriefDone': {
+    value: 'Copied. Paste it into HIGGSFIELD_MASTER_ASSET_PLAN.md §6.1.',
+    contentKey: 'studio_help.higgsfield_copy_brief_done',
+  },
+  'studio.higgsfield.copyBriefFailed': {
+    value: 'Could not copy. Nothing was placed on the clipboard.',
+    contentKey: 'studio_help.higgsfield_copy_brief_failed',
+  },
+
   // --- The asset drawer -------------------------------------------------------------------------
   // There is deliberately NO regenerate control here, and `scripts/media/assert-no-regeneration.ts`
   // keeps it that way. An asset in the manifest already exists; re-generating it spends credits to

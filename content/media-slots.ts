@@ -60,11 +60,16 @@ export const MEDIA_SLOTS: readonly MediaSlot[] = [
   // The manifest has 5 assets on `page = home`, all `interior-lifestyle`, and all STILLS. There is
   // no home video at all, which is why both the hero and its poster are gaps rather than one.
   {
+    // 16:9 rather than 21:9, matching brief G1 in the master plan and its stated reason: the
+    // library's largest furniture videos are 1344 px and 768 px wide, so a 21:9 full-bleed hero
+    // would upscale visibly. The registry follows the plan here because the plan reasoned about
+    // the actual pixels; a slot that declared a shape no generation is briefed for would hand
+    // whoever pastes the brief skeleton a ratio contradicting the brief above it.
     key: 'home.hero.video',
     page: '/',
     label: 'Home hero video',
     kind: 'VIDEO',
-    desktopRatio: '21:9',
+    desktopRatio: '16:9',
     mobileRatio: '9:16',
     fillableBy: [],
     minAssets: 2,
@@ -74,6 +79,9 @@ export const MEDIA_SLOTS: readonly MediaSlot[] = [
     // A poster is the frame a visitor sees before the video plays, and under reduced motion it is
     // the whole experience. It cannot be an unrelated still: it must be the video's own opening.
     // So it is a gap for as long as the video is, and filling it independently would be wrong.
+    // 21:9 desktop (G2) and 9:16 mobile (G6), as the plan briefs them. The poster is the LCP
+    // element and its desktop crop is wider than the video's own frame, which is a deliberate
+    // decision recorded in G2, not a mismatch.
     key: 'home.hero.poster',
     page: '/',
     label: 'Home hero poster',

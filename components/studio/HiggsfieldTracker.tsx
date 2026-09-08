@@ -8,13 +8,14 @@ import { Surface } from '@/components/primitives/Surface'
 import { Text } from '@/components/primitives/Text'
 import { Field } from '@/components/primitives/Field'
 import { Select } from '@/components/primitives/Select'
+import { CopyBriefButton } from '@/components/studio/CopyBriefButton'
 import { DataTable, type Column } from '@/components/studio/DataTable'
 import { EmptyState } from '@/components/studio/EmptyState'
 import { FilterBar } from '@/components/studio/FilterBar'
 import { HiggsfieldAssetDrawer, type DrawerAsset } from '@/components/studio/HiggsfieldAssetDrawer'
 import { StatCard } from '@/components/studio/StatCard'
 import { t } from '@/components/studio/strings'
-import type { GapReport, SlotState, SlotStatus } from '@/lib/media/gaps'
+import { briefSkeleton, type GapReport, type SlotState, type SlotStatus } from '@/lib/media/gaps'
 import {
   activeFilterCount,
   filterInventory,
@@ -409,9 +410,24 @@ type FamilyRow = {
   ratios: string
 }
 
-function FamiliesPanel({ rows }: { rows: readonly FamilyRow[] }) {
+function FamiliesPanel({ path, rows }: { path: string; rows: readonly FamilyRow[] }) {
   const columns: readonly Column<FamilyRow>[] = [
-    { id: 'family', header: t('studio.higgsfield.colFamily'), cell: (row) => row.family },
+    {
+      id: 'family',
+      header: t('studio.higgsfield.colFamily'),
+      // The family name is a link into the Inventory tab filtered to it. That is the "filter the
+      // inventory" action HIGGSFIELD_GUIDE.md §7 gives this tab, and it costs nothing but a href.
+      cell: (row) => (
+        <Link
+          href={
+            `${path}?${new URLSearchParams({ tab: 'inventory', family: row.family }).toString()}` as Route
+          }
+          className="font-mono whitespace-nowrap"
+        >
+          {row.family}
+        </Link>
+      ),
+    },
     {
       id: 'count',
       header: t('studio.higgsfield.colCount'),
@@ -438,7 +454,7 @@ function FamiliesPanel({ rows }: { rows: readonly FamilyRow[] }) {
   )
 }
 
-function GapsPanel({ report }: { report: GapReport }) {
+function GapsPanel({ report, families }: { report: GapReport; families: readonly string[] }) {
   const columns: readonly Column<SlotStatus>[] = [
     {
       id: 'slot',
@@ -473,6 +489,17 @@ function GapsPanel({ report }: { report: GapReport }) {
             <Text size="xs" tone="tertiary">
               {`${t('studio.higgsfield.missingRatios')} ${row.missingRatios.join(', ')}`}
             </Text>
+          ) : null}
+          {/* Only on a GAP that may be generated. A COVERED slot needs a binding, not a brief,
+              and an EMPTY_STATE gap must never get one — offering the button there would put a
+              one-click path to fabricating delivered work on the screen. */}
+          {row.state === 'GAP' && row.slot.resolution === 'GENERATE' ? (
+            <CopyBriefButton
+              brief={briefSkeleton(row, families)}
+              label={t('studio.higgsfield.copyBrief')}
+              copiedLabel={t('studio.higgsfield.copyBriefDone')}
+              failedLabel={t('studio.higgsfield.copyBriefFailed')}
+            />
           ) : null}
         </Stack>
       ),
@@ -621,8 +648,10 @@ export function HiggsfieldTracker({
       {tab === 'inventory' ? (
         <InventoryPanel path={path} tab={tab} entries={entries} filters={filters} facets={facets} />
       ) : null}
-      {tab === 'families' ? <FamiliesPanel rows={families} /> : null}
-      {tab === 'gaps' ? <GapsPanel report={report} /> : null}
+      {tab === 'families' ? <FamiliesPanel path={path} rows={families} /> : null}
+      {tab === 'gaps' ? (
+        <GapsPanel report={report} families={families.map((f) => f.family)} />
+      ) : null}
 
       <HiggsfieldAssetDrawer asset={selected} returnTo={`${path}?tab=${tab}`} />
     </Stack>
