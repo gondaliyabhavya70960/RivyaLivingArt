@@ -60,9 +60,33 @@ export const PERMISSION_ROLES = {
   'catalog.publish': ['owner', 'admin', 'merchandiser'],
 
   // Content -------------------------------------------------------------------------------------
+  //
+  // FOUR PERMISSIONS, NOT THREE, AND THE TWO NEW ONES GATE DIFFERENT ACTS (Phase 08, amendment A7).
+  //
+  // `content.review` gates the REVIEW edges — REVIEW -> DRAFT, APPROVED, ARCHIVED. Without it the
+  // review state is decorative: every edge out of REVIEW would have to be spelled `content.write`
+  // or `content.publish`, and a workflow whose middle state anyone can leave in either direction
+  // is not a workflow. It is also unwriteable otherwise — `Permission` is `keyof typeof
+  // PERMISSION_ROLES`, so `requirePermission('content.review')` does not compile until the key
+  // exists.
+  //
+  // `content.verify` gates setting `owner_verification = 'VERIFIED'`, and it is the narrow one.
+  // Publishing copy is an editorial act; asserting that a business claim is TRUE — that Rivya
+  // really does offer architectural installation, really has that lead time — is the owner's, and
+  // D10 exists because nobody else can know. Nothing in the matrix expressed it before, which is
+  // why the same three roles could both write a claim and mark it verified.
+  //
+  // `content.publish` deliberately KEEPS the editor. The Phase 08 spec's verification step 3 reads
+  // "as editor, attempt APPROVED -> PUBLISHED -> refused", which contradicts this cell as shipped
+  // in Phase 04 — and the cell wins. Narrowing a shipped authorisation through a sentence in a
+  // later phase's verification list is the wrong direction of travel, and the thing that sentence
+  // was protecting (an unverified business claim reaching the public) is held by `content.verify`
+  // above, not by publish. The phase document is corrected instead; see A7.
   'content.read': ALL,
   'content.write': ['owner', 'admin', 'editor'],
+  'content.review': ['owner', 'admin', 'editor'],
   'content.publish': ['owner', 'admin', 'editor'],
+  'content.verify': ['owner', 'admin'],
 
   // Media ---------------------------------------------------------------------------------------
   'media.read': ALL,
