@@ -1,0 +1,244 @@
+/*
+ * RIVYA LIVING ART — TOKEN SOURCE
+ *
+ * The ONLY file in the repository permitted to contain a colour literal.
+ * See docs/design/DESIGN_SYSTEM.md §1 for the three-layer architecture:
+ * primitive -> semantic -> component. Components read the semantic layer only.
+ *
+ * The neutral ramp is GENERATED, not chosen: ten OKLab-interpolated steps between
+ * obsidian and bone. scripts/design/check-tokens.mjs re-derives it and fails on drift.
+ * Do not hand-edit a ramp value.
+ */
+
+:root {
+  /* ---- primitive: brand (manifest evidence, §2.1) ---- */
+  --rv-color-obsidian: #080a0e;
+  --rv-color-ocean: #08283a;
+  --rv-color-sapphire: #164e6b;
+  --rv-color-champagne: #b89b63;
+  --rv-color-sapphire-bright: #0f52ba;
+  --rv-color-slate-deep: #0e3a53;
+  --rv-color-gold-bright: #d4af37;
+  --rv-color-bone: #faf9f5;
+
+  /* ---- primitive: generated neutrals (§2.2) ---- */
+  --rv-neutral-900: #080a0e;
+  --rv-neutral-800: #1d1f22;
+  --rv-neutral-700: #343639;
+  --rv-neutral-600: #4c4e50;
+  --rv-neutral-500: #67686a;
+  --rv-neutral-400: #828384;
+  --rv-neutral-300: #9f9f9f;
+  --rv-neutral-200: #bcbcbb;
+  --rv-neutral-100: #dbdad7;
+  --rv-neutral-50: #faf9f5;
+
+  /* ---- primitive: generated surfaces and accents (§2.3) ---- */
+  --rv-color-ocean-raised: #153346;
+  --rv-color-ocean-raised-2: #1f3e51;
+  --rv-color-ocean-line: #32444f;
+  --rv-color-obsidian-raised: #14161a;
+  --rv-color-obsidian-raised-2: #1d1f22;
+  --rv-color-obsidian-line: #2e3035;
+  --rv-color-steel: #79868e;
+  --rv-color-bone-raised: #f3f2ee;
+  --rv-color-bone-sunken: #eeede9;
+  --rv-color-bone-well: #e9e8e4;
+  --rv-color-champagne-deep: #83672f;
+
+  /* ---- primitive: state (§2.9) ---- */
+  --rv-color-success-dark: #2e804b;
+  --rv-color-success-light: #4d9d66;
+  --rv-color-warning-dark: #9c6500;
+  --rv-color-warning-light: #bb8301;
+  --rv-color-danger-dark: #bf4c44;
+  --rv-color-danger-light: #e0695f;
+  --rv-color-info-dark: #2f77a5;
+  --rv-color-info-light: #4d94c2;
+  --rv-color-success-soft-light: #e4f5e8;
+  --rv-color-success-soft-dark: #132819;
+  --rv-color-warning-soft-light: #fbeedb;
+  --rv-color-warning-soft-dark: #2f2004;
+  --rv-color-danger-soft-light: #ffe8e4;
+  --rv-color-danger-soft-dark: #381815;
+  --rv-color-info-soft-light: #e4f3fe;
+  --rv-color-info-soft-dark: #122532;
+
+  /* ---- typography: families (§3.1) ----
+     Two loaded families only. --rv-font-mono ships no file: it is a device-resident
+     stack, which is why the two-family ceiling in ops/PERFORMANCE.md §2.2 is not breached.
+     next/font sets --rv-font-display-src and --rv-font-body-src in app/layout.tsx. */
+  --rv-font-display:
+    var(--rv-font-display-src), 'Iowan Old Style', 'Palatino Linotype', Georgia, serif;
+  --rv-font-body:
+    var(--rv-font-body-src), system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+  --rv-font-mono:
+    ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+
+  /* ---- typography: display scale, fluid 360 -> 1440 (§3.2) ---- */
+  --rv-text-display-2xl: clamp(3rem, 1.833rem + 5.185vw, 6.5rem);
+  --rv-text-display-xl: clamp(2.5rem, 1.75rem + 3.333vw, 4.75rem);
+  --rv-text-display-lg: clamp(2.125rem, 1.625rem + 2.222vw, 3.625rem);
+  --rv-text-display-md: clamp(1.75rem, 1.417rem + 1.481vw, 2.75rem);
+  --rv-text-display-sm: clamp(1.5rem, 1.292rem + 0.926vw, 2.125rem);
+  --rv-text-display-xs: clamp(1.25rem, 1.125rem + 0.556vw, 1.625rem);
+
+  /* ---- typography: body scale, fixed (§3.3) ---- */
+  --rv-text-xl: 1.5rem;
+  --rv-text-lg: 1.25rem;
+  --rv-text-md: 1.125rem;
+  --rv-text-base: 1rem;
+  --rv-text-sm: 0.875rem;
+  --rv-text-xs: 0.75rem;
+  --rv-text-2xs: 0.6875rem;
+
+  --rv-leading-xl: 1.45;
+  --rv-leading-lg: 1.55;
+  --rv-leading-md: 1.6;
+  --rv-leading-base: 1.6;
+  --rv-leading-sm: 1.5;
+  --rv-leading-xs: 1.4;
+  --rv-leading-2xs: 1.35;
+
+  /* ---- typography: weight, leading, tracking (§3.4) ---- */
+  --rv-weight-display: 400;
+  --rv-weight-display-strong: 500;
+  --rv-weight-body: 400;
+  --rv-weight-medium: 500;
+  --rv-weight-strong: 600;
+
+  --rv-leading-display: 1.06;
+  --rv-leading-heading: 1.14;
+  --rv-leading-body: 1.6;
+  --rv-leading-tight: 1.35;
+
+  --rv-tracking-display: -0.02em;
+  --rv-tracking-heading: -0.01em;
+  --rv-tracking-body: 0;
+  --rv-tracking-eyebrow: 0.14em;
+  --rv-tracking-technical: 0.02em;
+
+  /* ---- motion: duration (§4.1). --rv-duration-scene is the ceiling. ---- */
+  --rv-duration-instant: 0ms;
+  --rv-duration-fast: 120ms;
+  --rv-duration-quick: 180ms;
+  --rv-duration-base: 240ms;
+  --rv-duration-slow: 360ms;
+  --rv-duration-slower: 560ms;
+  --rv-duration-flow: 720ms;
+  --rv-duration-scene: 900ms;
+
+  /* ---- motion: easing (§4.1) ---- */
+  --rv-ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --rv-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --rv-ease-in: cubic-bezier(0.7, 0, 0.84, 0);
+  --rv-ease-flow: cubic-bezier(0.65, 0, 0.35, 1);
+  --rv-ease-settle: cubic-bezier(0.34, 1.16, 0.64, 1);
+  --rv-ease-linear: linear;
+
+  /* ---- motion: travel (§4.1) ---- */
+  --rv-motion-rise-sm: 8px;
+  --rv-motion-rise-md: 16px;
+  --rv-motion-rise-lg: 24px;
+  --rv-motion-parallax-max: 24px;
+  --rv-motion-stagger: 60ms;
+  --rv-motion-stagger-max: 6;
+  --rv-motion-scale-in: 1.015;
+
+  /* ---- space: 4px base, steps 0-20 (§5.1) ---- */
+  --rv-space-0: 0px;
+  --rv-space-1: 4px;
+  --rv-space-2: 8px;
+  --rv-space-3: 12px;
+  --rv-space-4: 16px;
+  --rv-space-5: 20px;
+  --rv-space-6: 24px;
+  --rv-space-8: 32px;
+  --rv-space-10: 40px;
+  --rv-space-12: 48px;
+  --rv-space-16: 64px;
+  --rv-space-20: 80px;
+
+  /* ---- space: section rhythm, fluid (§5.1) ---- */
+  --rv-section-y-sm: clamp(3rem, 2.5rem + 2.222vw, 4.5rem);
+  --rv-section-y-md: clamp(4.5rem, 3.667rem + 3.704vw, 7rem);
+  --rv-section-y-lg: clamp(6rem, 4.667rem + 5.926vw, 10rem);
+  --rv-section-y-xl: clamp(8rem, 6.5rem + 6.667vw, 12.5rem);
+
+  /* ---- layout: breakpoints (§5.2) and containers (§5.3) ---- */
+  --rv-bp-sm: 430px;
+  --rv-bp-md: 768px;
+  --rv-bp-lg: 1024px;
+  --rv-bp-xl: 1280px;
+  --rv-bp-2xl: 1440px;
+  --rv-bp-3xl: 1920px;
+
+  --rv-container-prose: 44rem;
+  --rv-container-default: 75rem;
+  --rv-container-wide: 90rem;
+  --rv-container-full: 120rem;
+  --rv-gutter: clamp(1.25rem, 0.333rem + 4.074vw, 4rem);
+
+  /* ---- layout: grid (§5.4) ---- */
+  --rv-grid-columns: 4;
+  --rv-grid-gap: var(--rv-space-4);
+
+  /* ---- layout: z-index (§5.6) ---- */
+  --rv-z-base: 0;
+  --rv-z-raised: 10;
+  --rv-z-header: 100;
+  --rv-z-dropdown: 200;
+  --rv-z-mega: 300;
+  --rv-z-drawer: 400;
+  --rv-z-dialog: 500;
+  --rv-z-lightbox: 600;
+  --rv-z-toast: 700;
+  --rv-z-command: 800;
+  --rv-z-dev: 900;
+
+  /* ---- border and radius (§6.1). One border width in the system. ---- */
+  --rv-border-hairline: 1px;
+  --rv-border-emphasis: 2px;
+  --rv-radius-0: 0px;
+  --rv-radius-xs: 2px;
+  --rv-radius-sm: 4px;
+  --rv-radius-md: 8px;
+  --rv-radius-lg: 12px;
+  --rv-radius-xl: 20px;
+  --rv-radius-pill: 999px;
+
+  /* ---- shadow (§6.2). BONE only: on DEEP/INK, elevation is a lifted surface. ---- */
+  --rv-shadow-1: 0 1px 2px rgb(8 10 14 / 0.06), 0 2px 8px rgb(8 10 14 / 0.05);
+  --rv-shadow-2: 0 2px 6px rgb(8 10 14 / 0.08), 0 8px 24px rgb(8 10 14 / 0.08);
+  --rv-shadow-3: 0 4px 12px rgb(8 10 14 / 0.1), 0 24px 64px rgb(8 10 14 / 0.14);
+
+  /* ---- media veil (§2.5): identical across schemes ---- */
+  --rv-media-veil: linear-gradient(
+    to top,
+    rgb(8 10 14 / 0.86) 0%,
+    rgb(8 10 14 / 0.55) 38%,
+    rgb(8 10 14 / 0) 78%
+  );
+
+  /* ---- focus ring geometry (§2.10) ---- */
+  --rv-focus-ring-width: var(--rv-border-emphasis);
+  --rv-focus-ring-offset: 2px;
+}
+
+/* Grid columns step up with the viewport (§5.4). */
+@media (min-width: 768px) {
+  :root {
+    --rv-grid-columns: 8;
+    --rv-grid-gap: var(--rv-space-6);
+  }
+}
+@media (min-width: 1024px) {
+  :root {
+    --rv-grid-columns: 12;
+  }
+}
+@media (min-width: 1440px) {
+  :root {
+    --rv-grid-gap: var(--rv-space-8);
+  }
+}

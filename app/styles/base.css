@@ -1,0 +1,142 @@
+/*
+ * BASE LAYER (docs/design/DESIGN_SYSTEM.md §1.1)
+ * Reset, focus ring, reduced-motion defaults, root typography, selection.
+ * No component selectors and no values of its own beyond structural resets.
+ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background-color: var(--rv-surface-ground);
+  color: var(--rv-ink-primary);
+  font-family: var(--rv-font-body);
+  font-size: var(--rv-text-base);
+  line-height: var(--rv-leading-body);
+  font-weight: var(--rv-weight-body);
+  letter-spacing: var(--rv-tracking-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+figure,
+blockquote,
+dl,
+dd {
+  margin: 0;
+}
+
+ul[role='list'],
+ol[role='list'] {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+img,
+picture,
+video,
+canvas,
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+input,
+button,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+a {
+  color: inherit;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.18em;
+}
+
+/* One focus ring for the whole product (§2.10). Never remove it without a replacement
+   that is at least as visible: :focus-visible fires only for keyboard and assistive input. */
+:focus-visible {
+  outline: var(--rv-focus-ring-width) solid var(--rv-focus-ring);
+  outline-offset: var(--rv-focus-ring-offset);
+  border-radius: var(--rv-radius-xs);
+}
+
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+::selection {
+  background-color: var(--rv-ink-accent);
+  color: var(--rv-ink-on-accent);
+}
+
+:where(:root) {
+  scroll-behavior: smooth;
+}
+
+/*
+ * REDUCED MOTION (§4.3)
+ *
+ * This block is the floor, not the contract. Suppressing a transition is not the same
+ * as rendering the static branch: a Reveal whose animation is merely cancelled can be
+ * left at opacity 0 forever. Components therefore branch in JS via useReducedMotion and
+ * render a final-state DOM; this block only guarantees nothing moves if that is missed.
+ */
+@media (prefers-reduced-motion: reduce) {
+  :where(:root) {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/*
+ * Hit-box overlay (§7). A control may be visually smaller than 44px, but its hit area
+ * may not be: this expands the target without changing the rendered box. FEAT §48
+ * requires 44px, exceeding WCAG 2.5.8's 24px.
+ */
+.rv-hit-44 {
+  position: relative;
+}
+.rv-hit-44::before {
+  content: '';
+  position: absolute;
+  inset: 50% 0 0 0;
+  translate: 0 -50%;
+  block-size: 44px;
+  min-inline-size: 44px;
+}

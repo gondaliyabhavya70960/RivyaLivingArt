@@ -163,29 +163,44 @@ Operating rules:
 The eleven sources the specification approves for research. Audit outcome is recorded for each,
 **including rejections**, so a source is not re-litigated every phase.
 
-| Source | URL | Audit status | Components taken |
-|---|---|---|---|
-| ThreeUI | `https://threeui.com/browse` | `NOT_YET_AUDITED` | none |
-| SmoothUI | `https://smoothui.dev/` | `NOT_YET_AUDITED` | none |
-| Magic UI | `https://magicui.design/` | `NOT_YET_AUDITED` | none |
-| Unlumen UI | `https://ui.unlumen.com/` | `NOT_YET_AUDITED` | none |
-| 21st.dev | `https://21st.dev/` | `NOT_YET_AUDITED` | none |
-| React Bits | `https://reactbits.dev/` | `NOT_YET_AUDITED` | none |
-| AnimMasterLib | `https://animmasterlib.dev/` | `NOT_YET_AUDITED` | none |
-| Skiper UI | `https://skiper-ui.com/` | `NOT_YET_AUDITED` | none |
-| Vengence UI | `https://www.vengenceui.com/` | `NOT_YET_AUDITED` | none |
-| daisyUI | `https://daisyui.com/?lang=en` | `NOT_YET_AUDITED` | none |
-| OriginKit | `https://www.originkit.dev/` | `NOT_YET_AUDITED` | none |
+| Source | URL | Licence | Audit status | Components taken | Reason |
+|---|---|---|---|---|---|
+| ThreeUI | `https://threeui.com/browse` | `MIT` — verified in `LICENSE` at `MengTo/threeui@main` ("Copyright (c) 2026 Meng To") and in npm `@designcodeio/threeui@1.2.0` `"license": "MIT"`. Covers the Community edition only; the README states Pro source is withheld | `NOT_ADOPTED` | none | Licence is acceptable, the surface is not ours to duplicate. Its subject is procedural WebGL hero canvases, and that surface is already first-party in RC-401 under RC-228's rule that zero viewer JavaScript enters a route bundle and the poster, never the canvas, is the LCP element. A persistently mounted Three.js background contradicts both. The Pro catalogue sits outside the MIT grant, so the collection is not uniformly licensed |
+| SmoothUI | `https://smoothui.dev/` | `MIT` — verified in `LICENSE` at `educlopez/smoothui@main` ("Eduardo Calvo", 2024) | `NOT_ADOPTED` | none | A shadcn-style copy-paste registry whose README names Motion as a core technology, so each component arrives with a second animation runtime. RC-207 fixes this repository's motion contract at no animation library, and its `Reveal` already covers the entrance behaviour these components provide |
+| Magic UI | `https://magicui.design/` | `MIT` — verified in `LICENSE.md` at `magicuidesign/magicui@main` ("Copyright (c) Magic UI") | `NOT_ADOPTED` | none | Copy-paste animated-effect components, each a Client Component driven by `motion`. The scroll and entrance effects are precisely the WOOD class of `DESIGN_SYSTEM.md` §4.2 that RC-207 implements first-party, with one shared `IntersectionObserver` and a static branch under reduced motion, inside a 1 kB gz budget. Taking them would add a client runtime to reproduce behaviour we already own |
+| Unlumen UI | `https://ui.unlumen.com/` | `MIT` for the public registry — verified in `LICENSE` and in `"license": "MIT"` in `package.json` at `leovvx/unlumen-ui-docs@main`; the README limits the grant to "the code and public registry items in this repository" and holds Pro components in a separate private repository | `NOT_ADOPTED` | none | The stack matches on paper — the same `package.json` pins `tailwindcss@^4.1.13`, `react@^19.1.2`, `next@15.5.18` — but it also pins `motion@^12.23.24` **and** `framer-motion@^12.35.1`, two animation runtimes for a system that ships none. Pro slugs additionally require a licence key and fall outside the MIT grant, so the registry cannot be treated as uniformly licensed |
+| 21st.dev | `https://21st.dev/` | Platform `MIT` — verified in `LICENSE` at `serafimcloud/21st@main`. Per component: `UNVERIFIED — components are third-party and separately licensed` | `REJECTED` | none | The MIT file covers the marketplace application, not the catalogue. The platform's own terms keep demos, previews and presentation with 21st Labs Inc. while the underlying component code remains separately owned or licensed by its author. There is therefore no source-level licence to record here: each component would need its own author-by-author verification under §4.3, which a single source row cannot stand in for |
+| React Bits | `https://reactbits.dev/` | `MIT + Commons Clause License Condition v1.0` — read verbatim from `LICENSE.md` at `DavidHDev/react-bits@main`, "Copyright (c) 2026 David Haz", carrying a "Commons Clause Restriction" section and narrowing the grant to use "as part of an application, website, or product" | `REJECTED` | none | Commons Clause is an added condition, not boilerplate, and the result is not MIT. §4 accepts only MIT, Apache-2.0, BSD-2-Clause, BSD-3-Clause and ISC, so this fails the allowlist on its face. Rejected on licence alone, before any technical assessment was made |
+| AnimMasterLib | `https://animmasterlib.dev/` | `UNVERIFIED — no repository or npm package found; sold as paid packs` | `REJECTED` | none | The site could not be fetched from this session. Every reachable secondary description agrees it is a commercial product sold as one-time PRO and Premium packs with no public source, and §4 rejects anything behind a paid plan outright. Independently disqualifying: it is vanilla JavaScript driven by GSAP and WebGL rather than React, so it could not compose with Server Components even had the licence cleared |
+| Skiper UI | `https://skiper-ui.com/` | `UNVERIFIED — no LICENSE file located; site not fetched` | `REJECTED` | none | There is nothing verifiable to read. The site was unreachable, `registry.npmjs.org/skiper-ui` returns 404, a repository search for `skiper in:name shadcn` returns zero results, and the `skiper-ui` GitHub organisation exposes no searchable public repository. Only third-party summaries describe the terms — a free tier requiring attribution alongside 54+ paid Pro components — and §4 explicitly refuses a licence that exists only on a marketing page |
+| Vengence UI | `https://www.vengenceui.com/` | `UNVERIFIED — an MIT file exists in a repository not tied to this domain` | `REJECTED` | none | `Ashutoshx7/VengeanceUI` does carry an MIT `LICENSE` and a README stating the project is released under the MIT License, but that README names no website and never links the audited domain, and search surfaces a differently spelled `vengeanceui` domain alongside it. With the site unreachable the repository-to-domain link is unproven, so the licence of the code this URL actually serves is not established. §4.1 forbids recording a licence on that basis |
+| daisyUI | `https://daisyui.com/?lang=en` | `MIT` — verified twice: npm `daisyui@5.7.28` `"license": "MIT"`, and `LICENSE` at `saadeghi/daisyui@master` ("Copyright (c) 2020 Pouya Saadeghi") | `NOT_ADOPTED` | none | The licence is clean; the architecture collides. It is a CSS-only Tailwind plugin that installs a second semantic layer — component classes plus themed palettes carrying colour literals — against `DESIGN_SYSTEM.md` §1, which permits exactly one semantic vocabulary (`--rv-*`) and makes `app/styles/tokens.css` the only file allowed to hold a colour literal; `scripts/design/check-tokens.mjs` fails the build on the rest. Being CSS-only it also supplies none of the APG keyboard and ARIA contracts every §7 record specifies, so it would cost a token system and return no behaviour |
+| OriginKit | `https://www.originkit.dev/` | `UNVERIFIED — the CLI is MIT; the component source it downloads is not covered` | `REJECTED` | none | The only verifiable artefacts are wrappers. npm `originkit@0.2.23` declares `"license": "MIT"`, but its own metadata shows it ships a `bin` and fetches component source on demand from a remote registry API. `vellum-ai/originkit` is MIT (Vellum, Inc.) yet is an MCP plugin whose README states it bundles metadata only, no source code, and that the components are created by Originkit. No public repository holds the components — searching the `landerdevelopers` account named in the npm metadata returns only unrelated repositories — and the site could not be fetched. An MIT tool that downloads code does not license the code it downloads |
 
 **Current state of record: no external UI component has been adopted.** Every interactive component
 in §6 and §7 is first-party. That is a deliberate starting position, not an oversight — the
 behavioural patterns in `DESIGN_SYSTEM.md` §11 are the ones every other component composes from, and
 owning their keyboard and focus model outright is cheaper than adapting six different ones.
 
+**Audit performed 2026-09-07 by Claude, Phase 02.** Every one of the eleven URLs above was refused by
+this session's egress proxy, so **no source site was fetched and none was observed either to resolve
+or to fail** — the failure mode was uniform and on our side of the connection, not theirs, and no row
+above claims otherwise. Each licence recorded was therefore read from a reachable primary source
+instead: a `LICENSE` file served by `raw.githubusercontent.com` at a named repository and ref, or a
+`license` field in `registry.npmjs.org` metadata at a named version. Where neither existed the cell
+says exactly that and the outcome is `REJECTED`; no SPDX identifier in this table was inferred from a
+sibling project, a badge, or a marketing claim. Five sources — ThreeUI, SmoothUI, Magic UI, Unlumen
+UI and daisyUI — hold a verified `MIT` grant and were still not drawn on, for the architectural
+reasons stated in their rows; the remaining six cannot clear §4 at all. Two of those verifications are
+deliberately partial and must not be read as blanket grants: the ThreeUI and Unlumen UI licence files
+cover their free tiers only, with Pro source withheld in both cases. Nothing in §6 or §7 changes as a
+result — the first-party position stands, now on evidence rather than by default.
+
 Each source's audit, when it runs, records for the whole source: the licence stated in its
 repository, whether components are copy-paste or an npm dependency, whether it ships its own runtime
 (a second animation library is a rejection reason on its own), and its accessibility posture. The
-outcome replaces `NOT_YET_AUDITED` with `AUDITED — <date>` plus a one-line verdict.
+outcome replaces `NOT_YET_AUDITED` with one of `ADOPTED`, `ADAPTED`, `REJECTED` or `NOT_ADOPTED` — the four
+values `scripts/design/check-registry.mjs` accepts — plus the licence evidence and the reason.
 
 ---
 
@@ -201,37 +216,37 @@ All rows are `Source: Rivya first-party`, `Licence: N/A — first-party`, `Verdi
 
 | ID | Component | Purpose (FEAT §5) | Phase | State |
 |---|---|---|---|---|
-| RC-001 | `Button` | conversion, usability | 02 | PLANNED |
-| RC-002 | `IconButton` | usability | 02 | PLANNED |
-| RC-003 | `TextLink` | navigation | 02 | PLANNED |
-| RC-004 | `Field` | usability | 02 | PLANNED |
-| RC-005 | `Input` | conversion | 02 | PLANNED |
-| RC-006 | `Textarea` | conversion | 02 | PLANNED |
-| RC-007 | `Select` | conversion | 02 | PLANNED |
-| RC-008 | `Checkbox` | conversion | 02 | PLANNED |
-| RC-009 | `Radio` | conversion | 02 | PLANNED |
-| RC-010 | `Switch` | usability | 02 | PLANNED |
-| RC-011 | `Label` | usability | 02 | PLANNED |
-| RC-012 | `HelpText` | usability | 02 | PLANNED |
-| RC-013 | `ErrorText` | usability | 02 | PLANNED |
-| RC-014 | `Surface` | brand perception | 02 | PLANNED |
-| RC-015 | `Container` | usability | 02 | PLANNED |
-| RC-016 | `Section` | storytelling | 02 | PLANNED |
-| RC-017 | `Stack` | usability | 02 | PLANNED |
-| RC-018 | `Cluster` | usability | 02 | PLANNED |
-| RC-019 | `Grid` | usability | 02 | PLANNED |
-| RC-020 | `Heading` | storytelling | 02 | PLANNED |
-| RC-021 | `Text` | storytelling | 02 | PLANNED |
-| RC-022 | `Eyebrow` | brand perception | 02 | PLANNED |
-| RC-023 | `Divider` | usability | 02 | PLANNED |
-| RC-024 | `Badge` | usability | 02 | PLANNED |
-| RC-025 | `Tag` | navigation | 02 | PLANNED |
-| RC-026 | `Spinner` | usability | 02 | PLANNED |
-| RC-027 | `Skeleton` | usability | 02 | PLANNED |
-| RC-028 | `VisuallyHidden` | usability | 02 | PLANNED |
-| RC-029 | `AspectBox` | material understanding | 02 | PLANNED |
-| RC-030 | `MediaFrame` | material understanding | 02 | PLANNED |
-| RC-031 | `FocusTrap` | usability | 02 | PLANNED |
+| RC-001 | `Button` | conversion, usability | 02 | BUILT |
+| RC-002 | `IconButton` | usability | 02 | BUILT |
+| RC-003 | `TextLink` | navigation | 02 | BUILT |
+| RC-004 | `Field` | usability | 02 | BUILT |
+| RC-005 | `Input` | conversion | 02 | BUILT |
+| RC-006 | `Textarea` | conversion | 02 | BUILT |
+| RC-007 | `Select` | conversion | 02 | BUILT |
+| RC-008 | `Checkbox` | conversion | 02 | BUILT |
+| RC-009 | `Radio` | conversion | 02 | BUILT |
+| RC-010 | `Switch` | usability | 02 | BUILT |
+| RC-011 | `Label` | usability | 02 | BUILT |
+| RC-012 | `HelpText` | usability | 02 | BUILT |
+| RC-013 | `ErrorText` | usability | 02 | BUILT |
+| RC-014 | `Surface` | brand perception | 02 | BUILT |
+| RC-015 | `Container` | usability | 02 | BUILT |
+| RC-016 | `Section` | storytelling | 02 | BUILT |
+| RC-017 | `Stack` | usability | 02 | BUILT |
+| RC-018 | `Cluster` | usability | 02 | BUILT |
+| RC-019 | `Grid` | usability | 02 | BUILT |
+| RC-020 | `Heading` | storytelling | 02 | BUILT |
+| RC-021 | `Text` | storytelling | 02 | BUILT |
+| RC-022 | `Eyebrow` | brand perception | 02 | BUILT |
+| RC-023 | `Divider` | usability | 02 | BUILT |
+| RC-024 | `Badge` | usability | 02 | BUILT |
+| RC-025 | `Tag` | navigation | 02 | BUILT |
+| RC-026 | `Spinner` | usability | 02 | BUILT |
+| RC-027 | `Skeleton` | usability | 02 | BUILT |
+| RC-028 | `VisuallyHidden` | usability | 02 | BUILT |
+| RC-029 | `AspectBox` | material understanding | 02 | BUILT |
+| RC-030 | `MediaFrame` | material understanding | 02 | BUILT |
+| RC-031 | `FocusTrap` | usability | 02 | BUILT |
 | RC-032 | `SkipLink` | navigation | 05 | PLANNED |
 | RC-033 | `FileUpload` | conversion | 19 | PLANNED |
 
@@ -247,13 +262,13 @@ and Phase 10's site shell then reuses it.
 
 | ID | Component | Purpose | Phase | State | Record |
 |---|---|---|---|---|---|
-| RC-201 | `Dialog` | usability | 02 | PLANNED | §7.1 |
-| RC-202 | `Drawer` | usability | 02 | PLANNED | §7.2 |
-| RC-203 | `Tabs` | usability | 02 | PLANNED | §7.3 |
-| RC-204 | `Accordion` | usability | 02 | PLANNED | §7.4 |
-| RC-205 | `Tooltip` | usability | 02 | PLANNED | §7.5 |
-| RC-206 | `Disclosure` | usability | 02 | PLANNED | §7.6 |
-| RC-207 | `Reveal` + `useReducedMotion` | brand perception | 02 | PLANNED | §7.7 |
+| RC-201 | `Dialog` | usability | 02 | BUILT | §7.1 |
+| RC-202 | `Drawer` | usability | 02 | BUILT | §7.2 |
+| RC-203 | `Tabs` | usability | 02 | BUILT | §7.3 |
+| RC-204 | `Accordion` | usability | 02 | BUILT | §7.4 |
+| RC-205 | `Tooltip` | usability | 02 | BUILT | §7.5 |
+| RC-206 | `Disclosure` | usability | 02 | BUILT | §7.6 |
+| RC-207 | `Reveal` + `useReducedMotion` | brand perception | 02 | BUILT | §7.7 |
 | RC-208 | `SiteHeader` | navigation | 10 | PLANNED | index only — server, no interaction model |
 | RC-209 | `AnnouncementBar` | conversion | 10 | PLANNED | index only |
 | RC-210 | `MegaMenu` | navigation | 10 | PLANNED | §7.8 |
@@ -276,8 +291,8 @@ and Phase 10's site shell then reuses it.
 | RC-227 | `InquirySuccess` | conversion | 20 | PLANNED | index only — server, SEED §48 copy |
 | RC-228 | `ModelViewerMount` | product understanding | 21 | PLANNED | §7.22 |
 | RC-229 | `charts/*` (`BarSeries`, `BandStrip`, `Scatter`, `Sparkline`) | usability | 31 | PLANNED | §7.23 |
-| RC-230 | `Breadcrumbs` | navigation | 02 | PLANNED | §7.35 |
-| RC-231 | `DropdownMenu` | navigation | 02 | PLANNED | §7.36 |
+| RC-230 | `Breadcrumbs` | navigation | 02 | BUILT | §7.35 |
+| RC-231 | `DropdownMenu` | navigation | 02 | BUILT | §7.36 |
 | RC-232 | `MediaImage` | material understanding | 06 | PLANNED | §7.37 |
 | RC-233 | `MediaVideo` | material understanding | 06 | PLANNED | §7.38 |
 | RC-234 | `Pagination` | navigation | 14 | PLANNED | §7.39 |

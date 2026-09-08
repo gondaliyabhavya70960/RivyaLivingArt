@@ -918,6 +918,37 @@ Shadows are never coloured, never inset, and never used to fake a border on a co
 
 ---
 
+## 6.3 Polymorphic components and `ref`
+
+A component that accepts an `as` prop cannot pass its forwarded `ref` straight to the
+rendered tag. React types `ref` per intrinsic element, and a union of intrinsic elements
+does **not** unify those ref types: rendering `<Tag ref={ref}>` where `Tag` is
+`'div' | 'section' | 'ul'` asks TypeScript for a ref that is simultaneously an
+`HTMLDivElement`, an `HTMLElement` and an `HTMLLIElement` — an intersection nothing
+satisfies. The error names a property from an unrelated element (`cite` is missing…,
+`align` is missing…) and reads like a bug in the component, which is why three separate
+component groups hit it independently while this section did not exist.
+
+Route the tag through `asTag` from `lib/ui/polymorphic.ts`:
+
+```tsx
+import { asTag } from '@/lib/ui/polymorphic'
+
+export const Text = React.forwardRef<HTMLElement, TextProps>(function Text({ as = 'p', ...rest }, ref) {
+  const Tag = asTag(as)          // not: const Tag: React.ElementType = as
+  return <Tag ref={ref} {...rest} />
+})
+```
+
+Every element in our polymorphic unions **is** an `HTMLElement`, so narrowing the JSX type
+to one that accepts an `HTMLElement` ref is sound. The cast lives in that one helper rather
+than at each call site, and the component's public prop surface stays fully typed — `as`
+remains restricted to its declared union.
+
+Components using it today: `Container`, `Surface`, `Section`, `Stack`, `Text`, `Eyebrow`.
+
+---
+
 ## 7. Form controls
 
 Everything in this section lives in `components/primitives/`. Shared rules first, because they are

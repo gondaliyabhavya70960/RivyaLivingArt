@@ -1,0 +1,112 @@
+/*
+ * GLOBAL ENTRY — imports only, plus the Tailwind bridge.
+ * This file holds NO values of its own: every name below resolves to a --rv-* token.
+ */
+/*
+ * ORDER AND LAYERING ARE LOAD-BEARING — read before touching.
+ *
+ * Tailwind is imported FIRST so its `@layer theme, base, components, utilities` declaration
+ * establishes the layer order. base.css is then imported INTO `layer(base)`.
+ *
+ * Both matter. An unlayered stylesheet beats every layered one regardless of source order,
+ * so while base.css sat unlayered its `button { padding: 0; border: none; background: none }`
+ * reset silently overrode every Tailwind padding, border and background utility on every
+ * button in the product: the primary CTA rendered with no accent fill, the secondary with no
+ * border, and all of them with no padding. Nothing caught it — the classes were present in
+ * source, they compiled to real CSS, and the visual baselines had been generated from the
+ * broken state, so they agreed with it.
+ *
+ * tokens.css and scheme.css stay unlayered on purpose: they declare custom properties, which
+ * nothing competes with, and keeping them outside the layers means a token can never lose to
+ * a utility.
+ */
+@import 'tailwindcss';
+@import './styles/tokens.css';
+@import './styles/scheme.css';
+@import './styles/base.css' layer(base);
+
+@theme inline {
+  --color-surface: var(--rv-surface-ground);
+  --color-surface-raised: var(--rv-surface-raised);
+  --color-surface-raised-2: var(--rv-surface-raised-2);
+  --color-surface-sunken: var(--rv-surface-sunken);
+  --color-surface-accent: var(--rv-surface-accent);
+  --color-surface-inverse: var(--rv-surface-inverse);
+  --color-ink: var(--rv-ink-primary);
+  --color-ink-secondary: var(--rv-ink-secondary);
+  --color-ink-tertiary: var(--rv-ink-tertiary);
+  --color-ink-disabled: var(--rv-ink-disabled);
+  --color-ink-accent: var(--rv-ink-accent);
+  --color-ink-on-accent: var(--rv-ink-on-accent);
+  --color-ink-inverse: var(--rv-ink-inverse);
+  --color-line: var(--rv-line-subtle);
+  --color-line-strong: var(--rv-line-strong);
+  --color-state-success: var(--rv-state-success);
+  --color-state-warning: var(--rv-state-warning);
+  --color-state-danger: var(--rv-state-danger);
+  --color-state-info: var(--rv-state-info);
+  --color-state-success-soft: var(--rv-state-success-soft);
+  --color-state-warning-soft: var(--rv-state-warning-soft);
+  --color-state-danger-soft: var(--rv-state-danger-soft);
+  --color-state-info-soft: var(--rv-state-info-soft);
+
+  --font-display: var(--rv-font-display);
+  --font-sans: var(--rv-font-body);
+  --font-mono: var(--rv-font-mono);
+
+  --text-display-2xl: var(--rv-text-display-2xl);
+  --text-display-xl: var(--rv-text-display-xl);
+  --text-display-lg: var(--rv-text-display-lg);
+  --text-display-md: var(--rv-text-display-md);
+  --text-display-sm: var(--rv-text-display-sm);
+  --text-display-xs: var(--rv-text-display-xs);
+  --text-xl: var(--rv-text-xl);
+  --text-lg: var(--rv-text-lg);
+  --text-md: var(--rv-text-md);
+  --text-base: var(--rv-text-base);
+  --text-sm: var(--rv-text-sm);
+  --text-xs: var(--rv-text-xs);
+  --text-2xs: var(--rv-text-2xs);
+
+  --tracking-display: var(--rv-tracking-display);
+  --tracking-heading: var(--rv-tracking-heading);
+  --tracking-eyebrow: var(--rv-tracking-eyebrow);
+  --tracking-technical: var(--rv-tracking-technical);
+
+  --leading-display: var(--rv-leading-display);
+  --leading-heading: var(--rv-leading-heading);
+  --leading-body: var(--rv-leading-body);
+  --leading-tight: var(--rv-leading-tight);
+
+  --spacing: var(--rv-space-1);
+
+  --radius-none: var(--rv-radius-0);
+  --radius-xs: var(--rv-radius-xs);
+  --radius-sm: var(--rv-radius-sm);
+  --radius-md: var(--rv-radius-md);
+  --radius-lg: var(--rv-radius-lg);
+  --radius-xl: var(--rv-radius-xl);
+  --radius-pill: var(--rv-radius-pill);
+
+  --shadow-1: var(--rv-elevation-1);
+  --shadow-2: var(--rv-elevation-2);
+  --shadow-3: var(--rv-elevation-3);
+
+  --container-prose: var(--rv-container-prose);
+  --container-default: var(--rv-container-default);
+  --container-wide: var(--rv-container-wide);
+  --container-full: var(--rv-container-full);
+
+  --breakpoint-sm: 26.875rem;
+  --breakpoint-md: 48rem;
+  --breakpoint-lg: 64rem;
+  --breakpoint-xl: 80rem;
+  --breakpoint-2xl: 90rem;
+  --breakpoint-3xl: 120rem;
+
+  --ease-standard: var(--rv-ease-standard);
+  --ease-out-expo: var(--rv-ease-out);
+  --ease-in-expo: var(--rv-ease-in);
+  --ease-flow: var(--rv-ease-flow);
+  --ease-settle: var(--rv-ease-settle);
+}

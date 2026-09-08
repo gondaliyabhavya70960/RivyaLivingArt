@@ -6,6 +6,88 @@ Every phase adds an entry; see `docs/architecture/CANONICAL-DECISIONS.md` D9 for
 
 ## [Unreleased]
 
+### Phase 02 — Reference UI Audit + Design System — COMPLETE
+
+**Added**
+
+- **Toolchain.** Next.js 16 App Router, React 19, TypeScript strict with
+  `noUncheckedIndexedAccess`, Tailwind 4 CSS-first, Vitest, Playwright, ESLint, Prettier, and
+  `.github/workflows/ci.yml` running every gate as a separately visible step.
+- **Token layer.** `app/styles/tokens.css` is the only file permitted a colour literal;
+  `scheme.css` redeclares an identical 28-token semantic set for DEEP, INK and BONE, so a
+  component reads `--rv-ink-secondary` and never asks which ground it is on; `globals.css`
+  carries the Tailwind `@theme` bridge and no values of its own.
+- **32 primitives**, **both motion helpers** and the **seven behavioural patterns**
+  (Dialog, Drawer, Tooltip, Tabs, Accordion, Disclosure, DropdownMenu), each with
+  behaviour-level tests. 282 unit tests across 41 files; 104 e2e tests across the eight QA
+  widths; 16 visual baselines.
+- **Dev-only gallery** at `/design-system`, plus an eight-width Playwright harness covering
+  visual baselines, axe, keyboard reachability and the reduced-motion contract.
+- **Five gates**, each proved to bite by provoking the failure it exists for:
+  `check-tokens` (colour literals, arbitrary values, and a re-derivation of the neutral ramp
+  from the OKLab rule), `check-utilities` (classes that compile to no CSS),
+  `check-registry` (the two-tier registry contract and licence allowlist), plus the two
+  media gates from amendment A1.
+- **Licence audit of all eleven FEAT §7 sources**: 5 `NOT_ADOPTED`, 6 `REJECTED`, none
+  adopted. Every licence read from a `LICENSE` file or npm metadata at a named ref, because
+  none of the eleven sites was reachable from this environment.
+
+**Verified rather than assumed**
+
+- The palette quartet re-counted against the Higgsfield manifest (114 assets each).
+- The ten-step neutral ramp reproduces exactly from DESIGN_SYSTEM §2.2's OKLab rule — all
+  ten hexes and luminances to four decimal places.
+- Champagne on bone measures 2.52:1 and fails AA at every size, which is why light grounds
+  use champagne-deep at 5.05:1.
+- `/design-system` returns 200 under `next dev` and 404 in a production build, and since the
+  route is in the production manifest the 404 provably comes from the `notFound()` guard.
+
+**Fixed**
+
+- **Every button in the product rendered unstyled** — no padding, no accent fill on the
+  primary CTA, no border on the secondary. `app/styles/base.css` was imported *unlayered*,
+  and Tailwind 4 puts utilities in `@layer utilities`; an unlayered stylesheet beats a
+  layered one regardless of source order, so `button { padding: 0; border: none;
+  background: none }` overrode every padding, border and background utility on every button.
+  Nothing caught it: the classes were present in source, they compiled to real CSS, axe was
+  satisfied because text-on-ground contrast is fine without a fill, and **the sixteen visual
+  baselines agreed with it, having been captured from the broken state.** Found only by
+  chasing a 43px-wide button reported by a newly added touch-target test. Fixed by importing
+  Tailwind first and pulling `base.css` into `layer(base)`; guarded by an e2e assertion that
+  reads computed style, which is the only place a cascade loss is visible.
+- **Nine components had no transitions.** `duration-[--rv-duration-fast]` is an arbitrary
+  *value* in Tailwind 4 and compiles to `transition-duration: --rv-duration-fast`, invalid
+  CSS the browser drops. The parenthesis form is the variable reference. `check-tokens` now
+  rejects the bracket-variable pattern anywhere.
+- **The QA matrix could not test touch.** The three "mobile" projects reported a fine
+  pointer, so they were narrow desktops and the 44px touch-target rule in FEAT §48 was
+  untestable at exactly the widths it exists for. `hasTouch` is now set on those projects and
+  a touch-target test asserts the rule.
+- **`Dialog` and `Drawer` did not restore focus to their trigger**, though both promise it in
+  their registry contracts. `useModalSurface` applies `inert` in a layout effect; `FocusTrap`
+  captured `document.activeElement` in a passive effect, which runs later — so it captured
+  `<body>` after the browser had blurred the inert trigger, and correctly refused to restore
+  to that. jsdom does not implement `inert`'s focus behaviour, so the unit test asserting
+  restoration passed throughout; the Chromium test caught it.
+- **`Switch` had no accessible name** — a critical axe violation. Its unit tests had hidden
+  it by passing `aria-label` themselves, so the tests were compensating for the gap they
+  existed to expose.
+- **Polymorphic `ref` typing.** Four component groups independently hit the same error: a
+  union of intrinsic elements does not unify its ref types. Fixed once in
+  `lib/ui/polymorphic.ts` and documented as DESIGN_SYSTEM §6.3.
+- **React Bits is not MIT** — its licence is "MIT + Commons Clause License Condition v1.0",
+  read verbatim. Recorded as `REJECTED` rather than assumed.
+- **Four false positives in the gates themselves**: unescaped variant selectors, bare
+  utility roots matching prose, unstripped block comments, and CSS leading-digit escaping.
+  A gate that cries wolf is worse than no gate.
+
+**Known blocker**
+
+GitHub Actions cannot provision a runner for this repository. Every run since the workflow
+was added fails in 2-5 seconds with `runner_id: 0` and zero steps executed, including the
+first — an account-level condition, not a defect in the diff. The full sequence passes
+locally from a clean `npm ci`.
+
 ### Phase 01 — PRD, Architecture & Documentation — COMPLETE
 
 **Added**

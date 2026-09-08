@@ -1,0 +1,129 @@
+/*
+ * COLOUR SCHEMES (docs/design/DESIGN_SYSTEM.md §2.4, §2.5)
+ *
+ * Three schemes, each redeclaring the same complete set of semantic names.
+ * A component never asks which scheme it is in — it reads the semantic token
+ * and receives a value already proven compliant in §2.6-§2.8.
+ *
+ * There is no user-facing light/dark toggle and prefers-color-scheme is not
+ * consulted: the ground is part of the brand, and inverting it would invert
+ * half the photography. Scheme is an editorial decision made per section.
+ */
+
+.rv-scheme-deep {
+  color-scheme: dark;
+  --rv-surface-ground: var(--rv-color-ocean);
+  --rv-surface-raised: var(--rv-color-ocean-raised);
+  --rv-surface-raised-2: var(--rv-color-ocean-raised-2);
+  --rv-surface-sunken: var(--rv-color-obsidian);
+  --rv-surface-accent: var(--rv-color-champagne);
+  --rv-surface-inverse: var(--rv-color-bone);
+  --rv-ink-primary: var(--rv-color-bone);
+  --rv-ink-secondary: var(--rv-neutral-200);
+  --rv-ink-tertiary: var(--rv-neutral-300);
+  --rv-ink-disabled: var(--rv-neutral-400);
+  --rv-ink-accent: var(--rv-color-champagne);
+  --rv-ink-on-accent: var(--rv-color-obsidian);
+  --rv-ink-inverse: var(--rv-color-obsidian);
+  --rv-line-subtle: var(--rv-color-ocean-line);
+  --rv-line-strong: var(--rv-color-steel);
+  --rv-focus-ring: var(--rv-color-champagne);
+  --rv-scrim: rgb(8 10 14 / 0.78);
+  --rv-state-success: var(--rv-color-success-light);
+  --rv-state-warning: var(--rv-color-warning-light);
+  --rv-state-danger: var(--rv-color-danger-light);
+  --rv-state-info: var(--rv-color-info-light);
+  --rv-state-success-soft: var(--rv-color-success-soft-dark);
+  --rv-state-warning-soft: var(--rv-color-warning-soft-dark);
+  --rv-state-danger-soft: var(--rv-color-danger-soft-dark);
+  --rv-state-info-soft: var(--rv-color-info-soft-dark);
+  --rv-elevation-1: none;
+  --rv-elevation-2: none;
+  --rv-elevation-3: none;
+}
+
+.rv-scheme-ink {
+  color-scheme: dark;
+  --rv-surface-ground: var(--rv-color-obsidian);
+  --rv-surface-raised: var(--rv-color-obsidian-raised);
+  /* Named token, never a bare --rv-neutral-800, so it appears in §2.6 under its own name. */
+  --rv-surface-raised-2: var(--rv-color-obsidian-raised-2);
+  /* The one place pure black is permitted, and only as a media well. Never a text ground. */
+  --rv-surface-sunken: #000000;
+  --rv-surface-accent: var(--rv-color-champagne);
+  --rv-surface-inverse: var(--rv-color-bone);
+  --rv-ink-primary: var(--rv-color-bone);
+  --rv-ink-secondary: var(--rv-neutral-200);
+  --rv-ink-tertiary: var(--rv-neutral-300);
+  --rv-ink-disabled: var(--rv-neutral-400);
+  --rv-ink-accent: var(--rv-color-gold-bright);
+  --rv-ink-on-accent: var(--rv-color-obsidian);
+  --rv-ink-inverse: var(--rv-color-obsidian);
+  --rv-line-subtle: var(--rv-color-obsidian-line);
+  --rv-line-strong: var(--rv-color-steel);
+  --rv-focus-ring: var(--rv-color-gold-bright);
+  --rv-scrim: rgb(8 10 14 / 0.86);
+  --rv-state-success: var(--rv-color-success-light);
+  --rv-state-warning: var(--rv-color-warning-light);
+  --rv-state-danger: var(--rv-color-danger-light);
+  --rv-state-info: var(--rv-color-info-light);
+  --rv-state-success-soft: var(--rv-color-success-soft-dark);
+  --rv-state-warning-soft: var(--rv-color-warning-soft-dark);
+  --rv-state-danger-soft: var(--rv-color-danger-soft-dark);
+  --rv-state-info-soft: var(--rv-color-info-soft-dark);
+  --rv-elevation-1: none;
+  --rv-elevation-2: none;
+  --rv-elevation-3: none;
+}
+
+.rv-scheme-bone {
+  color-scheme: light;
+  --rv-surface-ground: var(--rv-color-bone);
+  --rv-surface-raised: var(--rv-color-bone-raised);
+  --rv-surface-raised-2: var(--rv-color-bone-sunken);
+  --rv-surface-sunken: var(--rv-color-bone-well);
+  --rv-surface-accent: var(--rv-color-sapphire);
+  --rv-surface-inverse: var(--rv-color-ocean);
+  --rv-ink-primary: var(--rv-color-obsidian);
+  --rv-ink-secondary: var(--rv-neutral-700);
+  --rv-ink-tertiary: var(--rv-neutral-600);
+  --rv-ink-disabled: var(--rv-neutral-500);
+  /* Champagne #B89B63 on bone is 2.52:1 and fails AA at every size. On light grounds
+     the accent ink is champagne-deep (5.05:1). See §2.3, §2.8. */
+  --rv-ink-accent: var(--rv-color-champagne-deep);
+  --rv-ink-on-accent: var(--rv-color-bone);
+  --rv-ink-inverse: var(--rv-color-bone);
+  --rv-line-subtle: var(--rv-neutral-100);
+  --rv-line-strong: var(--rv-neutral-400);
+  --rv-focus-ring: var(--rv-color-sapphire);
+  --rv-scrim: rgb(8 10 14 / 0.62);
+  --rv-state-success: var(--rv-color-success-dark);
+  --rv-state-warning: var(--rv-color-warning-dark);
+  --rv-state-danger: var(--rv-color-danger-dark);
+  --rv-state-info: var(--rv-color-info-dark);
+  --rv-state-success-soft: var(--rv-color-success-soft-light);
+  --rv-state-warning-soft: var(--rv-color-warning-soft-light);
+  --rv-state-danger-soft: var(--rv-color-danger-soft-light);
+  --rv-state-info-soft: var(--rv-color-info-soft-light);
+  /* Elevation on a light ground is a shadow; on DEEP/INK it is a lifted surface (§6.2). */
+  --rv-elevation-1: var(--rv-shadow-1);
+  --rv-elevation-2: var(--rv-shadow-2);
+  --rv-elevation-3: var(--rv-shadow-3);
+}
+
+/*
+ * Automatic step-ups on the second raised surface (§2.11).
+ * A component nested inside .rv-surface-raised-2 keeps reading --rv-ink-tertiary and
+ * --rv-ink-accent; the values it receives are already the compliant ones. No component
+ * tests which surface it is on, and none may re-declare these to undo the step-up.
+ */
+.rv-scheme-deep .rv-surface-raised-2,
+.rv-scheme-ink .rv-surface-raised-2 {
+  --rv-ink-tertiary: var(--rv-neutral-200);
+}
+
+/* DEEP only: champagne is 4.24 on ocean-raised-2 (UI only); gold-bright is 5.35 (AA).
+   INK's accent is already gold-bright, so it needs no rule. */
+.rv-scheme-deep .rv-surface-raised-2 {
+  --rv-ink-accent: var(--rv-color-gold-bright);
+}
