@@ -2,7 +2,6 @@ import type { Metadata } from 'next'
 import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { z } from 'zod'
-import type { PostgrestError } from '@supabase/supabase-js'
 
 import { Badge, type BadgeTone } from '@/components/primitives/Badge'
 import { Button } from '@/components/primitives/Button'
@@ -56,15 +55,6 @@ const ENTITY = 'staff_profiles'
 /** `staff_profiles.status` is text plus a check constraint, so the allowed set lives here too. */
 const STATUSES = ['INVITED', 'ACTIVE', 'SUSPENDED'] as const
 type StaffStatus = (typeof STATUSES)[number]
-
-/**
- * SQLSTATE for the `enforce_last_owner` refusal (migration 0009 raises `check_violation`).
- *
- * The only other check constraint on this table is `staff_profiles_status_allowed`, and no input
- * that fails it survives the schemas below — so a 23514 arriving here is the owner rule, and
- * turning it into its own sentence is safe rather than a guess.
- */
-const LAST_OWNER_CODE = '23514'
 
 const ROLE_LABEL: Record<Role, StudioStringKey> = {
   owner: 'studio.users.roleOwner',

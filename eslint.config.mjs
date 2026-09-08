@@ -26,6 +26,32 @@ const config = [
   ...next,
 
   /**
+   * Dead bindings fail the build.
+   *
+   * Added in Phase 05 after an unused import went in unnoticed in the same sitting — which is the
+   * whole argument for it: nothing else in the toolchain objects. `tsc` does not (an unused import
+   * is legal TypeScript), Prettier does not, and the reader who eventually notices has to work out
+   * whether the import was load-bearing before deleting it.
+   *
+   * It found exactly three across the repository, and one of them mattered: `LAST_OWNER_CODE`, a
+   * SQLSTATE constant left behind when the last-owner refusal moved to matching the constraint
+   * NAME. Its comment still explained why matching 23514 was safe — reasoning for an approach that
+   * had been deliberately replaced, sitting next to the code that replaced it.
+   *
+   * The base rule rather than the typescript-eslint one: this config pins TypeScript to 6.0.3
+   * because typescript-eslint has no TS 7 support, and adding the plugin would tie another
+   * dependency to that pin for a rule the base ESLint already provides.
+   *
+   * `args: 'none'` because a React component signature often names props it does not use in every
+   * branch, and `_`-prefixed names are the documented way to say "deliberately unused".
+   */
+  {
+    rules: {
+      'no-unused-vars': ['error', { args: 'none', varsIgnorePattern: '^_' }],
+    },
+  },
+
+  /**
    * The service-role client bypasses Row Level Security entirely, so importing it is a decision
    * rather than a convenience. This rule names the small set of files allowed to make it.
    *

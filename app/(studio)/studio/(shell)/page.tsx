@@ -1,19 +1,17 @@
 import Link from 'next/link'
 
-import { Heading } from '@/components/primitives/Heading'
 import { Stack } from '@/components/primitives/Stack'
 import { Surface } from '@/components/primitives/Surface'
 import { Text } from '@/components/primitives/Text'
+import { ActorChip } from '@/components/studio/ActorChip'
+import { EmptyState } from '@/components/studio/EmptyState'
+import { RelativeTime } from '@/components/studio/RelativeTime'
+import { StatCard } from '@/components/studio/StatCard'
 import { StudioPage, studioMetadata } from '@/components/studio/StudioPage'
 import { t, type StudioStringKey } from '@/components/studio/strings'
 import { ROLE_PERMISSIONS, type Role } from '@/lib/auth/permissions'
 import { requirePermission } from '@/lib/auth/require'
-import {
-  cardsForRole,
-  cardTableExists,
-  isCardAvailable,
-  type DashboardCard,
-} from '@/lib/analytics/dashboard-cards'
+import { cardsForRole, cardTableExists, isCardAvailable } from '@/lib/analytics/dashboard-cards'
 import { readActivityFeed } from '@/lib/logging/activity'
 import { createClient } from '@/lib/supabase/server'
 import {
@@ -105,7 +103,18 @@ async function OverviewTab({ role }: { role: Role }) {
     <ul className="grid list-none grid-cols-1 gap-4 p-0 sm:grid-cols-2 lg:grid-cols-4">
       {cards.map((card) => (
         <li key={card.id}>
-          <Card card={card} value={counts[card.id]} />
+          <StatCard
+            label={t(card.labelKey as StudioStringKey)}
+            value={counts[card.id]}
+            // The card is unavailable when the phase has not landed OR the relation is missing.
+            // Both are checked: a phase number can be lowered by mistake, and the registry test
+            // asserts the pair agree.
+            unavailableFromPhase={
+              isCardAvailable(card) && cardTableExists(card) ? undefined : card.availableFromPhase
+            }
+            unavailableLabel={t('studio.card.unavailable')}
+            unreadableLabel={t('studio.card.unreadable')}
+          />
         </li>
       ))}
     </ul>
@@ -141,54 +150,31 @@ async function readCounts(): Promise<Record<string, MetricCount>> {
   }
 }
 
-function Card({ card, value }: { card: DashboardCard; value: MetricCount | undefined }) {
-  const available = isCardAvailable(card) && cardTableExists(card)
-
-  return (
-    <Surface level={1} className="h-full p-4">
-      <Stack gap={1}>
-        <Text size="2xs" uppercase tone="tertiary">
-          {t(card.labelKey as StudioStringKey)}
-        </Text>
-
-        {!available ? (
-          // Never a zero. "Open enquiries: 0" reads as "nobody has enquired" when the truth is that
-          // enquiries do not exist yet — a fabricated business fact, which D10 forbids.
-          <Text size="sm" tone="secondary">
-            {t('studio.card.unavailable')} {String(card.availableFromPhase).padStart(2, '0')}
-          </Text>
-        ) : value === null || value === undefined ? (
-          <Text size="sm" tone="secondary">
-            {t('studio.card.unreadable')}
-          </Text>
-        ) : (
-          <Heading level={2} size="display-sm">
-            {value.toLocaleString('en-IN')}
-          </Heading>
-        )}
-      </Stack>
-    </Surface>
-  )
-}
-
 /* ------------------------------------------------------------------------------ Activity tab */
 
 async function ActivityTab() {
   const { events, failed } = await readActivityFeed({ limit: 50 })
 
+  // The two zero-row cases are NOT the same and must not render the same. "Nothing has happened"
+  // when the truth is "the feed could not be read" is the interface asserting something false that
+  // the reader has no way to detect.
   if (failed) {
     return (
-      <Surface level={1} className="p-6">
-        <Text tone="secondary">{t('studio.activity.failed')}</Text>
-      </Surface>
+      <EmptyState
+        reason="unreadable"
+        heading={t('studio.activity.failedHeading')}
+        body={t('studio.activity.failed')}
+      />
     )
   }
 
   if (events.length === 0) {
     return (
-      <Surface level={1} className="p-6">
-        <Text tone="secondary">{t('studio.activity.empty')}</Text>
-      </Surface>
+      <EmptyState
+        reason="empty"
+        heading={t('studio.activity.emptyHeading')}
+        body={t('studio.activity.empty')}
+      />
     )
   }
 
@@ -199,11 +185,15 @@ async function ActivityTab() {
           <Surface level={1} className="p-4">
             <Stack gap={1}>
               <Text size="sm">{event.summary ?? event.action}</Text>
-              <Text size="xs" tone="tertiary">
-                {event.actor_role ?? 'system'} ·{' '}
-                <time dateTime={event.occurred_at}>{event.occurred_at}</time>
-                {event.entity_label !== null && ` · ${event.entity_label}`}
-              </Text>
+              <div className="flex flex-wrap items-center gap-2">
+                <ActorChip role={event.actor_role} />
+                <RelativeTime value={event.occurred_at} />
+                {event.entity_label !== null && (
+                  <Text as="span" size="xs" tone="tertiary">
+                    {event.entity_label}
+                  </Text>
+                )}
+              </div>
             </Stack>
           </Surface>
         </li>

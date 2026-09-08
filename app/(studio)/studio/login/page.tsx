@@ -14,7 +14,7 @@ import { Text } from '@/components/primitives/Text'
 import { writeAudit } from '@/lib/auth/audit'
 import { getStaffSession } from '@/lib/auth/session'
 import { createClient } from '@/lib/supabase/server'
-import { resolveNextPath, STUDIO_HOME } from '@/lib/auth/next-path'
+import { resolveNextPath } from '@/lib/auth/next-path'
 
 /**
  * The only unauthenticated Studio route (D4, amendment A2·b).

@@ -771,6 +771,49 @@ export const STUDIO_STRINGS = {
     value: 'Analytics arrives in phase 37. Nothing is measured here yet, so no figure is shown.',
     contentKey: 'studio_help.analytics_stub',
   },
+  'studio.activity.emptyHeading': {
+    value: 'No activity yet',
+    contentKey: 'studio_help.activity_empty_heading',
+  },
+  'studio.activity.failedHeading': {
+    value: 'The feed could not be read',
+    contentKey: 'studio_help.activity_failed_heading',
+  },
+  /* ------------------------------------------------------- page states (Phase 05, SEED 45/46) */
+  'studio.state.loading': {
+    value: 'Loading',
+    contentKey: 'studio_help.state_loading',
+  },
+  'studio.state.notFoundHeading': {
+    value: 'That page is not here',
+    contentKey: 'studio_help.state_not_found_heading',
+  },
+  'studio.state.notFoundBody': {
+    value:
+      'The link may be out of date, or the record may have been removed. Nothing has been changed.',
+    contentKey: 'studio_help.state_not_found_body',
+  },
+  'studio.state.errorHeading': {
+    value: 'Something interrupted this page',
+    contentKey: 'studio_help.state_error_heading',
+  },
+  'studio.state.errorBody': {
+    value: 'The page could not be loaded. Nothing you were doing has been saved or changed.',
+    contentKey: 'studio_help.state_error_body',
+  },
+  /** Precedes the error digest, which is what correlates this screen with the server log. */
+  'studio.state.errorReference': {
+    value: 'Reference',
+    contentKey: 'studio_help.state_error_reference',
+  },
+  'studio.state.tryAgain': {
+    value: 'Try again',
+    contentKey: 'studio_help.state_try_again',
+  },
+  'studio.state.backToOverview': {
+    value: 'Back to the Overview',
+    contentKey: 'studio_help.state_back_to_overview',
+  },
 } as const satisfies Record<string, StudioStringEntry>
 
 /** Every key this module resolves. A typo is a compile error, not a blank space on the page. */
