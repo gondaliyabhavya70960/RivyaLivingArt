@@ -55,6 +55,37 @@ import {
 import { createCloudinaryUploader } from '../../lib/media/providers/cloudinary-admin'
 
 const LEDGER_PATH = 'data/higgsfield/migration-log.json'
+const ENV_PATH = '.env.local'
+
+/**
+ * Load `.env.local`, if it is there.
+ *
+ * WITHOUT THIS THE SCRIPT IS UNRUNNABLE, and the first real run proved it: every asset failed with
+ * "Missing required environment variable NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME" while that variable sat
+ * in `.env.local` the whole time. Next.js loads that file for the app; a `tsx` CLI is not Next.js
+ * and nothing was loading it here.
+ *
+ * `process.loadEnvFile` is built into Node 22, so this costs no dependency. It **does not override
+ * a variable already set in the environment**, which is the property that makes it safe to call:
+ * `.env.local` points `DATABASE_URL` at the hosted project, and an operator who exported a local
+ * one — the way `db:reset` requires — must keep it. Verified rather than assumed.
+ *
+ * Missing file is not an error. CI has no `.env.local` and passes its variables directly.
+ */
+function loadLocalEnv(): void {
+  if (!existsSync(ENV_PATH)) return
+  try {
+    process.loadEnvFile(ENV_PATH)
+  } catch (error) {
+    // A malformed file is worth naming, but never worth printing: it holds live secrets.
+    console.error(
+      `Could not read ${ENV_PATH}: ${error instanceof Error ? error.message : 'unknown'}`,
+    )
+    process.exit(1)
+  }
+}
+
+loadLocalEnv()
 
 const argv = process.argv.slice(2)
 const dryRun = argv.includes('--dry-run')
@@ -94,6 +125,39 @@ function preflight(): void {
     )
     process.exit(1)
   }
+}
+
+/**
+ * The three variables `createCloudinaryUploader()` needs, checked ONCE before the run rather than
+ * discovered per asset.
+ *
+ * WHY THIS IS NOT LEFT TO THE UPLOADER. `configure()` is lazy, so a missing key surfaces on the
+ * first upload — inside the per-asset try/catch, which dutifully records it as a FAILURE and moves
+ * on. A full run with no credentials therefore produced 250 identical ledger entries, an exit code
+ * that says "250 assets failed", and a committed file describing a problem that was never about the
+ * assets at all. One check, one message, before anything is written.
+ *
+ * Names only, never values or lengths — these are live secrets (CLAUDE.md, house style).
+ */
+const CLOUDINARY_VARS = [
+  'NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME',
+  'CLOUDINARY_API_KEY',
+  'CLOUDINARY_API_SECRET',
+] as const
+
+function requireCloudinaryCredentials(): void {
+  const missing = CLOUDINARY_VARS.filter((name) => !process.env[name])
+  if (missing.length === 0) return
+
+  console.error(
+    `✗ ${String(missing.length)} Cloudinary variable(s) are not set:\n` +
+      missing.map((name) => `    ${name}`).join('\n') +
+      `\n\n  Add them to ${ENV_PATH} (names only are shown here; never paste a value into a\n` +
+      '  terminal transcript or a chat). The API key and secret are in the Cloudinary console\n' +
+      '  under Settings → API Keys. See docs/ops/ENVIRONMENT.md §5.\n' +
+      '  Nothing was uploaded and nothing was written.',
+  )
+  process.exit(1)
 }
 
 function readLedger(manifestVersion: string): Ledger {
@@ -174,6 +238,8 @@ async function main(): Promise<void> {
     if (plan.attempt.length > 5) console.log(`    … and ${String(plan.attempt.length - 5)} more`)
     return
   }
+
+  requireCloudinaryCredentials()
 
   const uploader: AssetUploader = createCloudinaryUploader()
   const client = new pg.Client({ connectionString: url })
