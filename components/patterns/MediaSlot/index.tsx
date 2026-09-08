@@ -72,22 +72,31 @@ export function BlockImage({
   overlay,
   className,
 }: BlockImageProps): React.ReactElement {
+  /*
+   * NO CLOUD NAME MEANS NO DELIVERABLE IMAGE, and that is a media failure rather than an error.
+   * `imageUrl` would happily build `https://res.cloudinary.com//image/upload/...` from an empty
+   * string — a URL that resolves to nothing, an `<img>` that 404s, and a broken-image glyph where
+   * the design says a labelled well should be. Treated as "no asset", the frame renders the
+   * reserved box and the seeded SEED §47 label, which is what the layout is already sized for.
+   */
+  const deliverable = cloudName === '' ? null : asset
+
   return (
     <MediaFrame
       ratio={ratio}
       mobileRatio={mobileRatio}
       fallbackLabel={siteStringOrEmpty(strings, FALLBACK_KEY)}
-      veil={veil && asset !== null}
+      veil={veil && deliverable !== null}
       overlay={overlay}
       className={className}
     >
-      {asset === null ? null : (
+      {deliverable === null ? null : (
         <MediaImage
           cloudName={cloudName}
-          media={mediaRefOf(asset)}
+          media={mediaRefOf(deliverable)}
           preset={preset}
           sizes={sizes}
-          alt={altTextOf(asset, altOverride)}
+          alt={altTextOf(deliverable, altOverride)}
           ratio={ratio}
           loading={eager ? 'eager' : 'lazy'}
         />
@@ -122,7 +131,16 @@ export function BlockVideo({
   cloudName,
   loop = true,
   className,
-}: BlockVideoProps): React.ReactElement {
+}: BlockVideoProps): React.ReactElement | null {
+  /*
+   * NOTHING RATHER THAN A BROKEN PLAYER. With no cloud name `videoUrl` builds a source that
+   * resolves to nothing and a poster that does the same, so the visitor gets a control that plays
+   * an error. `BlockImage`'s well is the right answer for a still because the layout reserved a
+   * box for it; a video the page cannot deliver has nothing to say in that box, and its caller —
+   * `HeroSection` — already falls back to the image branch when there is no video.
+   */
+  if (cloudName === '') return null
+
   return (
     <MediaVideo
       cloudName={cloudName}
@@ -175,7 +193,9 @@ export function ResponsiveMedia({
 }: ResponsiveMediaProps): React.ReactElement {
   const shared = { preset, altOverride, strings, cloudName, eager, veil, overlay } as const
 
-  if (desktop !== null && mobile !== null && desktop.id !== mobile.id) {
+  // Same rule as BlockImage, applied before the pair is chosen: with no cloud name neither asset
+  // is deliverable, so emit ONE frame carrying the fallback rather than two identical wells.
+  if (cloudName !== '' && desktop !== null && mobile !== null && desktop.id !== mobile.id) {
     return (
       <>
         <BlockImage

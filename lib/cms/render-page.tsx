@@ -8,7 +8,7 @@ import { cache } from 'react'
 
 import { SectionList } from '@/components/sections/SectionList'
 import { sectionRenderer } from '@/components/sections/registry'
-import { requiredEnv } from '@/lib/env'
+import { optionalEnv } from '@/lib/env'
 import { buildPageMetadata } from '@/lib/seo/metadata'
 import { getSiteChrome } from '@/lib/site/chrome'
 import { createPublicClient } from '@/lib/supabase/public'
@@ -160,7 +160,10 @@ export async function renderCmsPage(path: string): Promise<React.ReactElement> {
         sections={resolved.sections}
         assets={assets}
         strings={chrome.strings}
-        cloudName={requiredEnv('NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME')}
+        // Optional for the same reason as in the site layout: a page whose sections bind no media
+        // must not fail to render because an image setting is absent. Empty resolves to the §47
+        // fallback wherever an asset would have been drawn.
+        cloudName={optionalEnv('NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME') ?? ''}
       />
     </>
   )

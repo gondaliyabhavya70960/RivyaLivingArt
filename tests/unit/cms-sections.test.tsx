@@ -119,13 +119,17 @@ const STRINGS = siteStrings([
   global_('EMPTY_STATE', 'disabled_one', 'Should never render', false),
 ])
 
-function renderSections(sections: readonly PageSection[], assets: MediaAsset[] = []) {
+function renderSections(
+  sections: readonly PageSection[],
+  assets: MediaAsset[] = [],
+  cloudName = CLOUD,
+) {
   return render(
     <SectionList
       sections={sections}
       assets={new Map(assets.map((a) => [a.id, a]))}
       strings={STRINGS}
-      cloudName={CLOUD}
+      cloudName={cloudName}
     />,
   )
 }
@@ -457,6 +461,58 @@ describe('divider', () => {
       section({ block_type: 'divider', theme: 'BONE', payload: { spacing: 'tight', rule: true } }),
     ])
     expect(container.querySelector('.rv-scheme-bone')).not.toBeNull()
+  })
+})
+
+describe('no Cloudinary cloud name', () => {
+  /**
+   * THE DEPLOYMENT THIS PREVENTS. `app/(site)/layout.tsx` read the cloud name with `requiredEnv`
+   * and forwarded it; the header forwarded it again to category cards that had no bound asset, and
+   * nothing built a URL with it — yet every public page failed to prerender without it. A Vercel
+   * build died on `/about`, a page with no media at all, for want of an image setting.
+   *
+   * The rule now: an absent cloud name is a MEDIA FAILURE, handled the way every other media
+   * failure is. `imageUrl` would otherwise happily build `https://res.cloudinary.com//image/...`
+   * from an empty string — a URL resolving to nothing, and a broken-image glyph where the design
+   * says a labelled well belongs.
+   */
+  it('renders the §47 fallback instead of an image', () => {
+    renderSections([section({ block_type: 'hero', media_desktop_id: M1 })], [asset(M1)], '')
+    expect(screen.queryAllByRole('img')).toHaveLength(0)
+    expect(screen.getAllByText('Image unavailable').length).toBeGreaterThan(0)
+  })
+
+  it('emits one frame for a desktop/mobile pair rather than two identical wells', () => {
+    renderSections(
+      [section({ block_type: 'hero', media_desktop_id: M1, media_mobile_id: M2 })],
+      [asset(M1), asset(M2)],
+      '',
+    )
+    expect(screen.getAllByText('Image unavailable')).toHaveLength(1)
+  })
+
+  it('renders no player for a video, which has nothing to say in a reserved box', () => {
+    renderSections(
+      [
+        section({
+          block_type: 'hero',
+          media_desktop_id: M1,
+          payload: { is_video: true, autoplay: false, scrim: 30 },
+        }),
+      ],
+      [asset(M1, { resource_type: 'video' })],
+      '',
+    )
+    expect(screen.queryByRole('button', { name: 'Play' })).toBeNull()
+  })
+
+  it('still renders the section copy, because the page is not the media', () => {
+    renderSections(
+      [section({ block_type: 'hero', heading: 'A heading from the CMS', media_desktop_id: M1 })],
+      [asset(M1)],
+      '',
+    )
+    expect(screen.getByText('A heading from the CMS')).toBeTruthy()
   })
 })
 

@@ -5,7 +5,7 @@ import { SiteFooter } from '@/components/patterns/SiteFooter'
 import { SiteErrorCopyProvider } from '@/components/patterns/SiteErrorCopy'
 import { SiteHeader } from '@/components/patterns/SiteHeader'
 import { siteString } from '@/lib/cms/strings'
-import { requiredEnv } from '@/lib/env'
+import { optionalEnv } from '@/lib/env'
 import { getSiteChrome } from '@/lib/site/chrome'
 
 /**
@@ -61,7 +61,20 @@ export default async function SiteLayout({
   children: React.ReactNode
 }): Promise<React.ReactElement> {
   const chrome = await getSiteChrome()
-  const cloudName = requiredEnv('NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME')
+  /*
+   * OPTIONAL, NOT REQUIRED, AND THE DIFFERENCE TOOK THE SITE DOWN ONCE.
+   *
+   * This layout does not use the cloud name; it forwards it to the header, which forwards it to
+   * the category cards, none of which has a bound hero asset today. Read with `requiredEnv` it
+   * still threw during prerender, so every public page failed to build for want of a setting that
+   * nothing was going to spend — observed on a Vercel deployment where the variable is unset,
+   * where the build died on `/about`, a page with no media on it at all.
+   *
+   * Absent, it is the empty string, and every media component treats that exactly as it treats a
+   * missing asset: the reserved aspect box with the seeded SEED §47 label. That is a true
+   * statement — no image can be delivered — rather than a blank page or a failed deploy.
+   */
+  const cloudName = optionalEnv('NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME') ?? ''
   const skipLabel = siteString(chrome.strings, 'ACTION_LABEL.skip_to_content')
 
   return (
