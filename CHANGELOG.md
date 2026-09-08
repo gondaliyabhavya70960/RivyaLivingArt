@@ -6,6 +6,62 @@ Every phase adds an entry; see `docs/architecture/CANONICAL-DECISIONS.md` D9 for
 
 ## [Unreleased]
 
+### Phase 05 — Studio Foundation — IN PROGRESS
+
+The navigation spine, the shell, the primitives and the palette. Not complete: see *Not done* below.
+
+**Added**
+
+- **`lib/auth/studio-nav.ts` — the D4 route map, written down once.** 8 groups, 58 leaves, each with
+  a label *key*, a read permission, a write permission where one applies, and the phases that build
+  it. `nav-visibility.ts` derives from it; the 58 `page.tsx` files are generated from it.
+  `tests/unit/studio-nav.test.ts` **parses** the D4 block out of `CANONICAL-DECISIONS.md` and
+  requires manifest ↔ contract ↔ disk to agree, in both directions. A page on disk the manifest does
+  not name fails — that one would be unreachable from the sidebar and governed by no permission.
+- **The shell.** `app/(studio)/layout.tsx` (the bone ground, a Phase 04 carry-forward) and
+  `app/(studio)/studio/(shell)/layout.tsx`. `(shell)` is a route group because `/studio/login` is a
+  child of `/studio`: a layout at `studio/layout.tsx` would put a permission check in front of
+  signing in, which is a redirect loop that reads as "my password is wrong".
+- **`/studio` Overview** with D4's three tabs as query parameters rather than client state, so a tab
+  can be linked, reloaded and reached with Back.
+- **Migrations `0020` and `0021`** — `activity_events`, `studio_preferences`, and their generated
+  policies. Policy migrations are now **one file per phase**: a single growing file would be
+  rewritten by every later phase, which `db:migrate` refuses.
+- **Fifteen Studio primitives**, each built around the distinction it exists to preserve. Documented
+  in `STUDIO_GUIDE.md` §4.1.
+- **The ⌘K palette**, its provider registry (20 results / 200 ms per provider, enforced by the
+  registry) and `app/api/studio/search/route.ts`.
+- **`no-unused-vars`.** Found three dead bindings, one of which documented a rejected approach next
+  to the code that replaced it, then caught a fourth within the hour.
+
+**Fixed**
+
+- **`withPermission` wrote TWO audit rows per outcome**, and names the record now. Phase 04
+  verification step 8 is worded against one row; it could not be run, and while it could not be run
+  the wrapper was writing two of each.
+- **`check-migrations` demanded dense numbering** and would have failed every phase from 05 onward.
+  DATA_MODEL §12 allocates numbers in per-phase blocks. It now checks that a number is *allocated*.
+- **`check-utilities` reported `content-type` as a dead utility.** Two candidate fixes were measured
+  and rejected before the third shipped — the first would have gutted the gate.
+
+**Corrected in the specification**
+
+- **Phase 05 verification step 7 cannot pass as written.** It expects a permission error from
+  `select count(*) from activity_events` as anon. RLS denial is zero rows, not an exception, and `0`
+  on an empty table is the same `0` — so the step is satisfied identically by a locked table, an
+  empty table, and a table with RLS off. Replaced by `tests/unit/rls/phase05.test.ts`, which seeds a
+  row first so that zero means *refused*.
+
+**Not done**
+
+- `tests/e2e/studio-rbac.spec.ts` — the per-role route matrix. Needs real sessions, so it needs a
+  reachable Supabase project, exactly as Phase 04 step 6 does.
+- The top bar (user menu, role badge, environment badge) and a visible ⌘K affordance.
+- `studio_preferences` has no reader or writer: the table and its self-scope are verified, but
+  nothing collapses a sidebar or pins a route yet.
+- Visual baselines for the shell. The unauthenticated Studio surfaces pass at all eight FEAT §45
+  widths (104 assertions); the shell itself cannot be reached without a session.
+
 ### Phase 04 close-out — the proxy convention, and a runner that can touch a real database
 
 **Changed**

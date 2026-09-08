@@ -47,17 +47,21 @@ PR #7). Phase 03 merged as PR #4.
 
 1. **`tests/e2e/studio-rbac.spec.ts`** — the per-role route matrix. Blocked on the same thing as
    Phase 04 step 6: it needs real sessions, so it needs a reachable Supabase project.
-2. **The visual QA matrix** at the eight FEAT §45 widths (exit criterion), and Playwright visual
-   baselines for the shell.
+2. **Visual baselines for the shell.** The unauthenticated Studio surfaces DO pass at all eight
+   FEAT §45 widths — `studio-access.spec.ts` runs 104 assertions across them — but the shell itself
+   cannot be reached without a session, so its baselines wait on Supabase too.
 3. **The top bar.** The sidebar shows the role as text; the user menu, role badge and
    deployment-environment badge are not built, and the ⌘K trigger has no visible affordance.
 4. **`studio_preferences` has no reader or writer.** The table, its RLS and its self-scope exist and
    are verified, but nothing collapses the sidebar or pins a route yet, so `pinned_routes` and
    `dashboard_card_order` are columns nothing fills.
-5. **Verification steps 6 and 7** of Phase 05 (⌘K from a Studio page; `activity_events` refused to
-   anon in `psql`) have not been run against a browser and a live role — step 7 is checkable
-   locally and should be done next.
-6. **`docs/DATA_MODEL.md` and `CHANGELOG.md`** are not yet updated for Phase 05 (D9 requires both).
+5. **Verification step 6** (press ⌘K on a Studio page, type `journ`, assert Content → Journal is
+   first and Enter navigates) needs a browser with a session. The logic beneath it is covered:
+   `searchRoutes('journ', …)` is asserted to return the journal route first.
+   **Step 7 is done** — and the step as written was wrong; see `PHASE-05-09.md`, which now records
+   why, and `tests/unit/rls/phase05.test.ts`, which replaces it.
+6. **`docs/architecture/DATA_MODEL.md`** still needs its Phase 05 pass (D9). `CHANGELOG.md` is
+   done.
 
 ## Status
 
