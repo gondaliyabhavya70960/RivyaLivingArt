@@ -27,6 +27,7 @@ import {
   PHASE_07_POLICIES,
   PHASE_08_POLICIES,
   PHASE_15_POLICIES,
+  PHASE_16_POLICIES,
   TABLE_POLICY_MAP,
   type ManagedTable,
 } from '../../lib/auth/table-permissions'
@@ -109,6 +110,24 @@ const GENERATED: Record<string, { title: string; preamble: string }> = {
 -- all six roles, so the role list alone grants nothing useful — \`user_id = auth.uid()\` is what
 -- makes it safe, and it is ANDed into the select, insert and update policies alike. An extra
 -- SELECT leg would not have done: the danger is one staff member OVERWRITING another's row.`,
+  },
+  [PHASE_16_POLICIES]: {
+    title: `-- ${PHASE_16_POLICIES} — Phase 16`,
+    preamble: `-- Policies for \`entity_relations\`, which migration 0141 creates. Separate from that file for the
+-- reason every policy file is separate: this one is GENERATED from lib/auth/table-permissions.ts and
+-- is rewritten whole, so it may hold nothing a human wrote.
+--
+-- \`collections\` IS NOT HERE. It has carried Phase 04 policies since 0011 and gains no new ones —
+-- the columns Phase 16 adds are read and written under the same catalog.read / catalog.write it
+-- already had. A policy file is never re-opened once shipped, so the absence is correct rather than
+-- an omission.
+--
+-- entity_relations is SHAPE C: staff-only, no anon policy at all. Its sibling product_relations is
+-- shape B with a parent clause testing its source product's status, which works because that
+-- table's source is always a product. This one's source is polymorphic — a \`source_type\` chosen at
+-- runtime — and RLS cannot join a table named in a column, so there is no parent clause to write.
+-- An unconditional anon read was the alternative, and it would publish an editor's \`note\` about
+-- work that may not be published, plus the existence of edges pointing at drafts.`,
   },
   [PHASE_15_POLICIES]: {
     title: `-- ${PHASE_15_POLICIES} — Phase 15`,

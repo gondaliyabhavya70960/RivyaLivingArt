@@ -341,10 +341,21 @@ export async function loadFixture(): Promise<void> {
        ($2,'rls-draft','Draft','REQUEST_QUOTE','DRAFT')`,
     [f.publishedProduct, f.draftProduct],
   )
+  /**
+   * THE PUBLISHED COLLECTION IS ALSO OWNER_CONFIRMED, and it has to be as of Phase 16.
+   *
+   * This fixture used to insert a PUBLISHED collection with the default
+   * `concept_state = DRAFT_COLLECTION_CONCEPT`, and `enforce_collection_publish_gate` now refuses
+   * that row outright. The gate is right and the fixture was wrong: FEAT §9 says a collection is a
+   * CONCEPT until the owner confirms it is real, so "published but unconfirmed" was a state the
+   * business does not have, and five suites were resting on it.
+   *
+   * The draft collection stays a plain concept, which is what every seeded collection is.
+   */
   await db.query(
-    `insert into collections (id, slug, name, status) values
-       ($1,'rls-pub-coll','Published Collection','PUBLISHED'),
-       ($2,'rls-drf-coll','Draft Collection','DRAFT')`,
+    `insert into collections (id, slug, name, status, concept_state) values
+       ($1,'rls-pub-coll','Published Collection','PUBLISHED','OWNER_CONFIRMED'),
+       ($2,'rls-drf-coll','Draft Collection','DRAFT','DRAFT_COLLECTION_CONCEPT')`,
     [f.publishedCollection, f.draftCollection],
   )
   await db.query(
