@@ -184,16 +184,29 @@ Brand and editorial copy may be written; anything asserting business capability 
 
 ## Amendments
 
-**2026-09-09 · A20 — Phase 20's migrations are `0190`–`0192`, `inquiry_attachments` has no anon
-insert, and the anonymous submit path reads nothing back (PHASE-16-22 §Phase 20).**
+**2026-09-09 · A20 — Phase 20's migrations are `0190`–`0191`, there is no `CONTACT` content
+group, `inquiry_attachments` has no anon insert, and the anonymous submit path reads nothing back
+(PHASE-16-22 §Phase 20).**
 
-Three corrections to the phase document, each forced by something the database actually does.
+Four corrections to the phase document, each forced by something the repository or the database
+actually does.
 
 - **The numbers.** PHASE-16-22 assigns Phase 20 `0180`–`0182`. All three were spent while Phase 19
   was being finished: `0180` marks demonstration content, `0181` fixes a publication date a status
   trigger failed to carry, and `0182`/`0183` bring the rate limiter forward. Renumbering those would
   reorder the apply sequence relative to migrations that have already run on two databases. Phase 20
-  takes `0190`–`0192`; DATA_MODEL §12 is re-registered.
+  takes `0190`–`0191`; DATA_MODEL §12 is re-registered.
+
+- **There is no `global_content` group `CONTACT`, and no third migration.** The phase document adds
+  one so that SEED §21's "do not hardcode these values in multiple components" holds. It already
+  holds: Phase 09 put the phone, WhatsApp number, email and location in ONE `contact-details`
+  section payload, which the footer and `/contact` both read through `lib/site/contact-details.ts`.
+  Adding a `global_content` group now would create a SECOND home for the same four facts — two
+  places to change a phone number, one of which somebody forgets — which is the exact failure §21's
+  sentence warns about. The section carries `owner_verification` like any other content row, so the
+  VERIFIED gate the number resolution needs is already there. Verification step 1's
+  `select group, key from global_content where group = 'CONTACT'` therefore returns nothing, and
+  should.
 
 - **`inquiry_attachments` has no `anon` INSERT policy**, though the phase document names one. The
   reason is mechanical rather than a preference: an attachment references `media_assets`, and `anon`

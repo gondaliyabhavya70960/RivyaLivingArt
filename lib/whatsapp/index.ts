@@ -36,4 +36,4 @@ export {
   type ShortenLevel,
   type ShortenResult,
 } from './shorten'
-export { CONTACT_KEYS, normaliseE164, resolveWhatsAppNumber } from './number'
+export { normaliseE164, resolveWhatsAppNumber } from './number'

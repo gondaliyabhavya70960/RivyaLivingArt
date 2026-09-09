@@ -44,11 +44,22 @@ const ENTITY = 'inquiry'
  * a select policy: the caller already holds the identifier of the row it just wrote, and every
  * follow-up — the reference code, the attachments, the handoff record — is addressed by it.
  */
-export async function createInquiry(
-  client: Client,
-  values: Database['public']['Tables']['inquiries']['Insert'],
-): Promise<void> {
-  const { error } = await client.from('inquiries').insert(values)
+export type InquiryInsert = Omit<
+  Database['public']['Tables']['inquiries']['Insert'],
+  'reference_code'
+>
+
+export async function createInquiry(client: Client, values: InquiryInsert): Promise<void> {
+  /*
+   * `reference_code` IS OMITTED FROM THE PARAMETER AND FROM THE PAYLOAD, and the cast is what says
+   * so out loud. The column is `not null` with no default, so the generated types require it; the
+   * BEFORE trigger allocates it and OVERWRITES anything supplied, so sending a value would be
+   * sending something the database throws away. Widening the column with a default would weaken the
+   * shape CHECK to accommodate a placeholder nothing ever reads.
+   */
+  const { error } = await client
+    .from('inquiries')
+    .insert(values as Database['public']['Tables']['inquiries']['Insert'])
   if (error) throw toRepositoryError(ENTITY, 'insert', values.id ?? '(new)', error)
 }
 

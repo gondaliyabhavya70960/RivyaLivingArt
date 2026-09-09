@@ -63,13 +63,27 @@ export function bucketKey(prefix: string, value: string): string {
  * exempting every unheadered request is a hole.
  */
 export function callerAddress(request: Request): string {
-  const forwarded = request.headers.get('x-forwarded-for')
-  if (forwarded !== null && forwarded.trim() !== '') {
+  return addressFromHeaders(request.headers)
+}
+
+/**
+ * The same rule, for a caller that has headers but no `Request`.
+ *
+ * A SERVER ACTION IS THAT CALLER. `next/headers` hands back a `ReadonlyHeaders` and there is no
+ * `Request` object to pass — and Phase 20's submit path needs exactly this rule, because a rate
+ * limit that read the FIRST forwarded entry would let one client mint a fresh bucket per request by
+ * prepending an address of their choosing.
+ */
+export function addressFromHeaders(headers: {
+  get(name: string): string | null | undefined
+}): string {
+  const forwarded = headers.get('x-forwarded-for')
+  if (forwarded !== null && forwarded !== undefined && forwarded.trim() !== '') {
     const parts = forwarded.split(',').map((part) => part.trim())
     const last = parts[parts.length - 1]
     if (last !== undefined && last !== '') return last
   }
-  return request.headers.get('x-real-ip') ?? 'unknown'
+  return headers.get('x-real-ip') ?? 'unknown'
 }
 
 export interface RateWindow {
@@ -105,6 +119,16 @@ export async function consume(
 
   return { allowed }
 }
+
+/**
+ * The window the phase document fixes for an enquiry: five submissions an hour, per hashed address.
+ *
+ * ONE WINDOW AND NOT TWO, unlike the upload endpoint. An upload is a machine action a browser makes
+ * several of in a burst, so a per-minute ceiling is what catches a flood; an enquiry is a person
+ * finishing a form, and nobody sends five in a minute by accident. A tighter per-minute window here
+ * would refuse a couple who each write from the same house.
+ */
+export const INQUIRY_SUBMIT_WINDOWS: readonly RateWindow[] = [{ seconds: 3600, limit: 5 }]
 
 /** The two windows the phase document fixes for the public upload endpoint. */
 export const INQUIRY_UPLOAD_WINDOWS: readonly RateWindow[] = [

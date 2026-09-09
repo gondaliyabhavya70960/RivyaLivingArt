@@ -1,35 +1,32 @@
-import type { GlobalContent } from '@/lib/supabase/schemas'
+import type { ContactDetails } from '@/lib/site/contact-details'
 
 /**
  * Which number the handoff dials, and where that number comes from.
  *
  * TWO SOURCES, IN THIS ORDER, AND THE ORDER IS THE DECISION.
  *
- *   1. `global_content` group `CONTACT`, key `whatsapp_number` — but only when it is PUBLISHED,
- *      enabled and `VERIFIED`. The owner changes the studio's number in the Studio, and it changes
- *      on the site without a deployment. That is SEED §21's "do not hardcode these values in
- *      multiple components" taken to its conclusion: the value has one home.
+ *   1. The `contact-details` SECTION — the one row SEED §21's facts already live in — but only when
+ *      the owner has VERIFIED it. The footer and the contact page read the same row, so the studio's
+ *      number has exactly one home and changing it is one edit in Studio, with no deployment.
  *   2. `NEXT_PUBLIC_WHATSAPP_NUMBER` (D8) — the deployment default, so a fresh environment has a
  *      working handoff before anybody has opened the Studio.
  *
- * `VERIFIED` IS A CONDITION AND NOT A FORMALITY. A phone number is a business fact under D10: an
- * unverified one is worse than none, because a customer will ring it. A row seeded
- * `OWNER_VERIFICATION_REQUIRED` therefore does not win over the environment variable — it does not
- * count at all — and `global_content_verified_before_publish` stops it being published anyway.
+ * THE PHASE DOCUMENT ASKED FOR A `global_content` GROUP CALLED `CONTACT` AND THIS IS NOT THAT, for
+ * the reason the phase document itself gives. §21 says "do not hardcode these values in multiple
+ * components"; Phase 09 obeyed it by putting them in one section payload, and adding a second home
+ * now would be the exact failure the sentence warns about — two places to change a phone number,
+ * one of which somebody forgets. Recorded as amendment A20.
+ *
+ * VERIFICATION IS A CONDITION AND NOT A FORMALITY. A phone number is a business fact under D10: an
+ * unverified one is worse than none, because a customer will ring it. A section still carrying
+ * `OWNER_VERIFICATION_REQUIRED` does not merely lose to the environment variable — it does not
+ * count at all.
  *
  * NEITHER RESOLVING IS A STATE, NOT AN ERROR. `null` here means the enquiry is still saved, the
  * visitor still sees their reference code and the studio's other contact details, and the row
  * records `whatsapp_state = 'UNAVAILABLE'`. Losing an enquiry because a link could not be built is
  * the one outcome that is never acceptable.
  */
-
-/** The `global_content` address of each contact fact. SEED §21. */
-export const CONTACT_KEYS = {
-  phone: 'CONTACT.phone',
-  whatsappNumber: 'CONTACT.whatsapp_number',
-  email: 'CONTACT.email',
-  mapsUrl: 'CONTACT.maps_url',
-} as const
 
 /**
  * Digits only, with the country code, as `wa.me` requires — `919825012345`, never `+91 98250 12345`.
@@ -56,23 +53,16 @@ export function normaliseE164(raw: string | null | undefined): string | null {
 }
 
 /**
- * Resolve the studio's WhatsApp number from the content rows, falling back to the environment.
+ * Resolve the studio's WhatsApp number, falling back to the environment.
  *
- * The rows are passed in rather than read here so this stays pure and testable: the caller already
- * holds the `CONTACT` group for the contact details it is rendering.
+ * `verified` is the section's own `owner_verification === 'VERIFIED'`, passed in rather than read
+ * here so this stays pure: the caller already holds the row it is rendering contact details from.
  */
 export function resolveWhatsAppNumber(
-  rows: readonly GlobalContent[],
+  details: ContactDetails | null,
+  verified: boolean,
   envNumber: string | null | undefined,
 ): string | null {
-  const verified = rows.find(
-    (row) =>
-      row.group_key === 'CONTACT' &&
-      row.key === 'whatsapp_number' &&
-      row.is_enabled &&
-      row.status === 'PUBLISHED' &&
-      row.owner_verification === 'VERIFIED',
-  )
-
-  return normaliseE164(verified?.value ?? null) ?? normaliseE164(envNumber)
+  const fromContent = verified ? normaliseE164(details?.whatsapp ?? null) : null
+  return fromContent ?? normaliseE164(envNumber)
 }

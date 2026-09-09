@@ -9,7 +9,6 @@ import {
   resolveWhatsAppNumber,
   shorten,
 } from '@/lib/whatsapp'
-import type { GlobalContent } from '@/lib/supabase/schemas'
 
 /**
  * The five-level shortening ladder, one rung at a time, and the number resolution beneath it.
@@ -190,29 +189,14 @@ describe('the shortening ladder', () => {
 
 // -------------------------------------------------------------------------------------------------
 
-function contentRow(overrides: Partial<GlobalContent>): GlobalContent {
+function details(whatsapp: string | null) {
   return {
-    id: '00000000-0000-4000-8000-000000000001',
-    group_key: 'CONTACT',
-    key: 'whatsapp_number',
-    value: '+91 98250 12345',
-    description: null,
-    is_enabled: true,
-    status: 'PUBLISHED',
-    owner_verification: 'VERIFIED',
-    fact_classification: 'VERIFIED_BUSINESS_FACT',
-    published_at: null,
-    published_by: null,
-    seed_key: null,
-    content_seed_version: null,
-    seed_content_hash: null,
-    seed_last_applied_at: null,
-    owner_edited: false,
-    created_at: '2026-01-01T00:00:00Z',
-    updated_at: '2026-01-01T00:00:00Z',
-    updated_by: null,
-    ...overrides,
-  } as GlobalContent
+    phone: '+91 98250 12345',
+    whatsapp,
+    email: 'hello@example.test',
+    locationUrl: null,
+    locationLabel: null,
+  }
 }
 
 describe('resolving the studio number', () => {
@@ -228,31 +212,25 @@ describe('resolving the studio number', () => {
     expect(normaliseE164(null)).toBeNull()
   })
 
-  it('prefers a VERIFIED published row over the environment', () => {
-    expect(resolveWhatsAppNumber([contentRow({})], '910000000000')).toBe('919825012345')
+  it('prefers the verified contact section over the environment', () => {
+    expect(resolveWhatsAppNumber(details('+91 98250 12345'), true, '910000000000')).toBe(
+      '919825012345',
+    )
   })
 
   /**
    * The rule this test exists for: an unverified phone number is worse than none, because a
-   * customer will ring it. A row awaiting the owner's confirmation does not merely lose to the
+   * customer will ring it. A section awaiting the owner's confirmation does not merely lose to the
    * environment variable — it does not count at all.
    */
-  it('ignores a row the owner has not verified, and falls back to the environment', () => {
-    const unverified = contentRow({ owner_verification: 'OWNER_VERIFICATION_REQUIRED' })
-    expect(resolveWhatsAppNumber([unverified], '+91 90000 00000')).toBe('919000000000')
-  })
-
-  it('ignores a disabled or unpublished row for the same reason', () => {
-    expect(resolveWhatsAppNumber([contentRow({ is_enabled: false })], '910000000000')).toBe(
-      '910000000000',
-    )
-    expect(resolveWhatsAppNumber([contentRow({ status: 'DRAFT' })], '910000000000')).toBe(
-      '910000000000',
+  it('ignores the section until the owner has verified it', () => {
+    expect(resolveWhatsAppNumber(details('+91 98250 12345'), false, '+91 90000 00000')).toBe(
+      '919000000000',
     )
   })
 
   it('returns null when neither source resolves, which is a state and not an error', () => {
-    expect(resolveWhatsAppNumber([], undefined)).toBeNull()
-    expect(resolveWhatsAppNumber([contentRow({ value: 'not a number' })], null)).toBeNull()
+    expect(resolveWhatsAppNumber(null, true, undefined)).toBeNull()
+    expect(resolveWhatsAppNumber(details('not a number'), true, null)).toBeNull()
   })
 })

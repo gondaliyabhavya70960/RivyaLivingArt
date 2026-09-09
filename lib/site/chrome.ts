@@ -61,8 +61,17 @@ export type SiteChrome = {
   readonly categories: readonly Category[]
   /** Category hero assets by id. A category whose hero is unset or hidden is simply absent. */
   readonly categoryMedia: ReadonlyMap<string, MediaAsset>
-  /** From the one `contact-details` section. Null until the owner verifies it. */
+  /** From the one `contact-details` section. Null when the section is absent or does not parse. */
   readonly contact: ContactDetails | null
+  /**
+   * Has the owner confirmed those details are right?
+   *
+   * SEPARATE FROM `contact` BECAUSE THE TWO ANSWER DIFFERENT QUESTIONS. The footer renders whatever
+   * the section says, verified or not — an editor needs to see their own work. The WhatsApp handoff
+   * does not: a phone number nobody has confirmed is worse than none, because a customer will ring
+   * it, so `lib/whatsapp/number.ts` requires this to be true before it will use the number.
+   */
+  readonly contactVerified: boolean
   /**
    * The paths a visitor can actually load right now — pages with at least one section the
    * anonymous client can see.
@@ -106,6 +115,7 @@ async function loadSiteChrome(): Promise<SiteChrome> {
     categories,
     categoryMedia,
     contact: contactDetailsOf(contactSection),
+    contactVerified: contactSection?.owner_verification === 'VERIFIED',
     livePaths: new Set(publicPaths.map((page) => page.path)),
   }
 }
