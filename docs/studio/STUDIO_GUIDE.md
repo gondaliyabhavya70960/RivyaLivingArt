@@ -848,9 +848,39 @@ verified.
 
 ### 7.6 `/studio/catalog/customization-forms` and `/[formId]`
 
-The bespoke configurator is data, not code (FEAT §15). The builder is two panes: a drag-ordered step
-and field tree on the left, a live preview of the public configurator on the right. Actions:
-*Duplicate from template*, *Bind to product/category*, *Preview as visitor*.
+The bespoke configurator is data, not code (FEAT §15).
+
+**Built in Phase 19, and the shape differs from the sentence this section used to carry — see
+amendment A19.** The list shows every form with its step and question counts, because a row reading
+"0 steps, 0 questions" is a form somebody created and left. The builder is **one collapsed column**,
+not two panes: each step is a `<details>` carrying its own form, its questions and its ordering,
+which keeps eleven steps navigable without splitting the sequence across half a screen.
+
+Ordering is **a number per row and one save** — amendment A15·d, and here for a second reason:
+`normalise_form_step_order()` renumbers positions and forces the contact step last whatever it is
+given, so the sequence must be submitted whole. `cms_set_form_step_order` assigns every position in
+one statement; ten dragged rows saved one at a time would be ten transactions racing that trigger.
+
+Actions: *Create*, ***Duplicate from template*** (`cms_duplicate_customization_form()`, migration
+`0184` — the whole copy in one transaction; the copy is a draft, is never the default for its kind,
+and carries no seed identity), *Bind to product/category*, *Publish / Withdraw*, and a link to
+`/custom-commissions`.
+
+**There is no live preview pane**, and the omission is deliberate. The real `Configurator` writes a
+draft to `sessionStorage` under a fixed key and mints upload credentials against the unauthenticated
+`app/api/inquiries/upload-sign` — so a preview inside the Studio would overwrite a visitor's saved
+brief in the same browser and spend the rate-limit allowance that endpoint's protection depends on.
+The builder links to the public page instead, and says on screen that a form appears there once it
+is published **and** the `commission_configurator` flag is on.
+
+`validation` is **not editable in the builder**. Its allowlist CHECK admits nine Zod keys and no
+pricing, and a free-text JSON box would be the only way to trip a constraint whose refusal names a
+constraint rather than a field. The seeded templates set what they need.
+
+Permissions: read `catalog.read`; build `catalog.write`; publish and withdraw `catalog.publish`;
+delete a step or a question `destructive.execute`. **The contact step has no "shown to visitors"
+checkbox at all** — `customization_form_steps_contact_enabled` refuses a disabled one at the column,
+and a checkbox that always fails is worse than no checkbox because it looks like a setting.
 
 Three templates ship (SEED §33–35): `FURNITURE`, `PRESERVATION`, `THREE_D_RESIN` — the last seeded
 `OWNER_VERIFICATION_REQUIRED` until exact manufacturing options are defined.
@@ -1696,14 +1726,35 @@ environment value. The browser is read-only; the repository is the source.
 
 ### 13.12 `/studio/system/flags`
 
-Key, description, toggle, last changed by. Every flag defaults to `false` in every environment and is
-evaluated server-side. Registered: `three_d_viewer` · `experimental_webgl_hero` · `advanced_similarity` ·
-`higgsfield_tracker` · `google_sheets` · `advanced_analytics` · `research.enabled` ·
-`commission_configurator` · `newsletter` (FEAT §32).
+Key, description, state and a switch. Every flag defaults to `false` in every environment and is
+evaluated **server-side**: a switched-off feature is not rendered, not hidden — its markup is absent
+from the response, so no visitor can reach it by any means. FEAT §32 names nine flags eventually:
+`three_d_viewer` · `experimental_webgl_hero` · `advanced_similarity` · `higgsfield_tracker` ·
+`google_sheets` · `advanced_analytics` · `research.enabled` · `commission_configurator` ·
+`newsletter`.
 
-Readable by any active staff member; writable under `system.flags.write`. **A flag is not a substitute
-for configuration** — it turns a whole capability on or off, and anything with a value belongs in
-settings or content.
+**Built in Phase 19.** The register lives in `lib/flags/flags.ts`, not in the table, so a flag key is
+an identifier that breaks its call sites when removed. `feature_flags` holds only the flags somebody
+has **touched** — absent is off — which makes a fresh database, a restored backup and a preview
+branch behave identically with nothing seeded. Two keys are registered so far, each with a consumer:
+`commission_configurator` (Phase 19 builds the form, Phase 20's exit criteria switch it on) and
+`three_d_viewer` (Phase 21). A key nobody has registered cannot be switched: the action checks the
+submitted key against the register, so a request cannot leave a row naming a feature that does not
+exist.
+
+The screen is **not a table**. Each row carries the paragraph explaining what the flag gates and
+which phase has to ship before it can honestly be switched on — the sentence somebody needs before
+moving a switch, and the one a table cell would truncate.
+
+Readable under `studio.access`, which all six roles hold: the register is how anybody in the Studio
+accounts for a surface that is missing, and a merchandiser who cannot find the configurator should
+see that it is off rather than conclude the Studio is broken (open question 5, closed by amendment
+A17). Writable under `system.flags.write` — owner and administrator. For a role without it the
+switch is **absent, not disabled**: a greyed-out control reads as "ask somebody to enable this", and
+the truth is that the decision is not theirs to make.
+
+**A flag is not a substitute for configuration** — it turns a whole capability on or off, and
+anything with a value belongs in settings or content.
 
 ---
 

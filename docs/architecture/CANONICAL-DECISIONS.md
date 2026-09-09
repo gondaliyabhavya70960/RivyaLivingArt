@@ -184,6 +184,42 @@ Brand and editorial copy may be written; anything asserting business capability 
 
 ## Amendments
 
+**2026-09-09 · A19 — the form builder is one collapsed column with numeric ordering and a link to
+the public page, not two panes with a drag tree and a live preview (STUDIO_GUIDE §7.6).**
+
+STUDIO_GUIDE §7.6 describes the builder as "two panes: a drag-ordered step and field tree on the
+left, a live preview of the public configurator on the right". Three of those four things were
+built; the fourth was not, and the reasons are worth writing down rather than discovering again.
+
+- **Ordering is a number per row and one save, not a drag tree** — the same decision A15·d already
+  made for `portfolio_project_media`, for the same reasons, and one more that is specific to this
+  table. A form's positions are renumbered by `normalise_form_step_order()` and the contact step is
+  forced last whatever it is given, so the sequence has to be submitted whole:
+  `cms_set_form_step_order` assigns every position in one statement, while ten dragged rows saved
+  one at a time would be ten transactions racing that trigger, with the last to land deciding.
+- **One collapsed column, not two panes.** A form is a sequence, and the question a builder is
+  answering is whether the brief reads end to end. Two panes at this density would put the tree and
+  the field being edited on different halves of the screen at every width the QA matrix names below
+  1280. `<details>` collapses without state, without JavaScript and without removing the content
+  from the document.
+- **There is NO live preview pane, and this is the real divergence.** Mounting the real
+  `Configurator` inside the Studio would have two side effects on a surface whose whole job is to be
+  side-effect free. It writes a draft to `sessionStorage` under a fixed key, so a builder's
+  exploratory answers would overwrite a visitor's saved brief in the same browser; and its upload
+  control mints credentials against `app/api/inquiries/upload-sign`, the unauthenticated endpoint
+  A18's rate limit exists to protect — a preview would spend a real visitor's allowance. The
+  builder links to `/custom-commissions` instead, and the honest consequence is stated on the
+  screen: a form is previewed there once it is published and the flag is on. A preview that reads
+  drafts belongs with Phase 20's persistence, where the draft key stops being a single global.
+- **`validation` is not editable in the builder.** The column carries an allowlist CHECK — nine Zod
+  keys, and `price_multiplier` is not among them — and a free-text JSON box would be the only way
+  an editor could trip a constraint whose refusal names a constraint rather than a field. The
+  seeded templates set what they need; Phase 20 adds a typed control per key.
+- ***Duplicate from template* IS built**, as `cms_duplicate_customization_form()` (migration
+  `0184`): one transaction, because three PostgREST writes are three transactions and the
+  interruption between the steps and the questions leaves a form that looks finished and asks
+  nothing.
+
 **2026-09-09 · A18 — `rate_limit_buckets` arrives in Phase 19, and Phase 41 inherits it
 (SECURITY.md §8, PHASE-16-22 §Phase 19).**
 

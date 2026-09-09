@@ -117,7 +117,7 @@ begin
 end $$;
 
 comment on function public.cms_duplicate_customization_form(uuid, text, text) is
-  'Copies a form, its steps and its fields in ONE transaction. The copy is a DRAFT, is never the default, and carries no seed identity — it is somebody edit, not the runner''s.';
+  'Copies a form, its steps and its fields in ONE transaction. The copy is a DRAFT, is never the default, and carries no seed identity — it is somebody''s edit, not the runner''s.';
 
 -- `anon` has no business copying a form, and `public` would grant it by default. `authenticated`
 -- keeps EXECUTE and is refused by the insert policies unless it holds `catalog.write`.

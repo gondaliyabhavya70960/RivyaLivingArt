@@ -8,6 +8,155 @@
 
 ## Current Phase
 
+**Phase 19 — Bespoke / Custom Configurator. CODE COMPLETE; THE FEATURE IS SWITCHED OFF, WHICH IS THE
+FINISHED STATE.** Eleven steps exist, every question read from the database, and the Zod schema is
+generated from the same rows. It ends at a VALIDATED PAYLOAD: the review step's Submit button is
+rendered disabled with no handler, because D1 requires an inquiry to be persisted before any
+WhatsApp redirect and persistence is Phase 20's. `commission_configurator` ships OFF, so
+`/custom-commissions` still renders its six Phase 09 sections and no visitor sees a form that would
+save nothing.
+
+### Phase 19: what is built
+
+**Migrations `0170`–`0172` and `0184`, applied locally AND to hosted**, plus `0180`–`0183` from the
+same session. Four form tables, `feature_flags`, the generated RLS, the demonstration marker, the
+publication-date fix, the rate limiter and its RLS, and the duplicate function.
+
+**A REFUSING CONSTRAINT TRIGGER CANNOT SURVIVE PostgREST.** Studio writes one row per statement per
+transaction, so reordering ten steps means ten transactions, nine of them transiently illegal —
+and `deferrable` does not help, because "deferred" means "at commit" and each statement commits
+alone. `normalise_form_step_order()` REPAIRS instead of refusing, and forces `contact` last;
+`cms_set_form_step_order` assigns every position in ONE statement so the repair pass is a no-op and
+a single reorder writes half the revision history it otherwise would.
+
+**A FORM CANNOT BE PUBLISHED WITHOUT SOMEWHERE TO REPLY TO.** `enforce_form_publishable()` refuses
+PUBLISHED for a form with no enabled `contact` step, a contact step asking for neither a phone
+number nor an email address, or an enabled choice question with no choices. The builder states all
+three above the button and re-computes them in the action so every failure is reported at once.
+
+**NOTHING IN THIS GROUP CAN HOLD A PRICE.** `validation` carries an allowlist CHECK of nine Zod
+keys; the field-type enum has no money in it. `tests/unit/no-pricing.test.ts` greps the migration
+and is mutation-tested — and it originally PASSED both mutations: SQL doubles a quote where
+JavaScript backslashes it, so a JS string-stripper run over SQL inverts pairing from the first
+doubled quote onward; and `\b` creates no boundary before `_`, so `\bprice\b` cannot match
+`price_modifier`. Both are fixed and both mutations now fail.
+
+**ZOD 4 SKIPS AN ABSENT OPTIONAL KEY ENTIRELY.** `z.object` decides a key is optional from whether
+its INPUT type admits `undefined`, so `z.preprocess(fn, schema.optional()).refine(v => v !==
+undefined)` never runs for a MISSING key — a required field whose key was absent passed validation.
+Verified empirically; `unansweredRequired()` now checks presence outside the schema.
+
+**THE FLAG REGISTER LIVES IN THE CODE, NOT THE TABLE.** A flag key is an identifier that breaks its
+call sites when removed; `feature_flags` holds only the flags somebody has TOUCHED, so absent is off
+and a fresh database, a restored backup and a preview branch behave identically with nothing seeded.
+`isEnabled()` is server-side, so an off feature is absent from the response rather than hidden in
+it. `/studio/system/flags` reads for all six roles — amendment **A17**, closing STUDIO_GUIDE open
+question 5 — and writes for owner and admin, with the switch ABSENT rather than disabled for anyone
+else.
+
+**THE RATE LIMITER ARRIVED TWENTY-TWO PHASES EARLY** — amendment **A18**.
+`app/api/inquiries/upload-sign` is unauthenticated by design (D1 forbids a visitor account), and an
+unlimited credential minter is an open file host with Rivya's Cloudinary bill attached.
+`consume_rate_limit()` counts and decides in one statement, the key is a salted hash rather than an
+address, and it fails CLOSED.
+
+**THE BUILDER IS ONE COLLAPSED COLUMN AND THERE IS NO LIVE PREVIEW** — amendment **A19**, which
+records the divergence from STUDIO_GUIDE §7.6's two-pane sentence. Mounting the real configurator in
+the Studio would overwrite a visitor's `sessionStorage` draft in the same browser and spend the
+rate-limit allowance protecting the upload endpoint. *Duplicate from template* IS built, as
+`cms_duplicate_customization_form()` (`0184`): the whole copy in one transaction, because three
+PostgREST writes are three transactions and an interruption between the steps and the questions
+leaves a form that looks finished and asks nothing.
+
+**`npm run db:check-data-layer` WAS RED AND IS NOW GREEN.** Two calls reached PostgREST outside the
+repository layer — `consume_rate_limit` from `lib/security/rate-limit.ts`, and the journal's curated
+strip, which was also casting rows with `as unknown as` and so skipping Zod. Both now go through
+repositories.
+
+### Phase 19: what is NOT built, and why
+
+- **No submission.** The review step's Submit is disabled with no handler. Phase 20 persists the
+  inquiry and hands off to WhatsApp; D1 requires the save first, so a working button here would
+  either drop the brief or redirect with nothing stored.
+- **`commission_configurator` is OFF**, and Phase 20's exit criteria are what switch it on.
+- **No live preview pane in the builder**, and no `validation` editor — both A19, both with the
+  reason recorded rather than left to be rediscovered.
+- **No form deletion.** Steps and questions can be deleted under `destructive.execute`; a form
+  cannot, because nothing yet cleans up the bindings and revisions a deleted form leaves, and an
+  unpublished form costs nothing.
+- **No secondary "preview as visitor" session.** See A19.
+
+### Phase 19: verification, as actually run
+
+- `npm test` with `DATABASE_URL` set — **1388 pass, none skipped** (106 files).
+- `npm run check` — clean.
+- `npm run db:check-migrations` — 52 migrations to `0184`, every number allocated in DATA_MODEL §12.
+- `npm run db:check-schema` — 38 tables, RLS on all, column tiers correct, D10 gate on all 12
+  content tables.
+- `npm run auth:check-rls` — 38 tables, 153 policies, every staff-select role list matching the
+  matrix. `npm run auth:check-policies` — the three generated files match.
+- `npm run db:check-data-layer` — green again; see above.
+- **`cms_duplicate_customization_form()` probed against the local database**: the furniture template
+  copied to 11 steps and 16 questions, each question under the right step, DRAFT, not default, no
+  seed identity — and an `EXCEPT` both ways between source and copy over key, position, type,
+  options, validation, required and WhatsApp flags returned **0 rows in each direction**. The copy
+  was then deleted.
+- Hosted verified directly: the function exists as SECURITY INVOKER with `anon` revoked and
+  `authenticated` retained, and its ledger row carries the file's checksum.
+- **Playwright did not run.** The sandbox network policy denies the Supabase host, so `next dev`
+  cannot serve a page. `tests/e2e/configurator.spec.ts` is written to skip with a stated reason
+  rather than to be deleted.
+
+### Phase 19: the D9 ten, recorded
+
+1. **Scope implemented** — the four tables and `feature_flags`, the RLS, the seed resolution, the
+   configurator island and its block, the public upload endpoint and its limiter, both Studio
+   surfaces, the duplicate function, the flags module, the tests.
+2. **Relevant tests run** — 1388 pass, none skipped; the e2e suite skips for a stated environmental
+   reason.
+3. **No known scope-breaking error.** The data-layer gate that was red is fixed.
+4. **Documentation updated** — CANONICAL-DECISIONS A17/A18/**A19**, DATA_MODEL §12 (`0180`–`0184`)
+   and the column tiers, BUSINESS_RULES BR-F2b/BR-F4b, STUDIO_GUIDE §7.6 and §13.12 (open question 5
+   closed), DEMO_CONTENT.md.
+5. **CHANGELOG updated.**
+6. **PROJECT_STATE updated.**
+7. **SESSION-STATE updated** — this section.
+8. **Remaining issues documented** — see below.
+9. **Next phase identified** — **Phase 20, Inquiry & WhatsApp Handoff.** It persists the brief this
+   phase validates, and its exit criteria are what switch `commission_configurator` on.
+10. **Repository recoverable** — every commit pushed to `claude/rivya-living-art-phases-64hq5i`.
+
+### Standing issues, carried
+
+- `verify` is red on the account's Actions runner with a signature that is not a code failure
+  (`runner_id: 0`, ~2s, no steps, red on `main` too) and is **not re-run**, per the free-tier
+  instruction.
+- The Playwright suite cannot execute here: the network policy denies the Supabase host.
+- **Six secrets remain exposed in chat transcripts and unrotated** — the owner's task, after all
+  phase work.
+- **`content/seed/media-bindings.ts` is still EMPTY**, and its header still says the Higgsfield
+  migration "has never executed". It has: 250 assets are in Cloudinary and in `media_assets` on both
+  databases. So every seeded SECTION on the site is still unbound and renders the SEED §47 fallback.
+  Journal covers are unaffected — they bind through the article record's own `media` map — but the
+  wider binding pass is outstanding work that belongs to nobody's phase yet.
+- **`npm test` wipes the local seeded content.** `tests/unit/rls/phase08.test.ts` blanket-deletes
+  `pages` and `page_sections`, so re-run `seed:content` before checking any seeded-content claim
+  locally. This cost a confused half-hour chasing a "93 inserted" that was simply the suite's doing.
+- **A schema fingerprint must fix `search_path` on both sides.** `pg_get_indexdef` renders an
+  operator class according to the reader's path, so the same index reads as
+  `extensions.gin_trgm_ops` locally and `gin_trgm_ops` on hosted.
+- **Hosted carries 20 of the 30 demonstration products, the six categories, and nothing else of the
+  demonstration content.** The owner authorised the data and chose to publish it live; the run was
+  interrupted part way through the third batch and has not been resumed. **Awaiting the owner:
+  finish it, roll it back, or leave it.** Nothing further should be written to hosted demo content
+  until that is answered. `npm run demo:purge` removes every marked row in one command either way.
+- **The local cluster stops when the container idles**, and the RLS suite then fails with
+  `ECONNREFUSED 127.0.0.1:5433` on three function-grant tests before the rest skip. Restart with
+  `su postgres -c "/usr/lib/postgresql/16/bin/pg_ctl -D /var/lib/postgresql/rivya/data -o '-p 5433' -l /var/lib/postgresql/rivya/pg.log start"`
+  and re-run; it is never a code failure.
+
+### Superseded — Phase 18's state
+
 **Phase 18 — Journal. CODE COMPLETE; NOTHING IS PUBLISHED, WHICH IS THE FINISHED STATE.** Nine
 categories and ten article IDEAS exist — a title and an angle each, no body. SEED §20 says in
 capitals: seed as DRAFT, do not publish automatically. `/journal` renders SEED §29's sentence; every
@@ -93,26 +242,6 @@ dedupe fails the test.
 8. **Remaining issues documented** — see below.
 9. **Next phase identified** — **Phase 19, Bespoke / Custom Configurator.**
 10. **Repository recoverable** — every commit pushed to `claude/rivya-living-art-phases-64hq5i`.
-
-### Standing issues, carried
-
-- `verify` is red on the account's Actions runner with a signature that is not a code failure
-  (`runner_id: 0`, ~2s, no steps, red on `main` too) and is **not re-run**, per the free-tier
-  instruction.
-- The Playwright suite cannot execute here: the network policy denies the Supabase host.
-- **Six secrets remain exposed in chat transcripts and unrotated** — the owner's task, after all
-  phase work.
-- **`content/seed/media-bindings.ts` is still EMPTY**, and its header still says the Higgsfield
-  migration "has never executed". It has: 250 assets are in Cloudinary and in `media_assets` on both
-  databases. So every seeded SECTION on the site is still unbound and renders the SEED §47 fallback.
-  Journal covers are unaffected — they bind through the article record's own `media` map — but the
-  wider binding pass is outstanding work that belongs to nobody's phase yet.
-- **`npm test` wipes the local seeded content.** `tests/unit/rls/phase08.test.ts` blanket-deletes
-  `pages` and `page_sections`, so re-run `seed:content` before checking any seeded-content claim
-  locally. This cost a confused half-hour chasing a "93 inserted" that was simply the suite's doing.
-- **A schema fingerprint must fix `search_path` on both sides.** `pg_get_indexdef` renders an
-  operator class according to the reader's path, so the same index reads as
-  `extensions.gin_trgm_ops` locally and `gin_trgm_ops` on hosted.
 
 ### Superseded — Phase 17's state
 

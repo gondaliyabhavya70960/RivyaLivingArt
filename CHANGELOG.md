@@ -6,6 +6,78 @@ Every phase adds an entry; see `docs/architecture/CANONICAL-DECISIONS.md` D9 for
 
 ## [Unreleased]
 
+### Phase 19 — Bespoke / Custom Configurator
+
+The studio can now be asked for something it has not made. Eleven steps, one screen each, every
+question read from `customization_form_steps` and `customization_form_fields` — FEAT §15's "every
+step configurable from Studio" taken literally: the component asks no question of its own, and the
+validation is generated from the same rows the questions come from, so a field an owner adds is
+validated without anyone writing a schema for it.
+
+**Nothing in this group can hold a price, and the door is closed at the schema.**
+`customization_form_fields.validation` carries an allowlist CHECK — nine Zod keys — so
+`price_multiplier`, `surcharge` and `cost_per_mm` are rejected by the same expression that keeps the
+object Zod-shaped. There is no money in the field-type enum either. `tests/unit/no-pricing.test.ts`
+greps the migration for a pricing column and is itself mutation-tested, because a guard that passes
+against a deliberately broken copy of the schema is not a guard.
+
+**The whole configurator ships behind a flag that is OFF, and that is the phase working as
+written.** Phase 19 ends at a validated payload; D1 requires an inquiry to be persisted before any
+WhatsApp redirect, and persistence is Phase 20. So the Submit button on the review step is rendered
+disabled with no handler at all — a working one would either drop the brief or hand a visitor to
+WhatsApp with nothing saved — and `/custom-commissions` keeps its Phase 09 copy until Phase 20's
+exit criteria switch `commission_configurator` on.
+
+**A refusing trigger cannot survive PostgREST, so the ordering trigger repairs instead.** Studio
+writes one row per statement per transaction: reordering ten steps means ten transactions, nine of
+them transiently illegal, and `deferrable` does not help because "deferred" means "at commit" and
+each statement commits alone. `normalise_form_step_order()` renumbers rather than refusing, and
+forces the contact step last; `cms_set_form_step_order` assigns every position in ONE statement so
+the repair pass has nothing to correct and a single reorder writes half the revision history.
+
+**A form cannot be published without somewhere to reply to.** `enforce_form_publishable()` refuses
+PUBLISHED for a form with no enabled `contact` step, a contact step asking for neither a phone number
+nor an email address, or an enabled choice question with no choices. The builder states all three
+above the publish button and re-computes them in the action, so every failure is reported at once —
+the trigger stays the rule, and if the two ever disagree the trigger wins.
+
+**`app/api/inquiries/upload-sign` is unauthenticated by design, so its rate limit could not wait for
+Phase 41.** A visitor filling in a brief has no account and D1 forbids giving them one; an
+unauthenticated endpoint minting upload credentials with no ceiling is an open file host with
+Rivya's Cloudinary bill attached. Migration `0182` brings `rate_limit_buckets` forward in the shape
+DATA_MODEL already specified, `consume_rate_limit()` counts and decides in one statement so two
+concurrent callers cannot both be the last one under the limit, the bucket key is a salted hash
+rather than an address, and it fails CLOSED (amendment A18).
+
+**Feature flags are evaluated server-side and the register lives in the code.** A flag evaluated in
+the browser is a flag the browser can be told to ignore; here an off feature is absent from the
+response rather than hidden in it. `lib/flags/flags.ts` holds the register so a flag key is an
+identifier that breaks its call sites when removed, and `feature_flags` holds only the flags
+somebody has touched — absent is off, so a fresh database, a restored backup and a preview branch
+behave identically with nothing seeded. `/studio/system/flags` is readable by all six roles
+deliberately: the register is how anybody accounts for a surface that is missing (amendment A17).
+
+**The builder is one collapsed column, not two panes, and there is no live preview** — amendment
+A19. Mounting the real configurator inside the Studio would overwrite a visitor's `sessionStorage`
+draft in the same browser and spend the rate-limit allowance protecting the upload endpoint. It
+links to `/custom-commissions` instead and says so on screen. *Duplicate from template* IS built, as
+`cms_duplicate_customization_form()` (`0184`): the whole copy in one transaction, because three
+PostgREST writes are three transactions and the interruption between the steps and the questions
+leaves a form that looks finished and asks nothing.
+
+**Two Zod findings worth keeping.** `z.object` decides a key is optional from whether its INPUT type
+admits `undefined`, and for an optional key that is MISSING it skips validation entirely — so
+`z.preprocess(fn, schema.optional()).refine(v => v !== undefined)` never runs, and a required field
+whose key was absent passed. `unansweredRequired()` now checks presence outside the schema. And
+`\b` creates no boundary before `_`, so the pricing grep could not match `price_modifier`; both
+mutations now fail the test that missed them.
+
+**Three commission templates seeded, none published** — `FURNITURE`, `PRESERVATION` and
+`THREE_D_RESIN`, the last two `OWNER_VERIFICATION_REQUIRED` because their manufacturing and
+preservation options are not confirmed. 33 steps and 40 questions between them, and exactly one
+SELECT: `project_type`. Every other choice is left open, because a list of options is a claim about
+what the studio makes.
+
 ### Phase 18 — Journal
 
 Rivya gains an editorial surface. Nine SEED §19 categories and ten SEED §20 article IDEAS — a title

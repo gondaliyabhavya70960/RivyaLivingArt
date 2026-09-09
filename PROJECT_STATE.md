@@ -1,14 +1,14 @@
 # PROJECT_STATE — what is actually built
 
 > Verified against the repository, not against intent. Update at the end of every phase.
-> Last verified: Phase 18 (Journal), 2026-09-09.
+> Last verified: Phase 19 (Bespoke / Custom Configurator), 2026-09-09.
 
 ## Summary
 
 The design system is built; the database spine exists, carries RLS policies for all six roles, and
 has been verified against a real PostgreSQL **and against the hosted Supabase project**. What
 exists: the toolchain, the token layer, 32 primitives, 3 motion helpers, 7 behavioural patterns, a
-dev-only gallery, **thirty-two tables, all with RLS on**, generated types with a
+dev-only gallery, **thirty-eight tables, all with RLS on and 153 policies between them**, generated types with a
 drift gate, a repository layer with Zod at its boundary, an idempotent seed runner proved not to
 overwrite an owner's edit, the Studio shell with its ⌘K palette and user management, the media
 layer end to end, the Higgsfield migration, gap engine and tracker, **the CMS engine — pages,
@@ -132,6 +132,45 @@ curation is sufficient and never repeats an article an editor already linked. `/
 `/journal/[slug]` and `/journal/category/[slug]` all render; with nothing published the landing is
 SEED §29's sentence and every article URL 404s. RC-220 `ArticleCard` is built.
 
+**The studio can be asked for something it has not made.** Phase 19 added `customization_forms`,
+`customization_form_steps`, `customization_form_fields`, `product_customization_forms` and
+`feature_flags`, and resolved the three commission templates Phase 09 deferred: `FURNITURE`,
+`PRESERVATION` and `THREE_D_RESIN` — 33 steps and 40 questions, all DRAFT, the last two
+`OWNER_VERIFICATION_REQUIRED` because their options are not confirmed. Exactly one question is a
+SELECT (`project_type`); every other choice is left open, because a list of options is a claim about
+what the studio makes.
+
+**Nothing in that group can hold a price.** `customization_form_fields.validation` carries an
+allowlist CHECK of nine Zod keys, so `price_multiplier` and its relatives are rejected by the same
+expression that keeps the object Zod-shaped, and the field-type enum has no money in it.
+`tests/unit/no-pricing.test.ts` greps the migration and is mutation-tested against two deliberately
+broken copies of the schema — both of which it originally passed, one because SQL doubles a quote
+where JavaScript backslashes it, the other because `\b` creates no boundary before `_`.
+
+**The configurator is built and switched off.** Eleven steps, one screen each, every question read
+from the tables and the Zod schema generated from the same rows. It ends at a validated payload:
+the review step's Submit button is rendered disabled with no handler, because D1 requires an inquiry
+to be persisted before any WhatsApp redirect and persistence is Phase 20. `commission_configurator`
+ships off, so `/custom-commissions` keeps its Phase 09 copy; `isEnabled()` is evaluated server-side,
+so an off feature is absent from the response rather than hidden in it.
+
+**Two Studio surfaces and a rate limiter came with it.**
+`/studio/catalog/customization-forms` and its `[formId]` builder — one collapsed column with numeric
+ordering, publish gating that states its three refusals before the button, and *Duplicate from
+template* as a single-transaction database function (amendment A19). `/studio/system/flags` reads
+for all six roles and writes for two (amendment A17). `rate_limit_buckets` and
+`consume_rate_limit()` arrived twenty-two phases early because `app/api/inquiries/upload-sign` is
+unauthenticated by design and an unlimited credential minter is an open file host with the studio's
+Cloudinary bill attached (amendment A18).
+
+**Demonstration content exists, is marked, and is removable in one command.** The owner authorised
+placeholder data for launch preparation: 30 products, 10 article bodies, 6 portfolio projects and 6
+testimonials, every row carrying `is_demo` (migration `0180`), registered in
+`docs/content/DEMO_CONTENT.md` and badged in the Studio. It is seeded by `npm run demo:seed` and
+removed by `npm run demo:purge`, both separate from the content runner so the two can never be
+confused. **Hosted currently carries 20 of the 30 products and the six categories and nothing else
+of it** — the run was interrupted part way and has not been resumed pending the owner's decision.
+
 **Writing the seed test found a publishing defect.** The Phase 09 records put each article's angle —
 the studio's internal brief — into `excerpt`, which is what a card renders. Ten editorial briefs
 would have appeared on `/journal` as summaries the moment anything went live.
@@ -142,7 +181,14 @@ so every route answers 500 and no page can be measured — the first run of the 
 checks a baseline route and skips with the reason, never in CI. Phase 15's three specs are in the
 same position. Unit, RLS, seed and gate verification all run here and pass.
 
-**The hosted project is level with the repository through `0161`.** Phase 18's `0160`/`0161` were
+**The hosted project is level with the repository through `0184`.** Phase 19's `0170`-`0172`, the
+demonstration marker `0180`, the publication-date fix `0181`, the rate limiter `0182`-`0183` and the
+duplicate function `0184` were all applied through the Supabase MCP server, with a ledger row and
+checksum written on both sides. Schema-verified identical to local: 38 tables, RLS on every one,
+153 policies, the six `is_demo` columns and `cms_duplicate_customization_form()` as SECURITY INVOKER
+with `anon` revoked.
+
+**The hosted project was level with the repository through `0161`.** Phase 18's `0160`/`0161` were
 applied through the Supabase MCP server, and the nine categories, ten drafts and nine journal UI
 strings replayed there with local's own seed metadata, so the runner still owns them. Verified
 against local by a 178-line fingerprint over the journal objects.
@@ -240,7 +286,9 @@ in this document is from a local run.
 | 16 | Collections as Exhibitions | **CODE COMPLETE; NONE PUBLISHED BY DESIGN** | Migrations `0140`–`0143`. Eight new `collections` columns, `entity_relations`, the concept publish gate and its authority gate, the exhibition page and its ten-band template, `collection-products` and `signature-media` (30 blocks, 22 built), and the ten FEAT §9 concepts seeded as a name, a slug and an order. Applied to hosted and fingerprint-verified. Amendment A14. |
 | 17 | Portfolio / Projects | **CODE COMPLETE; ARCHIVE EMPTY BY DESIGN** | Migrations `0150`–`0153`. `portfolio_projects`, `portfolio_project_media` and `testimonials`, all with zero rows and none seedable; two per-table evidence gates with the withdrawal branch first; `evidence_note` revoked from `anon` at the grant; `project-gallery` (32 blocks, 24 built) and RC-219 `PortfolioCard`; the project and testimonial Studio editors with consent, verification and publish. `lib/portfolio/gates.ts` mirrors both triggers and is held to agreement with them by test. Applied to hosted and fingerprint-verified through `0153`. Amendment A15. |
 | 18 | Journal | **CODE COMPLETE; NOTHING PUBLISHED BY DESIGN** | Migrations `0160`/`0161`. Three tables, the ARTICLE page kind, `reading_minutes` derived by trigger, `enforce_article_has_body`, and the only date-gated public read on the site. Nine SEED §19 categories PUBLISHED and ten SEED §20 ideas DRAFT with covers bound; `lib/cms/related.ts` holds FEAT §11's one automatic rule; `/journal`, `/journal/[slug]` and `/journal/category/[slug]`; RC-220 `ArticleCard`; the Studio article editor and its categories screen. Applied to hosted and fingerprint-verified. Amendment A16. No RSS feed — the phase holds it behind an amendment nobody has granted. |
-| 19–46 | Conversion, Studio, research, ops, launch | **PLANNED** | Specified in `docs/project/phases/`. |
+| 19 | Bespoke / Custom Configurator | **CODE COMPLETE; SWITCHED OFF BY DESIGN** | Migrations `0170`–`0172` and `0184`. Four form tables and `feature_flags`; `normalise_form_step_order()` repairs rather than refuses, because a refusing constraint trigger cannot survive one-row-per-transaction writes; `enforce_form_publishable()` refuses a form with no way to reply on it; an allowlist CHECK on `validation` makes a pricing key unstorable, mutation-tested. Three SEED §33–35 templates seeded DRAFT — 33 steps, 40 questions, one SELECT. The configurator ends at a VALIDATED PAYLOAD with Submit disabled and no handler: D1 requires the save first and persistence is Phase 20's, so `commission_configurator` ships off. `/studio/catalog/customization-forms` and `[formId]`, `/studio/system/flags`, `cms_duplicate_customization_form()`. `rate_limit_buckets` brought forward for the unauthenticated upload endpoint. Applied to hosted through `0184`. Amendments A17, A18, A19. |
+| — | Demonstration content | **SEEDED LOCALLY; PART-APPLIED ON HOSTED** | Owner-authorised placeholder data, marked `is_demo` by migration `0180`, registered in `docs/content/DEMO_CONTENT.md`, badged in the Studio and removable with `npm run demo:purge`. 30 products, 10 article bodies, 6 projects, 6 testimonials. **Hosted carries 20 of the 30 products and the six categories only** — the run was interrupted and awaits the owner's decision. |
+| 20–46 | Conversion, Studio, research, ops, launch | **PLANNED** | Specified in `docs/project/phases/`. |
 
 ## What exists on disk
 
