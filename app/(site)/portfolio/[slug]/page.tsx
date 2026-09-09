@@ -42,15 +42,43 @@ type Props = { readonly params: Promise<Params> }
 const pathFor = (slug: string) => `/portfolio/${slug.toLowerCase()}`
 
 /**
+ * PostgREST's codes for a relation that is not there: PostgreSQL's own `undefined_table`, and
+ * PostgREST's for a table absent from its cached schema. `lib/cms/selectors/types.ts` matches the
+ * same pair, for the same reason — the second is what a live project answers before its schema
+ * cache has caught up with a migration.
+ */
+function isMissingTable(error: unknown): boolean {
+  const code = (error as { cause?: { code?: string } } | null)?.cause?.code
+  return code === '42P01' || code === 'PGRST205'
+}
+
+/**
  * Published projects only.
  *
  * The anonymous client is the filter, as everywhere else — nothing here says `status = 'PUBLISHED'`,
  * because RLS says it once in a policy, and the two evidence gates stand behind PUBLISHED. Today
  * this returns an empty list, so nothing is pre-rendered and nothing is reachable.
+ *
+ * A MISSING TABLE IS AN EMPTY LIST, NOT A FAILED BUILD, and that was learned the hard way: the first
+ * deploy of this route brought the WHOLE SITE's build down with
+ * `Failed to collect page data for /portfolio/[slug]`, because `portfolio_projects` existed locally
+ * and not yet on the hosted database. One table being a migration behind should cost this route its
+ * pre-rendering, not every other page its deployment.
+ *
+ * IT SWALLOWS ONLY THE MISSING-TABLE CODES. Any other failure — a broken policy, a bad column, a
+ * connection refused — still throws and still fails the build, because those are faults nobody
+ * should discover from an empty portfolio. And this is only the pre-render list: `dynamicParams`
+ * still renders on request, and the same visibility rule applies there, so nothing becomes
+ * reachable that would not otherwise have been.
  */
 export async function generateStaticParams(): Promise<Params[]> {
-  const projects = await listPublishedProjects(createPublicClient())
-  return projects.map((project) => ({ slug: project.slug.toLowerCase() }))
+  try {
+    const projects = await listPublishedProjects(createPublicClient())
+    return projects.map((project) => ({ slug: project.slug.toLowerCase() }))
+  } catch (error) {
+    if (isMissingTable(error)) return []
+    throw error
+  }
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
