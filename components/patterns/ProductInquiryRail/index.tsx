@@ -41,7 +41,19 @@ type RailKey = (typeof RAIL_KEYS)[number]
 
 export interface ProductInquiryRailProps {
   readonly slug: string
-  /** `Customize This Piece` renders only for a customizable piece — otherwise it is an empty offer. */
+  /**
+   * Whether `Customize This Piece` renders at all.
+   *
+   * THREE FACTS, RESOLVED BY THE CALLER, NOT ONE READ HERE. `products.is_customizable` says the
+   * piece can be commissioned differently; the caller ANDs it with "a customization form is bound to
+   * this product or its category" and "the `commission_configurator` flag is on". The link goes to
+   * `/custom-commissions?product=<slug>`, so any of the three being false makes it an invitation to
+   * a page that will not answer — and an action a visitor presses and gets nothing from is worse
+   * than one that was never offered.
+   *
+   * Resolved by the caller rather than here because this component is synchronous and reads no
+   * database: see the note at the top of `components/sections/types.ts` on why that matters.
+   */
   readonly isCustomizable: boolean
   readonly strings: SiteStrings
 }

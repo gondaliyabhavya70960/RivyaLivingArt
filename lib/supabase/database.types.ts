@@ -2644,6 +2644,24 @@ export type Database = {
           },
         ]
       }
+      rate_limit_buckets: {
+        Row: {
+          bucket_key: string
+          window_start: string
+          count: number
+        }
+        Insert: {
+          bucket_key: string
+          window_start: string
+          count?: number
+        }
+        Update: {
+          bucket_key?: string
+          window_start?: string
+          count?: number
+        }
+        Relationships: []
+      }
       seo_entries: {
         Row: {
           id: string
@@ -2975,6 +2993,10 @@ export type Database = {
         Returns: Json
       }
       cms_unpublish_media_asset: {
+        Args: Record<string, unknown>
+        Returns: Json
+      }
+      consume_rate_limit: {
         Args: Record<string, unknown>
         Returns: Json
       }

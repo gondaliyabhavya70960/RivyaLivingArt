@@ -70,12 +70,20 @@ export const dimensionAnswerSchema = z.object({
 /**
  * One reference the visitor uploaded, as the configurator holds it.
  *
- * The BYTES never pass through here. `app/api/inquiries/upload-sign` issues a signature, the
- * browser uploads straight to the media provider, and what comes back is an id and the original
- * filename — which is also what Phase 20 will attach to the inquiry.
+ * THE BYTES NEVER PASS THROUGH THE SERVER. `app/api/inquiries/upload-sign` issues a signature, the
+ * browser uploads straight to the media provider, and what comes back is a provider public_id and
+ * the original filename.
+ *
+ * `publicId`, NOT `assetId`, AND THE DIFFERENCE IS THE PHASE BOUNDARY. There is no `media_assets`
+ * row yet: the signature cannot know the public_id the upload will end up with, so a row minted at
+ * signing time would name an asset that may never exist. Phase 20 persists the inquiry and turns
+ * these references into rows — `source = 'USER_UPLOAD'`, `status = 'DRAFT'`, alt text from the
+ * filename — after checking each public_id really is under `rivya/inquiries/incoming/`. Until then
+ * an abandoned upload is a provider object with no row, which is what the 30-day orphan purge is
+ * for.
  */
 export const uploadedReferenceSchema = z.object({
-  assetId: z.string().min(1),
+  publicId: z.string().min(1),
   filename: z.string().min(1),
 })
 

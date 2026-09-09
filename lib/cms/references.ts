@@ -7,6 +7,10 @@ import {
   selectProjects,
 } from '@/lib/cms/selectors'
 import type { EntityCard, SelectorClient, SelectorResult } from '@/lib/cms/selectors'
+import { isEnabled } from '@/lib/flags'
+import type { ResolvedForm } from '@/lib/cms/forms'
+import { forProduct, getPublishedBySlug } from '@/lib/supabase/repositories/customization-forms'
+import { getProductForCommission } from '@/lib/supabase/repositories/products'
 import {
   getCollectionIdBySlug,
   getCollectionIdForPage,
@@ -16,6 +20,7 @@ import { listMediaAssetsByIds } from '@/lib/supabase/repositories/media'
 import type { MediaAsset, PageSection } from '@/lib/supabase/schemas'
 
 import { collectionProductsBlock } from '@/content/blocks/collection-products'
+import { commissionConfiguratorBlock } from '@/content/blocks/commission-configurator'
 import { projectGalleryBlock } from '@/content/blocks/project-gallery'
 import { journalStripBlock } from '@/content/blocks/journal-strip'
 import { portfolioStripBlock } from '@/content/blocks/portfolio-strip'
@@ -60,6 +65,30 @@ export type SectionReference = {
    * does not become a round trip per photograph inside an async component.
    */
   readonly media?: readonly ProjectGalleryItem[]
+  /**
+   * A RESOLVED CUSTOMIZATION FORM, for the one block that mounts an interactive surface.
+   *
+   * `commission-configurator` needs two things a selector cannot give it: a whole form definition —
+   * steps and fields, in order — and the state of a feature flag. Both are resolved here for the
+   * reason everything else is: `SectionRenderer` is SYNCHRONOUS AND PURE, so a renderer that
+   * fetched its own form would be a round trip inside the render and untestable without a database.
+   *
+   * `null` MEANS "DO NOT RENDER", and it is deliberately not distinguished from "not found". The
+   * flag is off, or the named form does not exist, or it exists and is not published — three
+   * different facts with one correct behaviour, and telling a visitor which of them it is would
+   * publish the studio's release schedule.
+   */
+  readonly configurator?: ResolvedForm | null
+  /**
+   * Answers the configurator opens with, from `?product=<slug>`.
+   *
+   * FROM THE PRODUCT ROW, NEVER FROM A GUESS. The only thing pre-filled is the project type, and it
+   * is read from the product's CATEGORY — a column on the row — through the fixed correspondence in
+   * `PROJECT_TYPE_BY_CATEGORY`. A category with no correspondence pre-fills nothing rather than
+   * choosing the nearest option, because a visitor who arrives to find the form has decided what
+   * they want has been told something about their own brief that nobody checked.
+   */
+  readonly prefill?: Readonly<Record<string, string>>
 }
 
 /** One picture in a project gallery: the asset, plus what the editor said about it HERE. */
@@ -136,6 +165,14 @@ export async function loadPageReferences(
   client: SelectorClient,
   sections: readonly PageSection[],
   pageId: string,
+  /**
+   * `?product=<slug>`, when the route read one.
+   *
+   * OPTIONAL, AND ONLY ONE ROUTE PASSES IT. Reading a search parameter opts a Server Component out
+   * of static rendering, so `/custom-commissions` is dynamic and the other twelve CMS routes are
+   * not — which is why this arrives as an argument rather than being read here from `headers()`.
+   */
+  productSlug: string | null = null,
 ): Promise<PageReferences> {
   const referencing = sections.filter((section) => isReferenceBlock(section.block_type))
   if (referencing.length === 0) return new Map()
@@ -162,6 +199,15 @@ export async function loadPageReferences(
         return [section.id, await loadProjectGallery(client, section, pageId)] as const
       }
 
+      /*
+       * NOR IS THE CONFIGURATOR, and for a different reason again: it returns no entities at all.
+       * What it resolves is a FORM DEFINITION and a feature flag, both of which the renderer must
+       * have before it draws anything and neither of which a card-shaped selector can express.
+       */
+      if (section.block_type === 'commission-configurator') {
+        return [section.id, await loadConfigurator(client, section, productSlug)] as const
+      }
+
       const result = await config.select(client, {
         limit: config.limit(section),
         categorySlug: config.categorySlug(section),
@@ -180,6 +226,79 @@ export async function loadPageReferences(
   )
 
   return new Map(resolved)
+}
+
+/**
+ * The form a `commission-configurator` band mounts, or null.
+ *
+ * THE FLAG IS CHECKED FIRST AND THE FORM IS NOT LOADED IF IT IS OFF. Not an optimisation: a
+ * switched-off feature should cost nothing and, more to the point, should leave no trace in the
+ * query log of a page that does not render it.
+ *
+ * THE READ GOES THROUGH THE PAGE'S OWN CLIENT, so RLS decides what is visible. A draft form
+ * resolves to null for a visitor and to the real thing in a Studio preview, which is exactly the
+ * behaviour a preview needs and exactly the behaviour a public page must not have.
+ */
+/**
+ * The seven seeded categories, mapped onto SEED §15's nine starting points.
+ *
+ * BOTH VOCABULARIES ARE FIXED AND SEEDED, so this is a stated correspondence rather than an
+ * inference — which is what lets `?product=` pre-fill a project type without guessing. The values
+ * are the option values the commissions seed derives from §15's labels; a category absent from this
+ * map pre-fills nothing, and three of the seven are absent on purpose: `decor`, `gifts` and
+ * `collectible-design` have no §15 starting point of their own, and answering "Other" on a
+ * visitor's behalf tells them their brief is a leftover.
+ */
+const PROJECT_TYPE_BY_CATEGORY: Readonly<Record<string, string>> = {
+  furniture: 'custom_furniture',
+  'wall-statement-art': 'wall_statement_art',
+  preservation: 'preservation_piece',
+  '3d-resin': '3d_resin_concept',
+}
+
+async function loadConfigurator(
+  client: SelectorClient,
+  section: PageSection,
+  productSlug: string | null,
+): Promise<SectionReference> {
+  const empty = { result: EMPTY_GALLERY, assets: new Map<string, MediaAsset>(), configurator: null }
+  if (!(await isEnabled('commission_configurator'))) return empty
+
+  /*
+   * A PRODUCT IN THE URL OVERRULES THE BLOCK'S OWN SLUG, and that is the right precedence. The
+   * payload says which form this PAGE mounts by default; `?product=` says which piece the visitor
+   * was looking at when they pressed "Customize This Piece", and a preservation keepsake must not
+   * open the furniture brief because the page's default said so. A product with no binding falls
+   * back to the page's form rather than to nothing: the visitor still gets to ask.
+   */
+  const bound = productSlug === null ? null : await formForProductSlug(client, productSlug)
+
+  if (bound !== null) return { ...empty, ...bound }
+
+  const slug = parseBlockPayload(commissionConfiguratorBlock, section.payload).formSlug.trim()
+  if (slug === '') return empty
+
+  return { ...empty, configurator: await getPublishedBySlug(client, slug) }
+}
+
+/** The form bound to a product, plus what its row lets us pre-fill. Null when the slug resolves to nothing. */
+async function formForProductSlug(
+  client: SelectorClient,
+  productSlug: string,
+): Promise<{ configurator: ResolvedForm; prefill: Record<string, string> } | null> {
+  const product = await getProductForCommission(client, productSlug)
+  if (product === null) return null
+
+  const form = await forProduct(client, product.id, product.categoryId)
+  if (form === null) return null
+
+  const projectType =
+    product.categorySlug === null ? undefined : PROJECT_TYPE_BY_CATEGORY[product.categorySlug]
+
+  return {
+    configurator: form,
+    prefill: projectType === undefined ? {} : { project_type: projectType },
+  }
 }
 
 /**

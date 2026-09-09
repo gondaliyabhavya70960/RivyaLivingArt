@@ -21,11 +21,12 @@ describe('block type union', () => {
     expect(new Set(BLOCK_TYPES).size).toBe(BLOCK_TYPES.length)
   })
 
-  it('carries the whole §08 catalogue, plus the exhibition and project blocks', () => {
+  it('carries the whole §08 catalogue, plus the exhibition, project and commission blocks', () => {
     // 28 from PHASE-05-09 §08, plus `signature-media` and `collection-products` — the two an
     // exhibition page needs, added in Phase 16 under amendment A14 — plus `project-gallery` and
-    // `testimonial-strip`, the two the project archive needs (Phase 17).
-    expect(BLOCK_TYPES).toHaveLength(32)
+    // `testimonial-strip`, the two the project archive needs (Phase 17), plus
+    // `commission-configurator`, the band that mounts the FEAT §15 brief (Phase 19).
+    expect(BLOCK_TYPES).toHaveLength(33)
   })
 
   it('validates only its own members', () => {
@@ -155,7 +156,7 @@ describe('built and planned', () => {
    * `components/sections/registry.ts` — which `tests/unit/cms-sections.test.tsx` asserts agrees
    * with this list in both directions.
    */
-  it('reports the twenty-four built blocks', () => {
+  it('reports the twenty-five built blocks', () => {
     expect(BUILT_BLOCK_TYPES).toEqual([
       'hero',
       'manifesto',
@@ -179,6 +180,7 @@ describe('built and planned', () => {
       'collection-products',
       'project-gallery',
       'testimonial-strip',
+      'commission-configurator',
       'empty-state',
       'divider',
     ])
@@ -193,8 +195,8 @@ describe('built and planned', () => {
 
   it('reports the rest as planned', () => {
     const planned = BLOCK_TYPES.filter((type) => !isBuilt(type))
-    // 32 declared, 24 built. Phase 13 moved the three `/large-format` blocks out of this list;
-    // Phases 16 and 17 added four more that are built on arrival, so this count is unchanged.
+    // 33 declared, 25 built. Phase 13 moved the three `/large-format` blocks out of this list;
+    // Phases 16, 17 and 19 added five more that are built on arrival, so this count is unchanged.
     expect(planned).toHaveLength(8)
     for (const type of planned) {
       expect(blockModule(type).state, type).toBe('PLANNED')

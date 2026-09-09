@@ -160,6 +160,16 @@ export async function cmsPageMetadata(
 export async function renderCmsPage(
   path: string,
   below?: React.ReactNode,
+  /**
+   * `?product=<slug>`, for the one route that reads one.
+   *
+   * `/custom-commissions` is the only CMS page whose content depends on a query parameter — the
+   * conversion rail on a product page links to it with the piece the visitor was looking at, and
+   * the configurator opens that piece's bound form. Reading a search parameter makes a route
+   * dynamic, so it arrives here as an argument from the route that chose to be: the other twelve
+   * stay static.
+   */
+  productSlug: string | null = null,
 ): Promise<React.ReactElement> {
   const { resolved, draft } = await resolveForRequest(path)
   if (resolved === null) notFound()
@@ -177,7 +187,7 @@ export async function renderCmsPage(
    */
   const [assets, references, chrome] = await Promise.all([
     loadPageMedia(client, resolved.sections),
-    loadPageReferences(client, resolved.sections, resolved.page.id),
+    loadPageReferences(client, resolved.sections, resolved.page.id, productSlug),
     getSiteChrome(),
   ])
 

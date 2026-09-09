@@ -168,6 +168,16 @@ const EXPECTED = {
    */
   feature_flags: ['updated_at', 'updated_by'],
 
+  /*
+   * A COUNTER, WHICH IS THE FOURTH KIND OF §1.4 EXEMPTION AND THE THINNEST. `rate_limit_buckets`
+   * has no audit columns at all — no `created_at`, no `updated_by` — and that is deliberate rather
+   * than an omission to fix later. Every column it has IS the record: a hashed key, a window and a
+   * count. Adding `updated_at` would double the write cost of the hottest table on the site to
+   * store a value `window_start` already bounds, and `updated_by` would name an actor that by
+   * definition has no account.
+   */
+  rate_limit_buckets: ['bucket_key', 'window_start', 'count'],
+
   // `db:migrate`'s own bookkeeping, and a §1.4 exemption for the same reason `content_seed_runs` is
   // one: what it records is an INVOCATION, and an invocation has no publication workflow, no owner
   // verification and nothing to seed. It is created by the runner rather than by a migration —

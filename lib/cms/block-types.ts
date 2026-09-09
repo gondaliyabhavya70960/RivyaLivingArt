@@ -47,6 +47,8 @@ export const BLOCK_TYPES = [
   // The project archive — added in Phase 17
   'project-gallery',
   'testimonial-strip',
+  // The bespoke brief, FEAT §15 — added in Phase 19
+  'commission-configurator',
   // Query-backed
   'faq-list',
   'contact-details',

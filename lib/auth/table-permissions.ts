@@ -101,6 +101,7 @@ export const PHASE_16_POLICIES = '0142_phase16_entity_relations_rls.sql'
 export const PHASE_17_POLICIES = '0151_phase17_portfolio_rls.sql'
 export const PHASE_18_POLICIES = '0161_phase18_journal_rls.sql'
 export const PHASE_19_POLICIES = '0172_phase19_rls.sql'
+export const PHASE_19_LIMIT_POLICIES = '0183_phase19_rate_limit_rls.sql'
 
 export const TABLE_POLICIES = {
   // --- Shape A: content tables ------------------------------------------------------------------
@@ -621,6 +622,33 @@ export const TABLE_POLICIES = {
       'Publishing this table would hand every visitor the list of features being prepared, ' +
       'their key names, and the moment each one was switched: an unreleased-roadmap feed with a ' +
       'timestamp. Nothing public needs it, because nothing public reads it.',
+  },
+
+  /**
+   * `rate_limit_buckets` — Phase 19 `0182`, early on Phase 41's behalf.
+   *
+   * SHAPE C WITH A READ AND NO WRITE, which is the same shape `higgsfield_migration_runs` takes and
+   * for the same reason: the only writer is a SECURITY DEFINER function granted to `service_role`,
+   * so an INSERT policy would describe a path nothing uses and would suggest to a later reader that
+   * a session can increment a counter. None can.
+   *
+   * THE READ IS `operations.logs.read` — owner and admin — rather than `studio.access`. A counter
+   * keyed on a hashed visitor address is operational telemetry, not something a viewer needs, and
+   * Phase 41's security surface is where it will be shown. Narrower than the table's sensitivity
+   * strictly requires, deliberately: the key is a hash and reveals no address, but the SHAPE of the
+   * data — how many anonymous visitors hit an endpoint and when — is still the kind of thing that
+   * belongs with the audit log rather than beside the content editor.
+   */
+  rate_limit_buckets: {
+    policiesIn: PHASE_19_LIMIT_POLICIES,
+    shape: 'C',
+    readPermission: 'operations.logs.read',
+    deviation:
+      'No anon policy and no write policy for any session role. Rows are written solely by ' +
+      'consume_rate_limit(), a SECURITY DEFINER function granted to service_role, because the ' +
+      'bucket key is derived from the caller and a session able to pass its own key could ' +
+      "exhaust somebody else's window. Nothing public reads it: a visitor learning how close " +
+      'they are to a rate limit learns how to pace an attack.',
   },
 
   // --- Phase 06 ---------------------------------------------------------------------------------

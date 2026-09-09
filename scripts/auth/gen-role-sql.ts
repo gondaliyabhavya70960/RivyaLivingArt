@@ -30,6 +30,7 @@ import {
   PHASE_16_POLICIES,
   PHASE_17_POLICIES,
   PHASE_18_POLICIES,
+  PHASE_19_LIMIT_POLICIES,
   PHASE_19_POLICIES,
   TABLE_POLICY_MAP,
   type ManagedTable,
@@ -208,6 +209,21 @@ const GENERATED: Record<string, { title: string; preamble: string }> = {
 -- surface that is missing, and STUDIO_GUIDE §2.3 explicitly rejected hiding it behind the write
 -- permission. Nothing public reads it, and publishing it would hand a visitor the list of features
 -- being prepared with the date each one was switched.`,
+  },
+  [PHASE_19_LIMIT_POLICIES]: {
+    title: `-- ${PHASE_19_LIMIT_POLICIES} — Phase 19`,
+    preamble: `-- Policies for \`rate_limit_buckets\`, which migration 0182 creates. GENERATED from
+-- lib/auth/table-permissions.ts and rewritten whole, so it may hold nothing a human wrote.
+--
+-- ONE POLICY, and the absence of the other three is the point. The table is written solely by
+-- \`consume_rate_limit()\`, a SECURITY DEFINER function granted to \`service_role\` alone — because
+-- the bucket key is derived from the caller's address, and a session that could pass its own key
+-- could exhaust somebody else's window on their behalf. An INSERT policy here would describe a
+-- path nothing uses and would tell a later reader that a session can move a counter.
+--
+-- NO ANON POLICY EITHER. A visitor who could read their own bucket would learn exactly how close
+-- they are to the ceiling and exactly when it resets, which is the information needed to pace an
+-- attack rather than to stop one.`,
   },
 }
 
