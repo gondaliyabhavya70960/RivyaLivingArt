@@ -3101,6 +3101,429 @@ export const STUDIO_STRINGS = {
     value: 'Save collection',
     contentKey: 'studio_help.catalog_collection_save',
   },
+
+  /* ---------------------------------------------------------------------------------------------
+   * Phase 19 — the customization form builder and the feature-flag register.
+   *
+   * THE BUILDER'S WORDS CARRY ITS RULES. A form's steps and fields are the questions a visitor is
+   * asked, and three of the database's refusals are invisible until they fire: a form cannot be
+   * published without an enabled contact step, that step must ask for a phone number or an email
+   * address, and a choice field with no choices is refused. The help text below says all three
+   * BEFORE the editor presses publish, because a refusal explained afterwards is a refusal that
+   * already wasted the work.
+   *
+   * NOTHING HERE OFFERS A PRICE. `customization_form_fields.validation` has an allowlist CHECK that
+   * rejects `price_multiplier` and its relatives outright, and the field-type enum has no money in
+   * it. The note on the fields panel says so, because a merchandiser looking for the surcharge box
+   * should be told it does not exist rather than left hunting for it.
+   * ------------------------------------------------------------------------------------------- */
+  'studio.catalog.forms.caption': {
+    value: 'Customization forms',
+    contentKey: 'studio_help.catalog_forms_caption',
+  },
+  'studio.catalog.forms.emptyHeading': {
+    value: 'No forms yet',
+    contentKey: 'studio_help.catalog_forms_empty_heading',
+  },
+  'studio.catalog.forms.emptyBody': {
+    value: 'A form is the set of questions a bespoke brief asks. Create one below.',
+    contentKey: 'studio_help.catalog_forms_empty_body',
+  },
+  'studio.catalog.forms.help': {
+    value:
+      'Each form is a sequence of steps, and each step a set of questions. A form is offered on a product page when it is bound to that product or to its category.',
+    contentKey: 'studio_help.catalog_forms_help',
+  },
+  'studio.catalog.forms.colName': {
+    value: 'Name',
+    contentKey: 'studio_help.catalog_forms_col_name',
+  },
+  'studio.catalog.forms.colSlug': {
+    value: 'Slug',
+    contentKey: 'studio_help.catalog_forms_col_slug',
+  },
+  'studio.catalog.forms.colKind': {
+    value: 'Kind',
+    contentKey: 'studio_help.catalog_forms_col_kind',
+  },
+  'studio.catalog.forms.colSteps': {
+    value: 'Steps',
+    contentKey: 'studio_help.catalog_forms_col_steps',
+  },
+  'studio.catalog.forms.colFields': {
+    value: 'Questions',
+    contentKey: 'studio_help.catalog_forms_col_fields',
+  },
+  'studio.catalog.forms.colDefault': {
+    value: 'Default',
+    contentKey: 'studio_help.catalog_forms_col_default',
+  },
+  'studio.catalog.forms.colStatus': {
+    value: 'Status',
+    contentKey: 'studio_help.catalog_forms_col_status',
+  },
+  'studio.catalog.forms.isDefaultYes': {
+    value: 'Default for its kind',
+    contentKey: 'studio_help.catalog_forms_is_default_yes',
+  },
+  'studio.catalog.forms.newHeading': {
+    value: 'New form',
+    contentKey: 'studio_help.catalog_forms_new_heading',
+  },
+  'studio.catalog.forms.newNote': {
+    value:
+      'A new form starts as a draft with no steps. Add a contact step before publishing it: a brief that arrives with no way to reply cannot be answered.',
+    contentKey: 'studio_help.catalog_forms_new_note',
+  },
+  'studio.catalog.form.name': {
+    value: 'Name',
+    contentKey: 'studio_help.catalog_form_name',
+  },
+  'studio.catalog.form.slug': {
+    value: 'Slug',
+    contentKey: 'studio_help.catalog_form_slug',
+  },
+  'studio.catalog.form.kind': {
+    value: 'Kind',
+    contentKey: 'studio_help.catalog_form_kind',
+  },
+  'studio.catalog.form.description': {
+    value: 'Description',
+    contentKey: 'studio_help.catalog_form_description',
+  },
+  'studio.catalog.form.descriptionHelp': {
+    value: 'For the Studio only. What this form is for, and who it is for.',
+    contentKey: 'studio_help.catalog_form_description_help',
+  },
+  'studio.catalog.form.create': {
+    value: 'Create form',
+    contentKey: 'studio_help.catalog_form_create',
+  },
+  'studio.catalog.form.save': {
+    value: 'Save form',
+    contentKey: 'studio_help.catalog_form_save',
+  },
+  'studio.catalog.form.back': {
+    value: 'Back to forms',
+    contentKey: 'studio_help.catalog_form_back',
+  },
+  'studio.catalog.form.untitled': {
+    value: 'Untitled form',
+    contentKey: 'studio_help.catalog_form_untitled',
+  },
+  'studio.catalog.form.requiredLabel': {
+    value: 'Required',
+    contentKey: 'studio_help.catalog_form_required_label',
+  },
+  'studio.catalog.form.identityHeading': {
+    value: 'The form',
+    contentKey: 'studio_help.catalog_form_identity_heading',
+  },
+  'studio.catalog.form.introHeading': {
+    value: 'Opening heading',
+    contentKey: 'studio_help.catalog_form_intro_heading',
+  },
+  'studio.catalog.form.introBody': {
+    value: 'Opening paragraph',
+    contentKey: 'studio_help.catalog_form_intro_body',
+  },
+  'studio.catalog.form.introHelp': {
+    value: 'What a visitor reads above the first step. Leave both empty to open straight into it.',
+    contentKey: 'studio_help.catalog_form_intro_help',
+  },
+  'studio.catalog.form.submitLabelKey': {
+    value: 'Submit button key',
+    contentKey: 'studio_help.catalog_form_submit_label_key',
+  },
+  'studio.catalog.form.submitLabelKeyHelp': {
+    value:
+      'A content key such as CTA.send_an_enquiry, not the words themselves. The wording lives in the content library so every form changes together.',
+    contentKey: 'studio_help.catalog_form_submit_label_key_help',
+  },
+  'studio.catalog.form.isDefault': {
+    value: 'Use this form when nothing more specific is bound',
+    contentKey: 'studio_help.catalog_form_is_default',
+  },
+  'studio.catalog.form.publishHeading': {
+    value: 'Publication',
+    contentKey: 'studio_help.catalog_form_publish_heading',
+  },
+  'studio.catalog.form.publishBody': {
+    value:
+      'A published form is offered to visitors. Publication is refused unless the form has an enabled contact step, that step asks for a phone number or an email address, and every choice question has at least one choice.',
+    contentKey: 'studio_help.catalog_form_publish_body',
+  },
+  'studio.catalog.form.publish': {
+    value: 'Publish form',
+    contentKey: 'studio_help.catalog_form_publish',
+  },
+  'studio.catalog.form.unpublish': {
+    value: 'Withdraw form',
+    contentKey: 'studio_help.catalog_form_unpublish',
+  },
+  'studio.catalog.form.flagNote': {
+    value:
+      'The configurator itself is behind a feature flag. Publishing a form does not put it on the site until that flag is switched on under System · Feature flags.',
+    contentKey: 'studio_help.catalog_form_flag_note',
+  },
+  'studio.catalog.form.stepsHeading': {
+    value: 'Steps',
+    contentKey: 'studio_help.catalog_form_steps_heading',
+  },
+  'studio.catalog.form.stepsHelp': {
+    value:
+      'Steps are shown in the order below. The contact step is always moved last, whatever number it is given, because it is the one asked after the brief is described.',
+    contentKey: 'studio_help.catalog_form_steps_help',
+  },
+  'studio.catalog.form.stepsEmpty': {
+    value: 'This form has no steps yet.',
+    contentKey: 'studio_help.catalog_form_steps_empty',
+  },
+  'studio.catalog.form.stepKey': {
+    value: 'Step key',
+    contentKey: 'studio_help.catalog_form_step_key',
+  },
+  'studio.catalog.form.stepKeyHelp': {
+    value: 'Lowercase letters, digits and underscores. It cannot be changed once questions use it.',
+    contentKey: 'studio_help.catalog_form_step_key_help',
+  },
+  'studio.catalog.form.stepTitle': {
+    value: 'Step title',
+    contentKey: 'studio_help.catalog_form_step_title',
+  },
+  'studio.catalog.form.stepDescription': {
+    value: 'Step description',
+    contentKey: 'studio_help.catalog_form_step_description',
+  },
+  'studio.catalog.form.stepPosition': {
+    value: 'Position',
+    contentKey: 'studio_help.catalog_form_step_position',
+  },
+  'studio.catalog.form.stepEnabled': {
+    value: 'Shown to visitors',
+    contentKey: 'studio_help.catalog_form_step_enabled',
+  },
+  'studio.catalog.form.stepRequired': {
+    value: 'Must be completed before continuing',
+    contentKey: 'studio_help.catalog_form_step_required',
+  },
+  'studio.catalog.form.stepSave': {
+    value: 'Save step',
+    contentKey: 'studio_help.catalog_form_step_save',
+  },
+  'studio.catalog.form.stepDelete': {
+    value: 'Delete step',
+    contentKey: 'studio_help.catalog_form_step_delete',
+  },
+  'studio.catalog.form.stepAddHeading': {
+    value: 'Add a step',
+    contentKey: 'studio_help.catalog_form_step_add_heading',
+  },
+  'studio.catalog.form.stepAdd': {
+    value: 'Add step',
+    contentKey: 'studio_help.catalog_form_step_add',
+  },
+  'studio.catalog.form.fieldsHeading': {
+    value: 'Questions',
+    contentKey: 'studio_help.catalog_form_fields_heading',
+  },
+  'studio.catalog.form.fieldsEmpty': {
+    value: 'This step asks nothing yet.',
+    contentKey: 'studio_help.catalog_form_fields_empty',
+  },
+  'studio.catalog.form.fieldsNote': {
+    value:
+      'There is no price, surcharge or multiplier question, and there is no way to add one: this studio quotes after reading a brief, never from a form.',
+    contentKey: 'studio_help.catalog_form_fields_note',
+  },
+  'studio.catalog.form.fieldKey': {
+    value: 'Question key',
+    contentKey: 'studio_help.catalog_form_field_key',
+  },
+  'studio.catalog.form.fieldKeyHelp': {
+    value:
+      'Lowercase letters, digits and underscores. It names the answer in the message sent to the studio and cannot be changed afterwards.',
+    contentKey: 'studio_help.catalog_form_field_key_help',
+  },
+  'studio.catalog.form.orderSave': {
+    value: 'Save order',
+    contentKey: 'studio_help.catalog_form_order_save',
+  },
+  'studio.catalog.form.fieldLabel': {
+    value: 'Question',
+    contentKey: 'studio_help.catalog_form_field_label',
+  },
+  'studio.catalog.form.fieldHelpText': {
+    value: 'Help text',
+    contentKey: 'studio_help.catalog_form_field_help_text',
+  },
+  'studio.catalog.form.fieldPlaceholder': {
+    value: 'Placeholder',
+    contentKey: 'studio_help.catalog_form_field_placeholder',
+  },
+  'studio.catalog.form.fieldType': {
+    value: 'Answer type',
+    contentKey: 'studio_help.catalog_form_field_type',
+  },
+  'studio.catalog.form.fieldOptions': {
+    value: 'Choices',
+    contentKey: 'studio_help.catalog_form_field_options',
+  },
+  'studio.catalog.form.fieldOptionsHelp': {
+    value:
+      'One per line, as value | label. Only choice questions use them, and a choice question with none cannot be published.',
+    contentKey: 'studio_help.catalog_form_field_options_help',
+  },
+  'studio.catalog.form.fieldPosition': {
+    value: 'Position',
+    contentKey: 'studio_help.catalog_form_field_position',
+  },
+  'studio.catalog.form.fieldEnabled': {
+    value: 'Asked',
+    contentKey: 'studio_help.catalog_form_field_enabled',
+  },
+  'studio.catalog.form.fieldRequired': {
+    value: 'Must be answered',
+    contentKey: 'studio_help.catalog_form_field_required',
+  },
+  'studio.catalog.form.fieldWhatsapp': {
+    value: 'Include the answer in the message to the studio',
+    contentKey: 'studio_help.catalog_form_field_whatsapp',
+  },
+  'studio.catalog.form.fieldSave': {
+    value: 'Save question',
+    contentKey: 'studio_help.catalog_form_field_save',
+  },
+  'studio.catalog.form.fieldDelete': {
+    value: 'Delete question',
+    contentKey: 'studio_help.catalog_form_field_delete',
+  },
+  'studio.catalog.form.fieldAddHeading': {
+    value: 'Add a question',
+    contentKey: 'studio_help.catalog_form_field_add_heading',
+  },
+  'studio.catalog.form.fieldAdd': {
+    value: 'Add question',
+    contentKey: 'studio_help.catalog_form_field_add',
+  },
+  'studio.catalog.form.bindingsHeading': {
+    value: 'Where this form is offered',
+    contentKey: 'studio_help.catalog_form_bindings_heading',
+  },
+  'studio.catalog.form.bindingsHelp': {
+    value:
+      'A binding to a product wins over a binding to its category. A form bound to nothing is still reachable from the commissions page if it is the default for its kind.',
+    contentKey: 'studio_help.catalog_form_bindings_help',
+  },
+  'studio.catalog.form.bindingsEmpty': {
+    value: 'This form is not bound to any product or category.',
+    contentKey: 'studio_help.catalog_form_bindings_empty',
+  },
+  'studio.catalog.form.bindingProduct': {
+    value: 'Product',
+    contentKey: 'studio_help.catalog_form_binding_product',
+  },
+  'studio.catalog.form.bindingCategory': {
+    value: 'Category',
+    contentKey: 'studio_help.catalog_form_binding_category',
+  },
+  'studio.catalog.form.bindingNone': {
+    value: '— none —',
+    contentKey: 'studio_help.catalog_form_binding_none',
+  },
+  'studio.catalog.form.bindingAdd': {
+    value: 'Bind form',
+    contentKey: 'studio_help.catalog_form_binding_add',
+  },
+  'studio.catalog.form.bindingRemove': {
+    value: 'Remove',
+    contentKey: 'studio_help.catalog_form_binding_remove',
+  },
+  'studio.catalog.form.bindingTarget': {
+    value: 'Bound to',
+    contentKey: 'studio_help.catalog_form_binding_target',
+  },
+  'studio.catalog.form.previewHeading': {
+    value: 'Preview',
+    contentKey: 'studio_help.catalog_form_preview_heading',
+  },
+  'studio.catalog.form.previewBody': {
+    value:
+      'Opens the commissions page, where a published form is rendered exactly as a visitor sees it once the configurator flag is on.',
+    contentKey: 'studio_help.catalog_form_preview_body',
+  },
+  'studio.catalog.form.preview': {
+    value: 'Open the commissions page',
+    contentKey: 'studio_help.catalog_form_preview',
+  },
+
+  /* ---------------------------------------------------------------------------------------------
+   * /studio/system/flags — the register of what is switched on.
+   *
+   * EVERY ROLE READS IT AND TWO ROLES MOVE IT. The register is how anybody in the Studio accounts
+   * for a surface that is missing: a merchandiser who cannot find the configurator should be able
+   * to see that it is off rather than conclude it is broken. Switching is `system.flags.write`,
+   * owner and administrator, and for a role without it the controls are ABSENT rather than
+   * disabled — a greyed-out switch reads as "ask someone to enable this", which is the wrong idea.
+   * ------------------------------------------------------------------------------------------- */
+  'studio.system.flags.heading': {
+    value: 'Feature flags',
+    contentKey: 'studio_help.system_flags_heading',
+  },
+  'studio.system.flags.help': {
+    value:
+      'What is switched on. A feature that is off is not hidden in the page — it is not built into the response at all, so a visitor cannot reach it by any means.',
+    contentKey: 'studio_help.system_flags_help',
+  },
+  'studio.system.flags.registerNote': {
+    value:
+      'Flags are declared in the code, not created here. A feature that has been built appears in this list; nothing else can be switched.',
+    contentKey: 'studio_help.system_flags_register_note',
+  },
+  'studio.system.flags.readOnlyNote': {
+    value: 'Only an owner or an administrator can move these switches.',
+    contentKey: 'studio_help.system_flags_read_only_note',
+  },
+  'studio.system.flags.caption': {
+    value: 'Feature flags',
+    contentKey: 'studio_help.system_flags_caption',
+  },
+  'studio.system.flags.colKey': {
+    value: 'Flag',
+    contentKey: 'studio_help.system_flags_col_key',
+  },
+  'studio.system.flags.colDescription': {
+    value: 'What it controls',
+    contentKey: 'studio_help.system_flags_col_description',
+  },
+  'studio.system.flags.colState': {
+    value: 'State',
+    contentKey: 'studio_help.system_flags_col_state',
+  },
+  'studio.system.flags.on': {
+    value: 'On',
+    contentKey: 'studio_help.system_flags_on',
+  },
+  'studio.system.flags.off': {
+    value: 'Off',
+    contentKey: 'studio_help.system_flags_off',
+  },
+  'studio.system.flags.enable': {
+    value: 'Switch on',
+    contentKey: 'studio_help.system_flags_enable',
+  },
+  'studio.system.flags.disable': {
+    value: 'Switch off',
+    contentKey: 'studio_help.system_flags_disable',
+  },
+  'studio.system.flags.emptyHeading': {
+    value: 'No flags are registered',
+    contentKey: 'studio_help.system_flags_empty_heading',
+  },
+  'studio.system.flags.emptyBody': {
+    value: 'Nothing in the code declares a flag, so there is nothing to switch.',
+    contentKey: 'studio_help.system_flags_empty_body',
+  },
 } as const satisfies Record<string, StudioStringEntry>
 
 /** Every key this module resolves. A typo is a compile error, not a blank space on the page. */
