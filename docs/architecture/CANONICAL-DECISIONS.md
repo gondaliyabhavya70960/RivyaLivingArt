@@ -85,6 +85,7 @@ Seeded categories, in priority order:
 /studio/merchandising/{homepage,store,featured,scheduling}
 /studio/content/{pages,homepage,portfolio,journal,testimonials,faqs,
                  navigation,footer,seo}
+/studio/content/journal/categories          the nine SEED §19 subjects (amendment A16)
 /studio/media/{all,images,videos,models,documents,higgsfield,brand}
 /studio/inquiries/{all,product,commission,consultation,quote}
 /studio/research/{dashboard,sources,scrape,jobs,runs,changes,explorer,
@@ -206,7 +207,24 @@ boundary, and a gate that excluded it would be measuring something other than wh
   from the shell, which is the layout; a walk from the page alone would report one island and pass
   while the shell grew four more.
 
-**2026-09-09 · A15 — four corrections raised by Phase 17 (PHASE-16-22 §Phase 17).**
+**2026-09-09 · A16 — D4 gains `/studio/content/journal/categories` (PHASE-16-22 §Phase 18).**
+
+Phase 18's Studio section asks for a screen editing the nine SEED §19 journal categories, and D4's
+map did not list it. Adding a Studio route silently is exactly what `tests/unit/studio-nav.test.ts`
+exists to prevent — it holds the navigation manifest, the D4 map and the files on disk to each
+other, and it caught this — so the route is recorded here rather than added to the manifest alone.
+
+It is a LEAF of its own rather than a tab of `/studio/content/journal`, and that is the decision
+worth writing down. The article list edits `journal_articles`; this screen edits
+`journal_categories`, whose `slug` is a public URL. Burying the one screen that can change a public
+address behind the one that cannot would make it harder to find than the routine work — and an
+editor visits it rarely and deliberately, which is what a leaf is for.
+
+It is also the Studio's first non-dynamic sub-page: every other second-level route under a leaf is
+a `[detailId]` or a tab of one. The nav test already models those two shapes and treats anything
+else as undeclared, which is why this needed the map rather than an exemption.
+
+**2026-09-09 · A15 — four corrections raised by Phase 17 (PHASE-16-22 §Phase 17).
 
 *A15·a — the evidence gate is TWO functions, one per table, and the phase document's ordering of
 its branches is wrong.* PHASE-16-22 §Phase 17 supplies pseudo-code putting the `WITHDRAWN` branch

@@ -403,6 +403,10 @@ export const STUDIO_STRINGS = {
     value: 'Journal',
     contentKey: 'studio_help.nav_content_journal',
   },
+  'studio.nav.content.journalCategories': {
+    value: 'Journal categories',
+    contentKey: 'studio_help.nav_content_journal_categories',
+  },
   'studio.nav.content.testimonials': {
     value: 'Testimonials',
     contentKey: 'studio_help.nav_content_testimonials',
@@ -2687,6 +2691,221 @@ export const STUDIO_STRINGS = {
   'studio.testimonials.requiredLabel': {
     value: 'Required',
     contentKey: 'studio_help.testimonials_required_label',
+  },
+
+  // --- Phase 18: the journal ---------------------------------------------------------------------
+  'studio.journal.caption': {
+    value: 'Articles and guides. Ten ideas are waiting to be written.',
+    contentKey: 'studio_help.journal_caption',
+  },
+  'studio.journal.emptyHeading': {
+    value: 'No articles yet',
+    contentKey: 'studio_help.journal_empty_heading',
+  },
+  'studio.journal.emptyBody': {
+    value:
+      'The ten seeded ideas arrive with this phase. Each is a title and an angle: what the piece is meant to be about, for whoever writes it. None has a body, and none can be published until one exists.',
+    contentKey: 'studio_help.journal_empty_body',
+  },
+  'studio.journal.colTitle': { value: 'Article', contentKey: 'studio_help.journal_col_title' },
+  'studio.journal.colCategory': {
+    value: 'Category',
+    contentKey: 'studio_help.journal_col_category',
+  },
+  'studio.journal.colStatus': { value: 'Status', contentKey: 'studio_help.journal_col_status' },
+  'studio.journal.colBody': { value: 'Body', contentKey: 'studio_help.journal_col_body' },
+  'studio.journal.colPublished': {
+    value: 'Appears on',
+    contentKey: 'studio_help.journal_col_published',
+  },
+  'studio.journal.untitled': {
+    value: 'Untitled article',
+    contentKey: 'studio_help.journal_untitled',
+  },
+  'studio.journal.noCategory': { value: 'Unfiled', contentKey: 'studio_help.journal_no_category' },
+  'studio.journal.bodyPresent': {
+    value: 'Written',
+    contentKey: 'studio_help.journal_body_present',
+  },
+  'studio.journal.bodyAbsent': { value: 'Empty', contentKey: 'studio_help.journal_body_absent' },
+  'studio.journal.backToList': { value: 'All articles', contentKey: 'studio_help.journal_back' },
+  'studio.journal.requiredLabel': { value: 'Required', contentKey: 'studio_help.journal_required' },
+
+  'studio.journal.newHeading': { value: 'Start an article', contentKey: 'studio_help.journal_new' },
+  'studio.journal.newHelp': {
+    value:
+      'A new article is a draft with no body. Give it a title and an address; the writing happens in the block editor, and it cannot be published until there is something to read.',
+    contentKey: 'studio_help.journal_new_help',
+  },
+  'studio.journal.newSlug': {
+    value: 'Address (the last part of the web address)',
+    contentKey: 'studio_help.journal_new_slug',
+  },
+  'studio.journal.newSubmit': {
+    value: 'Add article',
+    contentKey: 'studio_help.journal_new_submit',
+  },
+
+  'studio.journal.identityHeading': {
+    value: 'What this article is',
+    contentKey: 'studio_help.journal_identity',
+  },
+  'studio.journal.identitySave': {
+    value: 'Save these details',
+    contentKey: 'studio_help.journal_identity_save',
+  },
+  'studio.journal.fieldTitle': { value: 'Title', contentKey: 'studio_help.journal_field_title' },
+  'studio.journal.fieldStandfirst': {
+    value: 'Standfirst',
+    contentKey: 'studio_help.journal_field_standfirst',
+  },
+  'studio.journal.fieldStandfirstHelp': {
+    value: 'The line under the title on the article itself.',
+    contentKey: 'studio_help.journal_field_standfirst_help',
+  },
+  'studio.journal.fieldExcerpt': {
+    value: 'Card line',
+    contentKey: 'studio_help.journal_field_excerpt',
+  },
+  'studio.journal.fieldExcerptHelp': {
+    value:
+      'What a card shows in a listing — a different sentence from the standfirst, because a card is read in a grid beside other cards.',
+    contentKey: 'studio_help.journal_field_excerpt_help',
+  },
+  'studio.journal.fieldAngle': { value: 'Angle', contentKey: 'studio_help.journal_field_angle' },
+  'studio.journal.fieldAngleHelp': {
+    value:
+      'What the piece is meant to be about, for whoever writes it. Never shown on the website — this is the brief, not the summary.',
+    contentKey: 'studio_help.journal_field_angle_help',
+  },
+  'studio.journal.fieldByline': { value: 'Byline', contentKey: 'studio_help.journal_field_byline' },
+  'studio.journal.fieldBylineHelp': {
+    value:
+      'Defaults to the studio. Typing a person’s name is a claim that they wrote this, so it needs an owner to confirm it before the article can be published.',
+    contentKey: 'studio_help.journal_field_byline_help',
+  },
+  'studio.journal.fieldCategory': {
+    value: 'Primary category',
+    contentKey: 'studio_help.journal_field_category',
+  },
+  'studio.journal.fieldCategoryHelp': {
+    value:
+      'The one category this article belongs to. It decides which category page lists it, and which articles fill the related strip when nobody has chosen any.',
+    contentKey: 'studio_help.journal_field_category_help',
+  },
+  'studio.journal.categoryNone': { value: 'Unfiled', contentKey: 'studio_help.journal_cat_none' },
+
+  'studio.journal.readingMinutes': {
+    value: 'Reading time is worked out from the article’s own blocks and cannot be typed.',
+    contentKey: 'studio_help.journal_reading_minutes',
+  },
+
+  'studio.journal.bodyHeading': { value: 'Body', contentKey: 'studio_help.journal_body_heading' },
+  'studio.journal.bodyHelp': {
+    value:
+      'The article itself is an ordered list of blocks, the same as any other page on the site. Creating it lays down one band to start from; nothing can be published until at least one block is visible.',
+    contentKey: 'studio_help.journal_body_help',
+  },
+  'studio.journal.bodyCreate': {
+    value: 'Create the article page',
+    contentKey: 'studio_help.journal_body_create',
+  },
+  'studio.journal.bodyEdit': {
+    value: 'Open the block editor',
+    contentKey: 'studio_help.journal_body_edit',
+  },
+
+  'studio.journal.coverHeading': { value: 'Cover', contentKey: 'studio_help.journal_cover' },
+  'studio.journal.coverHelp': {
+    value:
+      'Desktop and mobile are separate pictures, never one cropped by the browser. Leave the mobile slot empty if there is no portrait version — an empty slot is honest, a squeezed landscape is not.',
+    contentKey: 'studio_help.journal_cover_help',
+  },
+  'studio.journal.coverDesktop': {
+    value: 'Cover — desktop',
+    contentKey: 'studio_help.journal_cover_desktop',
+  },
+  'studio.journal.coverMobile': {
+    value: 'Cover — mobile',
+    contentKey: 'studio_help.journal_cover_mobile',
+  },
+  'studio.journal.coverSave': {
+    value: 'Save the cover',
+    contentKey: 'studio_help.journal_cover_save',
+  },
+  'studio.journal.coverNone': { value: 'No picture', contentKey: 'studio_help.journal_cover_none' },
+
+  'studio.journal.relationsHeading': {
+    value: 'Related content',
+    contentKey: 'studio_help.journal_relations',
+  },
+  'studio.journal.relationsHelp': {
+    value:
+      'Links chosen by hand always come first. When there are fewer than three, the strip fills with other articles in the same category — newest first, labelled as what it is.',
+    contentKey: 'studio_help.journal_relations_help',
+  },
+
+  'studio.journal.publishHeading': {
+    value: 'Publishing',
+    contentKey: 'studio_help.journal_publish',
+  },
+  'studio.journal.publishHelp': {
+    value:
+      'An article appears when it is published AND its appearance date has passed. Setting a date in the future is how a piece is scheduled; leaving it empty publishes it now.',
+    contentKey: 'studio_help.journal_publish_help',
+  },
+  'studio.journal.fieldPublishedAt': {
+    value: 'Appears on',
+    contentKey: 'studio_help.journal_field_published_at',
+  },
+  'studio.journal.publish': { value: 'Publish', contentKey: 'studio_help.journal_publish_action' },
+  'studio.journal.unpublish': {
+    value: 'Take it off the site',
+    contentKey: 'studio_help.journal_unpublish',
+  },
+  'studio.journal.verifySet': {
+    value: 'Confirm this byline',
+    contentKey: 'studio_help.journal_verify_set',
+  },
+  'studio.journal.verifyClear': {
+    value: 'Withdraw that confirmation',
+    contentKey: 'studio_help.journal_verify_clear',
+  },
+  'studio.journal.verifyHelp': {
+    value:
+      'Only needed when this article names a person, asserts what Rivya can make, or states a standard. An owner or administrator confirms it; nothing publishes while it is outstanding.',
+    contentKey: 'studio_help.journal_verify_help',
+  },
+
+  'studio.journal.categoriesHeading': {
+    value: 'Categories',
+    contentKey: 'studio_help.journal_categories_heading',
+  },
+  'studio.journal.categoriesHelp': {
+    value:
+      'The nine subjects the journal is filed under. A name can be reworded and the order changed; the address cannot, because it is a public URL somebody may have linked to.',
+    contentKey: 'studio_help.journal_categories_help',
+  },
+  'studio.journal.categoryName': { value: 'Name', contentKey: 'studio_help.journal_category_name' },
+  'studio.journal.categorySlug': {
+    value: 'Address',
+    contentKey: 'studio_help.journal_category_slug',
+  },
+  'studio.journal.categoryIntro': {
+    value: 'Heading on the category page',
+    contentKey: 'studio_help.journal_category_intro',
+  },
+  'studio.journal.categoryDescription': {
+    value: 'Description',
+    contentKey: 'studio_help.journal_category_description',
+  },
+  'studio.journal.categoryPosition': {
+    value: 'Order',
+    contentKey: 'studio_help.journal_category_position',
+  },
+  'studio.journal.categorySave': {
+    value: 'Save this category',
+    contentKey: 'studio_help.journal_category_save',
   },
 
   // --- Phase 17: the verification panel ---------------------------------------------------------
