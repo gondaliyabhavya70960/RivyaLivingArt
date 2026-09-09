@@ -1,0 +1,2005 @@
+{
+  "results": {
+    "rivya/collection/3d-resin/three-d-resin-001-3x4": {
+      "publicId": "rivya/collection/3d-resin/three-d-resin-001-3x4",
+      "bytes": 452256,
+      "width": 3584,
+      "height": 4800,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/collection/3d-resin/three-d-resin-002-16x9": {
+      "publicId": "rivya/collection/3d-resin/three-d-resin-002-16x9",
+      "bytes": 233328,
+      "width": 5504,
+      "height": 3072,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/collection/3d-resin/three-d-resin-003-16x9": {
+      "publicId": "rivya/collection/3d-resin/three-d-resin-003-16x9",
+      "bytes": 187298,
+      "width": 5504,
+      "height": 3072,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/collection/3d-resin/three-d-resin-004-3x4": {
+      "publicId": "rivya/collection/3d-resin/three-d-resin-004-3x4",
+      "bytes": 277254,
+      "width": 3584,
+      "height": 4800,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/collection/3d-resin/three-d-resin-005-4x5": {
+      "publicId": "rivya/collection/3d-resin/three-d-resin-005-4x5",
+      "bytes": 89354,
+      "width": 1856,
+      "height": 2304,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/collection/3d-resin/three-d-resin-006-16x9": {
+      "publicId": "rivya/collection/3d-resin/three-d-resin-006-16x9",
+      "bytes": 230106,
+      "width": 2048,
+      "height": 1152,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/collection/3d-resin/three-d-resin-007-16x9": {
+      "publicId": "rivya/collection/3d-resin/three-d-resin-007-16x9",
+      "bytes": 363284,
+      "width": 2048,
+      "height": 1152,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/collection/3d-resin/three-d-resin-008-16x9": {
+      "publicId": "rivya/collection/3d-resin/three-d-resin-008-16x9",
+      "bytes": 321560,
+      "width": 2048,
+      "height": 1152,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/collection/3d-resin/three-d-resin-009-16x9": {
+      "publicId": "rivya/collection/3d-resin/three-d-resin-009-16x9",
+      "bytes": 381320,
+      "width": 2048,
+      "height": 1152,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/collection/3d-resin/three-d-resin-010-16x9": {
+      "publicId": "rivya/collection/3d-resin/three-d-resin-010-16x9",
+      "bytes": 294470,
+      "width": 2048,
+      "height": 1152,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/collection/3d-resin/three-d-resin-011-16x9": {
+      "publicId": "rivya/collection/3d-resin/three-d-resin-011-16x9",
+      "bytes": 379974,
+      "width": 2048,
+      "height": 1152,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/collection/3d-resin/three-d-resin-012-16x9": {
+      "publicId": "rivya/collection/3d-resin/three-d-resin-012-16x9",
+      "bytes": 359302,
+      "width": 2048,
+      "height": 1152,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/collection/3d-resin/three-d-resin-013-16x9": {
+      "publicId": "rivya/collection/3d-resin/three-d-resin-013-16x9",
+      "bytes": 370784,
+      "width": 2048,
+      "height": 1152,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/collection/decor/decor-001-16x9": {
+      "publicId": "rivya/collection/decor/decor-001-16x9",
+      "bytes": 223116,
+      "width": 5504,
+      "height": 3072,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/collection/decor/decor-002-3x4": {
+      "publicId": "rivya/collection/decor/decor-002-3x4",
+      "bytes": 292272,
+      "width": 3584,
+      "height": 4800,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/collection/decor/decor-003-9x16": {
+      "publicId": "rivya/collection/decor/decor-003-9x16",
+      "bytes": 202168,
+      "width": 3072,
+      "height": 5504,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/collection/decor/decor-004-9x16": {
+      "publicId": "rivya/collection/decor/decor-004-9x16",
+      "bytes": 253644,
+      "width": 3072,
+      "height": 5504,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/collection/decor/decor-005-3x4": {
+      "publicId": "rivya/collection/decor/decor-005-3x4",
+      "bytes": 303106,
+      "width": 3584,
+      "height": 4800,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/collection/decor/decor-006-3x4": {
+      "publicId": "rivya/collection/decor/decor-006-3x4",
+      "bytes": 283394,
+      "width": 3584,
+      "height": 4800,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/collection/decor/decor-007-3x4": {
+      "publicId": "rivya/collection/decor/decor-007-3x4",
+      "bytes": 159316,
+      "width": 3584,
+      "height": 4800,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/collection/decor/decor-008-3x4": {
+      "publicId": "rivya/collection/decor/decor-008-3x4",
+      "bytes": 260158,
+      "width": 3584,
+      "height": 4800,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/collection/decor/decor-009-4x5": {
+      "publicId": "rivya/collection/decor/decor-009-4x5",
+      "bytes": 60450,
+      "width": 896,
+      "height": 1152,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/collection/decor/decor-010-4x5": {
+      "publicId": "rivya/collection/decor/decor-010-4x5",
+      "bytes": 26674,
+      "width": 896,
+      "height": 1152,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/collection/decor/decor-011-3x2": {
+      "publicId": "rivya/collection/decor/decor-011-3x2",
+      "bytes": 110382,
+      "width": 2528,
+      "height": 1696,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/collection/decor/decor-012-3x4": {
+      "publicId": "rivya/collection/decor/decor-012-3x4",
+      "bytes": 397456,
+      "width": 1328,
+      "height": 1760,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/collection/decor/decor-013-16x9": {
+      "publicId": "rivya/collection/decor/decor-013-16x9",
+      "bytes": 410474,
+      "width": 2048,
+      "height": 1152,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/collection/decor/decor-014-16x9": {
+      "publicId": "rivya/collection/decor/decor-014-16x9",
+      "bytes": 269230,
+      "width": 2048,
+      "height": 1152,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/collection/decor/decor-015-16x9": {
+      "publicId": "rivya/collection/decor/decor-015-16x9",
+      "bytes": 296756,
+      "width": 2048,
+      "height": 1152,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/collection/decor/decor-016-16x9": {
+      "publicId": "rivya/collection/decor/decor-016-16x9",
+      "bytes": 629448,
+      "width": 2048,
+      "height": 1152,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/collection/decor/decor-017-16x9": {
+      "publicId": "rivya/collection/decor/decor-017-16x9",
+      "bytes": 358178,
+      "width": 2048,
+      "height": 1152,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/collection/decor/decor-018-16x9": {
+      "publicId": "rivya/collection/decor/decor-018-16x9",
+      "bytes": 3286979,
+      "width": 1920,
+      "height": 1080,
+      "durationSeconds": 6.041667,
+      "format": "mp4"
+    },
+    "rivya/collection/gifts/gifts-001-3x4": {
+      "publicId": "rivya/collection/gifts/gifts-001-3x4",
+      "bytes": 297152,
+      "width": 3584,
+      "height": 4800,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/collection/gifts/gifts-002-3x2": {
+      "publicId": "rivya/collection/gifts/gifts-002-3x2",
+      "bytes": 186058,
+      "width": 5056,
+      "height": 3392,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/collection/gifts/gifts-003-4x5": {
+      "publicId": "rivya/collection/gifts/gifts-003-4x5",
+      "bytes": 339064,
+      "width": 3712,
+      "height": 4608,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/collection/gifts/gifts-004-16x9": {
+      "publicId": "rivya/collection/gifts/gifts-004-16x9",
+      "bytes": 398104,
+      "width": 2048,
+      "height": 1152,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/collection/gifts/gifts-005-16x9": {
+      "publicId": "rivya/collection/gifts/gifts-005-16x9",
+      "bytes": 405760,
+      "width": 2048,
+      "height": 1152,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/collection/gifts/gifts-006-16x9": {
+      "publicId": "rivya/collection/gifts/gifts-006-16x9",
+      "bytes": 282648,
+      "width": 2048,
+      "height": 1152,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/collection/gifts/gifts-007-16x9": {
+      "publicId": "rivya/collection/gifts/gifts-007-16x9",
+      "bytes": 250344,
+      "width": 2048,
+      "height": 1152,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/collection/gifts/gifts-008-16x9": {
+      "publicId": "rivya/collection/gifts/gifts-008-16x9",
+      "bytes": 408970,
+      "width": 2048,
+      "height": 1152,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/collection/gifts/gifts-009-16x9": {
+      "publicId": "rivya/collection/gifts/gifts-009-16x9",
+      "bytes": 377052,
+      "width": 2048,
+      "height": 1152,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/collection/gifts/gifts-010-16x9": {
+      "publicId": "rivya/collection/gifts/gifts-010-16x9",
+      "bytes": 296420,
+      "width": 2048,
+      "height": 1152,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/collection/preservation/preservation-keepsake-001-4x5": {
+      "publicId": "rivya/collection/preservation/preservation-keepsake-001-4x5",
+      "bytes": 241172,
+      "width": 3712,
+      "height": 4608,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/collection/preservation/preservation-keepsake-002-1x1": {
+      "publicId": "rivya/collection/preservation/preservation-keepsake-002-1x1",
+      "bytes": 154838,
+      "width": 2048,
+      "height": 2048,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/collection/preservation/preservation-keepsake-003-16x9": {
+      "publicId": "rivya/collection/preservation/preservation-keepsake-003-16x9",
+      "bytes": 334442,
+      "width": 2048,
+      "height": 1152,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/collection/preservation/preservation-keepsake-004-16x9": {
+      "publicId": "rivya/collection/preservation/preservation-keepsake-004-16x9",
+      "bytes": 310894,
+      "width": 2048,
+      "height": 1152,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/collection/preservation/preservation-varmala-001-4x5": {
+      "publicId": "rivya/collection/preservation/preservation-varmala-001-4x5",
+      "bytes": 420140,
+      "width": 3712,
+      "height": 4608,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/collection/preservation/preservation-varmala-002-3x2": {
+      "publicId": "rivya/collection/preservation/preservation-varmala-002-3x2",
+      "bytes": 493476,
+      "width": 5056,
+      "height": 3392,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/collection/preservation/preservation-varmala-003-4x5": {
+      "publicId": "rivya/collection/preservation/preservation-varmala-003-4x5",
+      "bytes": 354302,
+      "width": 3712,
+      "height": 4608,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/collection/preservation/preservation-varmala-004-4x5": {
+      "publicId": "rivya/collection/preservation/preservation-varmala-004-4x5",
+      "bytes": 167460,
+      "width": 1856,
+      "height": 2304,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/collection/preservation/preservation-varmala-005-3x4": {
+      "publicId": "rivya/collection/preservation/preservation-varmala-005-3x4",
+      "bytes": 225124,
+      "width": 3584,
+      "height": 4800,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/collection/preservation/preservation-varmala-006-3x4": {
+      "publicId": "rivya/collection/preservation/preservation-varmala-006-3x4",
+      "bytes": 304330,
+      "width": 3584,
+      "height": 4800,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/collection/preservation/preservation-varmala-007-16x9": {
+      "publicId": "rivya/collection/preservation/preservation-varmala-007-16x9",
+      "bytes": 63390,
+      "width": 2688,
+      "height": 1536,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/collection/preservation/preservation-varmala-008-3x2": {
+      "publicId": "rivya/collection/preservation/preservation-varmala-008-3x2",
+      "bytes": 37398,
+      "width": 1280,
+      "height": 832,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/collection/preservation/preservation-varmala-009-4x5": {
+      "publicId": "rivya/collection/preservation/preservation-varmala-009-4x5",
+      "bytes": 53440,
+      "width": 896,
+      "height": 1152,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/collection/preservation/preservation-varmala-010-16x9": {
+      "publicId": "rivya/collection/preservation/preservation-varmala-010-16x9",
+      "bytes": 310642,
+      "width": 2048,
+      "height": 1152,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/collection/preservation/preservation-varmala-011-16x9": {
+      "publicId": "rivya/collection/preservation/preservation-varmala-011-16x9",
+      "bytes": 335840,
+      "width": 2048,
+      "height": 1152,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/collection/preservation/preservation-varmala-012-16x9": {
+      "publicId": "rivya/collection/preservation/preservation-varmala-012-16x9",
+      "bytes": 441600,
+      "width": 2048,
+      "height": 1152,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/collection/preservation/preservation-varmala-013-16x9": {
+      "publicId": "rivya/collection/preservation/preservation-varmala-013-16x9",
+      "bytes": 380002,
+      "width": 2048,
+      "height": 1152,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/collection/preservation/preservation-varmala-014-16x9": {
+      "publicId": "rivya/collection/preservation/preservation-varmala-014-16x9",
+      "bytes": 323030,
+      "width": 2048,
+      "height": 1152,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/collection/preservation/preservation-varmala-015-16x9": {
+      "publicId": "rivya/collection/preservation/preservation-varmala-015-16x9",
+      "bytes": 262720,
+      "width": 2048,
+      "height": 1152,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/collection/wall-art/wall-art-001-4x5": {
+      "publicId": "rivya/collection/wall-art/wall-art-001-4x5",
+      "bytes": 364402,
+      "width": 3712,
+      "height": 4608,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/collection/wall-art/wall-art-002-16x9": {
+      "publicId": "rivya/collection/wall-art/wall-art-002-16x9",
+      "bytes": 269398,
+      "width": 5504,
+      "height": 3072,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/collection/wall-art/wall-art-003-16x9": {
+      "publicId": "rivya/collection/wall-art/wall-art-003-16x9",
+      "bytes": 287258,
+      "width": 5504,
+      "height": 3072,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/collection/wall-art/wall-art-004-16x9": {
+      "publicId": "rivya/collection/wall-art/wall-art-004-16x9",
+      "bytes": 209084,
+      "width": 5504,
+      "height": 3072,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/collection/wall-art/wall-art-005-16x9": {
+      "publicId": "rivya/collection/wall-art/wall-art-005-16x9",
+      "bytes": 223560,
+      "width": 5504,
+      "height": 3072,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/collection/wall-art/wall-art-006-16x9": {
+      "publicId": "rivya/collection/wall-art/wall-art-006-16x9",
+      "bytes": 287978,
+      "width": 5504,
+      "height": 3072,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/collection/wall-art/wall-art-007-16x9": {
+      "publicId": "rivya/collection/wall-art/wall-art-007-16x9",
+      "bytes": 443606,
+      "width": 5504,
+      "height": 3072,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/collection/wall-art/wall-art-008-21x9": {
+      "publicId": "rivya/collection/wall-art/wall-art-008-21x9",
+      "bytes": 144576,
+      "width": 6336,
+      "height": 2688,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/collection/wall-art/wall-art-009-16x9": {
+      "publicId": "rivya/collection/wall-art/wall-art-009-16x9",
+      "bytes": 684788,
+      "width": 5504,
+      "height": 3072,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/collection/wall-art/wall-art-010-16x9": {
+      "publicId": "rivya/collection/wall-art/wall-art-010-16x9",
+      "bytes": 408710,
+      "width": 5504,
+      "height": 3072,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/collection/wall-art/wall-art-011-4x5": {
+      "publicId": "rivya/collection/wall-art/wall-art-011-4x5",
+      "bytes": 387708,
+      "width": 3712,
+      "height": 4608,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/collection/wall-art/wall-art-012-4x5": {
+      "publicId": "rivya/collection/wall-art/wall-art-012-4x5",
+      "bytes": 317408,
+      "width": 3712,
+      "height": 4608,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/collection/wall-art/wall-art-013-21x9": {
+      "publicId": "rivya/collection/wall-art/wall-art-013-21x9",
+      "bytes": 109218,
+      "width": 6336,
+      "height": 2688,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/collection/wall-art/wall-art-014-3x2": {
+      "publicId": "rivya/collection/wall-art/wall-art-014-3x2",
+      "bytes": 191882,
+      "width": 5056,
+      "height": 3392,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/collection/wall-art/wall-art-015-3x2": {
+      "publicId": "rivya/collection/wall-art/wall-art-015-3x2",
+      "bytes": 177986,
+      "width": 5056,
+      "height": 3392,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/collection/wall-art/wall-art-016-4x5": {
+      "publicId": "rivya/collection/wall-art/wall-art-016-4x5",
+      "bytes": 118346,
+      "width": 1856,
+      "height": 2304,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/collection/wall-art/wall-art-017-4x5": {
+      "publicId": "rivya/collection/wall-art/wall-art-017-4x5",
+      "bytes": 125808,
+      "width": 1856,
+      "height": 2304,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/collection/wall-art/wall-art-018-16x9": {
+      "publicId": "rivya/collection/wall-art/wall-art-018-16x9",
+      "bytes": 300662,
+      "width": 2048,
+      "height": 1152,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/collection/wall-art/wall-art-019-16x9": {
+      "publicId": "rivya/collection/wall-art/wall-art-019-16x9",
+      "bytes": 358304,
+      "width": 2048,
+      "height": 1152,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/collection/wall-art/wall-art-020-3x4": {
+      "publicId": "rivya/collection/wall-art/wall-art-020-3x4",
+      "bytes": 278086,
+      "width": 1328,
+      "height": 1760,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/interior/interior-lifestyle-001-4x5": {
+      "publicId": "rivya/interior/interior-lifestyle-001-4x5",
+      "bytes": 372678,
+      "width": 3712,
+      "height": 4608,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/interior/interior-lifestyle-002-3x2": {
+      "publicId": "rivya/interior/interior-lifestyle-002-3x2",
+      "bytes": 163042,
+      "width": 2528,
+      "height": 1696,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/interior/interior-lifestyle-003-4x5": {
+      "publicId": "rivya/interior/interior-lifestyle-003-4x5",
+      "bytes": 89122,
+      "width": 1856,
+      "height": 2304,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/interior/interior-lifestyle-004-3x2": {
+      "publicId": "rivya/interior/interior-lifestyle-004-3x2",
+      "bytes": 132974,
+      "width": 2528,
+      "height": 1696,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/interior/interior-lifestyle-005-16x9": {
+      "publicId": "rivya/interior/interior-lifestyle-005-16x9",
+      "bytes": 369126,
+      "width": 2048,
+      "height": 1152,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/journal/editorial/editorial-001-4x5": {
+      "publicId": "rivya/journal/editorial/editorial-001-4x5",
+      "bytes": 396292,
+      "width": 3712,
+      "height": 4608,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/journal/editorial/editorial-002-4x5": {
+      "publicId": "rivya/journal/editorial/editorial-002-4x5",
+      "bytes": 352940,
+      "width": 3712,
+      "height": 4608,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/journal/editorial/editorial-003-16x9": {
+      "publicId": "rivya/journal/editorial/editorial-003-16x9",
+      "bytes": 153802,
+      "width": 2752,
+      "height": 1536,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/journal/editorial/editorial-004-3x2": {
+      "publicId": "rivya/journal/editorial/editorial-004-3x2",
+      "bytes": 126040,
+      "width": 2528,
+      "height": 1696,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/journal/editorial/editorial-005-3x2": {
+      "publicId": "rivya/journal/editorial/editorial-005-3x2",
+      "bytes": 129596,
+      "width": 2528,
+      "height": 1696,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/journal/editorial/editorial-006-1x1": {
+      "publicId": "rivya/journal/editorial/editorial-006-1x1",
+      "bytes": 286836,
+      "width": 2048,
+      "height": 2048,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/journal/editorial/editorial-007-3x4": {
+      "publicId": "rivya/journal/editorial/editorial-007-3x4",
+      "bytes": 292266,
+      "width": 3584,
+      "height": 4800,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/journal/editorial/editorial-008-16x9": {
+      "publicId": "rivya/journal/editorial/editorial-008-16x9",
+      "bytes": 96870,
+      "width": 5504,
+      "height": 3072,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/journal/editorial/editorial-009-16x9": {
+      "publicId": "rivya/journal/editorial/editorial-009-16x9",
+      "bytes": 75356,
+      "width": 5504,
+      "height": 3072,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/journal/editorial/editorial-010-3x4": {
+      "publicId": "rivya/journal/editorial/editorial-010-3x4",
+      "bytes": 566922,
+      "width": 3584,
+      "height": 4800,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/journal/editorial/editorial-011-16x9": {
+      "publicId": "rivya/journal/editorial/editorial-011-16x9",
+      "bytes": 397328,
+      "width": 2048,
+      "height": 1152,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/journal/editorial/editorial-012-16x9": {
+      "publicId": "rivya/journal/editorial/editorial-012-16x9",
+      "bytes": 297422,
+      "width": 2048,
+      "height": 1152,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/journal/editorial/editorial-013-16x9": {
+      "publicId": "rivya/journal/editorial/editorial-013-16x9",
+      "bytes": 388570,
+      "width": 2048,
+      "height": 1152,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/journal/editorial/editorial-014-16x9": {
+      "publicId": "rivya/journal/editorial/editorial-014-16x9",
+      "bytes": 303318,
+      "width": 2048,
+      "height": 1152,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/journal/editorial/editorial-015-16x9": {
+      "publicId": "rivya/journal/editorial/editorial-015-16x9",
+      "bytes": 445074,
+      "width": 2048,
+      "height": 1152,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/journal/editorial/editorial-016-16x9": {
+      "publicId": "rivya/journal/editorial/editorial-016-16x9",
+      "bytes": 333090,
+      "width": 2048,
+      "height": 1152,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/journal/editorial/editorial-017-9x16": {
+      "publicId": "rivya/journal/editorial/editorial-017-9x16",
+      "bytes": 2387304,
+      "width": 1080,
+      "height": 1920,
+      "durationSeconds": 6.041667,
+      "format": "mp4"
+    },
+    "rivya/journal/editorial/editorial-018-16x9": {
+      "publicId": "rivya/journal/editorial/editorial-018-16x9",
+      "bytes": 989716,
+      "width": 1280,
+      "height": 720,
+      "durationSeconds": 6.041667,
+      "format": "mp4"
+    },
+    "rivya/journal/editorial/editorial-019-16x9": {
+      "publicId": "rivya/journal/editorial/editorial-019-16x9",
+      "bytes": 860387,
+      "width": 1280,
+      "height": 720,
+      "durationSeconds": 6.041667,
+      "format": "mp4"
+    },
+    "rivya/journal/workshop/workshop-session-001-16x9": {
+      "publicId": "rivya/journal/workshop/workshop-session-001-16x9",
+      "bytes": 266482,
+      "width": 5504,
+      "height": 3072,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/journal/workshop/workshop-session-002-16x9": {
+      "publicId": "rivya/journal/workshop/workshop-session-002-16x9",
+      "bytes": 243508,
+      "width": 5504,
+      "height": 3072,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/journal/workshop/workshop-session-003-16x9": {
+      "publicId": "rivya/journal/workshop/workshop-session-003-16x9",
+      "bytes": 180968,
+      "width": 5504,
+      "height": 3072,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/journal/workshop/workshop-session-004-16x9": {
+      "publicId": "rivya/journal/workshop/workshop-session-004-16x9",
+      "bytes": 305062,
+      "width": 5504,
+      "height": 3072,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/journal/workshop/workshop-session-005-16x9": {
+      "publicId": "rivya/journal/workshop/workshop-session-005-16x9",
+      "bytes": 204144,
+      "width": 5504,
+      "height": 3072,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/large-format/architectural/largeformat-monumental-001-21x9": {
+      "publicId": "rivya/large-format/architectural/largeformat-monumental-001-21x9",
+      "bytes": 344080,
+      "width": 6336,
+      "height": 2688,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/large-format/coffee/largeformat-coffee-001-3x2": {
+      "publicId": "rivya/large-format/coffee/largeformat-coffee-001-3x2",
+      "bytes": 258678,
+      "width": 2528,
+      "height": 1696,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/large-format/console/largeformat-console-001-16x9": {
+      "publicId": "rivya/large-format/console/largeformat-console-001-16x9",
+      "bytes": 354346,
+      "width": 5504,
+      "height": 3072,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/large-format/console/largeformat-console-002-16x9": {
+      "publicId": "rivya/large-format/console/largeformat-console-002-16x9",
+      "bytes": 259150,
+      "width": 5504,
+      "height": 3072,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/large-format/console/largeformat-console-003-3x2": {
+      "publicId": "rivya/large-format/console/largeformat-console-003-3x2",
+      "bytes": 178532,
+      "width": 2528,
+      "height": 1696,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/large-format/console/largeformat-console-004-16x9": {
+      "publicId": "rivya/large-format/console/largeformat-console-004-16x9",
+      "bytes": 394618,
+      "width": 2048,
+      "height": 1152,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/large-format/dining/largeformat-dining-001-9x16": {
+      "publicId": "rivya/large-format/dining/largeformat-dining-001-9x16",
+      "bytes": 102598,
+      "width": 1536,
+      "height": 2752,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/large-format/dining/largeformat-dining-002-21x9": {
+      "publicId": "rivya/large-format/dining/largeformat-dining-002-21x9",
+      "bytes": 399790,
+      "width": 6336,
+      "height": 2688,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/large-format/dining/largeformat-dining-003-16x9": {
+      "publicId": "rivya/large-format/dining/largeformat-dining-003-16x9",
+      "bytes": 414218,
+      "width": 2048,
+      "height": 1152,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/large-format/dining/largeformat-dining-004-9x16": {
+      "publicId": "rivya/large-format/dining/largeformat-dining-004-9x16",
+      "bytes": 4609099,
+      "width": 1080,
+      "height": 1920,
+      "durationSeconds": 6.041667,
+      "format": "mp4"
+    },
+    "rivya/large-format/dining/largeformat-dining-005-16x9": {
+      "publicId": "rivya/large-format/dining/largeformat-dining-005-16x9",
+      "bytes": 5811470,
+      "width": 1920,
+      "height": 1080,
+      "durationSeconds": 8.041667,
+      "format": "mp4"
+    },
+    "rivya/large-format/seating/largeformat-seating-001-4x5": {
+      "publicId": "rivya/large-format/seating/largeformat-seating-001-4x5",
+      "bytes": 306984,
+      "width": 3712,
+      "height": 4608,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/large-format/seating/largeformat-seating-002-4x5": {
+      "publicId": "rivya/large-format/seating/largeformat-seating-002-4x5",
+      "bytes": 350754,
+      "width": 3712,
+      "height": 4608,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/large-format/seating/largeformat-seating-003-4x5": {
+      "publicId": "rivya/large-format/seating/largeformat-seating-003-4x5",
+      "bytes": 370852,
+      "width": 3712,
+      "height": 4608,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/large-format/seating/largeformat-seating-004-4x5": {
+      "publicId": "rivya/large-format/seating/largeformat-seating-004-4x5",
+      "bytes": 265570,
+      "width": 3712,
+      "height": 4608,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/large-format/side/largeformat-side-001-4x5": {
+      "publicId": "rivya/large-format/side/largeformat-side-001-4x5",
+      "bytes": 223844,
+      "width": 3712,
+      "height": 4608,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/large-format/side/largeformat-side-002-4x5": {
+      "publicId": "rivya/large-format/side/largeformat-side-002-4x5",
+      "bytes": 256972,
+      "width": 3712,
+      "height": 4608,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/large-format/side/largeformat-side-003-16x9": {
+      "publicId": "rivya/large-format/side/largeformat-side-003-16x9",
+      "bytes": 261544,
+      "width": 2048,
+      "height": 1152,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/material/material-macro-001-1x1": {
+      "publicId": "rivya/material/material-macro-001-1x1",
+      "bytes": 350012,
+      "width": 4096,
+      "height": 4096,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/material/material-macro-002-9x16": {
+      "publicId": "rivya/material/material-macro-002-9x16",
+      "bytes": 247386,
+      "width": 3072,
+      "height": 5504,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/material/material-macro-003-9x16": {
+      "publicId": "rivya/material/material-macro-003-9x16",
+      "bytes": 262170,
+      "width": 3072,
+      "height": 5504,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/material/material-macro-004-9x16": {
+      "publicId": "rivya/material/material-macro-004-9x16",
+      "bytes": 295196,
+      "width": 3072,
+      "height": 5504,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/material/material-macro-005-9x16": {
+      "publicId": "rivya/material/material-macro-005-9x16",
+      "bytes": 274482,
+      "width": 3072,
+      "height": 5504,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/material/material-macro-006-1x1": {
+      "publicId": "rivya/material/material-macro-006-1x1",
+      "bytes": 273058,
+      "width": 4096,
+      "height": 4096,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/material/material-macro-007-1x1": {
+      "publicId": "rivya/material/material-macro-007-1x1",
+      "bytes": 216154,
+      "width": 4096,
+      "height": 4096,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/material/material-macro-008-16x9": {
+      "publicId": "rivya/material/material-macro-008-16x9",
+      "bytes": 145272,
+      "width": 2752,
+      "height": 1536,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/material/material-macro-009-21x9": {
+      "publicId": "rivya/material/material-macro-009-21x9",
+      "bytes": 124890,
+      "width": 6336,
+      "height": 2688,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/material/material-macro-010-1x1": {
+      "publicId": "rivya/material/material-macro-010-1x1",
+      "bytes": 326846,
+      "width": 4096,
+      "height": 4096,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/material/material-macro-011-21x9": {
+      "publicId": "rivya/material/material-macro-011-21x9",
+      "bytes": 182056,
+      "width": 6336,
+      "height": 2688,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/material/material-macro-012-16x9": {
+      "publicId": "rivya/material/material-macro-012-16x9",
+      "bytes": 357956,
+      "width": 5504,
+      "height": 3072,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/material/material-macro-013-4x5": {
+      "publicId": "rivya/material/material-macro-013-4x5",
+      "bytes": 249794,
+      "width": 3712,
+      "height": 4608,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/material/material-macro-014-16x9": {
+      "publicId": "rivya/material/material-macro-014-16x9",
+      "bytes": 520802,
+      "width": 5504,
+      "height": 3072,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/material/material-macro-015-21x9": {
+      "publicId": "rivya/material/material-macro-015-21x9",
+      "bytes": 479722,
+      "width": 6336,
+      "height": 2688,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/material/material-macro-016-1x1": {
+      "publicId": "rivya/material/material-macro-016-1x1",
+      "bytes": 323710,
+      "width": 4096,
+      "height": 4096,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/material/material-macro-017-1x1": {
+      "publicId": "rivya/material/material-macro-017-1x1",
+      "bytes": 694260,
+      "width": 4096,
+      "height": 4096,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/material/material-macro-018-1x1": {
+      "publicId": "rivya/material/material-macro-018-1x1",
+      "bytes": 240262,
+      "width": 4096,
+      "height": 4096,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/material/material-macro-019-1x1": {
+      "publicId": "rivya/material/material-macro-019-1x1",
+      "bytes": 127924,
+      "width": 4096,
+      "height": 4096,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/material/material-macro-020-1x1": {
+      "publicId": "rivya/material/material-macro-020-1x1",
+      "bytes": 315172,
+      "width": 4096,
+      "height": 4096,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/material/material-macro-021-1x1": {
+      "publicId": "rivya/material/material-macro-021-1x1",
+      "bytes": 302830,
+      "width": 4096,
+      "height": 4096,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/material/material-macro-022-1x1": {
+      "publicId": "rivya/material/material-macro-022-1x1",
+      "bytes": 216992,
+      "width": 4096,
+      "height": 4096,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/material/material-macro-023-4x5": {
+      "publicId": "rivya/material/material-macro-023-4x5",
+      "bytes": 198548,
+      "width": 3712,
+      "height": 4608,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/material/material-macro-024-4x5": {
+      "publicId": "rivya/material/material-macro-024-4x5",
+      "bytes": 66796,
+      "width": 896,
+      "height": 1152,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/material/material-macro-025-4x5": {
+      "publicId": "rivya/material/material-macro-025-4x5",
+      "bytes": 46730,
+      "width": 896,
+      "height": 1152,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/material/material-macro-026-16x9": {
+      "publicId": "rivya/material/material-macro-026-16x9",
+      "bytes": 110228,
+      "width": 2752,
+      "height": 1536,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/material/material-macro-027-21x9": {
+      "publicId": "rivya/material/material-macro-027-21x9",
+      "bytes": 240746,
+      "width": 3168,
+      "height": 1344,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/material/material-macro-028-16x9": {
+      "publicId": "rivya/material/material-macro-028-16x9",
+      "bytes": 171424,
+      "width": 2688,
+      "height": 1536,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/material/material-macro-029-3x4": {
+      "publicId": "rivya/material/material-macro-029-3x4",
+      "bytes": 297700,
+      "width": 1328,
+      "height": 1760,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/material/material-macro-030-16x9": {
+      "publicId": "rivya/material/material-macro-030-16x9",
+      "bytes": 462048,
+      "width": 2048,
+      "height": 1152,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/material/material-macro-031-16x9": {
+      "publicId": "rivya/material/material-macro-031-16x9",
+      "bytes": 330810,
+      "width": 2048,
+      "height": 1152,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/material/material-macro-032-3x4": {
+      "publicId": "rivya/material/material-macro-032-3x4",
+      "bytes": 355296,
+      "width": 1328,
+      "height": 1760,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/material/material-macro-033-3x4": {
+      "publicId": "rivya/material/material-macro-033-3x4",
+      "bytes": 258956,
+      "width": 1328,
+      "height": 1760,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/material/material-macro-034-16x9": {
+      "publicId": "rivya/material/material-macro-034-16x9",
+      "bytes": 983965,
+      "width": 1280,
+      "height": 720,
+      "durationSeconds": 6.041667,
+      "format": "mp4"
+    },
+    "rivya/material/material-macro-035-16x9": {
+      "publicId": "rivya/material/material-macro-035-16x9",
+      "bytes": 4351031,
+      "width": 1920,
+      "height": 1080,
+      "durationSeconds": 5.041667,
+      "format": "mp4"
+    },
+    "rivya/material/material-macro-036-16x9": {
+      "publicId": "rivya/material/material-macro-036-16x9",
+      "bytes": 4597713,
+      "width": 1920,
+      "height": 1080,
+      "durationSeconds": 10.041667,
+      "format": "mp4"
+    },
+    "rivya/material/material-macro-037-16x9": {
+      "publicId": "rivya/material/material-macro-037-16x9",
+      "bytes": 600281,
+      "width": 1920,
+      "height": 1080,
+      "durationSeconds": 6.041667,
+      "format": "mp4"
+    },
+    "rivya/material/material-macro-038-16x9": {
+      "publicId": "rivya/material/material-macro-038-16x9",
+      "bytes": 5475426,
+      "width": 1920,
+      "height": 1080,
+      "durationSeconds": 8.041667,
+      "format": "mp4"
+    },
+    "rivya/material/material-macro-039-16x9": {
+      "publicId": "rivya/material/material-macro-039-16x9",
+      "bytes": 930180,
+      "width": 1280,
+      "height": 720,
+      "durationSeconds": 6.041667,
+      "format": "mp4"
+    },
+    "rivya/portfolio/gallery/gallery-scene-001-4x5": {
+      "publicId": "rivya/portfolio/gallery/gallery-scene-001-4x5",
+      "bytes": 85950,
+      "width": 1856,
+      "height": 2304,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/portfolio/gallery/gallery-scene-002-21x9": {
+      "publicId": "rivya/portfolio/gallery/gallery-scene-002-21x9",
+      "bytes": 206868,
+      "width": 3168,
+      "height": 1344,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/portfolio/gallery/gallery-scene-003-16x9": {
+      "publicId": "rivya/portfolio/gallery/gallery-scene-003-16x9",
+      "bytes": 146812,
+      "width": 2688,
+      "height": 1536,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/portfolio/gallery/gallery-scene-004-16x9": {
+      "publicId": "rivya/portfolio/gallery/gallery-scene-004-16x9",
+      "bytes": 355498,
+      "width": 2048,
+      "height": 1152,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/portfolio/gallery/gallery-scene-005-16x9": {
+      "publicId": "rivya/portfolio/gallery/gallery-scene-005-16x9",
+      "bytes": 5546553,
+      "width": 1920,
+      "height": 1080,
+      "durationSeconds": 5.041667,
+      "format": "mp4"
+    },
+    "rivya/process/cure/process-cure-001-4x5": {
+      "publicId": "rivya/process/cure/process-cure-001-4x5",
+      "bytes": 271190,
+      "width": 3712,
+      "height": 4608,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/process/cure/process-cure-002-9x16": {
+      "publicId": "rivya/process/cure/process-cure-002-9x16",
+      "bytes": 219478,
+      "width": 3072,
+      "height": 5504,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/process/cure/process-cure-003-9x16": {
+      "publicId": "rivya/process/cure/process-cure-003-9x16",
+      "bytes": 205396,
+      "width": 3072,
+      "height": 5504,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/process/cure/process-cure-004-4x5": {
+      "publicId": "rivya/process/cure/process-cure-004-4x5",
+      "bytes": 154356,
+      "width": 3712,
+      "height": 4608,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/process/cure/process-cure-005-4x5": {
+      "publicId": "rivya/process/cure/process-cure-005-4x5",
+      "bytes": 203648,
+      "width": 3712,
+      "height": 4608,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/process/cure/process-cure-006-16x9": {
+      "publicId": "rivya/process/cure/process-cure-006-16x9",
+      "bytes": 413782,
+      "width": 2048,
+      "height": 1152,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/process/cure/process-cure-007-16x9": {
+      "publicId": "rivya/process/cure/process-cure-007-16x9",
+      "bytes": 325100,
+      "width": 2048,
+      "height": 1152,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/process/cure/process-cure-008-16x9": {
+      "publicId": "rivya/process/cure/process-cure-008-16x9",
+      "bytes": 356176,
+      "width": 2048,
+      "height": 1152,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/process/finish/process-finish-001-4x5": {
+      "publicId": "rivya/process/finish/process-finish-001-4x5",
+      "bytes": 230766,
+      "width": 3712,
+      "height": 4608,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/process/finish/process-finish-002-4x5": {
+      "publicId": "rivya/process/finish/process-finish-002-4x5",
+      "bytes": 153334,
+      "width": 3712,
+      "height": 4608,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/process/finish/process-finish-003-4x5": {
+      "publicId": "rivya/process/finish/process-finish-003-4x5",
+      "bytes": 288568,
+      "width": 3712,
+      "height": 4608,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/process/finish/process-finish-004-4x5": {
+      "publicId": "rivya/process/finish/process-finish-004-4x5",
+      "bytes": 156764,
+      "width": 3712,
+      "height": 4608,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/process/finish/process-finish-005-4x3": {
+      "publicId": "rivya/process/finish/process-finish-005-4x3",
+      "bytes": 210046,
+      "width": 2400,
+      "height": 1792,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/process/finish/process-finish-006-4x3": {
+      "publicId": "rivya/process/finish/process-finish-006-4x3",
+      "bytes": 83652,
+      "width": 2432,
+      "height": 1792,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/process/finish/process-finish-007-16x9": {
+      "publicId": "rivya/process/finish/process-finish-007-16x9",
+      "bytes": 450772,
+      "width": 2048,
+      "height": 1152,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/process/finish/process-finish-008-16x9": {
+      "publicId": "rivya/process/finish/process-finish-008-16x9",
+      "bytes": 325018,
+      "width": 2048,
+      "height": 1152,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/process/mould/process-mould-001-4x5": {
+      "publicId": "rivya/process/mould/process-mould-001-4x5",
+      "bytes": 332012,
+      "width": 3712,
+      "height": 4608,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/process/mould/process-mould-002-16x9": {
+      "publicId": "rivya/process/mould/process-mould-002-16x9",
+      "bytes": 156518,
+      "width": 5504,
+      "height": 3072,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/process/mould/process-mould-003-4x5": {
+      "publicId": "rivya/process/mould/process-mould-003-4x5",
+      "bytes": 290692,
+      "width": 3712,
+      "height": 4608,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/process/mould/process-mould-004-4x5": {
+      "publicId": "rivya/process/mould/process-mould-004-4x5",
+      "bytes": 269860,
+      "width": 3712,
+      "height": 4608,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/process/mould/process-mould-005-16x9": {
+      "publicId": "rivya/process/mould/process-mould-005-16x9",
+      "bytes": 301656,
+      "width": 5504,
+      "height": 3072,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/process/mould/process-mould-006-16x9": {
+      "publicId": "rivya/process/mould/process-mould-006-16x9",
+      "bytes": 299252,
+      "width": 5504,
+      "height": 3072,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/process/mould/process-mould-007-16x9": {
+      "publicId": "rivya/process/mould/process-mould-007-16x9",
+      "bytes": 243776,
+      "width": 5504,
+      "height": 3072,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/process/mould/process-mould-008-16x9": {
+      "publicId": "rivya/process/mould/process-mould-008-16x9",
+      "bytes": 267650,
+      "width": 5504,
+      "height": 3072,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/process/mould/process-mould-009-3x4": {
+      "publicId": "rivya/process/mould/process-mould-009-3x4",
+      "bytes": 241380,
+      "width": 3584,
+      "height": 4800,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/process/mould/process-mould-010-3x4": {
+      "publicId": "rivya/process/mould/process-mould-010-3x4",
+      "bytes": 280368,
+      "width": 3584,
+      "height": 4800,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/process/mould/process-mould-011-4x5": {
+      "publicId": "rivya/process/mould/process-mould-011-4x5",
+      "bytes": 172498,
+      "width": 1856,
+      "height": 2304,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/process/mould/process-mould-012-16x9": {
+      "publicId": "rivya/process/mould/process-mould-012-16x9",
+      "bytes": 3996478,
+      "width": 1920,
+      "height": 1080,
+      "durationSeconds": 5.041667,
+      "format": "mp4"
+    },
+    "rivya/process/pigment/process-pigment-001-4x5": {
+      "publicId": "rivya/process/pigment/process-pigment-001-4x5",
+      "bytes": 310532,
+      "width": 3712,
+      "height": 4608,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/process/pigment/process-pigment-002-4x5": {
+      "publicId": "rivya/process/pigment/process-pigment-002-4x5",
+      "bytes": 275132,
+      "width": 3712,
+      "height": 4608,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/process/pigment/process-pigment-003-4x5": {
+      "publicId": "rivya/process/pigment/process-pigment-003-4x5",
+      "bytes": 223886,
+      "width": 1856,
+      "height": 2304,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/process/pigment/process-pigment-004-16x9": {
+      "publicId": "rivya/process/pigment/process-pigment-004-16x9",
+      "bytes": 97850,
+      "width": 2752,
+      "height": 1536,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/process/pigment/process-pigment-005-4x5": {
+      "publicId": "rivya/process/pigment/process-pigment-005-4x5",
+      "bytes": 182844,
+      "width": 1856,
+      "height": 2304,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/process/pigment/process-pigment-006-3x4": {
+      "publicId": "rivya/process/pigment/process-pigment-006-3x4",
+      "bytes": 109748,
+      "width": 1792,
+      "height": 2432,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/process/pigment/process-pigment-007-16x9": {
+      "publicId": "rivya/process/pigment/process-pigment-007-16x9",
+      "bytes": 62078,
+      "width": 2688,
+      "height": 1536,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/process/pigment/process-pigment-008-16x9": {
+      "publicId": "rivya/process/pigment/process-pigment-008-16x9",
+      "bytes": 285624,
+      "width": 2048,
+      "height": 1152,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/process/pigment/process-pigment-009-16x9": {
+      "publicId": "rivya/process/pigment/process-pigment-009-16x9",
+      "bytes": 339712,
+      "width": 2048,
+      "height": 1152,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/process/pigment/process-pigment-010-16x9": {
+      "publicId": "rivya/process/pigment/process-pigment-010-16x9",
+      "bytes": 418736,
+      "width": 2048,
+      "height": 1152,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/process/pigment/process-pigment-011-16x9": {
+      "publicId": "rivya/process/pigment/process-pigment-011-16x9",
+      "bytes": 440094,
+      "width": 2048,
+      "height": 1152,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/process/pigment/process-pigment-012-16x9": {
+      "publicId": "rivya/process/pigment/process-pigment-012-16x9",
+      "bytes": 3497379,
+      "width": 1920,
+      "height": 1080,
+      "durationSeconds": 6.041667,
+      "format": "mp4"
+    },
+    "rivya/process/pigment/process-pigment-013-9x16": {
+      "publicId": "rivya/process/pigment/process-pigment-013-9x16",
+      "bytes": 3233291,
+      "width": 1080,
+      "height": 1920,
+      "durationSeconds": 6.041667,
+      "format": "mp4"
+    },
+    "rivya/process/pour/process-pour-001-9x16": {
+      "publicId": "rivya/process/pour/process-pour-001-9x16",
+      "bytes": 161532,
+      "width": 3072,
+      "height": 5504,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/process/pour/process-pour-002-9x16": {
+      "publicId": "rivya/process/pour/process-pour-002-9x16",
+      "bytes": 179568,
+      "width": 3072,
+      "height": 5504,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/process/pour/process-pour-003-9x16": {
+      "publicId": "rivya/process/pour/process-pour-003-9x16",
+      "bytes": 174586,
+      "width": 3072,
+      "height": 5504,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/process/pour/process-pour-004-9x16": {
+      "publicId": "rivya/process/pour/process-pour-004-9x16",
+      "bytes": 213202,
+      "width": 3072,
+      "height": 5504,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/process/pour/process-pour-005-4x5": {
+      "publicId": "rivya/process/pour/process-pour-005-4x5",
+      "bytes": 117182,
+      "width": 3712,
+      "height": 4608,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/process/pour/process-pour-006-4x5": {
+      "publicId": "rivya/process/pour/process-pour-006-4x5",
+      "bytes": 138976,
+      "width": 3712,
+      "height": 4608,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/process/pour/process-pour-007-16x9": {
+      "publicId": "rivya/process/pour/process-pour-007-16x9",
+      "bytes": 119100,
+      "width": 2688,
+      "height": 1536,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/process/pour/process-pour-008-16x9": {
+      "publicId": "rivya/process/pour/process-pour-008-16x9",
+      "bytes": 381742,
+      "width": 2048,
+      "height": 1152,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/process/pour/process-pour-009-16x9": {
+      "publicId": "rivya/process/pour/process-pour-009-16x9",
+      "bytes": 754262,
+      "width": 1280,
+      "height": 720,
+      "durationSeconds": 5.041667,
+      "format": "mp4"
+    },
+    "rivya/process/pour/process-pour-010-16x9": {
+      "publicId": "rivya/process/pour/process-pour-010-16x9",
+      "bytes": 3677160,
+      "width": 1920,
+      "height": 1080,
+      "durationSeconds": 5.041667,
+      "format": "mp4"
+    },
+    "rivya/process/pour/process-pour-011-16x9": {
+      "publicId": "rivya/process/pour/process-pour-011-16x9",
+      "bytes": 1123125,
+      "width": 1920,
+      "height": 1080,
+      "durationSeconds": 6.041667,
+      "format": "mp4"
+    },
+    "rivya/process/pour/process-pour-012-16x9": {
+      "publicId": "rivya/process/pour/process-pour-012-16x9",
+      "bytes": 1251946,
+      "width": 1280,
+      "height": 720,
+      "durationSeconds": 10.08,
+      "format": "mp4"
+    },
+    "rivya/process/studio/process-studio-001-4x3": {
+      "publicId": "rivya/process/studio/process-studio-001-4x3",
+      "bytes": 463180,
+      "width": 4800,
+      "height": 3584,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/process/studio/process-studio-002-16x9": {
+      "publicId": "rivya/process/studio/process-studio-002-16x9",
+      "bytes": 461488,
+      "width": 5504,
+      "height": 3072,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/process/studio/process-studio-003-16x9": {
+      "publicId": "rivya/process/studio/process-studio-003-16x9",
+      "bytes": 467742,
+      "width": 5504,
+      "height": 3072,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/process/studio/process-studio-004-16x9": {
+      "publicId": "rivya/process/studio/process-studio-004-16x9",
+      "bytes": 144672,
+      "width": 2752,
+      "height": 1536,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/process/studio/process-studio-005-16x9": {
+      "publicId": "rivya/process/studio/process-studio-005-16x9",
+      "bytes": 236326,
+      "width": 5504,
+      "height": 3072,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/process/studio/process-studio-006-4x5": {
+      "publicId": "rivya/process/studio/process-studio-006-4x5",
+      "bytes": 231396,
+      "width": 3712,
+      "height": 4608,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/process/studio/process-studio-007-16x9": {
+      "publicId": "rivya/process/studio/process-studio-007-16x9",
+      "bytes": 163898,
+      "width": 5504,
+      "height": 3072,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/process/studio/process-studio-008-4x5": {
+      "publicId": "rivya/process/studio/process-studio-008-4x5",
+      "bytes": 202850,
+      "width": 3712,
+      "height": 4608,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/process/studio/process-studio-009-4x3": {
+      "publicId": "rivya/process/studio/process-studio-009-4x3",
+      "bytes": 42628,
+      "width": 1216,
+      "height": 896,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/process/studio/process-studio-010-16x9": {
+      "publicId": "rivya/process/studio/process-studio-010-16x9",
+      "bytes": 133006,
+      "width": 2752,
+      "height": 1536,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/process/studio/process-studio-011-3x2": {
+      "publicId": "rivya/process/studio/process-studio-011-3x2",
+      "bytes": 397488,
+      "width": 2528,
+      "height": 1696,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/process/studio/process-studio-012-16x9": {
+      "publicId": "rivya/process/studio/process-studio-012-16x9",
+      "bytes": 88744,
+      "width": 2688,
+      "height": 1536,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/process/studio/process-studio-013-16x9": {
+      "publicId": "rivya/process/studio/process-studio-013-16x9",
+      "bytes": 306562,
+      "width": 2048,
+      "height": 1152,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/process/studio/process-studio-014-16x9": {
+      "publicId": "rivya/process/studio/process-studio-014-16x9",
+      "bytes": 379246,
+      "width": 2048,
+      "height": 1152,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/process/studio/process-studio-015-3x4": {
+      "publicId": "rivya/process/studio/process-studio-015-3x4",
+      "bytes": 348914,
+      "width": 1328,
+      "height": 1760,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/process/studio/process-studio-016-16x9": {
+      "publicId": "rivya/process/studio/process-studio-016-16x9",
+      "bytes": 4893375,
+      "width": 1920,
+      "height": 1080,
+      "durationSeconds": 8.041667,
+      "format": "mp4"
+    },
+    "rivya/process/studio/process-studio-017-16x9": {
+      "publicId": "rivya/process/studio/process-studio-017-16x9",
+      "bytes": 1184152,
+      "width": 1280,
+      "height": 720,
+      "durationSeconds": 6.041667,
+      "format": "mp4"
+    },
+    "rivya/process/studio/process-studio-018-16x9": {
+      "publicId": "rivya/process/studio/process-studio-018-16x9",
+      "bytes": 1421746,
+      "width": 1280,
+      "height": 720,
+      "durationSeconds": 6.05,
+      "format": "mp4"
+    },
+    "rivya/process/studio/process-studio-019-16x9": {
+      "publicId": "rivya/process/studio/process-studio-019-16x9",
+      "bytes": 766045,
+      "width": 1920,
+      "height": 1080,
+      "durationSeconds": 6.041667,
+      "format": "mp4"
+    },
+    "rivya/process/timber/process-timber-001-4x5": {
+      "publicId": "rivya/process/timber/process-timber-001-4x5",
+      "bytes": 350786,
+      "width": 3712,
+      "height": 4608,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/process/timber/process-timber-002-4x5": {
+      "publicId": "rivya/process/timber/process-timber-002-4x5",
+      "bytes": 219740,
+      "width": 3712,
+      "height": 4608,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/process/timber/process-timber-003-3x2": {
+      "publicId": "rivya/process/timber/process-timber-003-3x2",
+      "bytes": 112752,
+      "width": 2528,
+      "height": 1696,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/process/timber/process-timber-004-3x2": {
+      "publicId": "rivya/process/timber/process-timber-004-3x2",
+      "bytes": 250942,
+      "width": 2528,
+      "height": 1696,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/process/timber/process-timber-005-3x2": {
+      "publicId": "rivya/process/timber/process-timber-005-3x2",
+      "bytes": 260186,
+      "width": 2528,
+      "height": 1696,
+      "durationSeconds": null,
+      "format": "webp"
+    },
+    "rivya/process/timber/process-timber-006-16x9": {
+      "publicId": "rivya/process/timber/process-timber-006-16x9",
+      "bytes": 3552000,
+      "width": 1920,
+      "height": 1080,
+      "durationSeconds": 6.041667,
+      "format": "mp4"
+    },
+    "rivya/process/timber/process-timber-007-16x9": {
+      "publicId": "rivya/process/timber/process-timber-007-16x9",
+      "bytes": 4417316,
+      "width": 1920,
+      "height": 1080,
+      "durationSeconds": 8.041667,
+      "format": "mp4"
+    }
+  },
+  "failures": {}
+}
