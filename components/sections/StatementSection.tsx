@@ -15,7 +15,10 @@ import type { SectionRenderProps } from './types'
  * unfilled statement would appear as a stripe of colour with nothing in it — which reads as a
  * rendering fault rather than as absent copy.
  */
-export function StatementSection({ section }: SectionRenderProps): React.ReactElement | null {
+export function StatementSection({
+  section,
+  livePaths,
+}: SectionRenderProps): React.ReactElement | null {
   if (!hasSectionCopy(section)) return null
 
   const centred = section.layout_variant === 'centred'
@@ -24,7 +27,11 @@ export function StatementSection({ section }: SectionRenderProps): React.ReactEl
     <SectionShell section={section} spacing="md" container="prose">
       <Stack gap={6} className={centred ? 'items-center' : ''}>
         <SectionCopy section={section} size="display-lg" align={centred ? 'centre' : 'start'} />
-        <SectionActions section={section} align={centred ? 'centre' : 'start'} />
+        <SectionActions
+          section={section}
+          livePaths={livePaths}
+          align={centred ? 'centre' : 'start'}
+        />
       </Stack>
     </SectionShell>
   )

@@ -29,6 +29,7 @@ export function JournalStripSection({
   strings,
   cloudName,
   reference,
+  livePaths,
 }: SectionRenderProps): React.ReactElement | null {
   const cards = reference?.result.cards ?? []
 
@@ -56,7 +57,7 @@ export function JournalStripSection({
             cloudName={cloudName}
           />
         )}
-        <SectionActions section={section} />
+        <SectionActions section={section} livePaths={livePaths} />
       </Stack>
     </SectionShell>
   )

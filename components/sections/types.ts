@@ -42,6 +42,16 @@ export type SectionRenderProps = {
    */
   readonly ordinal: number
   /**
+   * The paths a visitor can load right now, from `getSiteChrome`.
+   *
+   * PASSED, NOT FETCHED, like everything else here — and needed because an editor's link is data.
+   * `cta_url` and a category entry's `href` are typed into Studio long after the build, so
+   * `typedRoutes` cannot see them and a path that answers 404 looks exactly like one that does
+   * not. `lib/site/resolve-target.ts` turns the pair into a decision: render the anchor, or render
+   * the same content without one.
+   */
+  readonly livePaths: ReadonlySet<string>
+  /**
    * What this section's reference selector found, for the three blocks that have one, and
    * `undefined` for every other block.
    *

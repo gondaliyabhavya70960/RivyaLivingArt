@@ -29,6 +29,8 @@ export type SectionListProps = {
   readonly cloudName: string
   /** By section id. Empty for a page with no reference block, which is most of them. */
   readonly references?: PageReferences
+  /** The paths a visitor can load right now. See `SectionRenderProps.livePaths`. */
+  readonly livePaths: ReadonlySet<string>
 }
 
 export function SectionList({
@@ -37,6 +39,7 @@ export function SectionList({
   strings,
   cloudName,
   references,
+  livePaths,
 }: SectionListProps): React.ReactElement {
   /*
    * ONE COUNTER PER BLOCK TYPE, filled as the list is walked, so a renderer can know it is the
@@ -65,6 +68,7 @@ export function SectionList({
             cloudName={cloudName}
             isFirst={index === 0}
             ordinal={ordinal}
+            livePaths={livePaths}
             reference={references?.get(section.id)}
           />
         )

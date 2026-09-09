@@ -33,11 +33,11 @@ chrome has to render before any content exists. The public site has no such excu
 
 ---
 
-## 2. The 28 blocks, and the seventeen that are built
+## 2. The 28 blocks, and the twenty that are built
 
-`lib/cms/block-types.ts` lists the whole PHASE-05-09 §08 catalogue. Seventeen are built; 11 are
-declared `PLANNED` (amendment A8). Phase 08 built the first six, Phase 11 added the ten the
-homepage needed, and Phase 12 added `scale-statement` — the one block `/about` was still missing.
+`lib/cms/block-types.ts` lists the whole PHASE-05-09 §08 catalogue. Twenty are built; 8 are declared
+`PLANNED` (amendment A8). Phase 08 built the first six, Phase 11 added the ten the homepage needed,
+Phase 12 added `scale-statement` for `/about`, and Phase 13 added the three `/large-format` needed.
 
 | Built | Payload family it proves |
 |---|---|
@@ -54,6 +54,9 @@ homepage needed, and Phase 12 added `scale-statement` — the one block `/about`
 | `commission-cta` | Chips, each verifiable on its own |
 | `three-d-resin` | A reserved slot for Phase 21's viewer that renders nothing while empty |
 | `scale-statement` | No payload; a 21:9 desktop crop paired with a separate 4:5 mobile asset |
+| `category-intro` | No payload; the sentence above a list, tighter to what follows than a statement |
+| `category-list` | Repeating entries with entry-level verification, an optional picture and an optional validated link |
+| `customization-note` | No payload, and the one renderer that refuses to draw itself unverified |
 
 A planned block cannot be added in Studio, and renders **nothing** on the public site — not a
 placeholder, not a grey box. Studio lists them separately so the outstanding catalogue is visible
@@ -309,6 +312,29 @@ So a repeating item carries its own flag, inside the payload:
 Every repeating item also carries a `key` — a stable name that does not move when the list is
 reordered. It becomes `data-entry-key` in the rendered markup, which is how a test can assert that
 a withheld item is absent by name rather than by a position that shifts.
+
+### Editorial groupings are not taxonomy
+
+`/large-format` lists six groupings — Dining & Statement Tables, Coffee & Centre Tables, and so on.
+**They are `category-list` entries in one section's payload, not rows in the `categories` table.**
+The two sets are disjoint and they behave differently:
+
+| | Editorial groupings | Taxonomy categories |
+|---|---|---|
+| Where | `page_sections.payload.entries` | The `categories` table |
+| Routes | **None.** They create no URLs | `/collection/[category]`, one each |
+| Edited in | The page's own editor | Studio → Catalogue → Categories |
+| Reordered by | Dragging within the section | Their own position column |
+
+A grouping may LINK to a taxonomy category, and often should. What it may never do is grow a route
+of its own: `tests/unit/site-routes.test.ts` fails the build if a `/large-format/*` route file
+appears, which is what would happen the first time somebody mistook one for the other.
+
+**A link is rendered only when its destination is live.** An entry's `href` is a path you type, and
+a page whose sections are all still DRAFT answers 404 — so `resolveInternalTarget` checks it against
+the pages that actually render, and a card whose target is not ready renders as text rather than as
+a dead link. Nothing is hidden: the words stay, only the anchor goes, and it comes back by itself
+the day the destination publishes. The same rule applies to a section's calls to action.
 
 ### Writing a process chapter
 

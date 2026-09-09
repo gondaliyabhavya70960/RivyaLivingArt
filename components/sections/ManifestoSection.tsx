@@ -31,6 +31,7 @@ export function ManifestoSection({
   media,
   strings,
   cloudName,
+  livePaths,
 }: SectionRenderProps): React.ReactElement | null {
   if (!hasSectionCopy(section)) return null
 
@@ -40,7 +41,11 @@ export function ManifestoSection({
   const copy = (
     <Stack gap={6} className={centred ? 'items-center' : ''}>
       <SectionCopy section={section} size="display-lg" align={centred ? 'centre' : 'start'} />
-      <SectionActions section={section} align={centred ? 'centre' : 'start'} />
+      <SectionActions
+        section={section}
+        livePaths={livePaths}
+        align={centred ? 'centre' : 'start'}
+      />
     </Stack>
   )
 

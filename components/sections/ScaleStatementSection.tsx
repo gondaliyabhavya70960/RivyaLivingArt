@@ -31,6 +31,7 @@ export function ScaleStatementSection({
   media,
   strings,
   cloudName,
+  livePaths,
 }: SectionRenderProps): React.ReactElement | null {
   const hasMedia = media.desktop !== null || media.mobile !== null
   if (!hasSectionCopy(section) && !hasMedia) return null
@@ -54,7 +55,7 @@ export function ScaleStatementSection({
   const copy = (
     <Stack gap={6}>
       <SectionCopy section={section} size="display-lg" />
-      <SectionActions section={section} />
+      <SectionActions section={section} livePaths={livePaths} />
     </Stack>
   )
 

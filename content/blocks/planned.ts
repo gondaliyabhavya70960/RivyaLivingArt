@@ -59,21 +59,6 @@ function planned(type: BlockType, label: string, description: string): BlockModu
  * descriptions are the catalogue's own, so they are already right when a block ships.
  */
 export const PLANNED_BLOCKS = {
-  'category-intro': planned(
-    'category-intro',
-    'Category introduction',
-    'The opening band of a category page.',
-  ),
-  'category-list': planned(
-    'category-list',
-    'Category list',
-    'Categories as a vertical list with descriptions.',
-  ),
-  'customization-note': planned(
-    'customization-note',
-    'Customisation note',
-    'What can and cannot be varied on a commission.',
-  ),
   checklist: planned('checklist', 'Checklist', 'A list of points, each with a mark.'),
   'numbered-steps': planned(
     'numbered-steps',

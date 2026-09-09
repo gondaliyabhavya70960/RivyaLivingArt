@@ -205,6 +205,7 @@ describeDb('a page renders from real rows', () => {
 
     render(
       <SectionList
+        livePaths={new Set<string>()}
         sections={live.sections}
         assets={assets}
         strings={strings}
@@ -221,6 +222,7 @@ describeDb('a page renders from real rows', () => {
   it("renders the hero's image with the asset's own alt text", () => {
     render(
       <SectionList
+        livePaths={new Set<string>()}
         sections={selectSections(sections, NOW).sections}
         assets={assets}
         strings={strings}
@@ -244,6 +246,7 @@ describeDb('a page renders from real rows', () => {
 
     render(
       <SectionList
+        livePaths={new Set<string>()}
         sections={selectSections(sections, NOW).sections}
         assets={new Map()}
         strings={strings}
@@ -267,7 +270,13 @@ describeDb('a page renders from real rows', () => {
     const section = pageSectionSchema.parse(asRow(fresh[0] as Record<string, unknown>))
 
     render(
-      <SectionList sections={[section]} assets={assets} strings={strings} cloudName="rivya-test" />,
+      <SectionList
+        livePaths={new Set<string>()}
+        sections={[section]}
+        assets={assets}
+        strings={strings}
+        cloudName="rivya-test"
+      />,
     )
     expect(
       screen.getByText('Verified Rivya projects will appear here as the portfolio develops.'),

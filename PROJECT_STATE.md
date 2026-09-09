@@ -1,7 +1,7 @@
 # PROJECT_STATE — what is actually built
 
 > Verified against the repository, not against intent. Update at the end of every phase.
-> Last verified: Phase 12 (About + Process), 2026-09-09.
+> Last verified: Phase 13 (Large Format Experience), 2026-09-09.
 
 ## Summary
 
@@ -117,7 +117,8 @@ in this document is from a local run.
 | 10 | Public Website Foundation | **COMPLETE** | `app/(site)/` with the shell and thirteen route files, `renderCmsPage`, `MediaSlot`, the metadata/robots/sitemap/revalidate plumbing, the WhatsApp module and its usage gate. Verified against a local PostgREST on a production build; amendments A9/A10. |
 | 11 | Homepage + Material Experience | **CODE COMPLETE; NOT MEASURED** | Ten new renderers (16 of 28 blocks built), entry-level owner verification, the three reference selectors and their editorial fallback, `HeroMotion` and `MaterialSequence`, the island-budget gate, the homepage JSON-LD. 8 e2e specs across 8 widths, 924 unit tests. Amendments A11/A12. **What is not done is the measurement**: LCP, CLS and INP are unmeasured because there is no media to measure, and `tests/e2e/homepage.visual.spec.ts` is deferred for the same reason. |
 | 12 | About + Process | **CODE COMPLETE; NOT MEASURED** | `scale-statement` built (17 of 28 blocks), the `/process` chapter layout with positional numbering, `ChapterMedia` (RC-216) loaded on demand, the Studio verification banner and its nine seeded notes. 933 unit tests; `about.spec.ts` and `process.spec.ts` green at 1440 and 390 with zero serious axe violations. Both pages verified against a live database in their launch state — `/about` renders three of five sections, `/process` its hero — and `/process` was walked through a three-chapter state to prove the renumbering. Visual baselines deferred for the same reason as Phase 11: there is no media. |
-| 13–46 | Public site, Studio, research, ops, launch | **PLANNED** | Specified in `docs/project/phases/`. |
+| 13 | Large Format Experience | **CODE COMPLETE; NOT MEASURED** | `category-intro`, `category-list` and `customization-note` built (20 of 28 blocks), `lib/site/resolve-target.ts` and the live-path set on `getSiteChrome`, entry-level marks on three of the six groupings. 942 unit tests; `large-format.spec.ts` green at 1440 and 390. Verified against a live database: 4 of 5 sections publish, exactly the three confirmed groupings render, and both CTAs are dropped while `/custom-commissions` has nothing published — then reappear when it does. Visual baselines deferred; there is still no media. |
+| 14–46 | Public site, Studio, research, ops, launch | **PLANNED** | Specified in `docs/project/phases/`. |
 
 ## What exists on disk
 
@@ -143,7 +144,7 @@ docs/SESSION-STATE.md
 
 No product page under `app/(site)` — `/product/[slug]` is Phase 15 — and **no media delivery**:
 `media_assets` is empty on both databases, so every `MediaSlot` on every page renders its reserved
-box and the SEED §47 fallback label. Eleven of the twenty-eight blocks have no renderer; the eleven
+box and the SEED §47 fallback label. Eight of the twenty-eight blocks have no renderer; the eight
 are listed as `null` in `components/sections/registry.ts` and the two registries are asserted to
 agree, so a block cannot be forgotten, only explicitly declared unbuilt.
 

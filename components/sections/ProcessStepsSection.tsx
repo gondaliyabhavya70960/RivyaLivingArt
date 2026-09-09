@@ -65,6 +65,7 @@ export function ProcessStepsSection({
   strings,
   cloudName,
   ordinal,
+  livePaths,
 }: SectionRenderProps): React.ReactElement | null {
   const payload = parseBlockPayload(processStepsBlock, section.payload)
 
@@ -76,6 +77,7 @@ export function ProcessStepsSection({
         strings={strings}
         cloudName={cloudName}
         ordinal={ordinal}
+        livePaths={livePaths}
       />
     )
   }
@@ -151,7 +153,7 @@ export function ProcessStepsSection({
             })}
           </Stack>
         )}
-        <SectionActions section={section} />
+        <SectionActions section={section} livePaths={livePaths} />
       </Stack>
     </SectionShell>
   )
@@ -174,9 +176,10 @@ function ProcessChapter({
   strings,
   cloudName,
   ordinal,
+  livePaths,
 }: Pick<
   SectionRenderProps,
-  'section' | 'media' | 'strings' | 'cloudName' | 'ordinal'
+  'section' | 'media' | 'strings' | 'cloudName' | 'ordinal' | 'livePaths'
 >): React.ReactElement | null {
   if (!hasSectionCopy(section)) return null
 
@@ -196,7 +199,7 @@ function ProcessChapter({
               and it is a numeral rather than a word, which no editor would want to translate. */}
           <Eyebrow tone="accent">{String(ordinal).padStart(2, '0')}</Eyebrow>
           <SectionCopy section={section} size="display-md" />
-          <SectionActions section={section} />
+          <SectionActions section={section} livePaths={livePaths} />
         </Stack>
         <div className="relative">
           <ResponsiveMedia

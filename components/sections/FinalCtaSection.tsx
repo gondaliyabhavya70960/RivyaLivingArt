@@ -29,6 +29,7 @@ export function FinalCtaSection({
   media,
   strings,
   cloudName,
+  livePaths,
 }: SectionRenderProps): React.ReactElement | null {
   if (!hasSectionCopy(section)) return null
 
@@ -43,7 +44,11 @@ export function FinalCtaSection({
         align={centred ? 'centre' : 'start'}
         maxWidth="prose"
       />
-      <SectionActions section={section} align={centred ? 'centre' : 'start'} />
+      <SectionActions
+        section={section}
+        livePaths={livePaths}
+        align={centred ? 'centre' : 'start'}
+      />
     </Stack>
   )
 

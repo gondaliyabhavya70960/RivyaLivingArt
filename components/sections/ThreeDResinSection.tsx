@@ -27,13 +27,14 @@ export function ThreeDResinSection({
   media,
   strings,
   cloudName,
+  livePaths,
 }: SectionRenderProps): React.ReactElement | null {
   const fullBleed = (section.layout_variant ?? 'split') === 'full-bleed'
 
   const copy = (
     <Stack gap={6}>
       <SectionCopy section={section} />
-      <SectionActions section={section} />
+      <SectionActions section={section} livePaths={livePaths} />
     </Stack>
   )
 

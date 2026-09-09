@@ -45,6 +45,7 @@ export function HeroSection({
   strings,
   cloudName,
   isFirst,
+  livePaths,
 }: SectionRenderProps): React.ReactElement | null {
   const payload = parseBlockPayload(heroBlock, section.payload)
   const variant = section.layout_variant ?? 'full-bleed'
@@ -57,7 +58,7 @@ export function HeroSection({
   const copy = (
     <Stack gap={6} className={overlaid ? 'items-start' : ''}>
       <SectionCopy section={section} level={isFirst ? 1 : 2} size="display-xl" />
-      <SectionActions section={section} />
+      <SectionActions section={section} livePaths={livePaths} />
     </Stack>
   )
 

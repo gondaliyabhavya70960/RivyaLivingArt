@@ -58,6 +58,7 @@ function renderChapters(count: number): string {
   const sections = Array.from({ length: count }, (_, i) => chapter(i + 1))
   return renderToStaticMarkup(
     <SectionList
+      livePaths={new Set<string>()}
       sections={sections}
       assets={new Map<string, MediaAsset>()}
       strings={new Map()}

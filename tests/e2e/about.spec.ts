@@ -78,15 +78,31 @@ test.describe('/about', () => {
     expect(match?.[0] ?? null, `forbidden copy on ${PATH}`).toBeNull()
   })
 
-  test('links its closing call to action to a real route', async ({ page }) => {
+  test('renders no anchor in its body that does not resolve', async ({ page }) => {
     test.skip(!(await published(page)), 'no published sections on /about in this database')
 
-    const cta = page.locator('main a[href="/custom-commissions"]')
-    // Phase 19 builds that page; until then the route exists and answers 404 by design, which is a
-    // deliberate empty page rather than a broken link inside the body.
-    await expect(cta.first()).toBeVisible()
-    const response = await page.request.get('/custom-commissions')
-    expect([200, 404]).toContain(response.status())
+    /*
+     * PHASE 13 CHANGED WHAT THIS TEST ASSERTS, and the change is the point. The closing CTA points
+     * at `/custom-commissions`, which Phase 19 builds: the route file exists, the `pages` row
+     * exists, and every section on it is DRAFT — so a visitor clicking it got a 404. Phase 12's
+     * version of this test accepted that ("200 or a deliberate 404"). `resolveInternalTarget` now
+     * drops a link whose destination is not live, so the assertion is the stronger one: every
+     * anchor in the body resolves, and the CTA reappears by itself the day that page publishes.
+     *
+     * The chrome's navigation is deliberately out of scope — those links come from
+     * `navigation_items` and are Phase 10's surface.
+     */
+    const hrefs = await page
+      .locator('main a[href]')
+      .evaluateAll((nodes) => nodes.map((node) => node.getAttribute('href') ?? ''))
+
+    for (const href of hrefs) {
+      expect(href).not.toBe('')
+      expect(href).not.toBe('#')
+      if (!href.startsWith('/')) continue
+      const response = await page.request.get(href)
+      expect(response.status(), `${href} is linked from the body and does not resolve`).toBe(200)
+    }
   })
 
   test('reports no critical or serious axe violation', async ({ page }) => {

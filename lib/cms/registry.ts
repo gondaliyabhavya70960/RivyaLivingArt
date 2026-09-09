@@ -1,4 +1,7 @@
 import { categoryGridBlock } from '@/content/blocks/category-grid'
+import { categoryIntroBlock } from '@/content/blocks/category-intro'
+import { categoryListBlock } from '@/content/blocks/category-list'
+import { customizationNoteBlock } from '@/content/blocks/customization-note'
 import { commissionCtaBlock } from '@/content/blocks/commission-cta'
 import { finalCtaBlock } from '@/content/blocks/final-cta'
 import { journalStripBlock } from '@/content/blocks/journal-strip'
@@ -46,6 +49,9 @@ const BUILT_BLOCKS = {
   'journal-strip': journalStripBlock,
   'final-cta': finalCtaBlock,
   'scale-statement': scaleStatementBlock,
+  'category-intro': categoryIntroBlock,
+  'category-list': categoryListBlock,
+  'customization-note': customizationNoteBlock,
   statement: statementBlock,
   'empty-state': emptyStateBlock,
   divider: dividerBlock,

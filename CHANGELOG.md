@@ -6,6 +6,34 @@ Every phase adds an entry; see `docs/architecture/CANONICAL-DECISIONS.md` D9 for
 
 ## [Unreleased]
 
+### Phase 13 — Large Format Experience
+
+`/large-format` renders: a hero, a framing paragraph, six editorial groupings of which three are
+confirmed, and a closing band. Twenty of the twenty-eight blocks now have renderers.
+
+**A link is rendered only when its destination is live.** `lib/site/resolve-target.ts` is the
+smallest piece of this phase and the one with the widest reach: an editor's `href` is a database
+value, so `typedRoutes` cannot see it, and a page whose sections are all still DRAFT answers 404
+while looking exactly like a real path. `/large-format` links twice to `/custom-commissions`, which
+Phase 19 builds — so at launch both calls to action are dropped, and both reappear by themselves the
+day that page publishes. Verified in both directions against a live database. The same rule now
+governs every section's CTA, and the About spec's assertion was upgraded from "200 or a deliberate
+404" to "every anchor in the body resolves".
+
+**The text-only card is a designed layout.** One of the six groupings has no photograph in the
+library at all — Conference & Commercial Tables, now recorded as DQ-14 — and two have a single asset
+each. A card with no picture renders as a card with no picture: no reserved grey box, no borrowed
+image from a neighbouring family.
+
+**Three of the six groupings are withheld individually**, where the seed previously flagged the whole
+list. SEED §12 marks two outright and leaves the third conditional on production nobody has
+confirmed; flagging the section took the confirmed three off the page to withhold the other three.
+
+**`customization-note` refuses to render unverified**, duplicating the publish trigger on purpose.
+It describes what a large-format commission involves — access, weight, structural considerations —
+which is a service claim, and it is the one renderer where the cost of a silent early publish
+justifies a second mechanism.
+
 ### Phase 12 — About + Process
 
 The two pages that explain who Rivya is and how a piece is made now render from the CMS, and both
