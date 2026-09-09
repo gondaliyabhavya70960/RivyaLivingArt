@@ -189,13 +189,11 @@ export function isSafeHttpUrl(value: string): boolean {
  * so an editor gets a sentence naming the field instead of a constraint violation.
  */
 export function priceIssues(
-  draft: Pick<
-    ProductDraft,
-    'price_state' | 'price_minor' | 'price_from_minor' | 'currency'
-  >,
+  draft: Pick<ProductDraft, 'price_state' | 'price_minor' | 'price_from_minor' | 'currency'>,
 ): readonly ValidationIssue[] {
   const issues: ValidationIssue[] = []
-  const quoteOnly = draft.price_state === 'REQUEST_QUOTE' || draft.price_state === 'PRICE_ON_REQUEST'
+  const quoteOnly =
+    draft.price_state === 'REQUEST_QUOTE' || draft.price_state === 'PRICE_ON_REQUEST'
 
   if (quoteOnly) {
     if (draft.price_minor !== null || draft.price_from_minor !== null) {
@@ -436,9 +434,7 @@ export function unmetForPublish(checklist: readonly ReadinessEntry[]): readonly 
 }
 
 /** The shape stored in `products.publication_readiness`, so Studio's list need not recompute it. */
-export function readinessSnapshot(
-  checklist: readonly ReadinessEntry[],
-): Record<string, unknown> {
+export function readinessSnapshot(checklist: readonly ReadinessEntry[]): Record<string, unknown> {
   return {
     items: checklist.map((entry) => ({
       item: entry.item,

@@ -1,20 +1,99 @@
+import { Divider } from '@/components/primitives/Divider'
+import { Stack } from '@/components/primitives/Stack'
+import { DataTable } from '@/components/studio/DataTable'
+import { EntityForm } from '@/components/studio/catalog/EntityForm'
+import { PageHeader } from '@/components/studio/PageHeader'
+import { StatusPill } from '@/components/studio/StatusPill'
 import { StudioPage, studioMetadata } from '@/components/studio/StudioPage'
+import { t } from '@/components/studio/strings'
+import { roleHasPermission } from '@/lib/auth/permissions'
 import { requirePermission } from '@/lib/auth/require'
+import { listCollectionsForStudio } from '@/lib/supabase/repositories/catalog-admin'
+import { createClient } from '@/lib/supabase/server'
+import type { Collection } from '@/lib/supabase/schemas'
+
+import { saveCollectionAction } from '../actions'
 
 /**
- * /studio/catalog/collections
+ * /studio/catalog/collections — groupings that stay concepts.
  *
- * A route stub. It exists so navigation never dead-ends — the sidebar shows this leaf to any role
- * holding `catalog.read`, and a link that 404s is worse than a page saying it is not built.
+ * FEAT §9 IS THE WHOLE SHAPE OF THIS SCREEN. `collection_concept_state` has one value,
+ * `DRAFT_COLLECTION_CONCEPT`, and Phase 16 adds the owner confirmation that introduces a second.
+ * Until then a collection cannot be published, so there is no publish control here at all — not a
+ * disabled one, which would read as a broken interface, and not a hidden one that appears for some
+ * roles. The note above the form says why.
  *
- * THE PERMISSION CHECK IS REAL, not a placeholder. It runs before anything renders, writes a DENIED
- * audit row when it refuses, and is the same call the finished surface will make. Phase 14
- * replaces the body below; it does not add the gate, because a gate added later is a gate that was
- * missing in between.
+ * A collection is still worth creating now: `product_collections` is what the `?collection=` facet
+ * filters by, and grouping pieces is editorial work that can happen before the exhibition is real.
  */
 export const metadata = studioMetadata('/studio/catalog/collections')
 
 export default async function Page() {
-  await requirePermission('catalog.read')
-  return <StudioPage path="/studio/catalog/collections" />
+  const session = await requirePermission('catalog.read')
+  const collections = await listCollectionsForStudio(await createClient())
+  const canWrite = roleHasPermission(session.role, 'catalog.write')
+
+  return (
+    <StudioPage path="/studio/catalog/collections">
+      <Stack gap={8}>
+        <DataTable<Collection>
+          caption={t('studio.catalog.collections.caption')}
+          rows={collections}
+          rowKey={(collection) => collection.id}
+          empty={{
+            reason: 'empty',
+            heading: t('studio.catalog.collections.emptyHeading'),
+            body: t('studio.catalog.collections.emptyBody'),
+          }}
+          columns={[
+            {
+              id: 'name',
+              header: t('studio.catalog.collections.colName'),
+              cell: (collection) => collection.name,
+            },
+            {
+              id: 'slug',
+              header: t('studio.catalog.collections.colSlug'),
+              cell: (collection) => collection.slug,
+            },
+            {
+              id: 'concept',
+              header: t('studio.catalog.collections.colConcept'),
+              cell: (collection) => collection.concept_state,
+            },
+            {
+              id: 'status',
+              header: t('studio.catalog.collections.colStatus'),
+              cell: (collection) => <StatusPill status={collection.status} />,
+            },
+          ]}
+        />
+
+        {canWrite ? (
+          <>
+            <Divider />
+            <PageHeader level={2} title={t('studio.catalog.collections.newHeading')} />
+            <EntityForm
+              id={null}
+              action={saveCollectionAction}
+              submitLabelKey="studio.catalog.collection.save"
+              canWrite
+              note={t('studio.catalog.collections.conceptNote')}
+              fields={[
+                { name: 'name', labelKey: 'studio.catalog.collection.name', required: true },
+                { name: 'slug', labelKey: 'studio.catalog.collection.slug', required: true },
+                {
+                  name: 'statement',
+                  labelKey: 'studio.catalog.collection.statement',
+                  kind: 'textarea',
+                  rows: 4,
+                },
+                { name: 'sort_order', labelKey: 'studio.catalog.collection.sortOrder' },
+              ]}
+            />
+          </>
+        ) : null}
+      </Stack>
+    </StudioPage>
+  )
 }

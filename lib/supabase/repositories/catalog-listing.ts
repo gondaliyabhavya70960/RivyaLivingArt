@@ -97,7 +97,9 @@ function facetsSelect(filters: CatalogListingFilters): string {
     'is_large_format',
     'is_customizable',
   ]
-  parts.push((filters.materialIds?.length ?? 0) > 0 ? MATERIAL_EMBED : 'product_materials(material_id)')
+  parts.push(
+    (filters.materialIds?.length ?? 0) > 0 ? MATERIAL_EMBED : 'product_materials(material_id)',
+  )
   parts.push(
     (filters.collectionIds?.length ?? 0) > 0
       ? COLLECTION_EMBED

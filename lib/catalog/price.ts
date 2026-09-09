@@ -89,8 +89,7 @@ export function formatMinor(minor: number, currency: string, locale = 'en-IN'): 
 /** The `STARTING_FROM` label, honouring the owner's choice between the two seeded spellings. */
 function startingFromLabel(strings: SiteStrings): string | null {
   return (
-    siteString(strings, PRICE_LABEL_KEYS.from) ??
-    siteString(strings, PRICE_LABEL_KEYS.startingFrom)
+    siteString(strings, PRICE_LABEL_KEYS.from) ?? siteString(strings, PRICE_LABEL_KEYS.startingFrom)
   )
 }
 
@@ -152,7 +151,10 @@ export interface ProductBadge {
 }
 
 export function productBadges(
-  product: Pick<Product, 'edition_state' | 'edition_size' | 'availability_state' | 'is_customizable'>,
+  product: Pick<
+    Product,
+    'edition_state' | 'edition_size' | 'availability_state' | 'is_customizable'
+  >,
   strings: SiteStrings,
 ): readonly ProductBadge[] {
   const badges: ProductBadge[] = []

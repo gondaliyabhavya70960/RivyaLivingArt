@@ -1,6 +1,10 @@
 import { z } from 'zod'
 
-import { availabilityStateSchema, editionStateSchema, priceStateSchema } from '@/lib/supabase/schemas'
+import {
+  availabilityStateSchema,
+  editionStateSchema,
+  priceStateSchema,
+} from '@/lib/supabase/schemas'
 import type { Enums } from '@/lib/supabase/database.types'
 
 /**
@@ -123,7 +127,11 @@ function values(raw: RawSearchParams, key: CatalogParam): string[] {
 }
 
 /** Every value that parses, de-duplicated and sorted. Values that do not parse are dropped. */
-function accepted<T extends string>(raw: RawSearchParams, key: CatalogParam, schema: z.ZodType<T>): T[] {
+function accepted<T extends string>(
+  raw: RawSearchParams,
+  key: CatalogParam,
+  schema: z.ZodType<T>,
+): T[] {
   const kept = new Set<T>()
   for (const candidate of values(raw, key)) {
     const result = schema.safeParse(candidate)
@@ -133,7 +141,11 @@ function accepted<T extends string>(raw: RawSearchParams, key: CatalogParam, sch
 }
 
 /** The single-valued parameters take the FIRST parseable value; a repeat is not an error. */
-function first<T extends string>(raw: RawSearchParams, key: CatalogParam, schema: z.ZodType<T>): T | null {
+function first<T extends string>(
+  raw: RawSearchParams,
+  key: CatalogParam,
+  schema: z.ZodType<T>,
+): T | null {
   for (const candidate of values(raw, key)) {
     const result = schema.safeParse(candidate)
     if (result.success) return result.data
@@ -236,11 +248,7 @@ export function catalogUrl(
 /** Add or remove one value of a multi-valued dimension — what a facet checkbox link does. */
 export function toggleCatalogValue<
   K extends 'material' | 'price' | 'availability' | 'edition' | 'collection',
->(
-  query: CatalogQuery,
-  dimension: K,
-  value: CatalogQuery[K][number],
-): CatalogQuery {
+>(query: CatalogQuery, dimension: K, value: CatalogQuery[K][number]): CatalogQuery {
   const current = query[dimension] as readonly string[]
   const next = current.includes(value)
     ? current.filter((entry) => entry !== value)

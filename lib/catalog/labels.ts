@@ -1,7 +1,13 @@
 import { siteString, type SiteStrings } from '@/lib/cms/strings'
 
 import { BADGE_LABEL_KEYS, PRICE_LABEL_KEYS } from './price'
-import { CATALOG_SORTS, type AvailabilityState, type CatalogSort, type EditionState, type PriceState } from './query'
+import {
+  CATALOG_SORTS,
+  type AvailabilityState,
+  type CatalogSort,
+  type EditionState,
+  type PriceState,
+} from './query'
 
 /**
  * The words the LISTING CONTROLS use, as opposed to the words a card uses.
@@ -67,7 +73,9 @@ export function sortLabel(sort: CatalogSort, strings: SiteStrings): string | nul
 }
 
 /** The sort options that have a label, in the order they are offered. */
-export function sortOptions(strings: SiteStrings): readonly { value: CatalogSort; label: string }[] {
+export function sortOptions(
+  strings: SiteStrings,
+): readonly { value: CatalogSort; label: string }[] {
   return CATALOG_SORTS.map((value) => ({ value, label: sortLabel(value, strings) })).filter(
     (option): option is { value: CatalogSort; label: string } => option.label !== null,
   )
@@ -84,7 +92,8 @@ export function priceStateLabel(state: PriceState, strings: SiteStrings): string
   if (state === 'STARTING_FROM') {
     // The same two-spellings rule `presentPrice` follows, so the rail and the card agree.
     return (
-      siteString(strings, PRICE_LABEL_KEYS.from) ?? siteString(strings, PRICE_LABEL_KEYS.startingFrom)
+      siteString(strings, PRICE_LABEL_KEYS.from) ??
+      siteString(strings, PRICE_LABEL_KEYS.startingFrom)
     )
   }
   return siteString(strings, PRICE_STATE_KEYS[state])

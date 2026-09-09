@@ -30,7 +30,11 @@ export interface SortSelectProps {
   readonly strings: SiteStrings
 }
 
-export function SortSelect({ basePath, query, strings }: SortSelectProps): React.ReactElement | null {
+export function SortSelect({
+  basePath,
+  query,
+  strings,
+}: SortSelectProps): React.ReactElement | null {
   const label = siteString(strings, CATALOG_UI_KEYS.sort)
   const apply = siteString(strings, CATALOG_ACTION_KEYS.apply)
   const options = sortOptions(strings)
@@ -48,7 +52,12 @@ export function SortSelect({ basePath, query, strings }: SortSelectProps): React
   carried.delete('page')
 
   return (
-    <form method="get" action={basePath} data-sort-form="" className="flex flex-wrap items-end gap-3">
+    <form
+      method="get"
+      action={basePath}
+      data-sort-form=""
+      className="flex flex-wrap items-end gap-3"
+    >
       {[...carried.entries()].map(([name, value]) => (
         <input key={`${name}=${value}`} type="hidden" name={name} value={value} />
       ))}

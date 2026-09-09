@@ -9,11 +9,7 @@ import {
   largeFormatLabel,
   priceStateLabel,
 } from './labels'
-import {
-  SCALE_LARGE_FORMAT,
-  type CatalogParam,
-  type CatalogQuery,
-} from './query'
+import { SCALE_LARGE_FORMAT, type CatalogParam, type CatalogQuery } from './query'
 
 /**
  * Turning facet counts into the rail's groups — the decision layer, kept out of the component.

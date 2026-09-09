@@ -95,7 +95,11 @@ export function Pagination({
               ) : null}
               <li className="hidden min-[430px]:block">
                 {n === page ? (
-                  <span aria-current="page" data-current-page="" className={`${step} text-ink font-medium`}>
+                  <span
+                    aria-current="page"
+                    data-current-page=""
+                    className={`${step} text-ink font-medium`}
+                  >
                     {n}
                   </span>
                 ) : (
@@ -109,7 +113,10 @@ export function Pagination({
         })}
 
         {position === null ? null : (
-          <li data-pagination-position="" className="text-ink-secondary px-3 text-sm min-[430px]:hidden">
+          <li
+            data-pagination-position=""
+            className="text-ink-secondary px-3 text-sm min-[430px]:hidden"
+          >
             {interpolate(position, { page: String(page), pages: String(pageCount) })}
           </li>
         )}

@@ -71,10 +71,9 @@ export const priceStateSchema = z.enum([
  * MADE_TO_ORDER and must not render as it. READY_STOCK is an inventory claim and the database
  * refuses to publish a product asserting it until the owner has verified the row (D10).
  */
-export const availabilityStateSchema = z.enum([
-  'READY_STOCK',
-  'MADE_TO_ORDER',
-]) satisfies z.ZodType<Enums<'availability_state'>>
+export const availabilityStateSchema = z.enum(['READY_STOCK', 'MADE_TO_ORDER']) satisfies z.ZodType<
+  Enums<'availability_state'>
+>
 
 /** Phase 14 `0120`. LIMITED_EDITION must state `edition_size`; the other two must not carry one. */
 export const editionStateSchema = z.enum([

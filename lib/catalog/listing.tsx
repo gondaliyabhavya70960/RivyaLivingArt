@@ -217,9 +217,15 @@ export function CatalogListing({
               <div key={product.id} {...(gridName === null ? {} : { role: 'listitem' })}>
                 <ProductCard
                   product={product}
-                  asset={product.hero_media_id === null ? null : (assetsById.get(product.hero_media_id) ?? null)}
+                  asset={
+                    product.hero_media_id === null
+                      ? null
+                      : (assetsById.get(product.hero_media_id) ?? null)
+                  }
                   categoryName={
-                    product.category_id === null ? null : (categoryNames?.get(product.category_id) ?? null)
+                    product.category_id === null
+                      ? null
+                      : (categoryNames?.get(product.category_id) ?? null)
                   }
                   strings={strings}
                   cloudName={cloudName}

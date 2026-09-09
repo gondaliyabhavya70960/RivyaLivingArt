@@ -1,20 +1,163 @@
+import type { Route } from 'next'
+import Link from 'next/link'
+
+import { Cluster } from '@/components/primitives/Cluster'
+import { Text } from '@/components/primitives/Text'
+import { DataTable } from '@/components/studio/DataTable'
+import { RelativeTime } from '@/components/studio/RelativeTime'
+import { StatusPill } from '@/components/studio/StatusPill'
 import { StudioPage, studioMetadata } from '@/components/studio/StudioPage'
+import { t } from '@/components/studio/strings'
+import { roleHasPermission } from '@/lib/auth/permissions'
 import { requirePermission } from '@/lib/auth/require'
+import { unmetForPublish, readinessChecklist } from '@/lib/catalog/validation'
+import {
+  listCategoriesForStudio,
+  listProductsForStudio,
+} from '@/lib/supabase/repositories/catalog-admin'
+import { createClient } from '@/lib/supabase/server'
+import type { Product } from '@/lib/supabase/schemas'
+
+import { productDraft } from '../product-values'
 
 /**
- * /studio/catalog/products
+ * /studio/catalog/products — every product, with what is still missing.
  *
- * A route stub. It exists so navigation never dead-ends — the sidebar shows this leaf to any role
- * holding `catalog.read`, and a link that 404s is worse than a page saying it is not built.
+ * THE "NOT READY" COLUMN IS THE POINT OF THIS SCREEN. A status alone tells an owner that something
+ * is a draft; it does not tell them why it is still a draft. The column lists the unmet REQUIRED
+ * items by name, so the work outstanding across the whole catalogue is visible without opening
+ * anything — which is what FEAT §22 is asking for, one level up from the product form.
  *
- * THE PERMISSION CHECK IS REAL, not a placeholder. It runs before anything renders, writes a DENIED
- * audit row when it refuses, and is the same call the finished surface will make. Phase 14
- * replaces the body below; it does not add the gate, because a gate added later is a gate that was
- * missing in between.
+ * IT IS COMPUTED FROM THE ROW, NOT READ FROM `publication_readiness`. That column is a cache
+ * written on save; a row edited by any other route would carry a stale snapshot, and a list that
+ * quietly lies about what is missing is worse than one that costs a few microseconds per row.
+ *
+ * READS THROUGH THE REQUEST-SCOPED CLIENT, so the list is exactly what this role may see.
  */
 export const metadata = studioMetadata('/studio/catalog/products')
 
-export default async function Page() {
-  await requirePermission('catalog.read')
-  return <StudioPage path="/studio/catalog/products" />
+export default async function Page({
+  searchParams,
+}: {
+  readonly searchParams: Promise<{ q?: string }>
+}) {
+  const session = await requirePermission('catalog.read')
+  const { q } = await searchParams
+
+  const client = await createClient()
+  const [products, categories] = await Promise.all([
+    listProductsForStudio(client, q === undefined ? {} : { search: q }),
+    listCategoriesForStudio(client),
+  ])
+
+  const categoryNames = new Map(categories.map((category) => [category.id, category.name]))
+  const canWrite = roleHasPermission(session.role, 'catalog.write')
+
+  return (
+    <StudioPage
+      path="/studio/catalog/products"
+      actions={
+        canWrite ? (
+          <Link
+            href={'/studio/catalog/products/new' as Route}
+            className="underline underline-offset-4"
+          >
+            <Text as="span" size="sm">
+              {t('studio.catalog.products.newHeading')}
+            </Text>
+          </Link>
+        ) : undefined
+      }
+    >
+      {/* A plain GET form: searching a list must not need JavaScript any more than filtering the
+          public one does. */}
+      <form method="get" className="mb-6 flex flex-wrap items-end gap-3">
+        <label htmlFor="q" className="flex flex-col gap-1">
+          <Text as="span" size="sm" tone="secondary">
+            {t('studio.catalog.products.searchLabel')}
+          </Text>
+          <input
+            id="q"
+            name="q"
+            defaultValue={q ?? ''}
+            className="border-line-strong bg-surface h-11 rounded-sm border px-3"
+          />
+        </label>
+        <button type="submit" className="underline underline-offset-4">
+          <Text as="span" size="sm">
+            {t('studio.catalog.products.searchSubmit')}
+          </Text>
+        </button>
+      </form>
+
+      <DataTable<Product>
+        caption={t('studio.catalog.products.caption')}
+        rows={products}
+        rowKey={(product) => product.id}
+        empty={{
+          reason: 'empty',
+          heading: t('studio.catalog.products.emptyHeading'),
+          body: t('studio.catalog.products.emptyBody'),
+        }}
+        columns={[
+          {
+            id: 'title',
+            header: t('studio.catalog.products.colTitle'),
+            cell: (product) => (
+              <Link
+                href={`/studio/catalog/products/${product.id}` as Route}
+                className="underline underline-offset-4"
+              >
+                {product.title ?? t('studio.catalog.products.untitled')}
+              </Link>
+            ),
+          },
+          {
+            id: 'sku',
+            header: t('studio.catalog.products.colSku'),
+            cell: (product) => product.sku ?? t('studio.catalog.products.noSku'),
+          },
+          {
+            id: 'category',
+            header: t('studio.catalog.products.colCategory'),
+            cell: (product) =>
+              product.category_id === null
+                ? t('studio.catalog.products.noCategory')
+                : (categoryNames.get(product.category_id) ??
+                  t('studio.catalog.products.noCategory')),
+          },
+          {
+            id: 'status',
+            header: t('studio.catalog.products.colStatus'),
+            cell: (product) => <StatusPill status={product.status} />,
+          },
+          {
+            id: 'readiness',
+            header: t('studio.catalog.products.colReadiness'),
+            cell: (product) => {
+              const unmet = unmetForPublish(readinessChecklist(productDraft(product)))
+              return unmet.length === 0 ? (
+                <Text as="span" size="sm">
+                  {t('studio.catalog.products.readyToPublish')}
+                </Text>
+              ) : (
+                <Cluster gap={2} data-unmet-summary="">
+                  {unmet.map((item) => (
+                    <Text key={item} as="span" size="sm" tone="secondary">
+                      {item}
+                    </Text>
+                  ))}
+                </Cluster>
+              )
+            },
+          },
+          {
+            id: 'updated',
+            header: t('studio.catalog.products.colUpdated'),
+            cell: (product) => <RelativeTime value={product.updated_at} />,
+          },
+        ]}
+      />
+    </StudioPage>
+  )
 }
