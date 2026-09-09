@@ -29,6 +29,8 @@ export type SectionListProps = {
   readonly cloudName: string
   /** By section id. Empty for a page with no reference block, which is most of them. */
   readonly references?: PageReferences
+  /** The paths a visitor can load right now. See `SectionRenderProps.livePaths`. */
+  readonly livePaths: ReadonlySet<string>
 }
 
 export function SectionList({
@@ -37,13 +39,25 @@ export function SectionList({
   strings,
   cloudName,
   references,
+  livePaths,
 }: SectionListProps): React.ReactElement {
+  /*
+   * ONE COUNTER PER BLOCK TYPE, filled as the list is walked, so a renderer can know it is the
+   * third chapter without knowing about its siblings. Counting here rather than in the renderer is
+   * what keeps a section renderer a pure function of its own props: the list is the only thing
+   * that can see the page.
+   */
+  const seen = new Map<string, number>()
+
   return (
     <>
       {sections.map((section, index) => {
         if (!isBlockType(section.block_type)) return null
         const Renderer = sectionRenderer(section.block_type)
         if (Renderer === null) return null
+
+        const ordinal = (seen.get(section.block_type) ?? 0) + 1
+        seen.set(section.block_type, ordinal)
 
         return (
           <Renderer
@@ -53,6 +67,8 @@ export function SectionList({
             strings={strings}
             cloudName={cloudName}
             isFirst={index === 0}
+            ordinal={ordinal}
+            livePaths={livePaths}
             reference={references?.get(section.id)}
           />
         )

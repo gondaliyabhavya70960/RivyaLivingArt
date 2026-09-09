@@ -90,18 +90,27 @@ export const processSeed: SeedModule = {
         key: `process.${String(i + 2).padStart(2, '0')}.${step.key}`,
         blockType: 'process-steps',
         position: i + 2,
-        eyebrow: `${String(i + 1).padStart(2, '0')} — ${step.label}`,
+        /*
+         * THE NUMBER IS NOT IN THE EYEBROW, and Phase 12 took it out on purpose. Seeded as
+         * "01 — BRIEF" it was a hardcoded index: all seven chapters are
+         * OWNER_VERIFICATION_REQUIRED, so a page with three of them verified would have read
+         * 01, 04, 06 — which tells a visitor that something is missing and invites them to
+         * wonder what. `ProcessStepsSection` numbers by the chapter's position among the
+         * chapters that actually rendered, so three verified steps read 01, 02, 03.
+         */
+        eyebrow: step.label,
         heading: step.heading,
         body: step.body,
         fact: 'BRAND_COPY',
         verify: true,
-        payload: {
-          numbered: false,
-          // The step's own key, which is unique across the seven and does not move when one is
-          // reordered — unlike the array index, which is what a test would otherwise address.
-          steps: [{ key: step.key, title: step.heading, body: step.body, media_index: null }],
-          media: [],
-        },
+        layoutVariant: 'chapter',
+        /*
+         * NO STEP INSIDE THE PAYLOAD. A chapter's words ARE the section's heading and body; the
+         * step that used to sit here repeated both, and the page rendered each sentence twice.
+         * The chapter's picture is the section's own media, which is what the block's media
+         * shared fields are for.
+         */
+        payload: { numbered: false, steps: [], media: [] },
       }),
     ),
   ],

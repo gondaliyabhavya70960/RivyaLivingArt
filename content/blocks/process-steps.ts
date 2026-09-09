@@ -49,7 +49,24 @@ export const processStepsBlock: BlockModule<ProcessStepsPayload> = {
   state: 'BUILT',
   label: 'Process steps',
   description: 'Ordered stages, each with a heading, copy and an image.',
-  sharedFields: ['eyebrow', 'heading', 'body'],
+  /*
+   * THE MEDIA FIELDS ARRIVED IN PHASE 12, FOR THE CHAPTER LAYOUT. A `/process` chapter is one
+   * section carrying one stage of the process: its words are the section's own heading and body,
+   * and its picture is the section's own media rather than an entry inside `steps`. Before this the
+   * block could only hold a picture inside a repeating item, so a chapter had to duplicate its
+   * heading into a step just to have somewhere to put the image — and the page rendered the same
+   * sentence twice.
+   */
+  sharedFields: [
+    'eyebrow',
+    'heading',
+    'body',
+    'cta_label',
+    'cta_url',
+    'media_desktop_id',
+    'media_mobile_id',
+    'media_alt_override',
+  ],
   schema,
   defaults: { steps: [], numbered: true, media: [] },
   payloadFields: [
@@ -71,6 +88,12 @@ export const processStepsBlock: BlockModule<ProcessStepsPayload> = {
     { id: 'steps', role: 'GALLERY', repeating: true, desktopRatio: '4:3', mobileRatio: '4:5' },
   ],
   entryArrays: ['steps'],
-  layoutVariants: ['alternating', 'stacked'],
+  /*
+   * `chapter` IS A DIFFERENT SHAPE, NOT A DIFFERENT SKIN. `alternating` and `stacked` lay out a
+   * LIST of steps inside one section; `chapter` is one section that IS one step, numbered by its
+   * position among its siblings on the page. `/process` is seven of them; the homepage's process
+   * band is one section holding five steps.
+   */
+  layoutVariants: ['alternating', 'stacked', 'chapter'],
   allowedPages: null,
 }

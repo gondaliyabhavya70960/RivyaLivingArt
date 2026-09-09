@@ -173,6 +173,7 @@ export async function renderCmsPage(path: string): Promise<React.ReactElement> {
         // fallback wherever an asset would have been drawn.
         cloudName={optionalEnv('NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME') ?? ''}
         references={references}
+        livePaths={chrome.livePaths}
       />
     </>
   )

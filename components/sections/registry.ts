@@ -1,6 +1,9 @@
 import type { BlockType } from '@/lib/cms/block-types'
 
 import { CategoryGridSection } from './CategoryGridSection'
+import { CategoryIntroSection } from './CategoryIntroSection'
+import { CategoryListSection } from './CategoryListSection'
+import { CustomizationNoteSection } from './CustomizationNoteSection'
 import { CommissionCtaSection } from './CommissionCtaSection'
 import { DividerSection } from './DividerSection'
 import { EmptyStateSection } from './EmptyStateSection'
@@ -12,6 +15,7 @@ import { MaterialPaletteSection } from './MaterialPaletteSection'
 import { MaterialStorySection } from './MaterialStorySection'
 import { PortfolioStripSection } from './PortfolioStripSection'
 import { ProcessStepsSection } from './ProcessStepsSection'
+import { ScaleStatementSection } from './ScaleStatementSection'
 import { SecondaryObjectsSection } from './SecondaryObjectsSection'
 import { SelectedWorksSection } from './SelectedWorksSection'
 import { StatementSection } from './StatementSection'
@@ -46,10 +50,10 @@ export const SECTION_RENDERERS = {
   'journal-strip': JournalStripSection,
   'final-cta': FinalCtaSection,
   statement: StatementSection,
-  'scale-statement': null,
-  'category-intro': null,
-  'category-list': null,
-  'customization-note': null,
+  'scale-statement': ScaleStatementSection,
+  'category-intro': CategoryIntroSection,
+  'category-list': CategoryListSection,
+  'customization-note': CustomizationNoteSection,
   checklist: null,
   'numbered-steps': null,
   'faq-list': null,

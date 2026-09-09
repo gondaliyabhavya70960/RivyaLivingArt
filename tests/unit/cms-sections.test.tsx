@@ -119,6 +119,16 @@ const STRINGS = siteStrings([
   global_('EMPTY_STATE', 'disabled_one', 'Should never render', false),
 ])
 
+/**
+ * The paths these fixtures link to, treated as live.
+ *
+ * Phase 13 made a CTA conditional on its destination rendering: `SectionActions` drops a link to a
+ * path with nothing published on it, because that link 404s. These tests are about the pairing and
+ * the markup, not about publication state, so their targets are declared live — and the link rule
+ * has its own tests in `tests/unit/resolve-target.test.ts`.
+ */
+const LIVE_PATHS = new Set(['/contact', '/process', '/about', '/custom-commissions'])
+
 function renderSections(
   sections: readonly PageSection[],
   assets: MediaAsset[] = [],
@@ -126,6 +136,7 @@ function renderSections(
 ) {
   return render(
     <SectionList
+      livePaths={LIVE_PATHS}
       sections={sections}
       assets={new Map(assets.map((a) => [a.id, a]))}
       strings={STRINGS}

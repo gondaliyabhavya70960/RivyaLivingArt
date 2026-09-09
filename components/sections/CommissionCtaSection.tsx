@@ -35,6 +35,7 @@ export function CommissionCtaSection({
   media,
   strings,
   cloudName,
+  livePaths,
 }: SectionRenderProps): React.ReactElement | null {
   const payload = parseBlockPayload(commissionCtaBlock, section.payload)
   const capabilities = visibleEntries(payload.capabilities).filter(
@@ -55,7 +56,7 @@ export function CommissionCtaSection({
           ))}
         </Cluster>
       )}
-      <SectionActions section={section} />
+      <SectionActions section={section} livePaths={livePaths} />
     </Stack>
   )
 

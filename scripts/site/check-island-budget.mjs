@@ -121,7 +121,20 @@ function resolveSpecifier(specifier, fromFile) {
 }
 
 /**
- * Every module specifier in a file.
+ * Every module specifier in a file, split by how it is loaded.
+ *
+ * STATIC AND DYNAMIC ARE DIFFERENT FACTS ABOUT THE BUNDLE, which is why they are separated rather
+ * than merged. A static `import` of a Client Component puts that component in the ROUTE'S INITIAL
+ * JavaScript — every visitor downloads, parses and hydrates it whether or not the branch that
+ * renders it ever runs. An `import()` leaves a stub and fetches the module when something actually
+ * renders it. `ChapterMedia` is the case that forced the distinction: `/process` chapters may play
+ * one clip, the homepage's process band never does, and a static import would have charged the
+ * homepage for it.
+ *
+ * A LAZY ISLAND IS STILL REPORTED, never hidden. It is counted separately and printed, because
+ * "loaded on demand" is a claim worth being able to check — and because a module that is lazily
+ * imported in one place and statically imported in another is static, which this catches by
+ * walking both edge kinds.
  *
  * Comments are stripped and string literals kept — the specifier IS a string literal, and a
  * commented-out import must not pull a module into the graph. `import type` is included on
@@ -131,16 +144,19 @@ function resolveSpecifier(specifier, fromFile) {
  */
 function specifiersOf(source) {
   const masked = stripCommentsAndStrings(source, { strings: false })
-  const found = new Set()
-  const patterns = [
-    /\bfrom\s*['"]([^'"]+)['"]/g,
-    /\bimport\s*\(\s*['"]([^'"]+)['"]\s*\)/g,
-    /\bimport\s*['"]([^'"]+)['"]/g,
-  ]
-  for (const pattern of patterns) {
-    for (const match of masked.matchAll(pattern)) found.add(match[1])
+  const dynamicSpecifiers = new Set()
+  for (const match of masked.matchAll(/\bimport\s*\(\s*['"]([^'"]+)['"]\s*\)/g)) {
+    dynamicSpecifiers.add(match[1])
   }
-  return [...found]
+
+  const staticSpecifiers = new Set()
+  for (const pattern of [/\bfrom\s*['"]([^'"]+)['"]/g, /\bimport\s*['"]([^'"]+)['"]/g]) {
+    for (const match of masked.matchAll(pattern)) {
+      if (!dynamicSpecifiers.has(match[1])) staticSpecifiers.add(match[1])
+    }
+  }
+
+  return { static: [...staticSpecifiers], dynamic: [...dynamicSpecifiers] }
 }
 
 /** The directive, if the file opens with one. Anything after the first statement is not one. */
@@ -153,10 +169,17 @@ function directiveOf(source) {
 }
 
 const islands = new Map()
+const lazyIslands = new Map()
 const seen = new Set()
 
-/** Depth-first, and it does not stop at a client module: a client file may import another. */
-function walk(file, parentIsClient) {
+/**
+ * Depth-first, and it does not stop at a client module: a client file may import another.
+ *
+ * `lazy` travels down the graph. A module reached only through an `import()` is not in the initial
+ * bundle, and neither is anything it imports — so a client component three static imports below a
+ * dynamic one is still lazy.
+ */
+function walk(file, parentIsClient, lazy) {
   const key = relative(ROOT, file)
   const source = readFileSync(file, 'utf8')
   const kind = directiveOf(source)
@@ -164,19 +187,30 @@ function walk(file, parentIsClient) {
 
   // A client module imported by a SERVER module is a hydration boundary. The same module reached
   // through another client module is not — it is already inside that island's bundle.
-  if (kind === 'client' && !parentIsClient && !islands.has(key)) {
-    islands.set(key, relative(ROOT, file))
+  if (kind === 'client' && !parentIsClient) {
+    if (lazy) {
+      if (!islands.has(key)) lazyIslands.set(key, key)
+    } else {
+      islands.set(key, key)
+      lazyIslands.delete(key)
+    }
   }
 
-  if (seen.has(`${key}:${isClient}`)) return
-  seen.add(`${key}:${isClient}`)
+  if (seen.has(`${key}:${isClient}:${lazy}`)) return
+  seen.add(`${key}:${isClient}:${lazy}`)
 
-  for (const specifier of specifiersOf(source)) {
-    const resolved = resolveSpecifier(specifier, file)
-    if (resolved === null) continue
-    // Tests are not shipped, and a test importing a client component is not an island.
-    if (/\.(?:test|spec)\.[jt]sx?$/.test(resolved)) continue
-    walk(resolved, isClient)
+  const specifiers = specifiersOf(source)
+  for (const [list, isLazy] of [
+    [specifiers.static, lazy],
+    [specifiers.dynamic, true],
+  ]) {
+    for (const specifier of list) {
+      const resolved = resolveSpecifier(specifier, file)
+      if (resolved === null) continue
+      // Tests are not shipped, and a test importing a client component is not an island.
+      if (/\.(?:test|spec)\.[jt]sx?$/.test(resolved)) continue
+      walk(resolved, isClient, isLazy)
+    }
   }
 }
 
@@ -185,7 +219,7 @@ for (const entry of ENTRIES) {
     console.error(`✗ no entry at ${relative(ROOT, entry)} — the homepage route has moved`)
     process.exit(1)
   }
-  walk(entry, false)
+  walk(entry, false, false)
 }
 
 const problems = []
@@ -214,7 +248,13 @@ if (problems.length > 0) {
   process.exit(1)
 }
 
+const name = (key) => key.split('/').at(-2)
+const lazyNote =
+  lazyIslands.size === 0
+    ? ''
+    : `, plus ${lazyIslands.size} loaded on demand (${[...lazyIslands.keys()].map(name).join(', ')})`
+
 console.log(
-  `✓ island budget: ${islands.size} client island(s) across the homepage's layouts and page — ` +
-    [...islands.keys()].map((key) => key.split('/').at(-2)).join(', '),
+  `✓ island budget: ${islands.size} client island(s) in the initial bundle across the homepage's ` +
+    `layouts and page — ${[...islands.keys()].map(name).join(', ')}${lazyNote}`,
 )

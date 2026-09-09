@@ -277,7 +277,7 @@ and Phase 10's site shell then reuses it.
 | RC-213 | `MediaSlot` | material understanding | 10 | BUILT | §7.10 — moved from `components/sections/SectionMedia.tsx`, not written anew |
 | RC-214 | `HeroMotion` | brand perception | 11 | BUILT | §7.11 |
 | RC-215 | `MaterialSequence` | material understanding | 11 | BUILT | §7.12 |
-| RC-216 | `ChapterMedia` | storytelling | 12 | PLANNED | index only — composes RC-213/RC-207 |
+| RC-216 | `ChapterMedia` | storytelling | 12 | BUILT | §7.41 — a Client Component after all, and loaded on demand |
 | RC-217 | `ProductCard` | product understanding | 14 | PLANNED | §7.13 |
 | RC-218 | `CollectionCard` | navigation | 16 | PLANNED | §7.14 |
 | RC-219 | `PortfolioCard` | storytelling | 17 | PLANNED | §7.15 |
@@ -1304,3 +1304,22 @@ a checker nobody can trust:
 
 Adding a `components/sections/<Type>.tsx` renderer must **not** fail this checker; it is
 `tests/unit/cms-registry.test.ts` that has an opinion about it (§1).
+
+### 7.41 RC-216 — `ChapterMedia`
+
+| Field | Value |
+|---|---|
+| Registry ID | RC-216 |
+| Source | Rivya first-party |
+| Link | `components/patterns/ChapterMedia/index.tsx` |
+| Licence | N/A — first-party |
+| Dependencies | none (composes RC-233 `MediaVideo` and the four motion hooks) |
+| Page | `/process` |
+| Purpose | storytelling, material understanding |
+| Adaptation | A process chapter's optional motion layer, over a still the section already rendered. **It was planned as "index only — composes RC-213/RC-207" and is a Client Component instead**, because the thing it coordinates cannot be known on the server: `/process` is seven chapters and the library holds thirteen process videos, so the clip mounts only while its own chapter crosses the middle of the viewport, and a module-level claim keeps a second chapter from taking the slot while the first holds it |
+| Mobile behaviour | Below 768px no clip mounts at all; the still is the whole chapter |
+| Performance | **Not in any route's initial bundle.** `ProcessStepsSection` reaches it through `next/dynamic`, because that renderer is imported by every page with a process band — the homepage included — and a static import would have charged the homepage for an island it never renders. `scripts/site/check-island-budget.mjs` measured exactly that and failed the build; it now counts static and lazy islands separately, and reports this one as lazy |
+| Accessibility | The layer is `aria-hidden`: the still beneath carries the section's alt text and the clip is the same subject in motion, so announcing both reads the picture twice. Under `prefers-reduced-motion`, Data Saver, `deviceMemory < 4`, below 768px, or for a clip whose duration is unknown, no `<video>` element mounts and nothing is drawn — never a poster with a play control, which over a chapter's own still would be a second picture and a competing control |
+| Reviewed on | Phase 12 |
+| Reviewer | UNASSIGNED |
+| Verdict | FIRST_PARTY |

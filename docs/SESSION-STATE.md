@@ -8,6 +8,117 @@
 
 ## Current Phase
 
+**Phase 13 — Large Format Experience. CODE COMPLETE; NOT MEASURED.** `/large-format` renders, and
+the phase's real contribution is smaller and wider than the page: a link is now rendered only when
+its destination is live.
+
+Phase 12 is open as PR #16; Phase 11 merged as PR #15.
+
+### Phase 13: what is built
+
+**Three renderers** — `category-intro`, `category-list`, `customization-note` — so twenty of the
+twenty-eight blocks have one and `/large-format` needs no further block.
+
+**`lib/site/resolve-target.ts`.** An editor's `href` is a database value: `typedRoutes` cannot see
+it, and a page whose sections are all DRAFT answers 404 while looking exactly like a real path.
+`getSiteChrome` now carries `livePaths` — pages with at least one section the anonymous client can
+see — and `SectionActions` and `CategoryListSection` both drop a link whose destination is not in
+it, rendering the content without the anchor rather than hiding the content. Proved in both
+directions: with `/custom-commissions` unpublished the page has no anchors in its body at all, and
+publishing one section on it brings both CTAs back.
+
+**Entry-level marks on three of the six groupings**, where the seed flagged the whole list before.
+
+**A text-only card as a designed layout**, because one grouping has no photograph in the library —
+recorded as DQ-14 in `HIGGSFIELD_ASSET_STATUS.md`, not filled from a neighbouring family.
+
+### Phase 13: what is NOT built, and why
+
+- **`components/patterns/WideHero.tsx`**, which the phase document lists. It would be a second
+  implementation of what `HeroSection` and `ResponsiveMedia` already do: 21:9 desktop, 9:16 mobile,
+  two assets rather than a CSS crop, motion behind `HeroMotion`'s five gates. `/large-format`'s hero
+  uses the same `hero` block as every other page and needs nothing new. A wrapper would be a second
+  place for the art-direction rules to drift.
+- **The visual baselines**, for the fourth phase running: no media, so a snapshot records a page of
+  fallback wells.
+- **Any media binding.** The 18-asset `large-format` bucket is named in the phase document and
+  cannot be bound until the Higgsfield migration runs.
+
+### Phase 13: verification, as actually run
+
+| Step | Result |
+|---|---|
+| 1 · publish `/large-format` | ✓ 4 of 5 sections; the customization statement refused by the verification constraint |
+| 2 · entry-level query | ✓ exactly three withheld keys — conference, seating, architectural — and exactly the other three render |
+| 3 · anchors inside `<main>` | ✓ none at all, because `/custom-commissions` has nothing published; publishing one section on it brought both CTAs back, then it was returned to DRAFT |
+| 4 · `large-format.spec.ts` at 1440 and 390 | ✓ 12 assertions including the no-dead-anchor scan and zero serious axe violations |
+| 5 · `resolve-target.test.ts` | ✓ 9 cases: live, not-live, empty, `#`, trailing slash, query, fragment, external, protocol-relative, `/search` |
+| 6 · full unit suite | ✓ 942 tests |
+
+**The local cluster had to be restarted mid-phase** — the container had lost it. It lives at
+`/var/lib/postgresql/rivya/data` and its config says port 5432, so it must be started with an
+explicit override: `pg_ctl -D /var/lib/postgresql/rivya/data -o '-p 5433'`. Starting the packaged
+cluster instead takes 5432 and blocks it.
+
+---
+
+**Phase 12 — About + Process. CODE COMPLETE; NOT MEASURED.** `/about` and `/process` render from
+the CMS, and both are built to read as complete while the claims inside them wait for the owner.
+What is not done is the same pair Phase 11 left: the visual baselines and the Lighthouse numbers,
+both waiting on media that does not exist yet.
+
+Phase 11 merged as PR #15; Phase 10 as PR #14.
+
+### Phase 12: what is built
+
+**`scale-statement`** — seventeen of the twenty-eight blocks now have renderers, and `/about` needs
+no further block. It is the site's one editorial 21:9 crop, with a separate 4:5 mobile asset rather
+than a CSS crop of the wide one.
+
+**The `/process` chapter layout.** A chapter is ONE section carrying ONE stage, which is what lets
+the owner verify one stage without verifying the rest. Its number is its position among the
+chapters that rendered — `SectionList` counts per block type and passes an `ordinal`, because a
+renderer is a pure function of its own props and cannot see the page. Seeded as "01 — BRIEF", three
+verified chapters would have read 01, 04, 06; they now read 01, 02, 03, and the bands alternate on
+the same index.
+
+**`ChapterMedia` (RC-216)** — one clip plays at a time across the page, gated by
+`IntersectionObserver` on top of the five gates `HeroMotion` applies. Loaded through `next/dynamic`,
+because `ProcessStepsSection` is imported by every page with a process band.
+
+**A Studio verification banner** on every flagged section, quoting the section's own claim and, where
+the specification has wording, its wording: SEED §16's "Avoid specific production claims until
+verified" is seeded verbatim against step 04. The other six notes are this project's and are
+labelled as such in each row's `description`.
+
+### Phase 12: what is NOT built, and why
+
+- **Visual baselines** (`about.visual.spec.ts`, `process.visual.spec.ts`). Same reason as Phase 11:
+  `media_assets` is empty, so every image is the SEED §47 fallback well and a baseline would record
+  a composition that is not the composition.
+- **Any media binding**, so no chapter has a clip and `ChapterMedia` mounts nothing today. The
+  Phase 12 media table names every family; binding is an edit to `content/seed/media-bindings.ts`
+  once the Higgsfield migration has run.
+- **The `/custom-commissions` destination** of About's closing CTA. Phase 19 builds that page; the
+  route exists and answers 404 by design, which the About spec asserts as an acceptable outcome
+  rather than treating as a broken link.
+
+### Phase 12: verification, as actually run
+
+| Step | Result |
+|---|---|
+| 1 · `npm run check` | ✓ 28 gates |
+| 2 · publish `/about` and `/process` | ✓ 9 sections refused by the verification constraint — About's scale and bespoke, and all seven chapters. `/about` renders 3 of 5, `/process` its hero |
+| 3 · verify three chapters out of order (authored positions 3, 6, 8) | ✓ they render 01, 02, 03 with one inverted band, then were returned to the launch state |
+| 4 · `about.spec.ts` + `process.spec.ts` at 1440 and 390 | ✓ 22 assertions: seeded order, one `h1`, flagged sections absent, no forbidden copy, zero serious axe violations |
+| 5 · `process-numbering.test.tsx` at 1, 3, 5 and 7 chapters | ✓ contiguous numbering and correct alternation, through the real `SectionList` |
+| 6 · island budget after adding `ChapterMedia` | ✗ **failed** — the homepage would have shipped it. Fixed with `next/dynamic`; the gate now separates initial-bundle islands from lazy ones and was re-proved to fail on a sixth static island |
+| 7 · re-seed and confirm | ✓ 7 records updated, 9 verification notes written, chapters reshaped to `chapter` with label-only eyebrows |
+
+**933 unit tests**, 81 files.
+
+---
+
 **Phase 11 — Homepage + Material Experience. CODE COMPLETE; NOT MEASURED.** All thirteen SEED §10
 sections render from the CMS in seeded order, the two motion islands are built, and the homepage's
 client budget is measured and enforced. What is not done is the performance MEASUREMENT and the
@@ -1001,6 +1112,24 @@ the CTA library's reserved page id or add a D4 route leaf, and whether `analytic
 on `/studio` rather than a route segment.
 
 ## Next Exact Action
+
+**Start Phase 14 — Product Catalog**, or run the owner-side actions, which are now four phases old.
+
+`npm run media:migrate:higgsfield` still closes the visual-baseline and Lighthouse gaps for every
+page built so far. Phase 14 is the first phase that needs something else from the owner as well:
+`products` has no rows and no seed will ever add any.
+
+### Superseded — the Phase 13 plan
+
+**Start Phase 13 — Large Format Experience**, or run the owner-side actions below, which still
+unblock more than any code change can.
+
+The two measurement gaps Phase 11 opened are now two phases old, and both close the moment
+`npm run media:migrate:higgsfield` runs: no media means no visual baseline worth taking and no
+Lighthouse number worth recording. After that, `npm run seed:content` against hosted, then publish
+in Studio.
+
+### Superseded — the Phase 12 plan
 
 **Start Phase 12 — the remaining page compositions**, or run the two owner-side actions below,
 which unblock more than any code change can.

@@ -33,6 +33,7 @@ export function PortfolioStripSection({
   strings,
   cloudName,
   reference,
+  livePaths,
 }: SectionRenderProps): React.ReactElement | null {
   const cards = reference?.result.cards ?? []
 
@@ -73,7 +74,7 @@ export function PortfolioStripSection({
             cloudName={cloudName}
           />
         )}
-        <SectionActions section={section} />
+        <SectionActions section={section} livePaths={livePaths} />
       </Stack>
     </SectionShell>
   )

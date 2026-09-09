@@ -33,11 +33,11 @@ chrome has to render before any content exists. The public site has no such excu
 
 ---
 
-## 2. The 28 blocks, and the sixteen that are built
+## 2. The 28 blocks, and the twenty that are built
 
-`lib/cms/block-types.ts` lists the whole PHASE-05-09 §08 catalogue. Sixteen are built; 12 are
-declared `PLANNED` (amendment A8). Phase 08 built the first six; Phase 11 added the ten the
-homepage needed.
+`lib/cms/block-types.ts` lists the whole PHASE-05-09 §08 catalogue. Twenty are built; 8 are declared
+`PLANNED` (amendment A8). Phase 08 built the first six, Phase 11 added the ten the homepage needed,
+Phase 12 added `scale-statement` for `/about`, and Phase 13 added the three `/large-format` needed.
 
 | Built | Payload family it proves |
 |---|---|
@@ -53,6 +53,10 @@ homepage needed.
 | `material-palette`, `secondary-objects` | Repeating items with entry-level verification |
 | `commission-cta` | Chips, each verifiable on its own |
 | `three-d-resin` | A reserved slot for Phase 21's viewer that renders nothing while empty |
+| `scale-statement` | No payload; a 21:9 desktop crop paired with a separate 4:5 mobile asset |
+| `category-intro` | No payload; the sentence above a list, tighter to what follows than a statement |
+| `category-list` | Repeating entries with entry-level verification, an optional picture and an optional validated link |
+| `customization-note` | No payload, and the one renderer that refuses to draw itself unverified |
 
 A planned block cannot be added in Studio, and renders **nothing** on the public site — not a
 placeholder, not a grey box. Studio lists them separately so the outstanding catalogue is visible
@@ -308,6 +312,63 @@ So a repeating item carries its own flag, inside the payload:
 Every repeating item also carries a `key` — a stable name that does not move when the list is
 reordered. It becomes `data-entry-key` in the rendered markup, which is how a test can assert that
 a withheld item is absent by name rather than by a position that shifts.
+
+### Editorial groupings are not taxonomy
+
+`/large-format` lists six groupings — Dining & Statement Tables, Coffee & Centre Tables, and so on.
+**They are `category-list` entries in one section's payload, not rows in the `categories` table.**
+The two sets are disjoint and they behave differently:
+
+| | Editorial groupings | Taxonomy categories |
+|---|---|---|
+| Where | `page_sections.payload.entries` | The `categories` table |
+| Routes | **None.** They create no URLs | `/collection/[category]`, one each |
+| Edited in | The page's own editor | Studio → Catalogue → Categories |
+| Reordered by | Dragging within the section | Their own position column |
+
+A grouping may LINK to a taxonomy category, and often should. What it may never do is grow a route
+of its own: `tests/unit/site-routes.test.ts` fails the build if a `/large-format/*` route file
+appears, which is what would happen the first time somebody mistook one for the other.
+
+**A link is rendered only when its destination is live.** An entry's `href` is a path you type, and
+a page whose sections are all still DRAFT answers 404 — so `resolveInternalTarget` checks it against
+the pages that actually render, and a card whose target is not ready renders as text rather than as
+a dead link. Nothing is hidden: the words stay, only the anchor goes, and it comes back by itself
+the day the destination publishes. The same rule applies to a section's calls to action.
+
+### Writing a process chapter
+
+`/process` is eight sections: a hero and seven chapters. **A chapter is one section carrying one
+stage** — `process-steps` with its layout variant set to `chapter` — rather than one section
+holding a list of seven. That shape is what lets the owner verify one stage without verifying the
+rest, and it is why each chapter has its own picture and its own position.
+
+Three rules follow from it, and each exists because the obvious alternative was tried:
+
+- **Do not put a number in the copy.** The chapter's number is its position among the chapters that
+  actually rendered, drawn by the renderer. All seven are `OWNER_VERIFICATION_REQUIRED`, so a page
+  with the first, fourth and sixth verified would read "01 04 06" if the numbers were seeded — which
+  tells a visitor something has been removed and invites them to wonder what. Numbered by position
+  it reads 01 02 03, which is true: these are the stages Rivya has confirmed.
+- **Do not fill in `steps`.** A chapter's words are the section's own heading and body. The seed
+  used to copy them into a step as well, and the page rendered every sentence twice.
+- **The picture is the section's media**, chosen in the section's own image fields. `steps` stays for
+  the other shape — the homepage's process band is one section holding five stages.
+
+The bands alternate left/right on the rendered number, so three published chapters alternate from
+their own first band rather than inheriting the parity of the seven that were authored.
+
+### What a caption may say
+
+A caption, an alt text or a body on `/about` or `/process` describes **the material or the process
+in the frame** and nothing else. It never names a piece, a price, a dimension, a lead time, a
+client or an award. Every asset on both pages is `is_concept = true` — AI-developed concept media —
+so a caption that named a delivered object would be describing something that does not exist.
+
+`tests/e2e/{about,process}.spec.ts` scan the rendered page for a currency symbol, a number followed
+by `mm`, `cm`, `m`, `in` or `ft`, and the words *client*, *customer*, *award*, *warranty* and
+*guarantee*. The scan is deliberately blunt: it will occasionally object to an innocent sentence,
+and that is the cheaper failure.
 
 ### The inventory
 

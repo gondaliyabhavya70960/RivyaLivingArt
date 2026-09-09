@@ -142,7 +142,8 @@ describe('every block is well formed', () => {
 
 describe('built and planned', () => {
   /*
-   * SIXTEEN, IN BLOCK_TYPES ORDER — the six Phase 08 built and the ten Phase 11 added.
+   * TWENTY, IN BLOCK_TYPES ORDER — six from Phase 08, ten from Phase 11, `scale-statement` from
+   * Phase 12, and the three `/large-format` needed in Phase 13.
    *
    * THE LIST RATHER THAN THE COUNT, and in order. `BUILT_BLOCK_TYPES` is `BLOCK_TYPES.filter`, so
    * its order is the canonical block order and a block that moves in that list moves here; a
@@ -151,7 +152,7 @@ describe('built and planned', () => {
    * `components/sections/registry.ts` — which `tests/unit/cms-sections.test.tsx` asserts agrees
    * with this list in both directions.
    */
-  it('reports the sixteen built blocks', () => {
+  it('reports the twenty built blocks', () => {
     expect(BUILT_BLOCK_TYPES).toEqual([
       'hero',
       'manifesto',
@@ -167,6 +168,10 @@ describe('built and planned', () => {
       'journal-strip',
       'final-cta',
       'statement',
+      'scale-statement',
+      'category-intro',
+      'category-list',
+      'customization-note',
       'empty-state',
       'divider',
     ])
@@ -181,8 +186,8 @@ describe('built and planned', () => {
 
   it('reports the rest as planned', () => {
     const planned = BLOCK_TYPES.filter((type) => !isBuilt(type))
-    // 28 declared, 16 built. Phase 11 moved ten out of this list and none into it.
-    expect(planned).toHaveLength(12)
+    // 28 declared, 20 built. Phase 13 moved the three `/large-format` blocks out of this list.
+    expect(planned).toHaveLength(8)
     for (const type of planned) {
       expect(blockModule(type).state, type).toBe('PLANNED')
     }

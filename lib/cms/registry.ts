@@ -1,4 +1,7 @@
 import { categoryGridBlock } from '@/content/blocks/category-grid'
+import { categoryIntroBlock } from '@/content/blocks/category-intro'
+import { categoryListBlock } from '@/content/blocks/category-list'
+import { customizationNoteBlock } from '@/content/blocks/customization-note'
 import { commissionCtaBlock } from '@/content/blocks/commission-cta'
 import { finalCtaBlock } from '@/content/blocks/final-cta'
 import { journalStripBlock } from '@/content/blocks/journal-strip'
@@ -14,6 +17,7 @@ import { emptyStateBlock } from '@/content/blocks/empty-state'
 import { heroBlock } from '@/content/blocks/hero'
 import { PLANNED_BLOCKS } from '@/content/blocks/planned'
 import { processStepsBlock } from '@/content/blocks/process-steps'
+import { scaleStatementBlock } from '@/content/blocks/scale-statement'
 import { statementBlock } from '@/content/blocks/statement'
 
 import { type AnyBlockModule, type BlockModule } from './block-module'
@@ -44,6 +48,10 @@ const BUILT_BLOCKS = {
   'secondary-objects': secondaryObjectsBlock,
   'journal-strip': journalStripBlock,
   'final-cta': finalCtaBlock,
+  'scale-statement': scaleStatementBlock,
+  'category-intro': categoryIntroBlock,
+  'category-list': categoryListBlock,
+  'customization-note': customizationNoteBlock,
   statement: statementBlock,
   'empty-state': emptyStateBlock,
   divider: dividerBlock,

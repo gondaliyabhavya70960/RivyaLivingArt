@@ -9,6 +9,7 @@ import {
   getContactDetailsSection,
   listGlobalContent,
   listNavigationItems,
+  listPublicPagePaths,
 } from '@/lib/supabase/repositories/cms'
 import { listMediaAssetsByIds } from '@/lib/supabase/repositories/media'
 import type { Category, MediaAsset } from '@/lib/supabase/schemas'
@@ -62,16 +63,30 @@ export type SiteChrome = {
   readonly categoryMedia: ReadonlyMap<string, MediaAsset>
   /** From the one `contact-details` section. Null until the owner verifies it. */
   readonly contact: ContactDetails | null
+  /**
+   * The paths a visitor can actually load right now — pages with at least one section the
+   * anonymous client can see.
+   *
+   * NARROWER THAN THE ROUTE MAP, ON PURPOSE. `/custom-commissions` has a route file and a `pages`
+   * row and answers 404, because every section on it is still DRAFT. `resolveInternalTarget` uses
+   * this set to decide whether an editor's link may be an anchor or must render as plain text, and
+   * the route map cannot answer that question.
+   *
+   * It rides on the chrome load because it is one query per request for something several
+   * renderers need, and `getSiteChrome` is already memoised per request.
+   */
+  readonly livePaths: ReadonlySet<string>
 }
 
 async function loadSiteChrome(): Promise<SiteChrome> {
   const client = createPublicClient()
 
-  const [globalRows, navRows, categories, contactSection] = await Promise.all([
+  const [globalRows, navRows, categories, contactSection, publicPaths] = await Promise.all([
     listGlobalContent(client),
     listNavigationItems(client),
     listCategories(client),
     getContactDetailsSection(client),
+    listPublicPagePaths(client),
   ])
 
   // The heroes of the categories that have one. Two of the seven do not — Phase 09 recorded both
@@ -91,6 +106,7 @@ async function loadSiteChrome(): Promise<SiteChrome> {
     categories,
     categoryMedia,
     contact: contactDetailsOf(contactSection),
+    livePaths: new Set(publicPaths.map((page) => page.path)),
   }
 }
 

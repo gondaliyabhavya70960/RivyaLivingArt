@@ -57,8 +57,12 @@ export const largeFormatSeed: SeedModule = {
       blockType: 'category-list',
       position: 3,
       fact: 'BRAND_COPY',
-      // Three of the six are marked by §12. See the header for why the third counts.
-      verify: true,
+      /*
+       * NOT FLAGGED WHOLE ANY MORE. Phase 13 moved these three marks onto the entries themselves
+       * (`lib/cms/entry-visibility.ts`): flagging the section refused the whole list, taking
+       * Dining, Coffee and Consoles off the page to withhold the other three. The section's own
+       * heading claims nothing and publishes; the three unconfirmed groupings render nothing.
+       */
       payload: {
         entries: [
           {
@@ -84,18 +88,24 @@ export const largeFormatSeed: SeedModule = {
             title: 'Conference & Commercial Tables',
             description:
               'Larger communal surfaces create opportunities for custom dimensions, material direction and strong visual identity.',
+            // §12 marks this grouping OWNER_VERIFICATION_REQUIRED outright. It is also the one grouping with no photograph in the library — recorded as a gap, never filled from a neighbouring family — so it renders as a text-only card once confirmed.
+            owner_verification: 'OWNER_VERIFICATION_REQUIRED',
           },
           {
             key: 'sculptural-seating',
             title: 'Sculptural Seating',
             description:
               'Seating conceived with greater emphasis on silhouette and object character.',
+            // §12 carries the conditional "mark if not yet produced", which the seed cannot answer. The safe reading of a question nobody has answered is the one that refuses to publish.
+            owner_verification: 'OWNER_VERIFICATION_REQUIRED',
           },
           {
             key: 'architectural-and-statement-pieces',
             title: 'Architectural & Statement Pieces',
             description:
               'Large wall compositions, feature surfaces and custom objects intended for spatial integration.',
+            // §12 marks this grouping OWNER_VERIFICATION_REQUIRED outright.
+            owner_verification: 'OWNER_VERIFICATION_REQUIRED',
           },
         ],
       },

@@ -45,6 +45,8 @@ export type PageEditorProps = {
   readonly assets: readonly PickerAsset[]
   readonly slotKeys: readonly string[]
   readonly permissions: readonly Permission[]
+  /** Seeded verification notes by `seed_key`, loaded on the server. See `VerificationBanner`. */
+  readonly verificationNotes?: ReadonlyMap<string, string>
 }
 
 export function PageEditor({
@@ -54,6 +56,7 @@ export function PageEditor({
   assets,
   slotKeys,
   permissions,
+  verificationNotes,
 }: PageEditorProps): React.ReactElement {
   const [adding, setAdding] = React.useState(false)
   const [addError, setAddError] = React.useState<string | null>(null)
@@ -103,6 +106,7 @@ export function PageEditor({
         canWrite={canWrite}
         canDelete={canDelete}
         permissions={permissions}
+        verificationNotes={verificationNotes}
         onSave={(values: SectionFormValues) => updateSectionAction(values).then(toOutcome)}
         onDelete={(sectionId) => deleteSectionAction({ sectionId, pageId }).then(toOutcome)}
         onReorder={(sectionIds) => reorderSectionsAction({ pageId, sectionIds }).then(toOutcome)}

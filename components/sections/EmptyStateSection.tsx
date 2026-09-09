@@ -26,6 +26,7 @@ import type { SectionRenderProps } from './types'
 export function EmptyStateSection({
   section,
   strings,
+  livePaths,
 }: SectionRenderProps): React.ReactElement | null {
   const payload = parseBlockPayload(emptyStateBlock, section.payload)
   if (payload.content_key === null) return null
@@ -40,7 +41,9 @@ export function EmptyStateSection({
         <Text size="lg" tone="secondary">
           {message}
         </Text>
-        {payload.show_cta ? <SectionActions section={section} align="centre" /> : null}
+        {payload.show_cta ? (
+          <SectionActions section={section} livePaths={livePaths} align="centre" />
+        ) : null}
       </Stack>
     </SectionShell>
   )

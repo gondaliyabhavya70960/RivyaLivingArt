@@ -38,6 +38,7 @@ export function SelectedWorksSection({
   strings,
   cloudName,
   reference,
+  livePaths,
 }: SectionRenderProps): React.ReactElement | null {
   /*
    * THE PAYLOAD IS NOT PARSED HERE, and its absence is the seam working rather than an omission.
@@ -83,7 +84,7 @@ export function SelectedWorksSection({
             cloudName={cloudName}
           />
         )}
-        <SectionActions section={section} />
+        <SectionActions section={section} livePaths={livePaths} />
       </Stack>
     </SectionShell>
   )
