@@ -6,6 +6,7 @@ import { NotFoundError } from '../errors'
 import {
   portfolioProjectMediaSchema,
   portfolioProjectSchema,
+  type PortfolioProject,
   type PortfolioProjectMedia,
 } from '../schemas'
 import { parseRow, parseRows, toRepositoryError } from './support'
@@ -118,4 +119,39 @@ export async function getProjectIdForPage(client: Client, pageId: string): Promi
 
   if (error) throw toRepositoryError(ENTITY, 'for-page', pageId, error)
   return data?.id ?? null
+}
+
+/**
+ * Every project, for the Studio. All statuses, all columns.
+ *
+ * `'*'` IS CORRECT HERE AND WOULD BE WRONG ON A PUBLIC READ. `0152` grants anon a named column list
+ * that excludes `evidence_note`, so `select *` is refused for a visitor — deliberately, so a
+ * careless public read fails loudly. Staff hold the full grant, and the Verification panel needs
+ * that column: it is what the owner looks at while deciding whether the project is real.
+ */
+export async function listProjectsForStudio(client: Client): Promise<PortfolioProject[]> {
+  const { data, error } = await client
+    .from('portfolio_projects')
+    .select('*')
+    .order('sort_order', { ascending: true })
+    .order('title', { ascending: true })
+
+  if (error) throw toRepositoryError(ENTITY, 'list', 'studio', error)
+  return parseRows(ENTITY, portfolioProjectSchema, data ?? [])
+}
+
+/** One project for the editor, by id. NotFoundError covers "no such row" and "not visible to you". */
+export async function getProjectByIdForStudio(
+  client: Client,
+  id: string,
+): Promise<PortfolioProject> {
+  const { data, error } = await client
+    .from('portfolio_projects')
+    .select('*')
+    .eq('id', id)
+    .maybeSingle()
+
+  if (error) throw toRepositoryError(ENTITY, 'get', id, error)
+  if (data === null) throw new NotFoundError(ENTITY, id)
+  return parseRow(ENTITY, portfolioProjectSchema, data)
 }

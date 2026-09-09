@@ -2304,6 +2304,101 @@ export const STUDIO_STRINGS = {
     value: 'New collection',
     contentKey: 'studio_help.catalog_collections_new_heading',
   },
+  // --- Phase 17: the portfolio and testimonials -------------------------------------------------
+  'studio.portfolio.caption': {
+    value: 'Delivered projects. Every one is a claim that Rivya made something for someone.',
+    contentKey: 'studio_help.portfolio_caption',
+  },
+  'studio.portfolio.emptyHeading': {
+    value: 'No projects yet',
+    contentKey: 'studio_help.portfolio_empty_heading',
+  },
+  'studio.portfolio.emptyBody': {
+    value:
+      'The portfolio is empty because no project has been entered and verified. That is the correct state, not a fault — the public page says so in its own words. Add a project when there is real work to show.',
+    contentKey: 'studio_help.portfolio_empty_body',
+  },
+  'studio.portfolio.colTitle': {
+    value: 'Project',
+    contentKey: 'studio_help.portfolio_col_title',
+  },
+  'studio.portfolio.colClient': {
+    value: 'Client',
+    contentKey: 'studio_help.portfolio_col_client',
+  },
+  'studio.portfolio.colConsent': {
+    value: 'Consent',
+    contentKey: 'studio_help.portfolio_col_consent',
+  },
+  'studio.portfolio.colStatus': {
+    value: 'Status',
+    contentKey: 'studio_help.portfolio_col_status',
+  },
+  'studio.portfolio.untitled': {
+    value: 'Untitled project',
+    contentKey: 'studio_help.portfolio_untitled',
+  },
+  'studio.portfolio.noClient': {
+    value: 'Not a client project',
+    contentKey: 'studio_help.portfolio_no_client',
+  },
+  'studio.testimonials.caption': {
+    value: 'Quotes from real people. Never written in-house.',
+    contentKey: 'studio_help.testimonials_caption',
+  },
+  'studio.testimonials.emptyHeading': {
+    value: 'No testimonials yet',
+    contentKey: 'studio_help.testimonials_empty_heading',
+  },
+  'studio.testimonials.emptyBody': {
+    value:
+      'A testimonial is something a real person said and agreed to have published. There is no way to write one here, and that is deliberate: an invented quote is the plainest kind of fabricated evidence.',
+    contentKey: 'studio_help.testimonials_empty_body',
+  },
+  'studio.testimonials.colQuote': {
+    value: 'Quote',
+    contentKey: 'studio_help.testimonials_col_quote',
+  },
+  'studio.testimonials.colAttribution': {
+    value: 'Attributed to',
+    contentKey: 'studio_help.testimonials_col_attribution',
+  },
+  'studio.testimonials.unattributed': {
+    value: 'Unattributed',
+    contentKey: 'studio_help.testimonials_unattributed',
+  },
+
+  // --- Phase 17: the verification panel ---------------------------------------------------------
+  'studio.verification.heading': {
+    value: 'Before this can be published',
+    contentKey: 'studio_help.verification_heading',
+  },
+  'studio.verification.ready': {
+    value: 'Everything this needs is in place.',
+    contentKey: 'studio_help.verification_ready',
+  },
+  'studio.verification.ownerOnly': {
+    value: 'Only an owner or an administrator can clear this.',
+    contentKey: 'studio_help.verification_owner_only',
+  },
+  'studio.verification.gate.owner_verification': {
+    value: 'Nobody has confirmed this happened.',
+    contentKey: 'studio_help.verification_gate_owner',
+  },
+  'studio.verification.gate.client_consent': {
+    value: 'This names a client, and their consent is not recorded as granted.',
+    contentKey: 'studio_help.verification_gate_client_consent',
+  },
+  'studio.verification.gate.attribution_consent': {
+    value: 'This names a person, and their consent is not recorded as granted.',
+    contentKey: 'studio_help.verification_gate_attribution',
+  },
+  'studio.verification.gate.consent_withdrawn': {
+    value:
+      'Consent has been withdrawn. This cannot be published, and publishing it will archive it instead.',
+    contentKey: 'studio_help.verification_gate_withdrawn',
+  },
+
   // --- Phase 16: the collection editor ---------------------------------------------------------
   'studio.catalog.collection.back': {
     value: 'All collections',

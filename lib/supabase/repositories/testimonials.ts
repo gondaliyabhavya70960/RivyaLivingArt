@@ -35,3 +35,21 @@ export async function listPublishedTestimonials(client: Client): Promise<Testimo
   if (error) throw toRepositoryError(ENTITY, 'list', 'published', error)
   return parseRows(ENTITY, testimonialSchema, data ?? [])
 }
+
+/**
+ * Every testimonial, for the Studio. All statuses.
+ *
+ * Returns `[]` today, and the Studio screen says why in words rather than showing an error state:
+ * an empty testimonials table is the correct condition of a business that has not collected any,
+ * not a failure to load.
+ */
+export async function listTestimonialsForStudio(client: Client): Promise<Testimonial[]> {
+  const { data, error } = await client
+    .from('testimonials')
+    .select('*')
+    .order('sort_order', { ascending: true })
+    .order('id', { ascending: true })
+
+  if (error) throw toRepositoryError(ENTITY, 'list', 'studio', error)
+  return parseRows(ENTITY, testimonialSchema, data ?? [])
+}
