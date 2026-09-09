@@ -28,4 +28,12 @@ export {
   type TokenValues,
   type WhatsAppToken,
 } from './templates'
-export { MAX_ENCODED_URL_LENGTH, PROTECTED_TOKEN, shorten, type ShortenResult } from './shorten'
+export {
+  dropEmptyTokenLines,
+  MAX_ENCODED_URL_LENGTH,
+  PROTECTED_TOKEN,
+  shorten,
+  type ShortenLevel,
+  type ShortenResult,
+} from './shorten'
+export { CONTACT_KEYS, normaliseE164, resolveWhatsAppNumber } from './number'

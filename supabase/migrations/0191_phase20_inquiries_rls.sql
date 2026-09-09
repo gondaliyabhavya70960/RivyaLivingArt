@@ -79,14 +79,20 @@ create policy inquiry_attachments_select_staff on inquiry_attachments for select
 -- ----------------------------------------------------------------------------------------------
 -- inquiry_events — shape C
 -- ----------------------------------------------------------------------------------------------
--- DECLARED DEVIATION. No anon policy and no write policy for any session role. The timeline is
--- written by SECURITY DEFINER triggers and refuses UPDATE and DELETE outright; a session able to
--- append an event by hand could record a reply that never happened.
--- read: inquiries.read (owner, admin, editor, merchandiser, viewer)
+-- DECLARED DEVIATION. No anon policy, and no UPDATE or DELETE policy for any session role. Staff
+-- holding inquiries.write may APPEND an event; nobody may change one, because a log that can be
+-- edited cannot answer what happened.
+-- read: inquiries.read (owner, admin, editor, merchandiser, viewer)   write: inquiries.write (owner, admin, merchandiser)
 
 -- No anon policy. Shape C tables are never publicly readable.
 
 create policy inquiry_events_select_staff on inquiry_events for select
   to authenticated using (public.has_role('owner','admin','editor','merchandiser','viewer'));
 
--- No write policy for authenticated: see the deviation note above.
+create policy inquiry_events_insert_staff on inquiry_events for insert
+  to authenticated with check (public.has_role('owner','admin','merchandiser'));
+
+-- NO UPDATE POLICY. APPEND ONLY. A trigger refuses UPDATE and DELETE for every role including the
+-- owner, so an update policy would name a path the database will not take. Staff APPEND — a note,
+-- an export record — and the timeline is what happened rather than what somebody later wished had
+-- happened.

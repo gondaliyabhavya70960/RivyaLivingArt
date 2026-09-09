@@ -353,10 +353,17 @@ function policiesFor(table: ManagedTable): string {
     out.push(`create policy ${table}_insert_staff on ${table} for insert`)
     out.push(`  to authenticated with check (${scoped(hasRole(writeRoles))});`)
     out.push('')
-    out.push(`create policy ${table}_update_staff on ${table} for update`)
-    out.push(`  to authenticated using  (${scoped(hasRole(writeRoles))})`)
-    out.push(`                with check (${scoped(hasRole(writeRoles))});`)
-    out.push('')
+    if (policy.writeIsInsertOnly) {
+      for (const line of wrap(`NO UPDATE POLICY. ${policy.writeIsInsertOnly.why}`, 96)) {
+        out.push(`-- ${line}`)
+      }
+      out.push('')
+    } else {
+      out.push(`create policy ${table}_update_staff on ${table} for update`)
+      out.push(`  to authenticated using  (${scoped(hasRole(writeRoles))})`)
+      out.push(`                with check (${scoped(hasRole(writeRoles))});`)
+      out.push('')
+    }
   } else {
     out.push(`-- No write policy for authenticated: see the deviation note above.`)
     out.push('')

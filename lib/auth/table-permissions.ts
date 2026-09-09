@@ -38,6 +38,15 @@ export type TablePolicy = {
   /** Governs DELETE. Absent means no delete policy — nobody may delete through an ordinary session. */
   deletePermission?: Permission
   /**
+   * The write permission covers INSERT and NOTHING ELSE, because the table is append-only.
+   *
+   * `inquiry_events` is the case: a trigger refuses UPDATE and DELETE outright, so an update policy
+   * would describe a path the database will not take. Shipping one anyway is not harmless — a
+   * generated file is read as a statement of what is possible, and a dead policy tells the next
+   * reader that a session can edit the timeline.
+   */
+  writeIsInsertOnly?: { why: string }
+  /**
    * The anon/authenticated SELECT predicate for a shape-A table, when `status = 'PUBLISHED'` is
    * not the whole story.
    *
@@ -755,10 +764,18 @@ export const TABLE_POLICIES = {
     policiesIn: PHASE_20_POLICIES,
     shape: 'C',
     readPermission: 'inquiries.read',
+    writePermission: 'inquiries.write',
+    writeIsInsertOnly: {
+      why:
+        'APPEND ONLY. A trigger refuses UPDATE and DELETE for every role including the owner, so an ' +
+        'update policy would name a path the database will not take. Staff APPEND — a note, an ' +
+        'export record — and the timeline is what happened rather than what somebody later wished ' +
+        'had happened.',
+    },
     deviation:
-      'No anon policy and no write policy for any session role. The timeline is written by SECURITY ' +
-      'DEFINER triggers and refuses UPDATE and DELETE outright; a session able to append an event ' +
-      'by hand could record a reply that never happened.',
+      'No anon policy, and no UPDATE or DELETE policy for any session role. Staff holding ' +
+      'inquiries.write may APPEND an event; nobody may change one, because a log that can be ' +
+      'edited cannot answer what happened.',
   },
 } as const satisfies Record<string, TablePolicy>
 
