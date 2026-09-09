@@ -43,6 +43,11 @@ describe('seed_key identity', () => {
       // `global:` because they came from a different phase for a different reason: `global.ts`
       // holds what the SEED specification supplies, and these are the words a component needed.
       'chrome',
+      // Phase 16. The ten FEAT §9 concepts. `collection:` rather than `page:collection.<slug>` —
+      // which `collections.ts` already uses for the seven CATEGORY pages — because these address a
+      // `collections` ROW and those address a `pages` row. The two families would otherwise be one
+      // prefix apart while pointing at different tables.
+      'collection',
       'commission-form',
       'faq',
       'global',
