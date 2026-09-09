@@ -53,6 +53,7 @@ export const DYNAMIC_PUBLIC_ROUTES = [
   '/collection/[category]',
   '/product/[slug]',
   '/collections/[slug]',
+  '/portfolio/[slug]',
 ] as const
 
 export type DynamicPublicRoute = (typeof DYNAMIC_PUBLIC_ROUTES)[number]

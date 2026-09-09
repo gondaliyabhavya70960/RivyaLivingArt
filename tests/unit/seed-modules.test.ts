@@ -230,10 +230,29 @@ describe('D10 — nothing fabricated', () => {
     }
   })
 
-  /** Portfolio ships an empty state and zero projects, which is §17's rule in capitals. */
-  it('seeds no portfolio projects', () => {
+  /**
+   * Portfolio ships an empty state and zero projects, which is §17's rule in capitals.
+   *
+   * THIS USED TO ASSERT A SECTION COUNT, and the count was a proxy for the rule rather than the rule
+   * itself: it read `toHaveLength(2)` — hero and empty state — which broke the moment Phase 17 gave
+   * the page a legitimate third band. A test that fails when the page gains a section is testing the
+   * page's shape, not "no fabricated projects". So it now asserts the actual rule, in both halves:
+   * nothing anywhere seeds a project or a testimonial, and this page still explains its own
+   * emptiness.
+   *
+   * `portfolio_projects` AND `testimonials` ARE NOT IN `SeedableTable`, so a record targeting one
+   * would not compile — this is the runtime half of that, which also covers a record built
+   * dynamically or cast.
+   */
+  it('seeds no portfolio projects and no testimonials, anywhere', () => {
+    const forbidden = RECORDS.filter(
+      (r) => r.table === ('portfolio_projects' as string) || r.table === ('testimonials' as string),
+    )
+    expect(forbidden.map((r) => r.seedKey)).toEqual([])
+  })
+
+  it('keeps the portfolio landing explaining its own emptiness', () => {
     const portfolio = seedModules.find((m) => m.name === 'portfolio')
-    expect(portfolio?.records).toHaveLength(2)
     expect(portfolio?.records.some((r) => r.fields.block_type === 'empty-state')).toBe(true)
   })
 })

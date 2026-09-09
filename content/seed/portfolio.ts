@@ -45,11 +45,34 @@ export const portfolioSeed: SeedModule = {
       payload: { is_video: false, autoplay: false, scrim: 35 },
     }),
 
+    /**
+     * The strip of published projects — Phase 17.
+     *
+     * IT DRAWS NOTHING TODAY AND SAYS NOTHING ABOUT IT. `show_empty_state` is false because the
+     * block below already carries §28's sentence; a strip that also fell back would print it twice.
+     * With zero published projects this section is therefore invisible, and the page reads exactly
+     * as it did before Phase 17 — which is the correct behaviour for a portfolio with no projects.
+     *
+     * ITS KEY AND ITS POSITION DISAGREE ON PURPOSE. The keys on this page embed the order they were
+     * written in — `portfolio.01.hero`, `portfolio.02.empty-state` — and a seed key is an IDENTITY
+     * that must never change once shipped: renaming one orphans the existing row and inserts a
+     * duplicate beside it. So this band takes the next free number, `03`, and sorts at position 2.
+     * The empty state keeps the key it shipped with and moves to position 3.
+     */
+    section({
+      page: PAGE,
+      key: 'portfolio.03.projects',
+      blockType: 'portfolio-strip',
+      position: 2,
+      fact: 'BRAND_COPY',
+      payload: { limit: 6, show_empty_state: false },
+    }),
+
     section({
       page: PAGE,
       key: 'portfolio.02.empty-state',
       blockType: 'empty-state',
-      position: 2,
+      position: 3,
       // §17's own two lines, used where §28 supplies nothing: the calls to action.
       ctaLabel: 'View the Collection',
       ctaUrl: '/collection',

@@ -8,6 +8,8 @@ import { ReferenceCards } from './ReferenceCards'
 import { SectionActions } from './SectionActions'
 import { SectionCopy } from './SectionCopy'
 import { SectionShell } from './SectionShell'
+import { parseBlockPayload } from '@/lib/cms/registry'
+import { portfolioStripBlock } from '@/content/blocks/portfolio-strip'
 import type { SectionRenderProps } from './types'
 
 /**
@@ -36,6 +38,9 @@ export function PortfolioStripSection({
   livePaths,
 }: SectionRenderProps): React.ReactElement | null {
   const cards = reference?.result.cards ?? []
+  // `?? true` preserves what every row written before this key existed already did.
+  const showEmptyState =
+    parseBlockPayload(portfolioStripBlock, section.payload).show_empty_state ?? true
 
   return (
     <SectionShell section={section} spacing="lg">
@@ -55,7 +60,12 @@ export function PortfolioStripSection({
           />
         )}
         {cards.length === 0 ? (
-          reference === undefined ? null : (
+          /*
+           * `show_empty_state` false means a neighbour already says it. `/portfolio` carries the
+           * seeded `empty-state` block with the same content key, and two identical sentences
+           * stacked on one page reads as a bug rather than as emphasis.
+           */
+          reference === undefined || showEmptyState === false ? null : (
             <EditorialFallback
               strings={strings}
               contentKey={FALLBACK_KEY}
