@@ -156,7 +156,7 @@ describe('built and planned', () => {
    * `components/sections/registry.ts` — which `tests/unit/cms-sections.test.tsx` asserts agrees
    * with this list in both directions.
    */
-  it('reports the twenty-five built blocks', () => {
+  it('reports the twenty-six built blocks', () => {
     expect(BUILT_BLOCK_TYPES).toEqual([
       'hero',
       'manifesto',
@@ -181,6 +181,9 @@ describe('built and planned', () => {
       'project-gallery',
       'testimonial-strip',
       'commission-configurator',
+      // Phase 20. Its position is the catalogue's, not this list's: `contact-form` sits beside
+      // `contact-details` among the query-backed blocks in `BLOCK_TYPES`.
+      'contact-form',
       'empty-state',
       'divider',
     ])
@@ -195,9 +198,11 @@ describe('built and planned', () => {
 
   it('reports the rest as planned', () => {
     const planned = BLOCK_TYPES.filter((type) => !isBuilt(type))
-    // 33 declared, 25 built. Phase 13 moved the three `/large-format` blocks out of this list;
-    // Phases 16, 17 and 19 added five more that are built on arrival, so this count is unchanged.
-    expect(planned).toHaveLength(8)
+    // 33 declared, 26 built. Phase 13 moved the three `/large-format` blocks out of this list;
+    // Phases 16, 17 and 19 added five more that were built on arrival, so the count held at 8 until
+    // Phase 20 PROMOTED one: `contact-form` was declared in Phase 08 and seeded in Phase 09, and is
+    // the first block in this repository to move from planned to built rather than to arrive built.
+    expect(planned).toHaveLength(7)
     for (const type of planned) {
       expect(blockModule(type).state, type).toBe('PLANNED')
     }

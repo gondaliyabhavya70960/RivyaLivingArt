@@ -71,11 +71,6 @@ export const PLANNED_BLOCKS = {
     'Contact details',
     'Address, hours and channels from global content.',
   ),
-  'contact-form': planned(
-    'contact-form',
-    'Contact form',
-    'The inquiry form, which persists before any handoff.',
-  ),
   'rich-text': planned('rich-text', 'Rich text', 'A long-form prose band.'),
   'media-split': planned('media-split', 'Media split', 'An image beside copy, either way round.'),
   quote: planned('quote', 'Quote', 'A pulled quotation with an attribution.'),

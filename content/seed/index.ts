@@ -6,6 +6,7 @@ import { collectionsSeed } from './collections'
 import { commerceLabelsSeed } from './commerce-labels'
 import { commissionsSeed } from './commissions'
 import { configuratorUiSeed } from './configurator-ui'
+import { inquiryUiSeed } from './inquiry-ui'
 import { contactSeed } from './contact'
 import { faqSeed } from './faq'
 import { globalSeed } from './global'
@@ -79,6 +80,7 @@ export const seedModules: readonly SeedModule[] = [
   // The configurator's chrome before the templates that will be rendered inside it. Order is not
   // load-bearing here — neither references the other — but reading order should match the page's.
   configuratorUiSeed,
+  inquiryUiSeed,
   commissionsSeed,
   processSeed,
   portfolioSeed,
