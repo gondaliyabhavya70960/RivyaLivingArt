@@ -212,6 +212,19 @@ export const contentColumns = {
   published_by: uuidSchema.nullable(),
 }
 
+/**
+ * The demo marker (migration `0180`). Present on the six tables that can hold placeholder rows.
+ *
+ * NOT A VISIBILITY FLAG, and no consumer should read it as one. A demo product is published,
+ * readable and rendered exactly like a real one — a placeholder catalogue that behaved differently
+ * would tell the owner nothing about the site they are evaluating. What the column carries is
+ * IDENTITY: this row is placeholder, it is listed in `docs/content/DEMO_CONTENT.md`, and
+ * `npm run demo:purge` will remove it. Studio shows a badge; nothing on the public site reads it.
+ */
+export const demoColumn = {
+  is_demo: z.boolean(),
+}
+
 /** Tier C — seed columns. Present on every table a content/seed module writes to. */
 export const seedColumns = {
   seed_key: z.string().nullable(),

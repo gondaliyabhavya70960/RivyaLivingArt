@@ -9,6 +9,7 @@ import {
   relationEntitySchema,
   relationKindSchema,
   contentColumns,
+  demoColumn,
   editionStateSchema,
   factClassificationSchema,
   formFieldTypeSchema,
@@ -257,6 +258,7 @@ export const productSchema = z.object({
   ...auditColumns,
   ...contentColumns,
   ...seedColumns,
+  ...demoColumn,
 }) satisfies z.ZodType<Tables<'products'>>
 
 /**
@@ -357,6 +359,7 @@ export const portfolioProjectSchema = z.object({
    * something; there is no honest null.
    */
   fact_classification: factClassificationSchema,
+  ...demoColumn,
 }) satisfies z.ZodType<Tables<'portfolio_projects'>>
 
 export type PortfolioProject = z.infer<typeof portfolioProjectSchema>
@@ -397,6 +400,7 @@ export const testimonialSchema = z.object({
   ...contentColumns,
   /** NOT NULL here too — see the note on `portfolioProjectSchema`. */
   fact_classification: factClassificationSchema,
+  ...demoColumn,
 }) satisfies z.ZodType<Tables<'testimonials'>>
 
 export type Testimonial = z.infer<typeof testimonialSchema>
@@ -467,6 +471,7 @@ export const journalArticleSchema = z.object({
   ...seedColumns,
   /** NOT NULL on this table — see the note on `portfolioProjectSchema`. */
   fact_classification: factClassificationSchema,
+  ...demoColumn,
 }) satisfies z.ZodType<Tables<'journal_articles'>>
 
 export type JournalArticle = z.infer<typeof journalArticleSchema>

@@ -11,7 +11,7 @@ import { DataTable } from '@/components/studio/DataTable'
 import { SelectField, TextField } from '@/components/studio/FormField'
 import { PageHeader } from '@/components/studio/PageHeader'
 import { RelativeTime } from '@/components/studio/RelativeTime'
-import { StatusPill } from '@/components/studio/StatusPill'
+import { DemoPill, StatusPill } from '@/components/studio/StatusPill'
 import { StudioPage, studioMetadata } from '@/components/studio/StudioPage'
 import { t } from '@/components/studio/strings'
 import { roleHasPermission } from '@/lib/auth/permissions'
@@ -113,7 +113,12 @@ export default async function Page() {
             {
               id: 'status',
               header: t('studio.journal.colStatus'),
-              cell: (article) => <StatusPill status={article.status} />,
+              cell: (article) => (
+                <span className="flex flex-wrap items-center gap-1">
+                  <StatusPill status={article.status} />
+                  <DemoPill isDemo={article.is_demo} />
+                </span>
+              ),
             },
           ]}
         />

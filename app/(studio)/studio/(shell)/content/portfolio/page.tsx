@@ -10,7 +10,7 @@ import { ActionForm } from '@/components/studio/ActionForm'
 import { DataTable } from '@/components/studio/DataTable'
 import { TextField } from '@/components/studio/FormField'
 import { PageHeader } from '@/components/studio/PageHeader'
-import { StatusPill } from '@/components/studio/StatusPill'
+import { DemoPill, StatusPill } from '@/components/studio/StatusPill'
 import { StudioPage, studioMetadata } from '@/components/studio/StudioPage'
 import { t } from '@/components/studio/strings'
 import { roleHasPermission } from '@/lib/auth/permissions'
@@ -96,7 +96,12 @@ export default async function Page() {
             {
               id: 'status',
               header: t('studio.portfolio.colStatus'),
-              cell: (project) => <StatusPill status={project.status} />,
+              cell: (project) => (
+                <span className="flex flex-wrap items-center gap-1">
+                  <StatusPill status={project.status} />
+                  <DemoPill isDemo={project.is_demo} />
+                </span>
+              ),
             },
           ]}
         />

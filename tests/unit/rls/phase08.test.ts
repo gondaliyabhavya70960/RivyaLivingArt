@@ -63,6 +63,20 @@ describeDb('the status-transition trigger', () => {
   beforeAll(async () => {
     await loadFixture()
     const db = await connect()
+    /*
+     * THE ENTITY PAGES HAVE TO BE UNPUBLISHED BEFORE THEY CAN BE DELETED, and finding that out here
+     * was worth the failure. `journal_articles.page_id` is `on delete set null`, so deleting an
+     * article's body leaves the article PUBLISHED with nothing to read — which
+     * `enforce_article_has_body()` refuses, aborting this teardown with a message naming an article
+     * nobody in this file has heard of.
+     *
+     * That refusal is correct and is not the test's to work around: a published article with no body
+     * must not exist. So the teardown does what any real caller deleting a page would have to do,
+     * and the article returns to DRAFT rather than the trigger being circumvented.
+     */
+    await db.query(
+      `update pages set status = 'DRAFT' where kind in ('ARTICLE','PROJECT','COLLECTION')`,
+    )
     await db.query('delete from page_sections')
     await db.query('delete from pages')
     // Service role: no session actor, so the INSERT rule does not apply and the fixture can be

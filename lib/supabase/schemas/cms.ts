@@ -4,6 +4,7 @@ import type { Tables } from '../database.types'
 import {
   auditColumns,
   contentColumns,
+  demoColumn,
   contentStatusSchema,
   factClassificationSchema,
   jsonSchema,
@@ -61,6 +62,7 @@ export const pageSchema = z.object({
   ...auditColumns,
   ...cmsContentColumns,
   ...seedColumns,
+  ...demoColumn,
 }) satisfies z.ZodType<Tables<'pages'>>
 
 export const pageSectionSchema = z.object({
@@ -101,6 +103,7 @@ export const pageSectionSchema = z.object({
   ...auditColumns,
   ...cmsContentColumns,
   ...seedColumns,
+  ...demoColumn,
 }) satisfies z.ZodType<Tables<'page_sections'>>
 
 /**

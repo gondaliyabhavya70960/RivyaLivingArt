@@ -7,6 +7,7 @@ import { Button } from '@/components/primitives/Button'
 import { Stack } from '@/components/primitives/Stack'
 import { Text } from '@/components/primitives/Text'
 import { SelectField, TextAreaField, TextField, errorFor } from '@/components/studio/FormField'
+import { DemoPill } from '@/components/studio/StatusPill'
 import { OwnerVerificationPanel } from '@/components/studio/OwnerVerificationPanel'
 import { t } from '@/components/studio/strings'
 import { testimonialPublishGates } from '@/lib/portfolio/gates'
@@ -40,6 +41,8 @@ export interface TestimonialRowData {
   readonly ownerVerification: string
   readonly status: string
   readonly sortOrder: number
+  /** Placeholder content the owner authorised; see docs/content/DEMO_CONTENT.md. */
+  readonly isDemo: boolean
 }
 
 export interface TestimonialRowProps {
@@ -86,6 +89,11 @@ export function TestimonialRow({
   return (
     <li className="border-b border-line py-6" data-testimonial={row.id}>
       <Stack gap={4}>
+        {/*
+          The badge before the gate panel, not after. A reader deciding whether to act on a
+          verification warning needs to know first whether the row is real.
+        */}
+        <DemoPill isDemo={row.isDemo} />
         <OwnerVerificationPanel
           gates={testimonialPublishGates({
             owner_verification: row.ownerVerification,

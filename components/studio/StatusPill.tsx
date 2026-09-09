@@ -57,3 +57,20 @@ export function VerificationPill({ verification }: { verification: OwnerVerifica
   if (verification === 'NOT_REQUIRED') return null
   return <Badge tone={VERIFICATION_TONE[verification]}>{humanise(verification)}</Badge>
 }
+
+/**
+ * The demo badge. Rendered wherever a row that can be placeholder is listed.
+ *
+ * WARNING TONE, THE SAME AS THE VERIFICATION GATE, and for a related reason: both mark a row that
+ * must not be mistaken for settled truth. A demo product looks exactly like a real one on the public
+ * site — deliberately, because a placeholder catalogue that behaved differently would tell the owner
+ * nothing about the site they are evaluating — so the Studio is the only place the difference is
+ * visible, and it has to be visible at a glance rather than on a detail screen.
+ *
+ * It renders NOTHING for a real row. `docs/content/DEMO_CONTENT.md` is the register and
+ * `npm run demo:purge` is the removal; this is the reminder, on every row, that both exist.
+ */
+export function DemoPill({ isDemo }: { isDemo: boolean }) {
+  if (!isDemo) return null
+  return <Badge tone="warning">Demo</Badge>
+}

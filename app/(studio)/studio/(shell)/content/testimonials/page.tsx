@@ -89,6 +89,7 @@ export default async function Page() {
                   ownerVerification: row.owner_verification,
                   status: row.status,
                   sortOrder: row.sort_order,
+                  isDemo: row.is_demo,
                 }}
                 consentOptions={CONSENT_OPTIONS}
                 canWrite={canWrite}

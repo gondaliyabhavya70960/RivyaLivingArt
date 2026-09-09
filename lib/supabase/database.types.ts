@@ -1093,6 +1093,7 @@ export type Database = {
           created_at: string
           updated_at: string
           updated_by: string | null
+          is_demo: boolean
         }
         Insert: {
           id?: string
@@ -1121,6 +1122,7 @@ export type Database = {
           created_at?: string
           updated_at?: string
           updated_by?: string | null
+          is_demo?: boolean
         }
         Update: {
           id?: string
@@ -1149,6 +1151,7 @@ export type Database = {
           created_at?: string
           updated_at?: string
           updated_by?: string | null
+          is_demo?: boolean
         }
         Relationships: [
           {
@@ -1736,6 +1739,7 @@ export type Database = {
           updated_by: string | null
           published_at: string | null
           published_by: string | null
+          is_demo: boolean
         }
         Insert: {
           id?: string
@@ -1779,6 +1783,7 @@ export type Database = {
           updated_by?: string | null
           published_at?: string | null
           published_by?: string | null
+          is_demo?: boolean
         }
         Update: {
           id?: string
@@ -1822,6 +1827,7 @@ export type Database = {
           updated_by?: string | null
           published_at?: string | null
           published_by?: string | null
+          is_demo?: boolean
         }
         Relationships: [
           {
@@ -1885,6 +1891,7 @@ export type Database = {
           updated_by: string | null
           published_at: string | null
           published_by: string | null
+          is_demo: boolean
         }
         Insert: {
           id?: string
@@ -1909,6 +1916,7 @@ export type Database = {
           updated_by?: string | null
           published_at?: string | null
           published_by?: string | null
+          is_demo?: boolean
         }
         Update: {
           id?: string
@@ -1933,6 +1941,7 @@ export type Database = {
           updated_by?: string | null
           published_at?: string | null
           published_by?: string | null
+          is_demo?: boolean
         }
         Relationships: [
           {
@@ -2042,6 +2051,7 @@ export type Database = {
           created_at: string
           updated_at: string
           updated_by: string | null
+          is_demo: boolean
         }
         Insert: {
           id?: string
@@ -2071,6 +2081,7 @@ export type Database = {
           created_at?: string
           updated_at?: string
           updated_by?: string | null
+          is_demo?: boolean
         }
         Update: {
           id?: string
@@ -2100,6 +2111,7 @@ export type Database = {
           created_at?: string
           updated_at?: string
           updated_by?: string | null
+          is_demo?: boolean
         }
         Relationships: [
           {
@@ -2510,6 +2522,7 @@ export type Database = {
           is_customizable: boolean
           sort_order: number | null
           specifications_omitted: boolean
+          is_demo: boolean
         }
         Insert: {
           id?: string
@@ -2550,6 +2563,7 @@ export type Database = {
           is_customizable?: boolean
           sort_order?: number | null
           specifications_omitted?: boolean
+          is_demo?: boolean
         }
         Update: {
           id?: string
@@ -2590,6 +2604,7 @@ export type Database = {
           is_customizable?: boolean
           sort_order?: number | null
           specifications_omitted?: boolean
+          is_demo?: boolean
         }
         Relationships: [
           {
@@ -2862,6 +2877,7 @@ export type Database = {
           created_at: string
           updated_at: string
           updated_by: string | null
+          is_demo: boolean
         }
         Insert: {
           id?: string
@@ -2880,6 +2896,7 @@ export type Database = {
           created_at?: string
           updated_at?: string
           updated_by?: string | null
+          is_demo?: boolean
         }
         Update: {
           id?: string
@@ -2898,6 +2915,7 @@ export type Database = {
           created_at?: string
           updated_at?: string
           updated_by?: string | null
+          is_demo?: boolean
         }
         Relationships: [
           {
