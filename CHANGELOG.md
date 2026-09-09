@@ -6,6 +6,59 @@ Every phase adds an entry; see `docs/architecture/CANONICAL-DECISIONS.md` D9 for
 
 ## [Unreleased]
 
+### Phase 16 — Collections as Exhibitions
+
+A collection stops being a stub and becomes an entity with a statement, a curated set of pieces, a
+graph of hand-made links and an exhibition page — and the phase ships with **zero published
+collections**, which is the finished state rather than an unfinished one.
+
+**The publish gate is the phase.** `enforce_collection_publish_gate()` refuses
+`status = 'PUBLISHED'` unless `concept_state = 'OWNER_CONFIRMED'`, and
+`enforce_collection_concept_authority()` refuses that confirmation to anyone but an owner or admin,
+stamping who did it from the session rather than from the submission. FEAT §9's rule — a collection
+is a concept until the owner says otherwise — is now a property of the row, so it holds against
+`curl`, a future import and a Studio form somebody refactored.
+
+**The sync runs page → collection, and the direction was measured rather than chosen.** Mirroring
+collection → page is impossible twice over: `collections` legitimately jumps DRAFT → PUBLISHED,
+which is not one of the twelve legal page edges and is refused for every actor including the service
+role; and `catalog.write` (owner/admin/merchandiser) is disjoint from every page transition
+permission (owner/admin/editor), which `SECURITY DEFINER` cannot bridge because `current_staff_role()`
+reads `auth.uid()`. Publishing an unconfirmed concept's page therefore fails naming the COLLECTION,
+and the page stays unpublished.
+
+**Two new blocks take the catalogue to 30** (amendment A14). `collection-products` holds no product
+ids — curation lives in `product_collections`, and an empty slug means "the collection this page
+belongs to", answered from `collections.page_id` rather than copied into a payload that would go
+stale. `signature-media` is one block used twice, FEAT §8's still and film, because that is the only
+arrangement in which the film is optional at every level.
+
+**The exhibition template inserts ten bands, not eleven.** FEAT §8's element 9 is `rich-text`, which
+is declared and unbuilt; inserting it would hand an editor a band indistinguishable from one they
+had not filled in. Recorded in A14, asserted by a test that sits next to the reason.
+
+**The ten FEAT §9 concepts are seeded as a name, a slug and an order.** No statement, no media, no
+products, no page — a statement describing work nobody has made is a claim about the business (D10).
+`owner_verification` is `NOT_REQUIRED`, deliberately: `concept_state` is already a stronger gate, and
+setting both would mean the owner confirms a concept and the collection still cannot publish,
+refused by a Phase 03 constraint naming neither.
+
+**`entity_relations` is invisible to anonymous readers entirely**, not filtered to published — it
+carries editorial notes and the existence of edges pointing at unpublished work. Every write takes
+an actor as a required positional argument, so the type system refuses an edge with nobody's name on
+it, and every removal is a verified diff: an RLS-filtered DELETE removes zero rows and reports
+success, so a "replace" written naively becomes an append.
+
+**Reordering a curation is Move up / Move down rather than drag**, because a drag handle needs a
+keyboard equivalent to be operable at all — so the buttons must exist regardless, and they are the
+half that works without JavaScript.
+
+**Known limitation.** The Playwright suite cannot execute in the current sandbox: its network policy
+denies the Supabase host, so every route answers 500 and no page can be measured. The new spec
+detects that by checking a baseline route and skips with the reason, never in CI. The three Phase 15
+specs are in the same position.
+
+
 ### Phase 15 — Product Detail Experience
 
 `/product/[slug]` renders for published products only, and renders for nobody today: `products`

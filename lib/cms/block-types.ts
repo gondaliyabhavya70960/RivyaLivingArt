@@ -1,13 +1,14 @@
 import { z } from 'zod'
 
 /**
- * Every block type the CMS knows, from the PHASE-05-09 §08 catalogue.
+ * Every block type the CMS knows: the PHASE-05-09 §08 catalogue of 28, plus the two an exhibition
+ * page needs (amendment A14).
  *
  * THE TUPLE IS THE SOURCE. `BlockType` is derived from it, the registry is keyed by it, and
  * `blockTypeSchema` validates against it — so adding a block means adding one string here and
  * then following the compile errors, which is a far better guide than a checklist in a document.
  *
- * ALL 28 ARE LISTED EVEN THOUGH NOT ALL ARE BUILT. The alternative — listing only what ships —
+ * ALL 30 ARE LISTED EVEN THOUGH NOT ALL ARE BUILT. The alternative — listing only what ships —
  * would make `block_type` on an unbuilt block fail validation at read time rather than render an
  * honest "not built yet", and would hide from a reader how much of the catalogue is outstanding.
  * `lib/cms/registry.ts` records each one's state; `tests/unit/cms-registry.test.ts` asserts that a
@@ -40,6 +41,9 @@ export const BLOCK_TYPES = [
   'customization-note',
   'checklist',
   'numbered-steps',
+  // Collections and exhibitions, FEAT §8 — added in Phase 16
+  'signature-media',
+  'collection-products',
   // Query-backed
   'faq-list',
   'contact-details',

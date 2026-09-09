@@ -206,6 +206,49 @@ boundary, and a gate that excluded it would be measuring something other than wh
   from the shell, which is the layout; a walk from the page alone would report one island and pass
   while the shell grew four more.
 
+**2026-09-09 · A14 — the block catalogue is 30, not 28, and the exhibition template is ten
+elements rather than eleven (supersedes A8's count; PHASE-16-22 §Phase 16).**
+
+Two corrections, both raised by Phase 16 and both about counting.
+
+*The catalogue is 30.* A8 records that PHASE-05-09 §08 names 28 block types, and it did. Phase 16
+adds `signature-media` and `collection-products`, which §08 could not have named because neither is
+a page section in the homepage sense — they exist because FEAT §8 describes an exhibition page and
+two of its eleven elements have no block that can express them. Both ship BUILT, so A8's tiering is
+untouched: the split is still recorded in code rather than in prose, and the planned list is still
+eight. `lib/cms/block-types.ts`, both registries and `tests/unit/cms-registry.test.ts` all say 30.
+
+*The exhibition template inserts ten blocks, not eleven.* The phase document's element table maps
+FEAT §8's eleven elements onto blocks, and element 9 — "Editorial copy" — maps to `rich-text`, which
+is one of the eight PLANNED blocks: declared so a page can hold one, with `null` for its renderer
+and nothing on the public site. The phase's own exit criterion asks that all eleven be available as
+blocks, and that criterion and the registry cannot both be satisfied by this phase.
+
+Building a `rich-text` renderer to close the gap would be the worse answer. It is the one block in
+the catalogue whose payload is unbounded — a rich-text document needs a sanitiser, an allow-list of
+elements, a decision about embedded media and a Studio editor that is not a JSON textarea — and
+none of that is Phase 16's subject. A template that inserted a block which renders nothing would be
+worse still: an editor would apply the template, see ten bands, and have no way to tell that the
+eleventh is missing rather than empty.
+
+So the template inserts the ten elements that have renderers, in FEAT §8 order, and
+`content/templates/exhibition.ts` records element 9's absence and the phase that closes it. Every
+block is optional and removable, which the phase document already says the template is for — a
+starting point, not a constraint — so an editor who wants editorial copy today has `statement`.
+
+*No `app/(site)/collections/[slug]/opengraph-image.tsx`.* The phase document lists one and says it
+"uses the `og` preset from `lib/media/transform.ts`" — which is already what happens for every page
+on the site: `buildPageMetadata` resolves `seo_entries.og_media_id` through `resolveSpec('og')`, so
+the social image is a thing an editor picks in Studio. Next gives file-based metadata precedence
+over the `metadata` export, so adding that route would override the editor's choice on exactly these
+pages: the owner would change the image in Studio and watch nothing happen. No other route in the
+project has one, for the same reason.
+
+*A third, smaller correction.* The phase document names the two renderers
+`components/sections/CollectionProducts.tsx` and `SignatureMedia.tsx`. Every one of the other
+twenty renderers in that directory is named `<Block>Section.tsx`, and the registry test reads the
+directory; they are built as `CollectionProductsSection.tsx` and `SignatureMediaSection.tsx`.
+
 **2026-09-09 · A13 — Phase 14's eight departures from what was written before it.**
 
 Each is small, each is argued where it lives, and each is here so that a reader who finds the code
@@ -328,7 +371,8 @@ at all — is fully prerendered and renders without JavaScript.
 **2026-09-08 · A8 — the CMS block catalogue ships in two tiers, and the registry says which (D9).**
 
 PHASE-05-09 §08 names 28 block types. Phase 08 builds the ENGINE plus six of them; the other 22
-are declared and explicitly unbuilt. This is an amendment rather than a silent scope cut because
+are declared and explicitly unbuilt. (A14 later raises the catalogue to 30: Phase 16 adds the two
+blocks an exhibition page needs. The tiering below is unaffected.) This is an amendment rather than a silent scope cut because
 the phase document reads as though all 28 arrive together, and a reader comparing the document to
 the code needs the difference to be recorded rather than inferred.
 

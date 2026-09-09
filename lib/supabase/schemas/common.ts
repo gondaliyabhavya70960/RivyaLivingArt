@@ -82,9 +82,54 @@ export const editionStateSchema = z.enum([
   'OPEN_EDITION',
 ]) satisfies z.ZodType<Enums<'edition_state'>>
 
-/** One value until Phase 16 adds OWNER_CONFIRMED and RETIRED. */
+/**
+ * Phase 16 `0140`. The lifecycle of a collection CONCEPT (FEAT §9).
+ *
+ * IN LIFECYCLE ORDER, NOT ALPHABETICAL, matching the enum's own `enumsortorder`: a concept is
+ * drafted, confirmed by the owner, and eventually retired. A Studio list ordered by this column
+ * therefore reads as progress rather than as accident.
+ *
+ * `OWNER_CONFIRMED` IS THE ONLY STATE A COLLECTION MAY BE PUBLISHED IN, and that is not a
+ * convention this schema enforces — `enforce_collection_publish_gate` refuses the row. FEAT §9 is
+ * explicit that the ten seeded names are "possible editable starting concepts" and must not be
+ * fabricated as real published collections, so the gate exists to make a mistaken publish
+ * impossible rather than merely discouraged.
+ */
+/**
+ * Phase 16 `0141`. What an `entity_relations` edge may point at or from.
+ *
+ * CLOSED BY CONSTRUCTION, and the database agrees — these are real enum types, unlike
+ * `product_relations.target_type`, which is plain text. An edge to a table no renderer knows about
+ * is an association nobody can display, so the vocabulary is fixed where it is stored.
+ */
+export const relationEntitySchema = z.enum([
+  'PRODUCT',
+  'COLLECTION',
+  'CATEGORY',
+  'PORTFOLIO_PROJECT',
+  'JOURNAL_ARTICLE',
+  'MATERIAL',
+]) satisfies z.ZodType<Enums<'relation_entity'>>
+
+/**
+ * What an edge MEANS.
+ *
+ * Closed so that "customers also bought" — a claim about behaviour this business does not measure —
+ * cannot be stored at all (FEAT §11). Every value here is something an editor asserts, not
+ * something a system infers.
+ */
+export const relationKindSchema = z.enum([
+  'RELATED',
+  'FEATURES',
+  'REFERENCES',
+  'USES_MATERIAL',
+  'PART_OF',
+]) satisfies z.ZodType<Enums<'relation_kind'>>
+
 export const collectionConceptStateSchema = z.enum([
   'DRAFT_COLLECTION_CONCEPT',
+  'OWNER_CONFIRMED',
+  'RETIRED',
 ]) satisfies z.ZodType<Enums<'collection_concept_state'>>
 
 /**

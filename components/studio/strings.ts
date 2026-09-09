@@ -2304,6 +2304,143 @@ export const STUDIO_STRINGS = {
     value: 'New collection',
     contentKey: 'studio_help.catalog_collections_new_heading',
   },
+  // --- Phase 16: the collection editor ---------------------------------------------------------
+  'studio.catalog.collection.back': {
+    value: 'All collections',
+    contentKey: 'studio_help.catalog_collection_back',
+  },
+  'studio.catalog.collection.untitled': {
+    value: 'Untitled collection',
+    contentKey: 'studio_help.catalog_collection_untitled',
+  },
+  'studio.catalog.collection.conceptHeading': {
+    value: 'Is this collection real?',
+    contentKey: 'studio_help.catalog_collection_concept_heading',
+  },
+  'studio.catalog.collection.conceptBody': {
+    value:
+      'A collection stays a concept until the owner confirms it exists. Only the owner or an administrator can confirm one, and nothing can be published until they have.',
+    contentKey: 'studio_help.catalog_collection_concept_body',
+  },
+  'studio.catalog.collection.confirm': {
+    value: 'Confirm this collection is real',
+    contentKey: 'studio_help.catalog_collection_confirm',
+  },
+  'studio.catalog.collection.withdraw': {
+    value: 'Retire this collection',
+    contentKey: 'studio_help.catalog_collection_withdraw',
+  },
+  'studio.catalog.collection.reopen': {
+    value: 'Return to concept',
+    contentKey: 'studio_help.catalog_collection_reopen',
+  },
+  'studio.catalog.collection.confirmedBy': {
+    value: 'Confirmed',
+    contentKey: 'studio_help.catalog_collection_confirmed_by',
+  },
+  'studio.catalog.collection.fieldsHeading': {
+    value: 'Exhibition details',
+    contentKey: 'studio_help.catalog_collection_fields_heading',
+  },
+  'studio.catalog.collection.subtitle': {
+    value: 'Subtitle',
+    contentKey: 'studio_help.catalog_collection_subtitle',
+  },
+  'studio.catalog.collection.statementLong': {
+    value: 'Long statement',
+    contentKey: 'studio_help.catalog_collection_statement_long',
+  },
+  'studio.catalog.collection.statementHelp': {
+    value:
+      'Leave this empty until the collection exists. A statement describing work that has not been made is a claim about the business, not a draft.',
+    contentKey: 'studio_help.catalog_collection_statement_help',
+  },
+  'studio.catalog.collection.signatureMedia': {
+    value: 'Signature image id',
+    contentKey: 'studio_help.catalog_collection_signature_media',
+  },
+  'studio.catalog.collection.videoMedia': {
+    value: 'Film id',
+    contentKey: 'studio_help.catalog_collection_video_media',
+  },
+  'studio.catalog.collection.curationHeading': {
+    value: 'Pieces in this collection',
+    contentKey: 'studio_help.catalog_collection_curation_heading',
+  },
+  'studio.catalog.collection.curationEmpty': {
+    value: 'No pieces yet. Paste a product id to add the first one.',
+    contentKey: 'studio_help.catalog_collection_curation_empty',
+  },
+  'studio.catalog.collection.productId': {
+    value: 'Product id',
+    contentKey: 'studio_help.catalog_collection_product_id',
+  },
+  'studio.catalog.collection.add': {
+    value: 'Add piece',
+    contentKey: 'studio_help.catalog_collection_add',
+  },
+  'studio.catalog.collection.moveUp': {
+    value: 'Move up',
+    contentKey: 'studio_help.catalog_collection_move_up',
+  },
+  'studio.catalog.collection.moveDown': {
+    value: 'Move down',
+    contentKey: 'studio_help.catalog_collection_move_down',
+  },
+  'studio.catalog.collection.remove': {
+    value: 'Remove',
+    contentKey: 'studio_help.catalog_collection_remove',
+  },
+  'studio.catalog.collection.pageHeading': {
+    value: 'Exhibition page',
+    contentKey: 'studio_help.catalog_collection_page_heading',
+  },
+  'studio.catalog.collection.pageAbsent': {
+    value:
+      'This collection has no exhibition page yet. Creating one adds the standard bands, empty, in order — you write what goes in them.',
+    contentKey: 'studio_help.catalog_collection_page_absent',
+  },
+  'studio.catalog.collection.pageCreate': {
+    value: 'Create exhibition page',
+    contentKey: 'studio_help.catalog_collection_page_create',
+  },
+  'studio.catalog.collection.pageEdit': {
+    value: 'Edit the exhibition page',
+    contentKey: 'studio_help.catalog_collection_page_edit',
+  },
+  'studio.catalog.collection.relationsHeading': {
+    value: 'Related content',
+    contentKey: 'studio_help.catalog_collection_relations_heading',
+  },
+  'studio.catalog.collection.relationsHelp': {
+    value:
+      'Links you make by hand. Nothing here is suggested or scored, and an id that does not exist yet is allowed — the link stays invisible until it does.',
+    contentKey: 'studio_help.catalog_collection_relations_help',
+  },
+  'studio.catalog.collection.relationsEmpty': {
+    value: 'No links yet.',
+    contentKey: 'studio_help.catalog_collection_relations_empty',
+  },
+  'studio.catalog.collection.targetType': {
+    value: 'Links to',
+    contentKey: 'studio_help.catalog_collection_target_type',
+  },
+  'studio.catalog.collection.targetId': {
+    value: 'Its id',
+    contentKey: 'studio_help.catalog_collection_target_id',
+  },
+  'studio.catalog.collection.relationType': {
+    value: 'Kind of link',
+    contentKey: 'studio_help.catalog_collection_relation_type',
+  },
+  'studio.catalog.collection.relationNote': {
+    value: 'Note',
+    contentKey: 'studio_help.catalog_collection_relation_note',
+  },
+  'studio.catalog.collection.relationAdd': {
+    value: 'Add link',
+    contentKey: 'studio_help.catalog_collection_relation_add',
+  },
   'studio.catalog.collections.conceptNote': {
     value:
       'A collection stays a draft concept until the owner confirms it, so it cannot be published from here.',

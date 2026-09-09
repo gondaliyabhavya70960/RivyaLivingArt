@@ -177,7 +177,7 @@ export async function renderCmsPage(
    */
   const [assets, references, chrome] = await Promise.all([
     loadPageMedia(client, resolved.sections),
-    loadPageReferences(client, resolved.sections),
+    loadPageReferences(client, resolved.sections, resolved.page.id),
     getSiteChrome(),
   ])
 

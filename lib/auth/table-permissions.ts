@@ -97,6 +97,7 @@ export const PHASE_06_POLICIES = '0031_rls_policies_phase06.sql'
 export const PHASE_07_POLICIES = '0041_rls_policies_phase07.sql'
 export const PHASE_08_POLICIES = '0051_phase08_cms_rls.sql'
 export const PHASE_15_POLICIES = '0131_phase15_product_specs_rls.sql'
+export const PHASE_16_POLICIES = '0142_phase16_entity_relations_rls.sql'
 
 export const TABLE_POLICIES = {
   // --- Shape A: content tables ------------------------------------------------------------------
@@ -282,6 +283,40 @@ export const TABLE_POLICIES = {
     deletePermission: 'destructive.execute',
     parentClause: `exists (select 1 from products p
              where p.id = product_relations.source_product_id and p.status = 'PUBLISHED')`,
+  },
+
+  /**
+   * `entity_relations` — Phase 16. The general edge: collection ↔ project, article, material or
+   * another collection.
+   *
+   * STAFF-ONLY, WHICH IS A DEVIATION FROM ITS SIBLING AND IS ARGUED RATHER THAN INHERITED.
+   * `product_relations` is Shape B with a parent clause testing its source product's status. That
+   * works because its source is ALWAYS a product. This table's source is polymorphic — a
+   * `source_type` chosen at runtime — and RLS cannot join a table named in a column, so there is no
+   * parent clause to write.
+   *
+   * The alternative was an unconditional anon read. That leaks two things: `note`, which is an
+   * editor's sentence about why two things belong together and may describe work not yet published,
+   * and the mere EXISTENCE of edges pointing at unpublished projects and drafts. The phase document
+   * settles it — "entity_relations is never publicly readable by itself" — and this is that
+   * sentence expressed as a policy set.
+   *
+   * The public route still renders related content: it reads through a repository function that
+   * resolves each target against the target table's own policies, so an unpublished project simply
+   * yields nothing. That is the same reasoning `product_relations` relies on, applied one layer up.
+   */
+  entity_relations: {
+    policiesIn: PHASE_16_POLICIES,
+    shape: 'C',
+    readPermission: 'catalog.read',
+    writePermission: 'catalog.write',
+    deletePermission: 'destructive.execute',
+    deviation:
+      'No anon policy: a polymorphic source cannot be tested by a parent clause, and the row ' +
+      'carries an editorial `note` plus the existence of edges to unpublished work. The phase ' +
+      'document requires that this table never be publicly readable by itself; the public reads ' +
+      "related content through a repository that resolves each target under the target table's " +
+      'own policies, so an unpublished target yields nothing.',
   },
 
   // --- Shape C: staff-only, each a declared deviation --------------------------------------------

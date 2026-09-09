@@ -1,3 +1,6 @@
+import type { Route } from 'next'
+import Link from 'next/link'
+
 import { Divider } from '@/components/primitives/Divider'
 import { Stack } from '@/components/primitives/Stack'
 import { DataTable } from '@/components/studio/DataTable'
@@ -49,7 +52,17 @@ export default async function Page() {
             {
               id: 'name',
               header: t('studio.catalog.collections.colName'),
-              cell: (collection) => collection.name,
+              // The name is the way in to the editor, where the concept is confirmed and the
+              // exhibition page is created. Phase 16 added that screen; this comment's predecessor
+              // said it would.
+              cell: (collection) => (
+                <Link
+                  href={`/studio/catalog/collections/${collection.id}` as Route}
+                  className="underline underline-offset-4"
+                >
+                  {collection.name}
+                </Link>
+              ),
             },
             {
               id: 'slug',

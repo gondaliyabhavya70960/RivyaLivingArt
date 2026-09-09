@@ -1,6 +1,7 @@
 import { aboutSeed } from './about'
 import { catalogUiSeed } from './catalog-ui'
 import { productDetailUiSeed } from './product-detail-ui'
+import { collectionConceptsSeed } from './collection-concepts'
 import { collectionsSeed } from './collections'
 import { commerceLabelsSeed } from './commerce-labels'
 import { commissionsSeed } from './commissions'
@@ -45,6 +46,11 @@ export type { SeedModule, SeedRecord, SeedableTable } from './types'
 export const seedModules: readonly SeedModule[] = [
   // Referenced by everything else, so first.
   taxonomySeed,
+  // The ten FEAT §9 concepts. Taxonomy, not content: they reference nothing and a `collections`
+  // row is what `product_collections` and the `?collection=` facet point at, so they sit with the
+  // categories rather than with the page copy. Nothing here creates a page — an exhibition page is
+  // made in Studio, one collection at a time, by a person who has decided the collection is real.
+  collectionConceptsSeed,
   pagesSeed,
   // Global strings: reference nothing.
   globalContentSeed,

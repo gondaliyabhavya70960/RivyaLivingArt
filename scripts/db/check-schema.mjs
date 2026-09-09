@@ -113,6 +113,10 @@ const EXPECTED = {
   product_materials: ['created_at', 'created_by'],
   product_media: ['created_at', 'created_by'],
   product_relations: ['created_at', 'created_by'],
+  // Phase 16's general edge. An edge, not content: created_at and created_by only, the same
+  // shape as the four Phase 03 join tables. A `status` here would let a relation be draft,
+  // which is a state nobody can act on — either an editor made the connection or they did not.
+  entity_relations: ['created_at', 'created_by'],
   content_seed_runs: ['started_at', 'finished_at', 'is_dry_run', 'report'],
 
   // Phase 07. A RUN RECORD, the same §1.4 exemption as content_seed_runs above and deliberately

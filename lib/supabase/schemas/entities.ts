@@ -5,6 +5,8 @@ import {
   auditColumns,
   availabilityStateSchema,
   collectionConceptStateSchema,
+  relationEntitySchema,
+  relationKindSchema,
   contentColumns,
   editionStateSchema,
   factClassificationSchema,
@@ -51,14 +53,60 @@ export const collectionSchema = z.object({
   id: uuidSchema,
   slug: z.string(),
   name: z.string(),
+  subtitle: z.string().nullable(),
   statement: z.string().nullable(),
+  /**
+   * Phase 16 `0141`. The long-form exhibition statement.
+   *
+   * NULL ON EVERY SEEDED CONCEPT, and that is the seed doing its job rather than an oversight.
+   * FEAT §9 seeds ten names as "possible editable starting concepts"; a statement describing a
+   * collection Rivya has not made would assert a business capability nobody has confirmed (D10).
+   * The owner writes it, or it stays empty and the band does not render.
+   */
+  statement_long: z.string().nullable(),
   concept_state: collectionConceptStateSchema,
   hero_media_id: uuidSchema.nullable(),
+  signature_media_id: uuidSchema.nullable(),
+  video_media_id: uuidSchema.nullable(),
+  /** The exhibition page this collection renders through. Null until one is created from template. */
+  page_id: uuidSchema.nullable(),
+  seo_entry_id: uuidSchema.nullable(),
+  /**
+   * Written by `enforce_collection_concept_authority`, never submitted by a form — so the record of
+   * who confirmed a concept, and when, cannot be set by whoever is doing the confirming.
+   */
+  owner_confirmed_at: timestampSchema.nullable(),
+  owner_confirmed_by: uuidSchema.nullable(),
   sort_order: z.number().int(),
   ...auditColumns,
   ...contentColumns,
   ...seedColumns,
 }) satisfies z.ZodType<Tables<'collections'>>
+
+/**
+ * One hand-made edge between two entities. Phase 16 `0141`.
+ *
+ * NO STATUS, NO OWNER VERIFICATION, NO SEED COLUMNS — this is an edge, not content. Either an
+ * editor connected two things or they did not, and a draft relation is a state nobody can act on.
+ * What it carries instead is `created_by`: FEAT §11 says no edge is ever created automatically, and
+ * the only way that stays true is if every row can name the person who made it.
+ *
+ * `source_id` and `target_id` are validated as uuids but have no foreign key in the database — the
+ * referent may be any of six entity types, and a polymorphic edge cannot name six parents in one
+ * constraint. Resolution happens in the repository, against the target table's own policies.
+ */
+export const entityRelationSchema = z.object({
+  id: uuidSchema,
+  source_type: relationEntitySchema,
+  source_id: uuidSchema,
+  target_type: relationEntitySchema,
+  target_id: uuidSchema,
+  relation_type: relationKindSchema,
+  note: z.string().nullable(),
+  sort_order: z.number().int(),
+  created_at: timestampSchema,
+  created_by: uuidSchema.nullable(),
+}) satisfies z.ZodType<Tables<'entity_relations'>>
 
 export const materialSchema = z.object({
   id: uuidSchema,
@@ -251,6 +299,7 @@ export const productRelationSchema = z.object({
 
 export type Category = z.infer<typeof categorySchema>
 export type Collection = z.infer<typeof collectionSchema>
+export type EntityRelation = z.infer<typeof entityRelationSchema>
 export type Material = z.infer<typeof materialSchema>
 export type MediaAsset = z.infer<typeof mediaAssetSchema>
 export type Product = z.infer<typeof productSchema>

@@ -249,6 +249,14 @@ export type Database = {
           seed_content_hash: string | null
           seed_last_applied_at: string | null
           owner_edited: boolean
+          page_id: string | null
+          subtitle: string | null
+          statement_long: string | null
+          signature_media_id: string | null
+          video_media_id: string | null
+          seo_entry_id: string | null
+          owner_confirmed_at: string | null
+          owner_confirmed_by: string | null
         }
         Insert: {
           id?: string
@@ -271,6 +279,14 @@ export type Database = {
           seed_content_hash?: string | null
           seed_last_applied_at?: string | null
           owner_edited?: boolean
+          page_id?: string | null
+          subtitle?: string | null
+          statement_long?: string | null
+          signature_media_id?: string | null
+          video_media_id?: string | null
+          seo_entry_id?: string | null
+          owner_confirmed_at?: string | null
+          owner_confirmed_by?: string | null
         }
         Update: {
           id?: string
@@ -293,6 +309,14 @@ export type Database = {
           seed_content_hash?: string | null
           seed_last_applied_at?: string | null
           owner_edited?: boolean
+          page_id?: string | null
+          subtitle?: string | null
+          statement_long?: string | null
+          signature_media_id?: string | null
+          video_media_id?: string | null
+          seo_entry_id?: string | null
+          owner_confirmed_at?: string | null
+          owner_confirmed_by?: string | null
         }
         Relationships: [
           {
@@ -303,6 +327,20 @@ export type Database = {
             referencedColumns: ['id']
           },
           {
+            foreignKeyName: 'collections_owner_confirmed_by_fkey'
+            columns: ['owner_confirmed_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'collections_page_id_fkey'
+            columns: ['page_id']
+            isOneToOne: true
+            referencedRelation: 'pages'
+            referencedColumns: ['id']
+          },
+          {
             foreignKeyName: 'collections_published_by_fkey'
             columns: ['published_by']
             isOneToOne: false
@@ -310,10 +348,31 @@ export type Database = {
             referencedColumns: ['id']
           },
           {
+            foreignKeyName: 'collections_seo_entry_id_fkey'
+            columns: ['seo_entry_id']
+            isOneToOne: false
+            referencedRelation: 'seo_entries'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'collections_signature_media_id_fkey'
+            columns: ['signature_media_id']
+            isOneToOne: false
+            referencedRelation: 'media_assets'
+            referencedColumns: ['id']
+          },
+          {
             foreignKeyName: 'collections_updated_by_fkey'
             columns: ['updated_by']
             isOneToOne: false
             referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'collections_video_media_id_fkey'
+            columns: ['video_media_id']
+            isOneToOne: false
+            referencedRelation: 'media_assets'
             referencedColumns: ['id']
           },
         ]
@@ -406,6 +465,53 @@ export type Database = {
           deferred_count?: number
         }
         Relationships: []
+      }
+      entity_relations: {
+        Row: {
+          id: string
+          source_type: Database['public']['Enums']['relation_entity']
+          source_id: string
+          target_type: Database['public']['Enums']['relation_entity']
+          target_id: string
+          relation_type: Database['public']['Enums']['relation_kind']
+          note: string | null
+          sort_order: number
+          created_at: string
+          created_by: string | null
+        }
+        Insert: {
+          id?: string
+          source_type: Database['public']['Enums']['relation_entity']
+          source_id: string
+          target_type: Database['public']['Enums']['relation_entity']
+          target_id: string
+          relation_type: Database['public']['Enums']['relation_kind']
+          note?: string | null
+          sort_order?: number
+          created_at?: string
+          created_by?: string | null
+        }
+        Update: {
+          id?: string
+          source_type?: Database['public']['Enums']['relation_entity']
+          source_id?: string
+          target_type?: Database['public']['Enums']['relation_entity']
+          target_id?: string
+          relation_type?: Database['public']['Enums']['relation_kind']
+          note?: string | null
+          sort_order?: number
+          created_at?: string
+          created_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'entity_relations_created_by_fkey'
+            columns: ['created_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
       }
       faqs: {
         Row: {
@@ -1988,7 +2094,7 @@ export type Database = {
     }
     Enums: {
       availability_state: 'READY_STOCK' | 'MADE_TO_ORDER'
-      collection_concept_state: 'DRAFT_COLLECTION_CONCEPT'
+      collection_concept_state: 'DRAFT_COLLECTION_CONCEPT' | 'OWNER_CONFIRMED' | 'RETIRED'
       content_status: 'DRAFT' | 'REVIEW' | 'APPROVED' | 'PUBLISHED' | 'ARCHIVED'
       edition_state: 'ONE_OF_ONE' | 'LIMITED_EDITION' | 'OPEN_EDITION'
       fact_classification:
@@ -2002,6 +2108,9 @@ export type Database = {
       media_source: 'REAL' | 'USER_UPLOAD' | 'HIGGSFIELD' | 'RENDER' | 'FALLBACK'
       owner_verification: 'NOT_REQUIRED' | 'OWNER_VERIFICATION_REQUIRED' | 'VERIFIED'
       price_state: 'STARTING_FROM' | 'REQUEST_QUOTE' | 'PRICE_ON_REQUEST' | 'FIXED'
+      relation_entity:
+        'PRODUCT' | 'COLLECTION' | 'CATEGORY' | 'PORTFOLIO_PROJECT' | 'JOURNAL_ARTICLE' | 'MATERIAL'
+      relation_kind: 'RELATED' | 'FEATURES' | 'REFERENCES' | 'USES_MATERIAL' | 'PART_OF'
       user_role: 'owner' | 'admin' | 'editor' | 'merchandiser' | 'researcher' | 'viewer'
     }
     CompositeTypes: {

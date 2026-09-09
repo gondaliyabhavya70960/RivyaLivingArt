@@ -33,11 +33,12 @@ chrome has to render before any content exists. The public site has no such excu
 
 ---
 
-## 2. The 28 blocks, and the twenty that are built
+## 2. The 30 blocks, and the twenty-two that are built
 
-`lib/cms/block-types.ts` lists the whole PHASE-05-09 §08 catalogue. Twenty are built; 8 are declared
-`PLANNED` (amendment A8). Phase 08 built the first six, Phase 11 added the ten the homepage needed,
-Phase 12 added `scale-statement` for `/about`, and Phase 13 added the three `/large-format` needed.
+`lib/cms/block-types.ts` lists the whole PHASE-05-09 §08 catalogue of 28, plus the two an exhibition
+page needs. Twenty-two are built; 8 are declared `PLANNED` (amendments A8 and A14). Phase 08 built
+the first six, Phase 11 added the ten the homepage needed, Phase 12 added `scale-statement` for
+`/about`, Phase 13 added the three `/large-format` needed, and Phase 16 added the two below.
 
 | Built | Payload family it proves |
 |---|---|
@@ -57,6 +58,8 @@ Phase 12 added `scale-statement` for `/about`, and Phase 13 added the three `/la
 | `category-intro` | No payload; the sentence above a list, tighter to what follows than a statement |
 | `category-list` | Repeating entries with entry-level verification, an optional picture and an optional validated link |
 | `customization-note` | No payload, and the one renderer that refuses to draw itself unverified |
+| `signature-media` | One image or film full width, with a caption bound to it. Used TWICE on an exhibition page — FEAT §8's element 3 is the still, element 6 the film — because they are the same band and only `is_video` differs. The still is always bound and always paints first; a film with no still renders nothing |
+| `collection-products` | A **reference block** like `selected-works`, but scoped to one collection. It holds no product ids: curation lives in `product_collections`, and an empty `collection_slug` means "the collection this page belongs to", answered from `collections.page_id` |
 
 A planned block cannot be added in Studio, and renders **nothing** on the public site — not a
 placeholder, not a grey box. Studio lists them separately so the outstanding catalogue is visible

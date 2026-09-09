@@ -938,6 +938,19 @@ Exhibitions, not filtered grids (FEAT §8). The ten FEAT §9 concept names may b
 **Gate** — `enforce_collection_publish_gate()` refuses `status = 'PUBLISHED'` unless
 `concept_state = 'OWNER_CONFIRMED'`. Only `owner` or `admin` may set `OWNER_CONFIRMED`.
 
+**Seeded** — `content/seed/collection-concepts.ts` writes the ten FEAT §9 names (Ocean, Earth,
+Aurora, Midnight, Monsoon, Geode, Forest, Clear, Botanical, Bespoke) as slug, name and `sort_order`
+only. No statement, no media, no products, no page: a statement describing work nobody has made is
+a claim about the business (D10). `concept_state` is left at its default rather than stated, so no
+edit to that module can confirm a concept.
+
+`owner_verification` is seeded `NOT_REQUIRED`, **and that is the deliberate reading**. A collection
+already carries a stronger gate in `concept_state`, which only an owner or admin can advance.
+Seeding `OWNER_VERIFICATION_REQUIRED` as well would mean the owner confirms the concept and the
+collection still cannot publish — refused by `collections_verified_before_publish` (Phase 03), a
+constraint that names neither the concept nor the owner. Two gates for one decision, one invisible.
+`tests/unit/rls/phase16.test.ts` asserts the interaction so the choice cannot be undone silently.
+
 ### `materials` — Phase 03 · migration `0004` · RLS-PUBLIC (`catalog.write`)
 
 | Column | Type | Notes |
@@ -1390,7 +1403,7 @@ On `portfolio_projects` and `testimonials`: `PUBLISHED` requires `owner_verifica
 and any row naming a person or client requires `client_consent = 'GRANTED'`. `WITHDRAWN` consent
 forces `status` back to `ARCHIVED`.
 
-### 8.7 `enforce_collection_publish_gate()` — Phase 16 `0140`
+### 8.7 `enforce_collection_publish_gate()` — Phase 16 `0141`
 `PUBLISHED` requires `concept_state = 'OWNER_CONFIRMED'` (FEAT §9).
 
 ### 8.8 `set_owner_edited()` — Phase 08 `0050`, tightened Phase 09 `0070`
@@ -1824,7 +1837,8 @@ local and hosted is isolated to one file that can never be picked up by `supabas
 | 11–13 | — | **None.** These phases render what Phases 06–10 created |
 | 14 | `0120`–`0122` | A `products` (`price_minor`, `availability_state`, `edition_state`, `edition_size`, `is_customizable`, `sort_order`); enums `availability_state`, `edition_state`, `price_state += FIXED`; the three coherence constraints; concept-media trigger |
 | 15 | `0130`–`0132` | T `product_specs`; F `is_valid_dimensions()`; A `products.dimensions` shape constraint; `0131` is the generated RLS file for `product_specs`; `0132` adds `products.specifications_omitted` (§8.6). `product_relations_source_idx` is NOT here — `0008` already created it with the definition Phase 15 asks for |
-| 16 | `0140`–`0141` | T `entity_relations`; A `collections`, `pages.kind`; enums `relation_entity`, `relation_kind`; `collection_concept_state += OWNER_CONFIRMED, RETIRED` |
+| 15·14 fix | `0143` | Revokes EXECUTE from `public`, `anon` and `authenticated` on the five functions that `0022`'s rule covers but `0050`, `0122` and `0130` omitted. No schema change |
+| 16 | `0140`–`0142` | `0140` adds `collection_concept_state += OWNER_CONFIRMED, RETIRED` and **nothing else** — `db:migrate` runs each file in one transaction and PostgreSQL refuses to use a value added in it, so the transaction boundary must be a file (measured; Phase 14 needed the same split across `0120`–`0122`). `0141` T `entity_relations`; A `collections`, `pages.kind`; enums `relation_entity`, `relation_kind`; the publish gate and the sync triggers. `0142` is the GENERATED RLS file for `entity_relations` — `collections` keeps its Phase 04 policies in `0011` |
 | 17 | `0150`–`0151` | T `portfolio_projects`, `portfolio_project_media`, `testimonials`; enum `client_consent_state` |
 | 18 | `0160`–`0161` | T `journal_categories`, `journal_articles`, `journal_article_categories` |
 | 19 | `0170`–`0172` | T `customization_forms`, `customization_form_steps`, `customization_form_fields`, `product_customization_forms`, `feature_flags`; enums `form_kind`, `form_field_type` |
