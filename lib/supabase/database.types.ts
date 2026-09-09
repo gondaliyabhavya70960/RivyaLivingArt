@@ -466,6 +466,265 @@ export type Database = {
         }
         Relationships: []
       }
+      customization_form_fields: {
+        Row: {
+          id: string
+          form_id: string
+          step_id: string
+          key: string
+          label: string
+          help_text: string | null
+          placeholder: string | null
+          field_type: Database['public']['Enums']['form_field_type']
+          options: Json
+          validation: Json
+          is_enabled: boolean
+          is_required: boolean
+          position: number
+          include_in_whatsapp: boolean
+          seed_key: string | null
+          content_seed_version: string | null
+          seed_content_hash: string | null
+          seed_last_applied_at: string | null
+          owner_edited: boolean
+          created_at: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          form_id: string
+          step_id: string
+          key: string
+          label: string
+          help_text?: string | null
+          placeholder?: string | null
+          field_type?: Database['public']['Enums']['form_field_type']
+          options?: Json
+          validation?: Json
+          is_enabled?: boolean
+          is_required?: boolean
+          position?: number
+          include_in_whatsapp?: boolean
+          seed_key?: string | null
+          content_seed_version?: string | null
+          seed_content_hash?: string | null
+          seed_last_applied_at?: string | null
+          owner_edited?: boolean
+          created_at?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          form_id?: string
+          step_id?: string
+          key?: string
+          label?: string
+          help_text?: string | null
+          placeholder?: string | null
+          field_type?: Database['public']['Enums']['form_field_type']
+          options?: Json
+          validation?: Json
+          is_enabled?: boolean
+          is_required?: boolean
+          position?: number
+          include_in_whatsapp?: boolean
+          seed_key?: string | null
+          content_seed_version?: string | null
+          seed_content_hash?: string | null
+          seed_last_applied_at?: string | null
+          owner_edited?: boolean
+          created_at?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'customization_form_fields_form_id_fkey'
+            columns: ['form_id']
+            isOneToOne: false
+            referencedRelation: 'customization_forms'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'customization_form_fields_step_fk'
+            columns: ['step_id', 'form_id']
+            isOneToOne: false
+            referencedRelation: 'customization_form_steps'
+            referencedColumns: ['id', 'form_id']
+          },
+          {
+            foreignKeyName: 'customization_form_fields_updated_by_fkey'
+            columns: ['updated_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      customization_form_steps: {
+        Row: {
+          id: string
+          form_id: string
+          key: string
+          title: string
+          description: string | null
+          position: number
+          is_enabled: boolean
+          is_required: boolean
+          seed_key: string | null
+          content_seed_version: string | null
+          seed_content_hash: string | null
+          seed_last_applied_at: string | null
+          owner_edited: boolean
+          created_at: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          form_id: string
+          key: string
+          title: string
+          description?: string | null
+          position?: number
+          is_enabled?: boolean
+          is_required?: boolean
+          seed_key?: string | null
+          content_seed_version?: string | null
+          seed_content_hash?: string | null
+          seed_last_applied_at?: string | null
+          owner_edited?: boolean
+          created_at?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          form_id?: string
+          key?: string
+          title?: string
+          description?: string | null
+          position?: number
+          is_enabled?: boolean
+          is_required?: boolean
+          seed_key?: string | null
+          content_seed_version?: string | null
+          seed_content_hash?: string | null
+          seed_last_applied_at?: string | null
+          owner_edited?: boolean
+          created_at?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'customization_form_steps_form_id_fkey'
+            columns: ['form_id']
+            isOneToOne: false
+            referencedRelation: 'customization_forms'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'customization_form_steps_updated_by_fkey'
+            columns: ['updated_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      customization_forms: {
+        Row: {
+          id: string
+          slug: string
+          name: string
+          kind: Database['public']['Enums']['form_kind']
+          description: string | null
+          intro_heading: string | null
+          intro_body: string | null
+          submit_label_key: string | null
+          is_default: boolean
+          status: Database['public']['Enums']['content_status']
+          owner_verification: Database['public']['Enums']['owner_verification']
+          fact_classification: Database['public']['Enums']['fact_classification']
+          seed_key: string | null
+          content_seed_version: string | null
+          seed_content_hash: string | null
+          seed_last_applied_at: string | null
+          owner_edited: boolean
+          published_at: string | null
+          published_by: string | null
+          created_at: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          slug: string
+          name: string
+          kind?: Database['public']['Enums']['form_kind']
+          description?: string | null
+          intro_heading?: string | null
+          intro_body?: string | null
+          submit_label_key?: string | null
+          is_default?: boolean
+          status?: Database['public']['Enums']['content_status']
+          owner_verification?: Database['public']['Enums']['owner_verification']
+          fact_classification?: Database['public']['Enums']['fact_classification']
+          seed_key?: string | null
+          content_seed_version?: string | null
+          seed_content_hash?: string | null
+          seed_last_applied_at?: string | null
+          owner_edited?: boolean
+          published_at?: string | null
+          published_by?: string | null
+          created_at?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          slug?: string
+          name?: string
+          kind?: Database['public']['Enums']['form_kind']
+          description?: string | null
+          intro_heading?: string | null
+          intro_body?: string | null
+          submit_label_key?: string | null
+          is_default?: boolean
+          status?: Database['public']['Enums']['content_status']
+          owner_verification?: Database['public']['Enums']['owner_verification']
+          fact_classification?: Database['public']['Enums']['fact_classification']
+          seed_key?: string | null
+          content_seed_version?: string | null
+          seed_content_hash?: string | null
+          seed_last_applied_at?: string | null
+          owner_edited?: boolean
+          published_at?: string | null
+          published_by?: string | null
+          created_at?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'customization_forms_published_by_fkey'
+            columns: ['published_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'customization_forms_updated_by_fkey'
+            columns: ['updated_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       entity_relations: {
         Row: {
           id: string
@@ -584,6 +843,38 @@ export type Database = {
           },
           {
             foreignKeyName: 'faqs_updated_by_fkey'
+            columns: ['updated_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      feature_flags: {
+        Row: {
+          key: string
+          description: string | null
+          is_enabled: boolean
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          key: string
+          description?: string | null
+          is_enabled?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          key?: string
+          description?: string | null
+          is_enabled?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'feature_flags_updated_by_fkey'
             columns: ['updated_by']
             isOneToOne: false
             referencedRelation: 'users'
@@ -1901,6 +2192,65 @@ export type Database = {
           },
         ]
       }
+      product_customization_forms: {
+        Row: {
+          id: string
+          form_id: string
+          product_id: string | null
+          category_id: string | null
+          position: number
+          created_at: string
+          created_by: string | null
+        }
+        Insert: {
+          id?: string
+          form_id: string
+          product_id?: string | null
+          category_id?: string | null
+          position?: number
+          created_at?: string
+          created_by?: string | null
+        }
+        Update: {
+          id?: string
+          form_id?: string
+          product_id?: string | null
+          category_id?: string | null
+          position?: number
+          created_at?: string
+          created_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'product_customization_forms_category_id_fkey'
+            columns: ['category_id']
+            isOneToOne: false
+            referencedRelation: 'categories'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'product_customization_forms_created_by_fkey'
+            columns: ['created_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'product_customization_forms_form_id_fkey'
+            columns: ['form_id']
+            isOneToOne: false
+            referencedRelation: 'customization_forms'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'product_customization_forms_product_id_fkey'
+            columns: ['product_id']
+            isOneToOne: false
+            referencedRelation: 'products'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       product_materials: {
         Row: {
           product_id: string
@@ -2594,6 +2944,14 @@ export type Database = {
         Args: Record<string, unknown>
         Returns: Json
       }
+      cms_set_form_field_order: {
+        Args: Record<string, unknown>
+        Returns: Json
+      }
+      cms_set_form_step_order: {
+        Args: Record<string, unknown>
+        Returns: Json
+      }
       cms_transition_allowed: {
         Args: Record<string, unknown>
         Returns: Json
@@ -2636,6 +2994,22 @@ export type Database = {
         | 'PRODUCT_FACT'
         | 'SEO_COPY'
         | 'LEGAL_COPY'
+      form_field_type:
+        | 'TEXT'
+        | 'TEXTAREA'
+        | 'NUMBER'
+        | 'DIMENSION'
+        | 'SELECT'
+        | 'MULTISELECT'
+        | 'RADIO'
+        | 'CHECKBOX'
+        | 'COLOUR_DIRECTION'
+        | 'FILE'
+        | 'CITY'
+        | 'CONTACT_NAME'
+        | 'CONTACT_PHONE'
+        | 'CONTACT_EMAIL'
+      form_kind: 'FURNITURE' | 'PRESERVATION' | 'THREE_D_RESIN' | 'CUSTOM'
       media_kind: 'IMAGE' | 'VIDEO' | 'MODEL_3D' | 'DOCUMENT' | 'BRAND'
       media_source: 'REAL' | 'USER_UPLOAD' | 'HIGGSFIELD' | 'RENDER' | 'FALLBACK'
       owner_verification: 'NOT_REQUIRED' | 'OWNER_VERIFICATION_REQUIRED' | 'VERIFIED'

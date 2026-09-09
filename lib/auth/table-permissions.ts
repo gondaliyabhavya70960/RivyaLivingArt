@@ -100,6 +100,7 @@ export const PHASE_15_POLICIES = '0131_phase15_product_specs_rls.sql'
 export const PHASE_16_POLICIES = '0142_phase16_entity_relations_rls.sql'
 export const PHASE_17_POLICIES = '0151_phase17_portfolio_rls.sql'
 export const PHASE_18_POLICIES = '0161_phase18_journal_rls.sql'
+export const PHASE_19_POLICIES = '0172_phase19_rls.sql'
 
 export const TABLE_POLICIES = {
   // --- Shape A: content tables ------------------------------------------------------------------
@@ -508,6 +509,118 @@ export const TABLE_POLICIES = {
         'scope is what carries the security, not the permission. Wrapped in a sub-select so the ' +
         'planner evaluates auth.uid() once per statement rather than once per row.',
     },
+  },
+
+  // --- Phase 19 ---------------------------------------------------------------------------------
+  /**
+   * `customization_forms` — Phase 19.
+   *
+   * SHAPE A WITH THE THIN CLAUSE. A form definition is public the moment it is published, because
+   * the configurator that renders it is served to anonymous visitors; there is no second condition
+   * to add. What keeps an unfinished template off the site is `enforce_form_publishable()`, which
+   * refuses PUBLISHED for a form with no contact step, no way to reply on it, or a choice field
+   * with no choices — enforced at the write rather than re-tested here where it could drift.
+   *
+   * CATALOGUE PERMISSIONS RATHER THAN CONTENT ONES, and that is a considered split. The form lives
+   * at `/studio/catalog/customization-forms`, is bound to products and categories, and is edited by
+   * the same person who decides what a product is called. `content.write` would have given the
+   * editor the form and denied it to the merchandiser, which is the wrong way round for a surface
+   * whose whole job is to ask about a product.
+   */
+  customization_forms: {
+    policiesIn: PHASE_19_POLICIES,
+    shape: 'A',
+    readPermission: 'catalog.read',
+    writePermission: 'catalog.write',
+    deletePermission: 'destructive.execute',
+  },
+
+  /**
+   * `customization_form_steps` and `customization_form_fields` — Phase 19.
+   *
+   * BOTH CARRY A PARENT TEST, matching `product_specs`, `portfolio_project_media` and
+   * `journal_article_categories`. A step row is a question — "Preferred Shape", "Item / Flower
+   * Type" — and a published step hanging off an unpublished form would publish the questions of a
+   * brief the site does not yet offer. Worse, it is a legible plan: reading the steps and fields of
+   * an unpublished PRESERVATION template tells a competitor exactly which service is being
+   * prepared, without the form row ever being readable.
+   *
+   * The field's test goes through its FORM rather than through its step, even though a field has a
+   * step. Both are correct; the form is the shorter path, and the composite foreign key
+   * `(step_id, form_id)` already guarantees a field's step belongs to the same form, so the two
+   * predicates cannot disagree.
+   */
+  customization_form_steps: {
+    policiesIn: PHASE_19_POLICIES,
+    shape: 'A',
+    publicClause: `exists (select 1 from customization_forms f
+                   where f.id = customization_form_steps.form_id and f.status = 'PUBLISHED')`,
+    readPermission: 'catalog.read',
+    writePermission: 'catalog.write',
+    deletePermission: 'destructive.execute',
+  },
+  customization_form_fields: {
+    policiesIn: PHASE_19_POLICIES,
+    shape: 'A',
+    publicClause: `exists (select 1 from customization_forms f
+                   where f.id = customization_form_fields.form_id and f.status = 'PUBLISHED')`,
+    readPermission: 'catalog.read',
+    writePermission: 'catalog.write',
+    deletePermission: 'destructive.execute',
+  },
+
+  /**
+   * `product_customization_forms` — Phase 19. Shape B: a join with no status of its own.
+   *
+   * THE PARENT CLAUSE TESTS BOTH ENDS, and the second half is the one that matters. Requiring the
+   * FORM to be published is obvious. Requiring the PRODUCT or CATEGORY to be published is what
+   * stops the binding table from being a list of unreleased products: a row naming a draft product
+   * is readable by anon otherwise, and `select product_id from product_customization_forms` becomes
+   * an inventory of everything the studio is about to launch.
+   */
+  product_customization_forms: {
+    policiesIn: PHASE_19_POLICIES,
+    shape: 'B',
+    parentClause: `exists (select 1 from customization_forms f
+      where f.id = product_customization_forms.form_id and f.status = 'PUBLISHED')
+    and (
+      product_customization_forms.product_id is null
+      or exists (select 1 from products p
+          where p.id = product_customization_forms.product_id and p.status = 'PUBLISHED')
+    )
+    and (
+      product_customization_forms.category_id is null
+      or exists (select 1 from categories c
+          where c.id = product_customization_forms.category_id and c.status = 'PUBLISHED')
+    )`,
+    readPermission: 'catalog.read',
+    writePermission: 'catalog.write',
+    deletePermission: 'destructive.execute',
+  },
+
+  /**
+   * `feature_flags` — Phase 19.
+   *
+   * READ IS `studio.access`, WHICH EVERY ROLE HOLDS, and that is the whole point rather than a
+   * loose default: the register of what is switched on is how anyone in the Studio finds out why a
+   * surface is missing. Hiding it behind the write permission — STUDIO_GUIDE §2.3 considered and
+   * rejected exactly that — would leave four of the six roles looking at a site whose behaviour
+   * they cannot account for.
+   *
+   * WRITE IS `system.flags.write`: owner and admin. See amendment A17 and the header of migration
+   * 0171 for why the phase document's "owner-only" did not win.
+   */
+  feature_flags: {
+    policiesIn: PHASE_19_POLICIES,
+    shape: 'C',
+    readPermission: 'studio.access',
+    writePermission: 'system.flags.write',
+    deviation:
+      'No anon policy, and no public read of any kind. A flag is evaluated SERVER-SIDE and the ' +
+      'browser is never told a flag exists — it is told markup that is present or absent. ' +
+      'Publishing this table would hand every visitor the list of features being prepared, ' +
+      'their key names, and the moment each one was switched: an unreleased-roadmap feed with a ' +
+      'timestamp. Nothing public needs it, because nothing public reads it.',
   },
 
   // --- Phase 06 ---------------------------------------------------------------------------------

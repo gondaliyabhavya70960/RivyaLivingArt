@@ -141,6 +141,46 @@ export const clientConsentStateSchema = z.enum([
   'WITHDRAWN',
 ]) satisfies z.ZodType<Enums<'client_consent_state'>>
 
+/**
+ * Phase 19 `0170`. Which of the three SEED §33-35 templates a form descends from.
+ *
+ * `CUSTOM` IS NOT A FOURTH TEMPLATE. It is what a form the owner built from nothing is, and it
+ * exists so that "which template is this" always has an answer — a nullable `kind` would have made
+ * every consumer handle a case that means the same thing as this value does.
+ */
+export const formKindSchema = z.enum([
+  'FURNITURE',
+  'PRESERVATION',
+  'THREE_D_RESIN',
+  'CUSTOM',
+]) satisfies z.ZodType<Enums<'form_kind'>>
+
+/**
+ * Phase 19 `0170`. What a question IS, which decides both how it renders and how it validates.
+ *
+ * NOT A LIST OF HTML INPUT TYPES. `DIMENSION` carries a unit and is not a bare `NUMBER`;
+ * `COLOUR_DIRECTION` is a choice among named directions rather than a colour picker, because Rivya
+ * works in directions ("warm amber, low transparency") and a hex value would be a promise about a
+ * finish nobody has agreed. The three `CONTACT_*` members exist so the publish gate can ask "is
+ * there a way to reply to this brief?" without pattern-matching on a label an editor may rename.
+ */
+export const formFieldTypeSchema = z.enum([
+  'TEXT',
+  'TEXTAREA',
+  'NUMBER',
+  'DIMENSION',
+  'SELECT',
+  'MULTISELECT',
+  'RADIO',
+  'CHECKBOX',
+  'COLOUR_DIRECTION',
+  'FILE',
+  'CITY',
+  'CONTACT_NAME',
+  'CONTACT_PHONE',
+  'CONTACT_EMAIL',
+]) satisfies z.ZodType<Enums<'form_field_type'>>
+
 export const collectionConceptStateSchema = z.enum([
   'DRAFT_COLLECTION_CONCEPT',
   'OWNER_CONFIRMED',

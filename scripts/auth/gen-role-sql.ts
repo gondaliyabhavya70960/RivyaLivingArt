@@ -30,6 +30,7 @@ import {
   PHASE_16_POLICIES,
   PHASE_17_POLICIES,
   PHASE_18_POLICIES,
+  PHASE_19_POLICIES,
   TABLE_POLICY_MAP,
   type ManagedTable,
 } from '../../lib/auth/table-permissions'
@@ -183,6 +184,30 @@ const GENERATED: Record<string, { title: string; preamble: string }> = {
 -- \`journal_categories\` HAS THE ORDINARY THIN CLAUSE. A category asserts nothing about the
 -- business beyond "the studio writes about this", and the nine seeded ones ship PUBLISHED
 -- precisely so their pages can render.`,
+  },
+  [PHASE_19_POLICIES]: {
+    title: `-- ${PHASE_19_POLICIES} — Phase 19`,
+    preamble: `-- Policies for the four customization-form tables migration 0170 creates and \`feature_flags\`
+-- from 0171. GENERATED from lib/auth/table-permissions.ts and rewritten whole, so it may hold
+-- nothing a human wrote.
+--
+-- THE THREE FORM TABLES USE CATALOGUE PERMISSIONS, NOT CONTENT ONES. A form definition is edited
+-- at /studio/catalog/customization-forms, is bound to products and categories, and is the same
+-- person's work as naming a product — so \`catalog.read\` / \`catalog.write\`, which admits the
+-- merchandiser and not the editor. Using \`content.write\` would have inverted that for the one
+-- surface whose entire job is asking questions about a product.
+--
+-- STEPS AND FIELDS CARRY A PARENT TEST. A step is a question; the questions of an unpublished
+-- PRESERVATION template are a legible plan of a service not yet offered, readable by anon straight
+-- through PostgREST even while the form row itself stays hidden. \`product_customization_forms\`
+-- goes further and tests BOTH ends: without the product and category halves, that table is a list
+-- of every unreleased product id the studio has bound a brief to.
+--
+-- \`feature_flags\` IS SHAPE C AND ITS READ IS \`studio.access\`, held by all six roles. That is
+-- deliberate: the register of what is switched on is how anyone in the Studio accounts for a
+-- surface that is missing, and STUDIO_GUIDE §2.3 explicitly rejected hiding it behind the write
+-- permission. Nothing public reads it, and publishing it would hand a visitor the list of features
+-- being prepared with the date each one was switched.`,
   },
 }
 

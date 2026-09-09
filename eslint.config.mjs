@@ -112,6 +112,12 @@ const config = [
    *                            "editor published X" naming a colleague, into the record their
    *                            colleagues actually read. Only this file writes it. It reads through
    *                            the cookie-bound client, so `activity.read` still governs the feed.
+   *   lib/flags/index.ts       `feature_flags` is shape C — no anon policy, because publishing it
+   *                            would hand every visitor the list of features being prepared. Its
+   *                            first consumer is a PUBLIC route with no session, so there is no
+   *                            user whose permissions could be checked and no client but this one
+   *                            that can read the table. The seam is one SELECT and the module
+   *                            exports a boolean, never the client.
    *   lib/auth/provisioning.ts creating an `auth.users` row is possible only through GoTrue's admin
    *                            API, which authenticates with the service-role key. Public sign-up
    *                            is disabled at the project level, so an invitation issued here is
@@ -129,6 +135,7 @@ const config = [
       'lib/auth/audit.ts',
       'lib/logging/activity.ts',
       'lib/auth/provisioning.ts',
+      'lib/flags/index.ts',
       'scripts/**',
       'tests/**',
     ],
