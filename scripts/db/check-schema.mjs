@@ -127,6 +127,14 @@ const EXPECTED = {
   testimonials: [...TIER_A, ...TIER_B],
   // The gallery join is an edge, like the four above it.
   portfolio_project_media: ['created_at', 'created_by'],
+
+  // Phase 18. Both journal tables ARE seeded — SEED §19's nine categories and §20's ten article
+  // ideas — so unlike the portfolio pair they carry Tier C. What the seed writes is a title and an
+  // angle; the body is the owner's, and no seed record can publish one.
+  journal_categories: [...TIER_A, ...TIER_B, ...TIER_C],
+  journal_articles: [...TIER_A, ...TIER_B, ...TIER_C],
+  // The secondary-category join is an edge, like the gallery one above.
+  journal_article_categories: ['created_at', 'created_by'],
   content_seed_runs: ['started_at', 'finished_at', 'is_dry_run', 'report'],
 
   // `db:migrate`'s own bookkeeping, and a §1.4 exemption for the same reason `content_seed_runs` is

@@ -99,6 +99,7 @@ export const PHASE_08_POLICIES = '0051_phase08_cms_rls.sql'
 export const PHASE_15_POLICIES = '0131_phase15_product_specs_rls.sql'
 export const PHASE_16_POLICIES = '0142_phase16_entity_relations_rls.sql'
 export const PHASE_17_POLICIES = '0151_phase17_portfolio_rls.sql'
+export const PHASE_18_POLICIES = '0161_phase18_journal_rls.sql'
 
 export const TABLE_POLICIES = {
   // --- Shape A: content tables ------------------------------------------------------------------
@@ -360,6 +361,57 @@ export const TABLE_POLICIES = {
    * consent gate lives in `enforce_testimonial_evidence_gate()`, so PUBLISHED already implies a
    * granted consent for any row that names someone.
    */
+  /**
+   * `journal_categories` — Phase 18. Taxonomy, and PUBLISHED for the nine seeded ones.
+   *
+   * THE PUBLIC CLAUSE IS THE ORDINARY ONE. A category asserts nothing about the business beyond
+   * "the studio writes about this", and `/journal/category/<slug>` cannot render at all if `anon`
+   * cannot read the row. Categories therefore seed PUBLISHED where articles seed DRAFT — the
+   * difference is deliberate and is explained in `0160`.
+   */
+  journal_categories: {
+    policiesIn: PHASE_18_POLICIES,
+    shape: 'A',
+    publicClause: `status = 'PUBLISHED'`,
+    readPermission: 'content.read',
+    writePermission: 'content.write',
+    deletePermission: 'destructive.execute',
+  },
+
+  /**
+   * `journal_articles` — Phase 18.
+   *
+   * `published_at <= now()` IS PART OF THE PUBLIC CLAUSE, and it is the only content table where a
+   * date gates the read. Scheduling matters here in a way it does not for a product or a project: an
+   * article is written, approved and set to appear on a morning, and a row that is PUBLISHED with a
+   * future `published_at` must not be readable before that morning. The Phase 08 scheduler flips
+   * status on a cron, and a cron that runs late would otherwise publish early.
+   */
+  journal_articles: {
+    policiesIn: PHASE_18_POLICIES,
+    shape: 'A',
+    publicClause: `status = 'PUBLISHED' and published_at <= now()`,
+    readPermission: 'content.read',
+    writePermission: 'content.write',
+    deletePermission: 'destructive.execute',
+  },
+
+  /**
+   * `journal_article_categories` — Phase 18. Shape A with a parent clause, matching
+   * `portfolio_project_media`: which categories an unpublished article belongs to is a fact about
+   * unpublished editorial, and it leaks through the join if the edge is readable on its own.
+   */
+  journal_article_categories: {
+    policiesIn: PHASE_18_POLICIES,
+    shape: 'A',
+    publicClause: `exists (select 1 from journal_articles a
+                   where a.id = journal_article_categories.article_id
+                     and a.status = 'PUBLISHED' and a.published_at <= now())`,
+    readPermission: 'content.read',
+    writePermission: 'content.write',
+    deletePermission: 'destructive.execute',
+  },
+
   testimonials: {
     policiesIn: PHASE_17_POLICIES,
     shape: 'A',

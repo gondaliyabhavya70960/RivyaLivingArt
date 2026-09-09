@@ -29,6 +29,7 @@ import {
   PHASE_15_POLICIES,
   PHASE_16_POLICIES,
   PHASE_17_POLICIES,
+  PHASE_18_POLICIES,
   TABLE_POLICY_MAP,
   type ManagedTable,
 } from '../../lib/auth/table-permissions'
@@ -159,6 +160,29 @@ const GENERATED: Record<string, { title: string; preamble: string }> = {
 -- \`portfolio_project_media\` DOES carry a parent test, matching \`product_specs\`: the photographs
 -- of an unpublished project must not be readable, or the existence and the contents of unannounced
 -- work leak through the join even while the project row itself stays hidden.`,
+  },
+  [PHASE_18_POLICIES]: {
+    title: `-- ${PHASE_18_POLICIES} — Phase 18`,
+    preamble: `-- Policies for \`journal_categories\`, \`journal_articles\` and
+-- \`journal_article_categories\`, which migration 0160 creates. GENERATED from
+-- lib/auth/table-permissions.ts and rewritten whole, so it may hold nothing a human wrote.
+--
+-- \`journal_articles\` IS THE ONLY TABLE ON THE SITE WHOSE PUBLIC READ IS GATED BY A DATE.
+-- \`status = 'PUBLISHED' and published_at <= now()\`. Scheduling matters for editorial in a way it
+-- does not for a product or a project: a piece is written, approved and set to appear on a given
+-- morning, and a row that is PUBLISHED with a future date must not be readable before it. The
+-- Phase 08 scheduler flips status on a cron; a cron that runs early — or a publish performed by
+-- hand ahead of the date — would otherwise put the article on the site immediately. The clause is
+-- the guard that does not depend on a job running at the right minute.
+--
+-- \`journal_article_categories\` CARRIES A PARENT TEST, matching \`portfolio_project_media\` and
+-- \`product_specs\`. Which categories an unpublished article belongs to is a fact about
+-- unpublished editorial — a reader could enumerate the studio's unannounced pieces by category
+-- from the join alone, without ever reading the article row.
+--
+-- \`journal_categories\` HAS THE ORDINARY THIN CLAUSE. A category asserts nothing about the
+-- business beyond "the studio writes about this", and the nine seeded ones ship PUBLISHED
+-- precisely so their pages can render.`,
   },
 }
 

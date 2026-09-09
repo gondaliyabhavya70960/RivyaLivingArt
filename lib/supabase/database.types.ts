@@ -728,6 +728,270 @@ export type Database = {
           },
         ]
       }
+      journal_article_categories: {
+        Row: {
+          article_id: string
+          category_id: string
+          position: number
+          created_at: string
+          created_by: string | null
+        }
+        Insert: {
+          article_id: string
+          category_id: string
+          position?: number
+          created_at?: string
+          created_by?: string | null
+        }
+        Update: {
+          article_id?: string
+          category_id?: string
+          position?: number
+          created_at?: string
+          created_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'journal_article_categories_article_id_fkey'
+            columns: ['article_id']
+            isOneToOne: false
+            referencedRelation: 'journal_articles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'journal_article_categories_category_id_fkey'
+            columns: ['category_id']
+            isOneToOne: false
+            referencedRelation: 'journal_categories'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'journal_article_categories_created_by_fkey'
+            columns: ['created_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      journal_articles: {
+        Row: {
+          id: string
+          slug: string
+          page_id: string | null
+          title: string
+          standfirst: string | null
+          excerpt: string | null
+          angle_note: string | null
+          primary_category_id: string | null
+          cover_media_id: string | null
+          cover_mobile_media_id: string | null
+          byline: string
+          reading_minutes: number | null
+          seo_entry_id: string | null
+          status: Database['public']['Enums']['content_status']
+          owner_verification: Database['public']['Enums']['owner_verification']
+          fact_classification: Database['public']['Enums']['fact_classification']
+          seed_key: string | null
+          content_seed_version: string | null
+          seed_content_hash: string | null
+          seed_last_applied_at: string | null
+          owner_edited: boolean
+          published_at: string | null
+          published_by: string | null
+          created_at: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          slug: string
+          page_id?: string | null
+          title: string
+          standfirst?: string | null
+          excerpt?: string | null
+          angle_note?: string | null
+          primary_category_id?: string | null
+          cover_media_id?: string | null
+          cover_mobile_media_id?: string | null
+          byline?: string
+          reading_minutes?: number | null
+          seo_entry_id?: string | null
+          status?: Database['public']['Enums']['content_status']
+          owner_verification?: Database['public']['Enums']['owner_verification']
+          fact_classification?: Database['public']['Enums']['fact_classification']
+          seed_key?: string | null
+          content_seed_version?: string | null
+          seed_content_hash?: string | null
+          seed_last_applied_at?: string | null
+          owner_edited?: boolean
+          published_at?: string | null
+          published_by?: string | null
+          created_at?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          slug?: string
+          page_id?: string | null
+          title?: string
+          standfirst?: string | null
+          excerpt?: string | null
+          angle_note?: string | null
+          primary_category_id?: string | null
+          cover_media_id?: string | null
+          cover_mobile_media_id?: string | null
+          byline?: string
+          reading_minutes?: number | null
+          seo_entry_id?: string | null
+          status?: Database['public']['Enums']['content_status']
+          owner_verification?: Database['public']['Enums']['owner_verification']
+          fact_classification?: Database['public']['Enums']['fact_classification']
+          seed_key?: string | null
+          content_seed_version?: string | null
+          seed_content_hash?: string | null
+          seed_last_applied_at?: string | null
+          owner_edited?: boolean
+          published_at?: string | null
+          published_by?: string | null
+          created_at?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'journal_articles_cover_media_id_fkey'
+            columns: ['cover_media_id']
+            isOneToOne: false
+            referencedRelation: 'media_assets'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'journal_articles_cover_mobile_media_id_fkey'
+            columns: ['cover_mobile_media_id']
+            isOneToOne: false
+            referencedRelation: 'media_assets'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'journal_articles_page_id_fkey'
+            columns: ['page_id']
+            isOneToOne: true
+            referencedRelation: 'pages'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'journal_articles_primary_category_id_fkey'
+            columns: ['primary_category_id']
+            isOneToOne: false
+            referencedRelation: 'journal_categories'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'journal_articles_published_by_fkey'
+            columns: ['published_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'journal_articles_seo_entry_id_fkey'
+            columns: ['seo_entry_id']
+            isOneToOne: false
+            referencedRelation: 'seo_entries'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'journal_articles_updated_by_fkey'
+            columns: ['updated_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      journal_categories: {
+        Row: {
+          id: string
+          slug: string
+          name: string
+          description: string | null
+          intro_heading: string | null
+          position: number
+          status: Database['public']['Enums']['content_status']
+          owner_verification: Database['public']['Enums']['owner_verification']
+          fact_classification: Database['public']['Enums']['fact_classification']
+          seed_key: string | null
+          content_seed_version: string | null
+          seed_content_hash: string | null
+          seed_last_applied_at: string | null
+          owner_edited: boolean
+          published_at: string | null
+          published_by: string | null
+          created_at: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          slug: string
+          name: string
+          description?: string | null
+          intro_heading?: string | null
+          position?: number
+          status?: Database['public']['Enums']['content_status']
+          owner_verification?: Database['public']['Enums']['owner_verification']
+          fact_classification?: Database['public']['Enums']['fact_classification']
+          seed_key?: string | null
+          content_seed_version?: string | null
+          seed_content_hash?: string | null
+          seed_last_applied_at?: string | null
+          owner_edited?: boolean
+          published_at?: string | null
+          published_by?: string | null
+          created_at?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          slug?: string
+          name?: string
+          description?: string | null
+          intro_heading?: string | null
+          position?: number
+          status?: Database['public']['Enums']['content_status']
+          owner_verification?: Database['public']['Enums']['owner_verification']
+          fact_classification?: Database['public']['Enums']['fact_classification']
+          seed_key?: string | null
+          content_seed_version?: string | null
+          seed_content_hash?: string | null
+          seed_last_applied_at?: string | null
+          owner_edited?: boolean
+          published_at?: string | null
+          published_by?: string | null
+          created_at?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'journal_categories_published_by_fkey'
+            columns: ['published_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'journal_categories_updated_by_fkey'
+            columns: ['updated_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       materials: {
         Row: {
           id: string
