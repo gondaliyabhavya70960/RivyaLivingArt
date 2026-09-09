@@ -22,7 +22,30 @@ PostgreSQL refuses to USE an enum value added in it, so the transaction boundary
 (measured; Phase 14 needed the same split). `0141` adds the eight `collections` columns,
 `entity_relations`, the two new enums, `COLLECTION` on the `pages.kind` check, the publish gate, the
 concept-authority trigger and the two sync triggers. `0142` is the GENERATED RLS file.
-**Not yet applied to hosted** — that is the next action.
+
+**APPLIED TO HOSTED, AND FINGERPRINT-MATCHED.** `0140`–`0143` are on `ccvarsmzickdkryoakdg` with
+ledger rows carrying the runner's own SHA-256, so `db:migrate` sees them as applied and unedited.
+(`0143` turned out to be outstanding there too — hosted was at `0132`, not `0143` as an earlier
+draft of this file claimed.) A 106-line fingerprint over columns, constraints, policies, indexes,
+triggers, function bodies, security flags, ACLs and enum values matched local exactly:
+`634f45127e65b14242324683344542b1` on both.
+
+That match took a correction worth recording. The first comparison agreed on 106 lines but not on
+the hash, and the difference was three function BODIES — `enforce_collection_concept_authority`,
+`sync_collection_page_path` and `sync_entity_page_status`. `pg_get_functiondef` returns the stored
+text INCLUDING its comments, and those were the three functions whose inline comments I had dropped
+when inlining the SQL into the MCP call. Behaviour was identical; the hosted definitions were simply
+poorer to read. Re-applied verbatim, and the hashes then matched.
+
+**The gates were proved to BEHAVE on hosted, not merely to exist.** A probe inside a single
+statement created a collection, tried to publish it, tried a self-edge and tried a blank note, then
+raised deliberately so the whole thing rolled back: `collection zz-hosted-gate-probe cannot be
+published while concept_state = DRAFT_COLLECTION_CONCEPT (FEAT §9)`,
+`entity_relations_no_self`, `entity_relations_note_present`. Nothing was left behind — verified.
+
+**The ten concepts are replayed to hosted**, inserted with the same seed metadata local holds, all
+ten slugs returned by the insert. The row-level content fingerprint comparison was not run: the
+tool call was declined.
 
 **The two gates.** `enforce_collection_publish_gate()` refuses PUBLISHED unless the concept is
 OWNER_CONFIRMED; `enforce_collection_concept_authority()` refuses the confirmation to anyone but

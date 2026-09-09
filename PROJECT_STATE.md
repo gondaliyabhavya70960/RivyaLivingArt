@@ -86,8 +86,13 @@ so every route answers 500 and no page can be measured — the first run of the 
 checks a baseline route and skips with the reason, never in CI. Phase 15's three specs are in the
 same position. Unit, RLS, seed and gate verification all run here and pass.
 
-**The hosted project is level with the repository through `0143`, and NOT through Phase 16.**
-`0140`–`0142` are applied locally only and are the next hosted action.
+**The hosted project is level with the repository through `0143`.** Phase 16's `0140`–`0142` and the
+`0143` revoke were applied through the Supabase MCP server — hosted was at `0132`, so the revoke was
+outstanding there too — and verified against local by a 106-line fingerprint over columns,
+constraints, policies, indexes, triggers, function bodies, security flags, ACLs and enum values,
+which matched exactly. The publish gate, the self-edge check and the blank-note check were each
+shown to FIRE on hosted, inside a probe that rolled itself back. The ten concepts are replayed
+there with local's seed metadata.
 
 **The hosted project is level with the repository.** Every migration through
 `0132_phase15_specifications_omitted.sql` is applied to `ccvarsmzickdkryoakdg` and recorded in
