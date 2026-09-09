@@ -33,6 +33,7 @@
  *   npm run media:migrate:higgsfield
  *   npm run media:migrate:higgsfield -- --family=process-pour
  *   npm run media:migrate:higgsfield -- --limit=10
+ *   npm run media:migrate:higgsfield -- --from-results=data/higgsfield/mcp-upload-results.json
  */
 import { execFileSync } from 'node:child_process'
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
@@ -51,6 +52,7 @@ import {
   type AssetUploader,
   type Ledger,
   type RunScope,
+  type UploadedAsset,
 } from '../../lib/media/migration'
 import { createCloudinaryUploader } from '../../lib/media/providers/cloudinary-admin'
 
@@ -92,6 +94,9 @@ const dryRun = argv.includes('--dry-run')
 const family = argv.find((a) => a.startsWith('--family='))?.slice('--family='.length)
 const limitRaw = argv.find((a) => a.startsWith('--limit='))?.slice('--limit='.length)
 const limit = limitRaw === undefined ? undefined : Number(limitRaw)
+const resultsPath = argv
+  .find((a) => a.startsWith('--from-results='))
+  ?.slice('--from-results='.length)
 
 if (limit !== undefined && (!Number.isInteger(limit) || limit <= 0)) {
   console.error(`--limit must be a positive integer; got ${String(limitRaw)}`)
@@ -209,6 +214,49 @@ do update set
   migrated_at       = excluded.migrated_at
 `
 
+/**
+ * `--from-results=<file>` — replay uploads that happened somewhere else.
+ *
+ * WHY THIS EXISTS. The sandbox this project is built in cannot open a connection to
+ * api.cloudinary.com at all — the proxy refuses the CONNECT — so `createCloudinaryUploader()` can
+ * never run here. The uploads were performed through the Cloudinary MCP server instead, with the
+ * SAME parameters this file's uploader sends (`public_id` verbatim, `overwrite: false`,
+ * `unique_filename: false`, `use_filename: false`, the tags from `cloudinaryTagsFor`, the context
+ * from `contextFor`), and each response was saved. This mode feeds those saved responses through
+ * the same planner, the same row mapping and the same ledger rules, so the ONLY thing that differs
+ * from a direct run is which process made the HTTP request.
+ *
+ * WHAT IT REFUSES. An asset with no recorded response is a FAILURE, not a skip: the ledger records
+ * it as failed and the run exits non-zero, exactly as a rejected upload would. A recorded failure
+ * is replayed as a failure. Nothing here can invent an upload that did not happen.
+ *
+ * The file's shape:
+ *   { "results":  { "<publicId>": { publicId, bytes, width, height, durationSeconds, format } },
+ *     "failures": { "<publicId>": "<error message>" } }
+ */
+type RecordedResults = {
+  readonly results: Record<string, UploadedAsset>
+  readonly failures?: Record<string, string>
+}
+
+function createReplayUploader(path: string): AssetUploader {
+  const recorded = JSON.parse(readFileSync(path, 'utf8')) as RecordedResults
+  const results = recorded.results ?? {}
+  const failures = recorded.failures ?? {}
+
+  return {
+    async probe(publicId): Promise<UploadedAsset | null> {
+      return results[publicId] ?? null
+    },
+    async upload(request): Promise<UploadedAsset> {
+      const hit = results[request.publicId]
+      if (hit !== undefined) return hit
+      const failure = failures[request.publicId]
+      throw new Error(failure ?? `no recorded upload result for ${request.publicId} in ${path}`)
+    },
+  }
+}
+
 async function main(): Promise<void> {
   preflight()
 
@@ -239,9 +287,11 @@ async function main(): Promise<void> {
     return
   }
 
-  requireCloudinaryCredentials()
+  // A replay needs no Cloudinary credentials: the requests it replays were already made.
+  if (resultsPath === undefined) requireCloudinaryCredentials()
 
-  const uploader: AssetUploader = createCloudinaryUploader()
+  const uploader: AssetUploader =
+    resultsPath === undefined ? createCloudinaryUploader() : createReplayUploader(resultsPath)
   const client = new pg.Client({ connectionString: url })
   await client.connect()
 
