@@ -34,6 +34,13 @@ Specifications, Related — each a route rather than a pane. The eleventh readin
 Specifications, is required and satisfiable either by a spec row or by the recorded decision that a
 piece publishes none.
 
+**Hosted content.** The 16 Phase 15 `UI_LABEL` rows — the seven dimension labels, the gallery's
+four strings, the two material-band strings, the two related headings and the specification heading
+— were replayed to hosted and fingerprint-matched against local (`caa84a6a…`, 16 rows, both sides).
+This mattered more than it looks: `ProductSpecifications` DROPS a dimension the CMS cannot name
+rather than showing `length_mm` to a visitor, so without these rows the deployed specification block
+would have rendered every measurement as nothing at all.
+
 **Tests.** 1245 unit and RLS tests pass with none skipped, including `spec-rendering` (twelve cases,
 all about absence) and `tests/unit/rls/phase15.test.ts` (the `0130` guards, the dimensions
 constraint, and the RLS asymmetry the Studio's writes are shaped around). The three e2e specs
