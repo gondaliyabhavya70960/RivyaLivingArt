@@ -48,7 +48,15 @@ describe('seed_key identity', () => {
       // `collections` ROW and those address a `pages` row. The two families would otherwise be one
       // prefix apart while pointing at different tables.
       'collection',
+      // Phase 19 turned one family into three. A `commission-form:` key addresses a
+      // `customization_forms` row; the SEED §33-35 field list it used to carry as an array became
+      // real `customization_form_steps` and `customization_form_fields` rows, because SEED §33
+      // requires each field to be enabled, disabled, required, optional, reordered and renamed —
+      // six states an array of strings cannot hold. The form keys did not change, so nothing was
+      // orphaned; the two new prefixes are the rows that did not exist before.
+      'commission-field',
       'commission-form',
+      'commission-step',
       'faq',
       'global',
       'journal-article',
@@ -100,11 +108,76 @@ describe('deferral', () => {
     expect(applied.length + deferred.length).toBe(RECORDS.length)
   })
 
-  it('defers exactly the 22 the phase document names', () => {
-    expect(deferred).toHaveLength(22)
+  /**
+   * WHAT THIS COUNTS CHANGED MEANING IN PHASE 19, AND THE NUMBER IS NOT THE POINT.
+   *
+   * `requiresTables` is a DECLARATION of the tables a record needs, not a runtime state. It was
+   * written when `journal_*` and `customization_forms*` did not exist and the runner reported these
+   * records `deferred`; both phases have since shipped, so today the runner probes, finds the
+   * tables, and writes all 95. The declaration stays because it is true — these records do need
+   * those tables — and because removing it would erase the only record of why the copy was authored
+   * two phases before it could land.
+   *
+   * The count moved from 22 to 95 for one reason: Phase 19 turned each form template from a single
+   * row carrying a `fields` array into a form, eleven steps and its own field rows. 3 forms + 33
+   * steps + 40 fields = 76, plus the 19 journal records = 95.
+   */
+  it('declares a table dependency on exactly the 95 records two phases deferred', () => {
+    expect(deferred).toHaveLength(95)
     expect(deferred.filter((r) => r.table === 'journal_categories')).toHaveLength(9)
     expect(deferred.filter((r) => r.table === 'journal_articles')).toHaveLength(10)
     expect(deferred.filter((r) => r.table === 'customization_forms')).toHaveLength(3)
+    // Eleven FEAT §15 steps on every template, including the ones a template has no questions for:
+    // a step it does not use is seeded DISABLED rather than omitted, so an owner can switch it on.
+    expect(deferred.filter((r) => r.table === 'customization_form_steps')).toHaveLength(33)
+    expect(deferred.filter((r) => r.table === 'customization_form_fields')).toHaveLength(40)
+  })
+
+  /**
+   * Every field row names both its form and its step, and every step row names its form.
+   *
+   * `resolveReferences` looks a ref up by `seed_key` and FAILS rather than writing null, so a typo
+   * here is loud at seed time. What it cannot catch is a field that names no step at all: the
+   * column is NOT NULL, so the insert would fail with a constraint name rather than with the
+   * mistake, which is why this asserts the shape rather than trusting the database to explain it.
+   */
+  it('gives every seeded form field a form and a step to belong to', () => {
+    for (const record of deferred.filter((r) => r.table === 'customization_form_fields')) {
+      expect(Object.keys(record.refs ?? {}).sort(), record.seedKey).toEqual(['form_id', 'step_id'])
+    }
+    for (const record of deferred.filter((r) => r.table === 'customization_form_steps')) {
+      expect(Object.keys(record.refs ?? {}), record.seedKey).toEqual(['form_id'])
+    }
+  })
+
+  /**
+   * The seeded step positions must be dense from 1 with `contact` at the end.
+   *
+   * NOT COSMETIC. `normalise_form_step_order()` renumbers every form's steps densely with contact
+   * last after each write, so a seed numbering them any other way would be silently corrected — and
+   * the corrected `position` would no longer match the hash the runner stored, making all
+   * thirty-three step rows report themselves owner-edited on the very next run. The seed would then
+   * stand down from its own output, permanently.
+   */
+  it('numbers seeded steps the way the database will renumber them anyway', () => {
+    const steps = deferred.filter((r) => r.table === 'customization_form_steps')
+    const byForm = new Map<string, SeedRecord[]>()
+    for (const step of steps) {
+      const form = step.refs?.['form_id']?.seedKey ?? '(none)'
+      byForm.set(form, [...(byForm.get(form) ?? []), step])
+    }
+
+    expect(byForm.size).toBe(3)
+    for (const [form, rows] of byForm) {
+      const positions = rows.map((r) => r.fields['position'] as number).sort((a, b) => a - b)
+      expect(positions, form).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11])
+
+      const contact = rows.find((r) => r.fields['key'] === 'contact')
+      expect(contact?.fields['position'], form).toBe(11)
+      // It may be renamed. It may not be switched off — a CHECK on the row says so, and the seed
+      // must not ship a form that would fail its own constraint.
+      expect(contact?.fields['is_enabled'], form).toBe(true)
+    }
   })
 
   /** A deferred record must name the table it waits for, or the runner cannot probe anything. */
