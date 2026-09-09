@@ -43,6 +43,81 @@ export async function listLargeFormatProducts(client: Client): Promise<Product[]
   return parseRows(ENTITY, productSchema, data ?? [])
 }
 
+/**
+ * The order `product_media` rows render in on a product page: by role, then by the owner's
+ * `sort_order` within a role.
+ *
+ * DECLARED HERE RATHER THAN SORTED IN SQL because `role` is `text` with a check constraint, not an
+ * enum, so PostgreSQL has no opinion about which role comes first — an `order by role` would sort
+ * alphabetically and put `detail` before `hero`. This is DATA_MODEL §2.1's vocabulary in the
+ * sequence a page reads: the piece itself, then the set, then the close looks, then it in a room,
+ * then the process behind it, then moving image, then the model.
+ */
+const MEDIA_ROLE_ORDER = [
+  'hero',
+  'gallery',
+  'detail',
+  'lifestyle',
+  'process',
+  'video',
+  'model',
+] as const
+
+/** A role the constraint allows but this ordering has no place for sorts last, not first. */
+function roleRank(role: string | null): number {
+  if (role === null) return MEDIA_ROLE_ORDER.length + 1
+  const index = (MEDIA_ROLE_ORDER as readonly string[]).indexOf(role)
+  return index === -1 ? MEDIA_ROLE_ORDER.length : index
+}
+
+export type ProductMediaEdge = {
+  readonly media_asset_id: string
+  readonly role: string | null
+  readonly sort_order: number | null
+}
+
+/**
+ * The gallery edges for one product, in render order.
+ *
+ * A PUBLIC READ, unlike `listProductMediaIds` in `catalog-admin.ts`, which is the Studio's. The
+ * separation is not ceremony: this one is called with the request-scoped anon client on a route a
+ * visitor loads, so `product_media_select_public` decides what comes back — edges whose parent
+ * product is published. The Studio's read runs under a staff session and sees drafts.
+ */
+export async function listProductMediaEdges(
+  client: Client,
+  productId: string,
+): Promise<ProductMediaEdge[]> {
+  const { data, error } = await client
+    .from('product_media')
+    .select('media_asset_id, role, sort_order')
+    .eq('product_id', productId)
+
+  if (error) throw toRepositoryError(ENTITY, 'list-media', productId, error)
+
+  return [...(data ?? [])].sort(
+    (a, b) =>
+      roleRank(a.role) - roleRank(b.role) ||
+      // Null sorts last within a role — unplaced, not first, the same rule the listing uses.
+      (a.sort_order ?? Number.MAX_SAFE_INTEGER) - (b.sort_order ?? Number.MAX_SAFE_INTEGER) ||
+      a.media_asset_id.localeCompare(b.media_asset_id),
+  )
+}
+
+/** The material ids attached to one product, as a visitor may see them. */
+export async function listProductMaterialIdsPublic(
+  client: Client,
+  productId: string,
+): Promise<string[]> {
+  const { data, error } = await client
+    .from('product_materials')
+    .select('material_id')
+    .eq('product_id', productId)
+
+  if (error) throw toRepositoryError(ENTITY, 'list-materials', productId, error)
+  return (data ?? []).map((row) => row.material_id)
+}
+
 export async function getProductBySlug(client: Client, slug: string): Promise<Product> {
   const { data, error } = await client.from('products').select('*').eq('slug', slug).maybeSingle()
 

@@ -45,9 +45,10 @@ export type StaticPublicPath = (typeof STATIC_PUBLIC_PATHS)[number]
  * against the first directly, and against the second only by consulting the database — which is
  * what `listPublicPagePaths` is for.
  *
- * Phase 14 adds the first entry. `/product/[slug]`, `/collections/[slug]`, `/portfolio/[slug]`,
- * `/journal/[slug]` and `/journal/category/[slug]` join it in Phases 15 to 18.
+ * Phase 14 added the first entry and Phase 15 the second. `/collections/[slug]`,
+ * `/portfolio/[slug]`, `/journal/[slug]` and `/journal/category/[slug]` join them in Phases 16
+ * to 18.
  */
-export const DYNAMIC_PUBLIC_ROUTES = ['/collection/[category]'] as const
+export const DYNAMIC_PUBLIC_ROUTES = ['/collection/[category]', '/product/[slug]'] as const
 
 export type DynamicPublicRoute = (typeof DYNAMIC_PUBLIC_ROUTES)[number]

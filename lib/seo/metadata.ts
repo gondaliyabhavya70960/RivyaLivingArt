@@ -51,6 +51,23 @@ export type PageMetadataInput = {
   readonly canonicalPath?: string
   /** `rel="prev"` / `rel="next"` for a paginated view, as absolute-from-root paths. */
   readonly pagination?: { readonly previous?: string; readonly next?: string }
+  /**
+   * Title and description from the ROW ITSELF, for a route whose page is an entity rather than a
+   * `pages` record.
+   *
+   * `/product/[slug]` has no `seo_entries` row and cannot have one: entries are keyed by path, and
+   * there is one path per product. The words live on `products.seo_title` / `seo_description`
+   * instead. Passing them here rather than writing a second metadata builder is what keeps the
+   * §41 fallback chain — global entry, then `SEO_DEFAULT.site_name`, then the title template, then
+   * the social keys and the OG image — in one place. A second builder would drift from this one
+   * the first time either changed.
+   *
+   * Absent or blank falls through to exactly what a page with no entry gets.
+   */
+  readonly override?: {
+    readonly title?: string | null
+    readonly description?: string | null
+  }
 }
 
 function nonEmpty(value: string | null | undefined): string | null {
@@ -110,7 +127,7 @@ export async function buildPageMetadata(input: PageMetadataInput): Promise<Metad
   const template = siteString(chrome.strings, 'SEO_DEFAULT.title_template')
   const siteName = siteString(chrome.strings, 'SEO_DEFAULT.site_name')
 
-  const pageTitle = nonEmpty(entry?.title)
+  const pageTitle = nonEmpty(input.override?.title) ?? nonEmpty(entry?.title)
   const fallbackTitle = nonEmpty(globalEntry?.title) ?? siteName
 
   /**
@@ -128,15 +145,22 @@ export async function buildPageMetadata(input: PageMetadataInput): Promise<Metad
         : template.replace(TITLE_PLACEHOLDER, pageTitle)
 
   const description =
-    nonEmpty(entry?.description) ?? nonEmpty(globalEntry?.description) ?? undefined
+    nonEmpty(input.override?.description) ??
+    nonEmpty(entry?.description) ??
+    nonEmpty(globalEntry?.description) ??
+    undefined
 
   const socialTitle =
     nonEmpty(entry?.social_title) ??
+    // The override is the page's own title, so it precedes the GLOBAL social fallbacks but not a
+    // social title an editor wrote for this specific path.
+    nonEmpty(input.override?.title) ??
     nonEmpty(globalEntry?.social_title) ??
     siteString(chrome.strings, 'SOCIAL.og_headline') ??
     title
   const socialDescription =
     nonEmpty(entry?.social_description) ??
+    nonEmpty(input.override?.description) ??
     nonEmpty(globalEntry?.social_description) ??
     siteString(chrome.strings, 'SOCIAL.og_description') ??
     description

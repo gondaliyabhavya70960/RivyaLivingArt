@@ -45,6 +45,38 @@ export type Sql = {
 
 let client: pg.Client | null = null
 
+/**
+ * The key every RLS suite serialises on. Arbitrary, but fixed and shared.
+ *
+ * WHY A DATABASE LOCK RATHER THAN A RUNNER SETTING. `loadFixture` is not a private setup: it runs
+ * `alter table … disable trigger`, which is committed DDL every other connection sees, and it
+ * DELETEs and re-INSERTs the fixture rows outside any transaction. Two suites overlapping means one
+ * file's wipe lands in the middle of another's assertions — a count that was 1 a moment ago reads 0,
+ * and a guard that fired correctly reports a row it can no longer see.
+ *
+ * The obvious fix is to tell the runner not to overlap them, and the obvious fix does not hold.
+ * `fileParallelism: false` inside a project is silently ignored; `maxWorkers: 1` on a project did
+ * not isolate it either; and even with `fileParallelism` at the root the failures came back. Each of
+ * those was tried, and each looked like it worked for a run or two — green runs were luck, not
+ * evidence, and only a captured failure showed why.
+ *
+ * IT IS TAKEN ON CONNECT, NOT ON `loadFixture`, and that distinction is the whole of the second
+ * bug. Taking it in `loadFixture` covered four of the five suites and missed
+ * `phase08-render.test.tsx`, which builds its own page and sections rather than using the shared
+ * fixture — so it never took the lock, and `phase08.test.ts` deleting every `page_sections` row
+ * went on landing in the middle of it. Every suite connects; not every suite loads the fixture.
+ * The first database touch is the honest place for it.
+ *
+ * This works because it does not depend on the runner at all. Whoever holds the lock owns the
+ * database until they disconnect, whatever process they are in and however the files were
+ * scheduled. Session-level, so a crashed worker releases it when its connection dies rather than
+ * wedging the suite.
+ */
+const FIXTURE_LOCK = 918_273_645
+
+/** Whether THIS module instance holds it. Advisory locks are re-entrant, so unlocks must match. */
+let holdsFixtureLock = false
+
 export async function connect(): Promise<pg.Client> {
   if (client) return client
   const connectionString = process.env.DATABASE_URL
@@ -53,11 +85,19 @@ export async function connect(): Promise<pg.Client> {
   }
   client = new pg.Client({ connectionString })
   await client.connect()
+  await client.query('select pg_advisory_lock($1)', [FIXTURE_LOCK])
+  holdsFixtureLock = true
   return client
 }
 
 export async function disconnect(): Promise<void> {
   if (client) {
+    // Released before the socket closes so the next waiter starts immediately rather than after
+    // the server notices a dead connection.
+    if (holdsFixtureLock) {
+      await client.query('select pg_advisory_unlock($1)', [FIXTURE_LOCK])
+      holdsFixtureLock = false
+    }
     await client.end()
     client = null
   }
@@ -222,6 +262,7 @@ export const FIXTURE_IDS = {
  * runner writes). Idempotent, so the suite can be re-run without a reset.
  */
 export async function loadFixture(): Promise<void> {
+  // `connect` already holds FIXTURE_LOCK, so this wipe cannot land inside another suite's run.
   const db = await connect()
   const u = FIXTURE_USERS
   const f = FIXTURE_IDS
