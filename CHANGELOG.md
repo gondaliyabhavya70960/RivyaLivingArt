@@ -6,6 +6,77 @@ Every phase adds an entry; see `docs/architecture/CANONICAL-DECISIONS.md` D9 for
 
 ## [Unreleased]
 
+### Phase 18 — Journal
+
+Rivya gains an editorial surface. Nine SEED §19 categories and ten SEED §20 article IDEAS — a title
+and an angle each — and **not one line of article prose written by this repository**. §20 says it in
+capitals: seed as DRAFT, do not publish automatically. Several of those titles ask questions only
+Rivya can answer.
+
+**The seed's field names were wrong, and the mistake was a publishing one.** The nineteen records
+were authored in Phase 09 against a table Phase 18 had not yet created, and they put each article's
+ANGLE — the studio's internal brief for whoever writes the piece — into `excerpt`. `excerpt` is what
+a card renders. Those ten briefs would have appeared on `/journal` as summaries the moment anything
+was published. The angle now lives in `angle_note`, which nothing renders, and `excerpt` is null:
+a summary of an unwritten article is a summary of nothing.
+
+**`reading_minutes` is derived by a trigger, which is what "never typed" has to mean.** The phase
+document says the value is computed at 200 words per minute; leaving that to the application makes
+it derived only on the paths that remembered. `set_article_reading_minutes()` overwrites the column
+on every write from the linked page's visible sections — probed: 999 written, NULL stored. NULL
+rather than 1 when there is nothing to read, because "1 min read" over an empty article is a claim
+about a body that does not exist.
+
+**An article cannot be published without a body.** The risk table assigns that guard to
+`lib/cms/publishing.ts`; `enforce_article_has_body()` is the copy that cannot be bypassed. No page,
+an empty page, and a page whose only section is hidden are all refused, each naming the article. It
+does not judge whether the prose is any good — a trigger pretending to make that call would refuse
+work for reasons nobody could predict.
+
+**`journal_articles` is the only table on the site whose public read is gated by a date.**
+`published_at <= now()` alongside the status. A piece set to appear on a given morning must not be
+readable before it, and the clause is the guard that does not depend on a cron running at the right
+minute. That is also the whole scheduling mechanism: publishing with tomorrow's date puts the
+article live tomorrow, so there is no separate schedule button because there is no separate act.
+
+**One automatic related rule, and `lib/cms/related.ts` is where it is written down.** Curated edges
+always win; when there are fewer than three, the shortfall fills from other published articles in
+the same primary category, newest first, excluding this one and anything a curated edge already
+points at. No similarity scoring, no personalisation. The two groups render under separate headings
+— "Related" for what a person chose, "More in {category}" for the fill, which states a fact rather
+than implying a judgement nobody made.
+
+**Categories seed PUBLISHED, articles seed DRAFT** — the one exception to Phase 09's rule, because a
+category is taxonomy rather than copy and `/journal/category/materials` cannot render at all if anon
+cannot read the row.
+
+**RC-220 is `ArticleCard`, the only card on the site that changes LAYOUT rather than ratio on a
+phone.** A product or project card is browsed; a list of articles is read, and a stack of full-width
+16:9 images pushes three titles below the fold that a horizontal row keeps on it. Its date is a
+`<time datetime>` formatted in a fixed UTC zone so server and browser agree.
+
+**No RSS feed.** The phase lists one and then holds it behind an amendment nobody has granted; its
+own verification says that if declined, assert the URL 404s and no feed is advertised. That is what
+`tests/e2e/journal.spec.ts` does.
+
+**Three guards fired on this work and all three were right.** `site-routes` caught two undeclared
+route families. `seed-modules` caught a new seed-key namespace and changed the design —
+`journal-ui.ts` uses `global:UI_LABEL.*` like its two most recent siblings rather than a `journal:`
+prefix that would have sat one character from `journal-article:` while addressing a different table.
+`studio-nav` caught `/studio/content/journal/categories`, which D4 did not list; recorded as
+amendment A16 rather than added to the manifest alone.
+
+**`Pagination` (RC-234) lost its two couplings to the catalogue.** It took a `CatalogQuery` and read
+`UI_LABEL.catalog.*` itself, so a change to how the catalogue encodes `sort` would have changed the
+journal's page URLs, and a screen-reader user paging the journal would have heard the region
+announced as the catalogue's. It now takes `hrefFor` and four resolved labels.
+
+Also fixes a latent hole in `sync_project_page_path` (0153): it fired on INSERT or a slug change
+only, so linking an existing page to a project left it at whatever path it was created with. Nothing
+was broken — Phase 17's action passes the right path at insert — but the article twin would have
+inherited it.
+
+
 ### Phase 17 — Portfolio / Projects
 
 Rivya gains a project archive that is structurally incapable of lying, and it ships with **zero

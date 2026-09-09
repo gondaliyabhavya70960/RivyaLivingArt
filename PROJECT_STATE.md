@@ -1,14 +1,14 @@
 # PROJECT_STATE — what is actually built
 
 > Verified against the repository, not against intent. Update at the end of every phase.
-> Last verified: Phase 17 (Portfolio / Projects), 2026-09-09.
+> Last verified: Phase 18 (Journal), 2026-09-09.
 
 ## Summary
 
 The design system is built; the database spine exists, carries RLS policies for all six roles, and
 has been verified against a real PostgreSQL **and against the hosted Supabase project**. What
 exists: the toolchain, the token layer, 32 primitives, 3 motion helpers, 7 behavioural patterns, a
-dev-only gallery, **twenty-nine tables, all with RLS on**, generated types with a
+dev-only gallery, **thirty-two tables, all with RLS on**, generated types with a
 drift gate, a repository layer with Zod at its boundary, an idempotent seed runner proved not to
 overwrite an owner's edit, the Studio shell with its ⌘K palette and user management, the media
 layer end to end, the Higgsfield migration, gap engine and tracker, **the CMS engine — pages,
@@ -111,13 +111,51 @@ restricted to one page kind (`allowedPages: ['/portfolio/[slug]']`), because it 
 whichever project owns the page it sits on and is meaningless anywhere else. RC-219 `PortfolioCard`
 is built and replaces Phase 11's `ReferenceCards` placeholder for projects.
 
+**The journal exists, and holds ten ideas rather than ten articles.** Phase 18 added
+`journal_categories`, `journal_articles` and `journal_article_categories`, and resolved the nineteen
+records Phase 09 authored and deferred: nine SEED §19 categories (PUBLISHED — a category is taxonomy,
+and a DRAFT one is a page that 404s) and ten SEED §20 article IDEAS, all DRAFT, each a title and an
+angle with no body. §20 forbids publishing them automatically, and three carry
+`OWNER_VERIFICATION_REQUIRED` because §20 attaches a caution to each.
+
+Two rules that could have been application-only are in the database instead.
+`set_article_reading_minutes()` derives `reading_minutes` from the linked page's visible sections at
+200 words per minute and overwrites anything a caller sends — probed with 999, stored NULL — and
+`enforce_article_has_body()` refuses to publish an article with no page, an empty page, or a page
+whose only section is hidden. `journal_articles` is the only table on the site whose public read is
+gated by a date: `published_at <= now()`, which is both the scheduling mechanism and the guard that
+does not depend on a cron running on time.
+
+`lib/cms/related.ts` holds FEAT §11's single automatic rule — curated edges first, then a
+same-category fill, labelled as what it is — with a test that asserts the rule does not fire when
+curation is sufficient and never repeats an article an editor already linked. `/journal`,
+`/journal/[slug]` and `/journal/category/[slug]` all render; with nothing published the landing is
+SEED §29's sentence and every article URL 404s. RC-220 `ArticleCard` is built.
+
+**Writing the seed test found a publishing defect.** The Phase 09 records put each article's angle —
+the studio's internal brief — into `excerpt`, which is what a card renders. Ten editorial briefs
+would have appeared on `/journal` as summaries the moment anything went live.
+
 **The Playwright suite cannot execute in this sandbox.** The network policy denies the Supabase host,
 so every route answers 500 and no page can be measured — the first run of the Phase 16 spec reported
 `expected 404, received 500` and pointed at collections before that was diagnosed. The spec now
 checks a baseline route and skips with the reason, never in CI. Phase 15's three specs are in the
 same position. Unit, RLS, seed and gate verification all run here and pass.
 
-**The hosted project is level with the repository through `0153`.** Phase 17's `0150`–`0153` were
+**The hosted project is level with the repository through `0161`.** Phase 18's `0160`/`0161` were
+applied through the Supabase MCP server, and the nine categories, ten drafts and nine journal UI
+strings replayed there with local's own seed metadata, so the runner still owns them. Verified
+against local by a 178-line fingerprint over the journal objects.
+
+That comparison first reported a mismatch and the cause is worth recording: `pg_get_indexdef`
+renders an operator class according to the READER's `search_path`, so the trigram index showed as
+`extensions.gin_trgm_ops` locally and `gin_trgm_ops` on hosted while being the same index — same
+opclass, same schema, same extension, checked directly against `pg_opclass`. Read with the same
+`search_path` on both sides the fingerprints are identical (`f55c1a1e3258265162046c0288386bb0`). Any
+future fingerprint must fix the search_path on both sides or it will chase this again. The gates were
+also proved to BEHAVE on hosted inside a probe that rolled itself back.
+
+**The hosted project was level with the repository through `0153`.** Phase 17's `0150`–`0153` were
 applied through the Supabase MCP server and verified against local by a 146-line fingerprint over
 columns, constraints, policies, indexes, triggers, function bodies, security flags, ACLs and enum
 values, which matched exactly (`79215119657489fc98cdff8f6ead4d5c`). Applying them was not optional:
@@ -201,7 +239,8 @@ in this document is from a local run.
 | 15 | Product Detail Experience | **CODE COMPLETE; NO PRODUCTS BY DESIGN** | Migrations `0130`–`0132`, `product_specs`, the specification block that has no placeholder branch at all, the dimensions shape constraint, `specifications_omitted`, the gallery with its lightbox (RC-238) and the four Studio tabs. `/product/[slug]` answers 404 for every slug because `products` holds zero rows. |
 | 16 | Collections as Exhibitions | **CODE COMPLETE; NONE PUBLISHED BY DESIGN** | Migrations `0140`–`0143`. Eight new `collections` columns, `entity_relations`, the concept publish gate and its authority gate, the exhibition page and its ten-band template, `collection-products` and `signature-media` (30 blocks, 22 built), and the ten FEAT §9 concepts seeded as a name, a slug and an order. Applied to hosted and fingerprint-verified. Amendment A14. |
 | 17 | Portfolio / Projects | **CODE COMPLETE; ARCHIVE EMPTY BY DESIGN** | Migrations `0150`–`0153`. `portfolio_projects`, `portfolio_project_media` and `testimonials`, all with zero rows and none seedable; two per-table evidence gates with the withdrawal branch first; `evidence_note` revoked from `anon` at the grant; `project-gallery` (32 blocks, 24 built) and RC-219 `PortfolioCard`; the project and testimonial Studio editors with consent, verification and publish. `lib/portfolio/gates.ts` mirrors both triggers and is held to agreement with them by test. Applied to hosted and fingerprint-verified through `0153`. Amendment A15. |
-| 18–46 | Journal, conversion, Studio, research, ops, launch | **PLANNED** | Specified in `docs/project/phases/`. |
+| 18 | Journal | **CODE COMPLETE; NOTHING PUBLISHED BY DESIGN** | Migrations `0160`/`0161`. Three tables, the ARTICLE page kind, `reading_minutes` derived by trigger, `enforce_article_has_body`, and the only date-gated public read on the site. Nine SEED §19 categories PUBLISHED and ten SEED §20 ideas DRAFT with covers bound; `lib/cms/related.ts` holds FEAT §11's one automatic rule; `/journal`, `/journal/[slug]` and `/journal/category/[slug]`; RC-220 `ArticleCard`; the Studio article editor and its categories screen. Applied to hosted and fingerprint-verified. Amendment A16. No RSS feed — the phase holds it behind an amendment nobody has granted. |
+| 19–46 | Conversion, Studio, research, ops, launch | **PLANNED** | Specified in `docs/project/phases/`. |
 
 ## What exists on disk
 

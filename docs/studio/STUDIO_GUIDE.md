@@ -1042,7 +1042,8 @@ Publish At / Unpublish At where scheduling applies.
 | `/studio/content/homepage` | The homepage, pinned into the same editor | Edit the thirteen seeded sections; reorder; hide; swap media | `pages` · `page_sections` |
 | `/studio/content/portfolio` · `/[projectId]` | Delivered projects | List (with a permanent zero-row explanation, not an error state) and a two-field create. The editor opens with **Verification** — the panel naming every unmet gate — then **Identity** (title, subtitle, summary, type, location label, completion date, evidence note), **Client** (its own form: is-client-project, display name, consent state, consent reference), **Story page** (create the `PROJECT` page and its four starting bands, or open the block editor), **Gallery** (`portfolio_project_media`: role, caption, per-item alt override, order) and **Related** (`entity_relations`). Publish and unpublish sit under the verification panel | `portfolio_projects` · `portfolio_project_media` · `entity_relations` · `pages` |
 | `/studio/content/testimonials` | Quotes, with the same consent discipline | Record a quote; per-row edit, consent, verification and publish — four forms, three permissions | `testimonials` |
-| `/studio/content/journal` · `/[articleId]` · `/categories` | Editorial | Identity · Categories · Cover (desktop and mobile, separate) · Body · Related · Publishing with `publish_at` / `unpublish_at` | `journal_articles` · `journal_categories` · `journal_article_categories` |
+| `/studio/content/journal` · `/[articleId]` | Editorial | List (title, category, **body written or empty**, appears-on, status) and a create form taking a title, an address and a category. The editor carries **Publishing** first (verification, then publish with a date), then **Identity** (title, standfirst, card line, angle, category), **Byline**, **Body** (create the `ARTICLE` page, then open the block editor), **Cover** (desktop and mobile, separate slots) and **Related** | `journal_articles` · `journal_categories` · `entity_relations` · `pages` |
+| `/studio/content/journal/categories` | The nine SEED §19 subjects | Rename, reorder, write an intro and a description. The address is shown and cannot change. No create, no delete | `journal_categories` |
 | `/studio/content/faqs` | The ten seeded FAQ entries | Edit question, answer, category, position; add and archive | `faqs` |
 | `/studio/content/navigation` | Header, mobile and category menus | Edit label, href, order, visibility, target, nesting; a resolved-URL preview shows whether an href actually resolves before publishing | `navigation_items` (`menu in ('HEADER','MOBILE','CATEGORY')`) |
 | `/studio/content/footer` | Footer columns and links | As navigation | `navigation_items` (`menu = 'FOOTER'`) |
@@ -1087,6 +1088,25 @@ Publish At / Unpublish At where scheduling applies.
 - **The gallery is ordered by a number an editor types, not by dragging** (amendment A15·d). A
   drag-only reorder is unreachable by keyboard and by screen reader and does not work with
   JavaScript off, which every other Studio form does.
+- **A journal article cannot be published without a body.** `enforce_article_has_body` refuses
+  PUBLISHED unless the article has a linked page carrying at least one visible section, naming the
+  article rather than a constraint. That is why the list has a Body column: an empty body is the
+  blocker an editor will meet, and it is worth seeing before opening the article.
+- **Publishing takes a date, and the date IS the schedule.** The public read is gated on
+  `published_at <= now()`, so publishing with tomorrow's date puts the piece live tomorrow and an
+  empty field publishes it now. There is no separate schedule button because there is no separate
+  act. There is no `unpublish_at` either: `journal_articles` has no such column, and taking an
+  article down is a button somebody presses.
+- **Typing a person into the byline raises an owner-verification requirement**, and clearing it back
+  to the studio's own name lowers the one it raised — never a confirmation somebody gave for another
+  reason. A named human byline asserts who works at Rivya, which is a business fact.
+- **`reading_minutes` is shown and cannot be edited.** A trigger derives it from the article's own
+  blocks at 200 words per minute on every write, so a field would be a box whose value is discarded.
+- **A category's address cannot change; its name can.** The slug is a public URL, and moving one
+  needs a redirect row, which is Phase 39. The Studio shows the address and refuses a change with a
+  sentence rather than hiding the field — a field that accepts a value and ignores it is worse than
+  one that says no. There is no create and no delete: SEED §19 fixes the nine, a tenth needs a seed
+  record so every environment has it, and deleting one orphans every article filed under it.
 - **The ten seeded journal articles have no body.** They carry an `angle_note` and `status = 'DRAFT'`;
   two are `OWNER_VERIFICATION_REQUIRED` because they touch fabrication capability and preservation
   performance. `reading_minutes` is computed on save, never typed.

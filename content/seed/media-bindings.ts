@@ -15,11 +15,24 @@
  * from a gap: it is a typo, or a binding written against a manifest family that was renumbered.
  * The runner refuses the record and names the id rather than writing null and carrying on.
  *
- * THIS FILE IS EMPTY UNTIL THE MIGRATION RUNS. `scripts/media/migrate-higgsfield.ts` has never
- * executed — the sandbox proxy refuses CONNECT to both Cloudinary and the Higgsfield CDN — so
- * `media_assets` holds no Higgsfield rows at all, and every binding written here today would fail
- * the run rather than bind. The bindings the phase document plans, by page and family, are listed
- * below as the work item they are; they are added in one commit once the assets exist.
+ * THIS FILE IS STILL EMPTY, AND THAT IS NOW OUTSTANDING WORK RATHER THAN A BLOCKED STATE. An earlier
+ * version of this note said the migration "has never executed"; it has. All 250 Higgsfield assets
+ * are in Cloudinary and in `media_assets` on both the local cluster and hosted, verified by two
+ * independent fingerprints. Nothing prevents these bindings from being written any more.
+ *
+ * WHAT IS ACTUALLY MISSING IS THE CURATION. Choosing which of 250 assets illustrates which of 53
+ * seeded sections is an editorial decision across a dozen pages, and doing it badly is worse than
+ * leaving it undone: a binding is a picture on a page, and the wrong picture beside the wrong words
+ * is the fabrication D10 forbids in its quietest form. Until that pass happens, every seeded section
+ * renders the SEED §47 fallback, which is honest.
+ *
+ * ARTICLE AND PROJECT COVERS DO NOT COME THROUGH HERE. They are columns on the entity row
+ * (`journal_articles.cover_media_id`, and the gallery join for a project), bound by the seed
+ * record's own `media` map — so the journal's ten covers exist while this map is empty. This file
+ * binds SECTION slots, and only those.
+ *
+ * The bindings the phase documents plan, by page and family, are listed below as the work item
+ * they are.
  *
  *   /                      interior-lifestyle, material-macro, largeformat-* (category cards)
  *   /about                 material-macro

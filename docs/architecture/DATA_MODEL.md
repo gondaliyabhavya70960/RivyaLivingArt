@@ -1534,12 +1534,51 @@ looks up are the same string by construction rather than by two places agreeing.
 | `journal_article_categories` | `(article_id, category_id)` PK, `position int` | secondary categories |
 
 The ten SEED §20 article ideas are seeded as `status = 'DRAFT'` with `angle_note` holding the
-editorial angle and **no body**. Articles 04 and 08 carry
-`owner_verification = 'OWNER_VERIFICATION_REQUIRED'` because they touch fabrication capability and
-preservation performance.
-`reading_minutes` is computed on save from the block text at 200 words per minute — derived, never
-typed.
-**RLS** — anon `select` where `status = 'PUBLISHED'` **and** `published_at <= now()`.
+editorial angle and **no body**. Articles 02, 04 and 08 carry
+`owner_verification = 'OWNER_VERIFICATION_REQUIRED'` — §20 attaches a caution to each: room-size
+standards claimed without a source, Rivya-specific fabrication capability, and
+preservation-performance promises. (An earlier version of this line named only 04 and 08.)
+
+`angle_note` IS NOT `excerpt`, and the distinction is load-bearing. The angle is the studio's brief
+for whoever writes the piece and is rendered nowhere; `excerpt` is the line a CARD shows. The Phase
+09 records put the angle in `excerpt`, which would have published ten editorial briefs as summaries
+the moment anything went live; `tests/unit/journal-seed.test.ts` now asserts the separation.
+
+**`reading_minutes` is derived by `set_article_reading_minutes()`, not "computed on save".** The
+trigger overwrites the column on every write from the linked page's VISIBLE sections at 200 words
+per minute, so a value sent by any caller does not survive the statement that sent it. It reads
+`heading`, `body` and `supporting` and not `payload` — payload is block configuration, and counting
+it would inflate the estimate with words no reader reads. NULL when there is nothing to read, rather
+than 1: "1 min read" over an article with no body is a claim about a body that does not exist.
+
+**`enforce_article_has_body()` — `0160`.** PUBLISHED requires a linked page carrying at least one
+visible section. The phase document assigns this guard to `lib/cms/publishing.ts`; it is there as
+well, and this is the copy that cannot be bypassed. It does not judge whether the prose is any good
+or whether a three-word heading counts — that is an editor's call, and a trigger pretending to make
+it would refuse work for reasons nobody could predict.
+
+**The owner-verification gate is `journal_{articles,categories}_verified_before_publish`**, a CHECK
+constraint of the same shape the other thirteen content tables carry, rather than the trigger the
+phase document names. A fourteenth way of writing one rule is invisible to anyone grepping the
+constraint name.
+
+**`sync_article_page_path()` — `0160`** keeps `pages.path` equal to `/journal/<slug>`. The same
+migration retrofits its condition onto `sync_project_page_path`, which fired on INSERT or a slug
+change only — so linking an EXISTING page to a project left the page at whatever path it was created
+with. Nothing was broken, because Phase 17's own action passes the right path at insert; the article
+twin would have inherited the hole.
+
+**Categories seed PUBLISHED; articles seed DRAFT.** The one exception to Phase 09's rule that every
+seeded row is DRAFT. A category is taxonomy — it asserts nothing about what Rivya can make — and
+`/journal/category/materials` cannot render at all if `anon` cannot read the row.
+
+**RLS** — anon `select` where `status = 'PUBLISHED'` **and** `published_at <= now()`. This is the
+only table on the site whose public read is gated by a DATE, and the reason is scheduling: a piece
+is written, approved and set to appear on a given morning, and a row that is PUBLISHED with a future
+date must not be readable before it. The clause is the guard that does not depend on a cron running
+at the right minute. `journal_article_categories` carries a parent test for the same reason
+`portfolio_project_media` does — which categories an unpublished article belongs to is a fact about
+unpublished editorial, enumerable from the join alone.
 
 ### `inquiries` — Phase 20 · migrations `0180`–`0181` · RLS-INQUIRY
 

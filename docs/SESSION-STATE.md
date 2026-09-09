@@ -8,6 +8,114 @@
 
 ## Current Phase
 
+**Phase 18 — Journal. CODE COMPLETE; NOTHING IS PUBLISHED, WHICH IS THE FINISHED STATE.** Nine
+categories and ten article IDEAS exist — a title and an angle each, no body. SEED §20 says in
+capitals: seed as DRAFT, do not publish automatically. `/journal` renders SEED §29's sentence; every
+article URL 404s; the nine category pages render with empty lists.
+
+### Phase 18: what is built
+
+**Migrations `0160`/`0161`, applied locally AND to hosted.** Three tables, `pages.kind += ARTICLE`,
+two triggers that turn phase-document prose into schema rules, and the generated RLS file.
+
+**`reading_minutes` IS DERIVED BY A TRIGGER, WHICH IS WHAT "NEVER TYPED" HAS TO MEAN.** The phase
+says the value is computed at 200 words per minute; leaving that to the application makes it derived
+only on the paths that remembered. `set_article_reading_minutes()` overwrites the column from the
+linked page's VISIBLE sections on every write — probed with 999, stored NULL. It reads `heading`,
+`body` and `supporting` and not `payload`, which is block configuration. NULL rather than 1 when
+there is nothing to read.
+
+**AN ARTICLE CANNOT BE PUBLISHED WITHOUT A BODY.** The risk table assigns that to
+`lib/cms/publishing.ts`; `enforce_article_has_body()` is the copy that cannot be bypassed. No page,
+an empty page and a page whose only section is hidden are all refused, each naming the article.
+
+**THE ONLY DATE-GATED PUBLIC READ ON THE SITE.** `published_at <= now()` alongside the status, which
+is both the scheduling mechanism and the guard that does not depend on a cron running on time.
+
+**THE SEED'S FIELD NAMES WERE WRONG, AND THE MISTAKE WAS A PUBLISHING ONE.** Phase 09's records put
+each article's ANGLE — the studio's internal brief — into `excerpt`, which is what a card renders.
+Ten briefs would have appeared on `/journal` as summaries the moment anything went live. The angle
+now lives in `angle_note`; `excerpt` is null.
+
+**`lib/cms/related.ts` HOLDS FEAT §11's ONE AUTOMATIC RULE**, with the reason a rule exists at all
+written beside it. Curated first; below three, fill from the same primary category, newest first,
+excluding this article and anything a curated edge already points at. Mutation-checked: removing the
+dedupe fails the test.
+
+**THREE GUARDS FIRED AND ALL THREE WERE RIGHT.** `site-routes` caught two undeclared route families.
+`seed-modules` caught a new seed-key namespace and changed the design — `journal-ui.ts` follows
+`global:UI_LABEL.*` like its two most recent siblings. `studio-nav` caught
+`/studio/content/journal/categories`, which D4 did not list; recorded as **amendment A16**.
+
+**`Pagination` (RC-234) LOST ITS TWO COUPLINGS TO THE CATALOGUE** — a `CatalogQuery` and
+`UI_LABEL.catalog.*` — and now takes `hrefFor` and four resolved labels.
+
+### Phase 18: what is NOT built, and why
+
+- **No article bodies, and no published article.** SEED §20 forbids both. The ten ideas are briefs.
+- **No RSS feed.** The phase lists `/journal/rss.xml` and holds it behind an amendment nobody has
+  granted; its own verification says to assert the 404 and the absent feed link instead, which
+  `tests/e2e/journal.spec.ts` does.
+- **No `unpublish_at`.** The phase's Studio section names one and its own Database section gives
+  `journal_articles` no such column. Scheduling forward works; taking an article down is a button.
+- **No secondary categories in the Studio.** `journal_article_categories` exists with its RLS; the
+  editor sets the primary one, which is what the related rule and the category pages read. A second
+  picker for a relationship nothing yet renders would be a control with no effect.
+- **The related strip resolves article edges only.** An editor can already link an article to a
+  product, a project or a collection, and both of those tables hold zero published rows — a strip
+  that resolved them would render an empty heading on every article.
+
+### Phase 18: verification, as actually run
+
+- `npm test` — 1339 pass, none skipped.
+- `npm run check` — clean.
+- `seed:content` — nine categories, ten DRAFT articles, zero published, all covered and filed; a
+  second run reports zero changes; only Phase 19's three commission forms remain deferred.
+- The four journal behaviours probed directly on hosted, inside a block that rolled itself back:
+  a typed `reading_minutes` discarded, the no-body publish refused by name, the page path synced on
+  link, and 400 words → 2 minutes.
+- Hosted level through `0161`, fingerprint-matched against local over the journal objects — 178
+  lines, `f55c1a1e3258265162046c0288386bb0`.
+- **Playwright did not run.** The sandbox network policy denies the Supabase host.
+
+### Phase 18: the D9 ten, recorded
+
+1. **Scope implemented** — migrations, both triggers, schemas, repositories, the related rule, the
+   seed resolution, three public routes, RC-220, the Studio editor and categories screen, tests.
+2. **Relevant tests run** — 1339 pass, none skipped; the e2e suite skips for a stated environmental
+   reason.
+3. **No known scope-breaking error.**
+4. **Documentation updated** — DATA_MODEL §Journal, CONTENT_GUIDE, STUDIO_GUIDE §11 and its
+   guardrails, COMPONENT_REGISTRY RC-220 and RC-234, CANONICAL-DECISIONS A16 and the D4 map.
+5. **CHANGELOG updated.**
+6. **PROJECT_STATE updated**, including the phase table.
+7. **SESSION-STATE updated** — this section.
+8. **Remaining issues documented** — see below.
+9. **Next phase identified** — **Phase 19, Bespoke / Custom Configurator.**
+10. **Repository recoverable** — every commit pushed to `claude/rivya-living-art-phases-64hq5i`.
+
+### Standing issues, carried
+
+- `verify` is red on the account's Actions runner with a signature that is not a code failure
+  (`runner_id: 0`, ~2s, no steps, red on `main` too) and is **not re-run**, per the free-tier
+  instruction.
+- The Playwright suite cannot execute here: the network policy denies the Supabase host.
+- **Six secrets remain exposed in chat transcripts and unrotated** — the owner's task, after all
+  phase work.
+- **`content/seed/media-bindings.ts` is still EMPTY**, and its header still says the Higgsfield
+  migration "has never executed". It has: 250 assets are in Cloudinary and in `media_assets` on both
+  databases. So every seeded SECTION on the site is still unbound and renders the SEED §47 fallback.
+  Journal covers are unaffected — they bind through the article record's own `media` map — but the
+  wider binding pass is outstanding work that belongs to nobody's phase yet.
+- **`npm test` wipes the local seeded content.** `tests/unit/rls/phase08.test.ts` blanket-deletes
+  `pages` and `page_sections`, so re-run `seed:content` before checking any seeded-content claim
+  locally. This cost a confused half-hour chasing a "93 inserted" that was simply the suite's doing.
+- **A schema fingerprint must fix `search_path` on both sides.** `pg_get_indexdef` renders an
+  operator class according to the reader's path, so the same index reads as
+  `extensions.gin_trgm_ops` locally and `gin_trgm_ops` on hosted.
+
+### Superseded — Phase 17's state
+
 **Phase 17 — Portfolio / Projects. CODE COMPLETE; THE ARCHIVE IS EMPTY, WHICH IS THE FINISHED
 STATE.** `portfolio_projects`, `portfolio_project_media` and `testimonials` exist and hold zero
 rows. `/portfolio` renders SEED §28's empty state; `/portfolio/[slug]` answers 404 for every slug.
