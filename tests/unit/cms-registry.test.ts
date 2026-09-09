@@ -23,9 +23,9 @@ describe('block type union', () => {
 
   it('carries the whole §08 catalogue, plus the exhibition and project blocks', () => {
     // 28 from PHASE-05-09 §08, plus `signature-media` and `collection-products` — the two an
-    // exhibition page needs, added in Phase 16 under amendment A14 — plus `project-gallery`,
-    // which a project's story page needs (Phase 17).
-    expect(BLOCK_TYPES).toHaveLength(31)
+    // exhibition page needs, added in Phase 16 under amendment A14 — plus `project-gallery` and
+    // `testimonial-strip`, the two the project archive needs (Phase 17).
+    expect(BLOCK_TYPES).toHaveLength(32)
   })
 
   it('validates only its own members', () => {
@@ -155,7 +155,7 @@ describe('built and planned', () => {
    * `components/sections/registry.ts` — which `tests/unit/cms-sections.test.tsx` asserts agrees
    * with this list in both directions.
    */
-  it('reports the twenty-three built blocks', () => {
+  it('reports the twenty-four built blocks', () => {
     expect(BUILT_BLOCK_TYPES).toEqual([
       'hero',
       'manifesto',
@@ -178,6 +178,7 @@ describe('built and planned', () => {
       'signature-media',
       'collection-products',
       'project-gallery',
+      'testimonial-strip',
       'empty-state',
       'divider',
     ])
@@ -192,8 +193,8 @@ describe('built and planned', () => {
 
   it('reports the rest as planned', () => {
     const planned = BLOCK_TYPES.filter((type) => !isBuilt(type))
-    // 31 declared, 23 built. Phase 13 moved the three `/large-format` blocks out of this list;
-    // Phases 16 and 17 added three more that are built on arrival, so this count is unchanged.
+    // 32 declared, 24 built. Phase 13 moved the three `/large-format` blocks out of this list;
+    // Phases 16 and 17 added four more that are built on arrival, so this count is unchanged.
     expect(planned).toHaveLength(8)
     for (const type of planned) {
       expect(blockModule(type).state, type).toBe('PLANNED')

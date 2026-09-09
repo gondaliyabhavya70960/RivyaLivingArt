@@ -244,6 +244,14 @@ over the `metadata` export, so adding that route would override the editor's cho
 pages: the owner would change the image in Studio and watch nothing happen. No other route in the
 project has one, for the same reason.
 
+*Phase 17 takes the catalogue to 32 and builds no `ProjectCard`.* `project-gallery` and
+`testimonial-strip` join it; `components/patterns/ProjectCard.tsx`, which the Phase 17 deliverables
+table lists, is NOT built. `portfolio-strip` already renders project cards through `ReferenceCards`
+with `marker="data-project-card"` — the same component that draws product and article cards, tested
+once and behaving identically for all three. A second card component under a different name would
+be a duplicate of working, tested code, and the two would drift the first time one was restyled.
+The marker the phase's own e2e assertions use is already emitted.
+
 *A third, smaller correction.* The phase document names the two renderers
 `components/sections/CollectionProducts.tsx` and `SignatureMedia.tsx`. Every one of the other
 twenty renderers in that directory is named `<Block>Section.tsx`, and the registry test reads the
