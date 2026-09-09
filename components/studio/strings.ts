@@ -3541,6 +3541,185 @@ export const STUDIO_STRINGS = {
     value: 'Nothing in the code declares a flag, so there is nothing to switch.',
     contentKey: 'studio_help.system_flags_empty_body',
   },
+
+  /* ---------------------------------------------------------------------------------------------
+   * Phase 20 — the enquiry inbox.
+   *
+   * THE COLUMN HEADINGS ARE PLAIN WORDS AND NOT FIELD NAMES. "From" rather than "Name", "Received"
+   * rather than "created_at": this screen is read by whoever is answering the phone, not by whoever
+   * wrote the schema, and a column called `pipeline_status` helps nobody triage anything.
+   *
+   * NOTHING HERE OFFERS A PRICE, A QUOTE OR AN ORDER. There is no such column to render and no such
+   * control to name — the pipeline has a QUOTED status because a quotation is a conversation the
+   * studio has, not a number this product computes.
+   * ------------------------------------------------------------------------------------------- */
+  'studio.inquiries.help': {
+    value:
+      'Every enquiry the site has received. An enquiry is written to the database before any WhatsApp handoff, so this list is the record even when the conversation moved elsewhere.',
+    contentKey: 'studio_help.inquiries_help',
+  },
+  'studio.inquiries.caption': {
+    value: 'Enquiries',
+    contentKey: 'studio_help.inquiries_caption',
+  },
+  'studio.inquiries.emptyHeading': {
+    value: 'No enquiries yet',
+    contentKey: 'studio_help.inquiries_empty_heading',
+  },
+  'studio.inquiries.emptyBody': {
+    value: 'Enquiries sent from the website appear here the moment they are saved.',
+    contentKey: 'studio_help.inquiries_empty_body',
+  },
+  'studio.inquiries.colReference': {
+    value: 'Reference',
+    contentKey: 'studio_help.inquiries_col_reference',
+  },
+  'studio.inquiries.colKind': {
+    value: 'Kind',
+    contentKey: 'studio_help.inquiries_col_kind',
+  },
+  'studio.inquiries.colName': {
+    value: 'From',
+    contentKey: 'studio_help.inquiries_col_name',
+  },
+  'studio.inquiries.colCity': {
+    value: 'City',
+    contentKey: 'studio_help.inquiries_col_city',
+  },
+  'studio.inquiries.colStatus': {
+    value: 'Status',
+    contentKey: 'studio_help.inquiries_col_status',
+  },
+  'studio.inquiries.colWhatsapp': {
+    value: 'WhatsApp',
+    contentKey: 'studio_help.inquiries_col_whatsapp',
+  },
+  'studio.inquiries.colReceived': {
+    value: 'Received',
+    contentKey: 'studio_help.inquiries_col_received',
+  },
+  'studio.inquiries.colAssignee': {
+    value: 'Assigned',
+    contentKey: 'studio_help.inquiries_col_assignee',
+  },
+  'studio.inquiries.export': {
+    value: 'Export as CSV',
+    contentKey: 'studio_help.inquiries_export',
+  },
+  'studio.inquiries.exportNote': {
+    value:
+      'The export carries what a person needs to follow an enquiry up. It omits the hashed address and the browser string: those exist to catch abuse, not to travel in a spreadsheet.',
+    contentKey: 'studio_help.inquiries_export_note',
+  },
+  'studio.inquiry.back': {
+    value: 'Back to enquiries',
+    contentKey: 'studio_help.inquiry_back',
+  },
+  'studio.inquiry.contactHeading': {
+    value: 'Who sent it',
+    contentKey: 'studio_help.inquiry_contact_heading',
+  },
+  'studio.inquiry.phone': {
+    value: 'Phone',
+    contentKey: 'studio_help.inquiry_phone',
+  },
+  'studio.inquiry.email': {
+    value: 'Email',
+    contentKey: 'studio_help.inquiry_email',
+  },
+  'studio.inquiry.city': {
+    value: 'City',
+    contentKey: 'studio_help.inquiry_city',
+  },
+  'studio.inquiry.enquiryType': {
+    value: 'Enquiry type',
+    contentKey: 'studio_help.inquiry_enquiry_type',
+  },
+  'studio.inquiry.messageHeading': {
+    value: 'What they wrote',
+    contentKey: 'studio_help.inquiry_message_heading',
+  },
+  'studio.inquiry.answersHeading': {
+    value: 'The brief',
+    contentKey: 'studio_help.inquiry_answers_heading',
+  },
+  'studio.inquiry.answersEmpty': {
+    value: 'This enquiry carries no configured answers.',
+    contentKey: 'studio_help.inquiry_answers_empty',
+  },
+  'studio.inquiry.attachmentsHeading': {
+    value: 'Reference images',
+    contentKey: 'studio_help.inquiry_attachments_heading',
+  },
+  'studio.inquiry.attachmentsEmpty': {
+    value: 'No reference images were attached.',
+    contentKey: 'studio_help.inquiry_attachments_empty',
+  },
+  'studio.inquiry.timelineHeading': {
+    value: 'What has happened',
+    contentKey: 'studio_help.inquiry_timeline_heading',
+  },
+  'studio.inquiry.timelineNote': {
+    value:
+      'Append only. A mistaken entry is corrected by adding another, never by editing this record.',
+    contentKey: 'studio_help.inquiry_timeline_note',
+  },
+  'studio.inquiry.pipelineHeading': {
+    value: 'Where it stands',
+    contentKey: 'studio_help.inquiry_pipeline_heading',
+  },
+  'studio.inquiry.status': {
+    value: 'Status',
+    contentKey: 'studio_help.inquiry_status',
+  },
+  'studio.inquiry.statusSave': {
+    value: 'Move to this status',
+    contentKey: 'studio_help.inquiry_status_save',
+  },
+  'studio.inquiry.assignHeading': {
+    value: 'Who is answering it',
+    contentKey: 'studio_help.inquiry_assign_heading',
+  },
+  'studio.inquiry.assignee': {
+    value: 'Assigned to',
+    contentKey: 'studio_help.inquiry_assignee',
+  },
+  'studio.inquiry.assignSave': {
+    value: 'Save assignment',
+    contentKey: 'studio_help.inquiry_assign_save',
+  },
+  'studio.inquiry.unassigned': {
+    value: '— nobody —',
+    contentKey: 'studio_help.inquiry_unassigned',
+  },
+  'studio.inquiry.noteHeading': {
+    value: 'Add a note',
+    contentKey: 'studio_help.inquiry_note_heading',
+  },
+  'studio.inquiry.note': {
+    value: 'Note',
+    contentKey: 'studio_help.inquiry_note',
+  },
+  'studio.inquiry.noteAdd': {
+    value: 'Add note',
+    contentKey: 'studio_help.inquiry_note_add',
+  },
+  'studio.inquiry.sourcePath': {
+    value: 'Sent from',
+    contentKey: 'studio_help.inquiry_source_path',
+  },
+  'studio.inquiry.received': {
+    value: 'Received',
+    contentKey: 'studio_help.inquiry_received',
+  },
+  'studio.inquiry.whatsapp': {
+    value: 'WhatsApp',
+    contentKey: 'studio_help.inquiry_whatsapp',
+  },
+  'studio.inquiry.notFound': {
+    value: 'That enquiry could not be found.',
+    contentKey: 'studio_help.inquiry_not_found',
+  },
 } as const satisfies Record<string, StudioStringEntry>
 
 /** Every key this module resolves. A typo is a compile error, not a blank space on the page. */

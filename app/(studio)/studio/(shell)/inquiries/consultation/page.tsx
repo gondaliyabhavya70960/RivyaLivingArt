@@ -1,20 +1,38 @@
+import { Stack } from '@/components/primitives/Stack'
+import { InquiryInbox } from '@/components/studio/inquiries/InquiryInbox'
 import { StudioPage, studioMetadata } from '@/components/studio/StudioPage'
 import { requirePermission } from '@/lib/auth/require'
+import { listProductsForStudio } from '@/lib/supabase/repositories/catalog-admin'
+import { listInquiriesForStudio } from '@/lib/supabase/repositories/inquiries'
+import { createClient } from '@/lib/supabase/server'
 
 /**
  * /studio/inquiries/consultation
  *
- * A route stub. It exists so navigation never dead-ends — the sidebar shows this leaf to any role
- * holding `inquiries.read`, and a link that 404s is worse than a page saying it is not built.
+ * Only `CONSULTATION` enquiries. The filter is a database predicate rather than a client-side one, so a role that may not read an enquiry never receives it to filter.
  *
- * THE PERMISSION CHECK IS REAL, not a placeholder. It runs before anything renders, writes a DENIED
- * audit row when it refuses, and is the same call the finished surface will make. Phase 20
- * replaces the body below; it does not add the gate, because a gate added later is a gate that was
- * missing in between.
+ * ONE SHARED TABLE, FIVE ROUTES. D4 names the five and they differ by a filter; the component is
+ * `components/studio/inquiries/InquiryInbox.tsx`.
  */
 export const metadata = studioMetadata('/studio/inquiries/consultation')
 
 export default async function Page() {
   await requirePermission('inquiries.read')
-  return <StudioPage path="/studio/inquiries/consultation" />
+  const client = await createClient()
+  const [rows, products] = await Promise.all([
+    listInquiriesForStudio(client, { kind: 'CONSULTATION' }),
+    listProductsForStudio(client, {}),
+  ])
+
+  const titles = new Map(
+    products.flatMap((product) => (product.title === null ? [] : [[product.id, product.title]])),
+  )
+
+  return (
+    <StudioPage path="/studio/inquiries/consultation">
+      <Stack gap={8}>
+        <InquiryInbox rows={rows} productTitles={titles} />
+      </Stack>
+    </StudioPage>
+  )
 }
