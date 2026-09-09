@@ -202,14 +202,54 @@ describe('readinessChecklist', () => {
   })
 
   it('lets a complete product publish', () => {
-    expect(unmetForPublish(readinessChecklist(VALID, { materialIds: ['m1'] }))).toEqual([])
+    expect(
+      unmetForPublish(readinessChecklist(VALID, { materialIds: ['m1'], specCount: 1 })),
+    ).toEqual([])
   })
 
   it('never blocks on Gallery or Customization', () => {
-    const checklist = readinessChecklist(VALID, { materialIds: ['m1'], galleryMediaIds: [] })
+    const checklist = readinessChecklist(VALID, {
+      materialIds: ['m1'],
+      galleryMediaIds: [],
+      specCount: 1,
+    })
     expect(unmetForPublish(checklist)).toEqual([])
     expect(checklist.find((entry) => entry.item === 'Gallery')?.required).toBe(false)
     expect(checklist.find((entry) => entry.item === 'Customization')?.required).toBe(false)
+  })
+
+  /**
+   * The Specifications item is the one whose SECOND branch is the point.
+   *
+   * It is required, so a product cannot publish while the question is open — and it is satisfiable
+   * with no measurement at all, so the way to close the question is never to estimate one. A test
+   * that only proved the first branch would pass just as happily against a rule that forces an
+   * owner to invent a number, which is the outcome D10 exists to prevent.
+   */
+  describe('the Specifications item', () => {
+    it('blocks publishing while the owner has neither entered specs nor declined to', () => {
+      const checklist = readinessChecklist(VALID, { materialIds: ['m1'], specCount: 0 })
+      expect(unmetForPublish(checklist)).toContain('Specifications')
+    })
+
+    it('is satisfied by a specification row', () => {
+      const checklist = readinessChecklist(VALID, { materialIds: ['m1'], specCount: 2 })
+      expect(checklist.find((entry) => entry.item === 'Specifications')?.met).toBe(true)
+    })
+
+    it('is satisfied by the deliberate omission, with no rows at all', () => {
+      const checklist = readinessChecklist(
+        { ...VALID, specifications_omitted: true },
+        { materialIds: ['m1'], specCount: 0 },
+      )
+      expect(checklist.find((entry) => entry.item === 'Specifications')?.met).toBe(true)
+      expect(unmetForPublish(checklist)).toEqual([])
+    })
+
+    it('is required, so the decision cannot simply be skipped', () => {
+      const checklist = readinessChecklist(VALID, { materialIds: ['m1'] })
+      expect(checklist.find((entry) => entry.item === 'Specifications')?.required).toBe(true)
+    })
   })
 
   it('marks Price state unmet when the state and its columns disagree', () => {

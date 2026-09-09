@@ -125,6 +125,7 @@ export function productDraft(product: Product): ProductDraft {
     edition_size: product.edition_size,
     is_customizable: product.is_customizable,
     is_large_format: product.is_large_format,
+    specifications_omitted: product.specifications_omitted,
     sort_order: product.sort_order,
     dimensions: product.dimensions,
     hero_media_id: product.hero_media_id,

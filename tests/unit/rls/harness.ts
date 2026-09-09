@@ -318,6 +318,10 @@ export async function loadFixture(): Promise<void> {
   await db.query('delete from product_collections')
   await db.query('delete from product_materials')
   await db.query('delete from product_media')
+  // Before the products, since the cascade would take these anyway — being explicit keeps the wipe
+  // readable as a list of what this fixture owns.
+  await db.query('delete from product_specs')
+  await db.query('delete from product_relations')
   await db.query('delete from products where id = any($1::uuid[])', [
     [f.publishedProduct, f.draftProduct],
   ])
@@ -383,5 +387,25 @@ export async function loadFixture(): Promise<void> {
     `insert into product_materials (product_id, material_id) values
        ($1,$3), ($1,$4), ($2,$3)`,
     [f.publishedProduct, f.draftProduct, f.publishedMaterial, f.draftMaterial],
+  )
+
+  /**
+   * Phase 15 specification rows, covering the three cases the policy must tell apart.
+   *
+   * WRITTEN HERE RATHER THAN IN THE TEST, because `asSession` rolls its transaction back — a row
+   * inserted as the owner is invisible to the anonymous read that follows, so a cross-role
+   * assertion can only be made against rows the fixture committed. That is not a limitation to
+   * work around: it is what keeps one suite's writes out of another's assertions.
+   *
+   * The third row is the one worth naming: PUBLISHED itself, on a DRAFT product. If the policy
+   * tested only the spec's own status, a draft piece's dimensions would be public before the piece
+   * was.
+   */
+  await db.query(
+    `insert into product_specs (product_id, label, value, unit, sort_order, status) values
+       ($1,'Published fact','yes',null,0,'PUBLISHED'),
+       ($1,'Draft fact','no',null,1,'DRAFT'),
+       ($2,'Leaked fact','yes',null,0,'PUBLISHED')`,
+    [f.publishedProduct, f.draftProduct],
   )
 }

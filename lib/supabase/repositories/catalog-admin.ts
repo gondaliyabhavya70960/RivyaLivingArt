@@ -188,17 +188,29 @@ export async function setProductMaterials(
 export async function joinCountsForProducts(
   client: Client,
   productIds: readonly string[],
-): Promise<{ materials: Map<string, number>; gallery: Map<string, number> }> {
-  const empty = { materials: new Map<string, number>(), gallery: new Map<string, number>() }
+): Promise<{
+  materials: Map<string, number>
+  gallery: Map<string, number>
+  specs: Map<string, number>
+}> {
+  const empty = {
+    materials: new Map<string, number>(),
+    gallery: new Map<string, number>(),
+    specs: new Map<string, number>(),
+  }
   if (productIds.length === 0) return empty
 
-  const [materialRows, mediaRows] = await Promise.all([
+  const [materialRows, mediaRows, specRows] = await Promise.all([
     client
       .from('product_materials')
       .select('product_id')
       .in('product_id', [...productIds]),
     client
       .from('product_media')
+      .select('product_id')
+      .in('product_id', [...productIds]),
+    client
+      .from('product_specs')
       .select('product_id')
       .in('product_id', [...productIds]),
   ])
@@ -211,6 +223,9 @@ export async function joinCountsForProducts(
   if (mediaRows.error) {
     throw toRepositoryError(PRODUCT, 'list-media-counts', batch, mediaRows.error)
   }
+  if (specRows.error) {
+    throw toRepositoryError(PRODUCT, 'list-spec-counts', batch, specRows.error)
+  }
 
   const tally = (rows: readonly { product_id: string }[]): Map<string, number> => {
     const counts = new Map<string, number>()
@@ -218,7 +233,11 @@ export async function joinCountsForProducts(
     return counts
   }
 
-  return { materials: tally(materialRows.data ?? []), gallery: tally(mediaRows.data ?? []) }
+  return {
+    materials: tally(materialRows.data ?? []),
+    gallery: tally(mediaRows.data ?? []),
+    specs: tally(specRows.data ?? []),
+  }
 }
 
 /** The gallery: every `product_media` row for one product, hero excluded by the caller. */

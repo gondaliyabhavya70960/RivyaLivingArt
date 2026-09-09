@@ -31,6 +31,7 @@ import {
   updateProduct,
 } from '@/lib/supabase/repositories/catalog-admin'
 import { listConceptMediaAssets, listMediaAssets } from '@/lib/supabase/repositories/media'
+import { countProductSpecs } from '@/lib/supabase/repositories/product-specs'
 
 /**
  * The catalogue editor's Server Actions.
@@ -270,6 +271,11 @@ function productValues(draft: ProductDraft, actorId: string) {
     seo_title: draft.seo_title,
     seo_description: draft.seo_description,
     updated_by: actorId,
+    // `specifications_omitted` IS DELIBERATELY ABSENT. It is set from the Specifications tab, by an
+    // action whose whole subject is that decision, and it is not a field on this form. Writing it
+    // here would mean every save of an unrelated field — a typo in the SEO title — silently
+    // restored whatever the form last serialised, which for a form that does not carry the field is
+    // `false`. A decision the owner made would be undone by an edit that had nothing to do with it.
   }
 }
 
@@ -284,12 +290,15 @@ async function contextFor(
   client: Awaited<ReturnType<typeof createClient>>,
   productId: string | null,
 ) {
-  const [identifiers, media, concept, materialIds, galleryMediaIds] = await Promise.all([
+  const [identifiers, media, concept, materialIds, galleryMediaIds, specCount] = await Promise.all([
     takenProductIdentifiers(client, productId),
     listMediaAssets(client, { limit: 1000 }),
     listConceptMediaAssets(client),
     productId === null ? Promise.resolve([]) : listProductMaterialIds(client, productId),
     productId === null ? Promise.resolve([]) : listProductMediaIds(client, productId),
+    // A product being created has no rows yet, and the Specifications item is satisfied by the
+    // deliberate omission flag on the draft rather than by a count in that case.
+    productId === null ? Promise.resolve(0) : countProductSpecs(client, productId),
   ])
 
   return {
@@ -299,6 +308,7 @@ async function contextFor(
     conceptMediaIds: new Set(concept.map((asset) => asset.id)),
     materialIds,
     galleryMediaIds,
+    specCount,
   }
 }
 

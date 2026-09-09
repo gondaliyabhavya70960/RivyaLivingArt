@@ -190,6 +190,13 @@ export const productSchema = z.object({
   /** Curation handle. Null sorts LAST in the default listing order — unplaced, not first. */
   sort_order: z.number().int().nullable(),
   is_large_format: z.boolean(),
+  /**
+   * Phase 15 `0132`. The owner's deliberate "this piece publishes no specifications" decision.
+   *
+   * NOT A FACT ABOUT THE OBJECT and never rendered — it satisfies the Specifications readiness item
+   * without a spec row, so publishing never requires inventing a measurement (D10).
+   */
+  specifications_omitted: z.boolean(),
   dimensions: jsonSchema.nullable(),
   hero_media_id: uuidSchema.nullable(),
   model_media_id: uuidSchema.nullable(),

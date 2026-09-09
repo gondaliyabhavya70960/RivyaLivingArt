@@ -32,6 +32,7 @@ import {
   listProductsByCategory,
 } from '@/lib/supabase/repositories/products'
 import { listProductSpecs } from '@/lib/supabase/repositories/product-specs'
+import { RELATION_TARGET } from '@/lib/supabase/repositories/product-edges'
 import { listRelationsForProduct } from '@/lib/supabase/repositories/relations'
 import { NotFoundError } from '@/lib/supabase/errors'
 
@@ -150,7 +151,7 @@ export default async function Page({ params }: Props): Promise<React.ReactElemen
    * be rendered by a later phase — dropping it from THIS list is not the same as ignoring it.
    */
   const relatedProductIds = relations
-    .filter((edge) => edge.target_type === 'product')
+    .filter((edge) => edge.target_type === RELATION_TARGET.product)
     .map((edge) => edge.target_id)
 
   const sameCategory =

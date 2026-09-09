@@ -172,6 +172,7 @@ export default async function Page({
                 readinessChecklist(productDraft(product), {
                   materialIds: new Array<string>(joinCounts.materials.get(product.id) ?? 0),
                   galleryMediaIds: new Array<string>(joinCounts.gallery.get(product.id) ?? 0),
+                  specCount: joinCounts.specs.get(product.id) ?? 0,
                 }),
               )
               return unmet.length === 0 ? (

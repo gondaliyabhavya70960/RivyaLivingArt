@@ -19,6 +19,7 @@ import {
   listProductMaterialIds,
   listProductMediaIds,
 } from '@/lib/supabase/repositories/catalog-admin'
+import { countProductSpecs } from '@/lib/supabase/repositories/product-specs'
 import { createClient } from '@/lib/supabase/server'
 
 import { publishProductAction, saveProductAction, unpublishProductAction } from '../../actions'
@@ -53,13 +54,18 @@ export default async function Page({ params }: { params: Promise<{ productId: st
   })
   if (product === null) notFound()
 
-  const [materialIds, galleryMediaIds, options] = await Promise.all([
+  const [materialIds, galleryMediaIds, specCount, options] = await Promise.all([
     listProductMaterialIds(client, product.id),
     listProductMediaIds(client, product.id),
+    countProductSpecs(client, product.id),
     productFormOptions(),
   ])
 
-  const checklist = readinessChecklist(productDraft(product), { materialIds, galleryMediaIds })
+  const checklist = readinessChecklist(productDraft(product), {
+    materialIds,
+    galleryMediaIds,
+    specCount,
+  })
 
   return (
     <Stack gap={8}>

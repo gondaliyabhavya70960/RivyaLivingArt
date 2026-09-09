@@ -47,6 +47,8 @@ export interface ProductDraft {
   readonly edition_size: number | null
   readonly is_customizable: boolean
   readonly is_large_format: boolean
+  /** Phase 15. The owner's deliberate "no published specifications" decision; see the item below. */
+  readonly specifications_omitted?: boolean
   readonly sort_order?: number | null
   readonly dimensions: unknown
   readonly hero_media_id: string | null
@@ -68,6 +70,13 @@ export interface ProductContext {
   readonly materialIds?: readonly string[]
   /** Non-hero media attached to this product, for the Gallery readiness item. */
   readonly galleryMediaIds?: readonly string[]
+  /**
+   * How many `product_specs` rows this product has. Phase 15.
+   *
+   * A COUNT AND NOT THE ROWS, because nothing here reads a label or a value — the item asks whether
+   * the owner has said anything about this piece's specifications, not what they said.
+   */
+  readonly specCount?: number
 }
 
 export interface ValidationIssue {
@@ -359,6 +368,7 @@ export const READINESS_ITEMS = [
   'Materials',
   'Hero image',
   'Gallery',
+  'Specifications',
   'SEO',
   'Customization',
 ] as const
@@ -385,6 +395,7 @@ const REQUIRED_ITEMS: ReadonlySet<ReadinessItem> = new Set<ReadinessItem>([
   'Dimensions',
   'Materials',
   'Hero image',
+  'Specifications',
   'SEO',
 ])
 
@@ -413,6 +424,21 @@ export function readinessChecklist(
     Materials: (context.materialIds?.length ?? 0) > 0,
     'Hero image': draft.hero_media_id !== null,
     Gallery: (context.galleryMediaIds?.length ?? 0) > 0,
+    /**
+     * REQUIRED, AND SATISFIABLE WITHOUT A SINGLE MEASUREMENT. This is the one item on the list
+     * whose second branch matters more than its first.
+     *
+     * A specification block is the strictest surface on the site: every row is a fact the owner
+     * typed about a real object, and nothing is converted, inferred or defaulted. Making the item
+     * required with only the first branch would mean a product cannot publish until somebody puts a
+     * number in — and the fastest way to satisfy a checklist is to estimate one. That is precisely
+     * the fabrication D10 forbids, arrived at through a helpful-looking gate.
+     *
+     * So the item is satisfied EITHER by a spec row OR by `specifications_omitted`: the owner
+     * saying, deliberately and on the record, that this piece publishes no specifications. What is
+     * required is the DECISION, never the number.
+     */
+    Specifications: (context.specCount ?? 0) > 0 || draft.specifications_omitted === true,
     SEO: filled(draft.seo_title) && filled(draft.seo_description),
     // Answered by construction — the column is a non-null boolean — so this item is a prompt to
     // decide rather than a gate, and it is advisory for exactly that reason.

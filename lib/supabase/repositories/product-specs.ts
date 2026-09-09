@@ -46,6 +46,23 @@ export async function listProductSpecs(client: Client, productId: string): Promi
   return parseRows(ENTITY, productSpecSchema, data ?? [])
 }
 
+/**
+ * How many specification rows a product has, without fetching them.
+ *
+ * The readiness checklist asks whether the owner has said ANYTHING about this piece's
+ * specifications, never what they said, so a `head` count is the whole answer and a list would be
+ * a page of text read to check one number.
+ */
+export async function countProductSpecs(client: Client, productId: string): Promise<number> {
+  const { count, error } = await client
+    .from('product_specs')
+    .select('id', { count: 'exact', head: true })
+    .eq('product_id', productId)
+
+  if (error) throw toRepositoryError(ENTITY, 'count', productId, error)
+  return count ?? 0
+}
+
 export async function getProductSpec(client: Client, id: string): Promise<ProductSpec> {
   const { data, error } = await client.from('product_specs').select('*').eq('id', id).maybeSingle()
 
