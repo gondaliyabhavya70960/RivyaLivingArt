@@ -104,6 +104,11 @@ const EXPECTED = {
   materials: [...TIER_A, ...TIER_B, ...TIER_C],
   products: [...TIER_A, ...TIER_B, ...TIER_C],
   media_assets: [...TIER_A, ...TIER_B],
+  // Tier A + B but NOT C: product_specs is never seeded. Every row is a measurement the owner
+  // typed, and a seeded specification would be a fabricated business fact wearing the clothes of
+  // one (Phase 15, D10). The absence of the seed columns is what makes that unenforceable-by-hand
+  // rule structural — a seeder has no key to address a row by.
+  product_specs: [...TIER_A, ...TIER_B],
   product_collections: ['created_at', 'created_by'],
   product_materials: ['created_at', 'created_by'],
   product_media: ['created_at', 'created_by'],
@@ -261,6 +266,9 @@ const CONTENT_TABLES = [
   'global_content',
   'seo_entries',
   'faqs',
+  // Phase 15. A spec row can be PUBLISHED, so it needs the same D10 gate as any other row that can
+  // carry a claim to the public site.
+  'product_specs',
 ]
 const gates = q(`
   select conrelid::regclass::text

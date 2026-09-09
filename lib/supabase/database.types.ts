@@ -1486,6 +1486,82 @@ export type Database = {
           },
         ]
       }
+      product_specs: {
+        Row: {
+          id: string
+          product_id: string
+          sort_order: number
+          label: string
+          value: string
+          unit: string | null
+          group_label: string | null
+          status: Database['public']['Enums']['content_status']
+          owner_verification: Database['public']['Enums']['owner_verification']
+          fact_classification: Database['public']['Enums']['fact_classification']
+          published_at: string | null
+          published_by: string | null
+          created_at: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          product_id: string
+          sort_order?: number
+          label: string
+          value: string
+          unit?: string | null
+          group_label?: string | null
+          status?: Database['public']['Enums']['content_status']
+          owner_verification?: Database['public']['Enums']['owner_verification']
+          fact_classification?: Database['public']['Enums']['fact_classification']
+          published_at?: string | null
+          published_by?: string | null
+          created_at?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          product_id?: string
+          sort_order?: number
+          label?: string
+          value?: string
+          unit?: string | null
+          group_label?: string | null
+          status?: Database['public']['Enums']['content_status']
+          owner_verification?: Database['public']['Enums']['owner_verification']
+          fact_classification?: Database['public']['Enums']['fact_classification']
+          published_at?: string | null
+          published_by?: string | null
+          created_at?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'product_specs_product_id_fkey'
+            columns: ['product_id']
+            isOneToOne: false
+            referencedRelation: 'products'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'product_specs_published_by_fkey'
+            columns: ['published_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'product_specs_updated_by_fkey'
+            columns: ['updated_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       products: {
         Row: {
           id: string
@@ -1895,6 +1971,10 @@ export type Database = {
         Returns: Json
       }
       is_staff: {
+        Args: Record<string, unknown>
+        Returns: Json
+      }
+      is_valid_dimensions: {
         Args: Record<string, unknown>
         Returns: Json
       }

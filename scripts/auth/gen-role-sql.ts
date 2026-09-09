@@ -26,6 +26,7 @@ import {
   PHASE_06_POLICIES,
   PHASE_07_POLICIES,
   PHASE_08_POLICIES,
+  PHASE_15_POLICIES,
   TABLE_POLICY_MAP,
   type ManagedTable,
 } from '../../lib/auth/table-permissions'
@@ -108,6 +109,18 @@ const GENERATED: Record<string, { title: string; preamble: string }> = {
 -- all six roles, so the role list alone grants nothing useful — \`user_id = auth.uid()\` is what
 -- makes it safe, and it is ANDed into the select, insert and update policies alike. An extra
 -- SELECT leg would not have done: the danger is one staff member OVERWRITING another's row.`,
+  },
+  [PHASE_15_POLICIES]: {
+    title: `-- ${PHASE_15_POLICIES} — Phase 15`,
+    preamble: `-- Policies for \`product_specs\`, which migration 0130 creates. Separate from that file for the
+-- reason every policy file is separate: this one is GENERATED from lib/auth/table-permissions.ts and
+-- is rewritten whole, so it may hold nothing a human wrote.
+--
+-- product_specs is shape A with a PARENT TEST FOLDED INTO ITS PUBLIC CLAUSE. A spec row is a
+-- sentence about a product — "Seat height · 450 mm" — so a published row hanging off an unpublished
+-- product would publish a measurement of a piece the site does not admit exists. The row's own
+-- status is therefore not the whole condition, and \`publicClause\` says so explicitly rather than
+-- leaving the parent test to the application that happens to join the two.`,
   },
 }
 

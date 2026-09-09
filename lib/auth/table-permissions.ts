@@ -96,6 +96,7 @@ export const PHASE_05_POLICIES = '0021_rls_policies_phase05.sql'
 export const PHASE_06_POLICIES = '0031_rls_policies_phase06.sql'
 export const PHASE_07_POLICIES = '0041_rls_policies_phase07.sql'
 export const PHASE_08_POLICIES = '0051_phase08_cms_rls.sql'
+export const PHASE_15_POLICIES = '0131_phase15_product_specs_rls.sql'
 
 export const TABLE_POLICIES = {
   // --- Shape A: content tables ------------------------------------------------------------------
@@ -123,6 +124,20 @@ export const TABLE_POLICIES = {
   products: {
     policiesIn: PHASE_04_POLICIES,
     shape: 'A',
+    readPermission: 'catalog.read',
+    writePermission: 'catalog.write',
+    deletePermission: 'destructive.execute',
+  },
+  // Shape A with a PARENT TEST FOLDED IN, which is what `publicClause` is for. A spec row is a
+  // sentence about a product — "Seat height · 450 mm" — and a published sentence attached to an
+  // unpublished product is a fact about a piece the site does not admit exists. Both must be
+  // PUBLISHED, so the row's own status is not the whole story and the clause says so.
+  product_specs: {
+    policiesIn: PHASE_15_POLICIES,
+    shape: 'A',
+    publicClause: `status = 'PUBLISHED'
+      and exists (select 1 from products p
+                   where p.id = product_specs.product_id and p.status = 'PUBLISHED')`,
     readPermission: 'catalog.read',
     writePermission: 'catalog.write',
     deletePermission: 'destructive.execute',
