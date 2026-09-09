@@ -1,5 +1,6 @@
 import { aboutSeed } from './about'
 import { catalogUiSeed } from './catalog-ui'
+import { productDetailUiSeed } from './product-detail-ui'
 import { collectionsSeed } from './collections'
 import { commerceLabelsSeed } from './commerce-labels'
 import { commissionsSeed } from './commissions'
@@ -54,6 +55,8 @@ export const seedModules: readonly SeedModule[] = [
   siteChromeSeed,
   // Phase 14's listing controls. Reference nothing either, so they sit with the shell strings.
   catalogUiSeed,
+  // Phase 15's product-page words, for the same reason.
+  productDetailUiSeed,
   navigationSeed,
   seoSeed,
   // Page content: every section references a page by seed_key.

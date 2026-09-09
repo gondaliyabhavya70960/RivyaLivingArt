@@ -72,10 +72,15 @@ function specRows(specs: readonly ProductSpec[]): Row[] {
  * owner can call `length_mm` "Length" or "Table length" without a code change. When the row is
  * missing the measurement is DROPPED rather than labelled with its raw key — `length_mm` is an
  * internal identifier, and showing one to a visitor is worse than showing them one fewer fact.
+ *
+ * `UI_LABEL`, not a new `SPEC_LABEL` group. `global_content_group_allowed` fixes the vocabulary at
+ * fourteen groups, and that constraint is there to stop it growing one surface at a time. These are
+ * interface labels — "Length", "Seat height" — naming fields rather than asserting anything about
+ * the business, which is what UI_LABEL already means.
  */
 function dimensionRows(dimensions: unknown, strings: SiteStrings): Row[] {
   return dimensionEntries(dimensions).flatMap((entry) => {
-    const label = siteString(strings, `SPEC_LABEL.dimension.${entry.key}`)
+    const label = siteString(strings, `UI_LABEL.product.dimension.${entry.key}`)
     if (label === null) return []
     return [
       {
@@ -99,7 +104,7 @@ export function ProductSpecifications({
   // Absent, not empty. No heading over nothing, no zero-height container.
   if (rows.length === 0) return null
 
-  const heading = siteString(strings, 'SPEC_LABEL.specifications.heading')
+  const heading = siteString(strings, 'UI_LABEL.product.specifications.heading')
 
   // Grouping preserves first-appearance order rather than sorting: the owner's order is the order.
   const groups: { label: string | null; rows: Row[] }[] = []
