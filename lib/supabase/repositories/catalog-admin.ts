@@ -13,6 +13,7 @@ import {
 } from '../schemas'
 import { NotFoundError, PermissionError } from '../errors'
 import { parseRow, parseRows, toRepositoryError } from './support'
+import { containsValue } from '../filter'
 
 type Client = SupabaseClient<Database>
 
@@ -59,10 +60,11 @@ export async function listProductsForStudio(
   if (filter.status !== undefined) query = query.eq('status', filter.status)
   if (filter.categoryId !== undefined) query = query.eq('category_id', filter.categoryId)
   if (filter.search !== undefined && filter.search.trim() !== '') {
-    // `%` and `_` inside the term are pattern metacharacters; escaped, or a search for "50%"
-    // matches every product. The same guard `searchProductsByTitle` applies.
-    const escaped = filter.search.trim().replace(/([\\%_])/g, '\\$1')
-    query = query.or(`title.ilike.%${escaped}%,slug.ilike.%${escaped}%`)
+    // Quoted AND pattern-escaped by `containsValue`, which is not the same thing done twice: the
+    // quotes keep a comma or a `)` from restructuring this `or` list, and the backslashes keep a
+    // `%` or `_` from matching more than the editor typed. See lib/supabase/filter.ts.
+    const value = containsValue(filter.search.trim())
+    query = query.or(`title.ilike.${value},slug.ilike.${value}`)
   }
 
   const { data, error } = await query

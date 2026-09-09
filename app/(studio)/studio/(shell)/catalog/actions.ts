@@ -659,12 +659,33 @@ export async function saveCollectionAction(
       }
     }
 
+    // AN UNPARSEABLE POSITION IS REPORTED, NOT ROUNDED DOWN TO ZERO. An earlier version folded
+    // `'invalid'` into 0 alongside the legitimately-absent case, so an editor who typed "2.5" or
+    // "first" was told the collection saved and got a value they had not chosen — silently moved to
+    // the front of every collection list. The category form four hundred lines above already
+    // refuses the same input with a field message; these two forms now agree.
+    //
+    // Null still means 0, and that is a different thing: the column is NOT NULL, an empty field is
+    // "unplaced", and 0 is what unplaced has always meant here.
     const sortOrder = integer(form, 'sort_order')
+    if (sortOrder === 'invalid') {
+      return {
+        status: 'error',
+        issues: [
+          {
+            field: 'sort_order',
+            code: 'sort_order_shape',
+            message: 'An order position is a whole number.',
+          },
+        ],
+      }
+    }
+
     const values = {
       slug,
       name,
       statement: text(form, 'statement'),
-      sort_order: sortOrder === 'invalid' || sortOrder === null ? 0 : sortOrder,
+      sort_order: sortOrder ?? 0,
       updated_by: session.userId,
     }
 

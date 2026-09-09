@@ -73,7 +73,13 @@ export function Pagination({
 
   return (
     <nav aria-label={regionName} data-pagination="" className="mt-12">
-      <ul className="flex flex-wrap items-center justify-center gap-1">
+      {/*
+        `role="list"` is not redundant on a `ul` here. Tailwind's preflight sets `list-style: none`,
+        and Safari drops list semantics from a list styled that way — so VoiceOver announces the
+        page numbers as loose links and never says how many there are. `Breadcrumbs` and `Stack`
+        both restore it for the same reason; this list was the one that did not.
+      */}
+      <ul role="list" className="flex flex-wrap items-center justify-center gap-1">
         <li>
           {page > 1 && previous !== null ? (
             <a rel="prev" href={catalogUrl(basePath, query, { page: page - 1 })} className={link}>

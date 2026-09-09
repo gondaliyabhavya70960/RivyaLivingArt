@@ -202,3 +202,39 @@ describe('currencyExponent', () => {
     expect(formatMinor(1_250_000, 'NOTACURRENCY')).toBeNull()
   })
 })
+
+/**
+ * The presenter may not invent a digit the owner did not type.
+ *
+ * `parseProductForm` accepts up to the currency's exponent in decimals — its error copy offers
+ * them — so a stored amount is not necessarily a round number of major units. Formatting at
+ * `maximumFractionDigits: 0` rounded 12500.50 up to ₹12,501 and 12500.49 down to ₹12,500, which is
+ * a price on a public card that nobody entered. D10: never fabricate a business fact.
+ */
+describe('formatMinor keeps the amount that was entered', () => {
+  it('shows a round amount round, with no trailing zeroes', () => {
+    expect(formatMinor(1_250_000, 'INR')).toBe('₹12,500')
+    expect(formatMinor(1_250_000, 'USD')).toBe('$12,500')
+  })
+
+  it('shows the fraction when there is one, rather than rounding it away', () => {
+    expect(formatMinor(1_250_050, 'INR')).toBe('₹12,500.50')
+    // The other direction of the same bug: this used to render as ₹12,500 exactly.
+    expect(formatMinor(1_250_049, 'INR')).toBe('₹12,500.49')
+  })
+
+  it('has no fraction to show for a zero-decimal currency', () => {
+    expect(formatMinor(1_200, 'JPY')).toBe('JP¥1,200')
+  })
+
+  it("uses the currency's own number of decimals, not two", () => {
+    // KWD has three. Rendering 1250.500 as 1,250.50 would drop a fils.
+    //
+    // `\u00a0`, NOT A SPACE. Intl separates a currency CODE from its number with a no-break space,
+    // so a plain space here fails with two strings the diff renders identically — which is worth a
+    // line of explanation rather than a second lost minute. INR and USD use a symbol with no
+    // separator at all, so only this case shows it.
+    expect(formatMinor(1_250_500, 'KWD')).toBe('KWD\u00a01,250.500')
+    expect(formatMinor(1_250_000, 'KWD')).toBe('KWD\u00a01,250')
+  })
+})

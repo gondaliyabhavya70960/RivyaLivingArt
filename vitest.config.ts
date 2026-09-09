@@ -38,10 +38,13 @@ export default defineConfig({
      * THE SPLIT IS FOR CLARITY, NOT FOR CORRECTNESS. It was originally introduced as the fix,
      * carrying `fileParallelism: false` on this project — which vitest silently ignores inside a
      * project. `maxWorkers` did not isolate it either, and neither did `fileParallelism` at the
-     * root. What actually serialises these files is a PostgreSQL advisory lock taken in
-     * `loadFixture` and released in `disconnect`; see the long note on `FIXTURE_LOCK` in
-     * `tests/unit/rls/harness.ts`. That holds however the runner decides to schedule anything, so
-     * both projects stay parallel and the suite keeps its speed.
+     * root. What actually serialises these files is a PostgreSQL advisory lock taken in `connect`
+     * and released in `disconnect`; see the long note on `FIXTURE_LOCK` in
+     * `tests/unit/rls/harness.ts`. IN `connect`, NOT IN `loadFixture` — this comment said
+     * `loadFixture` and that was the second bug inside the first: `phase08-render.test.tsx` builds
+     * its own rows and never calls `loadFixture`, so locking there left the one suite that was
+     * actually failing unprotected. The lock holds however the runner schedules anything, so both
+     * projects stay parallel and the suite keeps its speed.
      *
      * What the split still buys is a named `|rls|` prefix in the output, so a database failure is
      * distinguishable from a pure one at a glance, and a way to run either half alone.

@@ -176,12 +176,21 @@ export async function buildPageMetadata(input: PageMetadataInput): Promise<Metad
   const indexable = input.liveSectionCount > 0
   const robotsValue = nonEmpty(entry?.robots) ?? nonEmpty(globalEntry?.robots)
 
+  /**
+   * ONE RESOLVED PATH FOR BOTH THE CANONICAL AND `og:url`, because they answer the same question.
+   *
+   * `canonicalPath` is what the catalogue routes pass so that page 3 of a filtered listing is
+   * canonical to itself rather than to page 1. `og:url` used `input.path` — the bare route — so the
+   * two disagreed on exactly the pages where `canonicalPath` was supplied: pasting
+   * `/collection/lighting?page=3` into WhatsApp previewed page 1's title and image, and the share
+   * silently sent the recipient somewhere the sender had not been looking at.
+   */
+  const canonicalPath = input.canonicalPath ?? input.path
+
   return {
     title,
     ...(description === undefined ? {} : { description }),
-    ...(base === null
-      ? {}
-      : { metadataBase: base, alternates: { canonical: input.canonicalPath ?? input.path } }),
+    ...(base === null ? {} : { metadataBase: base, alternates: { canonical: canonicalPath } }),
     ...(input.pagination === undefined ? {} : { pagination: input.pagination }),
     robots: indexable
       ? (robotsValue ?? undefined)
@@ -193,7 +202,7 @@ export async function buildPageMetadata(input: PageMetadataInput): Promise<Metad
       title: socialTitle,
       ...(socialDescription === undefined ? {} : { description: socialDescription }),
       ...(siteName === null ? {} : { siteName }),
-      ...(base === null ? {} : { url: new URL(input.path, base).toString() }),
+      ...(base === null ? {} : { url: new URL(canonicalPath, base).toString() }),
       ...(image === null ? {} : { images: [image] }),
     },
     twitter: {

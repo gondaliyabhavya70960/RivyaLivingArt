@@ -95,12 +95,21 @@ export function formatMinor(minor: number, currency: string, locale = 'en-IN'): 
   if (exponent === null) return null
 
   try {
+    // A catalogue price is a headline, not an invoice line, so a round amount is shown round:
+    // ₹12,500 rather than ₹12,500.00. But ONLY a round amount. An earlier version fixed
+    // `maximumFractionDigits: 0` and justified it with "every price this site shows is a round
+    // number in the smallest unit anyway" — which the write path does not guarantee and never did.
+    // `parseProductForm` accepts up to `exponent` decimals on purpose (its error copy offers them),
+    // so 12500.50 stores 1250050, and rounding at display turned that into ₹12,501: a price the
+    // owner did not enter, rendered as if they had, which is exactly what D10 forbids. Below .50 it
+    // rounded the other way and quietly under-priced the piece instead.
+    const fractional = exponent > 0 && minor % 10 ** exponent !== 0
+    const digits = fractional ? exponent : 0
     const format = new Intl.NumberFormat(locale, {
       style: 'currency',
       currency,
-      // A catalogue price is a headline, not an invoice line: 12,500 reads better than 12,500.00,
-      // and every price this site shows is a round number in the smallest unit anyway.
-      maximumFractionDigits: 0,
+      minimumFractionDigits: digits,
+      maximumFractionDigits: digits,
     })
     return format.format(minor / 10 ** exponent)
   } catch {
