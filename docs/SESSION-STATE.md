@@ -76,6 +76,21 @@ into JSX.
 **1000 unit assertions** (86 files), including 17 database guards in `tests/unit/rls/phase14.test.ts`.
 `npm run check` clean; a production build compiles every new route.
 
+### Phase 14: the D9 ten, recorded
+
+| # | Point | Evidence |
+|---|---|---|
+| 1 | Scope implemented | `/collection`, `/collection/[category]`, four patterns, the four Studio catalogue surfaces, migrations `0120`–`0122`, the seed addition. Out of scope by the phase's own list and left alone: any seeded product, `/collections/[slug]`, bulk import, the relationship editor, the customization builder, search, and every cart affordance |
+| 2 | Relevant tests run | 1152 unit assertions across 90 files (17 of them database guards), `collection.spec.ts` + `collection-empty.spec.ts` + `catalog-studio.spec.ts` at 1440, the full non-snapshot e2e suite at 1440 (98 passed), the design-system snapshots at 1440 |
+| 3 | No known scope-breaking error | None. The known GAPS are listed above under *what is NOT built* and are all phase boundaries or the auth-server limitation Phases 04 and 05 already carry |
+| 4 | Documentation updated | `DATA_MODEL.md` (the constraint as strengthened, the index replacement), `BUSINESS_RULES.md` (BR-C5), `STUDIO_GUIDE.md` (§7.1.1), `CONTENT_GUIDE.md` (§8.5), `COMPONENT_REGISTRY.md` (four rows to BUILT, three planned behaviours corrected), `CANONICAL-DECISIONS.md` (A13), `INITIAL_CONTENT_INVENTORY.md` regenerated |
+| 5 | `CHANGELOG.md` | Phase 14 entry added |
+| 6 | `PROJECT_STATE.md` | Phase-status row, the hosted-migration gap, and the "what does not exist" section |
+| 7 | `docs/SESSION-STATE.md` | This block |
+| 8 | Remaining issues documented | Hosted is at `0080` and needs `0120`–`0122`; the Higgsfield migration is still unrun; the six exposed secrets are still unrotated; GitHub Actions still provisions no runner |
+| 9 | Next phase identified | Phase 15 — Product Detail Experience, under *Next Exact Action* |
+| 10 | Repository recoverable | `npm run db:reset` replays all 31 migrations onto an empty database; `npm run db:types` produces no diff after it; `git status` is clean and the generated inventory is committed |
+
 **The RLS fixture had to change.** `loadFixture` attached two `is_concept = true` assets to
 `product_media`, which `reject_concept_product_media` now refuses — so the whole RLS suite failed to
 load. Both are non-concept now, and a third asset carries the flag, attached to nothing, for the test
