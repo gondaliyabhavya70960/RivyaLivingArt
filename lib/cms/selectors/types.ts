@@ -38,6 +38,12 @@ export type EntityCard = {
   readonly href: string
   /** `media_assets.id`, resolved by the caller through `lib/cms/media.ts`. */
   readonly mediaId: string | null
+  /**
+   * A short line ABOVE the title, where the entity has one. Today only a project does — its
+   * `project_type`. Optional rather than nullable-required so the three selectors that have nothing
+   * to put here say nothing rather than each writing `eyebrow: null`.
+   */
+  readonly eyebrow?: string | null
 }
 
 export type SelectorResult = {

@@ -19,8 +19,7 @@ import type { SeedModule } from './types'
  * §17 also gives a two-line fallback of its own ("Portfolio archive is being prepared. / Explore
  * the collection or discuss a custom project with us."). That is a different wording from §28's,
  * for the same surface. §28's is the one seeded, because it is the section the specification
- * devotes to this state and because it is the one already in the database from Phase 08; §17's
- * lines are carried here as the CTA copy, which is the part §28 does not supply.
+ * devotes to this state and because it is the one already in the database from Phase 08.
  *
  * `content/media-slots.ts` marks `/portfolio` `resolution: 'EMPTY_STATE'` for the same reason:
  * generating imagery for a portfolio would fabricate delivered work in pictures instead of words.
@@ -68,12 +67,27 @@ export const portfolioSeed: SeedModule = {
       payload: { limit: 6, show_empty_state: false },
     }),
 
+    /**
+     * §28's empty state. THE HEADING IS SEEDED HERE AND THE BODY IS NOT, which looks inconsistent
+     * and is not: `empty-state` reads its message from `global_content` under `content_key`, so
+     * that `/portfolio`, `/journal` and `/collection` say the same kind of thing in the same voice
+     * and an editor rewords it once. The heading is this page's own and belongs to this section.
+     *
+     * IT SHIPPED WITHOUT THE HEADING AND THAT WAS A DEFECT. The section carried the body row and no
+     * heading at all, so the page rendered half of §28 — the explanation with nothing above it.
+     * `tests/unit/portfolio-empty.test.ts` now asserts both lines verbatim.
+     *
+     * THE CTA LABEL IS §7'S, NOT §28'S. §28 writes "Explore the Collection"; §7 is the reusable CTA
+     * vocabulary and contains "View the Collection" and "Start a Custom Project", which is what the
+     * rest of the site already says for these two destinations. One label per destination is worth
+     * more than one section's phrasing, and amendment A15 records the choice.
+     */
     section({
       page: PAGE,
       key: 'portfolio.02.empty-state',
       blockType: 'empty-state',
       position: 3,
-      // §17's own two lines, used where §28 supplies nothing: the calls to action.
+      heading: 'The project archive is being prepared.',
       ctaLabel: 'View the Collection',
       ctaUrl: '/collection',
       ctaSecondaryLabel: 'Start a Custom Project',

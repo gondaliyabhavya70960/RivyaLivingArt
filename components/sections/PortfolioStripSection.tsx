@@ -2,9 +2,9 @@ import * as React from 'react'
 
 import { EditorialFallback } from '@/components/patterns/EditorialFallback'
 import { ResponsiveMedia } from '@/components/patterns/MediaSlot'
+import { PortfolioCardGrid } from '@/components/patterns/PortfolioCard'
 import { Stack } from '@/components/primitives/Stack'
 
-import { ReferenceCards } from './ReferenceCards'
 import { SectionActions } from './SectionActions'
 import { SectionCopy } from './SectionCopy'
 import { SectionShell } from './SectionShell'
@@ -73,12 +73,15 @@ export function PortfolioStripSection({
             />
           )
         ) : (
-          <ReferenceCards
+          /*
+           * RC-219, not `ReferenceCards`. That component was written in Phase 11 as a placeholder
+           * for exactly this moment — its own header says the three entity phases replace it one at
+           * a time — and it crops to 4:5 on a phone, which cuts a room down to an object. The
+           * project card holds 3:2 at every width and carries the project type as an eyebrow.
+           */
+          <PortfolioCardGrid
             cards={cards}
             assets={reference?.assets ?? new Map()}
-            marker="data-project-card"
-            ratio="3:2"
-            mobileRatio="4:5"
             sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
             strings={strings}
             cloudName={cloudName}

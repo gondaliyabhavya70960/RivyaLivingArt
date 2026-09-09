@@ -39,6 +39,8 @@ function toCards(rows: readonly ReferenceRow[], hrefPrefix: string): EntityCard[
       summary: row.summary,
       href: `${hrefPrefix}/${row.slug}`,
       mediaId: row.hero_media_id,
+      // Present only where the read asked for it — see `ReferenceRow.eyebrow`.
+      eyebrow: row.eyebrow ?? null,
     }))
 }
 

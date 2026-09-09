@@ -108,6 +108,48 @@ describe('with rows to show', () => {
         summary: 'One line.',
         href: '/product/a-table',
         mediaId: null,
+        // Null, not absent, and not 'Furniture': the product read does not ask for an eyebrow
+        // column, so there is nothing for one to be populated from. Only a project has one.
+        eyebrow: null,
+      },
+    ])
+  })
+
+  /**
+   * THE ONE EXTRA COLUMN, AND ONLY FOR PROJECTS. RC-219 puts the project's type above its title as
+   * text, so `listReferenceProjects` reads `project_type` where its two siblings read nothing extra.
+   * This asserts that it arrives — and the assertion above asserts that it does NOT arrive on a
+   * product card, which together are the whole of the rule.
+   */
+  it('carries a project type onto a project card, and nothing else extra', async () => {
+    const answer: Answer = {
+      data: [
+        {
+          id: '33333333-3333-4333-8333-333333333333',
+          slug: 'a-residence',
+          title: 'A residence',
+          summary: null,
+          hero_media_id: null,
+          project_type: 'Commission',
+          // Planted, and must not reach the card: a client's name is publishable only where their
+          // consent is recorded, which a card has no way to know.
+          client_display_name: 'Somebody',
+        },
+      ],
+      error: null,
+    }
+
+    const result = await selectProjects(clientAnswering(answer), { limit: 3 })
+
+    expect(result.cards).toEqual([
+      {
+        id: '33333333-3333-4333-8333-333333333333',
+        key: 'a-residence',
+        title: 'A residence',
+        summary: null,
+        href: '/portfolio/a-residence',
+        mediaId: null,
+        eyebrow: 'Commission',
       },
     ])
   })

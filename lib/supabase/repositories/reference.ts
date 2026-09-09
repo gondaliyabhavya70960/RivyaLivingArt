@@ -34,6 +34,18 @@ export type ReferenceRow = {
   readonly title: string | null
   readonly summary: string | null
   readonly hero_media_id: string | null
+  /**
+   * One extra column, named per table, or absent.
+   *
+   * IT IS DELIBERATELY UNTYPED-BY-TABLE AND DELIBERATELY SINGULAR. The three tables this file reads
+   * share a narrow card shape on purpose — a name, a line and a picture, never a price or a
+   * dimension — and that restraint is what stops a card band quietly acquiring a fourth fact about
+   * a product. But `portfolio_projects.project_type` is a real difference: a project card carries
+   * "Commission" or "Restoration" above its title, which is what RC-219 means by an eyebrow, and no
+   * product or article has an equivalent. One optional slot admits that one difference without
+   * opening the select list to whatever the next caller fancies.
+   */
+  readonly eyebrow?: string | null
 }
 
 /** PostgreSQL's `undefined_table`, and PostgREST's own code for a relation absent from its cache. */
@@ -54,6 +66,8 @@ async function readMaybeMissing(
   client: Client,
   table: string,
   limit: number,
+  /** A column on THIS table to read as the card's eyebrow. Omitted for tables that have none. */
+  eyebrowColumn?: string,
 ): Promise<ReferenceRow[] | null> {
   const loose = client as unknown as {
     from: (t: string) => {
@@ -66,18 +80,22 @@ async function readMaybeMissing(
             column: string,
             options: { ascending: boolean },
           ) => {
-            limit: (
-              n: number,
-            ) => Promise<{ data: ReferenceRow[] | null; error: { code?: string } | null }>
+            limit: (n: number) => Promise<{
+              data: (ReferenceRow & Record<string, unknown>)[] | null
+              error: { code?: string } | null
+            }>
           }
         }
       }
     }
   }
 
+  const columns = ['id', 'slug', 'title', 'summary', 'hero_media_id']
+  if (eyebrowColumn !== undefined) columns.push(eyebrowColumn)
+
   const { data, error } = await loose
     .from(table)
-    .select('id, slug, title, summary, hero_media_id')
+    .select(columns.join(', '))
     .eq('status', 'PUBLISHED')
     .order('created_at', { ascending: false })
     .limit(limit)
@@ -86,7 +104,13 @@ async function readMaybeMissing(
     if (missingTable(error.code)) return null
     throw error
   }
-  return data ?? []
+  if (data === null) return []
+  if (eyebrowColumn === undefined) return data
+
+  return data.map((row) => {
+    const value = row[eyebrowColumn]
+    return { ...row, eyebrow: typeof value === 'string' ? value : null }
+  })
 }
 
 /**
@@ -103,12 +127,19 @@ export async function listReferenceProducts(
   return readMaybeMissing(client, 'products', limit)
 }
 
-/** Delivered projects. The table arrives in Phase 17; until then this returns null. */
+/**
+ * Delivered projects.
+ *
+ * `project_type` COMES BACK AS THE EYEBROW, which is the one column this file reads that its
+ * siblings do not. RC-219 asks for the project's type above its title as TEXT — never a
+ * colour-coded chip, because a colour is not readable to everyone and a chip invites a taxonomy
+ * nobody has agreed. It is nullable and often will be null; the card simply omits the line.
+ */
 export async function listReferenceProjects(
   client: Client,
   limit: number,
 ): Promise<ReferenceRow[] | null> {
-  return readMaybeMissing(client, 'portfolio_projects', limit)
+  return readMaybeMissing(client, 'portfolio_projects', limit, 'project_type')
 }
 
 /** Journal articles. The table arrives in Phase 18; until then this returns null. */
