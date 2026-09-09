@@ -1988,7 +1988,7 @@ export type Database = {
     }
     Enums: {
       availability_state: 'READY_STOCK' | 'MADE_TO_ORDER'
-      collection_concept_state: 'DRAFT_COLLECTION_CONCEPT'
+      collection_concept_state: 'DRAFT_COLLECTION_CONCEPT' | 'OWNER_CONFIRMED' | 'RETIRED'
       content_status: 'DRAFT' | 'REVIEW' | 'APPROVED' | 'PUBLISHED' | 'ARCHIVED'
       edition_state: 'ONE_OF_ONE' | 'LIMITED_EDITION' | 'OPEN_EDITION'
       fact_classification:

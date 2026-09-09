@@ -82,9 +82,23 @@ export const editionStateSchema = z.enum([
   'OPEN_EDITION',
 ]) satisfies z.ZodType<Enums<'edition_state'>>
 
-/** One value until Phase 16 adds OWNER_CONFIRMED and RETIRED. */
+/**
+ * Phase 16 `0140`. The lifecycle of a collection CONCEPT (FEAT §9).
+ *
+ * IN LIFECYCLE ORDER, NOT ALPHABETICAL, matching the enum's own `enumsortorder`: a concept is
+ * drafted, confirmed by the owner, and eventually retired. A Studio list ordered by this column
+ * therefore reads as progress rather than as accident.
+ *
+ * `OWNER_CONFIRMED` IS THE ONLY STATE A COLLECTION MAY BE PUBLISHED IN, and that is not a
+ * convention this schema enforces — `enforce_collection_publish_gate` refuses the row. FEAT §9 is
+ * explicit that the ten seeded names are "possible editable starting concepts" and must not be
+ * fabricated as real published collections, so the gate exists to make a mistaken publish
+ * impossible rather than merely discouraged.
+ */
 export const collectionConceptStateSchema = z.enum([
   'DRAFT_COLLECTION_CONCEPT',
+  'OWNER_CONFIRMED',
+  'RETIRED',
 ]) satisfies z.ZodType<Enums<'collection_concept_state'>>
 
 /**
