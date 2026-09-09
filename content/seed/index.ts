@@ -11,6 +11,7 @@ import { globalSeed } from './global'
 import { globalContentSeed } from './global-content'
 import { homepageSeed } from './homepage'
 import { journalSeed } from './journal'
+import { journalUiSeed } from './journal-ui'
 import { largeFormatSeed } from './large-format'
 import { navigationSeed } from './navigation'
 import { pagesSeed } from './pages'
@@ -77,6 +78,7 @@ export const seedModules: readonly SeedModule[] = [
   commissionsSeed,
   processSeed,
   portfolioSeed,
+  journalUiSeed,
   journalSeed,
   contactSeed,
   faqSeed,

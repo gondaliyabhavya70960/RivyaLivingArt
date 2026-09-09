@@ -1,8 +1,6 @@
 import * as React from 'react'
 
-import { CATALOG_ACTION_KEYS, CATALOG_UI_KEYS } from '@/lib/catalog/labels'
-import { catalogUrl, type CatalogQuery } from '@/lib/catalog/query'
-import { interpolate, siteString, type SiteStrings } from '@/lib/cms/strings'
+import { interpolate } from '@/lib/cms/strings'
 
 /**
  * RC-234. Page-number pagination, as real links.
@@ -25,14 +23,34 @@ import { interpolate, siteString, type SiteStrings } from '@/lib/cms/strings'
  * horizontal scroller on a phone is a control nobody can hit. What remains is Previous, Next and
  * the position string — which is why that string exists as a seeded sentence with `{{page}}` and
  * `{{pages}}` in it rather than as three nodes glued together in JSX.
+ *
+ * IT TAKES `hrefFor` AND ITS WORDS, NOT A CATALOGUE QUERY AND NOT CATALOGUE KEYS. This component
+ * once took `basePath` plus a `CatalogQuery` and read `UI_LABEL.catalog.pagination` itself, which
+ * tied a general navigation pattern to one listing twice over: a change to how the catalogue
+ * encodes `sort` would have changed the journal's page URLs, and a screen-reader user paging
+ * through the journal would have heard the region announced as the catalogue's.
+ *
+ * SO THE CALLER RESOLVES BOTH. It knows how its URLs are shaped and which rows name its own
+ * controls; this component knows only that page 4 has an address and that its region has a name.
+ * A null label means that piece does not render — the same rule `lib/cms/strings.ts` sets for every
+ * public string, because an unnamed region is worse than an absent one.
  */
 
+export interface PaginationLabels {
+  /** Names the `<nav>`. Without it the whole component renders nothing: see the note above. */
+  readonly region: string | null
+  readonly previous: string | null
+  readonly next: string | null
+  /** `Page {{page}} of {{pages}}` — one sentence, because below 430px it is the only thing left. */
+  readonly position: string | null
+}
+
 export interface PaginationProps {
-  readonly basePath: string
-  readonly query: CatalogQuery
+  /** `page` → the URL for that page, in whatever shape the caller's route uses. */
+  readonly hrefFor: (page: number) => string
   readonly page: number
   readonly pageCount: number
-  readonly strings: SiteStrings
+  readonly labels: PaginationLabels
 }
 
 /** How many numbered links to show around the current page before eliding. */
@@ -48,16 +66,12 @@ function pageNumbers(page: number, pageCount: number): readonly number[] {
 }
 
 export function Pagination({
-  basePath,
-  query,
+  hrefFor,
   page,
   pageCount,
-  strings,
+  labels,
 }: PaginationProps): React.ReactElement | null {
-  const regionName = siteString(strings, CATALOG_UI_KEYS.pagination)
-  const previous = siteString(strings, CATALOG_ACTION_KEYS.previous)
-  const next = siteString(strings, CATALOG_ACTION_KEYS.next)
-  const position = siteString(strings, CATALOG_UI_KEYS.paginationPosition)
+  const { region: regionName, previous, next, position } = labels
 
   // One page is not a sequence. Rendering a disabled Previous and Next beside a single "1" tells a
   // visitor there is more when there is not.
@@ -82,7 +96,7 @@ export function Pagination({
       <ul role="list" className="flex flex-wrap items-center justify-center gap-1">
         <li>
           {page > 1 && previous !== null ? (
-            <a rel="prev" href={catalogUrl(basePath, query, { page: page - 1 })} className={link}>
+            <a rel="prev" href={hrefFor(page - 1)} className={link}>
               {previous}
             </a>
           ) : previous === null ? null : (
@@ -112,7 +126,7 @@ export function Pagination({
                     {n}
                   </span>
                 ) : (
-                  <a href={catalogUrl(basePath, query, { page: n })} className={link}>
+                  <a href={hrefFor(n)} className={link}>
                     {n}
                   </a>
                 )}
@@ -132,7 +146,7 @@ export function Pagination({
 
         <li>
           {page < pageCount && next !== null ? (
-            <a rel="next" href={catalogUrl(basePath, query, { page: page + 1 })} className={link}>
+            <a rel="next" href={hrefFor(page + 1)} className={link}>
               {next}
             </a>
           ) : next === null ? null : (
