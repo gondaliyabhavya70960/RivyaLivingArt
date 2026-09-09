@@ -8,7 +8,7 @@ import { ErrorText } from '@/components/primitives/ErrorText'
 import { Heading } from '@/components/primitives/Heading'
 import { Stack } from '@/components/primitives/Stack'
 import { Text } from '@/components/primitives/Text'
-import { buildStepSchema, type ResolvedForm } from '@/lib/cms/forms'
+import { buildStepSchema, unansweredRequired, type ResolvedForm } from '@/lib/cms/forms'
 
 import { ConfiguratorProgress } from './Progress'
 import { ConfiguratorReview } from './Review'
@@ -179,6 +179,14 @@ export function Configurator({ definition, form, copy, uploadLimits, prefill }: 
     const result = buildStepSchema(entry).safeParse(answers)
     if (!result.success) {
       const next: Record<string, string> = {}
+      /*
+       * A FIELD LEFT BLANK GETS THE SEEDED WORD, NOT ZOD'S SENTENCE. "Invalid input: expected
+       * string, received undefined" is written by a library for a developer; D2 says every
+       * visitor-readable string comes from `global_content`. A field that was answered and answered
+       * WRONGLY still shows the schema's message — a malformed email or a number outside the
+       * editor's range is a specific complaint, and the seeded word would hide which.
+       */
+      for (const key of unansweredRequired(entry, answers)) next[key] = copy.required
       for (const issue of result.error.issues) {
         const key = issue.path[0]
         if (typeof key === 'string' && !(key in next)) next[key] = issue.message

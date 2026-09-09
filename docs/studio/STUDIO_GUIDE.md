@@ -1838,10 +1838,14 @@ Raised, not acted on. Nothing above knowingly diverges from `CANONICAL-DECISIONS
 4. **`merchandising.read` does not exist.** The matrix lists only `merchandising.write`. This guide
    reads every merchandising surface under `catalog.read`. Confirm, or add the row.
 
-5. **System group ownership.** `PHASE-05-09.md` says `System → Users` and `System → Feature Flags` are
-   owner-only and that admin sees the rest; Phase 04's matrix grants `system.users.manage` and
-   `system.flags.write` to admin, and Phase 19 calls `/studio/system/flags` "owner-only". This guide
-   follows the Phase 04 matrix. One of the three needs correcting.
+5. ~~**System group ownership.**~~ **CLOSED by amendment A17 (2026-09-09).** `PHASE-05-09.md` said
+   `System → Users` and `System → Feature Flags` were owner-only and Phase 19 called
+   `/studio/system/flags` "owner-only"; Phase 04's matrix grants `system.users.manage` and
+   `system.flags.write` to admin. **The matrix wins**, for the reason amendment A7 gave in the
+   identical situation: a later phase's prose does not narrow a shipped authorisation. An admin
+   already holds `system.settings.write` and `system.users.manage`, so a role trusted to invite
+   staff and edit the WhatsApp template is not one to lock out of a feature switch. Every toggle is
+   audited either way. This guide's tables were already correct and are unchanged.
 
 6. **Role-management UI ownership.** `PHASE-05-09.md` puts role management in Phase 38; Phase 04 already
    delivers `/studio/system/users`, and Phase 38 explicitly does not rebuild it. Amend Phase 05's

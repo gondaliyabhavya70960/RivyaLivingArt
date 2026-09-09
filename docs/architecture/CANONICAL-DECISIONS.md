@@ -184,6 +184,58 @@ Brand and editorial copy may be written; anything asserting business capability 
 
 ## Amendments
 
+**2026-09-09 · A18 — `rate_limit_buckets` arrives in Phase 19, and Phase 41 inherits it
+(SECURITY.md §8, PHASE-16-22 §Phase 19).**
+
+SECURITY.md assigns the rate-limit table to Phase 41 and `app/api/media/sign` deferred its own
+limit accordingly, with a comment recording the gap. That was defensible: the route demands a staff
+session with `media.write`, so the exposure is a signed-in colleague or a stolen session.
+
+Phase 19 adds `app/api/inquiries/upload-sign`, which is **unauthenticated by design** — a visitor
+filling in a bespoke brief has no account and D1 forbids giving them one. An unauthenticated
+endpoint that mints upload credentials with no limit is an open file host with the studio's
+Cloudinary bill attached, and the phase document names that risk and lists the per-IP limit among
+its mitigations. Deferring it would have meant shipping the risk together with a note that the
+mitigation exists twenty-two phases ahead.
+
+- Migration `0182` creates the table in the shape DATA_MODEL already specifies —
+  `(bucket_key, window_start)` — so Phase 41 adds the staff-endpoint keys and the sweeper rather
+  than creating anything. `0183` is its generated RLS.
+- The number is outside Phase 19's `0170`–`0172` block because that block had already been applied
+  when the need surfaced. Renumbering into it would have reordered the apply sequence relative to
+  migrations that had already run.
+- `consume_rate_limit()` counts and decides in ONE statement. A read-then-write limiter is a race
+  two concurrent requests both win, and a limiter with a race is a limiter with a documented bypass.
+- The bucket key is a salted hash. SECURITY.md forbids a raw visitor IP at rest and
+  `activity_events` says the same in its own comment; the table never sees an address.
+- It fails CLOSED. A database that cannot be reached is precisely when an endpoint is least able to
+  absorb whatever is hitting it, so an unanswerable limiter refuses rather than admits.
+
+**2026-09-09 · A17 — `system.flags.write` stays owner AND admin; STUDIO_GUIDE open question 5 is
+closed in the matrix's favour (PHASE-16-22 §Phase 19).**
+
+Phase 19's document calls `/studio/system/flags` "owner-only" in four places, including an exit
+criterion and an RLS requirement. The Phase 04 matrix has said `['owner', 'admin']` since it
+shipped, DATA_MODEL and STUDIO_GUIDE both already follow the matrix, and STUDIO_GUIDE's open
+question 5 records the disagreement and asks for it to be resolved. It is resolved here, and the
+matrix wins.
+
+The reason is the one amendment A7 gave in the identical situation one phase block earlier: **a
+later phase's prose does not narrow a shipped authorisation.** Phase 08's document said an editor
+must not publish; the matrix said they may; the matrix won and the danger the sentence was reaching
+for turned out to be held by a different permission. The same applies here — an admin already holds
+`system.settings.write` and `system.users.manage`, so a role trusted to invite staff and edit the
+WhatsApp template is not one to be locked out of a switch that turns an unreleased feature on.
+
+- `feature_flags` is READABLE under `studio.access`, which every role holds. STUDIO_GUIDE §2.3
+  considered and rejected hiding the register behind the write permission, and that reasoning is
+  adopted: the list of what is switched on is how anyone in the Studio accounts for a surface that
+  is missing.
+- Every toggle is audited, so an admin's flip carries a name either way.
+- The phase document's verification step 5 — "as `admin`, the toggle is absent and a direct POST is
+  denied" — is superseded. What replaces it: as `editor`, `merchandiser`, `researcher` or `viewer`
+  the toggle is absent and a direct write is refused by RLS and re-checked by the server action.
+
 **2026-09-08 · A11 — the homepage's island budget is five, and the fifth is `SiteErrorCopyProvider`.**
 
 The Phase 11 document names four client islands for `/` and says "a fifth island fails the build":

@@ -217,23 +217,34 @@ function baseFieldSchema(field: CustomizationFormField): z.ZodTypeAny {
  *
  * AN EMPTY STRING IS NOT AN ANSWER. An HTML form posts `""` for a text input nobody filled in, and
  * an unticked checkbox posts nothing at all — so an optional field would otherwise fail its own
- * validation on the commonest possible input. `z.preprocess` turns the empty cases into `undefined`
- * before the field's schema sees them, which is also what makes `.optional()` mean what it says.
+ * validation on the commonest possible input. `normalise` turns every empty shape into `undefined`
+ * before the field's schema sees it, which is also what makes `.optional()` mean what it says.
  *
- * A REQUIRED FIELD GETS THE SAME TREATMENT and then fails, deliberately: "Required" reads better
- * than whatever a bare string schema says about a zero-length value.
+ * A REQUIRED FIELD DOES NOT GET `.optional()`, AND THE FIRST VERSION OF THIS FILE DID GIVE IT ONE.
+ * It wrapped `schema.optional()` and then bolted a `.refine(value => value !== undefined)` on top,
+ * which reads correctly and does nothing: `z.object` decides a key is optional from whether its
+ * INPUT type admits `undefined`, and for an optional key that is MISSING it skips the field
+ * entirely — so the refine never ran and a required question could be omitted altogether.
+ * `tests/unit/form-schema.test.ts` caught it; a form that asks for a phone number and accepts a
+ * payload without one is precisely the failure the contact step exists to prevent.
  */
-function withOptionality(schema: z.ZodTypeAny, field: CustomizationFormField): z.ZodTypeAny {
-  const emptied = z.preprocess((value) => {
+function normaliseEmpty(field: CustomizationFormField) {
+  return (value: unknown): unknown => {
     if (value === '' || value === null) return undefined
     if (Array.isArray(value) && value.length === 0) return undefined
     if (value === false && field.field_type === 'CHECKBOX') return undefined
     return value
-  }, schema.optional())
+  }
+}
 
-  if (!field.is_required) return emptied
-
-  return emptied.refine((value) => value !== undefined, { message: 'Required' })
+function withOptionality(schema: z.ZodTypeAny, field: CustomizationFormField): z.ZodTypeAny {
+  const normalise = normaliseEmpty(field)
+  // Not optional: the key stays required in the object, so a missing one fails rather than being
+  // skipped. The visitor-facing wording for that failure is the seeded string the configurator
+  // substitutes — see `requiredIssueKeys` — because D2 keeps every visitor-readable sentence in
+  // `global_content` and Zod's default is English written by a library.
+  if (field.is_required) return z.preprocess(normalise, schema)
+  return z.preprocess(normalise, schema.optional())
 }
 
 /** The schema for one step's answers. Used by the configurator to validate before advancing. */
@@ -336,4 +347,24 @@ export function summariseAnswers(
   }
 
   return lines
+}
+
+/**
+ * Which of a step's required fields the visitor has not answered.
+ *
+ * SEPARATE FROM THE SCHEMA, ON PURPOSE. Zod reports a missing required field as
+ * "Invalid input: expected string, received undefined", which is a sentence written by a library
+ * for a developer. D2 says every visitor-readable string comes from `global_content`, so the
+ * configurator asks this function which fields are simply unanswered and shows the seeded word for
+ * it, falling back to the schema's own message only for a field that was answered and answered
+ * wrongly — a malformed email, a number out of the editor's range.
+ */
+export function unansweredRequired(
+  entry: FormStepWithFields,
+  answers: Readonly<Record<string, unknown>>,
+): readonly string[] {
+  return entry.fields
+    .filter((field) => field.is_enabled && field.is_required)
+    .filter((field) => normaliseEmpty(field)(answers[field.key]) === undefined)
+    .map((field) => field.key)
 }

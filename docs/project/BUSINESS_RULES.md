@@ -518,6 +518,53 @@ contradiction rather than leaving an engineer to discover it when the equality a
 Adding a third entry — here, in `SECURITY.md` T5 and in the guard's allowlist — is a BR-K1
 amendment, not a pull request.
 
+### BR-F2b — Placeholder content is marked, listed and removable
+
+**Rule.** Content written to make the site demonstrable before the real catalogue exists carries
+`is_demo`, is listed in `docs/content/DEMO_CONTENT.md`, and is removed in one command. Adding
+placeholder rows is authorised; adding **unmarked** placeholder rows is not.
+
+Permission to write a placeholder **does not suspend BR-D1**. A fabricated price is a fabricated
+price whether or not `is_demo` sits beside it — the column records what a row *is*, not what it may
+*claim*. So no demo row states a price, a dimension, a material, a specification, stock, a lead
+time, an award, a certification or a durability claim, and no demo testimonial is attributed to a
+person.
+
+| | |
+|---|---|
+| Enforced by | **Schema:** `is_demo boolean not null default false` on `products`, `pages`, `page_sections`, `journal_articles`, `portfolio_projects`, `testimonials` (migration `0180`). **Tooling:** `npm run demo:seed` writes only marked rows; `npm run demo:purge` deletes every row carrying the column and reverses the two edits the seeder makes to rows it does not own. **Register:** `npm run demo:check-register` regenerates `DEMO_CONTENT.md` from the modules and fails the build on a diff |
+| Test | `tests/unit/demo-content.test.ts` greps the demo modules for money, measurements, lead times, awards and guarantees, and asserts every testimonial attribution and project location is explicitly a placeholder |
+| Not a visibility rule | No policy tests `is_demo`. A demo product is published and rendered exactly like a real one, because a placeholder catalogue that behaved differently would tell the owner nothing about the site they are evaluating. What the column buys is a badge in Studio and a purge that cannot miss |
+| Two kinds of row cannot be published at all | `portfolio_projects` and `testimonials` each carry an evidence gate refusing PUBLISHED without the owner's verification or the subject's consent. A script cannot grant itself either, and does not try: the demo rows exist so the Studio screens have something to work against |
+| No photographs | All 250 library assets carry `is_concept`, and `products_reject_concept_hero` (Phase 14) refuses a concept render as a product's hero. Demo products have no imagery, and real photography is the one thing a placeholder cannot stand in for |
+
+**It is not `content/seed/**`, and must never move there.** `SeedableTable` deliberately has no
+`products` member — SEED §32 forbids seeded inventory and the type is the enforcement. The
+authorisation covers a separate, separately-named, reversible tool; it does not reopen that rule.
+
+---
+
+### BR-F4b — Nothing calculates a bespoke price
+
+**Rule.** No column, no field, no validation key and no rendered surface in the customization
+system may hold, derive or display a price, cost, surcharge, multiplier, estimate or quote. FEAT §15
+says it in as many words — *do not calculate fake bespoke pricing* — and D1 forbids checkout
+outright. Price vocabulary on the site is the seeded SEED §30 set — `Request a Quote`,
+`Starting from`, `Price on Request` — rendered by the product surfaces and never by the
+configurator.
+
+The risk this guards is not that somebody puts a price on the public form; nobody would. It is that
+somebody adds `price_modifier` to a field "just for internal estimating", and six months later a
+summary renders it.
+
+| | |
+|---|---|
+| Enforced by | **Schema:** no price column exists on any `customization_*` table, and `customization_form_fields.validation` is constrained to a fixed allowlist of Zod keys — `min`, `max`, `step`, `minLength`, `maxLength`, `pattern`, `accept`, `maxFiles`, `maxBytes` — so a surcharge cannot arrive dressed as validation. **Type:** `form_field_type` has fourteen members and none is a currency input |
+| Test | `tests/unit/no-pricing.test.ts` greps migration `0170`, `lib/cms/forms.ts` and `components/patterns/Configurator/**` for price-shaped identifiers and fails on a hit |
+| The review screen | Lists every answer given and no total. There is nothing to compute one from, because no field carries a number that means money |
+
+---
+
 ### BR-F3 — Research data is never publicly searchable
 
 **Rule.** `search_documents` (public) and `research_search_documents` (staff) are two indexes with
