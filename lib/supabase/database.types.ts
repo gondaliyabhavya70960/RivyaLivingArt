@@ -1519,6 +1519,12 @@ export type Database = {
           seed_content_hash: string | null
           seed_last_applied_at: string | null
           owner_edited: boolean
+          price_minor: number | null
+          availability_state: Database['public']['Enums']['availability_state'] | null
+          edition_state: Database['public']['Enums']['edition_state'] | null
+          edition_size: number | null
+          is_customizable: boolean
+          sort_order: number | null
         }
         Insert: {
           id?: string
@@ -1552,6 +1558,12 @@ export type Database = {
           seed_content_hash?: string | null
           seed_last_applied_at?: string | null
           owner_edited?: boolean
+          price_minor?: number | null
+          availability_state?: Database['public']['Enums']['availability_state'] | null
+          edition_state?: Database['public']['Enums']['edition_state'] | null
+          edition_size?: number | null
+          is_customizable?: boolean
+          sort_order?: number | null
         }
         Update: {
           id?: string
@@ -1585,6 +1597,12 @@ export type Database = {
           seed_content_hash?: string | null
           seed_last_applied_at?: string | null
           owner_edited?: boolean
+          price_minor?: number | null
+          availability_state?: Database['public']['Enums']['availability_state'] | null
+          edition_state?: Database['public']['Enums']['edition_state'] | null
+          edition_size?: number | null
+          is_customizable?: boolean
+          sort_order?: number | null
         }
         Relationships: [
           {
@@ -1886,8 +1904,10 @@ export type Database = {
       }
     }
     Enums: {
+      availability_state: 'READY_STOCK' | 'MADE_TO_ORDER'
       collection_concept_state: 'DRAFT_COLLECTION_CONCEPT'
       content_status: 'DRAFT' | 'REVIEW' | 'APPROVED' | 'PUBLISHED' | 'ARCHIVED'
+      edition_state: 'ONE_OF_ONE' | 'LIMITED_EDITION' | 'OPEN_EDITION'
       fact_classification:
         | 'BRAND_COPY'
         | 'EDITORIAL_COPY'
@@ -1898,7 +1918,7 @@ export type Database = {
       media_kind: 'IMAGE' | 'VIDEO' | 'MODEL_3D' | 'DOCUMENT' | 'BRAND'
       media_source: 'REAL' | 'USER_UPLOAD' | 'HIGGSFIELD' | 'RENDER' | 'FALLBACK'
       owner_verification: 'NOT_REQUIRED' | 'OWNER_VERIFICATION_REQUIRED' | 'VERIFIED'
-      price_state: 'STARTING_FROM' | 'REQUEST_QUOTE' | 'PRICE_ON_REQUEST'
+      price_state: 'STARTING_FROM' | 'REQUEST_QUOTE' | 'PRICE_ON_REQUEST' | 'FIXED'
       user_role: 'owner' | 'admin' | 'editor' | 'merchandiser' | 'researcher' | 'viewer'
     }
     CompositeTypes: {

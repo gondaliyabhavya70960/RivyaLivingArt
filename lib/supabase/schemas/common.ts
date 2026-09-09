@@ -58,10 +58,30 @@ export const mediaSourceSchema = z.enum([
 
 /** No FIXED until Phase 14. See supabase/migrations/0006_catalog.sql. */
 export const priceStateSchema = z.enum([
+  'FIXED',
   'STARTING_FROM',
   'REQUEST_QUOTE',
   'PRICE_ON_REQUEST',
 ]) satisfies z.ZodType<Enums<'price_state'>>
+
+/**
+ * Phase 14 `0120`. Whether a piece exists now or is made when ordered.
+ *
+ * Nullable everywhere it appears: null means the owner has not stated it, which is not the same as
+ * MADE_TO_ORDER and must not render as it. READY_STOCK is an inventory claim and the database
+ * refuses to publish a product asserting it until the owner has verified the row (D10).
+ */
+export const availabilityStateSchema = z.enum([
+  'READY_STOCK',
+  'MADE_TO_ORDER',
+]) satisfies z.ZodType<Enums<'availability_state'>>
+
+/** Phase 14 `0120`. LIMITED_EDITION must state `edition_size`; the other two must not carry one. */
+export const editionStateSchema = z.enum([
+  'ONE_OF_ONE',
+  'LIMITED_EDITION',
+  'OPEN_EDITION',
+]) satisfies z.ZodType<Enums<'edition_state'>>
 
 /** One value until Phase 16 adds OWNER_CONFIRMED and RETIRED. */
 export const collectionConceptStateSchema = z.enum([
