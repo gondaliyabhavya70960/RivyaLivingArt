@@ -1,5 +1,7 @@
 import type { Enums } from '@/lib/supabase/database.types'
 
+import { DIMENSION_KEYS, MAX_DIMENSION } from './dimensions'
+
 /**
  * FEAT §21 (data quality) and FEAT §22 (publication readiness), as one pure module.
  *
@@ -88,18 +90,14 @@ const CURRENCY = /^[A-Z]{3}$/
  * rejects the same blobs the database will once `0130` lands. Until then this is the only guard,
  * which is why it is exhaustive rather than advisory.
  */
-export const DIMENSION_KEYS = [
-  'length_mm',
-  'width_mm',
-  'height_mm',
-  'depth_mm',
-  'diameter_mm',
-  'weight_g',
-  'seats',
-] as const
+/**
+ * Re-exported, not redeclared. `lib/catalog/dimensions.ts` owns the list because the database
+ * constraint in 0130 mirrors it and the renderer reads it; a second copy here would be a third
+ * place for the seven measurements to disagree.
+ */
+export { DIMENSION_KEYS } from './dimensions'
 
-/** A metre and a half of table is 1500; a hundred metres is a data-entry slip, not a product. */
-const MAX_DIMENSION_MM = 100_000
+const MAX_DIMENSION_MM = MAX_DIMENSION
 
 export function hasDimensions(dimensions: unknown): boolean {
   return (

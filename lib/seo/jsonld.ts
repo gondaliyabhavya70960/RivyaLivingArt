@@ -82,11 +82,16 @@ export async function homepageJsonLd(): Promise<JsonLdGraph | null> {
 /**
  * The graph as a string safe to place inside a `<script>` element.
  *
+ * TAKES `unknown` RATHER THAN `JsonLdGraph`, because Phase 15's Product node carries fields this
+ * module's two-key node type does not have and never should — `offers`, `sku`, `brand`. Widening
+ * `JsonLdNode` to fit it would let the homepage graph grow keys nobody declared. One escaper, each
+ * caller typing its own graph, is the trade that keeps both honest.
+ *
  * `<` IS ESCAPED, AND THAT IS NOT PARANOIA ABOUT OUR OWN DATA. The brand name is a
  * `global_content` row an editor can type into, and a `</script>` sequence anywhere inside a
  * script block ends the block wherever it appears — including inside a JSON string. Escaping it as
  * `<` is still valid JSON, parses to the same value, and cannot close the element.
  */
-export function serialiseJsonLd(graph: JsonLdGraph): string {
+export function serialiseJsonLd(graph: unknown): string {
   return JSON.stringify(graph).replace(/</g, '\\u003c')
 }

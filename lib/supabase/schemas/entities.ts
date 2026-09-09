@@ -7,6 +7,7 @@ import {
   collectionConceptStateSchema,
   contentColumns,
   editionStateSchema,
+  factClassificationSchema,
   jsonSchema,
   mediaKindSchema,
   mediaSourceSchema,
@@ -200,6 +201,36 @@ export const productSchema = z.object({
   ...seedColumns,
 }) satisfies z.ZodType<Tables<'products'>>
 
+/**
+ * One owner-entered specification row. Phase 15 `0130`.
+ *
+ * `label` and `value` are plain non-empty strings rather than anything structured, and that is the
+ * point: the owner types "Seat height" and "450", the site shows "Seat height" and "450", and
+ * nothing between the two parses, converts or rounds. `unit` is what they typed as well.
+ *
+ * No seed columns. The table has none, because a seeded specification would be a fabricated
+ * measurement (D10) and the absence of a `seed_key` is what makes that structural.
+ */
+export const productSpecSchema = z.object({
+  id: uuidSchema,
+  product_id: uuidSchema,
+  sort_order: z.number().int(),
+  label: z.string(),
+  value: z.string(),
+  unit: z.string().nullable(),
+  group_label: z.string().nullable(),
+  ...auditColumns,
+  ...contentColumns,
+  /**
+   * NOT NULL here, unlike every other content table. 0130 declares it
+   * `not null default 'PRODUCT_FACT'` because that is what a row in this table IS by construction —
+   * a measurement of a real object, typed by the person who made it. There is no other honest value
+   * for it, so the column does not offer one and the schema follows the column rather than the
+   * shared helper.
+   */
+  fact_classification: factClassificationSchema,
+}) satisfies z.ZodType<Tables<'product_specs'>>
+
 export const productRelationSchema = z.object({
   id: uuidSchema,
   source_product_id: uuidSchema,
@@ -217,3 +248,4 @@ export type Material = z.infer<typeof materialSchema>
 export type MediaAsset = z.infer<typeof mediaAssetSchema>
 export type Product = z.infer<typeof productSchema>
 export type ProductRelation = z.infer<typeof productRelationSchema>
+export type ProductSpec = z.infer<typeof productSpecSchema>
