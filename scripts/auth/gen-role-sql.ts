@@ -28,6 +28,7 @@ import {
   PHASE_08_POLICIES,
   PHASE_15_POLICIES,
   PHASE_16_POLICIES,
+  PHASE_17_POLICIES,
   TABLE_POLICY_MAP,
   type ManagedTable,
 } from '../../lib/auth/table-permissions'
@@ -140,6 +141,24 @@ const GENERATED: Record<string, { title: string; preamble: string }> = {
 -- product would publish a measurement of a piece the site does not admit exists. The row's own
 -- status is therefore not the whole condition, and \`publicClause\` says so explicitly rather than
 -- leaving the parent test to the application that happens to join the two.`,
+  },
+  [PHASE_17_POLICIES]: {
+    title: `-- ${PHASE_17_POLICIES} — Phase 17`,
+    preamble: `-- Policies for \`portfolio_projects\`, \`portfolio_project_media\` and \`testimonials\`, which
+-- migration 0150 creates. Separate from that file for the reason every policy file is separate:
+-- this one is GENERATED from lib/auth/table-permissions.ts and is rewritten whole, so it may hold
+-- nothing a human wrote.
+--
+-- ALL THREE ARE SHAPE A, AND THE PUBLIC CLAUSE IS DELIBERATELY THIN. \`status = 'PUBLISHED'\` is the
+-- whole test on a project and on a testimonial, because the two rules that actually matter — the
+-- owner has verified this happened, and anyone the row names has consented to be named — are
+-- enforced by \`enforce_project_evidence_gate()\` and \`enforce_testimonial_evidence_gate()\` at the
+-- moment of publication. A row cannot REACH published without satisfying them, so re-testing
+-- \`owner_verification\` here would be a second copy of a rule that could drift from the trigger.
+--
+-- \`portfolio_project_media\` DOES carry a parent test, matching \`product_specs\`: the photographs
+-- of an unpublished project must not be readable, or the existence and the contents of unannounced
+-- work leak through the join even while the project row itself stays hidden.`,
   },
 }
 

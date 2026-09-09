@@ -98,6 +98,7 @@ export const PHASE_07_POLICIES = '0041_rls_policies_phase07.sql'
 export const PHASE_08_POLICIES = '0051_phase08_cms_rls.sql'
 export const PHASE_15_POLICIES = '0131_phase15_product_specs_rls.sql'
 export const PHASE_16_POLICIES = '0142_phase16_entity_relations_rls.sql'
+export const PHASE_17_POLICIES = '0151_phase17_portfolio_rls.sql'
 
 export const TABLE_POLICIES = {
   // --- Shape A: content tables ------------------------------------------------------------------
@@ -317,6 +318,55 @@ export const TABLE_POLICIES = {
       'document requires that this table never be publicly readable by itself; the public reads ' +
       "related content through a repository that resolves each target under the target table's " +
       'own policies, so an unpublished target yields nothing.',
+  },
+
+  /**
+   * `portfolio_projects` — Phase 17. Delivered work, and the most consequential public read on the
+   * site: every row is a claim that Rivya made something for someone.
+   *
+   * THE PUBLIC CLAUSE IS `status = 'PUBLISHED'` AND NOTHING ELSE, and that is not laxness. The two
+   * gates that matter — owner verification, and consent from anyone the row names — are enforced
+   * by `enforce_project_evidence_gate()` at the moment of publication, so a row cannot REACH
+   * PUBLISHED without satisfying them. Re-testing `owner_verification` here would be a second copy
+   * of the rule that could drift from the trigger, and the trigger is the one that cannot be
+   * bypassed.
+   */
+  portfolio_projects: {
+    policiesIn: PHASE_17_POLICIES,
+    shape: 'A',
+    publicClause: `status = 'PUBLISHED'`,
+    readPermission: 'content.read',
+    writePermission: 'content.write',
+    deletePermission: 'destructive.execute',
+  },
+
+  /**
+   * `portfolio_project_media` — Phase 17. Shape A with a parent clause, matching `product_specs`:
+   * the pictures of an unpublished project must not be readable, or the existence and contents of
+   * unannounced work leak through the join.
+   */
+  portfolio_project_media: {
+    policiesIn: PHASE_17_POLICIES,
+    shape: 'A',
+    publicClause: `exists (select 1 from portfolio_projects p
+                   where p.id = portfolio_project_media.project_id and p.status = 'PUBLISHED')`,
+    readPermission: 'content.read',
+    writePermission: 'content.write',
+    deletePermission: 'destructive.execute',
+  },
+
+  /**
+   * `testimonials` — Phase 17. Same shape and the same reasoning as `portfolio_projects`: the
+   * consent gate lives in `enforce_testimonial_evidence_gate()`, so PUBLISHED already implies a
+   * granted consent for any row that names someone.
+   */
+  testimonials: {
+    policiesIn: PHASE_17_POLICIES,
+    shape: 'A',
+    publicClause: `status = 'PUBLISHED'`,
+    readPermission: 'content.read',
+    writePermission: 'content.write',
+    deletePermission: 'destructive.execute',
   },
 
   // --- Shape C: staff-only, each a declared deviation --------------------------------------------

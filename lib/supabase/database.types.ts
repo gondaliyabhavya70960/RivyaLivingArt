@@ -1403,6 +1403,194 @@ export type Database = {
           },
         ]
       }
+      portfolio_project_media: {
+        Row: {
+          project_id: string
+          media_asset_id: string
+          role: string
+          caption: string | null
+          alt_override: string | null
+          sort_order: number
+          created_at: string
+          created_by: string | null
+        }
+        Insert: {
+          project_id: string
+          media_asset_id: string
+          role: string
+          caption?: string | null
+          alt_override?: string | null
+          sort_order?: number
+          created_at?: string
+          created_by?: string | null
+        }
+        Update: {
+          project_id?: string
+          media_asset_id?: string
+          role?: string
+          caption?: string | null
+          alt_override?: string | null
+          sort_order?: number
+          created_at?: string
+          created_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'portfolio_project_media_created_by_fkey'
+            columns: ['created_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'portfolio_project_media_media_asset_id_fkey'
+            columns: ['media_asset_id']
+            isOneToOne: false
+            referencedRelation: 'media_assets'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'portfolio_project_media_project_id_fkey'
+            columns: ['project_id']
+            isOneToOne: false
+            referencedRelation: 'portfolio_projects'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      portfolio_projects: {
+        Row: {
+          id: string
+          slug: string
+          page_id: string | null
+          title: string
+          subtitle: string | null
+          summary: string | null
+          project_type: string | null
+          location_label: string | null
+          completed_on: string | null
+          is_client_project: boolean
+          client_display_name: string | null
+          client_consent: Database['public']['Enums']['client_consent_state']
+          client_consent_reference: string | null
+          client_consent_recorded_at: string | null
+          client_consent_recorded_by: string | null
+          evidence_note: string | null
+          hero_media_id: string | null
+          seo_entry_id: string | null
+          sort_order: number
+          status: Database['public']['Enums']['content_status']
+          owner_verification: Database['public']['Enums']['owner_verification']
+          fact_classification: Database['public']['Enums']['fact_classification']
+          published_at: string | null
+          published_by: string | null
+          created_at: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          slug: string
+          page_id?: string | null
+          title: string
+          subtitle?: string | null
+          summary?: string | null
+          project_type?: string | null
+          location_label?: string | null
+          completed_on?: string | null
+          is_client_project?: boolean
+          client_display_name?: string | null
+          client_consent?: Database['public']['Enums']['client_consent_state']
+          client_consent_reference?: string | null
+          client_consent_recorded_at?: string | null
+          client_consent_recorded_by?: string | null
+          evidence_note?: string | null
+          hero_media_id?: string | null
+          seo_entry_id?: string | null
+          sort_order?: number
+          status?: Database['public']['Enums']['content_status']
+          owner_verification?: Database['public']['Enums']['owner_verification']
+          fact_classification?: Database['public']['Enums']['fact_classification']
+          published_at?: string | null
+          published_by?: string | null
+          created_at?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          slug?: string
+          page_id?: string | null
+          title?: string
+          subtitle?: string | null
+          summary?: string | null
+          project_type?: string | null
+          location_label?: string | null
+          completed_on?: string | null
+          is_client_project?: boolean
+          client_display_name?: string | null
+          client_consent?: Database['public']['Enums']['client_consent_state']
+          client_consent_reference?: string | null
+          client_consent_recorded_at?: string | null
+          client_consent_recorded_by?: string | null
+          evidence_note?: string | null
+          hero_media_id?: string | null
+          seo_entry_id?: string | null
+          sort_order?: number
+          status?: Database['public']['Enums']['content_status']
+          owner_verification?: Database['public']['Enums']['owner_verification']
+          fact_classification?: Database['public']['Enums']['fact_classification']
+          published_at?: string | null
+          published_by?: string | null
+          created_at?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'portfolio_projects_client_consent_recorded_by_fkey'
+            columns: ['client_consent_recorded_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'portfolio_projects_hero_media_id_fkey'
+            columns: ['hero_media_id']
+            isOneToOne: false
+            referencedRelation: 'media_assets'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'portfolio_projects_page_id_fkey'
+            columns: ['page_id']
+            isOneToOne: true
+            referencedRelation: 'pages'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'portfolio_projects_published_by_fkey'
+            columns: ['published_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'portfolio_projects_seo_entry_id_fkey'
+            columns: ['seo_entry_id']
+            isOneToOne: false
+            referencedRelation: 'seo_entries'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'portfolio_projects_updated_by_fkey'
+            columns: ['updated_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       product_collections: {
         Row: {
           product_id: string
@@ -2042,6 +2230,85 @@ export type Database = {
           },
         ]
       }
+      testimonials: {
+        Row: {
+          id: string
+          attributed_to: string | null
+          attribution_role: string | null
+          quote: string
+          project_id: string | null
+          consent: Database['public']['Enums']['client_consent_state']
+          consent_reference: string | null
+          sort_order: number
+          status: Database['public']['Enums']['content_status']
+          owner_verification: Database['public']['Enums']['owner_verification']
+          fact_classification: Database['public']['Enums']['fact_classification']
+          published_at: string | null
+          published_by: string | null
+          created_at: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          attributed_to?: string | null
+          attribution_role?: string | null
+          quote: string
+          project_id?: string | null
+          consent?: Database['public']['Enums']['client_consent_state']
+          consent_reference?: string | null
+          sort_order?: number
+          status?: Database['public']['Enums']['content_status']
+          owner_verification?: Database['public']['Enums']['owner_verification']
+          fact_classification?: Database['public']['Enums']['fact_classification']
+          published_at?: string | null
+          published_by?: string | null
+          created_at?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          attributed_to?: string | null
+          attribution_role?: string | null
+          quote?: string
+          project_id?: string | null
+          consent?: Database['public']['Enums']['client_consent_state']
+          consent_reference?: string | null
+          sort_order?: number
+          status?: Database['public']['Enums']['content_status']
+          owner_verification?: Database['public']['Enums']['owner_verification']
+          fact_classification?: Database['public']['Enums']['fact_classification']
+          published_at?: string | null
+          published_by?: string | null
+          created_at?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'testimonials_project_id_fkey'
+            columns: ['project_id']
+            isOneToOne: false
+            referencedRelation: 'portfolio_projects'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'testimonials_published_by_fkey'
+            columns: ['published_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'testimonials_updated_by_fkey'
+            columns: ['updated_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -2094,6 +2361,7 @@ export type Database = {
     }
     Enums: {
       availability_state: 'READY_STOCK' | 'MADE_TO_ORDER'
+      client_consent_state: 'NOT_APPLICABLE' | 'PENDING' | 'GRANTED' | 'WITHDRAWN'
       collection_concept_state: 'DRAFT_COLLECTION_CONCEPT' | 'OWNER_CONFIRMED' | 'RETIRED'
       content_status: 'DRAFT' | 'REVIEW' | 'APPROVED' | 'PUBLISHED' | 'ARCHIVED'
       edition_state: 'ONE_OF_ONE' | 'LIMITED_EDITION' | 'OPEN_EDITION'

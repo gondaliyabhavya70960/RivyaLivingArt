@@ -139,7 +139,19 @@ psql(
        version    text primary key,
        checksum   text not null,
        applied_at timestamptz not null default now()
-     );`,
+     );
+     -- RLS ON, WITH NO POLICY, WHICH MEANS NOBODY. On Supabase \`anon\` and \`authenticated\` hold
+     -- grants on every table in \`public\` — GRANT is not the security boundary there, RLS is the
+     -- whole of it — so a bookkeeping table left unguarded publishes the migration filenames and
+     -- their checksums to anyone with the anon key. Not catastrophic, and not nothing: it is a map
+     -- of the schema's history. This runner connects as the owner and bypasses RLS, so its own
+     -- reads and writes are unaffected.
+     --
+     -- IT IS DONE HERE RATHER THAN IN A MIGRATION because this is where the table is born. A
+     -- migration could not cover a database whose ledger the runner had just created, which is
+     -- exactly the case that exposed this: \`db:check-schema\` flagged the table the first time a
+     -- cluster had one at all.
+     alter table public.schema_migrations enable row level security;`,
   ],
   'creating schema_migrations',
   { capture: true },
