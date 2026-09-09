@@ -39,16 +39,22 @@ export interface CatalogListingFilters {
   readonly categoryId?: string | null
   /** Material ids, already resolved from the slugs in the URL. OR within the dimension. */
   readonly materialIds?: readonly string[]
-  /** Collection id, already resolved from the slug in the URL. */
-  readonly collectionId?: string | null
+  /** Collection ids, already resolved from the slugs in the URL. OR within the dimension. */
+  readonly collectionIds?: readonly string[]
 }
 
 export interface CatalogListing {
   readonly rows: readonly Product[]
-  /** Rows matching the filters across every page — what pagination is computed from. */
-  readonly total: number
-  readonly page: number
-  readonly pageCount: number
+  /**
+   * True when the requested page lies past the end of the result set.
+   *
+   * NOT AN ERROR AND NOT AN EMPTY PAGE. PostgREST answers an offset beyond the last row with
+   * PGRST103 rather than an empty list, and a stale bookmark or a crawler following an old
+   * `rel="next"` must not produce a 500. It is also not "no results": the results exist, at a
+   * different address. The caller decides what to do with it, and both routes answer 404 —
+   * `?page=99` of a two-page listing is not a page.
+   */
+  readonly beyondEnd: boolean
 }
 
 /** Counts per value, for one dimension. A value absent from the map has no matches at all. */
@@ -77,7 +83,7 @@ const COLLECTION_EMBED = 'product_collections!inner(collection_id)'
 function rowsSelect(filters: CatalogListingFilters): string {
   const parts = ['*']
   if ((filters.materialIds?.length ?? 0) > 0) parts.push(MATERIAL_EMBED)
-  if (filters.collectionId) parts.push(COLLECTION_EMBED)
+  if ((filters.collectionIds?.length ?? 0) > 0) parts.push(COLLECTION_EMBED)
   return parts.join(', ')
 }
 
@@ -92,7 +98,11 @@ function facetsSelect(filters: CatalogListingFilters): string {
     'is_customizable',
   ]
   parts.push((filters.materialIds?.length ?? 0) > 0 ? MATERIAL_EMBED : 'product_materials(material_id)')
-  parts.push(filters.collectionId ? COLLECTION_EMBED : 'product_collections(collection_id)')
+  parts.push(
+    (filters.collectionIds?.length ?? 0) > 0
+      ? COLLECTION_EMBED
+      : 'product_collections(collection_id)',
+  )
   return parts.join(', ')
 }
 
@@ -115,8 +125,8 @@ function applyFilters(builder: any, query: CatalogQuery, filters: CatalogListing
   if ((filters.materialIds?.length ?? 0) > 0) {
     next = next.in('product_materials.material_id', filters.materialIds)
   }
-  if (filters.collectionId) {
-    next = next.eq('product_collections.collection_id', filters.collectionId)
+  if ((filters.collectionIds?.length ?? 0) > 0) {
+    next = next.in('product_collections.collection_id', filters.collectionIds)
   }
   return next
 }
@@ -149,6 +159,17 @@ function applySort(builder: any, sort: CatalogQuery['sort']): any {
   }
 }
 
+/** PostgREST's code for "the requested range starts past the last row". */
+const RANGE_NOT_SATISFIABLE = 'PGRST103'
+
+/**
+ * One page of rows.
+ *
+ * IT ASKS FOR NO COUNT, deliberately. `count: 'exact'` makes PostgREST run the whole predicate a
+ * second time to count it, and the facet query beside this one already reads every matching row —
+ * so the total is free there and paid for twice here. `loadCatalogListing` takes it from the
+ * facets, which also guarantees the two can never disagree about how many results exist.
+ */
 export async function listCatalogProducts(
   client: Client,
   query: CatalogQuery,
@@ -156,21 +177,15 @@ export async function listCatalogProducts(
 ): Promise<CatalogListing> {
   const from = (query.page - 1) * PAGE_SIZE
 
-  const builder = applySort(
-    applyFilters(client.from('products').select(rowsSelect(filters), { count: 'exact' }), query, filters),
+  const { data, error } = await applySort(
+    applyFilters(client.from('products').select(rowsSelect(filters)), query, filters),
     query.sort,
   ).range(from, from + PAGE_SIZE - 1)
 
-  const { data, error, count } = await builder
+  if (error?.code === RANGE_NOT_SATISFIABLE) return { rows: [], beyondEnd: true }
   if (error) throw toRepositoryError(ENTITY, 'list', filters.categoryId ?? 'all', error)
 
-  const total = count ?? 0
-  return {
-    rows: parseRows(ENTITY, productSchema, data ?? []),
-    total,
-    page: query.page,
-    pageCount: Math.max(1, Math.ceil(total / PAGE_SIZE)),
-  }
+  return { rows: parseRows(ENTITY, productSchema, data ?? []), beyondEnd: false }
 }
 
 interface FacetRow {

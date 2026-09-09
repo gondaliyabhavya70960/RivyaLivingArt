@@ -44,6 +44,24 @@ export function siteStringOrEmpty(strings: SiteStrings, key: string): string {
 }
 
 /**
+ * `{{token}}` substitution, for the handful of strings that must contain a number.
+ *
+ * ALMOST NO STRING NEEDS THIS, and that is why it is a separate function rather than something
+ * `siteString` does. A sentence built out of fragments cannot be translated, reordered or even
+ * reworded properly — "Page 2 of 7" is not "Seite 2 von 7" with the words swapped — so the whole
+ * sentence lives in the row and the row names its own holes.
+ *
+ * The convention is `{{token}}`, matching `lib/whatsapp/templates.ts` exactly rather than
+ * inventing a second spelling for the same idea. A token with no value is replaced by the empty
+ * string: a missing number must never leave `{{page}}` visible to a visitor.
+ */
+const TOKEN = /\{\{([a-z_]+)\}\}/g
+
+export function interpolate(value: string, tokens: Readonly<Record<string, string>>): string {
+  return value.replace(TOKEN, (_match, token: string) => tokens[token] ?? '')
+}
+
+/**
  * The two media keys, named once.
  *
  * THREE COMPONENTS ASK FOR THE PLAY LABEL — `BlockVideo`, `HeroSection` and anything Phase 12 adds

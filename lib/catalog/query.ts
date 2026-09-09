@@ -74,7 +74,16 @@ export interface CatalogQuery {
   readonly edition: readonly EditionState[]
   readonly largeFormat: boolean
   readonly customizable: boolean
-  readonly collection: string | null
+  /**
+   * Collection slugs.
+   *
+   * MULTI-VALUED, LIKE EVERY OTHER DIMENSION, and the phase table's "collection slug" is satisfied
+   * either way — a slug is what the parameter carries. Uniformity is the reason: a single-valued
+   * dimension needs a different control from a multi-valued one (a select with an "any" option
+   * rather than checkboxes), a different way to clear it, and its own word for "any". Allowing
+   * more than one is a superset of the specified behaviour that keeps the rail one shape.
+   */
+  readonly collection: readonly string[]
   readonly sort: CatalogSort
   /** 1-based. Always at least 1; `page=0` and `page=-2` are dropped rather than clamped silently. */
   readonly page: number
@@ -87,7 +96,7 @@ export const EMPTY_CATALOG_QUERY: CatalogQuery = {
   edition: [],
   largeFormat: false,
   customizable: false,
-  collection: null,
+  collection: [],
   sort: DEFAULT_SORT,
   page: 1,
 }
@@ -156,7 +165,7 @@ export function parseCatalogQuery(raw: RawSearchParams): CatalogQuery {
     edition: accepted(raw, 'edition', editionStateSchema),
     largeFormat: values(raw, 'scale').includes(SCALE_LARGE_FORMAT),
     customizable: values(raw, 'customizable').includes('1'),
-    collection: first(raw, 'collection', slugSchema),
+    collection: accepted(raw, 'collection', slugSchema),
     sort: first(raw, 'sort', sortSchema) ?? DEFAULT_SORT,
     page,
   }
@@ -171,7 +180,7 @@ export function hasActiveFilters(query: CatalogQuery): boolean {
     query.edition.length > 0 ||
     query.largeFormat ||
     query.customizable ||
-    query.collection !== null
+    query.collection.length > 0
   )
 }
 
@@ -191,7 +200,7 @@ export function catalogSearchParams(query: CatalogQuery): URLSearchParams {
   if (query.edition.length > 0) params.set('edition', query.edition.join(','))
   if (query.largeFormat) params.set('scale', SCALE_LARGE_FORMAT)
   if (query.customizable) params.set('customizable', '1')
-  if (query.collection !== null) params.set('collection', query.collection)
+  if (query.collection.length > 0) params.set('collection', query.collection.join(','))
   if (query.sort !== DEFAULT_SORT) params.set('sort', query.sort)
   if (query.page > 1) params.set('page', String(query.page))
   return params
@@ -225,7 +234,9 @@ export function catalogUrl(
 }
 
 /** Add or remove one value of a multi-valued dimension — what a facet checkbox link does. */
-export function toggleCatalogValue<K extends 'material' | 'price' | 'availability' | 'edition'>(
+export function toggleCatalogValue<
+  K extends 'material' | 'price' | 'availability' | 'edition' | 'collection',
+>(
   query: CatalogQuery,
   dimension: K,
   value: CatalogQuery[K][number],
