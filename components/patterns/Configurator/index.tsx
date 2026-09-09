@@ -1,6 +1,7 @@
 'use client'
 
 import * as React from 'react'
+import { z } from 'zod'
 
 import { Button } from '@/components/primitives/Button'
 import { Cluster } from '@/components/primitives/Cluster'
@@ -8,7 +9,15 @@ import { ErrorText } from '@/components/primitives/ErrorText'
 import { Heading } from '@/components/primitives/Heading'
 import { Stack } from '@/components/primitives/Stack'
 import { Text } from '@/components/primitives/Text'
-import { buildStepSchema, unansweredRequired, type ResolvedForm } from '@/lib/cms/forms'
+import {
+  buildStepSchema,
+  unansweredRequired,
+  uploadedReferenceSchema,
+  type ResolvedForm,
+} from '@/lib/cms/forms'
+
+import { InquirySuccess } from '@/components/patterns/InquiryForm/Success'
+import type { InquiryCopy } from '@/components/patterns/InquiryForm/types'
 
 import { ConfiguratorProgress } from './Progress'
 import { ConfiguratorReview } from './Review'
@@ -58,6 +67,24 @@ export interface ConfiguratorProps {
   readonly uploadLimits: UploadLimits
   /** From `?product=`, resolved server-side to a real product. Pre-fills the project type. */
   readonly prefill?: Readonly<Record<string, string>>
+  /**
+   * Phase 20's second half: what happens when the visitor presses Submit.
+   *
+   * OPTIONAL, AND ITS ABSENCE IS A STATE RATHER THAN AN OMISSION. Phase 19 shipped this island with
+   * the Submit button rendered disabled and no handler at all, because D1 requires an inquiry to be
+   * PERSISTED before any WhatsApp redirect and persistence did not exist yet. Passing this prop is
+   * what makes the button live; not passing it leaves the Phase 19 behaviour exactly as it was,
+   * which is what the flag-off state and `tests/e2e/configurator.spec.ts` still describe.
+   */
+  readonly submit?: {
+    readonly copy: InquiryCopy
+    readonly action: (
+      payload: unknown,
+    ) => Promise<
+      | { ok: true; referenceCode: string; whatsappUrl: string | null; attachments: number }
+      | { ok: false; code: 'invalid' | 'rate_limited' | 'save_failed'; fields?: readonly string[] }
+    >
+  }
 }
 
 type Answers = Record<string, unknown>
@@ -75,7 +102,30 @@ function readDraft(): Answers {
   }
 }
 
-export function Configurator({ definition, form, copy, uploadLimits, prefill }: ConfiguratorProps) {
+/**
+ * Forget the brief. Called ONLY after a successful submission.
+ *
+ * A FAILED SUBMISSION KEEPS IT. Wiping the draft on an error would ask somebody who has answered
+ * eleven steps to answer them again over a network blip, which is the exact thing the draft exists
+ * to prevent.
+ */
+function clearDraft(): void {
+  try {
+    window.sessionStorage.removeItem(DRAFT_KEY)
+  } catch {
+    // Same reasons as `readDraft`. A configurator that throws on the way to a success state would
+    // turn a saved enquiry into an error screen.
+  }
+}
+
+export function Configurator({
+  definition,
+  form,
+  copy,
+  uploadLimits,
+  prefill,
+  submit,
+}: ConfiguratorProps) {
   const steps = definition.steps
   const stepKeys = React.useMemo(() => steps.map((entry) => entry.step.key), [steps])
 
@@ -84,6 +134,11 @@ export function Configurator({ definition, form, copy, uploadLimits, prefill }: 
   const [answers, setAnswers] = React.useState<Answers>({})
   const [errors, setErrors] = React.useState<Record<string, string>>({})
   const [summary, setSummary] = React.useState<string | null>(null)
+  const [sending, setSending] = React.useState(false)
+  const [sent, setSent] = React.useState<{
+    referenceCode: string
+    whatsappUrl: string | null
+  } | null>(null)
   const headingRef = React.useRef<HTMLDivElement>(null)
 
   /**
@@ -203,6 +258,77 @@ export function Configurator({ definition, form, copy, uploadLimits, prefill }: 
     else go(index + 1, false)
   }
 
+  /**
+   * Send the brief. THE ROW IS WRITTEN BEFORE ANYTHING ELSE HAPPENS (D1, SEED §49).
+   *
+   * THE CONTACT ANSWERS ARE READ OUT OF THE BRIEF BY FIELD TYPE, not by key. `contact_name` is what
+   * the seeded templates call it, but a form the owner built may call it anything — the TYPE is
+   * what the database knows, which is why `form_field_type` has `CONTACT_NAME`, `CONTACT_PHONE`,
+   * `CONTACT_EMAIL` and `CITY` at all rather than treating them as ordinary text.
+   *
+   * THE DRAFT IS CLEARED ONLY ON SUCCESS. A failed submission that wiped the brief would ask a
+   * visitor who has answered eleven steps to answer them again, which is the one thing the draft
+   * exists to prevent.
+   */
+  async function send() {
+    if (submit === undefined || sending) return
+    setSending(true)
+    setSummary(null)
+
+    const byType = (type: string): string => {
+      for (const step of form.steps) {
+        for (const field of step.fields) {
+          if (field.field_type !== type) continue
+          const value = answers[field.key]
+          if (typeof value === 'string' && value.trim() !== '') return value.trim()
+        }
+      }
+      return ''
+    }
+
+    const references = Object.values(answers).flatMap((value) => {
+      const parsed = z.array(uploadedReferenceSchema).safeParse(value)
+      return parsed.success ? parsed.data : []
+    })
+
+    const result = await submit.action({
+      kind: 'COMMISSION',
+      formId: definition.formId,
+      answers,
+      name: byType('CONTACT_NAME'),
+      phone: byType('CONTACT_PHONE'),
+      email: byType('CONTACT_EMAIL'),
+      city: byType('CITY'),
+      references,
+      elapsedMs: 60_000,
+    })
+
+    setSending(false)
+    if (!result.ok) {
+      setSummary(
+        result.code === 'rate_limited'
+          ? submit.copy.errorTooMany
+          : result.code === 'save_failed'
+            ? submit.copy.errorSave
+            : submit.copy.errorGeneric,
+      )
+      return
+    }
+
+    clearDraft()
+    setSent({ referenceCode: result.referenceCode, whatsappUrl: result.whatsappUrl })
+  }
+
+  if (sent !== null && submit !== undefined) {
+    return (
+      <InquirySuccess
+        copy={submit.copy}
+        referenceCode={sent.referenceCode}
+        whatsappUrl={sent.whatsappUrl}
+      />
+    )
+  }
+
   const entry = steps[index]
   if (entry === undefined) return null
 
@@ -285,8 +411,14 @@ export function Configurator({ definition, form, copy, uploadLimits, prefill }: 
            * shape of the ending; the whole configurator is behind a flag that Phase 20's exit
            * criteria switch on, so no visitor sees this before the button works.
            */
-          <Button type="button" variant="primary" disabled data-configurator-submit>
-            {copy.submit}
+          <Button
+            type="button"
+            variant="primary"
+            disabled={submit === undefined || sending}
+            data-configurator-submit
+            onClick={submit === undefined ? undefined : send}
+          >
+            {sending ? submit?.copy.sending : copy.submit}
           </Button>
         ) : (
           <Button type="button" variant="primary" onClick={advance}>

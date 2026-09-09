@@ -46,8 +46,9 @@ vi.mock('@/lib/security/rate-limit', async (importOriginal) => ({
 }))
 
 vi.mock('@/lib/supabase/public', () => ({ createPublicClient: () => ({}) }))
-vi.mock('@/lib/supabase/repositories/catalog-admin', () => ({
-  getProductById: async () => ({ title: 'Console Table' }),
+vi.mock('@/lib/supabase/repositories/products', () => ({
+  getProductBySlug: async (_client: unknown, slug: string) =>
+    slug === 'console-table' ? { id: 'p-1', title: 'Console Table' } : null,
 }))
 vi.mock('@/lib/supabase/repositories/customization-forms', () => ({
   getFormById: async () => null,
@@ -157,10 +158,35 @@ describe('submitInquiry', () => {
     expect(createInquiry).not.toHaveBeenCalled()
   })
 
-  it('refuses a PRODUCT enquiry that names no product', async () => {
+  it('refuses a PRODUCT enquiry that names no product at all', async () => {
     const result = await submitInquiry({ ...GOOD, kind: 'PRODUCT' })
     expect(result.ok).toBe(false)
     expect(createInquiry).not.toHaveBeenCalled()
+  })
+
+  it('files a PRODUCT enquiry against the piece its slug names', async () => {
+    const result = await submitInquiry({ ...GOOD, kind: 'PRODUCT', productSlug: 'console-table' })
+
+    expect(result.ok).toBe(true)
+    expect(createInquiry).toHaveBeenCalledWith(
+      {},
+      expect.objectContaining({ kind: 'PRODUCT', product_id: 'p-1' }),
+    )
+  })
+
+  /**
+   * A stale link — a piece withdrawn between the visitor opening the page and pressing send —
+   * must not lose the enquiry. The column constraint refuses PRODUCT with no product, so the kind
+   * gives way and the studio still gets the name, the number and whatever was typed.
+   */
+  it('files a product enquiry whose slug no longer resolves as a general one', async () => {
+    const result = await submitInquiry({ ...GOOD, kind: 'PRODUCT', productSlug: 'withdrawn' })
+
+    expect(result.ok).toBe(true)
+    expect(createInquiry).toHaveBeenCalledWith(
+      {},
+      expect.objectContaining({ kind: 'GENERAL', product_id: null }),
+    )
   })
 
   it('consumes the rate limit before it looks at the spam signals', async () => {

@@ -5,15 +5,13 @@ import * as React from 'react'
 import { Button } from '@/components/primitives/Button'
 import { ErrorText } from '@/components/primitives/ErrorText'
 import { Field } from '@/components/primitives/Field'
-import { Heading } from '@/components/primitives/Heading'
 import { Input } from '@/components/primitives/Input'
 import { Select } from '@/components/primitives/Select'
 import { Stack } from '@/components/primitives/Stack'
-import { Text } from '@/components/primitives/Text'
 import { Textarea } from '@/components/primitives/Textarea'
 import { VisuallyHidden } from '@/components/primitives/VisuallyHidden'
-import { interpolate } from '@/lib/cms/strings'
 
+import { InquirySuccess } from './Success'
 import type { InquiryCopy, InquiryFormKind } from './types'
 
 /**
@@ -54,8 +52,6 @@ export interface InquiryFormProps {
   readonly copy: InquiryCopy
   /** SEED §22's list, from the section payload. Empty hides the control rather than showing none. */
   readonly enquiryTypes: readonly string[]
-  /** Set on a product page, so the enquiry is filed against the piece it is about. */
-  readonly productId?: string
   /**
    * The action itself, injected rather than imported.
    *
@@ -72,33 +68,37 @@ export interface InquiryFormProps {
   >
 }
 
-export function InquiryForm({ kind, copy, enquiryTypes, productId, action }: InquiryFormProps) {
+export function InquiryForm({ kind, copy, enquiryTypes, action }: InquiryFormProps) {
   const [state, setState] = React.useState<SubmitState>({ status: 'idle' })
+  const [productSlug, setProductSlug] = React.useState<string | null>(null)
   const openedAt = React.useRef<number>(0)
-  const continueRef = React.useRef<HTMLAnchorElement | null>(null)
 
   // WHEN THE FORM WAS RENDERED, not when the module loaded. `Date.now()` at module scope would be
   // the moment the bundle was evaluated, which on a client-side navigation is minutes earlier.
   React.useEffect(() => {
     openedAt.current = Date.now()
-  }, [])
 
-  /*
-   * THE AUTO-FORWARD, AND IT IS DELIBERATELY LAZY. One second is long enough for the reference code
-   * to be read and for anybody who does not want WhatsApp to look away; `assign` rather than
-   * `replace` so Back returns to the saved-enquiry state rather than to an empty form.
-   */
-  React.useEffect(() => {
-    if (state.status !== 'sent' || state.whatsappUrl === null) return
-    continueRef.current?.focus()
-    const url = state.whatsappUrl
-    const timer = window.setTimeout(() => {
-      window.location.assign(url)
-    }, 1000)
-    return () => {
-      window.clearTimeout(timer)
-    }
-  }, [state])
+    /*
+     * `?product=` IS READ HERE, NOT ON THE SERVER, and for the reason `?step=` is on the
+     * configurator: reading it server-side would make `/contact` a different document per query
+     * string and lose the cached render for every visitor who arrives without one.
+     *
+     * IT IS WHAT MAKES THE PRODUCT ENQUIRY PATH WORK. Phase 15's rail links to
+     * `/contact?product=<slug>&type=product`, so the piece a visitor was looking at travels in the
+     * URL and the enquiry is filed against it — with no dialog, no second island on every product
+     * page, and no modal a keyboard user has to escape from. Amendment A20.
+     */
+    const params = new URLSearchParams(window.location.search)
+    const slug = params.get('product')
+    if (slug === null || slug.trim() === '') return
+
+    // `startTransition` for the same reason the configurator's `?step=` read uses it: a synchronous
+    // setState inside an effect is a cascading render, and the linter is right to say so. Nothing
+    // here is urgent — the form is already usable, and naming the piece is an improvement to it.
+    React.startTransition(() => {
+      setProductSlug(slug.trim())
+    })
+  }, [])
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -125,14 +125,21 @@ export function InquiryForm({ kind, copy, enquiryTypes, productId, action }: Inq
       elapsedMs: openedAt.current === 0 ? undefined : Date.now() - openedAt.current,
     }
 
+    /*
+     * A GENERAL FORM WITH A PRODUCT IN THE URL SUBMITS A PRODUCT ENQUIRY. The section renders the
+     * same markup either way — that is what keeps `/contact` cacheable — and the kind is decided
+     * here, where the query string is known.
+     */
+    const effectiveKind = kind === 'GENERAL' && productSlug !== null ? 'PRODUCT' : kind
+
     const payload =
-      kind === 'PRODUCT'
-        ? { kind, productId: productId ?? '', ...base }
-        : kind === 'QUOTE'
-          ? { kind, productId: productId ?? null, ...base }
-          : kind === 'GENERAL'
-            ? { kind, enquiryType: text('enquiry_type'), ...base }
-            : { kind, ...base }
+      effectiveKind === 'PRODUCT'
+        ? { kind: effectiveKind, productSlug: productSlug ?? '', ...base }
+        : effectiveKind === 'QUOTE'
+          ? { kind: effectiveKind, productSlug: productSlug ?? undefined, ...base }
+          : effectiveKind === 'GENERAL'
+            ? { kind: effectiveKind, enquiryType: text('enquiry_type'), ...base }
+            : { kind: effectiveKind, ...base }
 
     const result = await action(payload)
 
@@ -160,29 +167,11 @@ export function InquiryForm({ kind, copy, enquiryTypes, productId, action }: Inq
 
   if (state.status === 'sent') {
     return (
-      <Stack gap={4} data-inquiry-state="sent">
-        <Heading level={3}>{copy.successHeading}</Heading>
-        {state.referenceCode === '' ? null : (
-          <Text data-inquiry-reference={state.referenceCode}>
-            {interpolate(copy.reference, { code: state.referenceCode })}
-          </Text>
-        )}
-        {state.whatsappUrl === null ? (
-          <Text tone="secondary">{copy.savedWithoutWhatsApp}</Text>
-        ) : (
-          <>
-            <Text tone="secondary">{copy.successBody}</Text>
-            <a
-              ref={continueRef}
-              href={state.whatsappUrl}
-              className="underline underline-offset-4"
-              data-inquiry-continue
-            >
-              {copy.continueToWhatsApp}
-            </a>
-          </>
-        )}
-      </Stack>
+      <InquirySuccess
+        copy={copy}
+        referenceCode={state.referenceCode}
+        whatsappUrl={state.whatsappUrl}
+      />
     )
   }
 
@@ -211,7 +200,12 @@ export function InquiryForm({ kind, copy, enquiryTypes, productId, action }: Inq
           <Input name="city" autoComplete="address-level2" />
         </Field>
 
-        {kind === 'GENERAL' && enquiryTypes.length > 0 ? (
+        {/*
+          THE TYPE PICKER GOES WHEN A PRODUCT IS NAMED. A visitor who arrived from a piece has
+          already answered "what is this about", and asking again invites an answer that contradicts
+          the link they followed.
+        */}
+        {kind === 'GENERAL' && productSlug === null && enquiryTypes.length > 0 ? (
           <Field label={copy.enquiryType}>
             <Select name="enquiry_type" defaultValue="">
               <option value="" />

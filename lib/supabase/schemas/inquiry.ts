@@ -193,7 +193,14 @@ export const inquirySubmissionSchema = z.discriminatedUnion('kind', [
   z
     .object({
       kind: z.literal('PRODUCT'),
-      productId: uuidSchema,
+      /**
+       * A SLUG, NOT AN ID, and that is the boundary being honest. The browser learned it from the
+       * URL — `/contact?product=console-table-narrow-span` — and a uuid in a query string would be
+       * an internal identifier a visitor could paste anywhere. The action resolves it; a slug that
+       * resolves to nothing files the enquiry as GENERAL rather than refusing it, because the
+       * enquiry is real even when the reference to a piece is not.
+       */
+      productSlug: z.string().trim().min(1).max(200),
       ...commonFields,
     })
     .strict(),
@@ -201,7 +208,7 @@ export const inquirySubmissionSchema = z.discriminatedUnion('kind', [
     .object({
       kind: z.literal('COMMISSION'),
       formId: uuidSchema,
-      productId: uuidSchema.nullable().optional(),
+      productSlug: z.string().trim().max(200).optional(),
       /** The configurator's field key → answer map, exactly as `lib/cms/forms.ts` validated it. */
       answers: z.record(z.string(), z.unknown()),
       ...commonFields,
@@ -216,7 +223,7 @@ export const inquirySubmissionSchema = z.discriminatedUnion('kind', [
   z
     .object({
       kind: z.literal('QUOTE'),
-      productId: uuidSchema.nullable().optional(),
+      productSlug: z.string().trim().max(200).optional(),
       ...commonFields,
     })
     .strict(),

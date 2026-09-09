@@ -2,8 +2,11 @@ import dynamic from 'next/dynamic'
 import * as React from 'react'
 
 import type { ConfiguratorCopy, UploadLimits } from '@/components/patterns/Configurator'
+import type { InquiryCopy } from '@/components/patterns/InquiryForm/types'
 import { visibleSteps } from '@/lib/cms/forms'
 import { siteStringOrEmpty } from '@/lib/cms/strings'
+
+import { submitInquiry } from '@/app/(site)/_actions/submit-inquiry'
 
 import { SectionCopy } from './SectionCopy'
 import { SectionShell } from './SectionShell'
@@ -90,6 +93,33 @@ export function CommissionConfiguratorSection({
     submit: siteStringOrEmpty(strings, form.form.submit_label_key ?? ''),
   }
 
+  /*
+   * PHASE 20 MAKES THE SUBMIT BUTTON LIVE, and the shape of that change is the point. Phase 19 left
+   * it disabled with no handler because D1 requires the enquiry to be PERSISTED before any WhatsApp
+   * redirect and persistence did not exist. Passing `submit` is what turns it on; the island still
+   * renders the disabled button when the prop is absent, so nothing about the Phase 19 behaviour
+   * had to be unpicked.
+   */
+  const inquiryCopy: InquiryCopy = {
+    name: siteStringOrEmpty(strings, 'UI_LABEL.inquiry.name'),
+    phone: siteStringOrEmpty(strings, 'UI_LABEL.inquiry.phone'),
+    email: siteStringOrEmpty(strings, 'UI_LABEL.inquiry.email'),
+    city: siteStringOrEmpty(strings, 'UI_LABEL.inquiry.city'),
+    enquiryType: siteStringOrEmpty(strings, 'UI_LABEL.inquiry.enquiry_type'),
+    message: siteStringOrEmpty(strings, 'UI_LABEL.inquiry.message'),
+    required: siteStringOrEmpty(strings, 'UI_LABEL.inquiry.required'),
+    submit: copy.submit,
+    sending: siteStringOrEmpty(strings, 'UI_LABEL.inquiry.sending'),
+    successHeading: siteStringOrEmpty(strings, 'FORM_COPY.inquiry_success.heading'),
+    successBody: siteStringOrEmpty(strings, 'FORM_COPY.inquiry_success.body'),
+    reference: siteStringOrEmpty(strings, 'UI_LABEL.inquiry.reference'),
+    continueToWhatsApp: siteStringOrEmpty(strings, 'UI_LABEL.inquiry.continue'),
+    savedWithoutWhatsApp: siteStringOrEmpty(strings, 'UI_LABEL.inquiry.no_whatsapp'),
+    errorGeneric: siteStringOrEmpty(strings, 'FORM_COPY.error.generic'),
+    errorSave: siteStringOrEmpty(strings, 'FORM_COPY.error.inquiry_save'),
+    errorTooMany: siteStringOrEmpty(strings, 'FORM_COPY.error.too_many'),
+  }
+
   return (
     <SectionShell section={section}>
       <SectionCopy section={section} />
@@ -107,6 +137,7 @@ export function CommissionConfiguratorSection({
         // From `?product=`, resolved server-side to a real row. Empty when no product was named or
         // its category has no §15 starting point — never a nearest-match.
         prefill={reference?.prefill}
+        submit={{ copy: inquiryCopy, action: submitInquiry }}
       />
     </SectionShell>
   )

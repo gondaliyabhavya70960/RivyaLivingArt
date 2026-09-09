@@ -22,7 +22,7 @@ import {
   inquiryReferenceCode,
   recordInquiryHandoff,
 } from '@/lib/supabase/repositories/inquiries'
-import { getProductById } from '@/lib/supabase/repositories/catalog-admin'
+import { getProductBySlug } from '@/lib/supabase/repositories/products'
 import { inquirySubmissionSchema, type InquirySubmission } from '@/lib/supabase/schemas'
 import {
   TEMPLATE_KEYS,
@@ -133,11 +133,19 @@ async function commissionSummary(
   }
 }
 
-/** The product's title, for `{{product_or_project}}`. Never invented: empty when it cannot be read. */
-async function productTitle(productId: string | null | undefined): Promise<string> {
-  if (productId === null || productId === undefined) return ''
-  const product = await getProductById(createPublicClient(), productId).catch(() => null)
-  return product?.title ?? ''
+/**
+ * The published product a slug names, or `null`.
+ *
+ * THE PUBLIC CLIENT, SO RLS DECIDES. A slug naming a draft product resolves to nothing here, which
+ * is right: the enquiry is filed without it rather than against a piece the visitor could not have
+ * been looking at.
+ */
+async function resolveProduct(
+  slug: string | null | undefined,
+): Promise<{ id: string; title: string } | null> {
+  if (slug === null || slug === undefined || slug === '') return null
+  const product = await getProductBySlug(createPublicClient(), slug).catch(() => null)
+  return product === null ? null : { id: product.id, title: product.title ?? '' }
 }
 
 export async function submitInquiry(payload: unknown): Promise<SubmitInquiryResult> {
@@ -179,10 +187,20 @@ export async function submitInquiry(payload: unknown): Promise<SubmitInquiryResu
       ? await commissionSummary(submission.formId, submission.answers)
       : null
 
+  const product = await resolveProduct('productSlug' in submission ? submission.productSlug : null)
+
+  /*
+   * A PRODUCT ENQUIRY WHOSE PRODUCT DID NOT RESOLVE BECOMES A GENERAL ONE. The column constraint
+   * refuses `kind = 'PRODUCT'` with no product, and refusing the whole submission would lose a real
+   * enquiry over a stale link — a piece withdrawn between the visitor opening the page and pressing
+   * send. The studio still gets the name, the phone number and whatever was typed.
+   */
+  const kind = submission.kind === 'PRODUCT' && product === null ? 'GENERAL' : submission.kind
+
   try {
     await createInquiry(client, {
       id,
-      kind: submission.kind,
+      kind,
       name: submission.name,
       phone: submission.phone,
       email: submission.email ?? null,
@@ -190,12 +208,7 @@ export async function submitInquiry(payload: unknown): Promise<SubmitInquiryResu
       message: submission.message ?? null,
       source_path: submission.sourcePath ?? null,
       consent_contact: submission.consentContact ?? true,
-      product_id:
-        submission.kind === 'PRODUCT'
-          ? submission.productId
-          : submission.kind === 'QUOTE' || submission.kind === 'COMMISSION'
-            ? (submission.productId ?? null)
-            : null,
+      product_id: product?.id ?? null,
       customization_form_id: submission.kind === 'COMMISSION' ? submission.formId : null,
       answers:
         submission.kind === 'COMMISSION'
@@ -239,7 +252,7 @@ export async function submitInquiry(payload: unknown): Promise<SubmitInquiryResu
     optionalEnv('NEXT_PUBLIC_WHATSAPP_NUMBER'),
   )
 
-  const template = TEMPLATE_FOR[submission.kind]
+  const template = TEMPLATE_FOR[kind]
   const body = siteString(chrome.strings, TEMPLATE_KEYS[template])
 
   // No number, or no seeded template: the enquiry stands, the visitor gets their reference code and
@@ -260,9 +273,7 @@ export async function submitInquiry(payload: unknown): Promise<SubmitInquiryResu
           reference_urls: attachments === 0 ? '' : `${attachments}`,
         }
       : {
-          product_or_project: await productTitle(
-            'productId' in submission ? submission.productId : null,
-          ),
+          product_or_project: product?.title ?? '',
           customer_name: submission.name,
           phone: submission.phone,
           city: submission.city ?? '',
