@@ -8,6 +8,40 @@
 
 ## Current Phase
 
+**Phase 15 — Product Detail Experience. CODE COMPLETE; THE ROUTE RENDERS FOR NOBODY, WHICH IS THE
+FINISHED STATE.** `/product/[slug]` serves published products only and 404s otherwise, and
+`products` holds zero rows — so today it serves nothing. That is the intended end of this phase: a
+product exists when an owner types one in (SEED §32), and the Studio is the only thing that can.
+
+### Phase 15: what is built
+
+**Migrations `0130`–`0132`, LOCAL AND HOSTED.** `product_specs` with its non-blank checks and
+`unique (product_id, label)`; `is_valid_dimensions()` and the `products_dimensions_shape`
+constraint; the generated RLS file; and `products.specifications_omitted`. Hosted was verified
+against local by fingerprint — columns, constraints, policies, indexes, triggers and the function
+definition all match, and the function refuses inches, zero, negatives, string values and arrays
+identically on both. The ledger rows carry the runner's own SHA-256, so `db:migrate` will not
+re-apply them.
+
+**The public route.** `/product/[slug]` with `generateStaticParams` over published products,
+`generateMetadata` with the SEED §41 fallbacks, `Product` JSON-LD whose `offers` key is emitted only
+for `FIXED`, and five patterns: `ProductGallery` (RC-238), `ProductSpecifications` (RC-239),
+`ProductMaterialStory` (RC-240), `ProductInquiryRail` (RC-241), `RelatedContent` (RC-242). Every
+band is absent when it has nothing to show, rather than empty.
+
+**The Studio.** Four tabs under `/studio/catalog/products/[productId]` — Media, Materials,
+Specifications, Related — each a route rather than a pane. The eleventh readiness item,
+Specifications, is required and satisfiable either by a spec row or by the recorded decision that a
+piece publishes none.
+
+**Tests.** 1245 unit and RLS tests pass with none skipped, including `spec-rendering` (twelve cases,
+all about absence) and `tests/unit/rls/phase15.test.ts` (the `0130` guards, the dimensions
+constraint, and the RLS asymmetry the Studio's writes are shaped around). The three e2e specs
+execute and skip: this sandbox cannot reach the Supabase host, so there is no published product to
+find. They are written to be run where there is.
+
+### Superseded — Phase 14's state
+
 **Phase 14 — Product Catalog. CODE COMPLETE; THE CATALOGUE IS EMPTY, WHICH IS THE FINISHED STATE.**
 `/collection` and all seven `/collection/[category]` pages are browsable, server-rendered from the
 URL, filterable and pageable with JavaScript disabled — and every one of them renders SEED §27's
@@ -1202,6 +1236,31 @@ the CTA library's reserved page id or add a D4 route leaf, and whether `analytic
 on `/studio` rather than a route segment.
 
 ## Next Exact Action
+
+**Start Phase 16 — Collections / Exhibitions**, or run the owner-side actions below.
+
+Phase 16 assumes a public shell that composes CMS blocks (10), a finished block vocabulary (11–13),
+a catalogue it can filter by collection (14) and a product page to link into (15). All four exist.
+Nothing in the repository blocks it.
+
+The owner-side list has SHRUNK since Phase 14 — two of its five items are done:
+
+1. ~~Apply the migrations to hosted.~~ **Done.** Hosted is at `0132` and fingerprint-matches local.
+2. ~~`npm run media:migrate:higgsfield`.~~ **Done.** All 250 assets are in Cloudinary (231 new, 19
+   adopted, 0 failed) and `media_assets` holds 250 rows locally and on hosted, verified by two
+   independent fingerprints.
+3. **`npm run seed:content` against hosted**, then publish in Studio. The content itself is already
+   replayed and fingerprint-matched across all seven tables; what remains is the owner deciding what
+   to publish.
+4. **Enter the first products.** Still the one thing on this list no command can do:
+   `/studio/catalog/products/new`, as `owner`, `admin` or `merchandiser`. Nothing seeds a product
+   and nothing imports one. The readiness checklist on each names exactly what is missing — and the
+   Specifications item can be satisfied by saying a piece publishes none, so it never asks anyone to
+   invent a measurement.
+5. **Rotate the six exposed secrets** — still outstanding, and still recorded under *Known Issues*.
+   The owner asked for this to wait until all phase work is finished.
+
+### Superseded — the Phase 15 plan
 
 **Start Phase 15 — Product Detail Experience**, or run the owner-side actions, which are now five
 phases old and have grown by one.

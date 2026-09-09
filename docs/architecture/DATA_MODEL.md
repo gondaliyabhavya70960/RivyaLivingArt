@@ -967,6 +967,7 @@ approved import created it; neither path reads a research table.
 | `currency` | `char(3)` | 03 | ISO-4217; null for quote-only states |
 | `is_large_format` | `boolean not null default false` | 03 | drives `/large-format` |
 | `dimensions` | `jsonb` | 03 | validated shape, §8.5. Owner-entered only |
+| `specifications_omitted` | `boolean not null default false` | 15 | The owner's deliberate "this piece publishes no specifications" decision, §8.6. **Renders nowhere** |
 | `availability_state` | `availability_state` | 14 | |
 | `edition_state` | `edition_state` | 14 | |
 | `edition_size` | `int` | 14 | required when `LIMITED_EDITION` |
@@ -1070,6 +1071,21 @@ The product-sourced half of the FEAT §10/§11 relationship engine.
 
 **Keys** — `unique (source_product_id, target_type, target_id, relation_type)`;
 `product_relations_source_idx (source_product_id, relation_type, sort_order)`.
+
+**Vocabulary — application-level, and deliberately not a CHECK.** `target_type` and `relation_type`
+are unconstrained `text`. Phase 15 fixed their values in
+`lib/supabase/repositories/product-edges.ts` (`RELATION_TARGET`, `RELATION_TYPES`), lowercase, and
+the Related tab refuses anything outside them. They are not constraints for the reason the Phase 14
+commerce guards are: those defend business FACTS a visitor reads as true — a price, a stock claim —
+where a row written around the application is the hazard. This is a UI vocabulary with no seed and
+no import path, and Phase 23's suggestion engine will widen it, which a CHECK would turn into a
+migration for what is really a component's business. **Phase 23 should revisit this deliberately**
+once its own vocabulary is settled.
+
+The values are lowercase because `/product/[slug]` already filtered on `target_type === 'product'`
+before any writer existed. An uppercase vocabulary would have matched nothing and every curated
+relation would have fallen silently through to the same-category fallback. The route now imports
+`RELATION_TARGET.product` rather than holding its own literal.
 **Rule** — no edge is ever created automatically without a stated, named rule, and an editor can
 always override (FEAT §11). A rejected suggestion is recorded in `relation_suppressions` and never
 proposed again.
@@ -1344,6 +1360,30 @@ D10).
 `dimensions` must be an object whose keys are a subset of
 `{length_mm, width_mm, height_mm, depth_mm, diameter_mm, weight_g, seats}` with positive numeric
 values. A malformed blob is rejected at the database, so it can never reach a renderer.
+
+
+### 8.6 `products.specifications_omitted` — Phase 15 `0132`
+
+A boolean with **no constraint and no trigger**, which is unusual enough in this schema to be worth
+the paragraph.
+
+It exists because a product with no `product_specs` rows is ambiguous: it is either a piece nobody
+has measured yet, or a piece whose maker has decided its dimensions are not a published fact. The
+Phase 15 readiness checklist has to tell those apart, because its Specifications item is REQUIRED
+and is satisfied by "at least one spec row **or** the deliberate omission". Reading the absence of
+rows as the decision would satisfy the item for every product the moment it is created; treating
+the absence as unmet would leave one route to publishing, and it is the route D10 forbids — the
+fastest way past a checklist is to estimate a number.
+
+**It is not a claim about the object.** It says "we are not publishing specifications for this
+piece", never "this piece has no dimensions". Nothing renders it: `ProductSpecifications` reads
+`product_specs` and `dimensions` and is absent when both are empty, whatever this column says.
+
+**No trigger ties it to the rows**, deliberately. An owner who records the decision and later adds a
+specification has changed their mind, not violated an invariant — the checklist is satisfied either
+way, so a guard would only refuse a sensible edit. It is written from the Specifications tab by an
+action whose whole subject is that decision, and `productValues` in the product form deliberately
+omits it so that saving an unrelated field cannot silently clear it.
 
 ### 8.6 `enforce_evidence_gate()` — Phase 17 `0150`
 On `portfolio_projects` and `testimonials`: `PUBLISHED` requires `owner_verification = 'VERIFIED'`,
@@ -1783,7 +1823,7 @@ local and hosted is isolated to one file that can never be picked up by `supabas
 | 10 | `0080` | **No new tables** — Phase 10 renders what Phases 06–09 created, and its "Database — none" is about tables, which still holds. `0080` adds a `UI_LABEL` group to `global_content_group_allowed`, for the same reason `0055` and `0071` exist: Phase 10's exit criteria require every visitor-visible string in the site chrome to come from `global_content`, and the chrome needs strings no existing group means — the accessible names of the four navigation landmarks, and of the search and announcement regions. `ACTION_LABEL` is the near miss and the first draft used it: "Open menu" is an action, but "Primary navigation" is not by any reading, and filing it under a group named for actions makes it unfindable in the one screen an editor would look at. The controls that *are* actions stayed in `ACTION_LABEL`; only the names of regions moved |
 | 11–13 | — | **None.** These phases render what Phases 06–10 created |
 | 14 | `0120`–`0122` | A `products` (`price_minor`, `availability_state`, `edition_state`, `edition_size`, `is_customizable`, `sort_order`); enums `availability_state`, `edition_state`, `price_state += FIXED`; the three coherence constraints; concept-media trigger |
-| 15 | `0130`–`0131` | T `product_specs`; F `is_valid_dimensions()`; A `products.dimensions` shape constraint; `0131` is the generated RLS file for `product_specs`. `product_relations_source_idx` is NOT here — `0008` already created it with the definition Phase 15 asks for |
+| 15 | `0130`–`0132` | T `product_specs`; F `is_valid_dimensions()`; A `products.dimensions` shape constraint; `0131` is the generated RLS file for `product_specs`; `0132` adds `products.specifications_omitted` (§8.6). `product_relations_source_idx` is NOT here — `0008` already created it with the definition Phase 15 asks for |
 | 16 | `0140`–`0141` | T `entity_relations`; A `collections`, `pages.kind`; enums `relation_entity`, `relation_kind`; `collection_concept_state += OWNER_CONFIRMED, RETIRED` |
 | 17 | `0150`–`0151` | T `portfolio_projects`, `portfolio_project_media`, `testimonials`; enum `client_consent_state` |
 | 18 | `0160`–`0161` | T `journal_categories`, `journal_articles`, `journal_article_categories` |

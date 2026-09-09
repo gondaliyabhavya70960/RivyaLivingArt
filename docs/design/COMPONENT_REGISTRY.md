@@ -299,6 +299,11 @@ and Phase 10's site shell then reuses it.
 | RC-235 | `BlockVideo` | material understanding | 11 | BUILT | index only — server; split out of RC-213 so a route with no video does not carry the `MediaVideo` island |
 | RC-236 | `EditorialFallback` | conversion | 11 | BUILT | index only — server; renders a seeded `EMPTY_STATE.*` string where a reference block has nothing real to show |
 | RC-237 | `SortSelect` | navigation | 14 | BUILT | §7.42 |
+| RC-238 | `ProductGallery` (`index`, `Viewer`, `Thumbnails`, `Lightbox`) | product understanding | 15 | BUILT | §7.43 |
+| RC-239 | `ProductSpecifications` | product understanding | 15 | BUILT | §7.44 |
+| RC-240 | `ProductMaterialStory` | material understanding | 15 | BUILT | §7.45 |
+| RC-241 | `ProductInquiryRail` | conversion | 15 | BUILT | §7.46 |
+| RC-242 | `RelatedContent` | navigation | 15 | BUILT | §7.47 |
 
 `Breadcrumbs` and `DropdownMenu` are Phase 02, not Phase 10. `docs/project/phases/PHASE-00-04.md`
 pulls both forward on purpose and requires their rows to be opened in that phase: Phase 05's
@@ -1207,6 +1212,137 @@ is the SEED §48 success surface or the SEED §49 error message, rendered in pla
 | Reviewed on | Phase 14 |
 | Reviewer | UNASSIGNED |
 | Verdict | FIRST_PARTY |
+
+
+### 7.43 RC-238 — `ProductGallery`
+
+| Field | Value |
+|---|---|
+| Registry ID | RC-238 |
+| Source | Rivya first-party |
+| Link | `components/patterns/ProductGallery/{index.tsx,Viewer.tsx,Thumbnails.tsx,Lightbox.tsx}` |
+| Licence | N/A — first-party |
+| Dependencies | RC-232 `MediaImage`, RC-201 `Dialog` |
+| Page | `/product/[slug]` |
+| Purpose | product understanding |
+| Adaptation | Server-rendered stills with a client lightbox over them. Sources are `product_media` ordered by `role` then `sort_order` — `hero · gallery · detail · lifestyle · process · video · model`, the Phase 03 vocabulary. Zoom is a scale transform, and under reduced motion it swaps instantly rather than animating. **The 3D slot renders nothing until Phase 21** — not a teaser, not a placeholder, because a control that promises a viewer nobody built is worse than its absence |
+| Mobile behaviour | The still list is the page; the thumbnail strip wraps rather than scrolling sideways, so no thumbnail sits off-screen behind a gesture nobody discovers |
+| Performance | 0 kB for the stills, which are server-rendered and are what the route paints. The lightbox is the only client code and it is not in the initial bundle path — a visitor who never opens it never runs it |
+| Accessibility | The thumbnails are a roving-tabindex list: exactly one is in the tab order and the arrows move between them, so a twelve-image strip costs one Tab press rather than twelve. `Home`/`End` jump to the ends. `Enter` opens the lightbox, `Escape` closes it **and returns focus to the thumbnail it came from** — RC-201 `Dialog` owns that restoration. The zoom control's accessible name is the image's own `alt_text`, because the button IS the image and a second invented label would be read instead of the picture's description. `tests/e2e/product-gallery-a11y.spec.ts` drives every one of these from the keyboard and runs axe with the lightbox open |
+| Reviewed on | Phase 15 |
+| Reviewer | UNASSIGNED |
+| Verdict | FIRST_PARTY |
+
+**Client-boundary constraint.** `Thumbnails` and `Lightbox` are Client Components and take their
+`MediaRef` from `lib/media/ref.ts`, never from `lib/cms/media.ts` — that module opens with
+`import 'server-only'` and importing anything from it fails `next build` outright. Rule 3 of
+`site:check-client-boundary` walks the import graph out of every client component and fails
+`npm run check` on a violation, with the chain printed.
+
+### 7.44 RC-239 — `ProductSpecifications`
+
+| Field | Value |
+|---|---|
+| Registry ID | RC-239 |
+| Source | Rivya first-party |
+| Link | `components/patterns/ProductSpecifications/index.tsx` |
+| Licence | N/A — first-party |
+| Dependencies | none |
+| Page | `/product/[slug]` |
+| Purpose | product understanding |
+| Adaptation | The strictest surface on the site. Rows come only from `product_specs` and the non-null keys of `products.dimensions`; **there is no placeholder branch in the file at all** — no em dash, no "N/A", no "Contact us for details", because each of those tells a visitor a value exists and is being withheld. Zero rows means the block is ABSENT from the DOM, not rendered empty. Nothing is computed, converted, inferred, rounded or defaulted: a millimetre renders in millimetres |
+| Mobile behaviour | A definition list, so it reflows to two lines per fact rather than becoming a table with a horizontal scroller |
+| Performance | 0 kB, server |
+| Accessibility | `<dl>` with a `<dt>`/`<dd>` per fact, so the label–value relationship is structural rather than visual. Group headings step down from the block heading, never skipping a level |
+| Reviewed on | Phase 15 |
+| Reviewer | UNASSIGNED |
+| Verdict | FIRST_PARTY |
+
+**Honesty constraint (D10).** You cannot add a placeholder here by changing a prop, because there is
+no prop to change and no fallback expression to edit. `tests/unit/spec-rendering.test.tsx` asserts
+the absence directly, and a dimension key the CMS has no `UI_LABEL` row for is DROPPED rather than
+labelled with its raw column name — `length_mm` is an internal identifier, and showing one to a
+visitor is worse than showing them one fewer fact.
+
+### 7.45 RC-240 — `ProductMaterialStory`
+
+| Field | Value |
+|---|---|
+| Registry ID | RC-240 |
+| Source | Rivya first-party |
+| Link | `components/patterns/ProductMaterialStory/index.tsx` |
+| Licence | N/A — first-party |
+| Dependencies | RC-232 `MediaImage` |
+| Page | `/product/[slug]` |
+| Purpose | material understanding |
+| Adaptation | One study per row in `product_materials`, rendering the material's own name, `family` and description with the material's own imagery. A product with no attached materials renders **no band at all** |
+| Mobile behaviour | Studies stack; each keeps its caption directly beneath its image so the pairing survives the reflow |
+| Performance | 0 kB, server |
+| Accessibility | A labelled `<section>` with an `<article>` per study, so the band is skippable as one landmark rather than as N images |
+| Reviewed on | Phase 15 |
+| Reviewer | UNASSIGNED |
+| Verdict | FIRST_PARTY |
+
+**Media constraint (D6, D10).** This is the ONE place on a product page where a concept render may
+legitimately appear — it illustrates the MATERIAL, is captioned as a material study, and sits in a
+labelled band below the specification block, visually separated from the product gallery. Its
+captions come from the `materials` row and never from the product, which is what keeps the caption
+honest. Everywhere else on the route, `product_media_reject_concept` and
+`products_reject_concept_hero` refuse a concept asset at the database.
+
+### 7.46 RC-241 — `ProductInquiryRail`
+
+| Field | Value |
+|---|---|
+| Registry ID | RC-241 |
+| Source | Rivya first-party |
+| Link | `components/patterns/ProductInquiryRail/index.tsx` |
+| Licence | N/A — first-party |
+| Dependencies | none |
+| Page | `/product/[slug]` |
+| Purpose | conversion |
+| Adaptation | Exactly three actions and no others — `Ask About This Piece`, `Request a Quote`, and `Customize This Piece` only where `is_customizable`. Targets are `/contact?product=<slug>&type=product` and `/custom-commissions?product=<slug>`; Phase 19 reads that parameter and Phase 15 guarantees the contract and nothing more. Order is intent: the least committing action first |
+| Mobile behaviour | The actions wrap into a column at the narrow widths rather than shrinking below the 44px target |
+| Performance | 0 kB, server — three real links |
+| Accessibility | Real `<a href>` elements, so each is reachable, focusable and openable in a new tab by the ordinary means |
+| Reviewed on | Phase 15 |
+| Reviewer | UNASSIGNED |
+| Verdict | FIRST_PARTY |
+
+**Allowlist constraint (D1).** The rail names the three `ACTION_LABEL` keys it will render and
+CANNOT render a fourth. The obvious implementation reads the group and renders what it finds, and
+that one would put `Place Order` on the page the day somebody enables the row — the CMS would be
+able to add a checkout button to a business that has no checkout. `Place Order` is not rendered in
+any form: not as a button, not as a disabled control, not as a greyed affordance, because a disabled
+checkout reads as a checkout that is temporarily unavailable. **No WhatsApp link appears on this
+route in this phase**: persistence does not exist until Phase 20 and D1 requires the inquiry to be
+saved first. `tests/e2e/product-detail.spec.ts` asserts all three absences.
+
+### 7.47 RC-242 — `RelatedContent`
+
+| Field | Value |
+|---|---|
+| Registry ID | RC-242 |
+| Source | Rivya first-party |
+| Link | `components/patterns/RelatedContent/index.tsx` |
+| Licence | N/A — first-party |
+| Dependencies | RC-217 `ProductCard`, RC-019 `Grid` |
+| Page | `/product/[slug]` |
+| Purpose | navigation |
+| Adaptation | Editor-created `product_relations` edges render as "Related". When a product has zero manual edges, up to six other published products in the same category render instead — under the heading "More in {Category}", never "Related" and never "You may also like" |
+| Mobile behaviour | One card per row below 640px, two to 1024px, three above |
+| Performance | 0 kB, server |
+| Accessibility | A `<section>` whose heading names which of the two sets it is showing, so the distinction is available to a screen-reader user and not only to someone reading the styling |
+| Reviewed on | Phase 15 |
+| Reviewer | UNASSIGNED |
+| Verdict | FIRST_PARTY |
+
+**Affinity constraint (FEAT §11).** No relation is invented. The one permitted automatic behaviour
+is the same-category set, and it is labelled honestly: "Related" is a claim an editor made, and the
+fallback is an observation about a category. The two must never share a heading. The relation
+vocabulary is closed and lives in `lib/supabase/repositories/product-edges.ts`; the route imports
+`RELATION_TARGET.product` rather than holding its own literal, so the writer and the reader cannot
+drift apart.
 
 ### 7.41 RC-033 — `FileUpload`
 

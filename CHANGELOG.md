@@ -6,6 +6,60 @@ Every phase adds an entry; see `docs/architecture/CANONICAL-DECISIONS.md` D9 for
 
 ## [Unreleased]
 
+### Phase 15 — Product Detail Experience
+
+`/product/[slug]` renders for published products only, and renders for nobody today: `products`
+holds zero rows and no seed will ever add one. That is the finished state of this phase, not an
+unfinished one.
+
+**The specification block is the strictest surface on the site, and it is strict by omission.**
+There is no placeholder branch in the component at all — no em dash, no "N/A", no "Contact us for
+details", because each of those tells a visitor a value exists and is being withheld. A null value
+produces no row; zero rows means the block is absent from the DOM rather than rendered empty. You
+cannot add a placeholder by changing a prop, because there is no prop to change. Recorded as BR-D8.
+
+**Nothing is converted, and the database is what makes that permanent.**
+`products_dimensions_shape` refuses any key outside the seven declared measurements, so
+`{"length_inches": 90}` cannot be stored and no renderer ever meets a unit it would have to convert.
+The unit is part of the key; `product_specs.unit` is whatever the owner typed.
+
+**And nobody is pushed into inventing a measurement to publish.** The readiness checklist gains a
+required Specifications item, which would be an incentive to estimate a number if a spec row were
+the only way to satisfy it. `products.specifications_omitted` (migration `0132`) records the owner's
+deliberate decision that a piece publishes no specifications, and satisfies the item with none at
+all. What is required is the decision, never the value.
+
+**The conversion rail renders exactly three actions and cannot render a fourth.** The obvious
+implementation reads the `ACTION_LABEL` group and renders what it finds; that one would put `Place
+Order` on the page the day somebody enabled the row, which would let the CMS add a checkout button
+to a business that has no checkout. `Place Order` appears in no form — not as a button, not as a
+disabled control — and no WhatsApp link appears on this route at all, because persistence is Phase
+20 and D1 requires the inquiry to be saved first.
+
+**No relation is invented.** Editor edges render as "Related"; a product with none falls back to up
+to six other published products in the same category, under "More in {Category}". The two never
+share a heading.
+
+**The gallery is keyboard-complete**: roving tabindex over the thumbnails, arrows, `Home`/`End`,
+`Enter` to open the lightbox, `Escape` to close it and return focus to the thumbnail it came from.
+Zoom swaps instantly under reduced motion instead of animating.
+
+**The Studio product editor gains four tabs** — Media, Materials, Specifications, Related — each a
+URL rather than a pane, so a section is bookmarkable and the back button works.
+
+Migrations `0130`–`0132` are applied to hosted Supabase and verified against local by fingerprint:
+columns, constraints, policies, indexes, triggers and the `is_valid_dimensions` definition all
+match, and the function refuses inches, zero, negatives, string values and arrays identically on
+both.
+
+**Also in this phase, from the Phase 14 adversarial review:** the Studio's PostgREST search no
+longer breaks on a comma or a parenthesis (the term is quoted AND pattern-escaped, in the one order
+that works); a price with decimals renders as entered rather than rounded; the form's minor↔major
+conversion uses the currency's own exponent at BOTH ends; `og:url` follows the canonical on
+paginated views; and `site:check-client-boundary` gained a third rule that walks the import graph
+out of every client component and fails on a `server-only` module — the class of defect that had
+just broken a deploy.
+
 ### Phase 14 — Product Catalog
 
 The catalogue is browsable, server-rendered from the URL, and completely empty. Both of those are
