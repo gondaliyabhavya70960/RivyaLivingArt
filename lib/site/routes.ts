@@ -49,6 +49,10 @@ export type StaticPublicPath = (typeof STATIC_PUBLIC_PATHS)[number]
  * `/portfolio/[slug]`, `/journal/[slug]` and `/journal/category/[slug]` join them in Phases 16
  * to 18.
  */
-export const DYNAMIC_PUBLIC_ROUTES = ['/collection/[category]', '/product/[slug]'] as const
+export const DYNAMIC_PUBLIC_ROUTES = [
+  '/collection/[category]',
+  '/product/[slug]',
+  '/collections/[slug]',
+] as const
 
 export type DynamicPublicRoute = (typeof DYNAMIC_PUBLIC_ROUTES)[number]

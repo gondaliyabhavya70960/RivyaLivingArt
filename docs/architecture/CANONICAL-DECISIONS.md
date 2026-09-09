@@ -236,6 +236,14 @@ So the template inserts the ten elements that have renderers, in FEAT §8 order,
 block is optional and removable, which the phase document already says the template is for — a
 starting point, not a constraint — so an editor who wants editorial copy today has `statement`.
 
+*No `app/(site)/collections/[slug]/opengraph-image.tsx`.* The phase document lists one and says it
+"uses the `og` preset from `lib/media/transform.ts`" — which is already what happens for every page
+on the site: `buildPageMetadata` resolves `seo_entries.og_media_id` through `resolveSpec('og')`, so
+the social image is a thing an editor picks in Studio. Next gives file-based metadata precedence
+over the `metadata` export, so adding that route would override the editor's choice on exactly these
+pages: the owner would change the image in Studio and watch nothing happen. No other route in the
+project has one, for the same reason.
+
 *A third, smaller correction.* The phase document names the two renderers
 `components/sections/CollectionProducts.tsx` and `SignatureMedia.tsx`. Every one of the other
 twenty renderers in that directory is named `<Block>Section.tsx`, and the registry test reads the

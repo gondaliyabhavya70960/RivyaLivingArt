@@ -553,3 +553,47 @@ export async function restoreRevisionRow(
 
   if (error) throw toCmsError('content revision', 'restore', entityId, error)
 }
+
+/**
+ * Create an entity page — today, only a collection's exhibition page.
+ *
+ * IT ALWAYS INSERTS AS DRAFT, like `insertSection` and for the same reason:
+ * `enforce_status_transition` refuses anything else from a session actor, so accepting a status
+ * would only let a caller discover that by being refused. An exhibition is published later, through
+ * the page's own workflow, which is what makes the concept publish with it.
+ *
+ * THE SLUG IS `collections-<slug>`, NOT `collection-<slug>`. The seven seeded CATEGORY pages
+ * already own `collection-furniture`, `collection-decor` and so on — `content/seed/collections.ts`
+ * writes them — and `pages.slug` is unique. A collection whose slug happened to match a category's
+ * would collide on insert with a uniqueness error naming neither, so the plural keeps the two
+ * families apart by construction rather than by hoping they never overlap.
+ *
+ * THE PATH IS WRITTEN HERE AND AGAIN BY A TRIGGER. `collections_sync_page_path` sets it from the
+ * collection the moment `page_id` is linked; passing the same value here means the row satisfies
+ * `pages_path_present` at insert time, before any link exists. Lowercased for `pages_path_shape`,
+ * which refuses an upper-case character — the collection slug is `citext` and keeps whatever case
+ * was typed.
+ */
+export async function insertEntityPage(
+  client: Client,
+  values: {
+    readonly slug: string
+    readonly path: string
+    readonly title: string
+    readonly kind: 'COLLECTION'
+  },
+): Promise<Page> {
+  const { data, error } = await client
+    .from('pages')
+    .insert({
+      slug: values.slug,
+      path: values.path.toLowerCase(),
+      title: values.title,
+      kind: values.kind,
+    })
+    .select('*')
+    .single()
+
+  if (error) throw toCmsError(ENTITY, 'create', values.slug, error)
+  return parseRow(ENTITY, pageSchema, data)
+}

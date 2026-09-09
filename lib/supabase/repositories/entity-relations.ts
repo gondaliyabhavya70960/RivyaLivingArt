@@ -2,12 +2,28 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 
 import type { Database } from '../database.types'
 import { PermissionError } from '../errors'
-import { entityRelationSchema, type EntityRelation } from '../schemas'
+import {
+  entityRelationSchema,
+  relationEntitySchema,
+  relationKindSchema,
+  type EntityRelation,
+} from '../schemas'
 import { parseRows, toRepositoryError } from './support'
 
 type Client = SupabaseClient<Database>
-type RelationEntity = Database['public']['Enums']['relation_entity']
-type RelationKind = Database['public']['Enums']['relation_kind']
+export type RelationEntity = Database['public']['Enums']['relation_entity']
+export type RelationKind = Database['public']['Enums']['relation_kind']
+
+/**
+ * The two vocabularies, as values, for a Studio select.
+ *
+ * TAKEN FROM THE ZOD SCHEMAS RATHER THAN RETYPED. `relationEntitySchema` and `relationKindSchema`
+ * are already derived from the generated enums and already fail `db:check-types` when a migration
+ * adds a value; a second hand-written list here would be the copy that silently goes stale, and a
+ * select missing an option looks exactly like a feature nobody built.
+ */
+export const RELATION_ENTITIES = relationEntitySchema.options
+export const RELATION_KINDS = relationKindSchema.options
 
 const ENTITY = 'entity relation'
 

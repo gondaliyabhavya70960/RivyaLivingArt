@@ -330,6 +330,20 @@ export async function listCollectionsForStudio(client: Client): Promise<Collecti
   return parseRows(COLLECTION, collectionSchema, data ?? [])
 }
 
+/**
+ * One collection for the editor, by id.
+ *
+ * `NotFoundError` FOR BOTH "no such row" AND "not visible to you", and the caller turns it into a
+ * 404. Distinguishing them would leak the existence of a collection this role may not see, which is
+ * the same rule the product editor states one screen along.
+ */
+export async function getCollectionByIdForStudio(client: Client, id: string): Promise<Collection> {
+  const { data, error } = await client.from('collections').select('*').eq('id', id).maybeSingle()
+  if (error) throw toRepositoryError(COLLECTION, 'get', id, error)
+  if (data === null) throw new NotFoundError(COLLECTION, id)
+  return parseRow(COLLECTION, collectionSchema, data)
+}
+
 export async function insertCollection(
   client: Client,
   values: TablesInsert<'collections'>,
