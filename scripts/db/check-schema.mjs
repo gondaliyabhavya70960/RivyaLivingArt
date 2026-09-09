@@ -206,20 +206,36 @@ for (const table of columnsByTable.keys()) {
   }
 }
 
-// --- 3. price_state is exactly its three Phase 03 values ------------------------------------------
-// Phase 14 adds FIXED alongside price_minor and the three-branch constraint. Until then, FIXED
-// must not exist: a fixed price with nowhere to store the amount would render as no price at all.
+// --- 3. price_state carries FIXED, and only alongside somewhere to put the amount ----------------
+// Phase 03 seeded three values, all of which mean "there is no number here". Phase 14 (0120) added
+// FIXED, and this assertion inverted with it, exactly as its previous wording instructed.
+//
+// THE PAIRING IS THE POINT, not the list. FIXED without `products.price_minor` is the failure the
+// original assertion was written to prevent: a product could claim a fixed price with nowhere to
+// store the amount, and the card would render a price state with no price. So this checks both,
+// and reports the pairing rather than only the enum, because a run that added the enum and skipped
+// the column is the case worth naming.
 const priceStates = q(`
   select string_agg(e.enumlabel, ' ' order by e.enumsortorder)
   from pg_enum e join pg_type t on t.oid = e.enumtypid
   where t.typname = 'price_state';
 `)[0]
 
-const EXPECTED_PRICE_STATES = 'STARTING_FROM REQUEST_QUOTE PRICE_ON_REQUEST'
+const EXPECTED_PRICE_STATES = 'STARTING_FROM REQUEST_QUOTE PRICE_ON_REQUEST FIXED'
 if (priceStates !== EXPECTED_PRICE_STATES) {
   problems.push(
     `price_state is "${priceStates}", expected "${EXPECTED_PRICE_STATES}".\n` +
-      `      If Phase 14 has added FIXED, this assertion inverts — update it there, deliberately.`,
+      `      0120 appends FIXED to the three Phase 03 values; a different list means a migration ` +
+      `added a state this gate has not been told about.`,
+  )
+}
+
+const hasPriceMinor = columnsByTable.get('products')?.has('price_minor') === true
+if (priceStates?.includes('FIXED') === true && !hasPriceMinor) {
+  problems.push(
+    'price_state carries FIXED but products.price_minor does not exist.\n' +
+      '      A fixed price with nowhere to store the amount renders as no price at all — 0120 and ' +
+      '0121 must be applied together.',
   )
 }
 
@@ -274,5 +290,5 @@ if (problems.length > 0) {
 
 console.log(
   `✓ schema: ${rls.length} tables, RLS on all, column tiers correct, ` +
-    `price_state has its three Phase 03 values, D10 gate on all ${CONTENT_TABLES.length} content tables`,
+    `price_state has its four values with price_minor to match, D10 gate on all ${CONTENT_TABLES.length} content tables`,
 )

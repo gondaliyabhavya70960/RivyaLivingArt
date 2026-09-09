@@ -11,7 +11,7 @@ import {
   type Material,
   type Product,
 } from '../schemas'
-import { NotFoundError } from '../errors'
+import { NotFoundError, PermissionError } from '../errors'
 import { parseRow, parseRows, toRepositoryError } from './support'
 
 type Client = SupabaseClient<Database>
@@ -119,9 +119,22 @@ export async function listProductMaterialIds(client: Client, productId: string):
 /**
  * Replace a product's materials with exactly this set.
  *
- * DELETE THEN INSERT, not a diff. The join table has no surrogate key and no ordering, so there is
- * nothing a diff would preserve; two statements are also two chances for RLS to refuse an editor
- * who should not be here, rather than one.
+ * A DIFF, NOT DELETE-THEN-INSERT, AND THE REASON IS RLS. `product_materials` carries
+ * `deletePermission: 'destructive.execute'` (lib/auth/table-permissions.ts), so its DELETE policy
+ * admits `owner` and `admin` only, while its INSERT policy also admits `merchandiser`. That split
+ * is deliberate. What is not deliberate is what a blanket `delete().eq('product_id', …)` does under
+ * it: **RLS filters a DELETE, it does not refuse one.** A merchandiser's delete matches zero rows,
+ * PostgREST returns success with no error, and the insert that follows then ADDS to the set that
+ * was supposed to be replaced. The editor reports a save, the removed material is still attached,
+ * and nothing anywhere says so. Materials could only ever accumulate.
+ *
+ * So: work out what actually has to change, delete only that, and then LOOK AGAIN. Reading the
+ * rows back is the only way to learn whether a filtered delete removed anything, because the
+ * driver cannot tell "deleted nothing" from "there was nothing to delete". A removal that did not
+ * happen raises PermissionError instead of reporting success.
+ *
+ * The diff has a second effect worth having: a merchandiser who only ADDS materials never issues a
+ * destructive statement at all, so the common edit stays inside the permission they hold.
  */
 export async function setProductMaterials(
   client: Client,
@@ -129,16 +142,30 @@ export async function setProductMaterials(
   materialIds: readonly string[],
   actorId: string | null,
 ): Promise<void> {
-  const { error: deleteError } = await client
-    .from('product_materials')
-    .delete()
-    .eq('product_id', productId)
-  if (deleteError) throw toRepositoryError(PRODUCT, 'set-materials', productId, deleteError)
+  const wanted = [...new Set(materialIds)]
+  const current = await listProductMaterialIds(client, productId)
 
-  if (materialIds.length === 0) return
+  const removed = current.filter((id) => !wanted.includes(id))
+  const added = wanted.filter((id) => !current.includes(id))
+
+  if (removed.length > 0) {
+    const { error: deleteError } = await client
+      .from('product_materials')
+      .delete()
+      .eq('product_id', productId)
+      .in('material_id', removed)
+    if (deleteError) throw toRepositoryError(PRODUCT, 'set-materials', productId, deleteError)
+
+    const survivors = await listProductMaterialIds(client, productId)
+    if (removed.some((id) => survivors.includes(id))) {
+      throw new PermissionError('set-materials', PRODUCT)
+    }
+  }
+
+  if (added.length === 0) return
 
   const { error } = await client.from('product_materials').insert(
-    [...new Set(materialIds)].map((materialId) => ({
+    added.map((materialId) => ({
       product_id: productId,
       material_id: materialId,
       created_by: actorId,

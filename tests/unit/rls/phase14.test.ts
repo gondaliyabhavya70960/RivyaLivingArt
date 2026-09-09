@@ -347,3 +347,58 @@ describeDb('the catalogue write policies', () => {
     expect(anon.ok).toBe(false)
   })
 })
+
+/**
+ * The asymmetry that made `setProductMaterials` lie.
+ *
+ * `product_materials` carries `deletePermission: 'destructive.execute'`, so its DELETE policy
+ * admits `owner` and `admin` while its INSERT policy also admits `merchandiser`. That is
+ * deliberate. The trap is what PostgreSQL does with it: **RLS filters a DELETE, it does not refuse
+ * one.** The statement below is well-formed and permitted to run; the policy simply removes every
+ * candidate row from consideration first, so it deletes nothing and reports no error at all.
+ *
+ * Phase 14's product editor originally issued `delete … where product_id = $1` and then inserted
+ * the new set, gated on `catalog.write`. For a merchandiser that meant: delete silently removes
+ * nothing, insert adds, and the set the editor was replacing is still there — materials could only
+ * ever accumulate, and the save reported success. The repository now diffs and reads the rows back
+ * instead, which only works if this test's premise holds.
+ */
+describeDb('product_materials — a filtered DELETE succeeds while removing nothing', () => {
+  beforeAll(loadFixture)
+  afterAll(disconnect)
+
+  const countFor = async (sql: Parameters<Parameters<typeof asSession<number>>[2]>[0]) => {
+    const rows = await sql.rows<{ count: string }>(
+      'select count(*)::text as count from product_materials where product_id = $1',
+      [FIXTURE_IDS.publishedProduct],
+    )
+    return Number(rows[0]?.count ?? '0')
+  }
+
+  it('a merchandiser deleting a product’s materials is not refused and removes none of them', async () => {
+    const outcome = await asMerchandiser(async (sql) => {
+      const before = await countFor(sql)
+      const deletion = await sql.attempt('delete from product_materials where product_id = $1', [
+        FIXTURE_IDS.publishedProduct,
+      ])
+      return { before, deletion, after: await countFor(sql) }
+    })
+
+    expect(outcome.before).toBe(2)
+    // No error. This is the whole problem: nothing in the response says the removal did not happen.
+    expect(outcome.deletion.ok).toBe(true)
+    expect(outcome.after).toBe(2)
+  })
+
+  it('an owner deleting the same rows actually removes them', async () => {
+    const outcome = await asSession('authenticated', FIXTURE_USERS.owner, async (sql) => {
+      const deletion = await sql.attempt('delete from product_materials where product_id = $1', [
+        FIXTURE_IDS.publishedProduct,
+      ])
+      return { deletion, after: await countFor(sql) }
+    })
+
+    expect(outcome.deletion.ok).toBe(true)
+    expect(outcome.after).toBe(0)
+  })
+})
