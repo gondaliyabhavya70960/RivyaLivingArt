@@ -6,6 +6,96 @@ Every phase adds an entry; see `docs/architecture/CANONICAL-DECISIONS.md` D9 for
 
 ## [Unreleased]
 
+### Phase 17 — Portfolio / Projects
+
+Rivya gains a project archive that is structurally incapable of lying, and it ships with **zero
+projects and zero testimonials** — the finished state of this phase, not an unfinished one. Neither
+table is a member of the seed runner's `SeedableTable` union, so a seed record targeting one does
+not compile.
+
+**Two publish gates, and they ask different questions.** Owner verification asks *did this happen*;
+consent asks *may we say whose it was*. A project can be entirely real and still not publishable
+under someone's name. Both are enforced per row, in the database, by
+`enforce_project_evidence_gate()` and `enforce_testimonial_evidence_gate()`.
+
+**TWO functions, not the one the data model described.** The two tables name a person through
+different columns — `client_display_name` / `client_consent` and `attributed_to` / `consent`. A
+shared plpgsql function referencing both is CREATEd without complaint, because plpgsql resolves a
+record field at execution, and then raises `record "new" has no field "client_display_name"` on the
+first write to `testimonials`. Not on deploy, not in review — on the first row somebody tried to
+save. `DATA_MODEL.md` §8.12 is corrected, and also renumbered: it carried §8.6, which
+`products.specifications_omitted` already holds and two other lines cite.
+
+**The withdrawal branch runs FIRST, and the phase document's own pseudo-code has it last.** With
+that ordering, withdrawing consent on a row that is currently PUBLISHED is REFUSED — the statement
+meets the publish check on its way past, the check fails, and the write is rejected, leaving the
+project live under the name of the person who has just asked not to be named. Found by probing the
+gate rather than by reading it. Withdrawal is unconditional and archives the row on the same
+statement (amendment A15·a).
+
+**`evidence_note` is unreadable to a visitor, and the first fix for that did nothing.** RLS filters
+ROWS, not COLUMNS, so the published-rows policy served every column of a published project including
+the owner's private note. A column-level `REVOKE` was measured and had no effect —
+`has_column_privilege` stayed true, because a table-level `GRANT` covers it. `0152` drops anon's
+table grant and re-grants a named column list. The consequence, deliberately: `select *` is now
+refused for `anon` on that table, so a careless public read fails loudly instead of leaking.
+
+**The Studio names the unmet gate before Publish is pressed.** `lib/portfolio/gates.ts` is a pure
+mirror of both triggers, and `tests/unit/rls/phase17.test.ts` is an agreement test rather than a
+unit test: for every combination of verification, name and consent it asks the mirror whether the
+row may publish, asks the DATABASE to publish the same row, and requires the two answers to match.
+A mirror tested against the thing it mirrors is a mirror that stays true. A refused publish writes a
+`DENIED` audit row — the attempt is the interesting event.
+
+**An absent consent field means "unchanged", not "NOT_APPLICABLE".** The phase document asks for the
+consent controls to be disabled until the is-client-project toggle is on. A disabled control posts
+nothing, so an editor who unticked that box would have submitted a form with no `client_consent` in
+it — and reading that as `NOT_APPLICABLE` would erase a recorded consent, its date and its recorder,
+by unticking a checkbox. The controls stay enabled and the action reads absence as silence.
+
+**The project editor's relation action is a second copy of the collection one, deliberately.** It
+first reused `setRelationAction` from the collection editor, which hardcodes
+`source_type = 'COLLECTION'` — so every edge made from a project would have been stored claiming the
+project's id was a collection, silently, readable as a broken link months later. Taking the source
+type from the form would be worse: `entity_relations.source_id` is deliberately un-FK'd, so nothing
+in the database would catch a mismatch. As a compile-time constant, the endpoint can only ever write
+project edges. `ActionForm` typed its state by importing `CollectionActionState` from that same
+editor, which is what let the mistake type-check; it now takes a shared `StudioFormState`.
+
+**The testimonials screen shipped with no create form, and that guard was in the wrong place.** The
+reasoning — D10 names testimonials outright, and a box to type a quote into is an invitation to
+write one in-house — prevented nothing: a fabricated quote is refused at publication by the gate,
+whoever typed it. What it did do was make it impossible to record a REAL quote through the Studio at
+all. The screen now has create, per-row edit, consent, verification and publish; the gates are the
+guard.
+
+**The `/portfolio` empty state was rendering half of itself.** SEED §28 supplies a heading and a
+body; the body came from `global_content` and the heading was seeded nowhere, so the page had shown
+an explanation with nothing above it since Phase 09. Found by writing the test that asserts both
+lines verbatim. Its CTA label is §7's reusable "View the Collection" rather than §28's "Explore the
+Collection", recorded as amendment A15·b: one label per destination.
+
+**RC-219 `PortfolioCard` replaces `ReferenceCards` for projects.** That component was Phase 11's
+explicit placeholder and says so in its own header. It crops to 4:5 on a phone, which cuts a room
+down to an object; a project card holds 3:2 at every width and carries `project_type` as an eyebrow
+of text — never a colour-coded chip, which is unreadable to a colourblind visitor and invites a
+taxonomy nobody agreed. It renders no date, no client and no location, and could not if asked:
+`EntityCard` does not carry them.
+
+**The gallery orders by a number rather than by dragging** (amendment A15·d). Drag-only reordering
+is unreachable by keyboard and by screen reader, needs a client library, and does not work with
+JavaScript off — which every other Studio form does.
+
+**Setting `VERIFIED` requires `content.verify`, not `content.publish`** (amendment A15·c).
+BUSINESS_RULES BR-H3 said the latter, which also admits `editor`; confirming that Rivya delivered a
+project is a claim made on the business's own behalf. The implementation was already the stricter of
+the two.
+
+**Known limitation.** The Playwright suite still cannot execute in this sandbox: the network policy
+denies the Supabase host, so every route answers 500 and no page can be measured.
+`tests/e2e/portfolio.spec.ts` detects that through a baseline route and skips with the reason.
+
+
 ### Phase 16 — Collections as Exhibitions
 
 A collection stops being a stub and becomes an entity with a statement, a curated set of pieces, a

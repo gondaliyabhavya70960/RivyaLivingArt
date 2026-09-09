@@ -1,14 +1,14 @@
 # PROJECT_STATE — what is actually built
 
 > Verified against the repository, not against intent. Update at the end of every phase.
-> Last verified: Phase 16 (Collections as Exhibitions), 2026-09-09.
+> Last verified: Phase 17 (Portfolio / Projects), 2026-09-09.
 
 ## Summary
 
 The design system is built; the database spine exists, carries RLS policies for all six roles, and
 has been verified against a real PostgreSQL **and against the hosted Supabase project**. What
 exists: the toolchain, the token layer, 32 primitives, 3 motion helpers, 7 behavioural patterns, a
-dev-only gallery, **twenty-five tables, all with RLS on**, generated types with a
+dev-only gallery, **twenty-nine tables, all with RLS on**, generated types with a
 drift gate, a repository layer with Zod at its boundary, an idempotent seed runner proved not to
 overwrite an owner's edit, the Studio shell with its ⌘K palette and user management, the media
 layer end to end, the Higgsfield migration, gap engine and tracker, **the CMS engine — pages,
@@ -35,7 +35,7 @@ entries and the global string library — 231 records, every one from the specif
 more authored and deferred to Phases 18 and 19. `docs/content/INITIAL_CONTENT_INVENTORY.md` audits
 all 332 of them, generated from the database.
 
-**The homepage is a composition.** Sixteen of the twenty-eight blocks are built — Phase 11 added
+**The homepage is a composition.** Sixteen blocks were built for it — Phase 11 added
 the ten the homepage needed — and all thirteen SEED §10 sections render from the CMS in seeded
 order. Verified on a production build against a local PostgREST, with the sections walked to their
 launch-day state: eleven publish, two are refused by the publish gate because the claim IS the
@@ -47,8 +47,8 @@ What does not exist: **a page a visitor can read**, and the reason is unchanged.
 renders, and every one answers 404, because Phase 09 seeds all 53 sections `DRAFT` and
 `renderCmsPage` refuses to serve a published route with nothing on it — SEED §55, as code.
 Publishing is an editorial act in Studio, and 25 of those sections cannot be published at all until
-the owner verifies what they claim. Eight of the thirty blocks are still declared and
-unbuilt (amendments A8 and A14); a block with repeating items is edited as JSON until a repeater is built. No
+the owner verifies what they claim. Eight of the thirty-two blocks are still declared and
+unbuilt (amendments A8, A14 and A15); a block with repeating items is edited as JSON until a repeater is built. No
 product rows, and there will be none from a seed — `products` is not a member of the
 `SeedableTable` union. **No media**: `media_assets` is empty until the Higgsfield migration runs, so
 every image on every page is the SEED §47 fallback well and no visual baseline of a page is worth
@@ -76,9 +76,40 @@ OWNER_CONFIRMED, and only an owner or admin can confirm one. The ten FEAT §9 co
 a name, a slug and an order, with no statement, no media, no products and no page: verified against
 the database as ten rows, all DRAFT, zero with any content column set, zero published, zero pages of
 kind COLLECTION. `/collections/<slug>` therefore answers 404 for all ten, which is the finished state
-of the phase rather than an unfinished one. The block catalogue is now 30, of which 22 are built
+of the phase rather than an unfinished one. That phase took the block catalogue to 30, of which 22 were built
 (amendment A14); the exhibition template inserts ten of FEAT §8's eleven elements, because the
 eleventh maps to a block that renders nothing.
+
+**The project archive exists and holds nothing.** Phase 17 added `portfolio_projects`,
+`portfolio_project_media` and `testimonials`, all three with zero rows and no way for a seed to add
+one — none is a member of `SeedableTable`, so a record targeting one does not compile. Publishing a
+project needs two independent things: an owner has confirmed it happened, and — if it names a client
+— that client's consent is recorded as GRANTED with a reference saying where the consent is held.
+Both are enforced in the database by `enforce_project_evidence_gate()` and
+`enforce_testimonial_evidence_gate()` — two functions, one per table, because a shared plpgsql
+function referencing both tables' columns fails at runtime on the first write to whichever it was
+not written for. Withdrawing consent archives the row on the same statement; the phase document's
+own pseudo-code had that branch last, where it would have REFUSED the withdrawal and left the
+project live under the name of somebody who asked not to be named (amendment A15·a).
+
+`/portfolio` therefore renders SEED §28's empty state and `/portfolio/[slug]` answers 404 for every
+slug, which is the finished state of this phase. Writing the test for that empty state found that
+§28's HEADING had never been seeded — only its body — so the page had been rendering half of it
+since Phase 09.
+
+**The Studio can author one, end to end.** `/studio/content/portfolio` lists projects with a
+permanent zero-row explanation and creates one from a title and an address; the editor carries
+Verification, Identity, Client and consent, the story page (a `PROJECT` page with four starting
+bands), the gallery and related content, with publish and unpublish under the verification panel.
+`/studio/content/testimonials` does the same for quotes. `lib/portfolio/gates.ts` names the unmet
+gate before Publish is pressed, and `tests/unit/rls/phase17.test.ts` holds that mirror and the
+triggers to agreement across the full input matrix. `evidence_note` is unreadable to `anon` at the
+grant (`0152`) — a column-level REVOKE alone was measured and had no effect at all.
+
+**The block catalogue is 32, of which 24 are built.** `project-gallery` is the first block
+restricted to one page kind (`allowedPages: ['/portfolio/[slug]']`), because it reads the gallery of
+whichever project owns the page it sits on and is meaningless anywhere else. RC-219 `PortfolioCard`
+is built and replaces Phase 11's `ReferenceCards` placeholder for projects.
 
 **The Playwright suite cannot execute in this sandbox.** The network policy denies the Supabase host,
 so every route answers 500 and no page can be measured — the first run of the Phase 16 spec reported
@@ -86,7 +117,16 @@ so every route answers 500 and no page can be measured — the first run of the 
 checks a baseline route and skips with the reason, never in CI. Phase 15's three specs are in the
 same position. Unit, RLS, seed and gate verification all run here and pass.
 
-**The hosted project is level with the repository through `0143`.** Phase 16's `0140`–`0142` and the
+**The hosted project is level with the repository through `0153`.** Phase 17's `0150`–`0153` were
+applied through the Supabase MCP server and verified against local by a 146-line fingerprint over
+columns, constraints, policies, indexes, triggers, function bodies, security flags, ACLs and enum
+values, which matched exactly (`79215119657489fc98cdff8f6ead4d5c`). Applying them was not optional:
+the Vercel build had failed on `Failed to collect page data for /portfolio/[slug]` with PGRST205,
+because `generateStaticParams` runs at build time and queried a table hosted did not have —
+`generateStaticParams` now also treats a missing table as "no paths" rather than taking the whole
+site's build down.
+
+**The hosted project was level with the repository through `0143`.** Phase 16's `0140`–`0142` and the
 `0143` revoke were applied through the Supabase MCP server — hosted was at `0132`, so the revoke was
 outstanding there too — and verified against local by a 106-line fingerprint over columns,
 constraints, policies, indexes, triggers, function bodies, security flags, ACLs and enum values,
@@ -157,8 +197,11 @@ in this document is from a local run.
 | 11 | Homepage + Material Experience | **CODE COMPLETE; NOT MEASURED** | Ten new renderers (16 of 28 blocks built), entry-level owner verification, the three reference selectors and their editorial fallback, `HeroMotion` and `MaterialSequence`, the island-budget gate, the homepage JSON-LD. 8 e2e specs across 8 widths, 924 unit tests. Amendments A11/A12. **What is not done is the measurement**: LCP, CLS and INP are unmeasured because there is no media to measure, and `tests/e2e/homepage.visual.spec.ts` is deferred for the same reason. |
 | 12 | About + Process | **CODE COMPLETE; NOT MEASURED** | `scale-statement` built (17 of 28 blocks), the `/process` chapter layout with positional numbering, `ChapterMedia` (RC-216) loaded on demand, the Studio verification banner and its nine seeded notes. 933 unit tests; `about.spec.ts` and `process.spec.ts` green at 1440 and 390 with zero serious axe violations. Both pages verified against a live database in their launch state — `/about` renders three of five sections, `/process` its hero — and `/process` was walked through a three-chapter state to prove the renumbering. Visual baselines deferred for the same reason as Phase 11: there is no media. |
 | 13 | Large Format Experience | **CODE COMPLETE; NOT MEASURED** | `category-intro`, `category-list` and `customization-note` built (20 of 28 blocks), `lib/site/resolve-target.ts` and the live-path set on `getSiteChrome`, entry-level marks on three of the six groupings. 942 unit tests; `large-format.spec.ts` green at 1440 and 390. Verified against a live database: 4 of 5 sections publish, exactly the three confirmed groupings render, and both CTAs are dropped while `/custom-commissions` has nothing published — then reappear when it does. Visual baselines deferred; there is still no media. |
-| 14 | Product Catalog | **CODE COMPLETE; CATALOGUE EMPTY BY DESIGN** | Migrations `0120`–`0122` (local only — hosted is still at `0080`). `lib/catalog/{query,price,validation,labels,rail,listing}`, `catalog-listing` and `catalog-admin` repositories, `/collection` and `/collection/[category]`, patterns RC-217/223/234/237, and the Studio catalogue editor with the FEAT §22 checklist. 1000 unit assertions including 17 database guards against a real PostgreSQL; `collection.spec.ts`, `collection-empty.spec.ts` and `catalog-studio.spec.ts` green at 1440, the filter/sort/pagination assertions all with JavaScript disabled. Verified against a live database in both states: three products with the four price states render their own labels and only two of them a number, 33 products paginate at 24 with correct `rel` and canonical links, then the catalogue was emptied and all seven category pages render SEED §27 with zero `[data-product-card]`. **The authenticated Studio half is `test.fixme`**, as in Phases 04 and 05, for the same reason: no reachable auth server. |
-| 15–46 | Product detail, Studio, research, ops, launch | **PLANNED** | Specified in `docs/project/phases/`. |
+| 14 | Product Catalog | **CODE COMPLETE; CATALOGUE EMPTY BY DESIGN** | Migrations `0120`–`0122`, applied locally and to hosted. `lib/catalog/{query,price,validation,labels,rail,listing}`, `catalog-listing` and `catalog-admin` repositories, `/collection` and `/collection/[category]`, patterns RC-217/223/234/237, and the Studio catalogue editor with the FEAT §22 checklist. 1000 unit assertions including 17 database guards against a real PostgreSQL; `collection.spec.ts`, `collection-empty.spec.ts` and `catalog-studio.spec.ts` green at 1440, the filter/sort/pagination assertions all with JavaScript disabled. Verified against a live database in both states: three products with the four price states render their own labels and only two of them a number, 33 products paginate at 24 with correct `rel` and canonical links, then the catalogue was emptied and all seven category pages render SEED §27 with zero `[data-product-card]`. **The authenticated Studio half is `test.fixme`**, as in Phases 04 and 05, for the same reason: no reachable auth server. |
+| 15 | Product Detail Experience | **CODE COMPLETE; NO PRODUCTS BY DESIGN** | Migrations `0130`–`0132`, `product_specs`, the specification block that has no placeholder branch at all, the dimensions shape constraint, `specifications_omitted`, the gallery with its lightbox (RC-238) and the four Studio tabs. `/product/[slug]` answers 404 for every slug because `products` holds zero rows. |
+| 16 | Collections as Exhibitions | **CODE COMPLETE; NONE PUBLISHED BY DESIGN** | Migrations `0140`–`0143`. Eight new `collections` columns, `entity_relations`, the concept publish gate and its authority gate, the exhibition page and its ten-band template, `collection-products` and `signature-media` (30 blocks, 22 built), and the ten FEAT §9 concepts seeded as a name, a slug and an order. Applied to hosted and fingerprint-verified. Amendment A14. |
+| 17 | Portfolio / Projects | **CODE COMPLETE; ARCHIVE EMPTY BY DESIGN** | Migrations `0150`–`0153`. `portfolio_projects`, `portfolio_project_media` and `testimonials`, all with zero rows and none seedable; two per-table evidence gates with the withdrawal branch first; `evidence_note` revoked from `anon` at the grant; `project-gallery` (32 blocks, 24 built) and RC-219 `PortfolioCard`; the project and testimonial Studio editors with consent, verification and publish. `lib/portfolio/gates.ts` mirrors both triggers and is held to agreement with them by test. Applied to hosted and fingerprint-verified through `0153`. Amendment A15. |
+| 18–46 | Journal, conversion, Studio, research, ops, launch | **PLANNED** | Specified in `docs/project/phases/`. |
 
 ## What exists on disk
 
@@ -168,7 +211,7 @@ data/higgsfield/asset-manifest.json      250 assets, machine-readable
 data/higgsfield/raw/{images,videos}.json raw generation history
 scripts/media/build-higgsfield-manifest.py   deterministic classifier
 scripts/media/check-asset-ids.py             gap-ID collision guard
-scripts/media/migrate-higgsfield.ts          the 250-asset migration (never run)
+scripts/media/migrate-higgsfield.ts          the 250-asset migration (RUN: 250 in Cloudinary)
 scripts/media/assert-no-regeneration.ts      the regeneration guard
 scripts/media/build-asset-status.ts          writes HIGGSFIELD_ASSET_STATUS.md §3-§4
 content/media-slots.ts                       26 declared CMS media slots

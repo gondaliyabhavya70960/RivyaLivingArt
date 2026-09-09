@@ -1040,8 +1040,8 @@ Publish At / Unpublish At where scheduling applies.
 | `/studio/content/pages` · `/[pageId]` | Every CMS page (about 20 at seed) | List, create, open the block editor with drag reorder, per-section status pill, media picker, revision drawer, preview button, "View on site", "preview at breakpoint" (1440 · 768 · 390) | `pages` · `page_sections` · `content_revisions` |
 | `/studio/content/pages/global` | The reserved system page that edits reusable strings | Edit the CTA library, commerce and action labels, announcement bar, empty states, error copy, form copy, SEO defaults, social, newsletter and Studio helper text. **Not** the `WHATSAPP_TEMPLATE` or `CONTACT` groups — those are configuration and are edited at `/studio/system/settings` under `system.settings.write` (§13.8; SEED §21, §36) | `global_content` |
 | `/studio/content/homepage` | The homepage, pinned into the same editor | Edit the thirteen seeded sections; reorder; hide; swap media | `pages` · `page_sections` |
-| `/studio/content/portfolio` · `/[projectId]` | Delivered projects | Identity · Client (toggle, display name, consent state, consent reference — disabled until the toggle is on) · Story · Gallery · Related · Verification | `portfolio_projects` · `portfolio_project_media` |
-| `/studio/content/testimonials` | Quotes, with the same consent discipline | Create, edit, record consent, publish | `testimonials` |
+| `/studio/content/portfolio` · `/[projectId]` | Delivered projects | List (with a permanent zero-row explanation, not an error state) and a two-field create. The editor opens with **Verification** — the panel naming every unmet gate — then **Identity** (title, subtitle, summary, type, location label, completion date, evidence note), **Client** (its own form: is-client-project, display name, consent state, consent reference), **Story page** (create the `PROJECT` page and its four starting bands, or open the block editor), **Gallery** (`portfolio_project_media`: role, caption, per-item alt override, order) and **Related** (`entity_relations`). Publish and unpublish sit under the verification panel | `portfolio_projects` · `portfolio_project_media` · `entity_relations` · `pages` |
+| `/studio/content/testimonials` | Quotes, with the same consent discipline | Record a quote; per-row edit, consent, verification and publish — four forms, three permissions | `testimonials` |
 | `/studio/content/journal` · `/[articleId]` · `/categories` | Editorial | Identity · Categories · Cover (desktop and mobile, separate) · Body · Related · Publishing with `publish_at` / `unpublish_at` | `journal_articles` · `journal_categories` · `journal_article_categories` |
 | `/studio/content/faqs` | The ten seeded FAQ entries | Edit question, answer, category, position; add and archive | `faqs` |
 | `/studio/content/navigation` | Header, mobile and category menus | Edit label, href, order, visibility, target, nesting; a resolved-URL preview shows whether an href actually resolves before publishing | `navigation_items` (`menu in ('HEADER','MOBILE','CATEGORY')`) |
@@ -1054,9 +1054,39 @@ Publish At / Unpublish At where scheduling applies.
   portfolio shows the seeded empty state — *The project archive is being prepared.* — never a
   fabricated client project. `portfolio_projects.owner_verification` defaults to
   `OWNER_VERIFICATION_REQUIRED`, deliberately inverted from every other table.
-- **`enforce_evidence_gate()`**: publishing a project or testimonial requires
-  `owner_verification = 'VERIFIED'`, and any row naming a person or client requires
-  `client_consent = 'GRANTED'`. `WITHDRAWN` consent forces the row back to `ARCHIVED`.
+- **`enforce_project_evidence_gate()` and `enforce_testimonial_evidence_gate()`** — two functions,
+  one per table, because the two tables name a person through different columns and a shared plpgsql
+  function would fail at runtime on the first write to whichever table it was not written for
+  (`DATA_MODEL.md` §8.12). Publishing either requires `owner_verification = 'VERIFIED'`, and a row
+  naming a person or client additionally requires that person's consent recorded as `GRANTED`.
+  `WITHDRAWN` consent forces the row back to `ARCHIVED` **on the same statement** — it is not a
+  refusal to be worked around, and it does not wait for anyone to unpublish.
+- **The Studio names the unmet gate before Publish is pressed.** `OwnerVerificationPanel` reads
+  `lib/portfolio/gates.ts`, a pure mirror of both triggers that `tests/unit/rls/phase17.test.ts`
+  holds to agreement with them. It also says which gates only an owner or admin can clear, because
+  "you cannot publish this" and "you cannot publish this and you are not the person who can fix it"
+  are different messages. A publish attempt that fails a gate is refused server-side and writes a
+  `DENIED` audit row — the attempt is the interesting event.
+- **Recording a consent as `GRANTED` needs `content.verify` AND a reference.** `content.verify` is
+  owner and admin only. The reference answers "where is this held" — an email, a message thread, a
+  signed note — and without it `GRANTED` is an assertion with nothing behind it. The recorded-at and
+  recorded-by stamps come from the session, never from the form, and move only when the decision
+  itself changes.
+- **The consent controls are NOT disabled when the is-client-project toggle is off**, which diverges
+  from the phase document deliberately. A disabled control posts nothing, and reading an absent
+  `client_consent` as `NOT_APPLICABLE` would erase a recorded consent — its date and its recorder
+  with it — by unticking a checkbox. The action reads an absent field as "unchanged"; the controls
+  stay legible.
+- **A concept render can never enter a project gallery.** The picker does not offer one, the action
+  names the rule if somebody posts one anyway, and `reject_concept_project_media` refuses it in the
+  database. Three copies, all wanted: the picker cannot stop a `curl`, and the trigger cannot
+  explain itself.
+- **`evidence_note` is edited on the project screen and rendered nowhere public.** `0152` revokes it
+  from `anon` at the grant, so it is unreadable to a visitor even through a crafted request — not
+  merely unrendered.
+- **The gallery is ordered by a number an editor types, not by dragging** (amendment A15·d). A
+  drag-only reorder is unreachable by keyboard and by screen reader and does not work with
+  JavaScript off, which every other Studio form does.
 - **The ten seeded journal articles have no body.** They carry an `angle_note` and `status = 'DRAFT'`;
   two are `OWNER_VERIFICATION_REQUIRED` because they touch fabrication capability and preservation
   performance. `reading_minutes` is computed on save, never typed.
@@ -1699,7 +1729,7 @@ enforced.
 | 6 | A manifest asset can never be regenerated | No UI control; `assert-no-regeneration.ts` in CI |
 | 7 | A quote-only product can never carry a price | `products_price_state_coherent` constraint |
 | 8 | A collection cannot be published while it is a concept | `enforce_collection_publish_gate()` |
-| 9 | A project or testimonial cannot be published without evidence and consent | `enforce_evidence_gate()` |
+| 9 | A project or testimonial cannot be published without evidence and consent | `enforce_project_evidence_gate()` · `enforce_testimonial_evidence_gate()` — one per table |
 | 10 | Bulk never hard-deletes | The engine has no delete operation; `revoke delete` on the bulk tables |
 | 11 | A destructive bulk action requires a typed row count and `destructive.execute` | `ConfirmDestructive` + server-side permission check |
 | 12 | Apply cannot widen the previewed selection | `confirmation_token` + `selection` re-read from the row |

@@ -280,7 +280,7 @@ and Phase 10's site shell then reuses it.
 | RC-216 | `ChapterMedia` | storytelling | 12 | BUILT | §7.41 — a Client Component after all, and loaded on demand |
 | RC-217 | `ProductCard` | product understanding | 14 | BUILT | §7.13 |
 | RC-218 | `CollectionCard` | navigation | 16 | PLANNED | §7.14 |
-| RC-219 | `PortfolioCard` | storytelling | 17 | PLANNED | §7.15 |
+| RC-219 | `PortfolioCard` | storytelling | 17 | BUILT | §7.15 |
 | RC-220 | `JournalCard` | storytelling | 18 | PLANNED | §7.16 |
 | RC-221 | `ProductGallery` + `Lightbox` | product understanding | 15 | PLANNED | §7.17 |
 | RC-222 | `ContentCarousel` | navigation | 16 | PLANNED | §7.18 |
@@ -658,9 +658,9 @@ is a Studio-only affordance.
 |---|---|
 | Registry ID | RC-219 |
 | Source | Rivya first-party |
-| Link | `components/patterns/PortfolioCard.tsx` |
+| Link | `components/patterns/PortfolioCard/index.tsx` — a directory, following the convention Phase 10 settled; the flat path this row carried was written before it |
 | Licence | N/A — first-party |
-| Dependencies | none |
+| Dependencies | RC-213 `MediaSlot` (`BlockImage`), RC-019 `Grid` |
 | Page | `/portfolio`, `/`, `/collections/[slug]`, related content |
 | Purpose | storytelling, brand perception |
 | Adaptation | 3:2 at every width — landscape reads as a documented project rather than a catalogue item |
@@ -671,10 +671,36 @@ is a Studio-only affordance.
 | Reviewer | UNASSIGNED |
 | Verdict | FIRST_PARTY |
 
-**Content constraint (D10).** Location, year, client and scope render only from stored fields. The
-portfolio grid ships **empty by default** with the seeded SEED §28 empty state; no delivered project,
-named customer or testimonial is invented to populate it. `OWNER_VERIFICATION_REQUIRED` applies to
-every project record until the owner confirms it.
+**Content constraint (D10).** The card renders a picture, a project type, a title and a summary —
+and NOTHING ELSE. No date, no client, no location, no scope. An earlier version of this row said
+those "render only from stored fields", which was a discipline; as built it is a shape: `EntityCard`
+does not carry them, so this component could not render one if somebody wanted it to. Two of them
+belong to other people — a client's name is publishable only where their consent is recorded as
+granted (BR-D5), and a card has no way to know that. The portfolio grid ships **empty by default**
+with the seeded SEED §28 empty state; no delivered project, named customer or testimonial is
+invented to populate it. `OWNER_VERIFICATION_REQUIRED` applies to every project record until the
+owner confirms it.
+
+**Built in Phase 17, replacing `components/sections/ReferenceCards.tsx` for projects only.**
+`ReferenceCards` was written in Phase 11 as an explicit placeholder — its own header says the three
+entity phases replace it one at a time, as each gains the real data and learns what a card of that
+entity should say. Phase 17 is the first of those three; `data-product-card` and `data-article-card`
+still come from `ReferenceCards` until Phases 22 and 18 respectively.
+
+**What changed in replacing it.** `ReferenceCards` crops to 4:5 on a phone. A project photograph is
+a room, a wall or an installation, and a portrait crop cuts away the space that makes it a project
+rather than a piece of furniture — so RC-219 holds 3:2 at every width, which is the one thing in
+this row that is not negotiable per breakpoint.
+
+**The eyebrow needed one column.** `project_type` is read by `listReferenceProjects` and carried on
+`EntityCard.eyebrow`, which is optional and populated for projects alone. `ReferenceRow` therefore
+grew a single optional eyebrow slot rather than an open select list: a project may have a type, and
+a product still cannot acquire a price.
+
+**The grid ships with the card.** `PortfolioCardGrid` is exported from the same module because the
+column rhythm is part of what a project card is — three across at desktop, two at tablet, one on a
+phone. A section free to lay these out itself is free to put four across, and four landscape cards
+in a row are thumbnails.
 
 ### 7.16 RC-220 — `JournalCard`
 

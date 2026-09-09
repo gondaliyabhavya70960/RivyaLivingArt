@@ -8,6 +8,122 @@
 
 ## Current Phase
 
+**Phase 17 — Portfolio / Projects. CODE COMPLETE; THE ARCHIVE IS EMPTY, WHICH IS THE FINISHED
+STATE.** `portfolio_projects`, `portfolio_project_media` and `testimonials` exist and hold zero
+rows. `/portfolio` renders SEED §28's empty state; `/portfolio/[slug]` answers 404 for every slug.
+A project exists when the owner enters one, confirms it happened, and — if it names a client —
+records that client's consent. Nothing in this repository may do any of those on their behalf.
+
+### Phase 17: what is built
+
+**Migrations `0150`–`0153`, applied locally AND to hosted.** `0150` creates the three tables, the
+`client_consent_state` enum, both evidence gates, `reject_concept_project_media`, `PROJECT` on the
+`pages.kind` check and the extension to `sync_entity_page_status`. `0151` is the GENERATED RLS file.
+`0152` fixes the `evidence_note` exposure. `0153` adds `sync_project_page_path`. No enum split was
+needed this time: a BRAND-NEW type is usable in the transaction that creates it — only
+`ALTER TYPE … ADD VALUE` is restricted, which is what forced the split in Phases 14 and 16.
+
+**TWO gate functions, one per table.** The data model described one shared `enforce_evidence_gate()`
+and that design cannot work: plpgsql resolves a record field at execution, so a single function
+referencing `client_display_name` and `attributed_to` is created without complaint and then raises
+`record "new" has no field …` on the first write to whichever table it was not written for.
+`DATA_MODEL.md` §8.12 is corrected and renumbered — it carried §8.6, which
+`products.specifications_omitted` already holds and two other lines cite.
+
+**THE GATE ORDERING BUG, found by probing rather than by reading.** The phase document's own
+pseudo-code puts the `WITHDRAWN` branch LAST. With that ordering, withdrawing consent on a row that
+is currently PUBLISHED is REFUSED — the statement meets the publish check on its way past, the check
+fails, the write is rejected, and the project stays live under the name of the person who has just
+asked not to be named. Both gates handle withdrawal FIRST and unconditionally. Amendment A15·a.
+
+**`evidence_note` is unreadable to `anon`, and the first fix did nothing.** RLS filters ROWS, not
+COLUMNS. A column-level `REVOKE` was applied and measured: `has_column_privilege` stayed true,
+because the table-level `GRANT` covers it. `0152` revokes `SELECT` on the table from `anon` and
+re-grants a named column list. `select *` is consequently refused for `anon` on that table, which is
+the intended shape: a careless public read fails loudly rather than leaking.
+
+**`lib/portfolio/gates.ts` is a pure mirror of both triggers**, and
+`tests/unit/rls/phase17.test.ts` is an agreement test: for every combination of verification, name
+and consent it asks the mirror whether the row may publish, asks the DATABASE to publish the same
+row, and requires the two answers to match. Mutation-checked — the test was shown to fail when the
+mirror was altered.
+
+**The Studio authors a project end to end.** `/studio/content/portfolio` lists with a permanent
+zero-row explanation and creates from a title and an address; `[projectId]` carries Verification
+(first, because "why is this not live" is the question an editor arrives with), Identity, Client and
+consent as a separate form with a separate permission, the story page, the gallery and related
+content, with publish and unpublish under the panel. `/studio/content/testimonials` does the same
+for quotes.
+
+**Three things caught before they shipped.**
+- The editor first reused the collection editor's `setRelationAction`, which hardcodes
+  `source_type = 'COLLECTION'`; every edge made from a project would have claimed the project's id
+  was a collection. It has its own action now, with the source type as a compile-time constant.
+  `ActionForm` typed its state by importing `CollectionActionState` from that editor — which is what
+  let the mistake type-check — and now takes a shared `StudioFormState`.
+- Reading an absent `client_consent` as `NOT_APPLICABLE` would have erased a recorded consent, its
+  date and its recorder, by unticking a checkbox. Absence means unchanged.
+- The `/portfolio` empty state had never seeded SEED §28's HEADING — only its body — so the page had
+  been rendering half of it since Phase 09. Found by writing the test that asserts both lines.
+
+**RC-219 `PortfolioCard`** replaces Phase 11's `ReferenceCards` placeholder for projects: 3:2 at
+every width, `project_type` as a text eyebrow, and no date, client or location — `EntityCard` does
+not carry them.
+
+### Phase 17: what is NOT built, and why
+
+- **No project, no project photograph, no testimonial.** Not an omission: none of the three tables
+  is in `SeedableTable`, so a seed record targeting one does not compile, and D10 forbids inventing
+  the content anyway. The 30 products the owner asked for earlier remain blocked on the same rule.
+- **No `CreativeWork` JSON-LD on a project page.** It would want a creator, a date and an image, and
+  each is a business fact that is absent or gated. Structured data is read by machines that cannot
+  see the page's carefulness.
+- **No drag ordering in the gallery** (amendment A15·d): keyboard-unreachable, needs a client
+  library, and does not work with JavaScript off.
+- **No testimonial rendering on the public site beyond the block that draws nothing** — there are no
+  consented quotes to draw.
+
+### Phase 17: verification, as actually run
+
+- `npm test` — 1316 pass, none skipped, including the 32-case agreement test and the new
+  `portfolio-empty` suite.
+- `npm run check` — clean: format, lint, types, the data-layer and migration-content gates, the
+  copy-in-JSX gate, the client-boundary walk, the island budget and the WhatsApp usage gate.
+- The concept-media refusal was probed directly against the local cluster: SQLSTATE `23514`,
+  message `concept media cannot be attached to a portfolio project (…)` — which is the string the
+  editor's refusal matcher looks for, so the wording is tied to a test rather than hoped for.
+- The empty-state assertion was mutation-checked: removing the seeded heading fails it.
+- Hosted is level through `0153`, fingerprint-verified against local — 146 lines,
+  `79215119657489fc98cdff8f6ead4d5c` on both.
+- **Playwright did not run.** The sandbox network policy denies the Supabase host, so every route
+  answers 500. `tests/e2e/portfolio.spec.ts` detects that through a baseline route and skips with
+  the reason rather than reporting a false failure.
+
+### Phase 17: the D9 ten, recorded
+
+1. **Scope implemented** — migrations, both gates, schemas, repositories, the block, the public
+   routes, both Studio surfaces, the card pattern and the tests. Four spec departures recorded in
+   A15 rather than taken silently.
+2. **Relevant tests run** — 1316 pass, none skipped; the e2e suite skips for a stated environmental
+   reason.
+3. **No known scope-breaking error.**
+4. **Documentation updated** — DATA_MODEL §8.12 (corrected and renumbered) and §9,
+   BUSINESS_RULES BR-D5/BR-D9/BR-H3, STUDIO_GUIDE §11 and the guardrail register,
+   COMPONENT_REGISTRY RC-219, CANONICAL-DECISIONS A15.
+5. **CHANGELOG updated.**
+6. **PROJECT_STATE updated** — including the phase table, which had stopped at 14.
+7. **SESSION-STATE updated** — this section.
+8. **Remaining issues documented** — `verify` red on the account's Actions runner and not re-run,
+   per the free-tier instruction; the e2e suite unrunnable here; six secrets still unrotated. The
+   §28 heading is applied on BOTH local and hosted: `seed:content` wrote it locally and reports zero
+   changes on a second run, and hosted was updated in place carrying the runner's own
+   `seed_content_hash`, so the next seed run there still recognises the row as its own rather than
+   as owner-edited.
+9. **Next phase identified** — **Phase 18, Journal.**
+10. **Repository recoverable** — every commit pushed to `claude/rivya-living-art-phases-64hq5i`.
+
+### Superseded — Phase 16's state
+
 **Phase 16 — Collections as Exhibitions. CODE COMPLETE; NOTHING IS PUBLISHED, WHICH IS THE FINISHED
 STATE.** Ten collection concepts exist as a name, a slug and an order. None is confirmed, none is
 published, none has an exhibition page, and `/collections/<any slug>` answers 404. FEAT §9 asks for

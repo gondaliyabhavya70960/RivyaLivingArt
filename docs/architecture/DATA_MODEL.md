@@ -1398,11 +1398,6 @@ way, so a guard would only refuse a sensible edit. It is written from the Specif
 action whose whole subject is that decision, and `productValues` in the product form deliberately
 omits it so that saving an unrelated field cannot silently clear it.
 
-### 8.6 `enforce_evidence_gate()` — Phase 17 `0150`
-On `portfolio_projects` and `testimonials`: `PUBLISHED` requires `owner_verification = 'VERIFIED'`,
-and any row naming a person or client requires `client_consent = 'GRANTED'`. `WITHDRAWN` consent
-forces `status` back to `ARCHIVED`.
-
 ### 8.7 `enforce_collection_publish_gate()` — Phase 16 `0141`
 `PUBLISHED` requires `concept_state = 'OWNER_CONFIRMED'` (FEAT §9).
 
@@ -1424,6 +1419,49 @@ Maintains `media_usages` from `media_desktop_id`, `media_mobile_id` and any medi
 Once a `research_scoring_models` row leaves `DRAFT`, its `signals`, `weights_total` and
 `min_confidence` are immutable. Changing a formula means publishing a new version, so a historical
 score always remains reproducible.
+
+### 8.12 `enforce_project_evidence_gate()` and `enforce_testimonial_evidence_gate()` — Phase 17 `0150`
+
+**NUMBERED 8.12, NOT 8.6.** An earlier draft of this section carried §8.6, which
+`products.specifications_omitted` already holds and which two other lines in this document cite.
+A duplicated heading number in a document that cross-references itself is a broken reference, so
+this takes the next free number rather than the one next to it in reading order.
+
+**TWO FUNCTIONS, ONE PER TABLE. THIS SECTION PREVIOUSLY DESCRIBED ONE SHARED
+`enforce_evidence_gate()`, AND THAT DESIGN CANNOT WORK.** The two tables name a person through
+different columns — `portfolio_projects.client_display_name` / `client_consent` and
+`testimonials.attributed_to` / `consent`. A single plpgsql function referencing both would be
+CREATEd without complaint, because plpgsql resolves a record field at EXECUTION rather than at
+creation, and would then raise
+
+```
+record "new" has no field "client_display_name"
+```
+
+on the first write to `testimonials`. Not on deploy, not in review — on the first row somebody
+tried to save. The duplication is the correct answer here and is worth its second function.
+
+Each function, over its own table's columns:
+
+- `status = 'PUBLISHED'` requires `owner_verification = 'VERIFIED'`.
+- A row that NAMES somebody (`client_display_name is not null`, `attributed_to is not null`)
+  additionally requires that person's consent recorded as `GRANTED`.
+- Consent `WITHDRAWN` rewrites `status` to `ARCHIVED` in place.
+
+**THE WITHDRAWAL BRANCH RUNS FIRST, AND THE ORDER IS LOAD-BEARING.** The phase document's own
+pseudo-code puts it last, and with that ordering, withdrawing consent on a row that is currently
+PUBLISHED hits the publish check on its way past — which refuses the statement. The write fails and
+the project stays live, under the name of the person who just asked not to be named. Withdrawal is
+therefore handled first and unconditionally: consent is not ours to argue with, and a person who
+withdraws it leaves the site on the same statement rather than at the next deploy.
+
+Both are BEFORE triggers, which is what lets the withdrawal branch rewrite `status` at all.
+
+`lib/portfolio/gates.ts` is a pure TypeScript mirror of both, so the Studio can say WHICH gate is
+unmet before anyone presses Publish rather than surfacing a raised exception.
+`tests/unit/rls/phase17.test.ts` holds the mirror and the triggers to agreement across the full
+input matrix — it asks the mirror whether a row may publish, asks the database to publish the same
+row, and requires the two answers to match.
 
 ---
 
@@ -1460,8 +1498,32 @@ empty state, never a fabricated client project.
 | `portfolio_project_media` | `(project_id, media_asset_id)` PK, `role text check (...)`, `caption`, `alt_override`, `sort_order` |
 | `testimonials` | `id`, `attributed_to`, `attribution_role`, `quote`, `project_id uuid null`, `consent client_consent_state not null default 'PENDING'`, `consent_reference`, `sort_order`, Tier A + B |
 
-`testimonials` also ships with zero rows. D10 forbids seeding one, and the evidence gate (§8.6)
-makes publishing an unconsented quote impossible.
+`testimonials` also ships with zero rows. D10 forbids seeding one, and its own evidence gate —
+`enforce_testimonial_evidence_gate()`, §8.12, a separate function from the project one for the
+reason given there — makes publishing an unconsented quote impossible.
+
+`portfolio_project_media.role` is checked against `('hero','gallery','detail','process','video',
+'model')`. That list is NOT the product one: `product_media` also allows `lifestyle`, and the two
+constants are deliberately separate in `lib/supabase/repositories/` so that neither table offers an
+editor a role the other's constraint would refuse.
+
+**`reject_concept_project_media()` — `0150`.** A `portfolio_project_media` row whose asset carries
+`is_concept = true` is refused, with `errcode = 'check_violation'` and a hint naming D6 and D10. The
+same shape as `reject_concept_product_media()` (§8.4) and for the same reason: a CHECK constraint
+cannot see another table. The five `gallery-scene` assets are landing atmosphere and are exactly
+what somebody would reach for to make an empty portfolio look fuller.
+
+**`evidence_note` is not readable by `anon` — `0152`.** RLS filters ROWS, not COLUMNS, so the
+published-rows policy alone would serve every column of a published project, the owner's private
+note included. A column-level `REVOKE` does not cut through the table-level `GRANT` — measured, on
+this project's own cluster: `has_column_privilege` stayed true. The working form is to revoke
+`SELECT` on the table from `anon` and grant back a named column list without `evidence_note`. The
+consequence is that `select *` is refused for `anon` on this table, deliberately: a careless public
+read fails loudly instead of leaking.
+
+**`sync_project_page_path()` — `0153`.** Writes `'/portfolio/' || lower(slug)` onto the linked page
+whenever the slug or the link changes, so the URL a visitor loads and the `pages.path` the resolver
+looks up are the same string by construction rather than by two places agreeing.
 
 ### Journal — Phase 18 · migrations `0160`–`0161`
 
