@@ -10,6 +10,7 @@ import { Grid } from '@/components/primitives/Grid'
 import { Stack } from '@/components/primitives/Stack'
 import { Text } from '@/components/primitives/Text'
 import { TextLink } from '@/components/primitives/TextLink'
+import { catalogUrl } from '@/lib/catalog/query'
 import { optionalEnv } from '@/lib/env'
 import { getSiteChrome } from '@/lib/site/chrome'
 import { createPublicClient } from '@/lib/supabase/public'
@@ -236,11 +237,15 @@ export function CatalogListing({
         )}
 
         <Pagination
-          basePath={basePath}
-          query={query}
+          hrefFor={(n) => catalogUrl(basePath, query, { page: n })}
           page={page}
           pageCount={pageCount}
-          strings={strings}
+          labels={{
+            region: siteString(strings, CATALOG_UI_KEYS.pagination),
+            previous: siteString(strings, CATALOG_ACTION_KEYS.previous),
+            next: siteString(strings, CATALOG_ACTION_KEYS.next),
+            position: siteString(strings, CATALOG_UI_KEYS.paginationPosition),
+          }}
         />
       </Stack>
     </div>

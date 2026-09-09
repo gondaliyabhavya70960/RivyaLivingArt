@@ -137,6 +137,72 @@ const EXPECTED = {
   journal_article_categories: ['created_at', 'created_by'],
   content_seed_runs: ['started_at', 'finished_at', 'is_dry_run', 'report'],
 
+  /*
+   * Phase 19. THE FORM IS CONTENT AND ITS PARTS ARE STRUCTURE, which is why the three tiers split
+   * unevenly across three tables that arrived together.
+   *
+   * `customization_forms` carries all three: it is seeded from SEED §33-35, it has a publication
+   * workflow, and §35 requires the 3D + resin template to sit at OWNER_VERIFICATION_REQUIRED until
+   * the owner defines real manufacturing options — which is Tier B doing exactly its job.
+   *
+   * A STEP AND A FIELD CARRY TIER A AND TIER C BUT NOT TIER B, and the omission is the decision.
+   * They ARE seeded, so Tier C is compulsory: SEED §33 requires every field to be renameable, and a
+   * rename that the next seed run reverted would not be a rename. But a question has no publication
+   * workflow of its own — it is asked or it is not, which is `is_enabled` — and no owner
+   * verification, because a question asserts nothing about the business. Giving a field a `status`
+   * would invite a DRAFT question: a row that is neither asked nor removed, in a form whose whole
+   * contract is that an editor can see what it asks.
+   */
+  customization_forms: [...TIER_A, ...TIER_B, ...TIER_C],
+  customization_form_steps: [...TIER_A, ...TIER_C],
+  customization_form_fields: [...TIER_A, ...TIER_C],
+  // The product/category binding is an edge, like the six join tables above it.
+  product_customization_forms: ['created_at', 'created_by'],
+
+  /*
+   * Phase 19's flag table. A §1.4 exemption of a fourth kind: not an invocation record, but a
+   * SWITCH. It has no content, no publication workflow and nothing to seed — a flag with no row is
+   * off, so the register of which flags exist lives in `lib/flags/flags.ts` where deleting one
+   * breaks its call sites at compile time. What the row records is that somebody moved it, which is
+   * `updated_at` and `updated_by` and nothing else.
+   */
+  feature_flags: ['updated_at', 'updated_by'],
+
+  /*
+   * A COUNTER, WHICH IS THE FOURTH KIND OF §1.4 EXEMPTION AND THE THINNEST. `rate_limit_buckets`
+   * has no audit columns at all — no `created_at`, no `updated_by` — and that is deliberate rather
+   * than an omission to fix later. Every column it has IS the record: a hashed key, a window and a
+   * count. Adding `updated_at` would double the write cost of the hottest table on the site to
+   * store a value `window_start` already bounds, and `updated_by` would name an actor that by
+   * definition has no account.
+   */
+  /*
+   * Phase 20's three. `inquiries` carries TIER A AND NOTHING ELSE, and both absences are decisions
+   * recorded in DATA_MODEL §1.4.
+   *
+   * NO TIER B, because an enquiry is not content. It is never published, never scheduled, never
+   * revised and never verified — it moves through a SALES pipeline, which is what `pipeline_status`
+   * is and why it is not `content_status`. Giving it `owner_verification` would ask the owner to
+   * confirm that a customer really said what they said.
+   *
+   * NO TIER C, because nothing seeds a customer. A seeded enquiry is a fabricated conversation with
+   * a fabricated person, which is D10 at its most direct; the absence of a `seed_key` is what makes
+   * that structural rather than a rule somebody has to remember.
+   */
+  inquiries: [...TIER_A],
+  // An attachment is an edge, like every other join table here — and it has no `created_by`,
+  // because the visitor who created it is not a user and never will be (D1).
+  inquiry_attachments: ['created_at'],
+  /*
+   * APPEND-ONLY, SO IT HAS NO `updated_at` AND NO `updated_by` — a §1.4 exemption of the same kind
+   * as `activity_events`. The trigger refuses UPDATE outright, so a column recording when a row was
+   * last changed would name a moment that can never arrive. `occurred_at` is the whole timestamp
+   * story and `actor_id` is the whole actor story.
+   */
+  inquiry_events: ['occurred_at'],
+
+  rate_limit_buckets: ['bucket_key', 'window_start', 'count'],
+
   // `db:migrate`'s own bookkeeping, and a §1.4 exemption for the same reason `content_seed_runs` is
   // one: what it records is an INVOCATION, and an invocation has no publication workflow, no owner
   // verification and nothing to seed. It is created by the runner rather than by a migration —

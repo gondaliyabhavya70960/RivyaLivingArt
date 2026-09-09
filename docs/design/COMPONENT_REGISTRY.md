@@ -281,7 +281,7 @@ and Phase 10's site shell then reuses it.
 | RC-217 | `ProductCard` | product understanding | 14 | BUILT | §7.13 |
 | RC-218 | `CollectionCard` | navigation | 16 | PLANNED | §7.14 |
 | RC-219 | `PortfolioCard` | storytelling | 17 | BUILT | §7.15 |
-| RC-220 | `JournalCard` | storytelling | 18 | PLANNED | §7.16 |
+| RC-220 | `ArticleCard` | storytelling | 18 | BUILT | §7.16 |
 | RC-221 | `ProductGallery` + `Lightbox` | product understanding | 15 | PLANNED | §7.17 |
 | RC-222 | `ContentCarousel` | navigation | 16 | PLANNED | §7.18 |
 | RC-223 | `FilterRail` | navigation | 14 | BUILT | §7.19 — renamed from `FilterBar` (public) when built, to stop it reading as a variant of the Studio's `FilterBar`; same ID, same row |
@@ -702,15 +702,20 @@ column rhythm is part of what a project card is — three across at desktop, two
 phone. A section free to lay these out itself is free to put four across, and four landscape cards
 in a row are thumbnails.
 
-### 7.16 RC-220 — `JournalCard`
+### 7.16 RC-220 — `ArticleCard`
+
+**BUILT AS `ArticleCard`, NOT `JournalCard`.** The row reserved the second name; the component is
+named for what it renders — one article — rather than for the section it appears in, which is how
+`ProductCard` and `PortfolioCard` are named. Same ID, same row, following the precedent RC-223
+records for `FilterRail`.
 
 | Field | Value |
 |---|---|
 | Registry ID | RC-220 |
 | Source | Rivya first-party |
-| Link | `components/patterns/JournalCard.tsx` |
+| Link | `components/patterns/ArticleCard/index.tsx` — a directory, following the convention Phase 10 settled |
 | Licence | N/A — first-party |
-| Dependencies | none |
+| Dependencies | RC-213 `MediaSlot` (`BlockImage`), RC-019 `Grid` |
 | Page | `/journal`, `/journal/category/[slug]`, `/`, related content |
 | Purpose | storytelling |
 | Adaptation | 16:9; the only card that switches to a horizontal 96px-media layout at 360px, because a list of articles is read, not browsed |
@@ -720,6 +725,28 @@ in a row are thumbnails.
 | Reviewed on | — |
 | Reviewer | UNASSIGNED |
 | Verdict | FIRST_PARTY |
+
+**The horizontal switch is the reason this card is not `ProductCard` with a different ratio.** A
+product or a project is BROWSED — the eye moves across a grid of images. A list of articles is READ:
+the title is what is being scanned, and a stack of full-width 16:9 images pushes three titles below
+the fold that a horizontal row keeps on it. Below 640px the card becomes 96px of media beside the
+text, with the title clamped to three lines and the card line hidden.
+
+**The date is formatted in a fixed UTC zone.** A date rendered in the visitor's zone differs between
+the server and the browser, which React reports as a hydration mismatch and a reader sees as the
+date changing after the page loads. When an article was published is a fact about the studio's day,
+not about the reader's.
+
+**Reading time is omitted when null, never shown as "1 min read".** `reading_minutes` is derived by
+a trigger from the article's own blocks; an article with no body has NULL, and a card that filled
+that with "1 min" would describe a body that does not exist. The string itself is a seeded sentence
+with `{{minutes}}` in it, so it can be reworded or reordered without a code change.
+
+**No author name on the card.** `byline` defaults to the organisation, and printing "Rivya Living
+Art" under every title on a page that is entirely Rivya's is noise. The article page renders it.
+
+**`ArticleCardGrid` ships in the same module**, for the reason RC-219's grid does: the column rhythm
+is part of what the card is, and a section free to lay these out itself is free to put four across.
 
 ### 7.17 RC-221 — `ProductGallery` + `Lightbox`
 
@@ -1194,6 +1221,15 @@ document called that group `UI_CHROME`; migration `0080` created it as `UI_LABEL
 the database is the one that is true.) The position string is the ONE string on the listing that
 contains a number, so it is the one row carrying `{{page}}` and `{{pages}}` tokens — the sentence
 lives whole in the row because "Page 2 of 7" cannot be rebuilt from fragments in another language.
+
+
+**Phase 18 removed its two couplings to the catalogue.** It took `basePath` plus a `CatalogQuery`
+and built its own URLs, and it read `UI_LABEL.catalog.pagination` itself — so a change to how the
+catalogue encodes `sort` would have changed the journal's page addresses, and a screen-reader user
+paging through the journal would have heard the region announced as the catalogue's. It now takes
+`hrefFor(page)` and a `labels` object of four already-resolved strings. A caller knows how its own
+URLs are shaped and which rows name its own controls; this component knows only that page 4 has an
+address and that its region has a name.
 
 ### 7.40 RC-317 — `ToastRegion` + `Toast`
 

@@ -574,11 +574,11 @@ export async function restoreRevisionRow(
  * exists. Lowercased for `pages_path_shape`, which refuses an upper-case character — both entity
  * slugs are `citext` and keep whatever case was typed.
  *
- * `kind` IS A UNION OF THE TWO ENTITY KINDS, NOT `PageKind`. `PAGE`, `CATEGORY` and `SYSTEM` pages
- * are not owned by an entity row and have no path trigger behind them, so admitting them here would
+ * `kind` IS A UNION OF THE ENTITY KINDS, NOT `PageKind`. `PAGE`, `CATEGORY` and `SYSTEM` pages are
+ * not owned by an entity row and have no path trigger behind them, so admitting them here would
  * offer a caller a shape this function cannot honour. It widened from the single literal
- * `'COLLECTION'` when Phase 17 gave projects the same pattern; the next entity kind adds a third
- * member and nothing else.
+ * `'COLLECTION'` when Phase 17 gave projects the same pattern, and again for `ARTICLE` in Phase 18;
+ * each new entity kind adds a member and nothing else.
  */
 export async function insertEntityPage(
   client: Client,
@@ -586,7 +586,7 @@ export async function insertEntityPage(
     readonly slug: string
     readonly path: string
     readonly title: string
-    readonly kind: 'COLLECTION' | 'PROJECT'
+    readonly kind: 'COLLECTION' | 'PROJECT' | 'ARTICLE'
   },
 ): Promise<Page> {
   const { data, error } = await client

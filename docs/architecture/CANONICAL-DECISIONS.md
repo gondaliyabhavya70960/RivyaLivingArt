@@ -85,6 +85,7 @@ Seeded categories, in priority order:
 /studio/merchandising/{homepage,store,featured,scheduling}
 /studio/content/{pages,homepage,portfolio,journal,testimonials,faqs,
                  navigation,footer,seo}
+/studio/content/journal/categories          the nine SEED §19 subjects (amendment A16)
 /studio/media/{all,images,videos,models,documents,higgsfield,brand}
 /studio/inquiries/{all,product,commission,consultation,quote}
 /studio/research/{dashboard,sources,scrape,jobs,runs,changes,explorer,
@@ -183,6 +184,144 @@ Brand and editorial copy may be written; anything asserting business capability 
 
 ## Amendments
 
+**2026-09-09 · A20 — Phase 20's migrations are `0190`–`0191`, there is no `CONTACT` content
+group, `inquiry_attachments` has no anon insert, and the anonymous submit path reads nothing back
+(PHASE-16-22 §Phase 20).**
+
+Four corrections to the phase document, each forced by something the repository or the database
+actually does.
+
+- **The numbers.** PHASE-16-22 assigns Phase 20 `0180`–`0182`. All three were spent while Phase 19
+  was being finished: `0180` marks demonstration content, `0181` fixes a publication date a status
+  trigger failed to carry, and `0182`/`0183` bring the rate limiter forward. Renumbering those would
+  reorder the apply sequence relative to migrations that have already run on two databases. Phase 20
+  takes `0190`–`0191`; DATA_MODEL §12 is re-registered.
+
+- **There is no `global_content` group `CONTACT`, and no third migration.** The phase document adds
+  one so that SEED §21's "do not hardcode these values in multiple components" holds. It already
+  holds: Phase 09 put the phone, WhatsApp number, email and location in ONE `contact-details`
+  section payload, which the footer and `/contact` both read through `lib/site/contact-details.ts`.
+  Adding a `global_content` group now would create a SECOND home for the same four facts — two
+  places to change a phone number, one of which somebody forgets — which is the exact failure §21's
+  sentence warns about. The section carries `owner_verification` like any other content row, so the
+  VERIFIED gate the number resolution needs is already there. Verification step 1's
+  `select group, key from global_content where group = 'CONTACT'` therefore returns nothing, and
+  should.
+
+- **`inquiry_attachments` has no `anon` INSERT policy**, though the phase document names one. The
+  reason is mechanical rather than a preference: an attachment references `media_assets`, and `anon`
+  cannot create a row there — Phase 06's policies do not admit it and should not, because that table
+  is the studio's library. An anon insert policy on the join table would describe a path with no way
+  to satisfy its own foreign key. `attach_inquiry_references()` is SECURITY DEFINER instead: it
+  checks the enquiry was created in the last ten minutes and refuses any `public_id` outside
+  `rivya/inquiries/incoming/`, which is the folder `upload-sign` signs. Probed: a `rivya/brand/…`
+  reference is silently not attached, an incoming one is, as `USER_UPLOAD`/`DRAFT`.
+
+- **`INSERT ... RETURNING` DOES NOT WORK FOR `anon` ON A TABLE WITH NO SELECT POLICY**, and finding
+  that out changed the shape of the write path. PostgreSQL applies the SELECT policy to a RETURNING
+  clause, so the insert succeeds, the read of what was written is refused, and the error is
+  `new row violates row-level security policy` — which reads exactly like a rejected write and is
+  not one. That behaviour is correct and must not be worked around by giving `anon` a select policy:
+  "its own row" is a claim the database has no way to check. So the application generates the `id`
+  before inserting, and `inquiry_reference_code(uuid)` — SECURITY DEFINER, ten-minute window,
+  `NEW` only — returns the trigger-allocated code. The anon INSERT policy remains the real guard on
+  the real write path, and is the thing verification step 3 tests.
+
+**The generated-policy machinery gained one concept for this.** `TablePolicy` now carries an
+optional `anonInsert { withCheck, why }`; `gen-role-sql.ts` emits the policy and `check-rls.ts`
+compares the predicate the database re-printed against the one declared, normalising the casts and
+parentheses Postgres adds. It is not a fourth shape: a shape describes how a table is READ, and
+`inquiries` is read by nobody outside the studio. Any anon policy that can SELECT on a shape-C table
+is still an outright failure, declared insert or not.
+
+**2026-09-09 · A19 — the form builder is one collapsed column with numeric ordering and a link to
+the public page, not two panes with a drag tree and a live preview (STUDIO_GUIDE §7.6).**
+
+STUDIO_GUIDE §7.6 describes the builder as "two panes: a drag-ordered step and field tree on the
+left, a live preview of the public configurator on the right". Three of those four things were
+built; the fourth was not, and the reasons are worth writing down rather than discovering again.
+
+- **Ordering is a number per row and one save, not a drag tree** — the same decision A15·d already
+  made for `portfolio_project_media`, for the same reasons, and one more that is specific to this
+  table. A form's positions are renumbered by `normalise_form_step_order()` and the contact step is
+  forced last whatever it is given, so the sequence has to be submitted whole:
+  `cms_set_form_step_order` assigns every position in one statement, while ten dragged rows saved
+  one at a time would be ten transactions racing that trigger, with the last to land deciding.
+- **One collapsed column, not two panes.** A form is a sequence, and the question a builder is
+  answering is whether the brief reads end to end. Two panes at this density would put the tree and
+  the field being edited on different halves of the screen at every width the QA matrix names below
+  1280. `<details>` collapses without state, without JavaScript and without removing the content
+  from the document.
+- **There is NO live preview pane, and this is the real divergence.** Mounting the real
+  `Configurator` inside the Studio would have two side effects on a surface whose whole job is to be
+  side-effect free. It writes a draft to `sessionStorage` under a fixed key, so a builder's
+  exploratory answers would overwrite a visitor's saved brief in the same browser; and its upload
+  control mints credentials against `app/api/inquiries/upload-sign`, the unauthenticated endpoint
+  A18's rate limit exists to protect — a preview would spend a real visitor's allowance. The
+  builder links to `/custom-commissions` instead, and the honest consequence is stated on the
+  screen: a form is previewed there once it is published and the flag is on. A preview that reads
+  drafts belongs with Phase 20's persistence, where the draft key stops being a single global.
+- **`validation` is not editable in the builder.** The column carries an allowlist CHECK — nine Zod
+  keys, and `price_multiplier` is not among them — and a free-text JSON box would be the only way
+  an editor could trip a constraint whose refusal names a constraint rather than a field. The
+  seeded templates set what they need; Phase 20 adds a typed control per key.
+- ***Duplicate from template* IS built**, as `cms_duplicate_customization_form()` (migration
+  `0184`): one transaction, because three PostgREST writes are three transactions and the
+  interruption between the steps and the questions leaves a form that looks finished and asks
+  nothing.
+
+**2026-09-09 · A18 — `rate_limit_buckets` arrives in Phase 19, and Phase 41 inherits it
+(SECURITY.md §8, PHASE-16-22 §Phase 19).**
+
+SECURITY.md assigns the rate-limit table to Phase 41 and `app/api/media/sign` deferred its own
+limit accordingly, with a comment recording the gap. That was defensible: the route demands a staff
+session with `media.write`, so the exposure is a signed-in colleague or a stolen session.
+
+Phase 19 adds `app/api/inquiries/upload-sign`, which is **unauthenticated by design** — a visitor
+filling in a bespoke brief has no account and D1 forbids giving them one. An unauthenticated
+endpoint that mints upload credentials with no limit is an open file host with the studio's
+Cloudinary bill attached, and the phase document names that risk and lists the per-IP limit among
+its mitigations. Deferring it would have meant shipping the risk together with a note that the
+mitigation exists twenty-two phases ahead.
+
+- Migration `0182` creates the table in the shape DATA_MODEL already specifies —
+  `(bucket_key, window_start)` — so Phase 41 adds the staff-endpoint keys and the sweeper rather
+  than creating anything. `0183` is its generated RLS.
+- The number is outside Phase 19's `0170`–`0172` block because that block had already been applied
+  when the need surfaced. Renumbering into it would have reordered the apply sequence relative to
+  migrations that had already run.
+- `consume_rate_limit()` counts and decides in ONE statement. A read-then-write limiter is a race
+  two concurrent requests both win, and a limiter with a race is a limiter with a documented bypass.
+- The bucket key is a salted hash. SECURITY.md forbids a raw visitor IP at rest and
+  `activity_events` says the same in its own comment; the table never sees an address.
+- It fails CLOSED. A database that cannot be reached is precisely when an endpoint is least able to
+  absorb whatever is hitting it, so an unanswerable limiter refuses rather than admits.
+
+**2026-09-09 · A17 — `system.flags.write` stays owner AND admin; STUDIO_GUIDE open question 5 is
+closed in the matrix's favour (PHASE-16-22 §Phase 19).**
+
+Phase 19's document calls `/studio/system/flags` "owner-only" in four places, including an exit
+criterion and an RLS requirement. The Phase 04 matrix has said `['owner', 'admin']` since it
+shipped, DATA_MODEL and STUDIO_GUIDE both already follow the matrix, and STUDIO_GUIDE's open
+question 5 records the disagreement and asks for it to be resolved. It is resolved here, and the
+matrix wins.
+
+The reason is the one amendment A7 gave in the identical situation one phase block earlier: **a
+later phase's prose does not narrow a shipped authorisation.** Phase 08's document said an editor
+must not publish; the matrix said they may; the matrix won and the danger the sentence was reaching
+for turned out to be held by a different permission. The same applies here — an admin already holds
+`system.settings.write` and `system.users.manage`, so a role trusted to invite staff and edit the
+WhatsApp template is not one to be locked out of a switch that turns an unreleased feature on.
+
+- `feature_flags` is READABLE under `studio.access`, which every role holds. STUDIO_GUIDE §2.3
+  considered and rejected hiding the register behind the write permission, and that reasoning is
+  adopted: the list of what is switched on is how anyone in the Studio accounts for a surface that
+  is missing.
+- Every toggle is audited, so an admin's flip carries a name either way.
+- The phase document's verification step 5 — "as `admin`, the toggle is absent and a direct POST is
+  denied" — is superseded. What replaces it: as `editor`, `merchandiser`, `researcher` or `viewer`
+  the toggle is absent and a direct write is refused by RLS and re-checked by the server action.
+
 **2026-09-08 · A11 — the homepage's island budget is five, and the fifth is `SiteErrorCopyProvider`.**
 
 The Phase 11 document names four client islands for `/` and says "a fifth island fails the build":
@@ -206,7 +345,24 @@ boundary, and a gate that excluded it would be measuring something other than wh
   from the shell, which is the layout; a walk from the page alone would report one island and pass
   while the shell grew four more.
 
-**2026-09-09 · A15 — four corrections raised by Phase 17 (PHASE-16-22 §Phase 17).**
+**2026-09-09 · A16 — D4 gains `/studio/content/journal/categories` (PHASE-16-22 §Phase 18).**
+
+Phase 18's Studio section asks for a screen editing the nine SEED §19 journal categories, and D4's
+map did not list it. Adding a Studio route silently is exactly what `tests/unit/studio-nav.test.ts`
+exists to prevent — it holds the navigation manifest, the D4 map and the files on disk to each
+other, and it caught this — so the route is recorded here rather than added to the manifest alone.
+
+It is a LEAF of its own rather than a tab of `/studio/content/journal`, and that is the decision
+worth writing down. The article list edits `journal_articles`; this screen edits
+`journal_categories`, whose `slug` is a public URL. Burying the one screen that can change a public
+address behind the one that cannot would make it harder to find than the routine work — and an
+editor visits it rarely and deliberately, which is what a leaf is for.
+
+It is also the Studio's first non-dynamic sub-page: every other second-level route under a leaf is
+a `[detailId]` or a tab of one. The nav test already models those two shapes and treats anything
+else as undeclared, which is why this needed the map rather than an exemption.
+
+**2026-09-09 · A15 — four corrections raised by Phase 17 (PHASE-16-22 §Phase 17).
 
 *A15·a — the evidence gate is TWO functions, one per table, and the phase document's ordering of
 its branches is wrong.* PHASE-16-22 §Phase 17 supplies pseudo-code putting the `WITHDRAWN` branch

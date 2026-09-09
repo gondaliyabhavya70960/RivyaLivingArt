@@ -5,12 +5,15 @@ import { collectionConceptsSeed } from './collection-concepts'
 import { collectionsSeed } from './collections'
 import { commerceLabelsSeed } from './commerce-labels'
 import { commissionsSeed } from './commissions'
+import { configuratorUiSeed } from './configurator-ui'
+import { inquiryUiSeed } from './inquiry-ui'
 import { contactSeed } from './contact'
 import { faqSeed } from './faq'
 import { globalSeed } from './global'
 import { globalContentSeed } from './global-content'
 import { homepageSeed } from './homepage'
 import { journalSeed } from './journal'
+import { journalUiSeed } from './journal-ui'
 import { largeFormatSeed } from './large-format'
 import { navigationSeed } from './navigation'
 import { pagesSeed } from './pages'
@@ -74,9 +77,14 @@ export const seedModules: readonly SeedModule[] = [
   largeFormatSeed,
   // collections creates the seven CATEGORY pages before the sections that sit on them.
   collectionsSeed,
+  // The configurator's chrome before the templates that will be rendered inside it. Order is not
+  // load-bearing here — neither references the other — but reading order should match the page's.
+  configuratorUiSeed,
+  inquiryUiSeed,
   commissionsSeed,
   processSeed,
   portfolioSeed,
+  journalUiSeed,
   journalSeed,
   contactSeed,
   faqSeed,

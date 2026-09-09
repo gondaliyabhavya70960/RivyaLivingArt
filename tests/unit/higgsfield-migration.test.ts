@@ -287,6 +287,58 @@ describe('the row a manifest asset becomes', () => {
   })
 })
 
+describe('the ledger is a record of uploads, not of runs', () => {
+  const asset = readManifest().assets[0]!
+  const uploaded = {
+    publicId: 'rivya/x/y',
+    bytes: 1234,
+    width: 100,
+    height: 100,
+    durationSeconds: null,
+    format: 'jpg',
+  }
+
+  /**
+   * `--from-results --rebuild-rows` CALLS THIS WITHOUT UPLOADING ANYTHING. It reads an existing
+   * upload-results file and rewrites `media_assets` from it, which is how the 250 assets are
+   * restored after a local `db:reset`. Before this, every such pass restamped all 250 entries with
+   * the current time, so the committed ledger drifted towards saying the library had been uploaded
+   * on whatever afternoon somebody last reset their database — and it is committed precisely so it
+   * can be trusted by somebody holding the repository and no database.
+   */
+  it('keeps the original date when an entry is written again', () => {
+    const first = recordSuccess(EMPTY_LEDGER, asset, uploaded, '2026-09-01T10:00:00.000Z')
+    const second = recordSuccess(first, asset, uploaded, '2026-12-25T23:59:00.000Z')
+
+    expect(second.entries[asset.higgsfield_generation_id]?.uploadedAt).toBe(
+      '2026-09-01T10:00:00.000Z',
+    )
+  })
+
+  /** A genuine re-upload still corrects what the provider reports. Only the date is pinned. */
+  it('still updates the public id and the byte count', () => {
+    const first = recordSuccess(EMPTY_LEDGER, asset, uploaded, '2026-09-01T10:00:00.000Z')
+    const second = recordSuccess(
+      first,
+      asset,
+      { ...uploaded, publicId: 'rivya/x/moved', bytes: 4321 },
+      '2026-12-25T23:59:00.000Z',
+    )
+    const entry = second.entries[asset.higgsfield_generation_id]
+
+    expect(entry?.publicId).toBe('rivya/x/moved')
+    expect(entry?.bytes).toBe(4321)
+    expect(entry?.uploadedAt).toBe('2026-09-01T10:00:00.000Z')
+  })
+
+  it('stamps a first-time entry with the time it was given', () => {
+    const first = recordSuccess(EMPTY_LEDGER, asset, uploaded, '2026-09-01T10:00:00.000Z')
+    expect(first.entries[asset.higgsfield_generation_id]?.uploadedAt).toBe(
+      '2026-09-01T10:00:00.000Z',
+    )
+  })
+})
+
 describe('what travels onto the file itself', () => {
   const asset = ASSETS[0] as ManifestAsset
 

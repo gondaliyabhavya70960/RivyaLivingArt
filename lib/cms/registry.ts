@@ -1,4 +1,6 @@
 import { collectionProductsBlock } from '@/content/blocks/collection-products'
+import { commissionConfiguratorBlock } from '@/content/blocks/commission-configurator'
+import { contactFormBlock } from '@/content/blocks/contact-form'
 import { projectGalleryBlock } from '@/content/blocks/project-gallery'
 import { testimonialStripBlock } from '@/content/blocks/testimonial-strip'
 import { categoryGridBlock } from '@/content/blocks/category-grid'
@@ -60,6 +62,8 @@ const BUILT_BLOCKS = {
   'signature-media': signatureMediaBlock,
   'collection-products': collectionProductsBlock,
   'project-gallery': projectGalleryBlock,
+  'commission-configurator': commissionConfiguratorBlock,
+  'contact-form': contactFormBlock,
   'testimonial-strip': testimonialStripBlock,
   'empty-state': emptyStateBlock,
   divider: dividerBlock,

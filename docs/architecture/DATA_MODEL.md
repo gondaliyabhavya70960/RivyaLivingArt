@@ -1534,14 +1534,53 @@ looks up are the same string by construction rather than by two places agreeing.
 | `journal_article_categories` | `(article_id, category_id)` PK, `position int` | secondary categories |
 
 The ten SEED §20 article ideas are seeded as `status = 'DRAFT'` with `angle_note` holding the
-editorial angle and **no body**. Articles 04 and 08 carry
-`owner_verification = 'OWNER_VERIFICATION_REQUIRED'` because they touch fabrication capability and
-preservation performance.
-`reading_minutes` is computed on save from the block text at 200 words per minute — derived, never
-typed.
-**RLS** — anon `select` where `status = 'PUBLISHED'` **and** `published_at <= now()`.
+editorial angle and **no body**. Articles 02, 04 and 08 carry
+`owner_verification = 'OWNER_VERIFICATION_REQUIRED'` — §20 attaches a caution to each: room-size
+standards claimed without a source, Rivya-specific fabrication capability, and
+preservation-performance promises. (An earlier version of this line named only 04 and 08.)
 
-### `inquiries` — Phase 20 · migrations `0180`–`0181` · RLS-INQUIRY
+`angle_note` IS NOT `excerpt`, and the distinction is load-bearing. The angle is the studio's brief
+for whoever writes the piece and is rendered nowhere; `excerpt` is the line a CARD shows. The Phase
+09 records put the angle in `excerpt`, which would have published ten editorial briefs as summaries
+the moment anything went live; `tests/unit/journal-seed.test.ts` now asserts the separation.
+
+**`reading_minutes` is derived by `set_article_reading_minutes()`, not "computed on save".** The
+trigger overwrites the column on every write from the linked page's VISIBLE sections at 200 words
+per minute, so a value sent by any caller does not survive the statement that sent it. It reads
+`heading`, `body` and `supporting` and not `payload` — payload is block configuration, and counting
+it would inflate the estimate with words no reader reads. NULL when there is nothing to read, rather
+than 1: "1 min read" over an article with no body is a claim about a body that does not exist.
+
+**`enforce_article_has_body()` — `0160`.** PUBLISHED requires a linked page carrying at least one
+visible section. The phase document assigns this guard to `lib/cms/publishing.ts`; it is there as
+well, and this is the copy that cannot be bypassed. It does not judge whether the prose is any good
+or whether a three-word heading counts — that is an editor's call, and a trigger pretending to make
+it would refuse work for reasons nobody could predict.
+
+**The owner-verification gate is `journal_{articles,categories}_verified_before_publish`**, a CHECK
+constraint of the same shape the other thirteen content tables carry, rather than the trigger the
+phase document names. A fourteenth way of writing one rule is invisible to anyone grepping the
+constraint name.
+
+**`sync_article_page_path()` — `0160`** keeps `pages.path` equal to `/journal/<slug>`. The same
+migration retrofits its condition onto `sync_project_page_path`, which fired on INSERT or a slug
+change only — so linking an EXISTING page to a project left the page at whatever path it was created
+with. Nothing was broken, because Phase 17's own action passes the right path at insert; the article
+twin would have inherited the hole.
+
+**Categories seed PUBLISHED; articles seed DRAFT.** The one exception to Phase 09's rule that every
+seeded row is DRAFT. A category is taxonomy — it asserts nothing about what Rivya can make — and
+`/journal/category/materials` cannot render at all if `anon` cannot read the row.
+
+**RLS** — anon `select` where `status = 'PUBLISHED'` **and** `published_at <= now()`. This is the
+only table on the site whose public read is gated by a DATE, and the reason is scheduling: a piece
+is written, approved and set to appear on a given morning, and a row that is PUBLISHED with a future
+date must not be readable before it. The clause is the guard that does not depend on a cron running
+at the right minute. `journal_article_categories` carries a parent test for the same reason
+`portfolio_project_media` does — which categories an unpublished article belongs to is a fact about
+unpublished editorial, enumerable from the join alone.
+
+### `inquiries` — Phase 20 · migrations `0190`–`0191` · RLS-INQUIRY
 
 The conversion record. This is where the funnel ends; there is no next table.
 
@@ -1901,10 +1940,15 @@ local and hosted is isolated to one file that can never be picked up by `supabas
 | 15 | `0130`–`0132` | T `product_specs`; F `is_valid_dimensions()`; A `products.dimensions` shape constraint; `0131` is the generated RLS file for `product_specs`; `0132` adds `products.specifications_omitted` (§8.6). `product_relations_source_idx` is NOT here — `0008` already created it with the definition Phase 15 asks for |
 | 15·14 fix | `0143` | Revokes EXECUTE from `public`, `anon` and `authenticated` on the five functions that `0022`'s rule covers but `0050`, `0122` and `0130` omitted. No schema change |
 | 16 | `0140`–`0142` | `0140` adds `collection_concept_state += OWNER_CONFIRMED, RETIRED` and **nothing else** — `db:migrate` runs each file in one transaction and PostgreSQL refuses to use a value added in it, so the transaction boundary must be a file (measured; Phase 14 needed the same split across `0120`–`0122`). `0141` T `entity_relations`; A `collections`, `pages.kind`; enums `relation_entity`, `relation_kind`; the publish gate and the sync triggers. `0142` is the GENERATED RLS file for `entity_relations` — `collections` keeps its Phase 04 policies in `0011` |
-| 17 | `0150`–`0151` | T `portfolio_projects`, `portfolio_project_media`, `testimonials`; enum `client_consent_state` |
+| 17 | `0150`–`0153` | T `portfolio_projects`, `portfolio_project_media`, `testimonials`; enum `client_consent_state`. `0152` re-grants `testimonials` column-by-column so `anon` cannot read `evidence_note`; `0153` retrofits `sync_project_page_path()` |
 | 18 | `0160`–`0161` | T `journal_categories`, `journal_articles`, `journal_article_categories` |
+| 19 | `0184` | F `cms_duplicate_customization_form()`. STUDIO_GUIDE §7.6 lists *Duplicate from template* among the builder's actions, and the three seeded templates exist to be started from. One transaction rather than three PostgREST writes: an interruption between the steps and the fields would leave a form whose steps ask nothing. The copy is a DRAFT, is never the default, and carries no seed identity |
+| 19 | `0182`–`0183` | T `rate_limit_buckets`, F `consume_rate_limit()`. Phase 19's block closed at `0172`; the public upload endpoint's per-IP limit proved undeferrable, so the table SECURITY.md assigns to Phase 41 arrives here and Phase 41 inherits it (amendment A18). `0183` is its generated RLS |
+| — | `0181` | F `sync_entity_page_status()` now carries `published_at`/`published_by` with the status it propagates. Publishing an article's page had been impossible: the propagated UPDATE left the date null and the row failed `journal_articles_published_dated` |
+| — | `0180` | C `is_demo` on `products`, `pages`, `page_sections`, `journal_articles`, `portfolio_projects`, `testimonials`. Not a phase: owner-authorised placeholder content, marked so `npm run demo:purge` can remove every row of it before launch |
 | 19 | `0170`–`0172` | T `customization_forms`, `customization_form_steps`, `customization_form_fields`, `product_customization_forms`, `feature_flags`; enums `form_kind`, `form_field_type` |
-| 20 | `0180`–`0182` | T `inquiries`, `inquiry_attachments`, `inquiry_events`; enums `inquiry_kind`, `inquiry_status`, `whatsapp_state`, `inquiry_event_kind`; `global_content.group_key += CONTACT` |
+| 20 | `0193` | F `reject_inquiry_event_mutation()` narrowed. The append-only trigger fired on the CASCADE from `inquiries` and refused it, so deleting an enquiry was impossible for anybody including a superuser — found by the Phase 20 RLS suite, which could not clean up its own fixture. An event may now be deleted only when its enquiry is already gone; UPDATE is still refused unconditionally |
+| 20 | `0190`–`0191` | T `inquiries`, `inquiry_attachments`, `inquiry_events`; enums `inquiry_kind`, `inquiry_status`, `whatsapp_state`, `inquiry_event_kind`; S `inquiry_reference_seq`; F `allocate_inquiry_reference()`, `log_inquiry_created()`, `log_inquiry_status_change()`, `reject_inquiry_event_mutation()`, `inquiry_is_fresh()`, `attach_inquiry_references()`, `record_inquiry_handoff()`; `0191` is the generated RLS, the first to carry an anon INSERT policy. **Renumbered from the phase document's `0180`–`0182`, which Phase 19's session had already spent, and there is no third migration: SEED §21's contact facts already have one home in the `contact-details` section and a `global_content` CONTACT group would be a second — amendment A20** |
 | 21 | `0190` | T `model_variant_labels`; A `media_assets.viewer_settings` and the model size/triangle/poster checks |
 | 22 | `0200`–`0201` | T `merchandising_slots`, `merchandising_entries`; enum `merch_fallback` |
 | 23 | `0210`–`0213` | T `search_documents`, `research_search_documents` (empty), `search_queries`, `content_relations`, `relation_suppressions`, `product_attribute_terms`; A `product_relations`; enums `search_visibility`, `relation_origin`, `attribute_taxonomy` |

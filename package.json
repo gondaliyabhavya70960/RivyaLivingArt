@@ -29,6 +29,10 @@
     "db:check-data-layer": "node scripts/db/check-data-layer.mjs",
     "db:check-migrations": "node scripts/db/check-migrations.mjs",
     "seed:content": "tsx scripts/seed/seed-content.ts",
+    "demo:seed": "tsx scripts/demo/seed-demo.ts",
+    "demo:purge": "tsx scripts/demo/purge-demo.ts",
+    "demo:register": "tsx scripts/demo/build-register.ts",
+    "demo:check-register": "npm run demo:register && git diff --exit-code docs/content/DEMO_CONTENT.md",
     "db:check-schema": "node scripts/db/check-schema.mjs",
     "db:check-hosted-layout": "node scripts/db/check-hosted-layout.mjs",
     "auth:gen-policies": "tsx scripts/auth/gen-role-sql.ts",
@@ -55,7 +59,7 @@
     "site:check-islands": "node scripts/site/check-island-budget.mjs",
     "site:check-whatsapp": "node scripts/site/check-whatsapp-usage.mjs",
     "site:rest": "node scripts/db/local-rest.mjs",
-    "check": "npm run typecheck && npm run lint && npm run format:check && npm run media:check-ids && npm run media:assert-no-regen && npm run cms:check-transitions && npm run cms:check-copy && npm run site:check-client-boundary && npm run site:check-islands && npm run site:check-whatsapp"
+    "check": "npm run typecheck && npm run lint && npm run format:check && npm run media:check-ids && npm run media:assert-no-regen && npm run cms:check-transitions && npm run cms:check-copy && npm run demo:check-register && npm run site:check-client-boundary && npm run site:check-islands && npm run site:check-whatsapp"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.6",

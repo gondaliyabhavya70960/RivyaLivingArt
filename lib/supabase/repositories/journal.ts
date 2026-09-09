@@ -132,6 +132,31 @@ export async function listArticlesByCategory(
   return parseRows(ENTITY, journalArticleSchema, data ?? [])
 }
 
+/**
+ * Several articles by id, for the curated half of the related strip.
+ *
+ * RLS DECIDES WHAT COMES BACK, and the caller is written to expect a short list: an edge pointing at
+ * a draft article resolves to nothing for a visitor, so the strip drops it. That is right — the edge
+ * is an editorial intention and the article is not readable yet.
+ *
+ * THE CALLER RE-IMPOSES ITS OWN ORDER. `in (…)` returns rows in whatever order the planner likes,
+ * and the order that matters is the editor's.
+ */
+export async function listArticlesByIds(
+  client: Client,
+  ids: readonly string[],
+): Promise<JournalArticle[]> {
+  if (ids.length === 0) return []
+
+  const { data, error } = await client
+    .from('journal_articles')
+    .select('*')
+    .in('id', [...ids])
+
+  if (error) throw toRepositoryError(ENTITY, 'list-by-ids', ids.join(','), error)
+  return parseRows(ENTITY, journalArticleSchema, data ?? [])
+}
+
 /** One article by slug. */
 export async function getArticleBySlug(client: Client, slug: string): Promise<JournalArticle> {
   const { data, error } = await client

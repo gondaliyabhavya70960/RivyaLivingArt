@@ -9,8 +9,11 @@ import {
   relationEntitySchema,
   relationKindSchema,
   contentColumns,
+  demoColumn,
   editionStateSchema,
   factClassificationSchema,
+  formFieldTypeSchema,
+  formKindSchema,
   jsonSchema,
   mediaKindSchema,
   mediaSourceSchema,
@@ -255,6 +258,7 @@ export const productSchema = z.object({
   ...auditColumns,
   ...contentColumns,
   ...seedColumns,
+  ...demoColumn,
 }) satisfies z.ZodType<Tables<'products'>>
 
 /**
@@ -355,6 +359,7 @@ export const portfolioProjectSchema = z.object({
    * something; there is no honest null.
    */
   fact_classification: factClassificationSchema,
+  ...demoColumn,
 }) satisfies z.ZodType<Tables<'portfolio_projects'>>
 
 export type PortfolioProject = z.infer<typeof portfolioProjectSchema>
@@ -395,6 +400,7 @@ export const testimonialSchema = z.object({
   ...contentColumns,
   /** NOT NULL here too — see the note on `portfolioProjectSchema`. */
   fact_classification: factClassificationSchema,
+  ...demoColumn,
 }) satisfies z.ZodType<Tables<'testimonials'>>
 
 export type Testimonial = z.infer<typeof testimonialSchema>
@@ -465,6 +471,7 @@ export const journalArticleSchema = z.object({
   ...seedColumns,
   /** NOT NULL on this table — see the note on `portfolioProjectSchema`. */
   fact_classification: factClassificationSchema,
+  ...demoColumn,
 }) satisfies z.ZodType<Tables<'journal_articles'>>
 
 export type JournalArticle = z.infer<typeof journalArticleSchema>
@@ -479,3 +486,137 @@ export const journalArticleCategorySchema = z.object({
 }) satisfies z.ZodType<Tables<'journal_article_categories'>>
 
 export type JournalArticleCategory = z.infer<typeof journalArticleCategorySchema>
+
+/**
+ * A customization form definition. Phase 19 `0170`.
+ *
+ * THE QUESTIONS LIVE IN ROWS, WHICH IS THE WHOLE PHASE. FEAT §15 fixes eleven steps and then says
+ * every step is configurable from Studio — a sentence that only means something if the form is
+ * data. `lib/cms/forms.ts` generates the Zod schema a submission is validated against from these
+ * rows, so the validation and the questions cannot drift: there is only one copy of either.
+ *
+ * `submit_label_key` IS A KEY, NOT WORDS. `CTA.send_an_enquiry` resolves in `global_content`, where
+ * the site's action vocabulary already lives. Storing the label here would fork it — change the CTA
+ * library and eleven forms keep the old verb.
+ *
+ * NOTHING ON THIS SCHEMA PRICES ANYTHING, and the absence is enforced rather than observed: there
+ * is no price column to mirror, `validation` is constrained to an allowlist of Zod keys, and
+ * `tests/unit/no-pricing.test.ts` fails on a price-shaped identifier appearing here.
+ */
+export const customizationFormSchema = z.object({
+  id: uuidSchema,
+  slug: z.string(),
+  name: z.string(),
+  kind: formKindSchema,
+  /** What the Studio list says ABOUT the form. */
+  description: z.string().nullable(),
+  /** What the configurator says on its first screen. A different sentence, deliberately. */
+  intro_heading: z.string().nullable(),
+  intro_body: z.string().nullable(),
+  submit_label_key: z.string().nullable(),
+  /** The form used when a product has no binding of its own. At most one per kind. */
+  is_default: z.boolean(),
+  ...auditColumns,
+  ...contentColumns,
+  ...seedColumns,
+  /** NOT NULL on this table — see the note on `portfolioProjectSchema`. */
+  fact_classification: factClassificationSchema,
+}) satisfies z.ZodType<Tables<'customization_forms'>>
+
+export type CustomizationForm = z.infer<typeof customizationFormSchema>
+
+/**
+ * One screen of the configurator. Phase 19 `0170`.
+ *
+ * `position` IS REPORTED, NOT REQUESTED. `normalise_form_step_order()` renumbers a form's steps
+ * densely with `contact` last after every write, so a position sent by a caller is a preference the
+ * database may overrule. That is what makes "contact is always last" true rather than merely
+ * required — see the header of migration 0170 for why a refusing constraint could not survive the
+ * Studio, which writes one row per PostgREST statement.
+ *
+ * NO `status`. A step is switched on or off; it is not drafted, reviewed and published on its own.
+ * Its visibility is its form's.
+ */
+export const customizationFormStepSchema = z.object({
+  id: uuidSchema,
+  form_id: uuidSchema,
+  /** One of the eleven FEAT §15 keys, or an owner's own. `contact` is the only one the database knows by name. */
+  key: z.string(),
+  title: z.string(),
+  description: z.string().nullable(),
+  position: z.number().int(),
+  is_enabled: z.boolean(),
+  is_required: z.boolean(),
+  ...auditColumns,
+  ...seedColumns,
+}) satisfies z.ZodType<Tables<'customization_form_steps'>>
+
+export type CustomizationFormStep = z.infer<typeof customizationFormStepSchema>
+
+/**
+ * One question. Phase 19 `0170`.
+ *
+ * EVERY ROW SUPPORTS THE SEED §33 CONTRACT — enabled, disabled, required, optional, reordered,
+ * renamed — and the seed columns on this table are what make the last of those survive a re-seed.
+ * Renaming "Finish Preference" sets `owner_edited`, the runner stands down for that field alone,
+ * and the rest of the template stays correctable.
+ *
+ * `options` AND `validation` ARE `Json`, NOT PARSED SHAPES, and that is deliberate at this layer.
+ * This schema mirrors the ROW; `lib/cms/forms.ts` is where the two are read into the option list
+ * and the Zod rules a submission is checked against, because that is the only place that knows
+ * which field type it is reading them for.
+ */
+export const customizationFormFieldSchema = z.object({
+  id: uuidSchema,
+  form_id: uuidSchema,
+  step_id: uuidSchema,
+  key: z.string(),
+  label: z.string(),
+  help_text: z.string().nullable(),
+  placeholder: z.string().nullable(),
+  field_type: formFieldTypeSchema,
+  options: jsonSchema,
+  /** Zod keys only, enforced by an allowlist CHECK — the door a price multiplier would come through. */
+  validation: jsonSchema,
+  is_enabled: z.boolean(),
+  is_required: z.boolean(),
+  position: z.number().int(),
+  /** Phase 20 reads this when it builds the WhatsApp summary. */
+  include_in_whatsapp: z.boolean(),
+  ...auditColumns,
+  ...seedColumns,
+}) satisfies z.ZodType<Tables<'customization_form_fields'>>
+
+export type CustomizationFormField = z.infer<typeof customizationFormFieldSchema>
+
+/** Binds a form to a product or a category — exactly one of the two, checked in the database. */
+export const productCustomizationFormSchema = z.object({
+  id: uuidSchema,
+  form_id: uuidSchema,
+  product_id: uuidSchema.nullable(),
+  category_id: uuidSchema.nullable(),
+  position: z.number().int(),
+  created_at: timestampSchema,
+  created_by: uuidSchema.nullable(),
+}) satisfies z.ZodType<Tables<'product_customization_forms'>>
+
+export type ProductCustomizationForm = z.infer<typeof productCustomizationFormSchema>
+
+/**
+ * A feature flag. Phase 19 `0171`.
+ *
+ * A ROW MEANS SOMEBODY TOUCHED THE SWITCH. The register of which flags exist is `lib/flags/flags.ts`
+ * — a flag key is an identifier that call sites spell out, so it belongs in the type system where
+ * deleting one breaks its callers at compile time. `isEnabled()` returns false for a flag with no
+ * row, which makes absence and "off" the same state on a fresh database, a restored backup and a
+ * preview branch alike.
+ */
+export const featureFlagSchema = z.object({
+  key: z.string(),
+  description: z.string().nullable(),
+  is_enabled: z.boolean(),
+  updated_at: timestampSchema,
+  updated_by: uuidSchema.nullable(),
+}) satisfies z.ZodType<Tables<'feature_flags'>>
+
+export type FeatureFlag = z.infer<typeof featureFlagSchema>

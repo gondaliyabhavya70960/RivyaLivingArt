@@ -5,7 +5,7 @@ import { Cluster } from '@/components/primitives/Cluster'
 import { Text } from '@/components/primitives/Text'
 import { DataTable } from '@/components/studio/DataTable'
 import { RelativeTime } from '@/components/studio/RelativeTime'
-import { StatusPill } from '@/components/studio/StatusPill'
+import { DemoPill, StatusPill } from '@/components/studio/StatusPill'
 import { StudioPage, studioMetadata } from '@/components/studio/StudioPage'
 import { t } from '@/components/studio/strings'
 import { roleHasPermission } from '@/lib/auth/permissions'
@@ -162,7 +162,12 @@ export default async function Page({
           {
             id: 'status',
             header: t('studio.catalog.products.colStatus'),
-            cell: (product) => <StatusPill status={product.status} />,
+            cell: (product) => (
+              <span className="flex flex-wrap items-center gap-1">
+                <StatusPill status={product.status} />
+                <DemoPill isDemo={product.is_demo} />
+              </span>
+            ),
           },
           {
             id: 'readiness',

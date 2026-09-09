@@ -26,18 +26,27 @@ import { renderTemplate, type TemplateName, type TokenValues } from './templates
  * than quietly bypassing both.
  */
 
-/** `wa.me` takes digits only: no `+`, no spaces, no punctuation. */
-function phoneDigits(): string {
-  return requiredEnv('NEXT_PUBLIC_WHATSAPP_NUMBER').replace(/\D/gu, '')
+/**
+ * `wa.me` takes digits only: no `+`, no spaces, no punctuation.
+ *
+ * THE CALLER MAY SUPPLY THE NUMBER, and from Phase 20 the conversion path does. `lib/whatsapp/
+ * number.ts` resolves it from `global_content` (PUBLISHED, enabled, VERIFIED) and falls back to the
+ * environment, so the owner can change the studio's number without a deployment. When no number is
+ * passed the environment variable is still the answer, which keeps the three chrome surfaces and
+ * every existing call site working unchanged.
+ */
+function phoneDigits(supplied?: string): string {
+  const raw = supplied ?? requiredEnv('NEXT_PUBLIC_WHATSAPP_NUMBER')
+  return raw.replace(/\D/gu, '')
 }
 
-function urlFor(message: string): string {
-  return `https://wa.me/${phoneDigits()}?text=${encodeURIComponent(message)}`
+function urlFor(message: string, number?: string): string {
+  return `https://wa.me/${phoneDigits(number)}?text=${encodeURIComponent(message)}`
 }
 
 /** The prefix's length, for the shortener's arithmetic — everything but the message. */
-function prefixLength(): number {
-  return `https://wa.me/${phoneDigits()}?text=`.length
+function prefixLength(number?: string): number {
+  return `https://wa.me/${phoneDigits(number)}?text=`.length
 }
 
 export type HandoffInput = {
@@ -51,12 +60,17 @@ export type HandoffInput = {
   readonly body: string
   /** Everything except `inquiry_id`, which this function supplies from `inquiryId`. */
   readonly values: TokenValues
+  /**
+   * The studio's number, already normalised to digits. Optional: without it the environment
+   * variable is used, which is what every pre-Phase-20 call site does.
+   */
+  readonly number?: string
 }
 
 export type HandoffUrl = {
   readonly url: string
   readonly message: string
-} & Omit<ShortenResult, 'values'>
+} & Pick<ShortenResult, 'overLimit' | 'level'>
 
 /**
  * The post-persistence handoff.
@@ -91,16 +105,21 @@ export function buildHandoffUrl(input: HandoffInput): HandoffUrl {
     input.template,
     values,
     (candidate) => renderTemplate(input.template, input.body, candidate),
-    prefixLength(),
+    prefixLength(input.number),
+    undefined,
+    // The BODY, so the ladder's first rung can tell "City:" with an empty token from "City:" an
+    // editor typed. After substitution the two are identical text.
+    input.body,
   )
 
-  const message = renderTemplate(input.template, input.body, result.values)
+  // The shortener already rendered — and, from level 1 up, dropped the lines whose tokens resolved
+  // to nothing. Re-rendering here would put those lines back, which is the bug this comment exists
+  // to stop somebody reintroducing while tidying.
   return {
-    url: urlFor(message),
-    message,
+    url: urlFor(result.message, input.number),
+    message: result.message,
     overLimit: result.overLimit,
-    truncated: result.truncated,
-    dropped: result.dropped,
+    level: result.level,
   }
 }
 

@@ -212,6 +212,28 @@ async function resolveReferences(record: SeedRecord): Promise<Record<string, str
   return resolved
 }
 
+/**
+ * Bind one field value as a query parameter.
+ *
+ * `pg` TURNS A JS ARRAY INTO A POSTGRESQL ARRAY LITERAL, which is right for `text[]` and wrong for
+ * `jsonb`. Phase 19's `customization_form_fields.options` is the first seeded column that takes a
+ * TOP-LEVEL array, and it failed with `invalid input syntax for type json` — pg had sent
+ * `{"{\"value\"...}"}` where the column wanted `[{"value": ...}]`. An object never had this
+ * problem because pg already JSON-stringifies plain objects.
+ *
+ * Serialising here rather than in the module is what keeps the OWNER-EDIT HASH working. The hash is
+ * computed over `record.fields` and compared against the row read back, and `pg` parses a `jsonb`
+ * column into a real JS array — so a module that passed a pre-stringified JSON string would hash a
+ * string against an array and report every such row owner-edited on the next run.
+ *
+ * No seeded table has a real array column: `media_assets.tags`, `media_assets.subject_tags` and the
+ * two on `studio_preferences` are the only four in the schema, and none of them is in
+ * `SeedableTable`. If one ever is, this is the line that has to learn the difference.
+ */
+function toParameter(value: unknown): unknown {
+  return Array.isArray(value) ? JSON.stringify(value) : value
+}
+
 async function applyRecord(record: SeedRecord): Promise<RecordResult> {
   const table = quoteIdent(record.table)
   // Registered BEFORE the refs are resolved, so a record referencing one earlier in the same
@@ -242,7 +264,7 @@ async function applyRecord(record: SeedRecord): Promise<RecordResult> {
       'seed_last_applied_at',
     ]
     const values = [
-      ...fieldNames.map((name) => writable[name]),
+      ...fieldNames.map((name) => toParameter(writable[name])),
       record.seedKey,
       seedVersion,
       hash,
@@ -350,7 +372,7 @@ async function applyRecord(record: SeedRecord): Promise<RecordResult> {
     'seed_last_applied_at',
   ]
   const setValues = [
-    ...fieldNames.map((name) => writable[name]),
+    ...fieldNames.map((name) => toParameter(writable[name])),
     seedVersion,
     hash,
     new Date().toISOString(),

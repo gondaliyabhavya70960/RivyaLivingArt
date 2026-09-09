@@ -848,9 +848,39 @@ verified.
 
 ### 7.6 `/studio/catalog/customization-forms` and `/[formId]`
 
-The bespoke configurator is data, not code (FEAT §15). The builder is two panes: a drag-ordered step
-and field tree on the left, a live preview of the public configurator on the right. Actions:
-*Duplicate from template*, *Bind to product/category*, *Preview as visitor*.
+The bespoke configurator is data, not code (FEAT §15).
+
+**Built in Phase 19, and the shape differs from the sentence this section used to carry — see
+amendment A19.** The list shows every form with its step and question counts, because a row reading
+"0 steps, 0 questions" is a form somebody created and left. The builder is **one collapsed column**,
+not two panes: each step is a `<details>` carrying its own form, its questions and its ordering,
+which keeps eleven steps navigable without splitting the sequence across half a screen.
+
+Ordering is **a number per row and one save** — amendment A15·d, and here for a second reason:
+`normalise_form_step_order()` renumbers positions and forces the contact step last whatever it is
+given, so the sequence must be submitted whole. `cms_set_form_step_order` assigns every position in
+one statement; ten dragged rows saved one at a time would be ten transactions racing that trigger.
+
+Actions: *Create*, ***Duplicate from template*** (`cms_duplicate_customization_form()`, migration
+`0184` — the whole copy in one transaction; the copy is a draft, is never the default for its kind,
+and carries no seed identity), *Bind to product/category*, *Publish / Withdraw*, and a link to
+`/custom-commissions`.
+
+**There is no live preview pane**, and the omission is deliberate. The real `Configurator` writes a
+draft to `sessionStorage` under a fixed key and mints upload credentials against the unauthenticated
+`app/api/inquiries/upload-sign` — so a preview inside the Studio would overwrite a visitor's saved
+brief in the same browser and spend the rate-limit allowance that endpoint's protection depends on.
+The builder links to the public page instead, and says on screen that a form appears there once it
+is published **and** the `commission_configurator` flag is on.
+
+`validation` is **not editable in the builder**. Its allowlist CHECK admits nine Zod keys and no
+pricing, and a free-text JSON box would be the only way to trip a constraint whose refusal names a
+constraint rather than a field. The seeded templates set what they need.
+
+Permissions: read `catalog.read`; build `catalog.write`; publish and withdraw `catalog.publish`;
+delete a step or a question `destructive.execute`. **The contact step has no "shown to visitors"
+checkbox at all** — `customization_form_steps_contact_enabled` refuses a disabled one at the column,
+and a checkbox that always fails is worse than no checkbox because it looks like a setting.
 
 Three templates ship (SEED §33–35): `FURNITURE`, `PRESERVATION`, `THREE_D_RESIN` — the last seeded
 `OWNER_VERIFICATION_REQUIRED` until exact manufacturing options are defined.
@@ -1042,7 +1072,8 @@ Publish At / Unpublish At where scheduling applies.
 | `/studio/content/homepage` | The homepage, pinned into the same editor | Edit the thirteen seeded sections; reorder; hide; swap media | `pages` · `page_sections` |
 | `/studio/content/portfolio` · `/[projectId]` | Delivered projects | List (with a permanent zero-row explanation, not an error state) and a two-field create. The editor opens with **Verification** — the panel naming every unmet gate — then **Identity** (title, subtitle, summary, type, location label, completion date, evidence note), **Client** (its own form: is-client-project, display name, consent state, consent reference), **Story page** (create the `PROJECT` page and its four starting bands, or open the block editor), **Gallery** (`portfolio_project_media`: role, caption, per-item alt override, order) and **Related** (`entity_relations`). Publish and unpublish sit under the verification panel | `portfolio_projects` · `portfolio_project_media` · `entity_relations` · `pages` |
 | `/studio/content/testimonials` | Quotes, with the same consent discipline | Record a quote; per-row edit, consent, verification and publish — four forms, three permissions | `testimonials` |
-| `/studio/content/journal` · `/[articleId]` · `/categories` | Editorial | Identity · Categories · Cover (desktop and mobile, separate) · Body · Related · Publishing with `publish_at` / `unpublish_at` | `journal_articles` · `journal_categories` · `journal_article_categories` |
+| `/studio/content/journal` · `/[articleId]` | Editorial | List (title, category, **body written or empty**, appears-on, status) and a create form taking a title, an address and a category. The editor carries **Publishing** first (verification, then publish with a date), then **Identity** (title, standfirst, card line, angle, category), **Byline**, **Body** (create the `ARTICLE` page, then open the block editor), **Cover** (desktop and mobile, separate slots) and **Related** | `journal_articles` · `journal_categories` · `entity_relations` · `pages` |
+| `/studio/content/journal/categories` | The nine SEED §19 subjects | Rename, reorder, write an intro and a description. The address is shown and cannot change. No create, no delete | `journal_categories` |
 | `/studio/content/faqs` | The ten seeded FAQ entries | Edit question, answer, category, position; add and archive | `faqs` |
 | `/studio/content/navigation` | Header, mobile and category menus | Edit label, href, order, visibility, target, nesting; a resolved-URL preview shows whether an href actually resolves before publishing | `navigation_items` (`menu in ('HEADER','MOBILE','CATEGORY')`) |
 | `/studio/content/footer` | Footer columns and links | As navigation | `navigation_items` (`menu = 'FOOTER'`) |
@@ -1087,6 +1118,25 @@ Publish At / Unpublish At where scheduling applies.
 - **The gallery is ordered by a number an editor types, not by dragging** (amendment A15·d). A
   drag-only reorder is unreachable by keyboard and by screen reader and does not work with
   JavaScript off, which every other Studio form does.
+- **A journal article cannot be published without a body.** `enforce_article_has_body` refuses
+  PUBLISHED unless the article has a linked page carrying at least one visible section, naming the
+  article rather than a constraint. That is why the list has a Body column: an empty body is the
+  blocker an editor will meet, and it is worth seeing before opening the article.
+- **Publishing takes a date, and the date IS the schedule.** The public read is gated on
+  `published_at <= now()`, so publishing with tomorrow's date puts the piece live tomorrow and an
+  empty field publishes it now. There is no separate schedule button because there is no separate
+  act. There is no `unpublish_at` either: `journal_articles` has no such column, and taking an
+  article down is a button somebody presses.
+- **Typing a person into the byline raises an owner-verification requirement**, and clearing it back
+  to the studio's own name lowers the one it raised — never a confirmation somebody gave for another
+  reason. A named human byline asserts who works at Rivya, which is a business fact.
+- **`reading_minutes` is shown and cannot be edited.** A trigger derives it from the article's own
+  blocks at 200 words per minute on every write, so a field would be a box whose value is discarded.
+- **A category's address cannot change; its name can.** The slug is a public URL, and moving one
+  needs a redirect row, which is Phase 39. The Studio shows the address and refuses a change with a
+  sentence rather than hiding the field — a field that accepts a value and ignores it is worse than
+  one that says no. There is no create and no delete: SEED §19 fixes the nine, a tenth needs a seed
+  record so every environment has it, and deleting one orphans every article filed under it.
 - **The ten seeded journal articles have no body.** They carry an `angle_note` and `status = 'DRAFT'`;
   two are `OWNER_VERIFICATION_REQUIRED` because they touch fabrication capability and preservation
   performance. `reading_minutes` is computed on save, never typed.
@@ -1271,6 +1321,27 @@ with a product or a project.
 ---
 
 ## 11. `/studio/inquiries/*` — the conversion inbox
+
+**Built in Phase 20**, with four differences from the sentences below and one from the phase
+document; all five are recorded in amendment A20 or here.
+
+- **The detail route is `/studio/inquiries/all/[inquiryId]`**, not `/studio/inquiries/[inquiryId]`.
+  D4 names five leaves under `/studio/inquiries` and no leaf of that name, and the navigation test's
+  exemption is deliberately "a dynamic segment must sit directly beneath a route the manifest
+  NAMES" — the rule that stops an ungoverned surface being added by putting brackets in its name.
+  `all` is the view that contains every enquiry, so it is the honest parent.
+- **The export control appears on `/all` only.** It exports every enquiry rather than the filtered
+  set, and an *Export as CSV* button on the Commission view that quietly included product enquiries
+  would be a lie about what it did.
+- **Assignment is a user id typed in, not a picker.** `staff_profiles` is readable only under
+  `users.read`, which a merchandiser does not hold — a picker showing nothing to the person most
+  likely to use it is worse than a field they can paste into.
+- **`VIEWED` is a declared event kind that Phase 20 never writes.** Writing a row on every page
+  render is how an audit trail becomes noise, and a GET with a side effect is a GET that cannot be
+  retried. Opening an enquiry records nothing; moving it to `READ` records a `STATUS_CHANGED`.
+- **There is no `global_content` group `CONTACT`.** SEED §21's four contact facts already live in
+  one `contact-details` section, which the footer and `/contact` both read; a second home would be
+  the failure §21's own sentence warns about. See amendment A20.
 
 **What the group is for.** Every enquiry the website produces, in one place, with a pipeline. This is
 where the funnel ends; there is no next table.
@@ -1676,14 +1747,35 @@ environment value. The browser is read-only; the repository is the source.
 
 ### 13.12 `/studio/system/flags`
 
-Key, description, toggle, last changed by. Every flag defaults to `false` in every environment and is
-evaluated server-side. Registered: `three_d_viewer` · `experimental_webgl_hero` · `advanced_similarity` ·
-`higgsfield_tracker` · `google_sheets` · `advanced_analytics` · `research.enabled` ·
-`commission_configurator` · `newsletter` (FEAT §32).
+Key, description, state and a switch. Every flag defaults to `false` in every environment and is
+evaluated **server-side**: a switched-off feature is not rendered, not hidden — its markup is absent
+from the response, so no visitor can reach it by any means. FEAT §32 names nine flags eventually:
+`three_d_viewer` · `experimental_webgl_hero` · `advanced_similarity` · `higgsfield_tracker` ·
+`google_sheets` · `advanced_analytics` · `research.enabled` · `commission_configurator` ·
+`newsletter`.
 
-Readable by any active staff member; writable under `system.flags.write`. **A flag is not a substitute
-for configuration** — it turns a whole capability on or off, and anything with a value belongs in
-settings or content.
+**Built in Phase 19.** The register lives in `lib/flags/flags.ts`, not in the table, so a flag key is
+an identifier that breaks its call sites when removed. `feature_flags` holds only the flags somebody
+has **touched** — absent is off — which makes a fresh database, a restored backup and a preview
+branch behave identically with nothing seeded. Two keys are registered so far, each with a consumer:
+`commission_configurator` (Phase 19 builds the form, Phase 20's exit criteria switch it on) and
+`three_d_viewer` (Phase 21). A key nobody has registered cannot be switched: the action checks the
+submitted key against the register, so a request cannot leave a row naming a feature that does not
+exist.
+
+The screen is **not a table**. Each row carries the paragraph explaining what the flag gates and
+which phase has to ship before it can honestly be switched on — the sentence somebody needs before
+moving a switch, and the one a table cell would truncate.
+
+Readable under `studio.access`, which all six roles hold: the register is how anybody in the Studio
+accounts for a surface that is missing, and a merchandiser who cannot find the configurator should
+see that it is off rather than conclude the Studio is broken (open question 5, closed by amendment
+A17). Writable under `system.flags.write` — owner and administrator. For a role without it the
+switch is **absent, not disabled**: a greyed-out control reads as "ask somebody to enable this", and
+the truth is that the decision is not theirs to make.
+
+**A flag is not a substitute for configuration** — it turns a whole capability on or off, and
+anything with a value belongs in settings or content.
 
 ---
 
@@ -1818,10 +1910,14 @@ Raised, not acted on. Nothing above knowingly diverges from `CANONICAL-DECISIONS
 4. **`merchandising.read` does not exist.** The matrix lists only `merchandising.write`. This guide
    reads every merchandising surface under `catalog.read`. Confirm, or add the row.
 
-5. **System group ownership.** `PHASE-05-09.md` says `System → Users` and `System → Feature Flags` are
-   owner-only and that admin sees the rest; Phase 04's matrix grants `system.users.manage` and
-   `system.flags.write` to admin, and Phase 19 calls `/studio/system/flags` "owner-only". This guide
-   follows the Phase 04 matrix. One of the three needs correcting.
+5. ~~**System group ownership.**~~ **CLOSED by amendment A17 (2026-09-09).** `PHASE-05-09.md` said
+   `System → Users` and `System → Feature Flags` were owner-only and Phase 19 called
+   `/studio/system/flags` "owner-only"; Phase 04's matrix grants `system.users.manage` and
+   `system.flags.write` to admin. **The matrix wins**, for the reason amendment A7 gave in the
+   identical situation: a later phase's prose does not narrow a shipped authorisation. An admin
+   already holds `system.settings.write` and `system.users.manage`, so a role trusted to invite
+   staff and edit the WhatsApp template is not one to lock out of a feature switch. Every toggle is
+   audited either way. This guide's tables were already correct and are unchanged.
 
 6. **Role-management UI ownership.** `PHASE-05-09.md` puts role management in Phase 38; Phase 04 already
    delivers `/studio/system/users`, and Phase 38 explicitly does not rebuild it. Amend Phase 05's

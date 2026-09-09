@@ -472,7 +472,7 @@ adding one would be an amendment.
 
 | Surface | Limit | Key |
 |---|---|---|
-| `submitInquiry` — `app/(site)/_actions/submit-inquiry.ts` (server action) | 5 per 10 min | `ip_hash` + form fingerprint |
+| `submitInquiry` — `app/(site)/_actions/submit-inquiry.ts` (server action) | **5 per hour** (Phase 20; the phase document's figure, not this table's earlier 5-per-10-min) | `ip_hash` alone — a "form fingerprint" would be a second identifier derived from what the visitor typed, which is more data about them, not less |
 | `POST app/api/inquiries/upload-sign` (visitor reference images) | 10 per hour, 3 per min | `ip_hash` |
 | `POST app/api/media/sign` (Studio) | 20 per hour | staff `user_id` |
 | `GET app/api/search/suggest` | 60 per min | `ip_hash` |
@@ -481,12 +481,29 @@ adding one would be an amendment.
 | Studio sign-in | 10 per 15 min | email hash + `ip_hash` |
 | Research fetches | Per-source rate limit, delay and concurrency | source |
 
-The inquiry limiter is called from **inside the server action, before the Zod parse** — there is no
-`/api/inquiries` route handler for `proxy.ts` to match, and none may be added.
+The inquiry limiter is called from **inside the server action** — there is no `/api/inquiries` route
+handler for `proxy.ts` to match, and none may be added.
 
-`ip_hash` is `hmac(ip, server_salt)`; the raw address is never stored. A limited request returns
-**429 with `Retry-After`**, renders the seeded form-error copy (SEED §49), and writes a `SECURITY`
-system log — never an `audit_logs` row, because it has no actor.
+**Built in Phase 20, and the order is one line after the Zod parse rather than before it.** The
+payload is parsed first so a malformed submission is refused as malformed; the limit is then
+consumed BEFORE the spam signals, so a flood that trips the honeypot on every request still costs
+its sender their hourly allowance. Short-circuiting on the cheap check would make the expensive one
+unreachable.
+
+**Spam control is a honeypot and a clock, and no third-party captcha** (§13). A captcha is a tracker
+on a page that collects a phone number. The honeypot is a field hidden from sight AND from assistive
+technology — either alone leaves somebody meeting an input nobody can explain — and a submission
+completed in under three seconds is not a person reading a form. A machine gets the ordinary
+save-error copy rather than a specific one: naming the honeypot tells its author what to change, and
+returning success would tell a real person whose password manager filled a hidden field that their
+enquiry arrived when nothing was written.
+
+`ip_hash` is a salted SHA-256 of the address; the raw address is never stored, and
+`inquiries.ip_hash` carries a CHECK that makes a raw IP written there by mistake fail at the insert
+rather than sit in the column for a year looking like a hash. A limited SERVER ACTION cannot return
+429 — it is not an HTTP handler — so it returns `{ ok: false, code: 'rate_limited' }` and the form
+renders the seeded refusal (`FORM_COPY.error.too_many`, added in Phase 20 because SEED §49 predates
+the limiter). The `/api` surfaces above still answer 429.
 
 **Known limitation, accepted and documented:** a fixed window permits a 2× burst at a window
 boundary. The threat here is abuse volume, not precision; a sliding window would require Redis.

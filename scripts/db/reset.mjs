@@ -16,7 +16,8 @@
  * refusal can be overridden deliberately and visibly, never silently.
  */
 import { execFileSync } from 'node:child_process'
-import { readdirSync, existsSync } from 'node:fs'
+import { createHash } from 'node:crypto'
+import { readdirSync, existsSync, readFileSync } from 'node:fs'
 import { join, basename } from 'node:path'
 
 const MIGRATIONS_DIR = 'supabase/migrations'
@@ -101,12 +102,57 @@ if (migrations.length === 0) {
   process.exit(1)
 }
 
+/*
+ * The ledger table is created by `scripts/db/migrate.mjs`, not by any migration — see the long note
+ * there for why. A reset drops the schema it lives in, so it has to be recreated before the first
+ * migration can record itself, with the same shape and the same RLS-on-no-policy guard.
+ */
+psql(
+  [
+    '--command',
+    `create table if not exists public.schema_migrations (
+       version    text primary key,
+       checksum   text not null,
+       applied_at timestamptz not null default now()
+     );
+     alter table public.schema_migrations enable row level security;`,
+  ],
+  'creating schema_migrations',
+)
+
+/**
+ * THE LEDGER IS WRITTEN HERE TOO, and leaving it out was a real bug rather than a simplification.
+ *
+ * A reset applies every migration by hand and used to record none of them, so `schema_migrations`
+ * came back holding one row. The next `npm run db:migrate` then reported 47 pending against a
+ * database that already had all 47, tried to apply 0002, and died on `type "content_status" already
+ * exists` — a failure whose message points at the enum rather than at the ledger, on a database
+ * that was in fact perfectly correct.
+ *
+ * The row is written by the SAME statement that applies the migration, so a file that fails leaves
+ * no ledger row claiming it succeeded. Its shape matches `scripts/db/migrate.mjs` exactly — version
+ * and a SHA-256 of the file — because the two have to agree about what "applied" means or the drift
+ * check in that script reads a reset database as tampered with.
+ */
 for (const file of migrations) {
   console.log(`▸ ${file}`)
+  const checksum = createHash('sha256')
+    .update(readFileSync(join(MIGRATIONS_DIR, file)))
+    .digest('hex')
   // Each migration runs in its own transaction. `alter type ... add value` cannot run in a
   // transaction that later uses the new value, which is why enum extensions get their own
   // migration file rather than being appended to an existing one.
-  psql(['--single-transaction', '--file', join(MIGRATIONS_DIR, file)], file)
+  psql(
+    [
+      '--single-transaction',
+      '--file',
+      join(MIGRATIONS_DIR, file),
+      '--command',
+      `insert into public.schema_migrations (version, checksum)
+       values ('${file}', '${checksum}') on conflict (version) do nothing;`,
+    ],
+    file,
+  )
 }
 
 console.log(`\n✓ ${migrations.length} migrations applied to an empty database`)

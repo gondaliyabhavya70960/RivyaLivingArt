@@ -8,6 +8,358 @@
 
 ## Current Phase
 
+**Phase 20 — Inquiry + WhatsApp Flow. CODE COMPLETE; THE INBOX IS EMPTY, WHICH IS THE FINISHED
+STATE.** The conversion model is real: an enquiry is validated, written and given a reference code
+BEFORE any WhatsApp message is composed, and a failed write produces no URL because the failure
+member of the returned union has no such property. `commission_configurator` is switched ON, on both
+databases — and nothing appears on `/custom-commissions` yet, because all three commission templates
+are still DRAFT. The flag says the feature is built; publishing a form is the owner's editorial act.
+
+### Phase 20: what is built
+
+**Migrations `0190`, `0191` and `0193`, applied locally AND to hosted.** Three tables, four enums,
+the reference-code sequence, seven functions, the generated RLS — the first policy file in this
+repository to carry an anon INSERT — and a narrowing of the append-only trigger that the test suite
+forced (below).
+
+**`inquiries` IS THE ONLY TABLE A STRANGER MAY WRITE AND THE ONLY WRITE WITH NO SESSION BEHIND IT.**
+D1 forbids customer accounts, so the person filling in the form is nobody: the `with check` is doing
+the work `requirePermission` does everywhere else. Probed under `set role anon`: a forged
+`pipeline_status`, a forged `assigned_to`, a forged `updated_by` and a forged `whatsapp_state` are
+each refused, and the trigger discards a `reference_code` the caller supplied.
+
+**THERE IS NO ANON SELECT ON ANY OF THE THREE.** An enquiry carries a name, a phone number and a
+city; one `using (true)` and the customer list is a GET away with the publishable key that ships in
+every browser. `tests/unit/rls/phase20.test.ts` asserts the zero, including that anon cannot read
+the row it has just written.
+
+**`INSERT ... RETURNING` DOES NOT WORK FOR `anon` ON A TABLE WITH NO SELECT POLICY**, and finding
+that out changed the write path. PostgreSQL applies the SELECT policy to the RETURNING clause, so
+the insert succeeds, the read-back is refused, and the error is `new row violates row-level security
+policy` — which reads exactly like a rejected write and is not one. The application generates the
+id; `inquiry_reference_code()` returns the trigger-allocated code for a ten-minute window. Amendment
+**A20**.
+
+**THE APPEND-ONLY LOG COULD NOT BE DELETED, AND THE RLS SUITE FOUND IT.** `inquiry_events` refused
+UPDATE and DELETE outright, including the CASCADE from `inquiries` — so deleting an enquiry was
+impossible for anybody, superuser included, and the suite could not clean up its own fixture.
+"Nothing deletes an enquiry" is a rule about the STUDIO and is enforced there (no delete policy for
+any session role; SPAM and ARCHIVED are statuses so a judgement can be reversed). Migration `0193`
+narrows the trigger: an event may go only when its enquiry is already gone.
+
+**THE FIVE-LEVEL LADDER REPLACES PHASE 10's TWO STEPS.** "The longest field" is not "the least
+valuable field": a 400-character requirements note is the most valuable thing in the message and was
+the first thing the old version cut. `tests/unit/whatsapp-shorten.test.ts` exercises each rung by
+making the message too long in exactly one way, and asserts the reference code survives all five.
+Level 5 re-renders the same template with the non-essential tokens emptied, so it invents no words.
+
+**`contact-form` IS THE FIRST BLOCK PROMOTED FROM PLANNED TO BUILT.** Declared in Phase 08, seeded
+in Phase 09, built now. Its fields are fixed (they map to columns) and its enquiry types are not
+(the list is editorial).
+
+**THE PRODUCT ENQUIRY NEEDS NO DIALOG.** Phase 15's rail already links to
+`/contact?product=<slug>&type=product`; the form reads the slug after mount and files against it. A
+slug that no longer resolves files a GENERAL enquiry rather than refusing one.
+
+**THE CONFIGURATOR'S SUBMIT IS LIVE AND PHASE 19 NEEDED NO UNPICKING.** Passing the new `submit`
+prop turns it on; without it the island still renders the disabled button, which is what the
+flag-off state and `tests/e2e/configurator.spec.ts` describe.
+
+### Phase 20: what is NOT built, and why
+
+- **No `global_content` group `CONTACT`.** SEED §21's four facts already live in one
+  `contact-details` section that the footer and `/contact` both read; a second home is the failure
+  §21's own sentence warns about. Amendment A20, and verification step 1 therefore returns nothing.
+- **No `inquiry_attachments` anon INSERT**, though the phase document names one: an attachment
+  references `media_assets` and anon cannot create one, so the policy would describe a path that
+  cannot satisfy its own foreign key. `attach_inquiry_references()` is SECURITY DEFINER instead.
+- **No `VIEWED` event.** The enum has it; Phase 20 writes none. A row per page render is how an
+  audit trail becomes noise, and a GET with a side effect is a GET that cannot be retried.
+- **No product enquiry DIALOG.** See above — the rail's existing link is the path.
+- **No CONSULTATION surface.** The kind exists and the view is filled; nothing on the public site
+  produces one yet, and inventing a "book a consultation" button would be inventing a service.
+- **Nothing published on `/custom-commissions`.** The flag is on and all three templates are DRAFT.
+
+### Phase 20: verification, as actually run
+
+- `npm test` with `DATABASE_URL` set — **1432 pass, none skipped** (109 files).
+- `npm run check` — clean. `db:check-migrations` — 55 migrations to `0193`, every number allocated.
+- `db:check-schema` — 41 tables, RLS on all, column tiers correct. `auth:check-rls` — 41 tables,
+  160 policies, every staff-select role list matching the matrix. `auth:check-policies` — the four
+  generated files match. `db:check-types` — the generated types match the database.
+- **The anonymous path probed directly under `set role anon`**: insert accepted, zero rows readable
+  back, four forged columns refused, the supplied reference code discarded, the reference function
+  returning `RIV-2026-…`, a `rivya/brand/` attachment silently not attached and an incoming one
+  attached as `USER_UPLOAD`/`DRAFT`, and the handoff recorded once and refused the second time.
+- Hosted level through `0193` and matching local exactly: 41 tables, 160 policies, 55 migrations.
+- `commission_configurator` switched on in both databases.
+- **Playwright did not run.** The sandbox network policy denies the Supabase host, so `next dev`
+  cannot serve a page. `tests/e2e/inquiry-flow.spec.ts` is written to skip with a stated reason.
+
+### Phase 20: the D9 ten, recorded
+
+1. **Scope implemented** — the three tables and their RLS, the schemas and repository, the five-rung
+   ladder and the number resolution, `submitInquiry`, the contact form, the product path, the
+   configurator's submit, the five-view inbox with its detail screen, the audited export, the flag.
+2. **Relevant tests run** — 1432 pass, none skipped; the e2e suite skips for a stated environmental
+   reason.
+3. **No known scope-breaking error.** The cascade defect the suite found is fixed in `0193`.
+4. **Documentation updated** — CANONICAL-DECISIONS **A20**, DATA_MODEL §12 and the tier table,
+   BUSINESS_RULES BR-B1/BR-B2, SECURITY §8, STUDIO_GUIDE §11.
+5. **CHANGELOG updated.**
+6. **PROJECT_STATE updated**, including the phase table.
+7. **SESSION-STATE updated** — this section.
+8. **Remaining issues documented** — see below.
+9. **Next phase identified** — **Phase 21, 3D Product Experience.** Its flag, `three_d_viewer`, is
+   registered and off.
+10. **Repository recoverable** — every commit pushed to `claude/rivya-living-art-phases-64hq5i` and
+    merged to `main` at the owner's instruction.
+
+### Standing issues, carried
+
+- `verify` is red on the account's Actions runner with a signature that is not a code failure
+  (`runner_id: 0`, ~2s, no steps, red on `main` too) and is **not re-run**, per the free-tier
+  instruction.
+- The Playwright suite cannot execute here: the network policy denies the Supabase host.
+- **Six secrets remain exposed in chat transcripts and unrotated** — the owner's task, after all
+  phase work.
+- **`content/seed/contact.ts` holds the studio's real phone number, WhatsApp number and email, and
+  they are seeded `OWNER_VERIFICATION_REQUIRED`.** From Phase 20 that verification state is
+  load-bearing rather than bookkeeping: `resolveWhatsAppNumber` will not dial a number the owner has
+  not confirmed, so until the `contact-details` section is VERIFIED the handoff falls back to
+  `NEXT_PUBLIC_WHATSAPP_NUMBER` and, if that is unset, records `whatsapp_state = 'UNAVAILABLE'`. The
+  enquiry is saved either way. **Verifying that section is an owner action, not a developer one.**
+- **`content/seed/media-bindings.ts` is still EMPTY**, and its header still says the Higgsfield
+  migration "has never executed". It has: 250 assets are in Cloudinary and in `media_assets` on both
+  databases. So every seeded SECTION on the site is still unbound and renders the SEED §47 fallback.
+  Journal covers are unaffected — they bind through the article record's own `media` map — but the
+  wider binding pass is outstanding work that belongs to nobody's phase yet.
+- **`npm test` wipes the local seeded content.** `tests/unit/rls/phase08.test.ts` blanket-deletes
+  `pages` and `page_sections`, so re-run `seed:content` before checking any seeded-content claim
+  locally. This cost a confused half-hour chasing a "93 inserted" that was simply the suite's doing.
+- **A schema fingerprint must fix `search_path` on both sides.** `pg_get_indexdef` renders an
+  operator class according to the reader's path, so the same index reads as
+  `extensions.gin_trgm_ops` locally and `gin_trgm_ops` on hosted.
+- **Hosted carries 20 of the 30 demonstration products, the six categories, and nothing else of the
+  demonstration content.** The owner authorised the data and chose to publish it live; the run was
+  interrupted part way through the third batch and has not been resumed. **Awaiting the owner:
+  finish it, roll it back, or leave it.** Nothing further should be written to hosted demo content
+  until that is answered. `npm run demo:purge` removes every marked row in one command either way.
+- **The local cluster stops when the container idles**, and the RLS suite then fails with
+  `ECONNREFUSED 127.0.0.1:5433` on three function-grant tests before the rest skip. Restart with
+  `su postgres -c "/usr/lib/postgresql/16/bin/pg_ctl -D /var/lib/postgresql/rivya/data -o '-p 5433' -l /var/lib/postgresql/rivya/pg.log start"`
+  and re-run; it is never a code failure.
+
+### Superseded — Phase 19's state
+
+**Phase 19 — Bespoke / Custom Configurator. CODE COMPLETE; THE FEATURE IS SWITCHED OFF, WHICH IS THE
+FINISHED STATE.** Eleven steps exist, every question read from the database, and the Zod schema is
+generated from the same rows. It ends at a VALIDATED PAYLOAD: the review step's Submit button is
+rendered disabled with no handler, because D1 requires an inquiry to be persisted before any
+WhatsApp redirect and persistence is Phase 20's. `commission_configurator` ships OFF, so
+`/custom-commissions` still renders its six Phase 09 sections and no visitor sees a form that would
+save nothing.
+
+### Phase 19: what is built
+
+**Migrations `0170`–`0172` and `0184`, applied locally AND to hosted**, plus `0180`–`0183` from the
+same session. Four form tables, `feature_flags`, the generated RLS, the demonstration marker, the
+publication-date fix, the rate limiter and its RLS, and the duplicate function.
+
+**A REFUSING CONSTRAINT TRIGGER CANNOT SURVIVE PostgREST.** Studio writes one row per statement per
+transaction, so reordering ten steps means ten transactions, nine of them transiently illegal —
+and `deferrable` does not help, because "deferred" means "at commit" and each statement commits
+alone. `normalise_form_step_order()` REPAIRS instead of refusing, and forces `contact` last;
+`cms_set_form_step_order` assigns every position in ONE statement so the repair pass is a no-op and
+a single reorder writes half the revision history it otherwise would.
+
+**A FORM CANNOT BE PUBLISHED WITHOUT SOMEWHERE TO REPLY TO.** `enforce_form_publishable()` refuses
+PUBLISHED for a form with no enabled `contact` step, a contact step asking for neither a phone
+number nor an email address, or an enabled choice question with no choices. The builder states all
+three above the button and re-computes them in the action so every failure is reported at once.
+
+**NOTHING IN THIS GROUP CAN HOLD A PRICE.** `validation` carries an allowlist CHECK of nine Zod
+keys; the field-type enum has no money in it. `tests/unit/no-pricing.test.ts` greps the migration
+and is mutation-tested — and it originally PASSED both mutations: SQL doubles a quote where
+JavaScript backslashes it, so a JS string-stripper run over SQL inverts pairing from the first
+doubled quote onward; and `\b` creates no boundary before `_`, so `\bprice\b` cannot match
+`price_modifier`. Both are fixed and both mutations now fail.
+
+**ZOD 4 SKIPS AN ABSENT OPTIONAL KEY ENTIRELY.** `z.object` decides a key is optional from whether
+its INPUT type admits `undefined`, so `z.preprocess(fn, schema.optional()).refine(v => v !==
+undefined)` never runs for a MISSING key — a required field whose key was absent passed validation.
+Verified empirically; `unansweredRequired()` now checks presence outside the schema.
+
+**THE FLAG REGISTER LIVES IN THE CODE, NOT THE TABLE.** A flag key is an identifier that breaks its
+call sites when removed; `feature_flags` holds only the flags somebody has TOUCHED, so absent is off
+and a fresh database, a restored backup and a preview branch behave identically with nothing seeded.
+`isEnabled()` is server-side, so an off feature is absent from the response rather than hidden in
+it. `/studio/system/flags` reads for all six roles — amendment **A17**, closing STUDIO_GUIDE open
+question 5 — and writes for owner and admin, with the switch ABSENT rather than disabled for anyone
+else.
+
+**THE RATE LIMITER ARRIVED TWENTY-TWO PHASES EARLY** — amendment **A18**.
+`app/api/inquiries/upload-sign` is unauthenticated by design (D1 forbids a visitor account), and an
+unlimited credential minter is an open file host with Rivya's Cloudinary bill attached.
+`consume_rate_limit()` counts and decides in one statement, the key is a salted hash rather than an
+address, and it fails CLOSED.
+
+**THE BUILDER IS ONE COLLAPSED COLUMN AND THERE IS NO LIVE PREVIEW** — amendment **A19**, which
+records the divergence from STUDIO_GUIDE §7.6's two-pane sentence. Mounting the real configurator in
+the Studio would overwrite a visitor's `sessionStorage` draft in the same browser and spend the
+rate-limit allowance protecting the upload endpoint. *Duplicate from template* IS built, as
+`cms_duplicate_customization_form()` (`0184`): the whole copy in one transaction, because three
+PostgREST writes are three transactions and an interruption between the steps and the questions
+leaves a form that looks finished and asks nothing.
+
+**`npm run db:check-data-layer` WAS RED AND IS NOW GREEN.** Two calls reached PostgREST outside the
+repository layer — `consume_rate_limit` from `lib/security/rate-limit.ts`, and the journal's curated
+strip, which was also casting rows with `as unknown as` and so skipping Zod. Both now go through
+repositories.
+
+### Phase 19: what is NOT built, and why
+
+- **No submission.** The review step's Submit is disabled with no handler. Phase 20 persists the
+  inquiry and hands off to WhatsApp; D1 requires the save first, so a working button here would
+  either drop the brief or redirect with nothing stored.
+- **`commission_configurator` is OFF**, and Phase 20's exit criteria are what switch it on.
+- **No live preview pane in the builder**, and no `validation` editor — both A19, both with the
+  reason recorded rather than left to be rediscovered.
+- **No form deletion.** Steps and questions can be deleted under `destructive.execute`; a form
+  cannot, because nothing yet cleans up the bindings and revisions a deleted form leaves, and an
+  unpublished form costs nothing.
+- **No secondary "preview as visitor" session.** See A19.
+
+### Phase 19: verification, as actually run
+
+- `npm test` with `DATABASE_URL` set — **1388 pass, none skipped** (106 files).
+- `npm run check` — clean.
+- `npm run db:check-migrations` — 52 migrations to `0184`, every number allocated in DATA_MODEL §12.
+- `npm run db:check-schema` — 38 tables, RLS on all, column tiers correct, D10 gate on all 12
+  content tables.
+- `npm run auth:check-rls` — 38 tables, 153 policies, every staff-select role list matching the
+  matrix. `npm run auth:check-policies` — the three generated files match.
+- `npm run db:check-data-layer` — green again; see above.
+- **`cms_duplicate_customization_form()` probed against the local database**: the furniture template
+  copied to 11 steps and 16 questions, each question under the right step, DRAFT, not default, no
+  seed identity — and an `EXCEPT` both ways between source and copy over key, position, type,
+  options, validation, required and WhatsApp flags returned **0 rows in each direction**. The copy
+  was then deleted.
+- Hosted verified directly: the function exists as SECURITY INVOKER with `anon` revoked and
+  `authenticated` retained, and its ledger row carries the file's checksum.
+- **Playwright did not run.** The sandbox network policy denies the Supabase host, so `next dev`
+  cannot serve a page. `tests/e2e/configurator.spec.ts` is written to skip with a stated reason
+  rather than to be deleted.
+
+### Phase 19: the D9 ten, recorded
+
+1. **Scope implemented** — the four tables and `feature_flags`, the RLS, the seed resolution, the
+   configurator island and its block, the public upload endpoint and its limiter, both Studio
+   surfaces, the duplicate function, the flags module, the tests.
+2. **Relevant tests run** — 1388 pass, none skipped; the e2e suite skips for a stated environmental
+   reason.
+3. **No known scope-breaking error.** The data-layer gate that was red is fixed.
+4. **Documentation updated** — CANONICAL-DECISIONS A17/A18/**A19**, DATA_MODEL §12 (`0180`–`0184`)
+   and the column tiers, BUSINESS_RULES BR-F2b/BR-F4b, STUDIO_GUIDE §7.6 and §13.12 (open question 5
+   closed), DEMO_CONTENT.md.
+5. **CHANGELOG updated.**
+6. **PROJECT_STATE updated.**
+7. **SESSION-STATE updated** — this section.
+8. **Remaining issues documented** — see below.
+9. **Next phase identified** — **Phase 20, Inquiry & WhatsApp Handoff.** It persists the brief this
+   phase validates, and its exit criteria are what switch `commission_configurator` on.
+10. **Repository recoverable** — every commit pushed to `claude/rivya-living-art-phases-64hq5i`.
+
+### Superseded — Phase 18's state
+
+**Phase 18 — Journal. CODE COMPLETE; NOTHING IS PUBLISHED, WHICH IS THE FINISHED STATE.** Nine
+categories and ten article IDEAS exist — a title and an angle each, no body. SEED §20 says in
+capitals: seed as DRAFT, do not publish automatically. `/journal` renders SEED §29's sentence; every
+article URL 404s; the nine category pages render with empty lists.
+
+### Phase 18: what is built
+
+**Migrations `0160`/`0161`, applied locally AND to hosted.** Three tables, `pages.kind += ARTICLE`,
+two triggers that turn phase-document prose into schema rules, and the generated RLS file.
+
+**`reading_minutes` IS DERIVED BY A TRIGGER, WHICH IS WHAT "NEVER TYPED" HAS TO MEAN.** The phase
+says the value is computed at 200 words per minute; leaving that to the application makes it derived
+only on the paths that remembered. `set_article_reading_minutes()` overwrites the column from the
+linked page's VISIBLE sections on every write — probed with 999, stored NULL. It reads `heading`,
+`body` and `supporting` and not `payload`, which is block configuration. NULL rather than 1 when
+there is nothing to read.
+
+**AN ARTICLE CANNOT BE PUBLISHED WITHOUT A BODY.** The risk table assigns that to
+`lib/cms/publishing.ts`; `enforce_article_has_body()` is the copy that cannot be bypassed. No page,
+an empty page and a page whose only section is hidden are all refused, each naming the article.
+
+**THE ONLY DATE-GATED PUBLIC READ ON THE SITE.** `published_at <= now()` alongside the status, which
+is both the scheduling mechanism and the guard that does not depend on a cron running on time.
+
+**THE SEED'S FIELD NAMES WERE WRONG, AND THE MISTAKE WAS A PUBLISHING ONE.** Phase 09's records put
+each article's ANGLE — the studio's internal brief — into `excerpt`, which is what a card renders.
+Ten briefs would have appeared on `/journal` as summaries the moment anything went live. The angle
+now lives in `angle_note`; `excerpt` is null.
+
+**`lib/cms/related.ts` HOLDS FEAT §11's ONE AUTOMATIC RULE**, with the reason a rule exists at all
+written beside it. Curated first; below three, fill from the same primary category, newest first,
+excluding this article and anything a curated edge already points at. Mutation-checked: removing the
+dedupe fails the test.
+
+**THREE GUARDS FIRED AND ALL THREE WERE RIGHT.** `site-routes` caught two undeclared route families.
+`seed-modules` caught a new seed-key namespace and changed the design — `journal-ui.ts` follows
+`global:UI_LABEL.*` like its two most recent siblings. `studio-nav` caught
+`/studio/content/journal/categories`, which D4 did not list; recorded as **amendment A16**.
+
+**`Pagination` (RC-234) LOST ITS TWO COUPLINGS TO THE CATALOGUE** — a `CatalogQuery` and
+`UI_LABEL.catalog.*` — and now takes `hrefFor` and four resolved labels.
+
+### Phase 18: what is NOT built, and why
+
+- **No article bodies, and no published article.** SEED §20 forbids both. The ten ideas are briefs.
+- **No RSS feed.** The phase lists `/journal/rss.xml` and holds it behind an amendment nobody has
+  granted; its own verification says to assert the 404 and the absent feed link instead, which
+  `tests/e2e/journal.spec.ts` does.
+- **No `unpublish_at`.** The phase's Studio section names one and its own Database section gives
+  `journal_articles` no such column. Scheduling forward works; taking an article down is a button.
+- **No secondary categories in the Studio.** `journal_article_categories` exists with its RLS; the
+  editor sets the primary one, which is what the related rule and the category pages read. A second
+  picker for a relationship nothing yet renders would be a control with no effect.
+- **The related strip resolves article edges only.** An editor can already link an article to a
+  product, a project or a collection, and both of those tables hold zero published rows — a strip
+  that resolved them would render an empty heading on every article.
+
+### Phase 18: verification, as actually run
+
+- `npm test` — 1339 pass, none skipped.
+- `npm run check` — clean.
+- `seed:content` — nine categories, ten DRAFT articles, zero published, all covered and filed; a
+  second run reports zero changes; only Phase 19's three commission forms remain deferred.
+- The four journal behaviours probed directly on hosted, inside a block that rolled itself back:
+  a typed `reading_minutes` discarded, the no-body publish refused by name, the page path synced on
+  link, and 400 words → 2 minutes.
+- Hosted level through `0161`, fingerprint-matched against local over the journal objects — 178
+  lines, `f55c1a1e3258265162046c0288386bb0`.
+- **Playwright did not run.** The sandbox network policy denies the Supabase host.
+
+### Phase 18: the D9 ten, recorded
+
+1. **Scope implemented** — migrations, both triggers, schemas, repositories, the related rule, the
+   seed resolution, three public routes, RC-220, the Studio editor and categories screen, tests.
+2. **Relevant tests run** — 1339 pass, none skipped; the e2e suite skips for a stated environmental
+   reason.
+3. **No known scope-breaking error.**
+4. **Documentation updated** — DATA_MODEL §Journal, CONTENT_GUIDE, STUDIO_GUIDE §11 and its
+   guardrails, COMPONENT_REGISTRY RC-220 and RC-234, CANONICAL-DECISIONS A16 and the D4 map.
+5. **CHANGELOG updated.**
+6. **PROJECT_STATE updated**, including the phase table.
+7. **SESSION-STATE updated** — this section.
+8. **Remaining issues documented** — see below.
+9. **Next phase identified** — **Phase 19, Bespoke / Custom Configurator.**
+10. **Repository recoverable** — every commit pushed to `claude/rivya-living-art-phases-64hq5i`.
+
+### Superseded — Phase 17's state
+
 **Phase 17 — Portfolio / Projects. CODE COMPLETE; THE ARCHIVE IS EMPTY, WHICH IS THE FINISHED
 STATE.** `portfolio_projects`, `portfolio_project_media` and `testimonials` exist and hold zero
 rows. `/portfolio` renders SEED §28's empty state; `/portfolio/[slug]` answers 404 for every slug.

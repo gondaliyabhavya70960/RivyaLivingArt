@@ -4,6 +4,8 @@ import { CategoryGridSection } from './CategoryGridSection'
 import { CategoryIntroSection } from './CategoryIntroSection'
 import { CategoryListSection } from './CategoryListSection'
 import { CollectionProductsSection } from './CollectionProductsSection'
+import { CommissionConfiguratorSection } from './CommissionConfiguratorSection'
+import { ContactFormSection } from './ContactFormSection'
 import { ProjectGallerySection } from './ProjectGallerySection'
 import { TestimonialStripSection } from './TestimonialStripSection'
 import { CustomizationNoteSection } from './CustomizationNoteSection'
@@ -62,11 +64,12 @@ export const SECTION_RENDERERS = {
   'collection-products': CollectionProductsSection,
   'project-gallery': ProjectGallerySection,
   'testimonial-strip': TestimonialStripSection,
+  'commission-configurator': CommissionConfiguratorSection,
   checklist: null,
   'numbered-steps': null,
   'faq-list': null,
   'contact-details': null,
-  'contact-form': null,
+  'contact-form': ContactFormSection,
   'empty-state': EmptyStateSection,
   'rich-text': null,
   'media-split': null,

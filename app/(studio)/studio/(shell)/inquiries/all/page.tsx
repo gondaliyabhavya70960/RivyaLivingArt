@@ -1,20 +1,64 @@
+import { HelpText } from '@/components/primitives/HelpText'
+import { Stack } from '@/components/primitives/Stack'
+import { Text } from '@/components/primitives/Text'
+import { InquiryInbox } from '@/components/studio/inquiries/InquiryInbox'
 import { StudioPage, studioMetadata } from '@/components/studio/StudioPage'
+import { t } from '@/components/studio/strings'
+import { roleHasPermission } from '@/lib/auth/permissions'
 import { requirePermission } from '@/lib/auth/require'
+import { listProductsForStudio } from '@/lib/supabase/repositories/catalog-admin'
+import { listInquiriesForStudio } from '@/lib/supabase/repositories/inquiries'
+import { createClient } from '@/lib/supabase/server'
 
 /**
  * /studio/inquiries/all
  *
- * A route stub. It exists so navigation never dead-ends — the sidebar shows this leaf to any role
- * holding `inquiries.read`, and a link that 404s is worse than a page saying it is not built.
+ * Every enquiry, whatever produced it — including the GENERAL ones the contact form sends, which have no view of their own.
  *
- * THE PERMISSION CHECK IS REAL, not a placeholder. It runs before anything renders, writes a DENIED
- * audit row when it refuses, and is the same call the finished surface will make. Phase 20
- * replaces the body below; it does not add the gate, because a gate added later is a gate that was
- * missing in between.
+ * ONE SHARED TABLE, FIVE ROUTES. D4 names the five and they differ by a filter; the component is
+ * `components/studio/inquiries/InquiryInbox.tsx`.
  */
 export const metadata = studioMetadata('/studio/inquiries/all')
 
 export default async function Page() {
-  await requirePermission('inquiries.read')
-  return <StudioPage path="/studio/inquiries/all" />
+  const session = await requirePermission('inquiries.read')
+  const client = await createClient()
+  const [rows, products] = await Promise.all([
+    listInquiriesForStudio(client),
+    listProductsForStudio(client, {}),
+  ])
+
+  const titles = new Map(
+    products.flatMap((product) => (product.title === null ? [] : [[product.id, product.title]])),
+  )
+
+  return (
+    <StudioPage path="/studio/inquiries/all">
+      <Stack gap={8}>
+        <InquiryInbox rows={rows} productTitles={titles} />
+
+        {/*
+          THE EXPORT IS ON THIS VIEW AND NOT THE OTHER FOUR, because it exports EVERY enquiry rather
+          than the filtered set — a "Export as CSV" button on the Commission view that quietly
+          included the product enquiries would be a lie about what it did. It is absent for a role
+          without `inquiries.export`, not disabled: the editor holds `inquiries.read` and is not
+          being asked to request permission, they are being told this is not their decision.
+        */}
+        {roleHasPermission(session.role, 'inquiries.export') ? (
+          <Stack gap={2}>
+            <HelpText>{t('studio.inquiries.exportNote')}</HelpText>
+            <a
+              href="/api/studio/inquiries/export"
+              className="underline underline-offset-4"
+              data-inquiries-export
+            >
+              <Text size="sm" as="span">
+                {t('studio.inquiries.export')}
+              </Text>
+            </a>
+          </Stack>
+        ) : null}
+      </Stack>
+    </StudioPage>
+  )
 }

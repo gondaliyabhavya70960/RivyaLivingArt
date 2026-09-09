@@ -12,6 +12,8 @@ import { Heading } from '@/components/primitives/Heading'
 import { Stack } from '@/components/primitives/Stack'
 import { Text } from '@/components/primitives/Text'
 import { currencyExponent, presentPrice, productBadges } from '@/lib/catalog/price'
+import { isEnabled } from '@/lib/flags'
+import { forProduct } from '@/lib/supabase/repositories/customization-forms'
 import { getSiteChrome } from '@/lib/site/chrome'
 import { siteString } from '@/lib/cms/strings'
 import { optionalEnv } from '@/lib/env'
@@ -114,13 +116,31 @@ export default async function Page({ params }: Props): Promise<React.ReactElemen
   const chrome = await getSiteChrome()
   const cloudName = optionalEnv('NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME') ?? ''
 
-  const [mediaEdges, materialIds, specs, relations, categories] = await Promise.all([
-    listProductMediaEdges(client, product.id),
-    listProductMaterialIdsPublic(client, product.id),
-    listProductSpecs(client, product.id),
-    listRelationsForProduct(client, product.id),
-    listCategories(client),
-  ])
+  const [mediaEdges, materialIds, specs, relations, categories, configuratorOn] = await Promise.all(
+    [
+      listProductMediaEdges(client, product.id),
+      listProductMaterialIdsPublic(client, product.id),
+      listProductSpecs(client, product.id),
+      listRelationsForProduct(client, product.id),
+      listCategories(client),
+      isEnabled('commission_configurator'),
+    ],
+  )
+
+  /*
+   * "CUSTOMIZE THIS PIECE" NEEDS THREE THINGS TRUE, NOT ONE.
+   *
+   * `products.is_customizable` says the piece CAN be commissioned differently — an editorial fact
+   * about the object. It is not enough on its own: the link goes to `/custom-commissions?product=…`,
+   * where the configurator opens the form bound to this piece, so an action offered with no bound
+   * form or with the feature switched off is an invitation to a page that will not answer.
+   *
+   * The bound form is only looked up when the flag is on. A switched-off feature should cost
+   * nothing, and a query for a form nothing will render is exactly that.
+   */
+  const boundForm = configuratorOn
+    ? await forProduct(client, product.id, product.category_id)
+    : null
 
   const category = categories.find((row) => row.id === product.category_id) ?? null
 
@@ -245,7 +265,7 @@ export default async function Page({ params }: Props): Promise<React.ReactElemen
 
         <ProductInquiryRail
           slug={product.slug}
-          isCustomizable={product.is_customizable}
+          isCustomizable={product.is_customizable && boundForm !== null}
           strings={chrome.strings}
         />
 

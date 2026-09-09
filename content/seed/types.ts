@@ -29,6 +29,7 @@ export type SeedableTable =
   | 'journal_categories' // Phase 18, migration 0160
   | 'journal_articles' // Phase 18, migration 0160
   | 'customization_forms' // Phase 19, migration 0170
+  | 'customization_form_steps' // Phase 19, migration 0170
   | 'customization_form_fields' // Phase 19, migration 0170
 
 /**
@@ -53,6 +54,7 @@ export const SEEDABLE_TABLES: readonly SeedableTable[] = [
   'journal_categories',
   'journal_articles',
   'customization_forms',
+  'customization_form_steps',
   'customization_form_fields',
 ]
 

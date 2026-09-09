@@ -6,6 +6,221 @@ Every phase adds an entry; see `docs/architecture/CANONICAL-DECISIONS.md` D9 for
 
 ## [Unreleased]
 
+### Phase 20 — Inquiry + WhatsApp Flow
+
+The conversion model becomes real, and becomes safe. Every enquiry — from the contact form, from a
+product page, from the Phase 19 configurator — is validated, written to the database and given a
+reference code **before** anything else happens. Only then is a WhatsApp message composed from the
+seeded template and the visitor offered the handoff. If the write fails the visitor stays where they
+are, and there is no URL to navigate to because the failure branch of the returned union has no such
+property.
+
+**`inquiries` is the only table on this site a stranger may write, and the only write with no
+session behind it.** D1 forbids customer accounts, so the person filling in the form is nobody: the
+`with check` on the anon INSERT policy is doing the work `requirePermission` does everywhere else.
+It pins the enquiry to the start of the pipeline, unassigned, with no claimed editor and no claimed
+handoff — each of the four probed with a payload that tries to set it.
+
+**There is no anon SELECT on any of the three tables, and that absence is the most load-bearing line
+in the phase.** An enquiry carries a name, a phone number, a city and whatever a visitor chose to
+say about their home; one `using (true)` and the customer list is a GET away through PostgREST with
+the publishable key that ships in every browser.
+
+**Which turned up the finding that shaped the whole write path.** PostgreSQL applies the SELECT
+policy to an INSERT's RETURNING clause, so on this table the insert succeeds and the read-back is
+refused — with `new row violates row-level security policy`, a message that reads exactly like a
+rejected write and is not one. The right answer is not to give `anon` a select policy: "its own row"
+is a claim the database cannot check. The application generates the id, and
+`inquiry_reference_code()` returns the trigger-allocated code for an enquiry created in the last ten
+minutes (amendment A20).
+
+**The reference code is allocated by a trigger that OVERWRITES what arrived.** A code a caller could
+choose is a code a caller could collide with, enumerate, or use to claim somebody else's enquiry in
+a WhatsApp message.
+
+**Phase 10's two-step shortener is replaced by the five-level ladder the phase document
+specifies.** "The longest field" is not "the least valuable field": a 400-character requirements
+note is the most valuable thing in the message and was the first thing the old version cut. Empty
+label lines go first, then the summary is capped at eight with a count, then the notes are trimmed
+on a word boundary, then the reference URLs become a count, and only then does the message fall back
+to the essentials — which are re-rendered from the SAME template with the other tokens emptied, so
+level five invents no words. The reference code survives every rung.
+
+**The append-only log could not be deleted, and the RLS suite is what found it.**
+`inquiry_events` refused UPDATE and DELETE outright — including the CASCADE from `inquiries`, which
+made deleting an enquiry impossible for anybody, superuser included. "Nothing deletes an enquiry" is
+a rule about the Studio and is enforced there; it was never meant to make an erasure request
+impossible. Migration `0193` narrows the trigger: an event may go only when its enquiry is already
+gone.
+
+**`contact-form` is the first block in this repository to be PROMOTED from planned to built.** Its
+fields are fixed and its enquiry types are not: the six inputs map to columns `inquiries` actually
+has, so an editor cannot add a seventh — a form whose fields are configurable is the configurator,
+which has its own tables.
+
+**The product enquiry needs no dialog.** Phase 15's rail already links to
+`/contact?product=<slug>&type=product`; the form reads the slug after mount, like the configurator's
+`?step=` and for the same reason, and files the enquiry against that product. A slug that no longer
+resolves files a GENERAL enquiry rather than refusing one — a piece withdrawn between the page
+opening and Send is not a reason to lose a brief.
+
+**The configurator's Submit is live, and Phase 19 needed no unpicking.** Passing the new `submit`
+prop is what turns it on; without it the island still renders the disabled button. The contact
+answers are read out of the brief BY FIELD TYPE rather than by key, because `contact_name` is what
+the seeded templates call it and a form the owner built may call it anything.
+
+**The export omits `ip_hash` and `user_agent`, and the omission is at the query.** Export needs
+`inquiries.export`, not `inquiries.read`: reading an enquiry leaves it where it is, exporting puts
+every customer's phone number in a file that leaves the building the moment somebody emails it.
+Every export is audited, refusals included.
+
+**`commission_configurator` is switched on** on both databases, which is this phase's exit
+criterion. The three commission templates remain DRAFT, so nothing appears on `/custom-commissions`
+until the owner publishes one — the flag says the feature is built, and publication stays editorial.
+
+### Phase 19 — Bespoke / Custom Configurator
+
+The studio can now be asked for something it has not made. Eleven steps, one screen each, every
+question read from `customization_form_steps` and `customization_form_fields` — FEAT §15's "every
+step configurable from Studio" taken literally: the component asks no question of its own, and the
+validation is generated from the same rows the questions come from, so a field an owner adds is
+validated without anyone writing a schema for it.
+
+**Nothing in this group can hold a price, and the door is closed at the schema.**
+`customization_form_fields.validation` carries an allowlist CHECK — nine Zod keys — so
+`price_multiplier`, `surcharge` and `cost_per_mm` are rejected by the same expression that keeps the
+object Zod-shaped. There is no money in the field-type enum either. `tests/unit/no-pricing.test.ts`
+greps the migration for a pricing column and is itself mutation-tested, because a guard that passes
+against a deliberately broken copy of the schema is not a guard.
+
+**The whole configurator ships behind a flag that is OFF, and that is the phase working as
+written.** Phase 19 ends at a validated payload; D1 requires an inquiry to be persisted before any
+WhatsApp redirect, and persistence is Phase 20. So the Submit button on the review step is rendered
+disabled with no handler at all — a working one would either drop the brief or hand a visitor to
+WhatsApp with nothing saved — and `/custom-commissions` keeps its Phase 09 copy until Phase 20's
+exit criteria switch `commission_configurator` on.
+
+**A refusing trigger cannot survive PostgREST, so the ordering trigger repairs instead.** Studio
+writes one row per statement per transaction: reordering ten steps means ten transactions, nine of
+them transiently illegal, and `deferrable` does not help because "deferred" means "at commit" and
+each statement commits alone. `normalise_form_step_order()` renumbers rather than refusing, and
+forces the contact step last; `cms_set_form_step_order` assigns every position in ONE statement so
+the repair pass has nothing to correct and a single reorder writes half the revision history.
+
+**A form cannot be published without somewhere to reply to.** `enforce_form_publishable()` refuses
+PUBLISHED for a form with no enabled `contact` step, a contact step asking for neither a phone number
+nor an email address, or an enabled choice question with no choices. The builder states all three
+above the publish button and re-computes them in the action, so every failure is reported at once —
+the trigger stays the rule, and if the two ever disagree the trigger wins.
+
+**`app/api/inquiries/upload-sign` is unauthenticated by design, so its rate limit could not wait for
+Phase 41.** A visitor filling in a brief has no account and D1 forbids giving them one; an
+unauthenticated endpoint minting upload credentials with no ceiling is an open file host with
+Rivya's Cloudinary bill attached. Migration `0182` brings `rate_limit_buckets` forward in the shape
+DATA_MODEL already specified, `consume_rate_limit()` counts and decides in one statement so two
+concurrent callers cannot both be the last one under the limit, the bucket key is a salted hash
+rather than an address, and it fails CLOSED (amendment A18).
+
+**Feature flags are evaluated server-side and the register lives in the code.** A flag evaluated in
+the browser is a flag the browser can be told to ignore; here an off feature is absent from the
+response rather than hidden in it. `lib/flags/flags.ts` holds the register so a flag key is an
+identifier that breaks its call sites when removed, and `feature_flags` holds only the flags
+somebody has touched — absent is off, so a fresh database, a restored backup and a preview branch
+behave identically with nothing seeded. `/studio/system/flags` is readable by all six roles
+deliberately: the register is how anybody accounts for a surface that is missing (amendment A17).
+
+**The builder is one collapsed column, not two panes, and there is no live preview** — amendment
+A19. Mounting the real configurator inside the Studio would overwrite a visitor's `sessionStorage`
+draft in the same browser and spend the rate-limit allowance protecting the upload endpoint. It
+links to `/custom-commissions` instead and says so on screen. *Duplicate from template* IS built, as
+`cms_duplicate_customization_form()` (`0184`): the whole copy in one transaction, because three
+PostgREST writes are three transactions and the interruption between the steps and the questions
+leaves a form that looks finished and asks nothing.
+
+**Two Zod findings worth keeping.** `z.object` decides a key is optional from whether its INPUT type
+admits `undefined`, and for an optional key that is MISSING it skips validation entirely — so
+`z.preprocess(fn, schema.optional()).refine(v => v !== undefined)` never runs, and a required field
+whose key was absent passed. `unansweredRequired()` now checks presence outside the schema. And
+`\b` creates no boundary before `_`, so the pricing grep could not match `price_modifier`; both
+mutations now fail the test that missed them.
+
+**Three commission templates seeded, none published** — `FURNITURE`, `PRESERVATION` and
+`THREE_D_RESIN`, the last two `OWNER_VERIFICATION_REQUIRED` because their manufacturing and
+preservation options are not confirmed. 33 steps and 40 questions between them, and exactly one
+SELECT: `project_type`. Every other choice is left open, because a list of options is a claim about
+what the studio makes.
+
+### Phase 18 — Journal
+
+Rivya gains an editorial surface. Nine SEED §19 categories and ten SEED §20 article IDEAS — a title
+and an angle each — and **not one line of article prose written by this repository**. §20 says it in
+capitals: seed as DRAFT, do not publish automatically. Several of those titles ask questions only
+Rivya can answer.
+
+**The seed's field names were wrong, and the mistake was a publishing one.** The nineteen records
+were authored in Phase 09 against a table Phase 18 had not yet created, and they put each article's
+ANGLE — the studio's internal brief for whoever writes the piece — into `excerpt`. `excerpt` is what
+a card renders. Those ten briefs would have appeared on `/journal` as summaries the moment anything
+was published. The angle now lives in `angle_note`, which nothing renders, and `excerpt` is null:
+a summary of an unwritten article is a summary of nothing.
+
+**`reading_minutes` is derived by a trigger, which is what "never typed" has to mean.** The phase
+document says the value is computed at 200 words per minute; leaving that to the application makes
+it derived only on the paths that remembered. `set_article_reading_minutes()` overwrites the column
+on every write from the linked page's visible sections — probed: 999 written, NULL stored. NULL
+rather than 1 when there is nothing to read, because "1 min read" over an empty article is a claim
+about a body that does not exist.
+
+**An article cannot be published without a body.** The risk table assigns that guard to
+`lib/cms/publishing.ts`; `enforce_article_has_body()` is the copy that cannot be bypassed. No page,
+an empty page, and a page whose only section is hidden are all refused, each naming the article. It
+does not judge whether the prose is any good — a trigger pretending to make that call would refuse
+work for reasons nobody could predict.
+
+**`journal_articles` is the only table on the site whose public read is gated by a date.**
+`published_at <= now()` alongside the status. A piece set to appear on a given morning must not be
+readable before it, and the clause is the guard that does not depend on a cron running at the right
+minute. That is also the whole scheduling mechanism: publishing with tomorrow's date puts the
+article live tomorrow, so there is no separate schedule button because there is no separate act.
+
+**One automatic related rule, and `lib/cms/related.ts` is where it is written down.** Curated edges
+always win; when there are fewer than three, the shortfall fills from other published articles in
+the same primary category, newest first, excluding this one and anything a curated edge already
+points at. No similarity scoring, no personalisation. The two groups render under separate headings
+— "Related" for what a person chose, "More in {category}" for the fill, which states a fact rather
+than implying a judgement nobody made.
+
+**Categories seed PUBLISHED, articles seed DRAFT** — the one exception to Phase 09's rule, because a
+category is taxonomy rather than copy and `/journal/category/materials` cannot render at all if anon
+cannot read the row.
+
+**RC-220 is `ArticleCard`, the only card on the site that changes LAYOUT rather than ratio on a
+phone.** A product or project card is browsed; a list of articles is read, and a stack of full-width
+16:9 images pushes three titles below the fold that a horizontal row keeps on it. Its date is a
+`<time datetime>` formatted in a fixed UTC zone so server and browser agree.
+
+**No RSS feed.** The phase lists one and then holds it behind an amendment nobody has granted; its
+own verification says that if declined, assert the URL 404s and no feed is advertised. That is what
+`tests/e2e/journal.spec.ts` does.
+
+**Three guards fired on this work and all three were right.** `site-routes` caught two undeclared
+route families. `seed-modules` caught a new seed-key namespace and changed the design —
+`journal-ui.ts` uses `global:UI_LABEL.*` like its two most recent siblings rather than a `journal:`
+prefix that would have sat one character from `journal-article:` while addressing a different table.
+`studio-nav` caught `/studio/content/journal/categories`, which D4 did not list; recorded as
+amendment A16 rather than added to the manifest alone.
+
+**`Pagination` (RC-234) lost its two couplings to the catalogue.** It took a `CatalogQuery` and read
+`UI_LABEL.catalog.*` itself, so a change to how the catalogue encodes `sort` would have changed the
+journal's page URLs, and a screen-reader user paging the journal would have heard the region
+announced as the catalogue's. It now takes `hrefFor` and four resolved labels.
+
+Also fixes a latent hole in `sync_project_page_path` (0153): it fired on INSERT or a slug change
+only, so linking an existing page to a project left it at whatever path it was created with. Nothing
+was broken — Phase 17's action passes the right path at insert — but the article twin would have
+inherited it.
+
+
 ### Phase 17 — Portfolio / Projects
 
 Rivya gains a project archive that is structurally incapable of lying, and it ships with **zero

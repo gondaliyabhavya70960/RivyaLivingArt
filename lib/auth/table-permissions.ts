@@ -38,6 +38,15 @@ export type TablePolicy = {
   /** Governs DELETE. Absent means no delete policy — nobody may delete through an ordinary session. */
   deletePermission?: Permission
   /**
+   * The write permission covers INSERT and NOTHING ELSE, because the table is append-only.
+   *
+   * `inquiry_events` is the case: a trigger refuses UPDATE and DELETE outright, so an update policy
+   * would describe a path the database will not take. Shipping one anyway is not harmless — a
+   * generated file is read as a statement of what is possible, and a dead policy tells the next
+   * reader that a session can edit the timeline.
+   */
+  writeIsInsertOnly?: { why: string }
+  /**
    * The anon/authenticated SELECT predicate for a shape-A table, when `status = 'PUBLISHED'` is
    * not the whole story.
    *
@@ -62,6 +71,19 @@ export type TablePolicy = {
    * is indistinguishable from an oversight, so check-rls.ts requires the string to be non-empty.
    */
   deviation?: string
+  /**
+   * An `anon` INSERT policy, with the `with check` that constrains what a stranger may write.
+   *
+   * ONE TABLE NEEDS THIS AND IT IS THE ONE THE WHOLE SITE EXISTS TO FILL. `inquiries` is written by
+   * a visitor who has no account — D1 forbids giving them one — so the policy IS the guard: there is
+   * no session to check and no permission to hold. The predicate is what stops a crafted payload
+   * arriving pre-triaged, pre-assigned, or claiming to have been edited by a member of staff.
+   *
+   * It is deliberately NOT a shape. A shape describes how a table is READ, and this table is read
+   * by nobody outside the studio: `inquiries` is shape C with an anon insert bolted on, which is
+   * exactly what it is, rather than a fourth shape implying a family that has one member.
+   */
+  anonInsert?: { withCheck: string; why: string }
   /**
    * Roles allowed to SELECT beyond those from readPermission, with the predicate that admits them.
    * Exactly one table needs this and it is not a general escape hatch — see staff_profiles.
@@ -100,6 +122,9 @@ export const PHASE_15_POLICIES = '0131_phase15_product_specs_rls.sql'
 export const PHASE_16_POLICIES = '0142_phase16_entity_relations_rls.sql'
 export const PHASE_17_POLICIES = '0151_phase17_portfolio_rls.sql'
 export const PHASE_18_POLICIES = '0161_phase18_journal_rls.sql'
+export const PHASE_19_POLICIES = '0172_phase19_rls.sql'
+export const PHASE_19_LIMIT_POLICIES = '0183_phase19_rate_limit_rls.sql'
+export const PHASE_20_POLICIES = '0191_phase20_inquiries_rls.sql'
 
 export const TABLE_POLICIES = {
   // --- Shape A: content tables ------------------------------------------------------------------
@@ -510,6 +535,145 @@ export const TABLE_POLICIES = {
     },
   },
 
+  // --- Phase 19 ---------------------------------------------------------------------------------
+  /**
+   * `customization_forms` — Phase 19.
+   *
+   * SHAPE A WITH THE THIN CLAUSE. A form definition is public the moment it is published, because
+   * the configurator that renders it is served to anonymous visitors; there is no second condition
+   * to add. What keeps an unfinished template off the site is `enforce_form_publishable()`, which
+   * refuses PUBLISHED for a form with no contact step, no way to reply on it, or a choice field
+   * with no choices — enforced at the write rather than re-tested here where it could drift.
+   *
+   * CATALOGUE PERMISSIONS RATHER THAN CONTENT ONES, and that is a considered split. The form lives
+   * at `/studio/catalog/customization-forms`, is bound to products and categories, and is edited by
+   * the same person who decides what a product is called. `content.write` would have given the
+   * editor the form and denied it to the merchandiser, which is the wrong way round for a surface
+   * whose whole job is to ask about a product.
+   */
+  customization_forms: {
+    policiesIn: PHASE_19_POLICIES,
+    shape: 'A',
+    readPermission: 'catalog.read',
+    writePermission: 'catalog.write',
+    deletePermission: 'destructive.execute',
+  },
+
+  /**
+   * `customization_form_steps` and `customization_form_fields` — Phase 19.
+   *
+   * BOTH CARRY A PARENT TEST, matching `product_specs`, `portfolio_project_media` and
+   * `journal_article_categories`. A step row is a question — "Preferred Shape", "Item / Flower
+   * Type" — and a published step hanging off an unpublished form would publish the questions of a
+   * brief the site does not yet offer. Worse, it is a legible plan: reading the steps and fields of
+   * an unpublished PRESERVATION template tells a competitor exactly which service is being
+   * prepared, without the form row ever being readable.
+   *
+   * The field's test goes through its FORM rather than through its step, even though a field has a
+   * step. Both are correct; the form is the shorter path, and the composite foreign key
+   * `(step_id, form_id)` already guarantees a field's step belongs to the same form, so the two
+   * predicates cannot disagree.
+   */
+  customization_form_steps: {
+    policiesIn: PHASE_19_POLICIES,
+    shape: 'A',
+    publicClause: `exists (select 1 from customization_forms f
+                   where f.id = customization_form_steps.form_id and f.status = 'PUBLISHED')`,
+    readPermission: 'catalog.read',
+    writePermission: 'catalog.write',
+    deletePermission: 'destructive.execute',
+  },
+  customization_form_fields: {
+    policiesIn: PHASE_19_POLICIES,
+    shape: 'A',
+    publicClause: `exists (select 1 from customization_forms f
+                   where f.id = customization_form_fields.form_id and f.status = 'PUBLISHED')`,
+    readPermission: 'catalog.read',
+    writePermission: 'catalog.write',
+    deletePermission: 'destructive.execute',
+  },
+
+  /**
+   * `product_customization_forms` — Phase 19. Shape B: a join with no status of its own.
+   *
+   * THE PARENT CLAUSE TESTS BOTH ENDS, and the second half is the one that matters. Requiring the
+   * FORM to be published is obvious. Requiring the PRODUCT or CATEGORY to be published is what
+   * stops the binding table from being a list of unreleased products: a row naming a draft product
+   * is readable by anon otherwise, and `select product_id from product_customization_forms` becomes
+   * an inventory of everything the studio is about to launch.
+   */
+  product_customization_forms: {
+    policiesIn: PHASE_19_POLICIES,
+    shape: 'B',
+    parentClause: `exists (select 1 from customization_forms f
+      where f.id = product_customization_forms.form_id and f.status = 'PUBLISHED')
+    and (
+      product_customization_forms.product_id is null
+      or exists (select 1 from products p
+          where p.id = product_customization_forms.product_id and p.status = 'PUBLISHED')
+    )
+    and (
+      product_customization_forms.category_id is null
+      or exists (select 1 from categories c
+          where c.id = product_customization_forms.category_id and c.status = 'PUBLISHED')
+    )`,
+    readPermission: 'catalog.read',
+    writePermission: 'catalog.write',
+    deletePermission: 'destructive.execute',
+  },
+
+  /**
+   * `feature_flags` — Phase 19.
+   *
+   * READ IS `studio.access`, WHICH EVERY ROLE HOLDS, and that is the whole point rather than a
+   * loose default: the register of what is switched on is how anyone in the Studio finds out why a
+   * surface is missing. Hiding it behind the write permission — STUDIO_GUIDE §2.3 considered and
+   * rejected exactly that — would leave four of the six roles looking at a site whose behaviour
+   * they cannot account for.
+   *
+   * WRITE IS `system.flags.write`: owner and admin. See amendment A17 and the header of migration
+   * 0171 for why the phase document's "owner-only" did not win.
+   */
+  feature_flags: {
+    policiesIn: PHASE_19_POLICIES,
+    shape: 'C',
+    readPermission: 'studio.access',
+    writePermission: 'system.flags.write',
+    deviation:
+      'No anon policy, and no public read of any kind. A flag is evaluated SERVER-SIDE and the ' +
+      'browser is never told a flag exists — it is told markup that is present or absent. ' +
+      'Publishing this table would hand every visitor the list of features being prepared, ' +
+      'their key names, and the moment each one was switched: an unreleased-roadmap feed with a ' +
+      'timestamp. Nothing public needs it, because nothing public reads it.',
+  },
+
+  /**
+   * `rate_limit_buckets` — Phase 19 `0182`, early on Phase 41's behalf.
+   *
+   * SHAPE C WITH A READ AND NO WRITE, which is the same shape `higgsfield_migration_runs` takes and
+   * for the same reason: the only writer is a SECURITY DEFINER function granted to `service_role`,
+   * so an INSERT policy would describe a path nothing uses and would suggest to a later reader that
+   * a session can increment a counter. None can.
+   *
+   * THE READ IS `operations.logs.read` — owner and admin — rather than `studio.access`. A counter
+   * keyed on a hashed visitor address is operational telemetry, not something a viewer needs, and
+   * Phase 41's security surface is where it will be shown. Narrower than the table's sensitivity
+   * strictly requires, deliberately: the key is a hash and reveals no address, but the SHAPE of the
+   * data — how many anonymous visitors hit an endpoint and when — is still the kind of thing that
+   * belongs with the audit log rather than beside the content editor.
+   */
+  rate_limit_buckets: {
+    policiesIn: PHASE_19_LIMIT_POLICIES,
+    shape: 'C',
+    readPermission: 'operations.logs.read',
+    deviation:
+      'No anon policy and no write policy for any session role. Rows are written solely by ' +
+      'consume_rate_limit(), a SECURITY DEFINER function granted to service_role, because the ' +
+      'bucket key is derived from the caller and a session able to pass its own key could ' +
+      "exhaust somebody else's window. Nothing public reads it: a visitor learning how close " +
+      'they are to a rate limit learns how to pace an attack.',
+  },
+
   // --- Phase 06 ---------------------------------------------------------------------------------
   media_usages: {
     policiesIn: PHASE_06_POLICIES,
@@ -524,6 +688,94 @@ export const TABLE_POLICIES = {
       'this asset" — which is a Studio question. Exposing it to anon would publish the shape of ' +
       'every unpublished page: which slots exist, how many gallery items a draft has, which ' +
       'entities reference an asset nobody has seen.',
+  },
+
+  /**
+   * `inquiries` — Phase 20. Shape C with an `anon` INSERT, and it is the only table on the site
+   * that a stranger may write.
+   *
+   * NO ANON SELECT, EVER. An enquiry carries a name, a phone number, a city and whatever a visitor
+   * chose to say about their home. One `using (true)` here and the whole customer list is a GET
+   * away through PostgREST — no session, no key beyond the publishable one that ships in the
+   * browser. The absence of a select policy is the single most load-bearing line in this file.
+   *
+   * THE INSERT POLICY IS THE ONLY GUARD ON THE WRITE, because there is no session to check: D1
+   * forbids customer accounts, so the person filling in the form is nobody. The `with check` is
+   * therefore doing the work `requirePermission` does everywhere else, and it pins the three
+   * columns a crafted payload would otherwise use to arrive pre-triaged, pre-assigned, or bearing a
+   * staff member's id as its editor.
+   *
+   * READ IS `inquiries.read`, WHICH THE RESEARCHER DOES NOT HOLD. That is this file's own header
+   * example, written before the table existed: `using (is_staff())` copied onto this table would
+   * hand every customer's phone number to a role whose entire remit is competitor research.
+   */
+  inquiries: {
+    policiesIn: PHASE_20_POLICIES,
+    shape: 'C',
+    readPermission: 'inquiries.read',
+    writePermission: 'inquiries.write',
+    anonInsert: {
+      withCheck:
+        "pipeline_status = 'NEW' and assigned_to is null and updated_by is null and whatsapp_state = 'NOT_SENT'",
+      why:
+        'The public write path. A visitor has no account, so this predicate is the whole guard: it ' +
+        'pins the enquiry to the start of the pipeline, unassigned, with no claimed editor and no ' +
+        'claimed handoff. `reference_code` is not pinned here because the BEFORE trigger overwrites ' +
+        'it, which is stronger than a check — a caller cannot supply one at all.',
+    },
+    deviation:
+      'No anon SELECT of any kind. An enquiry carries a name, a phone number and a city; a public ' +
+      'read policy would publish the customer list through PostgREST with the publishable key that ' +
+      'ships in every browser. anon INSERTS and never reads back — not even the row it just wrote.',
+  },
+
+  /**
+   * `inquiry_attachments` — Phase 20. Shape C, staff-read, and NO anon insert despite the phase
+   * document naming one.
+   *
+   * THE REASON IS MECHANICAL. An attachment references `media_assets`, and `anon` cannot create a
+   * `media_assets` row — Phase 06's policies do not admit it and should not, because that table is
+   * the studio's library. An anon insert policy here would describe a path with no way to satisfy
+   * its own foreign key. `attach_inquiry_references()` is SECURITY DEFINER instead, checks the
+   * enquiry is one created in the last ten minutes, and refuses any `public_id` outside the folder
+   * `upload-sign` signs. Recorded as amendment A20.
+   */
+  inquiry_attachments: {
+    policiesIn: PHASE_20_POLICIES,
+    shape: 'C',
+    readPermission: 'inquiries.read',
+    deviation:
+      'No anon policy of either kind. A public read would list what a customer sent; a public ' +
+      'insert could not satisfy its foreign key, because anon cannot create the media_assets row ' +
+      'an attachment points at. Rows arrive through attach_inquiry_references(), which is SECURITY ' +
+      'DEFINER, checks the enquiry is fresh, and refuses a public_id outside the incoming folder.',
+  },
+
+  /**
+   * `inquiry_events` — Phase 20. Shape C, staff-read, and NO write policy for any session role.
+   *
+   * APPEND-ONLY IS ENFORCED BY TRIGGER AND THE ABSENCE OF A WRITE POLICY IS THE OTHER HALF. Rows
+   * are written by the three triggers and by `record_inquiry_handoff()`, all SECURITY DEFINER, so
+   * the timeline records what happened rather than what somebody later wished had happened. An
+   * insert policy here would let a session write an event by hand — including one saying an enquiry
+   * was answered.
+   */
+  inquiry_events: {
+    policiesIn: PHASE_20_POLICIES,
+    shape: 'C',
+    readPermission: 'inquiries.read',
+    writePermission: 'inquiries.write',
+    writeIsInsertOnly: {
+      why:
+        'APPEND ONLY. A trigger refuses UPDATE and DELETE for every role including the owner, so an ' +
+        'update policy would name a path the database will not take. Staff APPEND — a note, an ' +
+        'export record — and the timeline is what happened rather than what somebody later wished ' +
+        'had happened.',
+    },
+    deviation:
+      'No anon policy, and no UPDATE or DELETE policy for any session role. Staff holding ' +
+      'inquiries.write may APPEND an event; nobody may change one, because a log that can be ' +
+      'edited cannot answer what happened.',
   },
 } as const satisfies Record<string, TablePolicy>
 

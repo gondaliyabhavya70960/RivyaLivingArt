@@ -120,28 +120,21 @@ describe('renderTemplate', () => {
 })
 
 describe('shorten', () => {
+  /*
+   * PHASE 20 REPLACED THE TWO-STEP LADDER WITH FIVE RUNGS, and the full ladder is exercised in
+   * `whatsapp-shorten.test.ts`. What stays here is the property Phase 10 built this module for and
+   * Phase 20 did not change: the reference code survives everything.
+   */
   const render = (values: Record<string, string>) =>
     `${values['customization_summary'] ?? ''}|${values['notes'] ?? ''}|${values['inquiry_id'] ?? ''}`
 
-  it('leaves a short message untouched', () => {
+  it('leaves a short message untouched, and says so with a null level', () => {
     const result = shorten('inquiry', { notes: 'short', inquiry_id: 'INQ-1' }, render, 40)
     expect(result.overLimit).toBe(false)
-    expect(result.truncated).toEqual([])
-    expect(result.dropped).toEqual([])
+    expect(result.level).toBeNull()
   })
 
-  it('truncates the longest free-text field first', () => {
-    const result = shorten(
-      'inquiry',
-      { customization_summary: 'x'.repeat(400), notes: 'y'.repeat(80), inquiry_id: 'INQ-1' },
-      render,
-      40,
-      200,
-    )
-    expect(result.truncated).toContain('customization_summary')
-  })
-
-  it('never truncates or drops the inquiry id', () => {
+  it('never shortens or drops the inquiry id', () => {
     const result = shorten(
       'inquiry',
       { customization_summary: 'x'.repeat(4000), notes: 'y'.repeat(4000), inquiry_id: 'INQ-42' },
@@ -149,24 +142,8 @@ describe('shorten', () => {
       40,
       120,
     )
-    expect(result.values['inquiry_id']).toBe('INQ-42')
-    expect(result.truncated).not.toContain(PROTECTED_TOKEN)
-    expect(result.dropped).not.toContain(PROTECTED_TOKEN)
-  })
-
-  it('drops references before it drops the visitor’s own notes', () => {
-    const result = shorten(
-      'inquiry',
-      {
-        reference_urls: 'https://example.test/a '.repeat(20),
-        notes: 'z'.repeat(300),
-        inquiry_id: 'INQ-1',
-      },
-      (v) => `${v['reference_urls'] ?? ''}|${v['notes'] ?? ''}|${v['inquiry_id'] ?? ''}`,
-      40,
-      120,
-    )
-    expect(result.dropped[0]).toBe('reference_urls')
+    expect(result.values[PROTECTED_TOKEN]).toBe('INQ-42')
+    expect(result.message).toContain('INQ-42')
   })
 })
 
@@ -195,7 +172,7 @@ describe('buildHandoffUrl', () => {
   })
 
   it('keeps a very long enquiry under the URL cap', () => {
-    const { url, truncated, dropped } = buildHandoffUrl({
+    const { url, level } = buildHandoffUrl({
       inquiryId: 'INQ-1',
       template: 'inquiry',
       body: SEED_INQUIRY,
@@ -206,7 +183,7 @@ describe('buildHandoffUrl', () => {
       },
     })
     expect(url.length).toBeLessThanOrEqual(MAX_ENCODED_URL_LENGTH)
-    expect(truncated.length + dropped.length).toBeGreaterThan(0)
+    expect(level).not.toBeNull()
     // The id survives every step, because it is what ties the message to the persisted row.
     expect(decodeURIComponent(url)).toContain('INQ-1')
   })

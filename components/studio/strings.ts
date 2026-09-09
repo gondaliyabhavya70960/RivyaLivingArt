@@ -403,6 +403,10 @@ export const STUDIO_STRINGS = {
     value: 'Journal',
     contentKey: 'studio_help.nav_content_journal',
   },
+  'studio.nav.content.journalCategories': {
+    value: 'Journal categories',
+    contentKey: 'studio_help.nav_content_journal_categories',
+  },
   'studio.nav.content.testimonials': {
     value: 'Testimonials',
     contentKey: 'studio_help.nav_content_testimonials',
@@ -2689,6 +2693,221 @@ export const STUDIO_STRINGS = {
     contentKey: 'studio_help.testimonials_required_label',
   },
 
+  // --- Phase 18: the journal ---------------------------------------------------------------------
+  'studio.journal.caption': {
+    value: 'Articles and guides. Ten ideas are waiting to be written.',
+    contentKey: 'studio_help.journal_caption',
+  },
+  'studio.journal.emptyHeading': {
+    value: 'No articles yet',
+    contentKey: 'studio_help.journal_empty_heading',
+  },
+  'studio.journal.emptyBody': {
+    value:
+      'The ten seeded ideas arrive with this phase. Each is a title and an angle: what the piece is meant to be about, for whoever writes it. None has a body, and none can be published until one exists.',
+    contentKey: 'studio_help.journal_empty_body',
+  },
+  'studio.journal.colTitle': { value: 'Article', contentKey: 'studio_help.journal_col_title' },
+  'studio.journal.colCategory': {
+    value: 'Category',
+    contentKey: 'studio_help.journal_col_category',
+  },
+  'studio.journal.colStatus': { value: 'Status', contentKey: 'studio_help.journal_col_status' },
+  'studio.journal.colBody': { value: 'Body', contentKey: 'studio_help.journal_col_body' },
+  'studio.journal.colPublished': {
+    value: 'Appears on',
+    contentKey: 'studio_help.journal_col_published',
+  },
+  'studio.journal.untitled': {
+    value: 'Untitled article',
+    contentKey: 'studio_help.journal_untitled',
+  },
+  'studio.journal.noCategory': { value: 'Unfiled', contentKey: 'studio_help.journal_no_category' },
+  'studio.journal.bodyPresent': {
+    value: 'Written',
+    contentKey: 'studio_help.journal_body_present',
+  },
+  'studio.journal.bodyAbsent': { value: 'Empty', contentKey: 'studio_help.journal_body_absent' },
+  'studio.journal.backToList': { value: 'All articles', contentKey: 'studio_help.journal_back' },
+  'studio.journal.requiredLabel': { value: 'Required', contentKey: 'studio_help.journal_required' },
+
+  'studio.journal.newHeading': { value: 'Start an article', contentKey: 'studio_help.journal_new' },
+  'studio.journal.newHelp': {
+    value:
+      'A new article is a draft with no body. Give it a title and an address; the writing happens in the block editor, and it cannot be published until there is something to read.',
+    contentKey: 'studio_help.journal_new_help',
+  },
+  'studio.journal.newSlug': {
+    value: 'Address (the last part of the web address)',
+    contentKey: 'studio_help.journal_new_slug',
+  },
+  'studio.journal.newSubmit': {
+    value: 'Add article',
+    contentKey: 'studio_help.journal_new_submit',
+  },
+
+  'studio.journal.identityHeading': {
+    value: 'What this article is',
+    contentKey: 'studio_help.journal_identity',
+  },
+  'studio.journal.identitySave': {
+    value: 'Save these details',
+    contentKey: 'studio_help.journal_identity_save',
+  },
+  'studio.journal.fieldTitle': { value: 'Title', contentKey: 'studio_help.journal_field_title' },
+  'studio.journal.fieldStandfirst': {
+    value: 'Standfirst',
+    contentKey: 'studio_help.journal_field_standfirst',
+  },
+  'studio.journal.fieldStandfirstHelp': {
+    value: 'The line under the title on the article itself.',
+    contentKey: 'studio_help.journal_field_standfirst_help',
+  },
+  'studio.journal.fieldExcerpt': {
+    value: 'Card line',
+    contentKey: 'studio_help.journal_field_excerpt',
+  },
+  'studio.journal.fieldExcerptHelp': {
+    value:
+      'What a card shows in a listing — a different sentence from the standfirst, because a card is read in a grid beside other cards.',
+    contentKey: 'studio_help.journal_field_excerpt_help',
+  },
+  'studio.journal.fieldAngle': { value: 'Angle', contentKey: 'studio_help.journal_field_angle' },
+  'studio.journal.fieldAngleHelp': {
+    value:
+      'What the piece is meant to be about, for whoever writes it. Never shown on the website — this is the brief, not the summary.',
+    contentKey: 'studio_help.journal_field_angle_help',
+  },
+  'studio.journal.fieldByline': { value: 'Byline', contentKey: 'studio_help.journal_field_byline' },
+  'studio.journal.fieldBylineHelp': {
+    value:
+      'Defaults to the studio. Typing a person’s name is a claim that they wrote this, so it needs an owner to confirm it before the article can be published.',
+    contentKey: 'studio_help.journal_field_byline_help',
+  },
+  'studio.journal.fieldCategory': {
+    value: 'Primary category',
+    contentKey: 'studio_help.journal_field_category',
+  },
+  'studio.journal.fieldCategoryHelp': {
+    value:
+      'The one category this article belongs to. It decides which category page lists it, and which articles fill the related strip when nobody has chosen any.',
+    contentKey: 'studio_help.journal_field_category_help',
+  },
+  'studio.journal.categoryNone': { value: 'Unfiled', contentKey: 'studio_help.journal_cat_none' },
+
+  'studio.journal.readingMinutes': {
+    value: 'Reading time is worked out from the article’s own blocks and cannot be typed.',
+    contentKey: 'studio_help.journal_reading_minutes',
+  },
+
+  'studio.journal.bodyHeading': { value: 'Body', contentKey: 'studio_help.journal_body_heading' },
+  'studio.journal.bodyHelp': {
+    value:
+      'The article itself is an ordered list of blocks, the same as any other page on the site. Creating it lays down one band to start from; nothing can be published until at least one block is visible.',
+    contentKey: 'studio_help.journal_body_help',
+  },
+  'studio.journal.bodyCreate': {
+    value: 'Create the article page',
+    contentKey: 'studio_help.journal_body_create',
+  },
+  'studio.journal.bodyEdit': {
+    value: 'Open the block editor',
+    contentKey: 'studio_help.journal_body_edit',
+  },
+
+  'studio.journal.coverHeading': { value: 'Cover', contentKey: 'studio_help.journal_cover' },
+  'studio.journal.coverHelp': {
+    value:
+      'Desktop and mobile are separate pictures, never one cropped by the browser. Leave the mobile slot empty if there is no portrait version — an empty slot is honest, a squeezed landscape is not.',
+    contentKey: 'studio_help.journal_cover_help',
+  },
+  'studio.journal.coverDesktop': {
+    value: 'Cover — desktop',
+    contentKey: 'studio_help.journal_cover_desktop',
+  },
+  'studio.journal.coverMobile': {
+    value: 'Cover — mobile',
+    contentKey: 'studio_help.journal_cover_mobile',
+  },
+  'studio.journal.coverSave': {
+    value: 'Save the cover',
+    contentKey: 'studio_help.journal_cover_save',
+  },
+  'studio.journal.coverNone': { value: 'No picture', contentKey: 'studio_help.journal_cover_none' },
+
+  'studio.journal.relationsHeading': {
+    value: 'Related content',
+    contentKey: 'studio_help.journal_relations',
+  },
+  'studio.journal.relationsHelp': {
+    value:
+      'Links chosen by hand always come first. When there are fewer than three, the strip fills with other articles in the same category — newest first, labelled as what it is.',
+    contentKey: 'studio_help.journal_relations_help',
+  },
+
+  'studio.journal.publishHeading': {
+    value: 'Publishing',
+    contentKey: 'studio_help.journal_publish',
+  },
+  'studio.journal.publishHelp': {
+    value:
+      'An article appears when it is published AND its appearance date has passed. Setting a date in the future is how a piece is scheduled; leaving it empty publishes it now.',
+    contentKey: 'studio_help.journal_publish_help',
+  },
+  'studio.journal.fieldPublishedAt': {
+    value: 'Appears on',
+    contentKey: 'studio_help.journal_field_published_at',
+  },
+  'studio.journal.publish': { value: 'Publish', contentKey: 'studio_help.journal_publish_action' },
+  'studio.journal.unpublish': {
+    value: 'Take it off the site',
+    contentKey: 'studio_help.journal_unpublish',
+  },
+  'studio.journal.verifySet': {
+    value: 'Confirm this byline',
+    contentKey: 'studio_help.journal_verify_set',
+  },
+  'studio.journal.verifyClear': {
+    value: 'Withdraw that confirmation',
+    contentKey: 'studio_help.journal_verify_clear',
+  },
+  'studio.journal.verifyHelp': {
+    value:
+      'Only needed when this article names a person, asserts what Rivya can make, or states a standard. An owner or administrator confirms it; nothing publishes while it is outstanding.',
+    contentKey: 'studio_help.journal_verify_help',
+  },
+
+  'studio.journal.categoriesHeading': {
+    value: 'Categories',
+    contentKey: 'studio_help.journal_categories_heading',
+  },
+  'studio.journal.categoriesHelp': {
+    value:
+      'The nine subjects the journal is filed under. A name can be reworded and the order changed; the address cannot, because it is a public URL somebody may have linked to.',
+    contentKey: 'studio_help.journal_categories_help',
+  },
+  'studio.journal.categoryName': { value: 'Name', contentKey: 'studio_help.journal_category_name' },
+  'studio.journal.categorySlug': {
+    value: 'Address',
+    contentKey: 'studio_help.journal_category_slug',
+  },
+  'studio.journal.categoryIntro': {
+    value: 'Heading on the category page',
+    contentKey: 'studio_help.journal_category_intro',
+  },
+  'studio.journal.categoryDescription': {
+    value: 'Description',
+    contentKey: 'studio_help.journal_category_description',
+  },
+  'studio.journal.categoryPosition': {
+    value: 'Order',
+    contentKey: 'studio_help.journal_category_position',
+  },
+  'studio.journal.categorySave': {
+    value: 'Save this category',
+    contentKey: 'studio_help.journal_category_save',
+  },
+
   // --- Phase 17: the verification panel ---------------------------------------------------------
   'studio.verification.heading': {
     value: 'Before this can be published',
@@ -2881,6 +3100,625 @@ export const STUDIO_STRINGS = {
   'studio.catalog.collection.save': {
     value: 'Save collection',
     contentKey: 'studio_help.catalog_collection_save',
+  },
+
+  /* ---------------------------------------------------------------------------------------------
+   * Phase 19 — the customization form builder and the feature-flag register.
+   *
+   * THE BUILDER'S WORDS CARRY ITS RULES. A form's steps and fields are the questions a visitor is
+   * asked, and three of the database's refusals are invisible until they fire: a form cannot be
+   * published without an enabled contact step, that step must ask for a phone number or an email
+   * address, and a choice field with no choices is refused. The help text below says all three
+   * BEFORE the editor presses publish, because a refusal explained afterwards is a refusal that
+   * already wasted the work.
+   *
+   * NOTHING HERE OFFERS A PRICE. `customization_form_fields.validation` has an allowlist CHECK that
+   * rejects `price_multiplier` and its relatives outright, and the field-type enum has no money in
+   * it. The note on the fields panel says so, because a merchandiser looking for the surcharge box
+   * should be told it does not exist rather than left hunting for it.
+   * ------------------------------------------------------------------------------------------- */
+  'studio.catalog.forms.caption': {
+    value: 'Customization forms',
+    contentKey: 'studio_help.catalog_forms_caption',
+  },
+  'studio.catalog.forms.emptyHeading': {
+    value: 'No forms yet',
+    contentKey: 'studio_help.catalog_forms_empty_heading',
+  },
+  'studio.catalog.forms.emptyBody': {
+    value: 'A form is the set of questions a bespoke brief asks. Create one below.',
+    contentKey: 'studio_help.catalog_forms_empty_body',
+  },
+  'studio.catalog.forms.help': {
+    value:
+      'Each form is a sequence of steps, and each step a set of questions. A form is offered on a product page when it is bound to that product or to its category.',
+    contentKey: 'studio_help.catalog_forms_help',
+  },
+  'studio.catalog.forms.colName': {
+    value: 'Name',
+    contentKey: 'studio_help.catalog_forms_col_name',
+  },
+  'studio.catalog.forms.colSlug': {
+    value: 'Slug',
+    contentKey: 'studio_help.catalog_forms_col_slug',
+  },
+  'studio.catalog.forms.colKind': {
+    value: 'Kind',
+    contentKey: 'studio_help.catalog_forms_col_kind',
+  },
+  'studio.catalog.forms.colSteps': {
+    value: 'Steps',
+    contentKey: 'studio_help.catalog_forms_col_steps',
+  },
+  'studio.catalog.forms.colFields': {
+    value: 'Questions',
+    contentKey: 'studio_help.catalog_forms_col_fields',
+  },
+  'studio.catalog.forms.colDefault': {
+    value: 'Default',
+    contentKey: 'studio_help.catalog_forms_col_default',
+  },
+  'studio.catalog.forms.colStatus': {
+    value: 'Status',
+    contentKey: 'studio_help.catalog_forms_col_status',
+  },
+  'studio.catalog.forms.isDefaultYes': {
+    value: 'Default for its kind',
+    contentKey: 'studio_help.catalog_forms_is_default_yes',
+  },
+  'studio.catalog.forms.newHeading': {
+    value: 'New form',
+    contentKey: 'studio_help.catalog_forms_new_heading',
+  },
+  'studio.catalog.forms.newNote': {
+    value:
+      'A new form starts as a draft with no steps. Add a contact step before publishing it: a brief that arrives with no way to reply cannot be answered.',
+    contentKey: 'studio_help.catalog_forms_new_note',
+  },
+  'studio.catalog.forms.duplicateHeading': {
+    value: 'Copy an existing form',
+    contentKey: 'studio_help.catalog_forms_duplicate_heading',
+  },
+  'studio.catalog.forms.duplicateNote': {
+    value:
+      'The copy carries every step and question of the original, arrives as a draft, and is never the default for its kind. Editing it does not touch the form it came from.',
+    contentKey: 'studio_help.catalog_forms_duplicate_note',
+  },
+  'studio.catalog.forms.duplicateSource': {
+    value: 'Copy from',
+    contentKey: 'studio_help.catalog_forms_duplicate_source',
+  },
+  'studio.catalog.forms.duplicate': {
+    value: 'Copy form',
+    contentKey: 'studio_help.catalog_forms_duplicate',
+  },
+  'studio.catalog.form.name': {
+    value: 'Name',
+    contentKey: 'studio_help.catalog_form_name',
+  },
+  'studio.catalog.form.slug': {
+    value: 'Slug',
+    contentKey: 'studio_help.catalog_form_slug',
+  },
+  'studio.catalog.form.kind': {
+    value: 'Kind',
+    contentKey: 'studio_help.catalog_form_kind',
+  },
+  'studio.catalog.form.description': {
+    value: 'Description',
+    contentKey: 'studio_help.catalog_form_description',
+  },
+  'studio.catalog.form.descriptionHelp': {
+    value: 'For the Studio only. What this form is for, and who it is for.',
+    contentKey: 'studio_help.catalog_form_description_help',
+  },
+  'studio.catalog.form.create': {
+    value: 'Create form',
+    contentKey: 'studio_help.catalog_form_create',
+  },
+  'studio.catalog.form.save': {
+    value: 'Save form',
+    contentKey: 'studio_help.catalog_form_save',
+  },
+  'studio.catalog.form.back': {
+    value: 'Back to forms',
+    contentKey: 'studio_help.catalog_form_back',
+  },
+  'studio.catalog.form.untitled': {
+    value: 'Untitled form',
+    contentKey: 'studio_help.catalog_form_untitled',
+  },
+  'studio.catalog.form.requiredLabel': {
+    value: 'Required',
+    contentKey: 'studio_help.catalog_form_required_label',
+  },
+  'studio.catalog.form.identityHeading': {
+    value: 'The form',
+    contentKey: 'studio_help.catalog_form_identity_heading',
+  },
+  'studio.catalog.form.introHeading': {
+    value: 'Opening heading',
+    contentKey: 'studio_help.catalog_form_intro_heading',
+  },
+  'studio.catalog.form.introBody': {
+    value: 'Opening paragraph',
+    contentKey: 'studio_help.catalog_form_intro_body',
+  },
+  'studio.catalog.form.introHelp': {
+    value: 'What a visitor reads above the first step. Leave both empty to open straight into it.',
+    contentKey: 'studio_help.catalog_form_intro_help',
+  },
+  'studio.catalog.form.submitLabelKey': {
+    value: 'Submit button key',
+    contentKey: 'studio_help.catalog_form_submit_label_key',
+  },
+  'studio.catalog.form.submitLabelKeyHelp': {
+    value:
+      'A content key such as CTA.send_an_enquiry, not the words themselves. The wording lives in the content library so every form changes together.',
+    contentKey: 'studio_help.catalog_form_submit_label_key_help',
+  },
+  'studio.catalog.form.isDefault': {
+    value: 'Use this form when nothing more specific is bound',
+    contentKey: 'studio_help.catalog_form_is_default',
+  },
+  'studio.catalog.form.publishHeading': {
+    value: 'Publication',
+    contentKey: 'studio_help.catalog_form_publish_heading',
+  },
+  'studio.catalog.form.publishBody': {
+    value:
+      'A published form is offered to visitors. Publication is refused unless the form has an enabled contact step, that step asks for a phone number or an email address, and every choice question has at least one choice.',
+    contentKey: 'studio_help.catalog_form_publish_body',
+  },
+  'studio.catalog.form.publish': {
+    value: 'Publish form',
+    contentKey: 'studio_help.catalog_form_publish',
+  },
+  'studio.catalog.form.unpublish': {
+    value: 'Withdraw form',
+    contentKey: 'studio_help.catalog_form_unpublish',
+  },
+  'studio.catalog.form.flagNote': {
+    value:
+      'The configurator itself is behind a feature flag. Publishing a form does not put it on the site until that flag is switched on under System · Feature flags.',
+    contentKey: 'studio_help.catalog_form_flag_note',
+  },
+  'studio.catalog.form.stepsHeading': {
+    value: 'Steps',
+    contentKey: 'studio_help.catalog_form_steps_heading',
+  },
+  'studio.catalog.form.stepsHelp': {
+    value:
+      'Steps are shown in the order below. The contact step is always moved last, whatever number it is given, because it is the one asked after the brief is described.',
+    contentKey: 'studio_help.catalog_form_steps_help',
+  },
+  'studio.catalog.form.stepsEmpty': {
+    value: 'This form has no steps yet.',
+    contentKey: 'studio_help.catalog_form_steps_empty',
+  },
+  'studio.catalog.form.stepKey': {
+    value: 'Step key',
+    contentKey: 'studio_help.catalog_form_step_key',
+  },
+  'studio.catalog.form.stepKeyHelp': {
+    value: 'Lowercase letters, digits and underscores. It cannot be changed once questions use it.',
+    contentKey: 'studio_help.catalog_form_step_key_help',
+  },
+  'studio.catalog.form.stepTitle': {
+    value: 'Step title',
+    contentKey: 'studio_help.catalog_form_step_title',
+  },
+  'studio.catalog.form.stepDescription': {
+    value: 'Step description',
+    contentKey: 'studio_help.catalog_form_step_description',
+  },
+  'studio.catalog.form.stepPosition': {
+    value: 'Position',
+    contentKey: 'studio_help.catalog_form_step_position',
+  },
+  'studio.catalog.form.stepEnabled': {
+    value: 'Shown to visitors',
+    contentKey: 'studio_help.catalog_form_step_enabled',
+  },
+  'studio.catalog.form.stepRequired': {
+    value: 'Must be completed before continuing',
+    contentKey: 'studio_help.catalog_form_step_required',
+  },
+  'studio.catalog.form.stepSave': {
+    value: 'Save step',
+    contentKey: 'studio_help.catalog_form_step_save',
+  },
+  'studio.catalog.form.stepDelete': {
+    value: 'Delete step',
+    contentKey: 'studio_help.catalog_form_step_delete',
+  },
+  'studio.catalog.form.stepAddHeading': {
+    value: 'Add a step',
+    contentKey: 'studio_help.catalog_form_step_add_heading',
+  },
+  'studio.catalog.form.stepAdd': {
+    value: 'Add step',
+    contentKey: 'studio_help.catalog_form_step_add',
+  },
+  'studio.catalog.form.fieldsHeading': {
+    value: 'Questions',
+    contentKey: 'studio_help.catalog_form_fields_heading',
+  },
+  'studio.catalog.form.fieldsEmpty': {
+    value: 'This step asks nothing yet.',
+    contentKey: 'studio_help.catalog_form_fields_empty',
+  },
+  'studio.catalog.form.fieldsNote': {
+    value:
+      'There is no price, surcharge or multiplier question, and there is no way to add one: this studio quotes after reading a brief, never from a form.',
+    contentKey: 'studio_help.catalog_form_fields_note',
+  },
+  'studio.catalog.form.fieldKey': {
+    value: 'Question key',
+    contentKey: 'studio_help.catalog_form_field_key',
+  },
+  'studio.catalog.form.fieldKeyHelp': {
+    value:
+      'Lowercase letters, digits and underscores. It names the answer in the message sent to the studio and cannot be changed afterwards.',
+    contentKey: 'studio_help.catalog_form_field_key_help',
+  },
+  'studio.catalog.form.orderSave': {
+    value: 'Save order',
+    contentKey: 'studio_help.catalog_form_order_save',
+  },
+  'studio.catalog.form.fieldLabel': {
+    value: 'Question',
+    contentKey: 'studio_help.catalog_form_field_label',
+  },
+  'studio.catalog.form.fieldHelpText': {
+    value: 'Help text',
+    contentKey: 'studio_help.catalog_form_field_help_text',
+  },
+  'studio.catalog.form.fieldPlaceholder': {
+    value: 'Placeholder',
+    contentKey: 'studio_help.catalog_form_field_placeholder',
+  },
+  'studio.catalog.form.fieldType': {
+    value: 'Answer type',
+    contentKey: 'studio_help.catalog_form_field_type',
+  },
+  'studio.catalog.form.fieldOptions': {
+    value: 'Choices',
+    contentKey: 'studio_help.catalog_form_field_options',
+  },
+  'studio.catalog.form.fieldOptionsHelp': {
+    value:
+      'One per line, as value | label. Only choice questions use them, and a choice question with none cannot be published.',
+    contentKey: 'studio_help.catalog_form_field_options_help',
+  },
+  'studio.catalog.form.fieldPosition': {
+    value: 'Position',
+    contentKey: 'studio_help.catalog_form_field_position',
+  },
+  'studio.catalog.form.fieldEnabled': {
+    value: 'Asked',
+    contentKey: 'studio_help.catalog_form_field_enabled',
+  },
+  'studio.catalog.form.fieldRequired': {
+    value: 'Must be answered',
+    contentKey: 'studio_help.catalog_form_field_required',
+  },
+  'studio.catalog.form.fieldWhatsapp': {
+    value: 'Include the answer in the message to the studio',
+    contentKey: 'studio_help.catalog_form_field_whatsapp',
+  },
+  'studio.catalog.form.fieldSave': {
+    value: 'Save question',
+    contentKey: 'studio_help.catalog_form_field_save',
+  },
+  'studio.catalog.form.fieldDelete': {
+    value: 'Delete question',
+    contentKey: 'studio_help.catalog_form_field_delete',
+  },
+  'studio.catalog.form.fieldAddHeading': {
+    value: 'Add a question',
+    contentKey: 'studio_help.catalog_form_field_add_heading',
+  },
+  'studio.catalog.form.fieldAdd': {
+    value: 'Add question',
+    contentKey: 'studio_help.catalog_form_field_add',
+  },
+  'studio.catalog.form.bindingsHeading': {
+    value: 'Where this form is offered',
+    contentKey: 'studio_help.catalog_form_bindings_heading',
+  },
+  'studio.catalog.form.bindingsHelp': {
+    value:
+      'A binding to a product wins over a binding to its category. A form bound to nothing is still reachable from the commissions page if it is the default for its kind.',
+    contentKey: 'studio_help.catalog_form_bindings_help',
+  },
+  'studio.catalog.form.bindingsEmpty': {
+    value: 'This form is not bound to any product or category.',
+    contentKey: 'studio_help.catalog_form_bindings_empty',
+  },
+  'studio.catalog.form.bindingProduct': {
+    value: 'Product',
+    contentKey: 'studio_help.catalog_form_binding_product',
+  },
+  'studio.catalog.form.bindingCategory': {
+    value: 'Category',
+    contentKey: 'studio_help.catalog_form_binding_category',
+  },
+  'studio.catalog.form.bindingNone': {
+    value: '— none —',
+    contentKey: 'studio_help.catalog_form_binding_none',
+  },
+  'studio.catalog.form.bindingAdd': {
+    value: 'Bind form',
+    contentKey: 'studio_help.catalog_form_binding_add',
+  },
+  'studio.catalog.form.bindingRemove': {
+    value: 'Remove',
+    contentKey: 'studio_help.catalog_form_binding_remove',
+  },
+  'studio.catalog.form.bindingTarget': {
+    value: 'Bound to',
+    contentKey: 'studio_help.catalog_form_binding_target',
+  },
+  'studio.catalog.form.previewHeading': {
+    value: 'Preview',
+    contentKey: 'studio_help.catalog_form_preview_heading',
+  },
+  'studio.catalog.form.previewBody': {
+    value:
+      'Opens the commissions page, where a published form is rendered exactly as a visitor sees it once the configurator flag is on.',
+    contentKey: 'studio_help.catalog_form_preview_body',
+  },
+  'studio.catalog.form.preview': {
+    value: 'Open the commissions page',
+    contentKey: 'studio_help.catalog_form_preview',
+  },
+
+  /* ---------------------------------------------------------------------------------------------
+   * /studio/system/flags — the register of what is switched on.
+   *
+   * EVERY ROLE READS IT AND TWO ROLES MOVE IT. The register is how anybody in the Studio accounts
+   * for a surface that is missing: a merchandiser who cannot find the configurator should be able
+   * to see that it is off rather than conclude it is broken. Switching is `system.flags.write`,
+   * owner and administrator, and for a role without it the controls are ABSENT rather than
+   * disabled — a greyed-out switch reads as "ask someone to enable this", which is the wrong idea.
+   * ------------------------------------------------------------------------------------------- */
+  'studio.system.flags.heading': {
+    value: 'Feature flags',
+    contentKey: 'studio_help.system_flags_heading',
+  },
+  'studio.system.flags.help': {
+    value:
+      'What is switched on. A feature that is off is not hidden in the page — it is not built into the response at all, so a visitor cannot reach it by any means.',
+    contentKey: 'studio_help.system_flags_help',
+  },
+  'studio.system.flags.registerNote': {
+    value:
+      'Flags are declared in the code, not created here. A feature that has been built appears in this list; nothing else can be switched.',
+    contentKey: 'studio_help.system_flags_register_note',
+  },
+  'studio.system.flags.readOnlyNote': {
+    value: 'Only an owner or an administrator can move these switches.',
+    contentKey: 'studio_help.system_flags_read_only_note',
+  },
+  'studio.system.flags.caption': {
+    value: 'Feature flags',
+    contentKey: 'studio_help.system_flags_caption',
+  },
+  'studio.system.flags.colKey': {
+    value: 'Flag',
+    contentKey: 'studio_help.system_flags_col_key',
+  },
+  'studio.system.flags.colDescription': {
+    value: 'What it controls',
+    contentKey: 'studio_help.system_flags_col_description',
+  },
+  'studio.system.flags.colState': {
+    value: 'State',
+    contentKey: 'studio_help.system_flags_col_state',
+  },
+  'studio.system.flags.on': {
+    value: 'On',
+    contentKey: 'studio_help.system_flags_on',
+  },
+  'studio.system.flags.off': {
+    value: 'Off',
+    contentKey: 'studio_help.system_flags_off',
+  },
+  'studio.system.flags.enable': {
+    value: 'Switch on',
+    contentKey: 'studio_help.system_flags_enable',
+  },
+  'studio.system.flags.disable': {
+    value: 'Switch off',
+    contentKey: 'studio_help.system_flags_disable',
+  },
+  'studio.system.flags.emptyHeading': {
+    value: 'No flags are registered',
+    contentKey: 'studio_help.system_flags_empty_heading',
+  },
+  'studio.system.flags.emptyBody': {
+    value: 'Nothing in the code declares a flag, so there is nothing to switch.',
+    contentKey: 'studio_help.system_flags_empty_body',
+  },
+
+  /* ---------------------------------------------------------------------------------------------
+   * Phase 20 — the enquiry inbox.
+   *
+   * THE COLUMN HEADINGS ARE PLAIN WORDS AND NOT FIELD NAMES. "From" rather than "Name", "Received"
+   * rather than "created_at": this screen is read by whoever is answering the phone, not by whoever
+   * wrote the schema, and a column called `pipeline_status` helps nobody triage anything.
+   *
+   * NOTHING HERE OFFERS A PRICE, A QUOTE OR AN ORDER. There is no such column to render and no such
+   * control to name — the pipeline has a QUOTED status because a quotation is a conversation the
+   * studio has, not a number this product computes.
+   * ------------------------------------------------------------------------------------------- */
+  'studio.inquiries.help': {
+    value:
+      'Every enquiry the site has received. An enquiry is written to the database before any WhatsApp handoff, so this list is the record even when the conversation moved elsewhere.',
+    contentKey: 'studio_help.inquiries_help',
+  },
+  'studio.inquiries.caption': {
+    value: 'Enquiries',
+    contentKey: 'studio_help.inquiries_caption',
+  },
+  'studio.inquiries.emptyHeading': {
+    value: 'No enquiries yet',
+    contentKey: 'studio_help.inquiries_empty_heading',
+  },
+  'studio.inquiries.emptyBody': {
+    value: 'Enquiries sent from the website appear here the moment they are saved.',
+    contentKey: 'studio_help.inquiries_empty_body',
+  },
+  'studio.inquiries.colReference': {
+    value: 'Reference',
+    contentKey: 'studio_help.inquiries_col_reference',
+  },
+  'studio.inquiries.colKind': {
+    value: 'Kind',
+    contentKey: 'studio_help.inquiries_col_kind',
+  },
+  'studio.inquiries.colName': {
+    value: 'From',
+    contentKey: 'studio_help.inquiries_col_name',
+  },
+  'studio.inquiries.colCity': {
+    value: 'City',
+    contentKey: 'studio_help.inquiries_col_city',
+  },
+  'studio.inquiries.colStatus': {
+    value: 'Status',
+    contentKey: 'studio_help.inquiries_col_status',
+  },
+  'studio.inquiries.colWhatsapp': {
+    value: 'WhatsApp',
+    contentKey: 'studio_help.inquiries_col_whatsapp',
+  },
+  'studio.inquiries.colReceived': {
+    value: 'Received',
+    contentKey: 'studio_help.inquiries_col_received',
+  },
+  'studio.inquiries.colAssignee': {
+    value: 'Assigned',
+    contentKey: 'studio_help.inquiries_col_assignee',
+  },
+  'studio.inquiries.export': {
+    value: 'Export as CSV',
+    contentKey: 'studio_help.inquiries_export',
+  },
+  'studio.inquiries.exportNote': {
+    value:
+      'The export carries what a person needs to follow an enquiry up. It omits the hashed address and the browser string: those exist to catch abuse, not to travel in a spreadsheet.',
+    contentKey: 'studio_help.inquiries_export_note',
+  },
+  'studio.inquiry.back': {
+    value: 'Back to enquiries',
+    contentKey: 'studio_help.inquiry_back',
+  },
+  'studio.inquiry.contactHeading': {
+    value: 'Who sent it',
+    contentKey: 'studio_help.inquiry_contact_heading',
+  },
+  'studio.inquiry.phone': {
+    value: 'Phone',
+    contentKey: 'studio_help.inquiry_phone',
+  },
+  'studio.inquiry.email': {
+    value: 'Email',
+    contentKey: 'studio_help.inquiry_email',
+  },
+  'studio.inquiry.city': {
+    value: 'City',
+    contentKey: 'studio_help.inquiry_city',
+  },
+  'studio.inquiry.enquiryType': {
+    value: 'Enquiry type',
+    contentKey: 'studio_help.inquiry_enquiry_type',
+  },
+  'studio.inquiry.messageHeading': {
+    value: 'What they wrote',
+    contentKey: 'studio_help.inquiry_message_heading',
+  },
+  'studio.inquiry.answersHeading': {
+    value: 'The brief',
+    contentKey: 'studio_help.inquiry_answers_heading',
+  },
+  'studio.inquiry.answersEmpty': {
+    value: 'This enquiry carries no configured answers.',
+    contentKey: 'studio_help.inquiry_answers_empty',
+  },
+  'studio.inquiry.attachmentsHeading': {
+    value: 'Reference images',
+    contentKey: 'studio_help.inquiry_attachments_heading',
+  },
+  'studio.inquiry.attachmentsEmpty': {
+    value: 'No reference images were attached.',
+    contentKey: 'studio_help.inquiry_attachments_empty',
+  },
+  'studio.inquiry.timelineHeading': {
+    value: 'What has happened',
+    contentKey: 'studio_help.inquiry_timeline_heading',
+  },
+  'studio.inquiry.timelineNote': {
+    value:
+      'Append only. A mistaken entry is corrected by adding another, never by editing this record.',
+    contentKey: 'studio_help.inquiry_timeline_note',
+  },
+  'studio.inquiry.pipelineHeading': {
+    value: 'Where it stands',
+    contentKey: 'studio_help.inquiry_pipeline_heading',
+  },
+  'studio.inquiry.status': {
+    value: 'Status',
+    contentKey: 'studio_help.inquiry_status',
+  },
+  'studio.inquiry.statusSave': {
+    value: 'Move to this status',
+    contentKey: 'studio_help.inquiry_status_save',
+  },
+  'studio.inquiry.assignHeading': {
+    value: 'Who is answering it',
+    contentKey: 'studio_help.inquiry_assign_heading',
+  },
+  'studio.inquiry.assignee': {
+    value: 'Assigned to',
+    contentKey: 'studio_help.inquiry_assignee',
+  },
+  'studio.inquiry.assignSave': {
+    value: 'Save assignment',
+    contentKey: 'studio_help.inquiry_assign_save',
+  },
+  'studio.inquiry.unassigned': {
+    value: '— nobody —',
+    contentKey: 'studio_help.inquiry_unassigned',
+  },
+  'studio.inquiry.noteHeading': {
+    value: 'Add a note',
+    contentKey: 'studio_help.inquiry_note_heading',
+  },
+  'studio.inquiry.note': {
+    value: 'Note',
+    contentKey: 'studio_help.inquiry_note',
+  },
+  'studio.inquiry.noteAdd': {
+    value: 'Add note',
+    contentKey: 'studio_help.inquiry_note_add',
+  },
+  'studio.inquiry.sourcePath': {
+    value: 'Sent from',
+    contentKey: 'studio_help.inquiry_source_path',
+  },
+  'studio.inquiry.received': {
+    value: 'Received',
+    contentKey: 'studio_help.inquiry_received',
+  },
+  'studio.inquiry.whatsapp': {
+    value: 'WhatsApp',
+    contentKey: 'studio_help.inquiry_whatsapp',
+  },
+  'studio.inquiry.notFound': {
+    value: 'That enquiry could not be found.',
+    contentKey: 'studio_help.inquiry_not_found',
   },
 } as const satisfies Record<string, StudioStringEntry>
 

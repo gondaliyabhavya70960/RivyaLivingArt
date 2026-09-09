@@ -186,6 +186,20 @@ export const STUDIO_NAV: readonly StudioNavGroup[] = [
         writePermission: 'content.write',
         phases: [18],
       },
+      /*
+       * THE FIRST NON-DYNAMIC SUB-PAGE IN THE STUDIO, and it is a leaf of its own rather than a tab
+       * because it edits a different table. `/studio/content/journal` lists articles;
+       * `/studio/content/journal/categories` edits the nine subjects they are filed under, which an
+       * editor visits rarely and deliberately. Hiding it behind the article list would make the one
+       * screen that changes a public URL harder to find than the ones that do not.
+       */
+      {
+        href: '/studio/content/journal/categories',
+        labelKey: 'studio.nav.content.journalCategories',
+        permission: 'content.read',
+        writePermission: 'content.write',
+        phases: [18],
+      },
       {
         href: '/studio/content/testimonials',
         labelKey: 'studio.nav.content.testimonials',

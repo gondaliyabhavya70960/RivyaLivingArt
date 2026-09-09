@@ -153,3 +153,36 @@ export async function searchProductsByTitle(
   if (error) throw toRepositoryError(ENTITY, 'search', term, error)
   return parseRows(ENTITY, productSchema, data ?? [])
 }
+
+/**
+ * The two facts the commission configurator needs about a product, and nothing else.
+ *
+ * NOT `getProductBySlug`, WHICH THROWS. That function is for a product page, where a slug that
+ * resolves to nothing is a 404. Here the slug came from a query parameter — a link somebody shared,
+ * a URL somebody edited, a piece that has since been unpublished — and the right answer is to open
+ * the default brief rather than to take the page down. Null is that answer.
+ *
+ * IT RETURNS AN ID AND A CATEGORY, deliberately not a `Product`. What the configurator does with it
+ * is choose a form and pre-fill one field; handing it the whole row would invite a second reading
+ * of the same product from a component that has no business rendering one.
+ */
+export async function getProductForCommission(
+  client: Client,
+  slug: string,
+): Promise<{ id: string; categoryId: string | null; categorySlug: string | null } | null> {
+  const { data, error } = await client
+    .from('products')
+    .select('id, category_id, categories(slug)')
+    .eq('slug', slug)
+    .maybeSingle()
+
+  if (error) throw toRepositoryError(ENTITY, 'get-for-commission', slug, error)
+  if (data === null) return null
+
+  const category = data.categories as { slug?: string } | null
+  return {
+    id: data.id,
+    categoryId: data.category_id,
+    categorySlug: category?.slug ?? null,
+  }
+}

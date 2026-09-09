@@ -283,6 +283,21 @@ Each is written unchanged when that phase runs `npm run seed:content -- --only=<
 
   The CTA is §7's reusable *View the Collection*, not §28's *Explore the Collection* — one label per
   destination, recorded as amendment A15·b.
+- **No article bodies.** SEED §20 supplies ten IDEAS — a title and an angle each — and says in
+  capitals: seed as DRAFT, do not publish automatically. The seed writes the brief and the machinery;
+  the writing is the owner's. Three of the ten (§20's 02, 04 and 08) carry
+  `OWNER_VERIFICATION_REQUIRED` because §20 attaches a caution to each: room-size standards claimed
+  without a source, Rivya-specific fabrication capability, and preservation-performance promises.
+
+  The angle lives in `angle_note` and is rendered NOWHERE. `excerpt` — the line a card shows — is
+  left null, because a summary of an unwritten article is a summary of nothing. The Phase 09 records
+  put the angle in `excerpt`, which would have published ten editorial briefs as summaries on
+  `/journal` the moment anything went live.
+
+  Article covers are bound BY POSITION, not by subject, and an editor should change them. Every
+  `editorial` asset is a concept render of a mood; none is a photograph of the piece any of these
+  titles is about, because none of these articles is written.
+
 - **No placeholder media.** A slot with no asset is left null and reported as a gap. A binding
   naming an asset that is not in `media_assets` *fails the run* — that is a typo, which is a
   different thing from a gap.

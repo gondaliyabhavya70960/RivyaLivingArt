@@ -3,7 +3,7 @@ import Link from 'next/link'
 
 import { DataTable } from '@/components/studio/DataTable'
 import { RelativeTime } from '@/components/studio/RelativeTime'
-import { StatusPill } from '@/components/studio/StatusPill'
+import { DemoPill, StatusPill } from '@/components/studio/StatusPill'
 import { StudioPage, studioMetadata } from '@/components/studio/StudioPage'
 import { t } from '@/components/studio/strings'
 import { requirePermission } from '@/lib/auth/require'
@@ -73,7 +73,12 @@ export default async function Page() {
           {
             id: 'status',
             header: t('studio.content.pages.colStatus'),
-            cell: (page) => <StatusPill status={page.status} />,
+            cell: (page) => (
+              <span className="flex flex-wrap items-center gap-1">
+                <StatusPill status={page.status} />
+                <DemoPill isDemo={page.is_demo} />
+              </span>
+            ),
           },
           {
             id: 'updated',

@@ -85,12 +85,29 @@ export function isDone(ledger: Ledger, asset: ManifestAsset): boolean {
   return entry !== undefined && entry.error === undefined
 }
 
+/**
+ * `uploadedAt` RECORDS WHEN THE BYTES REACHED CLOUDINARY, AND NOTHING ELSE MAY RESTAMP IT.
+ *
+ * This overwrote it unconditionally, which is wrong for the one path that calls `recordSuccess`
+ * without uploading anything: `--from-results --rebuild-rows` reads an existing upload-results file
+ * and rewrites `media_assets` rows from it, which is how the 250 assets are restored after a local
+ * `db:reset`. Every run of that stamped all 250 entries with the current time, so the ledger
+ * gradually came to say the library had been uploaded on whatever afternoon somebody last reset
+ * their database — and the ledger is committed precisely so it can be trusted by somebody who has
+ * the repository and no database.
+ *
+ * An entry that already exists keeps its original date. A genuine re-upload changes `publicId` or
+ * `bytes`, and those are still overwritten: what is preserved is the answer to "when did this asset
+ * first arrive", which no later bookkeeping pass has any business revising.
+ */
 export function recordSuccess(
   ledger: Ledger,
   asset: ManifestAsset,
   uploaded: UploadedAsset,
   now: string,
 ): Ledger {
+  const existing = ledger.entries[asset.higgsfield_generation_id]
+
   return {
     manifestVersion: ledger.manifestVersion,
     entries: {
@@ -99,7 +116,7 @@ export function recordSuccess(
         rivyaAssetId: asset.rivya_asset_id,
         publicId: uploaded.publicId,
         resourceType: resourceTypeFor(asset),
-        uploadedAt: now,
+        uploadedAt: existing?.uploadedAt ?? now,
         bytes: uploaded.bytes,
       },
     },

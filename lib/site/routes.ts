@@ -45,15 +45,21 @@ export type StaticPublicPath = (typeof STATIC_PUBLIC_PATHS)[number]
  * against the first directly, and against the second only by consulting the database — which is
  * what `listPublicPagePaths` is for.
  *
- * Phase 14 added the first entry and Phase 15 the second. `/collections/[slug]`,
- * `/portfolio/[slug]`, `/journal/[slug]` and `/journal/category/[slug]` join them in Phases 16
- * to 18.
+ * Phase 14 added the first entry and Phase 15 the second; Phases 16, 17 and 18 added the rest.
+ *
+ * `/journal/category/[slug]` IS THE ONLY ONE OF THE SIX THAT IS NOT AN ENTITY PAGE. A collection, a
+ * product, a project and an article each have a story somebody wrote, held as blocks on a `pages`
+ * row; a journal category has no story — it is a filter with a name — so its route renders the
+ * category's own two fields and a list, and no `pages` row exists for it. Recorded here because a
+ * reader scanning this list would otherwise expect all six to resolve the same way.
  */
 export const DYNAMIC_PUBLIC_ROUTES = [
   '/collection/[category]',
   '/product/[slug]',
   '/collections/[slug]',
   '/portfolio/[slug]',
+  '/journal/[slug]',
+  '/journal/category/[slug]',
 ] as const
 
 export type DynamicPublicRoute = (typeof DYNAMIC_PUBLIC_ROUTES)[number]
