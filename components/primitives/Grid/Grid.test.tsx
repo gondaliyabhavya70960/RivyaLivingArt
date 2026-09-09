@@ -65,3 +65,62 @@ describe('Grid', () => {
     expect(ref.current).toBeInstanceOf(HTMLUListElement)
   })
 })
+
+/**
+ * The column-override contract, asserted on the class list because that is where it broke.
+ *
+ * `cn` joins without Tailwind awareness, so emitting the editorial defaults ALONGSIDE a caller's
+ * columns produced an element carrying both. Two competing `grid-cols-*` utilities are settled by
+ * stylesheet order, and Tailwind emits them in ascending numeric order per breakpoint layer, so
+ * `grid-cols-4` beat `grid-cols-1` and `lg:grid-cols-12` beat `lg:grid-cols-3` — every caller that
+ * stated columns rendered 4 across on a phone and 12 on a desktop.
+ */
+describe('Grid columns', () => {
+  it('drops the editorial defaults when the caller states its own columns', () => {
+    render(
+      <Grid data-testid="cards" className="grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+        <div />
+      </Grid>,
+    )
+
+    const cards = screen.getByTestId('cards')
+    expect(cards).toHaveClass('grid-cols-1', 'sm:grid-cols-2', 'lg:grid-cols-3')
+    expect(cards).not.toHaveClass('grid-cols-4')
+    expect(cards).not.toHaveClass('md:grid-cols-8')
+    expect(cards).not.toHaveClass('lg:grid-cols-12')
+  })
+
+  it('recognises a breakpoint-only override, where the class follows a colon', () => {
+    render(
+      <Grid data-testid="wide" className="lg:grid-cols-5">
+        <div />
+      </Grid>,
+    )
+
+    expect(screen.getByTestId('wide')).not.toHaveClass('grid-cols-4')
+  })
+
+  it('keeps the editorial 4/8/12 when the caller states no columns', () => {
+    render(
+      <Grid data-testid="editorial" className="items-center">
+        <div />
+      </Grid>,
+    )
+
+    expect(screen.getByTestId('editorial')).toHaveClass(
+      'grid-cols-4',
+      'md:grid-cols-8',
+      'lg:grid-cols-12',
+    )
+  })
+
+  it('is not fooled by a class that merely ends in something similar', () => {
+    render(
+      <Grid data-testid="gapped" className="auto-cols-fr">
+        <div />
+      </Grid>,
+    )
+
+    expect(screen.getByTestId('gapped')).toHaveClass('grid-cols-4')
+  })
+})
