@@ -1,4 +1,5 @@
 import { collectionProductsBlock } from '@/content/blocks/collection-products'
+import { projectGalleryBlock } from '@/content/blocks/project-gallery'
 import { categoryGridBlock } from '@/content/blocks/category-grid'
 import { categoryIntroBlock } from '@/content/blocks/category-intro'
 import { categoryListBlock } from '@/content/blocks/category-list'
@@ -57,6 +58,7 @@ const BUILT_BLOCKS = {
   statement: statementBlock,
   'signature-media': signatureMediaBlock,
   'collection-products': collectionProductsBlock,
+  'project-gallery': projectGalleryBlock,
   'empty-state': emptyStateBlock,
   divider: dividerBlock,
 } as const satisfies Partial<Record<BlockType, AnyBlockModule>>
@@ -70,7 +72,7 @@ const BUILT_BLOCKS = {
  * NO `as` CAST ON THIS EXPRESSION. `x as Record<BlockType, …> satisfies Record<BlockType, …>`
  * compiles for any x at all — the assertion answers the question the `satisfies` was asked, and
  * the exhaustiveness it appears to prove is worth nothing. Both spread sources therefore carry
- * literal keys, so the object's own type has all 30 and the check is real. Delete `hero` from
+ * literal keys, so the object's own type has all 31 and the check is real. Delete `hero` from
  * `BUILT_BLOCKS` and this line fails, naming it.
  *
  * The payload parameter is erased to `unknown`. A registry entry is looked up by a runtime string,

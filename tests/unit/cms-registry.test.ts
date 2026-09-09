@@ -21,10 +21,11 @@ describe('block type union', () => {
     expect(new Set(BLOCK_TYPES).size).toBe(BLOCK_TYPES.length)
   })
 
-  it('carries the whole §08 catalogue, plus the two exhibition blocks', () => {
+  it('carries the whole §08 catalogue, plus the exhibition and project blocks', () => {
     // 28 from PHASE-05-09 §08, plus `signature-media` and `collection-products` — the two an
-    // exhibition page needs, added in Phase 16 under amendment A14.
-    expect(BLOCK_TYPES).toHaveLength(30)
+    // exhibition page needs, added in Phase 16 under amendment A14 — plus `project-gallery`,
+    // which a project's story page needs (Phase 17).
+    expect(BLOCK_TYPES).toHaveLength(31)
   })
 
   it('validates only its own members', () => {
@@ -154,7 +155,7 @@ describe('built and planned', () => {
    * `components/sections/registry.ts` — which `tests/unit/cms-sections.test.tsx` asserts agrees
    * with this list in both directions.
    */
-  it('reports the twenty-two built blocks', () => {
+  it('reports the twenty-three built blocks', () => {
     expect(BUILT_BLOCK_TYPES).toEqual([
       'hero',
       'manifesto',
@@ -176,6 +177,7 @@ describe('built and planned', () => {
       'customization-note',
       'signature-media',
       'collection-products',
+      'project-gallery',
       'empty-state',
       'divider',
     ])
@@ -190,8 +192,8 @@ describe('built and planned', () => {
 
   it('reports the rest as planned', () => {
     const planned = BLOCK_TYPES.filter((type) => !isBuilt(type))
-    // 30 declared, 22 built. Phase 13 moved the three `/large-format` blocks out of this list;
-    // Phase 16 added two more that are built on arrival, so this count is unchanged.
+    // 31 declared, 23 built. Phase 13 moved the three `/large-format` blocks out of this list;
+    // Phases 16 and 17 added three more that are built on arrival, so this count is unchanged.
     expect(planned).toHaveLength(8)
     for (const type of planned) {
       expect(blockModule(type).state, type).toBe('PLANNED')
@@ -209,9 +211,26 @@ describe('built and planned', () => {
     }
   })
 
-  it('offers only built blocks to an editor', () => {
+  /**
+   * BUILT IS NECESSARY BUT NO LONGER SUFFICIENT, and that changed in Phase 17.
+   *
+   * Every block was `allowedPages: null` until `project-gallery`, which reads the media of the
+   * project whose page it sits on — so anywhere else it has no project and would render nothing at
+   * all. A band that silently renders nothing is the hardest kind of empty to diagnose, so Studio
+   * does not offer it there. This asserts BOTH directions: the restricted block is absent from a
+   * page it does not belong on, and present on the one it does.
+   */
+  it('offers built blocks to an editor, minus those a page does not allow', () => {
     const addable = addableBlocks('/').map((block) => block.type)
-    expect(addable).toEqual(BUILT_BLOCK_TYPES)
+    const unrestricted = BUILT_BLOCK_TYPES.filter((type) => blockModule(type).allowedPages === null)
+
+    expect(addable).toEqual(unrestricted)
+    expect(addable).not.toContain('project-gallery')
+  })
+
+  it('offers a page-restricted block on the page it belongs to', () => {
+    const addable = addableBlocks('/portfolio/[slug]').map((block) => block.type)
+    expect(addable).toContain('project-gallery')
   })
 
   it('filters by allowedPages when a block declares one', () => {
