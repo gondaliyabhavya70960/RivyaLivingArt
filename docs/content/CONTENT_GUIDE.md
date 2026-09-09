@@ -198,8 +198,11 @@ rather than quietly rewinding.
 
 ## 8. Seeding
 
-`npm run seed:content` applies `content/seed/**` idempotently. Eighteen modules, ~231 records,
-every string taken from `docs/requirements/02-INITIAL-CONTENT-SEED-SYSTEM.md` verbatim.
+`npm run seed:content` applies `content/seed/**` idempotently. Twenty modules, 300 records —
+every string from `docs/requirements/02-INITIAL-CONTENT-SEED-SYSTEM.md` verbatim, plus the two
+modules whose strings a component needed and the specification does not supply: `site-chrome`
+(Phase 10's shell controls and landmark names) and `catalog-ui` (Phase 14's listing controls). Both
+say so in their own headers, so a reader can always tell a quoted sentence from a written one.
 
 ```
 npm run seed:content -- --dry-run      decide everything, write nothing
@@ -378,6 +381,44 @@ modules — the question is what is actually there, not what the seed intended.
 without updating the file fails the build.
 
 ---
+
+## 8.5 The catalogue's strings, and the one choice hidden in them
+
+Phase 14's listing reads its words from three groups, and nothing in `components/patterns/{ProductCard,
+FilterRail,SortSelect,Pagination}` is a literal — `scripts/cms/check-section-copy.ts` fails the build
+on one.
+
+| What | Group | Where seeded |
+|---|---|---|
+| The ten SEED §30 price and badge labels | `COMMERCE_LABEL` | `content/seed/commerce-labels.ts` (Phase 09) |
+| Filter group names, sort options, pagination, the two facet values §30 has no word for | `UI_LABEL` | `content/seed/catalog-ui.ts` |
+| Apply, Clear Filters, Previous, Next | `ACTION_LABEL` | `content/seed/catalog-ui.ts` |
+| "This collection is being prepared" (SEED §27) | `EMPTY_STATE` | `content/seed/global-content.ts` (Phase 08) |
+| "No pieces match these filters." | `EMPTY_STATE` | `content/seed/commerce-labels.ts` (Phase 14) |
+
+**The two empty states are different sentences on purpose.** SEED §27 is true of a category with
+nothing published in it. It is FALSE of a category full of pieces none of which match the filters a
+visitor just applied — and telling someone a collection is unfinished when it is one checkbox away
+is how they leave. The filtered case names the filters as the cause and renders "Clear Filters"
+beside it.
+
+**`From` or `Starting from` — the owner chooses, and the mechanism is DISABLING one.** SEED §30
+lists both, and they are two spellings of one state's label. `lib/catalog/price.ts` resolves
+`COMMERCE_LABEL.from` first and falls back to `COMMERCE_LABEL.starting_from`, and `siteStrings()`
+drops any row whose `is_enabled` is false. So:
+
+- Leave both enabled → the card reads **From ₹12,500**. The shorter spelling, which is what fits.
+- Disable `From` in Studio → the card reads **Starting from ₹12,500**. No deploy, no code change.
+- Disable both → the card shows no price row at all, because there is no label to show. That is the
+  general rule for every string on this site, not a special case: a missing row renders nothing
+  rather than an English default nobody wrote.
+
+**A facet with no label does not render.** The same rule, applied to a checkbox: an unlabelled option
+is worse than an absent one, because a visitor can tick it and cannot tell what they ticked.
+`OPEN_EDITION` and the `large-format` scale value are the two facet values SEED §30 has no word for —
+the first because it is the ABSENCE of a scarcity claim and never appears on a card, the second
+because it is a filter and not a badge — so both are `UI_LABEL` rows rather than an eleventh and
+twelfth commerce label.
 
 ## 9. What Phase 10 inherits
 

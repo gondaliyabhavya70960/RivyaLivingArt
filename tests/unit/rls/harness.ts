@@ -206,6 +206,15 @@ export const FIXTURE_IDS = {
   draftMaterial: '00000000-0000-4000-8000-0000000000b6',
   publishedAsset: '00000000-0000-4000-8000-0000000000b7',
   draftAsset: '00000000-0000-4000-8000-0000000000b8',
+  /**
+   * A CONCEPT render, attached to nothing.
+   *
+   * Added in Phase 14 with `reject_concept_product_media`. The two assets above used to be concept
+   * renders and are no longer, because the trigger refuses one on a `product_media` row — so a
+   * fixture that kept them concept could not be loaded at all. This one exists so the refusal has
+   * something to refuse.
+   */
+  conceptAsset: '00000000-0000-4000-8000-0000000000b9',
 } as const
 
 /**
@@ -278,7 +287,7 @@ export async function loadFixture(): Promise<void> {
     [f.publishedMaterial, f.draftMaterial],
   ])
   await db.query('delete from media_assets where id = any($1::uuid[])', [
-    [f.publishedAsset, f.draftAsset],
+    [f.publishedAsset, f.draftAsset, f.conceptAsset],
   ])
 
   await db.query(
@@ -302,12 +311,20 @@ export async function loadFixture(): Promise<void> {
   // `source` is stated rather than defaulted because 0030 gives the column no default: an insert
   // that omits it fails outright. FALLBACK is the honest value for a synthetic fixture — it is not
   // real Rivya media, not a user upload, not a Higgsfield asset and not a render.
+  //
+  // `is_concept` IS FALSE ON THE TWO PRODUCT ASSETS, and that changed in Phase 14. Both were
+  // concept renders until `reject_concept_product_media` made that combination impossible: a
+  // concept asset may illustrate a material or a process, never a product (D6, D10). The join rows
+  // below attach these two to products, so a fixture that kept them concept would fail to load.
+  // `conceptAsset` carries the flag instead, attached to nothing, for the test that proves the
+  // refusal.
   await db.query(
     `insert into media_assets (id, resource_type, public_id, folder, kind, alt_text,
                                is_ai_generated, is_concept, status, source) values
-       ($1,'image','rls-pub','rivya/test','IMAGE','published asset',true,true,'PUBLISHED','FALLBACK'),
-       ($2,'image','rls-drf','rivya/test','IMAGE','draft asset',true,true,'DRAFT','FALLBACK')`,
-    [f.publishedAsset, f.draftAsset],
+       ($1,'image','rls-pub','rivya/test','IMAGE','published asset',true,false,'PUBLISHED','FALLBACK'),
+       ($2,'image','rls-drf','rivya/test','IMAGE','draft asset',true,false,'DRAFT','FALLBACK'),
+       ($3,'image','rls-concept','rivya/test','IMAGE','concept render',true,true,'PUBLISHED','FALLBACK')`,
+    [f.publishedAsset, f.draftAsset, f.conceptAsset],
   )
 
   // Join rows covering every combination the Shape B policies must distinguish.

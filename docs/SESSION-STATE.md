@@ -8,11 +8,86 @@
 
 ## Current Phase
 
+**Phase 14 — Product Catalog. CODE COMPLETE; THE CATALOGUE IS EMPTY, WHICH IS THE FINISHED STATE.**
+`/collection` and all seven `/collection/[category]` pages are browsable, server-rendered from the
+URL, filterable and pageable with JavaScript disabled — and every one of them renders SEED §27's
+"this collection is being prepared", because `products` holds zero rows and no seed will ever add
+one. The Studio catalogue editor is the only way that changes.
+
+Phases 12 and 13 merged as PR #16; Phase 11 as PR #15.
+
+### Phase 14: what is built
+
+**Migrations `0120`–`0122`, LOCAL ONLY.** `FIXED` on `price_state`, the `availability_state` and
+`edition_state` enums, six columns on `products`, the two listing indexes dropped and recreated in
+their full form (`0008` created them short with an instruction to do exactly this), the replaced
+price-coherence constraint, the edition-size constraint, and `reject_concept_product_media`. Hosted
+is still at `0080` — applying these is owner-side, like every migration since `0050`.
+
+**`lib/catalog/`** — `query.ts` (the whole listing parsed out of the URL, with a canonical builder
+that omits what it dropped), `price.ts` (the only place a price becomes words), `validation.ts`
+(FEAT §21 and §22 as pure functions, shared by the form and the action), `labels.ts`, `rail.ts`,
+`listing.tsx`. Two repositories: `catalog-listing.ts` for the public read, `catalog-admin.ts` for
+the Studio write.
+
+**Four patterns, all server components, zero client JavaScript** — RC-217 `ProductCard`, RC-223
+`FilterRail` (planned as `FilterBar` (public)), RC-234 `Pagination`, RC-237 `SortSelect`.
+
+**The Studio catalogue editor.** `/studio/catalog/{products,categories,collections,materials}`, with
+the ten-item FEAT §22 checklist computed from the saved row, publication refused with the unmet items
+named, and a "Not ready" column on the list running the same computation per row.
+
+**`content/seed/catalog-ui.ts`** — 22 rows for the listing's own controls, because a
+server-rendered filter rail needs words for its groups and D2 leaves no room for typing them
+into JSX.
+
+### Phase 14: what is NOT built, and why
+
+- **A link on a product card.** `/product/[slug]` is Phase 15. An anchor now would put a 404 behind
+  every card in the grid, which is the dead door `resolveInternalTarget` exists to refuse.
+- **The gallery editor with media roles**, the relationship editor, the customization form builder
+  and bulk import — Phases 15, 23, 19 and 24. Each has a stub route with a real permission check.
+- **The Specifications readiness item.** Eleven items were planned; ten shipped. `product_specs` is
+  Phase 15's table, and an item that always reads "Missing" because the table it counts does not
+  exist would train an owner to ignore the checklist.
+- **The mobile filter drawer** RC-223 planned. A drawer opened by a button is a Client Component,
+  and the phase requires the rail to filter with JavaScript disabled. A `<details>` disclosure would
+  satisfy both and is the obvious Phase 41 revision.
+- **The authenticated Studio e2e half.** `test.fixme`, as in Phases 04 and 05 and for the same
+  reason: no reachable auth server, so no real session. The layers beneath it are proved where they
+  can be — the write policies against a real PostgreSQL, the readiness gate as pure functions.
+- **Visual baselines**, for the fifth phase running. Still no media.
+
+### Phase 14: verification, as actually run
+
+| Step | Result |
+|---|---|
+| 1 · `db:reset` + `db:migrate` + `db:types` | ✓ 31 migrations apply to an empty database; the types diff is the six columns and two enums and nothing else |
+| 2 · quote-only product carrying a price | ✓ refused by `products_price_state_coherent`, including a zero |
+| 3 · concept asset on a `product_media` row | ✓ refused by the trigger, naming the asset, on INSERT and on UPDATE |
+| 4 · `collection-empty.spec.ts` against the empty catalogue | ✓ all seven category pages 200, own heading, SEED §27, **zero** `[data-product-card]` |
+| 5 · three products with the four price states | ✓ each label from `COMMERCE_LABEL`; the `REQUEST_QUOTE` card contains not one digit; the limited edition states its size |
+| 6 · filters, sort and page 2 with JavaScript disabled | ✓ all three; `?sort=price` and `?page=0` dropped from the canonical URL |
+| 7 · `rel="next"` on page 1, `rel="prev"` on page 2, canonical per page | ✓ — and `?page=99` answers 404 rather than the 500 PostgREST's PGRST103 would otherwise cause |
+| 8 · publication refused with a named unmet item | ✓ as pure functions in `catalog-studio.spec.ts`; the browser half is `test.fixme` |
+| 9 · `select count(*) from products` | ✓ 0, after the fixture was removed |
+| 10 · axe on `/collection/furniture` | ✓ zero critical or serious violations; no horizontal overflow |
+
+**1000 unit assertions** (86 files), including 17 database guards in `tests/unit/rls/phase14.test.ts`.
+`npm run check` clean; a production build compiles every new route.
+
+**The RLS fixture had to change.** `loadFixture` attached two `is_concept = true` assets to
+`product_media`, which `reject_concept_product_media` now refuses — so the whole RLS suite failed to
+load. Both are non-concept now, and a third asset carries the flag, attached to nothing, for the test
+that proves the refusal. Note also that `tests/unit/rls/phase08.test.ts` DELETES every row from
+`pages` and `page_sections`: after running the RLS suite locally, re-run `npm run seed:content` before
+looking at the site.
+
+---
+
 **Phase 13 — Large Format Experience. CODE COMPLETE; NOT MEASURED.** `/large-format` renders, and
 the phase's real contribution is smaller and wider than the page: a link is now rendered only when
 its destination is live.
-
-Phase 12 is open as PR #16; Phase 11 merged as PR #15.
 
 ### Phase 13: what is built
 
@@ -1112,6 +1187,31 @@ the CTA library's reserved page id or add a D4 route leaf, and whether `analytic
 on `/studio` rather than a route segment.
 
 ## Next Exact Action
+
+**Start Phase 15 — Product Detail Experience**, or run the owner-side actions, which are now five
+phases old and have grown by one.
+
+Phase 15 is the phase that makes a product card a link: it builds `/product/[slug]`, the gallery with
+its media roles, the specification table and the eleventh readiness item. Nothing in the repository
+blocks it.
+
+The owner-side list, in the order of what each unlocks:
+
+1. **Apply `0120`–`0122` to hosted.** The repository is at `0122`; `ccvarsmzickdkryoakdg` is at
+   `0080`. Until they are applied, the deployed preview's `products` table has no `price_minor`, no
+   `availability_state`, no `edition_state` and no concept-media trigger — so the catalogue routes
+   would fail there even with content. `npm run db:migrate -- --apply --allow-remote` from a machine
+   that can reach the session pooler, or the Supabase MCP server as `0050`–`0080` were applied.
+2. **`npm run media:migrate:higgsfield`**, which still closes the visual-baseline and Lighthouse
+   gaps for every page built so far.
+3. **`npm run seed:content` against hosted**, then publish in Studio.
+4. **Enter the first products.** This is the one thing on this list no command can do:
+   `/studio/catalog/products/new`, as `owner`, `admin` or `merchandiser`. Nothing seeds a product,
+   nothing imports one, and the checklist on each product names exactly what is still missing before
+   it can be published.
+5. **Rotate the six exposed secrets** — still outstanding, and still recorded under *Known Issues*.
+
+### Superseded — the Phase 14 plan
 
 **Start Phase 14 — Product Catalog**, or run the owner-side actions, which are now four phases old.
 

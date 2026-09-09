@@ -981,8 +981,18 @@ approved import created it; neither path reads a research table.
 `products_listing_idx (category_id, status, sort_order nulls last, published_at desc)`;
 `products_facets_idx (status, is_large_format, price_state, availability_state, edition_state)`;
 `products_published_idx (status) where status = 'PUBLISHED'`; `pg_trgm` GIN on `title` and `slug`.
+The first two were created by `0008` in a short form — without the Phase 14 columns, with a comment
+saying so — and `0121` DROPS AND RECREATES them rather than adding a second index beside each: an
+index cannot gain a column in place, and the short version left behind would write-amplify every
+product update forever. The material facet reads the join from the material side, which
+`product_materials_material_idx (material_id, product_id)` already served from `0008`.
 
-**Constraints** — three, and each encodes a business rule:
+**Constraints** — three, and each encodes a business rule. Phase 14's `0122` REPLACED the first
+(the Phase 03 version predates `FIXED` and would reject every fixed-price product), ADDED the
+second, and deliberately did NOT re-create the third: `products_verified_before_publish` has existed
+since Phase 03's `0006`, and adding a duplicate under the same name fails while adding one under a
+different name gives the same rule two names. It is quoted here because it belongs to this rule set,
+not because Phase 14 wrote it.
 
 ```sql
 -- a quote-only product can never carry a number, and a priced one must carry a currency
@@ -996,8 +1006,15 @@ alter table products add constraint products_price_state_coherent check (
                                     and currency is null)
 );
 
+-- a limited edition must state a positive size; every other edition state must not carry one.
+-- STRONGER THAN THE PHASE DOCUMENT SPECIFIED, in the same direction and for the same reason:
+-- "limited edition of 0" is a typo a visitor reads as inventory, and "One of One, edition of 12"
+-- is a contradiction a product card would render straight-faced.
 alter table products add constraint products_edition_size_coherent check (
-  edition_state <> 'LIMITED_EDITION' or edition_size is not null
+  case
+    when edition_state = 'LIMITED_EDITION' then edition_size is not null and edition_size > 0
+    else edition_size is null
+  end
 );
 
 -- an unverified capability claim can never be published (D10)

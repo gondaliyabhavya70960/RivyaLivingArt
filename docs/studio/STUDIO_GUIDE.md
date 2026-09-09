@@ -629,6 +629,38 @@ and the refusal names the items. The Specifications item is satisfied by *at lea
 by a deliberate "no published specifications" choice, so an owner is never pushed into inventing a
 value in order to publish.
 
+**Phase 14 ships TEN of those eleven.** Specifications joins the list in Phase 15, with the
+`product_specs` table it describes — an item that always reads "Missing" because the table it counts
+does not exist would train an owner to ignore the checklist, which is the one thing a checklist
+cannot survive. The ten are FEAT §22's own list, in its order.
+
+Eight of the ten are **required** and block publishing: Title, Description, Category, Price state,
+Dimensions, Materials, Hero image, SEO. Two are **advisory** and are shown, labelled, and never
+block: Gallery, because one strong photograph is a legitimate presentation of a piece; and
+Customization, because `is_customizable` is a non-null boolean that is answered by construction and
+the form builder behind it is Phase 19's. The rule for the split is that an item is required when its
+absence would put something dishonest or empty in front of a visitor — a product with no category has
+no page to live on, with no hero image its card is a grey box, and with no materials it makes a
+material-led studio look like a dropshipper.
+
+### 7.1.1 What Phase 14 built, and what §7.1 above still describes as planned
+
+The surface above was written before the phase. Where the two differ, this is what exists:
+
+| §7.1 says | Phase 14 built | Why |
+|---|---|---|
+| Detail **tabs** — Identity · Pricing · … · Publishing | One page of labelled sections in that order, with the readiness checklist and the publish control above the form | Tabs hide the unmet items behind whichever tab is not open, which is the opposite of what a transparent checklist is for. The publish refusal has to be visible from wherever the missing field is |
+| List columns including `owner_verification`, Price state, Large format, Updated by | Title · SKU · Category · Status · **Not ready** · Updated | "Not ready" lists the unmet REQUIRED items by name, per row. It is the column the screen exists for: a status says a product is a draft, and this says why. The rest are one click away on the product itself |
+| `product_media` rows with `role` and `sort_order` | `hero_media_id` only | The gallery editor is Phase 15's, with the product detail page that renders it. The Gallery readiness item already reads `product_media`, so it lights up the moment that editor exists |
+| `model_media_id`, `product_specs`, `product_relations` | Not editable | Phases 21, 15 and 23 respectively |
+| Categories: `slug`, `parent_id`, `is_primary` editable | Name · Subtitle · Description · Order · Hero image · SEO | The seven are D3's taxonomy AND the route map — `/collection/[category]` pre-renders exactly these slugs. Editing a slug breaks a published URL; adding an eighth category creates a page nobody designed. What an owner legitimately changes is the wording and the order |
+| — | Collections have **no publish control at all** | FEAT §9 keeps every collection a `DRAFT_COLLECTION_CONCEPT` until Phase 16 adds owner confirmation. A disabled button that never enables reads as a broken interface rather than as a rule |
+| — | The hero-image picker **never offers a concept render** | The trigger and the validator both refuse one. An interface that offers a choice and then blames you for making it is the wrong shape; the two guards stay for the request that did not come from this form |
+
+**Amounts are typed in major units.** The form asks for 12500, not 1250000, and converts once on
+save. Asking an owner to type a price in paise is asking for a price wrong by a hundredfold, and the
+catalogue would show it without complaint.
+
 **Guardrails.**
 
 - Price coherence is a database constraint: a `FIXED` product must carry `price_minor` and a

@@ -50,9 +50,22 @@ async function categoryFor(slug: string) {
 }
 
 export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
-  const { category } = await params
-  const path = `${BASE}/${category}`
-  const loaded = await loadCatalogListing({ basePath: path, searchParams: await searchParams })
+  const { category: slug } = await params
+  const path = `${BASE}/${slug}`
+
+  /*
+   * THE LISTING IS LOADED FOR THIS CATEGORY, not for the whole catalogue.
+   *
+   * `rel="next"` is a claim about how many pages THIS listing has. Computing it without the
+   * category filter would promise a page 2 of `/collection/furniture` that holds another
+   * category's products — or, worse, promise one at all when furniture fits on a single page.
+   */
+  const category = await categoryFor(slug)
+  const loaded = await loadCatalogListing({
+    basePath: path,
+    categoryId: category?.id ?? null,
+    searchParams: await searchParams,
+  })
   const { query, page, pageCount } = loaded
 
   return cmsPageMetadata(path, {

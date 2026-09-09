@@ -172,9 +172,15 @@ fixed, and an incoherent combination cannot be stored.
 **Enforced by — Schema.** `products_price_state_coherent`, verbatim in `DATA_MODEL.md` §products.
 A quote-only product can never carry a number; a priced one must carry a currency.
 
-**Test.** `tests/integration/publish-gates.test.ts` attempts each of the eight invalid combinations
-and asserts the constraint rejects all eight; `tests/unit/price-state.test.ts` holds **100 % branch
-coverage** on `lib/catalog/price-state.ts`† (Phase 14; a pending `lib/` domain — §M open question 6).
+**Test.** `tests/unit/rls/phase14.test.ts` attempts the invalid combinations against a real
+PostgreSQL, as a merchandiser through RLS, and asserts the constraint rejects each;
+`tests/unit/price-presenter.test.ts` covers every branch of `lib/catalog/price.ts`.
+
+*(Phase 14 built these where the phase's own deliverable table put them. The paths this row
+originally named — `tests/integration/publish-gates.test.ts`, `tests/unit/price-state.test.ts`,
+`lib/catalog/price-state.ts` — were written before the phase and never existed; §M open question 6
+about a pending `lib/catalog` domain is answered by `lib/catalog/{query,price,validation,labels,
+rail,listing}.ts`.)*
 
 ### BR-C2 — Zero is never a price
 
@@ -184,7 +190,7 @@ free, or an empty price element. It renders its label from `global_content`.
 | | |
 |---|---|
 | Enforced by | **Schema:** `price_minor > 0` and `price_from_minor > 0` in the coherence constraint; a quote-only row has both null. **Data quality:** FEAT §21 flags "quote-only represented as zero" as a validation error |
-| Test | `tests/unit/price-state.test.ts` asserts the renderer for each state; a `0` in either column is unrepresentable |
+| Test | `tests/unit/price-presenter.test.ts` asserts the presenter for each state — including the case where a number has somehow reached a quote-only row, which returns no amount rather than passing it through. `tests/e2e/collection.spec.ts` asserts on the rendered page that a quote-only card contains not one digit |
 
 ### BR-C3 — Bespoke pricing is never calculated
 
@@ -206,6 +212,32 @@ currency is inferred from a locale, an IP, or a browser setting.
 |---|---|
 | Enforced by | **Schema:** the coherence constraint. **Review:** no geolocation of any kind exists in the product |
 | Test | Covered by BR-C1's constraint test |
+
+### BR-C5 — There is no price sort, and its absence is a decision
+
+**Rule.** The catalogue listing offers three orderings — `curated`, `newest`, `title` — and will not
+offer a fourth by price. `?sort=price` is dropped as unparseable and does not appear in the page's
+canonical URL.
+
+**Why.** Three of the four price states carry no number at all. An ordering across them would have
+to invent a position for "Request a Quote" — before the cheapest piece, after the dearest, or
+somewhere in the middle — and whatever it invented, a visitor would read as a statement about what
+that piece costs. There is no honest answer, so there is no control. This is not a feature waiting
+for a later phase: adding one requires a documented reversal of this rule, not a ticket.
+
+**A related consequence, recorded so it is not rediscovered as a bug.** The facet counts beside each
+filter are computed from the SAME query as the rows, with every active filter applied. A count is
+therefore literally "how many of the products you are looking at are this", and an option that would
+return nothing does not render at all. The rail narrows as filters are applied; the trade is that
+swapping one value inside a dimension means clearing it first, and every ACTIVE value always renders
+so clearing is always possible. The alternative — counting each dimension with its own filter
+excluded — keeps every option visible at the cost of counts that do not describe the page they sit
+beside, which is the kind of small dishonesty this document exists to refuse.
+
+| | |
+|---|---|
+| Enforced by | **Code:** `lib/catalog/query.ts` parses `sort` against a closed union of three; an unknown value falls back to the default and is omitted from the canonical URL. **Content:** `content/seed/catalog-ui.ts` seeds three sort labels and no fourth |
+| Test | `tests/unit/catalog-query.test.ts` asserts `?sort=price` is dropped from both the parsed query and the canonical URL; `tests/e2e/collection.spec.ts` asserts the same on the rendered page with JavaScript disabled |
 
 ---
 
@@ -341,7 +373,7 @@ attached to a product as product photography.
 | | |
 |---|---|
 | Enforced by | **Schema:** both columns are `not null` on every row; a trigger blocks attaching a `is_concept = true` asset to a `products` media slot. **Studio:** the media drawer shows the concept badge and the seeded helper copy (SEED §40) |
-| Test | `tests/integration/publish-gates.test.ts` attempts to attach a concept asset to a product and asserts the trigger refuses; the release checklist confirms no page presents concept media as delivered work |
+| Test | `tests/unit/rls/phase14.test.ts` attempts to attach a concept asset to a product — by INSERT and by UPDATE — and asserts `product_media_reject_concept` refuses both, naming the asset; `tests/unit/catalog-validation.test.ts` asserts the same refusal at the application boundary, so an editor gets a sentence rather than an exception. Phase 14 also removed the concept flag from the Studio hero picker: the option is never offered, which is why the refusal should never be reached from the interface. The release checklist confirms no page presents concept media as delivered work |
 
 ### BR-E4 — Asset IDs come from two allocators and must not collide
 
@@ -754,6 +786,7 @@ rule, without deleting the rule, is a rejection.
 | BR-C2 | Zero is never a price | Schema constraint |
 | BR-C3 | Bespoke pricing never calculated | Schema (absence) + test |
 | BR-C4 | Currency explicit or absent | Schema constraint |
+| BR-C5 | No price sort; facet counts describe the page they sit beside | Code + content + test |
 | BR-D1 | Never fabricate a business fact | Schema (never seeded) + review |
 | BR-D2 | Capability claims are owner-verified | Schema trigger |
 | BR-D3 | Empty states, never invented content | Schema + content |

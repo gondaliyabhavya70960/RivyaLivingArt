@@ -1,7 +1,7 @@
 # PROJECT_STATE — what is actually built
 
 > Verified against the repository, not against intent. Update at the end of every phase.
-> Last verified: Phase 13 (Large Format Experience), 2026-09-09.
+> Last verified: Phase 14 (Product Catalog), 2026-09-09.
 
 ## Summary
 
@@ -64,10 +64,14 @@ because this sandbox's proxy refuses CONNECT to both Cloudinary and the CDN orig
 of those assets is APPROVED *and* `OWNER_VERIFICATION_REQUIRED`, so `cms_publish_section` refuses
 (RV006) any section that binds one. Both are recorded in *Remaining Work*.
 
-**The hosted project is current.** All 28 migrations are applied to `ccvarsmzickdkryoakdg` and
-recorded in `public.schema_migrations` with checksums; the latest is
-`0080_phase10_global_content_ui_label_group.sql`. Hosted still carries **no content** — the seed has
-only ever run against the local cluster.
+**The hosted project is one phase behind.** 28 migrations are applied to `ccvarsmzickdkryoakdg`
+and recorded in `public.schema_migrations` with checksums; the latest is
+`0080_phase10_global_content_ui_label_group.sql`. **Phase 14's `0120`–`0122` are NOT applied there**
+— they exist locally and in the repository only, so the hosted catalogue has no `price_minor`, no
+`availability_state`, no `edition_state` and no concept-media trigger. Applying them is the same
+owner-side task as every migration since `0050`: `npm run db:migrate -- --apply --allow-remote` from
+a machine that can reach the pooler, or the Supabase MCP server. Hosted still carries **no content**
+— the seed has only ever run against the local cluster.
 
 `0050`–`0055` and `0070`–`0071` were applied through the Supabase MCP server rather than by
 `npm run db:migrate`, because the workflow that runs it lives on GitHub Actions, which has never
@@ -118,7 +122,8 @@ in this document is from a local run.
 | 11 | Homepage + Material Experience | **CODE COMPLETE; NOT MEASURED** | Ten new renderers (16 of 28 blocks built), entry-level owner verification, the three reference selectors and their editorial fallback, `HeroMotion` and `MaterialSequence`, the island-budget gate, the homepage JSON-LD. 8 e2e specs across 8 widths, 924 unit tests. Amendments A11/A12. **What is not done is the measurement**: LCP, CLS and INP are unmeasured because there is no media to measure, and `tests/e2e/homepage.visual.spec.ts` is deferred for the same reason. |
 | 12 | About + Process | **CODE COMPLETE; NOT MEASURED** | `scale-statement` built (17 of 28 blocks), the `/process` chapter layout with positional numbering, `ChapterMedia` (RC-216) loaded on demand, the Studio verification banner and its nine seeded notes. 933 unit tests; `about.spec.ts` and `process.spec.ts` green at 1440 and 390 with zero serious axe violations. Both pages verified against a live database in their launch state — `/about` renders three of five sections, `/process` its hero — and `/process` was walked through a three-chapter state to prove the renumbering. Visual baselines deferred for the same reason as Phase 11: there is no media. |
 | 13 | Large Format Experience | **CODE COMPLETE; NOT MEASURED** | `category-intro`, `category-list` and `customization-note` built (20 of 28 blocks), `lib/site/resolve-target.ts` and the live-path set on `getSiteChrome`, entry-level marks on three of the six groupings. 942 unit tests; `large-format.spec.ts` green at 1440 and 390. Verified against a live database: 4 of 5 sections publish, exactly the three confirmed groupings render, and both CTAs are dropped while `/custom-commissions` has nothing published — then reappear when it does. Visual baselines deferred; there is still no media. |
-| 14–46 | Public site, Studio, research, ops, launch | **PLANNED** | Specified in `docs/project/phases/`. |
+| 14 | Product Catalog | **CODE COMPLETE; CATALOGUE EMPTY BY DESIGN** | Migrations `0120`–`0122` (local only — hosted is still at `0080`). `lib/catalog/{query,price,validation,labels,rail,listing}`, `catalog-listing` and `catalog-admin` repositories, `/collection` and `/collection/[category]`, patterns RC-217/223/234/237, and the Studio catalogue editor with the FEAT §22 checklist. 1000 unit assertions including 17 database guards against a real PostgreSQL; `collection.spec.ts`, `collection-empty.spec.ts` and `catalog-studio.spec.ts` green at 1440, the filter/sort/pagination assertions all with JavaScript disabled. Verified against a live database in both states: three products with the four price states render their own labels and only two of them a number, 33 products paginate at 24 with correct `rel` and canonical links, then the catalogue was emptied and all seven category pages render SEED §27 with zero `[data-product-card]`. **The authenticated Studio half is `test.fixme`**, as in Phases 04 and 05, for the same reason: no reachable auth server. |
+| 15–46 | Product detail, Studio, research, ops, launch | **PLANNED** | Specified in `docs/project/phases/`. |
 
 ## What exists on disk
 
@@ -142,11 +147,20 @@ docs/SESSION-STATE.md
 
 ## What does NOT exist yet
 
-No product page under `app/(site)` — `/product/[slug]` is Phase 15 — and **no media delivery**:
-`media_assets` is empty on both databases, so every `MediaSlot` on every page renders its reserved
-box and the SEED §47 fallback label. Eight of the twenty-eight blocks have no renderer; the eight
-are listed as `null` in `components/sections/registry.ts` and the two registries are asserted to
-agree, so a block cannot be forgotten, only explicitly declared unbuilt.
+No product page under `app/(site)` — `/product/[slug]` is Phase 15, which is also why a product card
+is not a link — and **no media delivery**: `media_assets` is empty on both databases, so every
+`MediaSlot` on every page renders its reserved box and the SEED §47 fallback label. Eight of the
+twenty-eight blocks have no renderer; the eight are listed as `null` in
+`components/sections/registry.ts` and the two registries are asserted to agree, so a block cannot be
+forgotten, only explicitly declared unbuilt.
+
+**`products` holds zero rows, and that is the finished state of Phase 14, not a gap.** A product
+exists because an owner types one into `/studio/catalog/products/new` (SEED §32); nothing seeds one,
+nothing imports one, and `tests/e2e/collection-empty.spec.ts` counts `[data-product-card]` elements
+on all seven category pages to keep it that way. What the catalogue is still missing is the product
+DETAIL surface (Phase 15), the gallery editor with media roles (Phase 15), the relationship editor
+(Phase 23), the customization form builder (Phase 19) and bulk import (Phase 24) — every one of
+which has a stub route with a real permission check rather than a dead link.
 
 The Studio shell EXISTS but most leaves below `/studio` are stubs: a real route with a real
 permission check and a notice naming the phase that will fill it, which is what stops navigation

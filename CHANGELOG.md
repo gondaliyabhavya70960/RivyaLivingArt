@@ -6,6 +6,58 @@ Every phase adds an entry; see `docs/architecture/CANONICAL-DECISIONS.md` D9 for
 
 ## [Unreleased]
 
+### Phase 14 — Product Catalog
+
+The catalogue is browsable, server-rendered from the URL, and completely empty. Both of those are
+correct: `products` ships with zero rows and stays that way, because a product exists when an owner
+types one in (SEED §32) — and until then, an empty catalogue that says so beats a grid of invented
+inventory.
+
+**A quote-only piece can never show a number — twice over.** Three of the four price states carry no
+amount at all, and the failure this phase was written against is a "Request a Quote" card rendering
+as ₹0. `products_price_state_coherent` makes the combination unstorable, down to a zero;
+`presentPrice` returns a label with no amount and cannot be made to return one. The database is the
+guarantee and the presenter is not allowed to trust it.
+
+**There is no price sort, and that is a decision.** An ordering across four states, three of them
+numberless, would have to invent a position for "Request a Quote", and whatever it invented a
+visitor would read as a statement about cost. `?sort=price` is dropped as unparseable and does not
+reach the canonical URL. Recorded as BR-C5.
+
+**The whole listing works with JavaScript disabled**, because there is nothing to disable: the
+filter rail is a `<form method="get">`, the sort control is a second one, and pagination is real
+anchors with `rel="prev"`/`rel="next"`. The e2e assertions for filtering, sorting and paging all run
+with scripting off.
+
+**A facet with a zero count is hidden, not disabled.** No option on the rail ever leads to an empty
+page. An option currently applied always renders, whatever its count, so a filter that matched
+nothing can still be cleared — and the counts beside the checkboxes are computed from the same query
+as the rows, so each one describes the page it sits beside.
+
+**Two empty states, because they are not the same statement.** "This collection is being prepared"
+(SEED §27) is true of a category with nothing in it and false of one whose filters just excluded
+everything; the second says so and offers the way back.
+
+**Concept media cannot reach a product**, by trigger, by validator, and by never appearing in the
+picker. A Higgsfield render may honestly illustrate a material or a process; on a product card it
+becomes a photograph of an object that does not exist.
+
+**The Studio catalogue editor is the only way a product comes into existence.**
+`/studio/catalog/{products,categories,collections,materials}` create, edit and publish, all through
+`withAudit()` with `catalog.write` and `catalog.publish` checked separately. The FEAT §22 readiness
+list is ten named items — never a score — computed from the saved row, and publishing is refused
+with the unmet items named. The products list runs the same computation per row, so what is
+outstanding across the catalogue is visible without opening anything.
+
+**Categories are edited, never created.** The seven are D3's taxonomy and the route map at once.
+Collections have no publish control at all: FEAT §9 keeps every one a concept until Phase 16 adds
+the owner confirmation, and a button that never enables reads as broken rather than as a rule.
+
+Migrations `0120`–`0122`; `lib/catalog/{query,price,validation,labels,rail,listing}`; patterns
+RC-217, RC-223 (renamed `FilterRail`), RC-234 and RC-237; 55 new unit assertions, 17 database guard
+assertions against a real PostgreSQL, and three e2e specs. Amendment A13 records the eight places
+this phase departed from what was written before it.
+
 ### Phase 13 — Large Format Experience
 
 `/large-format` renders: a hero, a framing paragraph, six editorial groupings of which three are
