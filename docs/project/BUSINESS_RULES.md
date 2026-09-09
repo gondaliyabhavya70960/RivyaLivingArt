@@ -100,8 +100,8 @@ built, returned, rendered or navigated to.
 
 | | |
 |---|---|
-| Enforced by | **Type:** `buildHandoffUrl({ inquiryId, … })` takes a required, non-optional `inquiryId`, so the bypass does not type-check. **Type:** `submitInquiry` returns `{ ok: true, data } \| { ok: false, code, fieldErrors? }`, which the caller must narrow. **Schema:** row, attachments and `inquiry_events(CREATED)` are inserted in one transaction |
-| Test | `tests/e2e/inquiry-conversion.spec.ts` runs both directions: success persists then opens the URL containing the persisted reference; a forced persistence failure shows the save-error copy and performs **no** navigation to `wa.me`. A unit test forces the insert to fail and asserts the returned object contains no URL |
+| Enforced by | **Type:** `buildHandoffUrl({ inquiryId, … })` takes a required, non-optional `inquiryId`, so the bypass does not type-check. **Type:** `submitInquiry` returns `{ ok: true, referenceCode, whatsappUrl, attachments } \| { ok: false, code, fields? }`, which the caller must narrow. **Schema:** the row and its `inquiry_events(CREATED)` are written in one transaction by trigger; the attachments follow through `attach_inquiry_references()`, and a failure in them leaves the enquiry saved rather than rolling it back — losing a brief because an image could not be linked is the worse outcome |
+| Test | **Built in Phase 20.** `tests/unit/inquiry-persistence.test.ts` forces the insert to throw and asserts the returned object has no `whatsappUrl` PROPERTY — not a null one, no such key — and that nothing downstream ran. `tests/e2e/inquiry-flow.spec.ts` (the phase document's name; the doc's earlier `inquiry-conversion.spec.ts` was never written) aborts the action's POST and asserts the browser never requests `wa.me` and never leaves the page |
 | Severity | This is the single most important behavioural rule in the product. A regression here is a release blocker, not a bug ticket |
 
 ### BR-B2 — The handoff message contains only allowlisted tokens
@@ -114,7 +114,7 @@ structurally unable to enter the message.
 | | |
 |---|---|
 | Enforced by | **Type/Server guard:** the renderer accepts a typed value map, not the inquiry row; unknown keys throw. **Schema:** the template is data, editable at `Studio → System → Site Settings → WhatsApp` |
-| Test | `tests/unit/whatsapp-render.test.ts`: an unknown token throws; a payload containing `ip_hash` cannot reach the output; the five-rung shorten ladder produces a decoded URL under 1800 characters at every rung |
+| Test | **Built in Phase 20.** `tests/unit/whatsapp-template.test.ts` (Phase 10) holds the allowlist in both directions: an unknown token in the TEMPLATE throws, and an unknown key in the VALUES throws — which is what makes `ip_hash` structurally unable to reach a message. `tests/unit/whatsapp-shorten.test.ts` exercises the five rungs one at a time, each by making the message too long in exactly one way, and asserts the reference code survives every one |
 
 ### BR-B3 — The public may write exactly one thing, and read none of it
 

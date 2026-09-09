@@ -6,6 +6,78 @@ Every phase adds an entry; see `docs/architecture/CANONICAL-DECISIONS.md` D9 for
 
 ## [Unreleased]
 
+### Phase 20 — Inquiry + WhatsApp Flow
+
+The conversion model becomes real, and becomes safe. Every enquiry — from the contact form, from a
+product page, from the Phase 19 configurator — is validated, written to the database and given a
+reference code **before** anything else happens. Only then is a WhatsApp message composed from the
+seeded template and the visitor offered the handoff. If the write fails the visitor stays where they
+are, and there is no URL to navigate to because the failure branch of the returned union has no such
+property.
+
+**`inquiries` is the only table on this site a stranger may write, and the only write with no
+session behind it.** D1 forbids customer accounts, so the person filling in the form is nobody: the
+`with check` on the anon INSERT policy is doing the work `requirePermission` does everywhere else.
+It pins the enquiry to the start of the pipeline, unassigned, with no claimed editor and no claimed
+handoff — each of the four probed with a payload that tries to set it.
+
+**There is no anon SELECT on any of the three tables, and that absence is the most load-bearing line
+in the phase.** An enquiry carries a name, a phone number, a city and whatever a visitor chose to
+say about their home; one `using (true)` and the customer list is a GET away through PostgREST with
+the publishable key that ships in every browser.
+
+**Which turned up the finding that shaped the whole write path.** PostgreSQL applies the SELECT
+policy to an INSERT's RETURNING clause, so on this table the insert succeeds and the read-back is
+refused — with `new row violates row-level security policy`, a message that reads exactly like a
+rejected write and is not one. The right answer is not to give `anon` a select policy: "its own row"
+is a claim the database cannot check. The application generates the id, and
+`inquiry_reference_code()` returns the trigger-allocated code for an enquiry created in the last ten
+minutes (amendment A20).
+
+**The reference code is allocated by a trigger that OVERWRITES what arrived.** A code a caller could
+choose is a code a caller could collide with, enumerate, or use to claim somebody else's enquiry in
+a WhatsApp message.
+
+**Phase 10's two-step shortener is replaced by the five-level ladder the phase document
+specifies.** "The longest field" is not "the least valuable field": a 400-character requirements
+note is the most valuable thing in the message and was the first thing the old version cut. Empty
+label lines go first, then the summary is capped at eight with a count, then the notes are trimmed
+on a word boundary, then the reference URLs become a count, and only then does the message fall back
+to the essentials — which are re-rendered from the SAME template with the other tokens emptied, so
+level five invents no words. The reference code survives every rung.
+
+**The append-only log could not be deleted, and the RLS suite is what found it.**
+`inquiry_events` refused UPDATE and DELETE outright — including the CASCADE from `inquiries`, which
+made deleting an enquiry impossible for anybody, superuser included. "Nothing deletes an enquiry" is
+a rule about the Studio and is enforced there; it was never meant to make an erasure request
+impossible. Migration `0193` narrows the trigger: an event may go only when its enquiry is already
+gone.
+
+**`contact-form` is the first block in this repository to be PROMOTED from planned to built.** Its
+fields are fixed and its enquiry types are not: the six inputs map to columns `inquiries` actually
+has, so an editor cannot add a seventh — a form whose fields are configurable is the configurator,
+which has its own tables.
+
+**The product enquiry needs no dialog.** Phase 15's rail already links to
+`/contact?product=<slug>&type=product`; the form reads the slug after mount, like the configurator's
+`?step=` and for the same reason, and files the enquiry against that product. A slug that no longer
+resolves files a GENERAL enquiry rather than refusing one — a piece withdrawn between the page
+opening and Send is not a reason to lose a brief.
+
+**The configurator's Submit is live, and Phase 19 needed no unpicking.** Passing the new `submit`
+prop is what turns it on; without it the island still renders the disabled button. The contact
+answers are read out of the brief BY FIELD TYPE rather than by key, because `contact_name` is what
+the seeded templates call it and a form the owner built may call it anything.
+
+**The export omits `ip_hash` and `user_agent`, and the omission is at the query.** Export needs
+`inquiries.export`, not `inquiries.read`: reading an enquiry leaves it where it is, exporting puts
+every customer's phone number in a file that leaves the building the moment somebody emails it.
+Every export is audited, refusals included.
+
+**`commission_configurator` is switched on** on both databases, which is this phase's exit
+criterion. The three commission templates remain DRAFT, so nothing appears on `/custom-commissions`
+until the owner publishes one — the flag says the feature is built, and publication stays editorial.
+
 ### Phase 19 — Bespoke / Custom Configurator
 
 The studio can now be asked for something it has not made. Eleven steps, one screen each, every

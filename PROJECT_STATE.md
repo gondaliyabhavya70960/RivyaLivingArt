@@ -1,14 +1,14 @@
 # PROJECT_STATE — what is actually built
 
 > Verified against the repository, not against intent. Update at the end of every phase.
-> Last verified: Phase 19 (Bespoke / Custom Configurator), 2026-09-09.
+> Last verified: Phase 20 (Inquiry + WhatsApp Flow), 2026-09-09.
 
 ## Summary
 
 The design system is built; the database spine exists, carries RLS policies for all six roles, and
 has been verified against a real PostgreSQL **and against the hosted Supabase project**. What
 exists: the toolchain, the token layer, 32 primitives, 3 motion helpers, 7 behavioural patterns, a
-dev-only gallery, **thirty-eight tables, all with RLS on and 153 policies between them**, generated types with a
+dev-only gallery, **forty-one tables, all with RLS on and 160 policies between them**, generated types with a
 drift gate, a repository layer with Zod at its boundary, an idempotent seed runner proved not to
 overwrite an owner's edit, the Studio shell with its ⌘K palette and user management, the media
 layer end to end, the Higgsfield migration, gap engine and tracker, **the CMS engine — pages,
@@ -163,6 +163,40 @@ for all six roles and writes for two (amendment A17). `rate_limit_buckets` and
 unauthenticated by design and an unlimited credential minter is an open file host with the studio's
 Cloudinary bill attached (amendment A18).
 
+**The funnel ends somewhere.** Phase 20 added `inquiries`, `inquiry_attachments` and
+`inquiry_events`. `inquiries` is the ONLY table on the site a stranger may write and the only write
+with no session behind it — D1 forbids customer accounts — so the anon INSERT policy is the guard,
+pinning the row to the start of the pipeline, unassigned, with no claimed editor and no claimed
+handoff. None of the three has an anon SELECT policy of any kind.
+
+**Persist, then redirect, is enforced three ways rather than remembered.** `buildHandoffUrl` takes a
+non-optional `inquiryId`; `submitInquiry` returns a discriminated union whose failure member has no
+`whatsappUrl` property at all; and `tests/unit/inquiry-persistence.test.ts` forces the insert to
+throw and asserts the returned object carries nothing that could be navigated to.
+
+**Two findings came out of building it.** PostgreSQL applies the SELECT policy to an INSERT's
+RETURNING clause, so on a table with an insert policy and no select policy the write succeeds and
+the read-back is refused with a message that reads like a rejected write — which is why the caller
+generates the id and `inquiry_reference_code()` returns the code (amendment A20). And the
+append-only trigger on `inquiry_events` refused the CASCADE from `inquiries`, making an enquiry
+undeletable by anybody including a superuser; migration `0193` narrows it so an event may go only
+with the enquiry it belongs to.
+
+**The public surfaces are the contact form, a product enquiry and the configurator.** `contact-form`
+is the first block in this repository promoted from planned to built. The product path needs no
+dialog: Phase 15's rail links to `/contact?product=<slug>`, the form reads it after mount, and a
+slug that no longer resolves files a GENERAL enquiry rather than losing one. The configurator's
+Submit is live and Phase 19's disabled button remains its behaviour when the new prop is absent.
+
+**The inbox fills all five D4 routes from one component**, with a detail screen that renders the
+brief against the form that produced it, an append-only timeline, a pipeline, notes and assignment.
+The CSV export is gated on `inquiries.export`, audited including refusals, and omits `ip_hash` and
+`user_agent` at the query rather than in the writer.
+
+**`commission_configurator` is ON, on both databases.** Nothing appears on `/custom-commissions` yet
+because all three commission templates are still DRAFT — the flag says the feature is built and
+publication stays the owner's editorial act.
+
 **Demonstration content exists, is marked, and is removable in one command.** The owner authorised
 placeholder data for launch preparation: 30 products, 10 article bodies, 6 portfolio projects and 6
 testimonials, every row carrying `is_demo` (migration `0180`), registered in
@@ -181,7 +215,12 @@ so every route answers 500 and no page can be measured — the first run of the 
 checks a baseline route and skips with the reason, never in CI. Phase 15's three specs are in the
 same position. Unit, RLS, seed and gate verification all run here and pass.
 
-**The hosted project is level with the repository through `0184`.** Phase 19's `0170`-`0172`, the
+**The hosted project is level with the repository through `0193`.** Phase 20's `0190`, `0191` and
+`0193` were applied through the Supabase MCP server with a ledger row and checksum on both sides,
+and hosted matches local exactly: 41 tables, 160 policies, 55 migrations. `commission_configurator`
+is switched on in both.
+
+**The hosted project was level with the repository through `0184`.** Phase 19's `0170`-`0172`, the
 demonstration marker `0180`, the publication-date fix `0181`, the rate limiter `0182`-`0183` and the
 duplicate function `0184` were all applied through the Supabase MCP server, with a ledger row and
 checksum written on both sides. Schema-verified identical to local: 38 tables, RLS on every one,
@@ -288,7 +327,8 @@ in this document is from a local run.
 | 18 | Journal | **CODE COMPLETE; NOTHING PUBLISHED BY DESIGN** | Migrations `0160`/`0161`. Three tables, the ARTICLE page kind, `reading_minutes` derived by trigger, `enforce_article_has_body`, and the only date-gated public read on the site. Nine SEED §19 categories PUBLISHED and ten SEED §20 ideas DRAFT with covers bound; `lib/cms/related.ts` holds FEAT §11's one automatic rule; `/journal`, `/journal/[slug]` and `/journal/category/[slug]`; RC-220 `ArticleCard`; the Studio article editor and its categories screen. Applied to hosted and fingerprint-verified. Amendment A16. No RSS feed — the phase holds it behind an amendment nobody has granted. |
 | 19 | Bespoke / Custom Configurator | **CODE COMPLETE; SWITCHED OFF BY DESIGN** | Migrations `0170`–`0172` and `0184`. Four form tables and `feature_flags`; `normalise_form_step_order()` repairs rather than refuses, because a refusing constraint trigger cannot survive one-row-per-transaction writes; `enforce_form_publishable()` refuses a form with no way to reply on it; an allowlist CHECK on `validation` makes a pricing key unstorable, mutation-tested. Three SEED §33–35 templates seeded DRAFT — 33 steps, 40 questions, one SELECT. The configurator ends at a VALIDATED PAYLOAD with Submit disabled and no handler: D1 requires the save first and persistence is Phase 20's, so `commission_configurator` ships off. `/studio/catalog/customization-forms` and `[formId]`, `/studio/system/flags`, `cms_duplicate_customization_form()`. `rate_limit_buckets` brought forward for the unauthenticated upload endpoint. Applied to hosted through `0184`. Amendments A17, A18, A19. |
 | — | Demonstration content | **SEEDED LOCALLY; PART-APPLIED ON HOSTED** | Owner-authorised placeholder data, marked `is_demo` by migration `0180`, registered in `docs/content/DEMO_CONTENT.md`, badged in the Studio and removable with `npm run demo:purge`. 30 products, 10 article bodies, 6 projects, 6 testimonials. **Hosted carries 20 of the 30 products and the six categories only** — the run was interrupted and awaits the owner's decision. |
-| 20–46 | Conversion, Studio, research, ops, launch | **PLANNED** | Specified in `docs/project/phases/`. |
+| 20 | Inquiry + WhatsApp Flow | **CODE COMPLETE; NO ENQUIRIES BY DESIGN** | Migrations `0190`, `0191`, `0193`. `inquiries`, `inquiry_attachments`, `inquiry_events`; four enums; the reference-code sequence and its overwriting trigger; the anon INSERT policy that is the only guard on the only public write, and no anon SELECT anywhere. `submitInquiry` as the one write path, returning a union whose failure member has no URL; the five-level shortening ladder; the contact form promoted from planned to built; the product enquiry through `?product=`; the configurator's Submit live; the five-view inbox, its detail screen and an audited export that omits the hashed address. `commission_configurator` switched on. Amendment A20. |
+| 21–46 | 3D, Studio, research, ops, launch | **PLANNED** | Specified in `docs/project/phases/`. |
 
 ## What exists on disk
 

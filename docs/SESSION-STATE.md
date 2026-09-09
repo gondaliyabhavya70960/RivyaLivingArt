@@ -8,6 +8,150 @@
 
 ## Current Phase
 
+**Phase 20 — Inquiry + WhatsApp Flow. CODE COMPLETE; THE INBOX IS EMPTY, WHICH IS THE FINISHED
+STATE.** The conversion model is real: an enquiry is validated, written and given a reference code
+BEFORE any WhatsApp message is composed, and a failed write produces no URL because the failure
+member of the returned union has no such property. `commission_configurator` is switched ON, on both
+databases — and nothing appears on `/custom-commissions` yet, because all three commission templates
+are still DRAFT. The flag says the feature is built; publishing a form is the owner's editorial act.
+
+### Phase 20: what is built
+
+**Migrations `0190`, `0191` and `0193`, applied locally AND to hosted.** Three tables, four enums,
+the reference-code sequence, seven functions, the generated RLS — the first policy file in this
+repository to carry an anon INSERT — and a narrowing of the append-only trigger that the test suite
+forced (below).
+
+**`inquiries` IS THE ONLY TABLE A STRANGER MAY WRITE AND THE ONLY WRITE WITH NO SESSION BEHIND IT.**
+D1 forbids customer accounts, so the person filling in the form is nobody: the `with check` is doing
+the work `requirePermission` does everywhere else. Probed under `set role anon`: a forged
+`pipeline_status`, a forged `assigned_to`, a forged `updated_by` and a forged `whatsapp_state` are
+each refused, and the trigger discards a `reference_code` the caller supplied.
+
+**THERE IS NO ANON SELECT ON ANY OF THE THREE.** An enquiry carries a name, a phone number and a
+city; one `using (true)` and the customer list is a GET away with the publishable key that ships in
+every browser. `tests/unit/rls/phase20.test.ts` asserts the zero, including that anon cannot read
+the row it has just written.
+
+**`INSERT ... RETURNING` DOES NOT WORK FOR `anon` ON A TABLE WITH NO SELECT POLICY**, and finding
+that out changed the write path. PostgreSQL applies the SELECT policy to the RETURNING clause, so
+the insert succeeds, the read-back is refused, and the error is `new row violates row-level security
+policy` — which reads exactly like a rejected write and is not one. The application generates the
+id; `inquiry_reference_code()` returns the trigger-allocated code for a ten-minute window. Amendment
+**A20**.
+
+**THE APPEND-ONLY LOG COULD NOT BE DELETED, AND THE RLS SUITE FOUND IT.** `inquiry_events` refused
+UPDATE and DELETE outright, including the CASCADE from `inquiries` — so deleting an enquiry was
+impossible for anybody, superuser included, and the suite could not clean up its own fixture.
+"Nothing deletes an enquiry" is a rule about the STUDIO and is enforced there (no delete policy for
+any session role; SPAM and ARCHIVED are statuses so a judgement can be reversed). Migration `0193`
+narrows the trigger: an event may go only when its enquiry is already gone.
+
+**THE FIVE-LEVEL LADDER REPLACES PHASE 10's TWO STEPS.** "The longest field" is not "the least
+valuable field": a 400-character requirements note is the most valuable thing in the message and was
+the first thing the old version cut. `tests/unit/whatsapp-shorten.test.ts` exercises each rung by
+making the message too long in exactly one way, and asserts the reference code survives all five.
+Level 5 re-renders the same template with the non-essential tokens emptied, so it invents no words.
+
+**`contact-form` IS THE FIRST BLOCK PROMOTED FROM PLANNED TO BUILT.** Declared in Phase 08, seeded
+in Phase 09, built now. Its fields are fixed (they map to columns) and its enquiry types are not
+(the list is editorial).
+
+**THE PRODUCT ENQUIRY NEEDS NO DIALOG.** Phase 15's rail already links to
+`/contact?product=<slug>&type=product`; the form reads the slug after mount and files against it. A
+slug that no longer resolves files a GENERAL enquiry rather than refusing one.
+
+**THE CONFIGURATOR'S SUBMIT IS LIVE AND PHASE 19 NEEDED NO UNPICKING.** Passing the new `submit`
+prop turns it on; without it the island still renders the disabled button, which is what the
+flag-off state and `tests/e2e/configurator.spec.ts` describe.
+
+### Phase 20: what is NOT built, and why
+
+- **No `global_content` group `CONTACT`.** SEED §21's four facts already live in one
+  `contact-details` section that the footer and `/contact` both read; a second home is the failure
+  §21's own sentence warns about. Amendment A20, and verification step 1 therefore returns nothing.
+- **No `inquiry_attachments` anon INSERT**, though the phase document names one: an attachment
+  references `media_assets` and anon cannot create one, so the policy would describe a path that
+  cannot satisfy its own foreign key. `attach_inquiry_references()` is SECURITY DEFINER instead.
+- **No `VIEWED` event.** The enum has it; Phase 20 writes none. A row per page render is how an
+  audit trail becomes noise, and a GET with a side effect is a GET that cannot be retried.
+- **No product enquiry DIALOG.** See above — the rail's existing link is the path.
+- **No CONSULTATION surface.** The kind exists and the view is filled; nothing on the public site
+  produces one yet, and inventing a "book a consultation" button would be inventing a service.
+- **Nothing published on `/custom-commissions`.** The flag is on and all three templates are DRAFT.
+
+### Phase 20: verification, as actually run
+
+- `npm test` with `DATABASE_URL` set — **1432 pass, none skipped** (109 files).
+- `npm run check` — clean. `db:check-migrations` — 55 migrations to `0193`, every number allocated.
+- `db:check-schema` — 41 tables, RLS on all, column tiers correct. `auth:check-rls` — 41 tables,
+  160 policies, every staff-select role list matching the matrix. `auth:check-policies` — the four
+  generated files match. `db:check-types` — the generated types match the database.
+- **The anonymous path probed directly under `set role anon`**: insert accepted, zero rows readable
+  back, four forged columns refused, the supplied reference code discarded, the reference function
+  returning `RIV-2026-…`, a `rivya/brand/` attachment silently not attached and an incoming one
+  attached as `USER_UPLOAD`/`DRAFT`, and the handoff recorded once and refused the second time.
+- Hosted level through `0193` and matching local exactly: 41 tables, 160 policies, 55 migrations.
+- `commission_configurator` switched on in both databases.
+- **Playwright did not run.** The sandbox network policy denies the Supabase host, so `next dev`
+  cannot serve a page. `tests/e2e/inquiry-flow.spec.ts` is written to skip with a stated reason.
+
+### Phase 20: the D9 ten, recorded
+
+1. **Scope implemented** — the three tables and their RLS, the schemas and repository, the five-rung
+   ladder and the number resolution, `submitInquiry`, the contact form, the product path, the
+   configurator's submit, the five-view inbox with its detail screen, the audited export, the flag.
+2. **Relevant tests run** — 1432 pass, none skipped; the e2e suite skips for a stated environmental
+   reason.
+3. **No known scope-breaking error.** The cascade defect the suite found is fixed in `0193`.
+4. **Documentation updated** — CANONICAL-DECISIONS **A20**, DATA_MODEL §12 and the tier table,
+   BUSINESS_RULES BR-B1/BR-B2, SECURITY §8, STUDIO_GUIDE §11.
+5. **CHANGELOG updated.**
+6. **PROJECT_STATE updated**, including the phase table.
+7. **SESSION-STATE updated** — this section.
+8. **Remaining issues documented** — see below.
+9. **Next phase identified** — **Phase 21, 3D Product Experience.** Its flag, `three_d_viewer`, is
+   registered and off.
+10. **Repository recoverable** — every commit pushed to `claude/rivya-living-art-phases-64hq5i` and
+    merged to `main` at the owner's instruction.
+
+### Standing issues, carried
+
+- `verify` is red on the account's Actions runner with a signature that is not a code failure
+  (`runner_id: 0`, ~2s, no steps, red on `main` too) and is **not re-run**, per the free-tier
+  instruction.
+- The Playwright suite cannot execute here: the network policy denies the Supabase host.
+- **Six secrets remain exposed in chat transcripts and unrotated** — the owner's task, after all
+  phase work.
+- **`content/seed/contact.ts` holds the studio's real phone number, WhatsApp number and email, and
+  they are seeded `OWNER_VERIFICATION_REQUIRED`.** From Phase 20 that verification state is
+  load-bearing rather than bookkeeping: `resolveWhatsAppNumber` will not dial a number the owner has
+  not confirmed, so until the `contact-details` section is VERIFIED the handoff falls back to
+  `NEXT_PUBLIC_WHATSAPP_NUMBER` and, if that is unset, records `whatsapp_state = 'UNAVAILABLE'`. The
+  enquiry is saved either way. **Verifying that section is an owner action, not a developer one.**
+- **`content/seed/media-bindings.ts` is still EMPTY**, and its header still says the Higgsfield
+  migration "has never executed". It has: 250 assets are in Cloudinary and in `media_assets` on both
+  databases. So every seeded SECTION on the site is still unbound and renders the SEED §47 fallback.
+  Journal covers are unaffected — they bind through the article record's own `media` map — but the
+  wider binding pass is outstanding work that belongs to nobody's phase yet.
+- **`npm test` wipes the local seeded content.** `tests/unit/rls/phase08.test.ts` blanket-deletes
+  `pages` and `page_sections`, so re-run `seed:content` before checking any seeded-content claim
+  locally. This cost a confused half-hour chasing a "93 inserted" that was simply the suite's doing.
+- **A schema fingerprint must fix `search_path` on both sides.** `pg_get_indexdef` renders an
+  operator class according to the reader's path, so the same index reads as
+  `extensions.gin_trgm_ops` locally and `gin_trgm_ops` on hosted.
+- **Hosted carries 20 of the 30 demonstration products, the six categories, and nothing else of the
+  demonstration content.** The owner authorised the data and chose to publish it live; the run was
+  interrupted part way through the third batch and has not been resumed. **Awaiting the owner:
+  finish it, roll it back, or leave it.** Nothing further should be written to hosted demo content
+  until that is answered. `npm run demo:purge` removes every marked row in one command either way.
+- **The local cluster stops when the container idles**, and the RLS suite then fails with
+  `ECONNREFUSED 127.0.0.1:5433` on three function-grant tests before the rest skip. Restart with
+  `su postgres -c "/usr/lib/postgresql/16/bin/pg_ctl -D /var/lib/postgresql/rivya/data -o '-p 5433' -l /var/lib/postgresql/rivya/pg.log start"`
+  and re-run; it is never a code failure.
+
+### Superseded — Phase 19's state
+
 **Phase 19 — Bespoke / Custom Configurator. CODE COMPLETE; THE FEATURE IS SWITCHED OFF, WHICH IS THE
 FINISHED STATE.** Eleven steps exist, every question read from the database, and the Zod schema is
 generated from the same rows. It ends at a VALIDATED PAYLOAD: the review step's Submit button is
@@ -125,35 +269,6 @@ repositories.
 9. **Next phase identified** — **Phase 20, Inquiry & WhatsApp Handoff.** It persists the brief this
    phase validates, and its exit criteria are what switch `commission_configurator` on.
 10. **Repository recoverable** — every commit pushed to `claude/rivya-living-art-phases-64hq5i`.
-
-### Standing issues, carried
-
-- `verify` is red on the account's Actions runner with a signature that is not a code failure
-  (`runner_id: 0`, ~2s, no steps, red on `main` too) and is **not re-run**, per the free-tier
-  instruction.
-- The Playwright suite cannot execute here: the network policy denies the Supabase host.
-- **Six secrets remain exposed in chat transcripts and unrotated** — the owner's task, after all
-  phase work.
-- **`content/seed/media-bindings.ts` is still EMPTY**, and its header still says the Higgsfield
-  migration "has never executed". It has: 250 assets are in Cloudinary and in `media_assets` on both
-  databases. So every seeded SECTION on the site is still unbound and renders the SEED §47 fallback.
-  Journal covers are unaffected — they bind through the article record's own `media` map — but the
-  wider binding pass is outstanding work that belongs to nobody's phase yet.
-- **`npm test` wipes the local seeded content.** `tests/unit/rls/phase08.test.ts` blanket-deletes
-  `pages` and `page_sections`, so re-run `seed:content` before checking any seeded-content claim
-  locally. This cost a confused half-hour chasing a "93 inserted" that was simply the suite's doing.
-- **A schema fingerprint must fix `search_path` on both sides.** `pg_get_indexdef` renders an
-  operator class according to the reader's path, so the same index reads as
-  `extensions.gin_trgm_ops` locally and `gin_trgm_ops` on hosted.
-- **Hosted carries 20 of the 30 demonstration products, the six categories, and nothing else of the
-  demonstration content.** The owner authorised the data and chose to publish it live; the run was
-  interrupted part way through the third batch and has not been resumed. **Awaiting the owner:
-  finish it, roll it back, or leave it.** Nothing further should be written to hosted demo content
-  until that is answered. `npm run demo:purge` removes every marked row in one command either way.
-- **The local cluster stops when the container idles**, and the RLS suite then fails with
-  `ECONNREFUSED 127.0.0.1:5433` on three function-grant tests before the rest skip. Restart with
-  `su postgres -c "/usr/lib/postgresql/16/bin/pg_ctl -D /var/lib/postgresql/rivya/data -o '-p 5433' -l /var/lib/postgresql/rivya/pg.log start"`
-  and re-run; it is never a code failure.
 
 ### Superseded — Phase 18's state
 

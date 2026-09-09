@@ -1322,6 +1322,27 @@ with a product or a project.
 
 ## 11. `/studio/inquiries/*` — the conversion inbox
 
+**Built in Phase 20**, with four differences from the sentences below and one from the phase
+document; all five are recorded in amendment A20 or here.
+
+- **The detail route is `/studio/inquiries/all/[inquiryId]`**, not `/studio/inquiries/[inquiryId]`.
+  D4 names five leaves under `/studio/inquiries` and no leaf of that name, and the navigation test's
+  exemption is deliberately "a dynamic segment must sit directly beneath a route the manifest
+  NAMES" — the rule that stops an ungoverned surface being added by putting brackets in its name.
+  `all` is the view that contains every enquiry, so it is the honest parent.
+- **The export control appears on `/all` only.** It exports every enquiry rather than the filtered
+  set, and an *Export as CSV* button on the Commission view that quietly included product enquiries
+  would be a lie about what it did.
+- **Assignment is a user id typed in, not a picker.** `staff_profiles` is readable only under
+  `users.read`, which a merchandiser does not hold — a picker showing nothing to the person most
+  likely to use it is worse than a field they can paste into.
+- **`VIEWED` is a declared event kind that Phase 20 never writes.** Writing a row on every page
+  render is how an audit trail becomes noise, and a GET with a side effect is a GET that cannot be
+  retried. Opening an enquiry records nothing; moving it to `READ` records a `STATUS_CHANGED`.
+- **There is no `global_content` group `CONTACT`.** SEED §21's four contact facts already live in
+  one `contact-details` section, which the footer and `/contact` both read; a second home would be
+  the failure §21's own sentence warns about. See amendment A20.
+
 **What the group is for.** Every enquiry the website produces, in one place, with a pipeline. This is
 where the funnel ends; there is no next table.
 
