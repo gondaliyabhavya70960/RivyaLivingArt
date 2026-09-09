@@ -9,7 +9,7 @@ import { cache } from 'react'
 import { SectionList } from '@/components/sections/SectionList'
 import { sectionRenderer } from '@/components/sections/registry'
 import { optionalEnv } from '@/lib/env'
-import { buildPageMetadata } from '@/lib/seo/metadata'
+import { buildPageMetadata, type PageMetadataInput } from '@/lib/seo/metadata'
 import { getSiteChrome } from '@/lib/site/chrome'
 import { createPublicClient } from '@/lib/supabase/public'
 import { createClient } from '@/lib/supabase/server'
@@ -135,12 +135,32 @@ const resolveForRequest = cache(
  *
  * Zero live sections is passed through as the `noindex` signal.
  */
-export async function cmsPageMetadata(path: string): Promise<Metadata> {
+export async function cmsPageMetadata(
+  path: string,
+  /** A listing route passes its canonical URL and pagination links; every other route passes none. */
+  extra: Pick<PageMetadataInput, 'canonicalPath' | 'pagination'> = {},
+): Promise<Metadata> {
   const { resolved } = await resolveForRequest(path)
-  return buildPageMetadata({ path, liveSectionCount: resolved?.sections.length ?? 0 })
+  return buildPageMetadata({ path, liveSectionCount: resolved?.sections.length ?? 0, ...extra })
 }
 
-export async function renderCmsPage(path: string): Promise<React.ReactElement> {
+/**
+ * `below` — content the route appends after the page's CMS sections.
+ *
+ * ONLY THE CATALOGUE ROUTES USE IT, and they use it for something the CMS genuinely cannot hold: a
+ * grid of database rows with filters over them. Everything a section can express stays a section,
+ * because the moment a route starts appending its own copy the owner has lost the ability to
+ * change that copy — which is the whole point of D2. A listing is not copy; it is a query.
+ *
+ * IT DOES NOT RESCUE A PAGE WITH NO LIVE SECTIONS. A category page whose hero is still DRAFT is
+ * still a 404: SEED §55's rule is about whether the page has been published, and a product grid
+ * appearing under a heading nobody approved would be exactly the "looks finished" failure the rule
+ * exists to prevent.
+ */
+export async function renderCmsPage(
+  path: string,
+  below?: React.ReactNode,
+): Promise<React.ReactElement> {
   const { resolved, draft } = await resolveForRequest(path)
   if (resolved === null) notFound()
 
@@ -175,6 +195,7 @@ export async function renderCmsPage(path: string): Promise<React.ReactElement> {
         references={references}
         livePaths={chrome.livePaths}
       />
+      {below}
     </>
   )
 }

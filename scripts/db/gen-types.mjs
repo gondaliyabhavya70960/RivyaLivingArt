@@ -25,6 +25,18 @@ import { writeFileSync } from 'node:fs'
 const OUT = 'lib/supabase/database.types.ts'
 const SCHEMA = 'public'
 
+/**
+ * Tables that exist in `public` but are not part of the application schema.
+ *
+ * `schema_migrations` is `db:migrate`'s own bookkeeping — version and checksum per applied file.
+ * It is created by the migration runner rather than by a migration, so whether it exists at
+ * generation time depends on whether anyone has run `db:migrate` against that database yet. That
+ * makes it a source of PHANTOM DRIFT: the same schema generates two different files depending on
+ * how it was built, and the CI drift check fails on a difference nobody made. No repository reads
+ * it and PostgREST never exposes it, so excluding it costs nothing and removes the ambiguity.
+ */
+const NON_APPLICATION_TABLES = ["'schema_migrations'"].join(', ')
+
 // Record and field separators. Chosen because neither can appear in a PostgreSQL identifier, an
 // enum label, or any expression this script reads back.
 const FS = '\x1f'
@@ -122,6 +134,7 @@ const columns = query(`
     and e.object_type    = 'TABLE'
     and e.collection_type_identifier = c.dtd_identifier
   where c.table_schema = '${SCHEMA}'
+    and c.table_name not in (${NON_APPLICATION_TABLES})
   order by c.table_name, c.ordinal_position;
 `)
 

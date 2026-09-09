@@ -39,6 +39,18 @@ export type PageMetadataInput = {
   readonly path: string
   /** How many sections the page will actually render. Zero means `noindex`. */
   readonly liveSectionCount: number
+  /**
+   * The address this particular view should be indexed at, when it is not `path`.
+   *
+   * A LISTING HAS MORE ADDRESSES THAN ROUTES. `/collection/furniture?sort=title&page=2` is a real,
+   * linkable, crawlable page and its canonical URL is itself — pointing every filtered and paged
+   * view back at the bare path would tell a crawler that page 2 is a duplicate of page 1 and that
+   * its products do not exist. Phase 14 passes the canonical URL its own query builder produced,
+   * so what is indexed is exactly what is rendered.
+   */
+  readonly canonicalPath?: string
+  /** `rel="prev"` / `rel="next"` for a paginated view, as absolute-from-root paths. */
+  readonly pagination?: { readonly previous?: string; readonly next?: string }
 }
 
 function nonEmpty(value: string | null | undefined): string | null {
@@ -143,7 +155,10 @@ export async function buildPageMetadata(input: PageMetadataInput): Promise<Metad
   return {
     title,
     ...(description === undefined ? {} : { description }),
-    ...(base === null ? {} : { metadataBase: base, alternates: { canonical: input.path } }),
+    ...(base === null
+      ? {}
+      : { metadataBase: base, alternates: { canonical: input.canonicalPath ?? input.path } }),
+    ...(input.pagination === undefined ? {} : { pagination: input.pagination }),
     robots: indexable
       ? (robotsValue ?? undefined)
       : // Explicit rather than `robots: 'noindex'`: `follow` still lets a crawler discover the

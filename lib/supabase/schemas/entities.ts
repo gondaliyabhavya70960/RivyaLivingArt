@@ -3,8 +3,10 @@ import { z } from 'zod'
 import type { Tables } from '../database.types'
 import {
   auditColumns,
+  availabilityStateSchema,
   collectionConceptStateSchema,
   contentColumns,
+  editionStateSchema,
   jsonSchema,
   mediaKindSchema,
   mediaSourceSchema,
@@ -173,7 +175,19 @@ export const productSchema = z.object({
   category_id: uuidSchema.nullable(),
   price_state: priceStateSchema,
   price_from_minor: z.number().int().nullable(),
+  /**
+   * Phase 14 `0121`. Exact price, smallest unit. `products_price_state_coherent` allows it only
+   * beside `price_state = 'FIXED'`, and forbids it beside either quote state — so a quote-only
+   * piece cannot carry a number even as a zero.
+   */
+  price_minor: z.number().int().nullable(),
   currency: z.string().length(3).nullable(),
+  availability_state: availabilityStateSchema.nullable(),
+  edition_state: editionStateSchema.nullable(),
+  edition_size: z.number().int().nullable(),
+  is_customizable: z.boolean(),
+  /** Curation handle. Null sorts LAST in the default listing order — unplaced, not first. */
+  sort_order: z.number().int().nullable(),
   is_large_format: z.boolean(),
   dimensions: jsonSchema.nullable(),
   hero_media_id: uuidSchema.nullable(),

@@ -134,13 +134,20 @@ describe('the Studio navigation manifest', () => {
      * reachable only from a leaf that IS in the manifest. So the rule is not "dynamic routes are
      * fine", which would let anyone add an ungoverned surface by putting brackets in its name; it
      * is "a dynamic segment must sit directly beneath a route the manifest names".
+     *
+     * A `/new` ROUTE IS EXEMPT ON THE SAME TERMS AND FOR THE SAME REASON. `/studio/catalog/products/new`
+     * is an ACTION on the products list, not a place in the sidebar: a permanent "New product" entry
+     * in the navigation would suggest the catalogue has two destinations when it has one, and every
+     * other create surface in the Studio (a section, a menu item, a material) is a control on its
+     * list rather than a leaf of its own. The segment is matched exactly — `new`, not any static
+     * child — so this cannot be used to smuggle in an ungoverned surface by naming it `/settings`.
      */
     for (const route of disk) {
-      if (route.endsWith(']')) {
+      if (route.endsWith(']') || route.endsWith('/new')) {
         const parent = route.slice(0, route.lastIndexOf('/'))
         expect(
           manifest,
-          `${route} is a detail route whose parent ${parent} is not a leaf`,
+          `${route} is a detail or create route whose parent ${parent} is not a leaf`,
         ).toContain(parent)
         continue
       }

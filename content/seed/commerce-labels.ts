@@ -106,9 +106,41 @@ const ACTION_LABELS = [
   'Explore Similar Work',
 ] as const
 
+/**
+ * The one row this module gained in Phase 14, and the only one that is not a label.
+ *
+ * SEED §27's `EMPTY_STATE.collection` already covers "this collection is being prepared" — a
+ * category with nothing published in it, and the whole catalogue on `/collection`. It does not
+ * cover the other empty listing: a category that HAS products, none of which match the filters a
+ * visitor has applied. Showing "this collection is being prepared" there would be untrue, and it
+ * would send someone away from a catalogue that has exactly what they want one checkbox back.
+ *
+ * So the two empty states say different things and the difference is the point. This one names the
+ * filters as the cause, and the rail renders "Clear Filters" beside it — a way out rather than a
+ * dead end. `EDITORIAL_COPY`, because it describes the interface and asserts nothing about the
+ * business.
+ */
+const NO_RESULTS: SeedRecord = {
+  seedKey: 'global:EMPTY_STATE.collection.no_results',
+  table: 'global_content',
+  fields: {
+    group_key: 'EMPTY_STATE',
+    key: 'collection.no_results',
+    label: 'Collection — no results for these filters',
+    value: 'No pieces match these filters.',
+    description:
+      'Shown when a collection has published products but none match the applied filters — a different situation from SEED §27, which is a collection with nothing in it. Rendered with a Clear Filters action.',
+    is_enabled: true,
+    status: 'PUBLISHED',
+    fact_classification: 'EDITORIAL_COPY',
+    owner_verification: 'NOT_REQUIRED',
+  },
+}
+
 export const commerceLabelsSeed: SeedModule = {
   name: 'commerce-labels',
-  description: '13 CTA labels (§7), 10 price labels (§30) and 7 action labels (§31).',
+  description:
+    '13 CTA labels (§7), 10 price labels (§30), 7 action labels (§31) and the filtered-listing empty state.',
   records: [
     ...CTA_LABELS.map((label) => labelRow('CTA', label)),
 
@@ -131,5 +163,7 @@ export const commerceLabelsSeed: SeedModule = {
           })
         : labelRow('ACTION_LABEL', label),
     ),
+
+    NO_RESULTS,
   ],
 }

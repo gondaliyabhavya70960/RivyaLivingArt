@@ -254,7 +254,7 @@ Two of these carry more than an index row's worth of contract and have full reco
 sitting in the primitives table: **RC-033 `FileUpload` (§7.41)** is a Client Component with an
 upload state machine, a live region and a per-file remove control, which §2 puts squarely in the
 full-record tier. RC-032 `SkipLink` needs no record — it is an anchor that becomes visible on focus,
-with its label from `global_content` group `UI_CHROME`. It is owned by Phase 05 rather than Phase 10
+with its label from `global_content` group `UI_LABEL` (created by `0080`; earlier drafts of this document called it `UI_CHROME`). It is owned by Phase 05 rather than Phase 10
 because the Studio shell renders one first (`docs/project/phases/PHASE-05-09.md`, Phase 05 shell)
 and Phase 10's site shell then reuses it.
 
@@ -278,13 +278,13 @@ and Phase 10's site shell then reuses it.
 | RC-214 | `HeroMotion` | brand perception | 11 | BUILT | §7.11 |
 | RC-215 | `MaterialSequence` | material understanding | 11 | BUILT | §7.12 |
 | RC-216 | `ChapterMedia` | storytelling | 12 | BUILT | §7.41 — a Client Component after all, and loaded on demand |
-| RC-217 | `ProductCard` | product understanding | 14 | PLANNED | §7.13 |
+| RC-217 | `ProductCard` | product understanding | 14 | BUILT | §7.13 |
 | RC-218 | `CollectionCard` | navigation | 16 | PLANNED | §7.14 |
 | RC-219 | `PortfolioCard` | storytelling | 17 | PLANNED | §7.15 |
 | RC-220 | `JournalCard` | storytelling | 18 | PLANNED | §7.16 |
 | RC-221 | `ProductGallery` + `Lightbox` | product understanding | 15 | PLANNED | §7.17 |
 | RC-222 | `ContentCarousel` | navigation | 16 | PLANNED | §7.18 |
-| RC-223 | `FilterBar` (public) | navigation | 14 | PLANNED | §7.19 |
+| RC-223 | `FilterRail` | navigation | 14 | BUILT | §7.19 — renamed from `FilterBar` (public) when built, to stop it reading as a variant of the Studio's `FilterBar`; same ID, same row |
 | RC-224 | `SearchCombobox` | navigation | 23 | PLANNED | §7.20 |
 | RC-225 | `RelatedContent` | storytelling | 15 | PLANNED | index only — server, composes cards |
 | RC-226 | `InquiryLauncher` | conversion | 20 | PLANNED | §7.21 |
@@ -295,9 +295,10 @@ and Phase 10's site shell then reuses it.
 | RC-231 | `DropdownMenu` | navigation | 02 | BUILT | §7.36 |
 | RC-232 | `MediaImage` | material understanding | 06 | BUILT | §7.37 |
 | RC-233 | `MediaVideo` | material understanding | 06 | BUILT | §7.38 |
-| RC-234 | `Pagination` | navigation | 14 | PLANNED | §7.39 |
+| RC-234 | `Pagination` | navigation | 14 | BUILT | §7.39 |
 | RC-235 | `BlockVideo` | material understanding | 11 | BUILT | index only — server; split out of RC-213 so a route with no video does not carry the `MediaVideo` island |
 | RC-236 | `EditorialFallback` | conversion | 11 | BUILT | index only — server; renders a seeded `EMPTY_STATE.*` string where a reference block has nothing real to show |
+| RC-237 | `SortSelect` | navigation | 14 | BUILT | §7.42 |
 
 `Breadcrumbs` and `DropdownMenu` are Phase 02, not Phase 10. `docs/project/phases/PHASE-00-04.md`
 pulls both forward on purpose and requires their rows to be opened in that phase: Phase 05's
@@ -361,7 +362,6 @@ at that point, from the next free number.
 | Component file | Owning phase | Named in |
 |---|---|---|
 | `components/patterns/Configurator/{index,Step,Progress,ReferenceUpload,Review}.tsx` | 19 | `docs/project/phases/PHASE-16-22.md`, Phase 19 deliverables |
-| `components/patterns/SortSelect.tsx` | 14 | `docs/project/phases/PHASE-10-15.md`, Phase 14 deliverables |
 
 `ReferenceUpload.tsx` composes RC-033 `FileUpload`; it does not reimplement a file input.
 
@@ -606,16 +606,16 @@ time; `—` and `UNASSIGNED` mean the review has not happened, not that it passe
 |---|---|
 | Registry ID | RC-217 |
 | Source | Rivya first-party |
-| Link | `components/patterns/ProductCard.tsx` |
+| Link | `components/patterns/ProductCard/index.tsx` — a directory, like every other pattern in this table; the flat path this row carried was written before Phase 10 settled the convention |
 | Licence | N/A — first-party |
 | Dependencies | none |
 | Page | `/collection`, `/collection/[category]`, `/collections/[slug]`, `/search`, related-content rails |
 | Purpose | product understanding, conversion |
-| Adaptation | `DESIGN_SYSTEM.md` §9 anatomy at 4:5; hover is border + 1.015 media scale only — no lift, no shadow, no rotation |
-| Mobile behaviour | Single full-width column at 360px; the meta row wraps to a second line rather than truncating a material name |
+| Adaptation | `DESIGN_SYSTEM.md` §9 anatomy at 4:5; hover is a 1.015 media scale only — no lift, no shadow, no rotation. **It is not a link in Phase 14**, and that is the phase boundary rather than an omission: `/product/[slug]` is Phase 15, so an anchor here would put a 404 behind every card in the grid — the dead door `resolveInternalTarget` exists to refuse. Phase 15 adds the heading anchor and the `::after` overlay described under Accessibility |
+| Mobile behaviour | Single full-width column at 360px; the badge row wraps to a second line rather than truncating a label |
 | Performance | 0 kB, server component. The grid ships no client JavaScript |
-| Accessibility | The title is the accessible name via a heading anchor with a `::after` overlay — no "read more" links; chips are text, not colour-only; focus ring renders on the card outline, not the image |
-| Reviewed on | — |
+| Accessibility | Renders as an `<article>` while it has no destination; the heading is the card's name and no "read more" link exists. Badges are text, not colour-only (RC via `Badge`, whose word is required). The price label and the amount are separate nodes, so a quote-only card announces a label with no number after it. From Phase 15 the title becomes the accessible name via a heading anchor with a `::after` overlay, and the focus ring renders on the card outline rather than the image |
+| Reviewed on | Phase 14 |
 | Reviewer | UNASSIGNED |
 | Verdict | FIRST_PARTY |
 
@@ -728,22 +728,22 @@ every project record until the owner confirms it.
 | Reviewer | UNASSIGNED |
 | Verdict | FIRST_PARTY |
 
-### 7.19 RC-223 — `FilterBar` (public)
+### 7.19 RC-223 — `FilterRail`
 
 | Field | Value |
 |---|---|
 | Registry ID | RC-223 |
 | Source | Rivya first-party |
-| Link | `components/patterns/FilterBar/index.tsx` |
+| Link | `components/patterns/FilterRail/index.tsx` — planned as `FilterBar` (public). Renamed when built: the Studio already has `components/studio/FilterBar.tsx`, and two components one word apart, one of them a Client Component, is how the wrong one gets imported |
 | Licence | N/A — first-party |
 | Dependencies | none |
 | Page | `/collection`, `/collection/[category]`, `/search` |
 | Purpose | navigation, product understanding |
-| Adaptation | The URL is the state; no client filter store exists. Facets come from `lib/catalog`, never a hard-coded list |
-| Mobile behaviour | A bottom-anchored RC-202 drawer opened by a "Filters" button showing the active count; footer holds Apply and Clear all within thumb reach |
-| Performance | budget ≤ 2.5 kB gz, client (unmeasured — PLANNED) |
-| Accessibility | "Skip to filters" link (Phase 41); active filters are removable chips whose accessible names say which filter they clear; zero-result options are disabled rather than hidden; the result count is `aria-live="polite"` and the grid is not a live region |
-| Reviewed on | — |
+| Adaptation | A `<form method="get">` and nothing else. The URL is the state; there is no client filter store, no fetch and no router push. Facets and their counts come from `lib/catalog/rail.ts`, computed from the same query as the rows, never from a hard-coded list. **Zero-count options are HIDDEN, not disabled** — this row planned the opposite, and the Phase 14 scope overrules it: a disabled option still tells a visitor the value exists and is worth wanting, and a rail that narrows to what actually matches is the honest shape. An ACTIVE value always renders, whatever its count, so a filter that matched nothing can still be cleared |
+| Mobile behaviour | A single stacked column above the grid at 360px, with the submit button and Clear Filters at its foot. **The planned bottom-anchored drawer was not built**: a drawer opened by a button is a Client Component, and the phase requires the rail to filter with JavaScript disabled. A no-JS disclosure (`<details>`) would satisfy both and is the obvious Phase 41 revision; a control that exists but cannot be opened is not |
+| Performance | 0 kB, server component — the budget this row carried (≤ 2.5 kB gz, client) is not spent, because nothing about a GET form needs to hydrate |
+| Accessibility | The form is labelled by its own heading; each dimension is a `<fieldset>` with a `<legend>`, so a screen reader announces "Material, group" before its checkboxes. Each count sits INSIDE its checkbox's label, so it is announced with the option rather than orphaned beside it. Clear Filters is a link, not a button, because it navigates. **No `aria-live` result count exists**: the results are a full page navigation rather than an in-place update, so the new page's own heading and content are what a screen reader reads — a live region would announce a count for a page that has already been replaced. The "Skip to filters" link remains Phase 41's |
+| Reviewed on | Phase 14 |
 | Reviewer | UNASSIGNED |
 | Verdict | FIRST_PARTY |
 
@@ -1068,14 +1068,14 @@ to its budget tables (`DESIGN_SYSTEM.md` §18 open item 1). Only then does this 
 | Adaptation | `DESIGN_SYSTEM.md` §8.4: `--rv-text-sm`, `--rv-ink-tertiary`, separators `aria-hidden`. Built in Phase 02 rather than Phase 10 because Phase 05's `StudioPage` needs the trail before the public chrome exists — one implementation serves both surfaces |
 | Mobile behaviour | Below 430px only the parent and the current page render. The trail never wraps to a second line and never truncates the current page's own label; it drops ancestors instead |
 | Performance | 0 kB, server |
-| Accessibility | `<nav>` with an `aria-label` from `global_content` group `UI_CHROME`, containing an ordered list; the current page is `aria-current="page"` and is **not** a link; separators are decorative `aria-hidden` text and never the only structure — the list markup carries it |
+| Accessibility | `<nav>` with an `aria-label` from `global_content` group `UI_LABEL`, containing an ordered list; the current page is `aria-current="page"` and is **not** a link; separators are decorative `aria-hidden` text and never the only structure — the list markup carries it |
 | Reviewed on | — |
 | Reviewer | UNASSIGNED |
 | Verdict | FIRST_PARTY |
 
 **Content constraint (SEED §1, D2).** The root label is a `global_content` string, not the literal
 `Home` typed into the component. `docs/content/INITIAL_CONTENT_INVENTORY.md` §1.3 row 2 records it
-as one of the thirteen strings needing a `UI_CHROME` group before the seed can hold it.
+as one of the thirteen strings needing a group of its own before the seed can hold it; `0080` created it as `UI_LABEL`.
 
 ### 7.36 RC-231 — `DropdownMenu`
 
@@ -1144,7 +1144,7 @@ it never selects or substitutes an asset of its own.
 |---|---|
 | Registry ID | RC-234 |
 | Source | Rivya first-party |
-| Link | `components/patterns/Pagination.tsx` |
+| Link | `components/patterns/Pagination/index.tsx` — a directory, per the convention Phase 10 settled |
 | Licence | N/A — first-party |
 | Dependencies | none |
 | Page | `/collection`, `/collection/[category]`, `/journal`, `/journal/category/[slug]`, `/search`, `/studio/**` |
@@ -1152,13 +1152,17 @@ it never selects or substitutes an asset of its own.
 | Adaptation | Page-number based on `?page=n`, with `rel="prev"`/`rel="next"` and a canonical URL for each page. 24 items per public page, 50 in Studio (`docs/ops/PERFORMANCE.md` §4.4). **Never infinite scroll** — changing that needs a documented decision, not a preference |
 | Mobile behaviour | Below 430px only previous, next and a "page n of m" indicator render; the number strip is dropped rather than horizontally scrolled |
 | Performance | 0 kB, server. The controls are real links, so the list paginates with JavaScript disabled |
-| Accessibility | `<nav>` with an `aria-label`; the current page carries `aria-current="page"`; previous and next are `aria-disabled` at the ends rather than removed, so the control set does not change shape under focus. After navigation, focus lands on the first new result, never back at the top of the document |
-| Reviewed on | — |
+| Accessibility | `<nav>` with an `aria-label`; the current page carries `aria-current="page"` and is not a link; previous and next are `aria-disabled` spans at the ends rather than removed, so the control set does not change shape under focus. The elision between number groups is `aria-hidden`, because "…" read aloud is noise. **Focus after navigation is the browser's**: each control is a real `<a href>` and the response is a new document, so there is nothing to move focus to — the "focus lands on the first new result" behaviour this row planned belongs to an in-place update, which this deliberately is not |
+| Reviewed on | Phase 14 |
 | Reviewer | UNASSIGNED |
 | Verdict | FIRST_PARTY |
 
 **Content constraint (SEED §1).** Previous, next and the position string are `global_content`
-strings in group `UI_CHROME`, not literals — `docs/content/INITIAL_CONTENT_INVENTORY.md` §1.3 row 3.
+strings in group `UI_LABEL`, not literals — `content/seed/catalog-ui.ts`. (Earlier drafts of this
+document called that group `UI_CHROME`; migration `0080` created it as `UI_LABEL`, and the name in
+the database is the one that is true.) The position string is the ONE string on the listing that
+contains a number, so it is the one row carrying `{{page}}` and `{{pages}}` tokens — the sentence
+lives whole in the row because "Page 2 of 7" cannot be rebuilt from fragments in another language.
 
 ### 7.40 RC-317 — `ToastRegion` + `Toast`
 
@@ -1184,6 +1188,25 @@ easy to miss, so it may never be the only notification of a destructive or faile
 outcome is reported where the action was taken — in the RC-309 dialog, on the form, in the row — and
 a toast may accompany it, never replace it. The public site has no toast at all: a visitor's outcome
 is the SEED §48 success surface or the SEED §49 error message, rendered in place and re-readable.
+
+### 7.42 RC-237 — `SortSelect`
+
+| Field | Value |
+|---|---|
+| Registry ID | RC-237 |
+| Source | Rivya first-party |
+| Link | `components/patterns/SortSelect/index.tsx` |
+| Licence | N/A — first-party |
+| Dependencies | none |
+| Page | `/collection`, `/collection/[category]`, `/search` |
+| Purpose | navigation |
+| Adaptation | A second `<form method="get">`, separate from the filter rail on purpose: a GET form submits everything it contains, so one form could not change the order without also re-submitting a half-ticked rail and resetting the page. It carries the active filters as hidden fields built from `catalogSearchParams`, so what it sends and what the canonical URL says can never disagree; `page` is deliberately not carried, because re-sorting changes what is on page 3. Three options — curated, newest, title. **There is no price option and there will not be one**: three of the four price states carry no number, so an ordering across them would have to invent a position for "Request a Quote" (`docs/project/BUSINESS_RULES.md`) |
+| Mobile behaviour | The label, the select and the submit button wrap onto two lines at 360px rather than shrinking the select below a comfortable tap target; the select is the platform control, so the picker is the phone's own |
+| Performance | 0 kB, server component |
+| Accessibility | A real `<label for>` on a real `<select>`, and a real submit button. It does NOT submit on change: `onChange`-submitting a select needs JavaScript, strands keyboard users mid-list on some browsers, and the phase requires the listing to sort with JavaScript disabled. The control renders only when at least two options have labels — one option is not a choice |
+| Reviewed on | Phase 14 |
+| Reviewer | UNASSIGNED |
+| Verdict | FIRST_PARTY |
 
 ### 7.41 RC-033 — `FileUpload`
 

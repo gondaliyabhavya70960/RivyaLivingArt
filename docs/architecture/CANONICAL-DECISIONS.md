@@ -189,6 +189,63 @@ boundary, and a gate that excluded it would be measuring something other than wh
   from the shell, which is the layout; a walk from the page alone would report one island and pass
   while the shell grew four more.
 
+**2026-09-09 · A13 — Phase 14's eight departures from what was written before it.**
+
+Each is small, each is argued where it lives, and each is here so that a reader who finds the code
+disagreeing with a document knows which one was decided later.
+
+1. **`lib/site/routes.ts` gains `DYNAMIC_PUBLIC_ROUTES`.** `/collection/[category]` is the first
+   dynamic public route, and `tests/unit/site-routes.test.ts` fails in both directions — a route
+   file with no declaration is a URL nobody wrote down. Exempting bracketed segments from the
+   "no undeclared route" half would have exempted every future dynamic family too, so the test now
+   compares two lists instead of one. `STATIC_PUBLIC_PATHS` still declares exactly thirteen.
+
+2. **`renderCmsPage(path, below?)` takes a second argument.** Only the two catalogue routes pass it,
+   and only for something the CMS genuinely cannot hold: a grid of database rows with filters over
+   them. Everything a section can express stays a section — the moment a route appends its own copy,
+   the owner has lost the ability to change that copy. The slot does NOT rescue a page with no live
+   sections: a category page whose hero is still DRAFT is still a 404, because SEED §55 is about
+   whether the page has been published, and a product grid under a heading nobody approved is
+   exactly the "looks finished" failure that rule exists to prevent.
+
+3. **A second seed module, `content/seed/catalog-ui.ts`.** The phase document names one seed addition
+   (`empty.collection.no_results`, which lives where the document puts it). It did not anticipate
+   that a server-rendered filter rail needs its own vocabulary — names for its groups, its three
+   sort options, Previous and Next. D2 and `scripts/cms/check-section-copy.ts` leave no room for
+   typing those into JSX, so they are rows. It follows `site-chrome.ts`, which exists for the same
+   reason and states it: strings a component needed are kept apart from strings the specification
+   supplied, so a reader can tell which is which.
+
+4. **`scripts/db/gen-types.mjs` excludes `schema_migrations`.** It is `db:migrate`'s own bookkeeping,
+   created by the runner rather than by a migration, so whether it exists at generation time depends
+   on how a database was built. That made the same schema generate two different type files and the
+   drift check fail on a difference nobody made. No repository reads it and PostgREST never exposes
+   it.
+
+5. **`?collection=` is multi-valued.** The phase's parameter table says "collection slug", singular,
+   and a slug is still what the parameter carries. Allowing more than one is a superset that keeps
+   the rail one shape: a single-valued dimension needs a different control from a multi-valued one
+   (a select with an "any" option rather than checkboxes), a different way to clear it, and its own
+   word for "any".
+
+6. **`products_edition_size_coherent` is stronger than specified.** The phase document requires that
+   `LIMITED_EDITION` states a size. `0122` also requires that size to be positive, and requires every
+   other edition state to carry none — "limited edition of 0" is a typo a visitor reads as inventory,
+   and "One of One, edition of 12" is a contradiction a product card would render straight-faced.
+   Same direction, one step further, argued in the migration.
+
+7. **Facet counts are computed from the fully filtered set**, so the rail narrows as filters are
+   applied and no option ever leads to an empty page. `docs/project/BUSINESS_RULES.md` BR-C5 records
+   the trade and why the alternative — counts that do not describe the page they sit beside — is the
+   kind of small dishonesty this project refuses.
+
+8. **Two component-registry corrections.** RC-223 was planned as `FilterBar` (public) and is built as
+   `FilterRail`, because the Studio already has a `FilterBar` and two components one word apart, one
+   of them a Client Component, is how the wrong one gets imported. RC-217 `ProductCard` is **not a
+   link** in Phase 14: `/product/[slug]` is Phase 15, and an anchor now would put a 404 behind every
+   card in the grid — the dead door Phase 13's `resolveInternalTarget` exists to refuse. Both records
+   carry the reason.
+
 **2026-09-08 · A12 — `--container-full` is not bridged into Tailwind's theme (DESIGN_SYSTEM §5.3).**
 
 Tailwind v4 reads the `--container-*` namespace for both `max-w-*` and `w-*`. `app/globals.css`

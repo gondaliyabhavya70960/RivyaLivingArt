@@ -21,6 +21,20 @@ import { asTag } from '@/lib/ui/polymorphic'
  * those entities, each of which knows its own minimum. This primitive stays the column
  * grid, and a card rail is not built by bending it.
  *
+ * A CALLER MAY STILL STATE ITS OWN COLUMN COUNT, and when it does this drops the three
+ * defaults entirely rather than emitting both sets. That is not a convenience; it is a
+ * correctness fix. `cn` is a plain joiner with no Tailwind awareness, so two competing
+ * `grid-cols-*` utilities on one element are settled by STYLESHEET order, not by which
+ * was passed last — and Tailwind emits `grid-cols-*` in ascending numeric order within
+ * each breakpoint layer. `grid-cols-4` therefore beat a caller's `grid-cols-1`, and
+ * `lg:grid-cols-12` beat `lg:grid-cols-3`. Every caller that passed column classes was
+ * rendering 4 columns on a phone and 12 on a desktop: measured in Chromium, a product
+ * card came out 66px wide at 360px and 90px at 1440px. Six call sites across five phases
+ * were affected, so the fix belongs here rather than in any one of them.
+ *
+ * Only a caller that names NO column class gets the editorial 4/8/12, which is the
+ * contract `col-span-*` children rely on.
+ *
  * See Stack for why `gap` is a union of §5.1 steps, why `ul` alone gets an explicit
  * `role`, and why an `ol` is left to render its own numbers.
  */
@@ -30,6 +44,19 @@ export type GridElement = 'div' | 'ul' | 'ol' | 'section' | 'article' | 'nav'
 
 /** §5.4: 16px, then 24px from 768, then 32px from 1440. The default when `gap` is unset. */
 const RESPONSIVE_GAP = 'gap-4 md:gap-6 2xl:gap-8'
+
+/** §5.4's editorial column grid. Emitted only when the caller states no columns of its own. */
+const EDITORIAL_COLUMNS = 'grid-cols-4 md:grid-cols-8 lg:grid-cols-12'
+
+/**
+ * True when `className` carries any `grid-cols-*`, at any breakpoint. The leading boundary
+ * matters: `sm:grid-cols-2` is preceded by a colon, a bare `grid-cols-1` by a space or the
+ * start of the string, and neither may be confused with a class that merely ends in those
+ * characters.
+ */
+function statesColumns(className: string | undefined): boolean {
+  return className !== undefined && /(?:^|[\s:])grid-cols-/.test(className)
+}
 
 const GAP: Record<GridGap, string> = {
   0: 'gap-0',
@@ -68,7 +95,8 @@ export const Grid = React.forwardRef<HTMLElement, GridProps>(function Grid(
       ref={ref}
       role={LIST_ELEMENTS.has(as) ? 'list' : undefined}
       className={cn(
-        'grid grid-cols-4 md:grid-cols-8 lg:grid-cols-12',
+        'grid',
+        statesColumns(className) ? undefined : EDITORIAL_COLUMNS,
         gap === undefined ? RESPONSIVE_GAP : GAP[gap],
         className,
       )}

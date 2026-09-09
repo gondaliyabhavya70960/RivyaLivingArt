@@ -3,7 +3,7 @@ import { join } from 'node:path'
 
 import { describe, expect, it } from 'vitest'
 
-import { STATIC_PUBLIC_PATHS } from '@/lib/site/routes'
+import { DYNAMIC_PUBLIC_ROUTES, STATIC_PUBLIC_PATHS } from '@/lib/site/routes'
 
 /**
  * The route map and the file system agree, exactly.
@@ -61,7 +61,11 @@ function routePaths(dir: string, prefix = ''): string[] {
 }
 
 describe('public route parity', () => {
-  const actual = routePaths(SITE).sort()
+  const found = routePaths(SITE)
+  /** A path containing a `[segment]` is a dynamic family, checked against its own declaration. */
+  const isDynamic = (path: string): boolean => path.includes('[')
+  const actual = found.filter((path) => !isDynamic(path)).sort()
+  const actualDynamic = found.filter(isDynamic).sort()
   // Widened to `string[]`: the literal union from `as const` is what makes the list readable in a
   // diff, but comparing it against paths discovered on disk needs plain strings on both sides.
   const expected: string[] = [...D3_STATIC_PATHS].sort()
@@ -74,6 +78,12 @@ describe('public route parity', () => {
   it('has no route file for a path D3 does not declare', () => {
     const undeclared = actual.filter((path) => !expected.includes(path))
     expect(undeclared).toEqual([])
+  })
+
+  it('has a route file for every declared dynamic family, and no undeclared one', () => {
+    // Both directions, for the same reason as the static halves above: a declared family with no
+    // file is a route that 404s, and a file with no declaration is a URL nobody wrote down.
+    expect(actualDynamic).toEqual([...DYNAMIC_PUBLIC_ROUTES].sort())
   })
 
   it('declares exactly thirteen static paths', () => {

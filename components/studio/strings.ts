@@ -1664,6 +1664,485 @@ export const STUDIO_STRINGS = {
     value: 'Awaiting owner verification — a section bound to it cannot be published.',
     contentKey: 'studio_help.content_media_unverified_note',
   },
+
+  /** DESIGN_SYSTEM §7.4 marks a required field with the word, never an asterisk alone. */
+  'studio.catalog.requiredLabel': {
+    value: 'Required',
+    contentKey: 'studio_help.catalog_required_label',
+  },
+  // --- Phase 14: the catalogue editor ---------------------------------------------------------
+  //
+  // These are interface mechanics — column headers, field labels, the words on two buttons — and
+  // none of them asserts a business fact. The two that come closest are deliberately worded as
+  // warnings rather than claims: the availability help text says what "Ready Stock" WOULD assert,
+  // and the hero-image help says what the database will refuse.
+  'studio.catalog.products.caption': {
+    value: 'Products, with their status and what is still missing.',
+    contentKey: 'studio_help.catalog_products_caption',
+  },
+  'studio.catalog.products.emptyHeading': {
+    value: 'No products yet',
+    contentKey: 'studio_help.catalog_products_empty_heading',
+  },
+  'studio.catalog.products.emptyBody': {
+    value:
+      'A product exists because someone typed it in. Nothing is seeded, and nothing is imported.',
+    contentKey: 'studio_help.catalog_products_empty_body',
+  },
+  'studio.catalog.products.colTitle': {
+    value: 'Title',
+    contentKey: 'studio_help.catalog_products_col_title',
+  },
+  'studio.catalog.products.colSku': {
+    value: 'SKU',
+    contentKey: 'studio_help.catalog_products_col_sku',
+  },
+  'studio.catalog.products.colCategory': {
+    value: 'Category',
+    contentKey: 'studio_help.catalog_products_col_category',
+  },
+  'studio.catalog.products.colStatus': {
+    value: 'Status',
+    contentKey: 'studio_help.catalog_products_col_status',
+  },
+  'studio.catalog.products.colReadiness': {
+    value: 'Not ready',
+    contentKey: 'studio_help.catalog_products_col_readiness',
+  },
+  'studio.catalog.products.colUpdated': {
+    value: 'Updated',
+    contentKey: 'studio_help.catalog_products_col_updated',
+  },
+  'studio.catalog.products.readyToPublish': {
+    value: 'Ready',
+    contentKey: 'studio_help.catalog_products_ready',
+  },
+  'studio.catalog.products.untitled': {
+    value: 'Untitled',
+    contentKey: 'studio_help.catalog_products_untitled',
+  },
+  'studio.catalog.products.noCategory': {
+    value: 'No category',
+    contentKey: 'studio_help.catalog_products_no_category',
+  },
+  'studio.catalog.products.noSku': {
+    value: 'No SKU',
+    contentKey: 'studio_help.catalog_products_no_sku',
+  },
+  'studio.catalog.products.newHeading': {
+    value: 'New product',
+    contentKey: 'studio_help.catalog_products_new_heading',
+  },
+  'studio.catalog.products.searchLabel': {
+    value: 'Search title or slug',
+    contentKey: 'studio_help.catalog_products_search_label',
+  },
+  'studio.catalog.products.searchSubmit': {
+    value: 'Search',
+    contentKey: 'studio_help.catalog_products_search_submit',
+  },
+  'studio.catalog.product.identityHeading': {
+    value: 'Identity',
+    contentKey: 'studio_help.catalog_product_identity_heading',
+  },
+  'studio.catalog.product.copyHeading': {
+    value: 'Copy',
+    contentKey: 'studio_help.catalog_product_copy_heading',
+  },
+  'studio.catalog.product.commerceHeading': {
+    value: 'Price and edition',
+    contentKey: 'studio_help.catalog_product_commerce_heading',
+  },
+  'studio.catalog.product.specificationHeading': {
+    value: 'Specification',
+    contentKey: 'studio_help.catalog_product_specification_heading',
+  },
+  'studio.catalog.product.seoHeading': {
+    value: 'Search and social',
+    contentKey: 'studio_help.catalog_product_seo_heading',
+  },
+  'studio.catalog.product.slug': {
+    value: 'Slug',
+    contentKey: 'studio_help.catalog_product_slug',
+  },
+  'studio.catalog.product.slugHelp': {
+    value: 'The address this product will live at. Lowercase letters, numbers and single hyphens.',
+    contentKey: 'studio_help.catalog_product_slug_help',
+  },
+  'studio.catalog.product.sku': {
+    value: 'SKU',
+    contentKey: 'studio_help.catalog_product_sku',
+  },
+  'studio.catalog.product.title': {
+    value: 'Title',
+    contentKey: 'studio_help.catalog_product_title',
+  },
+  'studio.catalog.product.subtitle': {
+    value: 'Subtitle',
+    contentKey: 'studio_help.catalog_product_subtitle',
+  },
+  'studio.catalog.product.summary': {
+    value: 'Summary',
+    contentKey: 'studio_help.catalog_product_summary',
+  },
+  'studio.catalog.product.description': {
+    value: 'Description',
+    contentKey: 'studio_help.catalog_product_description',
+  },
+  'studio.catalog.product.category': {
+    value: 'Category',
+    contentKey: 'studio_help.catalog_product_category',
+  },
+  'studio.catalog.product.priceState': {
+    value: 'Price state',
+    contentKey: 'studio_help.catalog_product_price_state',
+  },
+  'studio.catalog.product.priceStateHelp': {
+    value: 'A quote-only piece carries no amount and no currency — not even zero.',
+    contentKey: 'studio_help.catalog_product_price_state_help',
+  },
+  'studio.catalog.product.priceMajor': {
+    value: 'Price',
+    contentKey: 'studio_help.catalog_product_price_major',
+  },
+  'studio.catalog.product.priceFromMajor': {
+    value: 'Price from',
+    contentKey: 'studio_help.catalog_product_price_from_major',
+  },
+  'studio.catalog.product.amountHelp': {
+    value: 'In whole currency units, as a customer would read it.',
+    contentKey: 'studio_help.catalog_product_amount_help',
+  },
+  'studio.catalog.product.currency': {
+    value: 'Currency',
+    contentKey: 'studio_help.catalog_product_currency',
+  },
+  'studio.catalog.product.currencyHelp': {
+    value: 'A three-letter ISO code, such as INR.',
+    contentKey: 'studio_help.catalog_product_currency_help',
+  },
+  'studio.catalog.product.availability': {
+    value: 'Availability',
+    contentKey: 'studio_help.catalog_product_availability',
+  },
+  'studio.catalog.product.availabilityHelp': {
+    value: 'Ready Stock asserts that a piece exists now. Leave it unset until that is true.',
+    contentKey: 'studio_help.catalog_product_availability_help',
+  },
+  'studio.catalog.product.edition': {
+    value: 'Edition',
+    contentKey: 'studio_help.catalog_product_edition',
+  },
+  'studio.catalog.product.editionSize': {
+    value: 'Edition size',
+    contentKey: 'studio_help.catalog_product_edition_size',
+  },
+  'studio.catalog.product.editionSizeHelp': {
+    value: 'Required for a limited edition, and refused for any other edition state.',
+    contentKey: 'studio_help.catalog_product_edition_size_help',
+  },
+  'studio.catalog.product.customizable': {
+    value: 'This piece can be customised',
+    contentKey: 'studio_help.catalog_product_customizable',
+  },
+  'studio.catalog.product.largeFormat': {
+    value: 'Large format',
+    contentKey: 'studio_help.catalog_product_large_format',
+  },
+  'studio.catalog.product.sortOrder': {
+    value: 'Order position',
+    contentKey: 'studio_help.catalog_product_sort_order',
+  },
+  'studio.catalog.product.sortOrderHelp': {
+    value:
+      'Lower numbers come first in the curated order. Leave it empty to fall in behind the placed pieces.',
+    contentKey: 'studio_help.catalog_product_sort_order_help',
+  },
+  'studio.catalog.product.heroMedia': {
+    value: 'Hero image',
+    contentKey: 'studio_help.catalog_product_hero_media',
+  },
+  'studio.catalog.product.heroMediaHelp': {
+    value: 'Real Rivya media only. Concept imagery is refused — by this form and by the database.',
+    contentKey: 'studio_help.catalog_product_hero_media_help',
+  },
+  'studio.catalog.product.materials': {
+    value: 'Materials',
+    contentKey: 'studio_help.catalog_product_materials',
+  },
+  'studio.catalog.product.materialsEmpty': {
+    value: 'No materials exist yet. Add them under Materials.',
+    contentKey: 'studio_help.catalog_product_materials_empty',
+  },
+  'studio.catalog.product.dimensions': {
+    value: 'Dimensions',
+    contentKey: 'studio_help.catalog_product_dimensions',
+  },
+  'studio.catalog.product.dimensionsHelp': {
+    value:
+      'Millimetres, except weight in grams and seats as a count. Leave a measurement empty if it does not apply.',
+    contentKey: 'studio_help.catalog_product_dimensions_help',
+  },
+  'studio.catalog.product.seoTitle': {
+    value: 'Search title',
+    contentKey: 'studio_help.catalog_product_seo_title',
+  },
+  'studio.catalog.product.seoDescription': {
+    value: 'Search description',
+    contentKey: 'studio_help.catalog_product_seo_description',
+  },
+  'studio.catalog.product.save': {
+    value: 'Save',
+    contentKey: 'studio_help.catalog_product_save',
+  },
+  'studio.catalog.product.create': {
+    value: 'Create product',
+    contentKey: 'studio_help.catalog_product_create',
+  },
+  'studio.catalog.product.publish': {
+    value: 'Publish',
+    contentKey: 'studio_help.catalog_product_publish',
+  },
+  'studio.catalog.product.unpublish': {
+    value: 'Unpublish',
+    contentKey: 'studio_help.catalog_product_unpublish',
+  },
+  'studio.catalog.product.saved': {
+    value: 'Saved.',
+    contentKey: 'studio_help.catalog_product_saved',
+  },
+  'studio.catalog.product.none': {
+    value: 'Not set',
+    contentKey: 'studio_help.catalog_product_none',
+  },
+  'studio.catalog.readiness.heading': {
+    value: 'Publication readiness',
+    contentKey: 'studio_help.catalog_readiness_heading',
+  },
+  'studio.catalog.readiness.body': {
+    value:
+      'Every item below is named, not scored. The required ones must be met before this product can be published.',
+    contentKey: 'studio_help.catalog_readiness_body',
+  },
+  'studio.catalog.readiness.met': {
+    value: 'Done',
+    contentKey: 'studio_help.catalog_readiness_met',
+  },
+  'studio.catalog.readiness.unmet': {
+    value: 'Missing',
+    contentKey: 'studio_help.catalog_readiness_unmet',
+  },
+  'studio.catalog.readiness.required': {
+    value: 'Required',
+    contentKey: 'studio_help.catalog_readiness_required',
+  },
+  'studio.catalog.readiness.optional': {
+    value: 'Optional',
+    contentKey: 'studio_help.catalog_readiness_optional',
+  },
+  'studio.catalog.readiness.refused': {
+    value: 'Publication refused. These items are still missing:',
+    contentKey: 'studio_help.catalog_readiness_refused',
+  },
+  'studio.catalog.priceState.FIXED': {
+    value: 'Fixed price',
+    contentKey: 'studio_help.catalog_price_state_fixed',
+  },
+  'studio.catalog.priceState.STARTING_FROM': {
+    value: 'Starting from',
+    contentKey: 'studio_help.catalog_price_state_starting_from',
+  },
+  'studio.catalog.priceState.REQUEST_QUOTE': {
+    value: 'Request a quote',
+    contentKey: 'studio_help.catalog_price_state_request_quote',
+  },
+  'studio.catalog.priceState.PRICE_ON_REQUEST': {
+    value: 'Price on request',
+    contentKey: 'studio_help.catalog_price_state_price_on_request',
+  },
+  'studio.catalog.availability.READY_STOCK': {
+    value: 'Ready stock',
+    contentKey: 'studio_help.catalog_availability_ready_stock',
+  },
+  'studio.catalog.availability.MADE_TO_ORDER': {
+    value: 'Made to order',
+    contentKey: 'studio_help.catalog_availability_made_to_order',
+  },
+  'studio.catalog.edition.ONE_OF_ONE': {
+    value: 'One of one',
+    contentKey: 'studio_help.catalog_edition_one_of_one',
+  },
+  'studio.catalog.edition.LIMITED_EDITION': {
+    value: 'Limited edition',
+    contentKey: 'studio_help.catalog_edition_limited_edition',
+  },
+  'studio.catalog.edition.OPEN_EDITION': {
+    value: 'Open edition',
+    contentKey: 'studio_help.catalog_edition_open_edition',
+  },
+  'studio.catalog.categories.caption': {
+    value: 'The seven categories, in the order they are presented.',
+    contentKey: 'studio_help.catalog_categories_caption',
+  },
+  'studio.catalog.categories.emptyHeading': {
+    value: 'No categories',
+    contentKey: 'studio_help.catalog_categories_empty_heading',
+  },
+  'studio.catalog.categories.emptyBody': {
+    value:
+      'The taxonomy is seeded. If this list is empty the seed has not run against this database.',
+    contentKey: 'studio_help.catalog_categories_empty_body',
+  },
+  'studio.catalog.categories.colName': {
+    value: 'Name',
+    contentKey: 'studio_help.catalog_categories_col_name',
+  },
+  'studio.catalog.categories.colSlug': {
+    value: 'Address',
+    contentKey: 'studio_help.catalog_categories_col_slug',
+  },
+  'studio.catalog.categories.colOrder': {
+    value: 'Order',
+    contentKey: 'studio_help.catalog_categories_col_order',
+  },
+  'studio.catalog.categories.colStatus': {
+    value: 'Status',
+    contentKey: 'studio_help.catalog_categories_col_status',
+  },
+  'studio.catalog.categories.editHeading': {
+    value: 'Edit category',
+    contentKey: 'studio_help.catalog_categories_edit_heading',
+  },
+  'studio.catalog.category.name': {
+    value: 'Name',
+    contentKey: 'studio_help.catalog_category_name',
+  },
+  'studio.catalog.category.subtitle': {
+    value: 'Subtitle',
+    contentKey: 'studio_help.catalog_category_subtitle',
+  },
+  'studio.catalog.category.description': {
+    value: 'Description',
+    contentKey: 'studio_help.catalog_category_description',
+  },
+  'studio.catalog.category.sortOrder': {
+    value: 'Order position',
+    contentKey: 'studio_help.catalog_category_sort_order',
+  },
+  'studio.catalog.category.heroMedia': {
+    value: 'Hero image',
+    contentKey: 'studio_help.catalog_category_hero_media',
+  },
+  'studio.catalog.materials.caption': {
+    value: 'Materials, used by the product filters.',
+    contentKey: 'studio_help.catalog_materials_caption',
+  },
+  'studio.catalog.materials.emptyHeading': {
+    value: 'No materials yet',
+    contentKey: 'studio_help.catalog_materials_empty_heading',
+  },
+  'studio.catalog.materials.emptyBody': {
+    value: 'A material is what the collection filters by. Add the ones Rivya actually works in.',
+    contentKey: 'studio_help.catalog_materials_empty_body',
+  },
+  'studio.catalog.materials.colName': {
+    value: 'Name',
+    contentKey: 'studio_help.catalog_materials_col_name',
+  },
+  'studio.catalog.materials.colSlug': {
+    value: 'Address',
+    contentKey: 'studio_help.catalog_materials_col_slug',
+  },
+  'studio.catalog.materials.colFamily': {
+    value: 'Family',
+    contentKey: 'studio_help.catalog_materials_col_family',
+  },
+  'studio.catalog.materials.colStatus': {
+    value: 'Status',
+    contentKey: 'studio_help.catalog_materials_col_status',
+  },
+  'studio.catalog.materials.newHeading': {
+    value: 'New material',
+    contentKey: 'studio_help.catalog_materials_new_heading',
+  },
+  'studio.catalog.material.name': {
+    value: 'Name',
+    contentKey: 'studio_help.catalog_material_name',
+  },
+  'studio.catalog.material.slug': {
+    value: 'Slug',
+    contentKey: 'studio_help.catalog_material_slug',
+  },
+  'studio.catalog.material.family': {
+    value: 'Family',
+    contentKey: 'studio_help.catalog_material_family',
+  },
+  'studio.catalog.material.description': {
+    value: 'Description',
+    contentKey: 'studio_help.catalog_material_description',
+  },
+  'studio.catalog.material.save': {
+    value: 'Save material',
+    contentKey: 'studio_help.catalog_material_save',
+  },
+  'studio.catalog.collections.caption': {
+    value: 'Collections. Every one is a concept until the owner confirms it.',
+    contentKey: 'studio_help.catalog_collections_caption',
+  },
+  'studio.catalog.collections.emptyHeading': {
+    value: 'No collections yet',
+    contentKey: 'studio_help.catalog_collections_empty_heading',
+  },
+  'studio.catalog.collections.emptyBody': {
+    value:
+      'A collection groups pieces into an exhibition. It stays a concept until Rivya confirms it exists.',
+    contentKey: 'studio_help.catalog_collections_empty_body',
+  },
+  'studio.catalog.collections.colName': {
+    value: 'Name',
+    contentKey: 'studio_help.catalog_collections_col_name',
+  },
+  'studio.catalog.collections.colSlug': {
+    value: 'Address',
+    contentKey: 'studio_help.catalog_collections_col_slug',
+  },
+  'studio.catalog.collections.colConcept': {
+    value: 'Concept state',
+    contentKey: 'studio_help.catalog_collections_col_concept',
+  },
+  'studio.catalog.collections.colStatus': {
+    value: 'Status',
+    contentKey: 'studio_help.catalog_collections_col_status',
+  },
+  'studio.catalog.collections.newHeading': {
+    value: 'New collection',
+    contentKey: 'studio_help.catalog_collections_new_heading',
+  },
+  'studio.catalog.collections.conceptNote': {
+    value:
+      'A collection stays a draft concept until the owner confirms it, so it cannot be published from here.',
+    contentKey: 'studio_help.catalog_collections_concept_note',
+  },
+  'studio.catalog.collection.name': {
+    value: 'Name',
+    contentKey: 'studio_help.catalog_collection_name',
+  },
+  'studio.catalog.collection.slug': {
+    value: 'Slug',
+    contentKey: 'studio_help.catalog_collection_slug',
+  },
+  'studio.catalog.collection.statement': {
+    value: 'Statement',
+    contentKey: 'studio_help.catalog_collection_statement',
+  },
+  'studio.catalog.collection.sortOrder': {
+    value: 'Order position',
+    contentKey: 'studio_help.catalog_collection_sort_order',
+  },
+  'studio.catalog.collection.save': {
+    value: 'Save collection',
+    contentKey: 'studio_help.catalog_collection_save',
+  },
 } as const satisfies Record<string, StudioStringEntry>
 
 /** Every key this module resolves. A typo is a compile error, not a blank space on the page. */

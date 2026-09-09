@@ -1486,6 +1486,82 @@ export type Database = {
           },
         ]
       }
+      product_specs: {
+        Row: {
+          id: string
+          product_id: string
+          sort_order: number
+          label: string
+          value: string
+          unit: string | null
+          group_label: string | null
+          status: Database['public']['Enums']['content_status']
+          owner_verification: Database['public']['Enums']['owner_verification']
+          fact_classification: Database['public']['Enums']['fact_classification']
+          published_at: string | null
+          published_by: string | null
+          created_at: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          product_id: string
+          sort_order?: number
+          label: string
+          value: string
+          unit?: string | null
+          group_label?: string | null
+          status?: Database['public']['Enums']['content_status']
+          owner_verification?: Database['public']['Enums']['owner_verification']
+          fact_classification?: Database['public']['Enums']['fact_classification']
+          published_at?: string | null
+          published_by?: string | null
+          created_at?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          product_id?: string
+          sort_order?: number
+          label?: string
+          value?: string
+          unit?: string | null
+          group_label?: string | null
+          status?: Database['public']['Enums']['content_status']
+          owner_verification?: Database['public']['Enums']['owner_verification']
+          fact_classification?: Database['public']['Enums']['fact_classification']
+          published_at?: string | null
+          published_by?: string | null
+          created_at?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'product_specs_product_id_fkey'
+            columns: ['product_id']
+            isOneToOne: false
+            referencedRelation: 'products'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'product_specs_published_by_fkey'
+            columns: ['published_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'product_specs_updated_by_fkey'
+            columns: ['updated_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       products: {
         Row: {
           id: string
@@ -1519,6 +1595,12 @@ export type Database = {
           seed_content_hash: string | null
           seed_last_applied_at: string | null
           owner_edited: boolean
+          price_minor: number | null
+          availability_state: Database['public']['Enums']['availability_state'] | null
+          edition_state: Database['public']['Enums']['edition_state'] | null
+          edition_size: number | null
+          is_customizable: boolean
+          sort_order: number | null
         }
         Insert: {
           id?: string
@@ -1552,6 +1634,12 @@ export type Database = {
           seed_content_hash?: string | null
           seed_last_applied_at?: string | null
           owner_edited?: boolean
+          price_minor?: number | null
+          availability_state?: Database['public']['Enums']['availability_state'] | null
+          edition_state?: Database['public']['Enums']['edition_state'] | null
+          edition_size?: number | null
+          is_customizable?: boolean
+          sort_order?: number | null
         }
         Update: {
           id?: string
@@ -1585,6 +1673,12 @@ export type Database = {
           seed_content_hash?: string | null
           seed_last_applied_at?: string | null
           owner_edited?: boolean
+          price_minor?: number | null
+          availability_state?: Database['public']['Enums']['availability_state'] | null
+          edition_state?: Database['public']['Enums']['edition_state'] | null
+          edition_size?: number | null
+          is_customizable?: boolean
+          sort_order?: number | null
         }
         Relationships: [
           {
@@ -1880,14 +1974,20 @@ export type Database = {
         Args: Record<string, unknown>
         Returns: Json
       }
+      is_valid_dimensions: {
+        Args: Record<string, unknown>
+        Returns: Json
+      }
       rivya_slugify: {
         Args: Record<string, unknown>
         Returns: Json
       }
     }
     Enums: {
+      availability_state: 'READY_STOCK' | 'MADE_TO_ORDER'
       collection_concept_state: 'DRAFT_COLLECTION_CONCEPT'
       content_status: 'DRAFT' | 'REVIEW' | 'APPROVED' | 'PUBLISHED' | 'ARCHIVED'
+      edition_state: 'ONE_OF_ONE' | 'LIMITED_EDITION' | 'OPEN_EDITION'
       fact_classification:
         | 'BRAND_COPY'
         | 'EDITORIAL_COPY'
@@ -1898,7 +1998,7 @@ export type Database = {
       media_kind: 'IMAGE' | 'VIDEO' | 'MODEL_3D' | 'DOCUMENT' | 'BRAND'
       media_source: 'REAL' | 'USER_UPLOAD' | 'HIGGSFIELD' | 'RENDER' | 'FALLBACK'
       owner_verification: 'NOT_REQUIRED' | 'OWNER_VERIFICATION_REQUIRED' | 'VERIFIED'
-      price_state: 'STARTING_FROM' | 'REQUEST_QUOTE' | 'PRICE_ON_REQUEST'
+      price_state: 'STARTING_FROM' | 'REQUEST_QUOTE' | 'PRICE_ON_REQUEST' | 'FIXED'
       user_role: 'owner' | 'admin' | 'editor' | 'merchandiser' | 'researcher' | 'viewer'
     }
     CompositeTypes: {

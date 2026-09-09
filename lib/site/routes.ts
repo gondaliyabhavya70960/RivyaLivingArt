@@ -31,3 +31,23 @@ export const STATIC_PUBLIC_PATHS = [
 ] as const
 
 export type StaticPublicPath = (typeof STATIC_PUBLIC_PATHS)[number]
+
+/**
+ * The dynamic public route families that EXIST on disk, as Next writes their segments.
+ *
+ * WHY THIS LIST EXISTS. `tests/unit/site-routes.test.ts` compares the route files against the
+ * declaration and fails in both directions. Without this, the first dynamic route would have to be
+ * exempted from the "no undeclared route" half of that test — and an exemption for one shape of
+ * path is an exemption for every future one, which is exactly the drift the test prevents.
+ *
+ * IT IS SEPARATE FROM `STATIC_PUBLIC_PATHS` because the two answer different questions. A static
+ * path is an address; a dynamic family is a shape. Studio's href resolution can check a typed href
+ * against the first directly, and against the second only by consulting the database — which is
+ * what `listPublicPagePaths` is for.
+ *
+ * Phase 14 adds the first entry. `/product/[slug]`, `/collections/[slug]`, `/portfolio/[slug]`,
+ * `/journal/[slug]` and `/journal/category/[slug]` join it in Phases 15 to 18.
+ */
+export const DYNAMIC_PUBLIC_ROUTES = ['/collection/[category]'] as const
+
+export type DynamicPublicRoute = (typeof DYNAMIC_PUBLIC_ROUTES)[number]

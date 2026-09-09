@@ -2,12 +2,21 @@
 /**
  * Writes the generated sections of `docs/media/HIGGSFIELD_ASSET_STATUS.md`.
  *
- * IT READS THE MANIFEST AND NOTHING ELSE — no database, no network. That is a requirement rather
- * than a simplification: the phase's verification step 10 is
+ * IT READS TWO COMMITTED FILES AND NOTHING ELSE — no database, no network. That is a requirement
+ * rather than a simplification: the phase's verification step 10 is
  * `npm run media:build-status && git diff --exit-code`, which runs in CI, and a generator whose
  * output depended on how many rows `media_assets` happened to hold would produce a document that
  * differs between a developer's machine, CI and production. A document that cannot be regenerated
  * identically is not a generated document; it is a document with a script attached.
+ *
+ * THE SECOND FILE IS THE MIGRATION LEDGER, `data/higgsfield/migration-log.json`, and it supplies
+ * the Status column. The manifest's own `status` is a GENERATION-TIME literal: the builder writes
+ * `AVAILABLE_UNMIGRATED` on every asset (see scripts/media/build-higgsfield-manifest.py) and never
+ * revisits it, so once the assets were actually migrated that column asserted the opposite of the
+ * truth about all 250 of them. The ledger is the record of what reached Cloudinary, it is
+ * committed, and it is keyed by `higgsfield_generation_id`, so reading it keeps the regenerate-
+ * identically property the paragraph above demands while making the column true. Only PRESENCE in
+ * the ledger is read — never `uploadedAt`, which would make the output vary per run.
  *
  * SO "Used?" AND "CMS placement" READ FROM THE MANIFEST'S OWN FIELDS, which are `false` and `null`
  * on all 250 and will stay that way — the manifest records what was generated, not what the CMS
@@ -22,13 +31,33 @@
  *
  * Usage: npm run media:build-status
  */
-import { readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 
 import { purposeFor } from '../../content/asset-purposes'
 import { readManifest, type ManifestAsset } from '../../lib/media/manifest'
+import { EMPTY_LEDGER, isDone, type Ledger } from '../../lib/media/migration'
 
 const DOC_PATH = 'docs/media/HIGGSFIELD_ASSET_STATUS.md'
+const LEDGER_PATH = 'data/higgsfield/migration-log.json'
 const PROMPT_LIMIT = 100
+
+/**
+ * Absent ledger = nothing migrated yet, which is the honest reading before Phase 07 runs and the
+ * state a fresh clone is in. It is not an error.
+ */
+function readLedger(): Ledger {
+  if (!existsSync(LEDGER_PATH)) return EMPTY_LEDGER
+  return JSON.parse(readFileSync(LEDGER_PATH, 'utf8')) as Ledger
+}
+
+/**
+ * MIGRATED means the asset reached Cloudinary at its manifest public ID and a `media_assets` row
+ * was written — the vocabulary §3 of the document defines. Anything else keeps whatever the
+ * manifest recorded at generation time.
+ */
+function statusOf(asset: ManifestAsset, ledger: Ledger): string {
+  return isDone(ledger, asset) ? 'MIGRATED' : asset.status
+}
 
 function begin(name: string): string {
   return `<!-- BEGIN GENERATED: ${name} -->`
@@ -131,7 +160,7 @@ function distribution(assets: readonly ManifestAsset[]): string {
   ].join('\n')
 }
 
-function inventory(assets: readonly ManifestAsset[]): string {
+function inventory(assets: readonly ManifestAsset[], ledger: Ledger): string {
   // Sorted by asset id rather than manifest order: a rebuild that reorders the JSON must not
   // reorder 250 rows in a committed document and bury the one real change in the diff.
   const rows = [...assets]
@@ -149,7 +178,7 @@ function inventory(assets: readonly ManifestAsset[]): string {
         asset.aspect_ratio,
         `${String(asset.width)}×${String(asset.height)}`,
         cell(truncate(asset.prompt, PROMPT_LIMIT)),
-        `\`${asset.status}\``,
+        `\`${statusOf(asset, ledger)}\``,
         asset.used_in_cms ? 'yes' : 'no',
         `\`${asset.cloudinary_public_id}\``,
         asset.cms_placement === null ? '—' : cell(asset.cms_placement),
@@ -185,11 +214,12 @@ function replaceRegion(document: string, name: string, body: string): string {
 }
 
 const manifest = readManifest()
+const ledger = readLedger()
 
 let document = readFileSync(DOC_PATH, 'utf8')
 document = replaceRegion(document, 'family-summary', familySummary(manifest.assets))
 document = replaceRegion(document, 'distribution', distribution(manifest.assets))
-document = replaceRegion(document, 'asset-inventory', inventory(manifest.assets))
+document = replaceRegion(document, 'asset-inventory', inventory(manifest.assets, ledger))
 
 writeFileSync(DOC_PATH, document)
 

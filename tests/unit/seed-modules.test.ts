@@ -33,6 +33,10 @@ describe('seed_key identity', () => {
   it('is namespaced by kind, so one glance says what a key addresses', () => {
     const prefixes = new Set(RECORDS.map((r) => r.seedKey.split(':')[0]))
     expect([...prefixes].sort()).toEqual([
+      // Phase 14. The listing controls' own words — filter group names, sort options, pagination
+      // — for the same reason `chrome:` exists and is not `global:`: they came from a component
+      // that needed them, not from the SEED specification.
+      'catalog',
       'category',
       // Phase 10. The public shell's own strings — the skip link, the two menu controls, the
       // announcement dismiss button, and the accessible names of the landmarks. They are not

@@ -981,8 +981,18 @@ approved import created it; neither path reads a research table.
 `products_listing_idx (category_id, status, sort_order nulls last, published_at desc)`;
 `products_facets_idx (status, is_large_format, price_state, availability_state, edition_state)`;
 `products_published_idx (status) where status = 'PUBLISHED'`; `pg_trgm` GIN on `title` and `slug`.
+The first two were created by `0008` in a short form — without the Phase 14 columns, with a comment
+saying so — and `0121` DROPS AND RECREATES them rather than adding a second index beside each: an
+index cannot gain a column in place, and the short version left behind would write-amplify every
+product update forever. The material facet reads the join from the material side, which
+`product_materials_material_idx (material_id, product_id)` already served from `0008`.
 
-**Constraints** — three, and each encodes a business rule:
+**Constraints** — three, and each encodes a business rule. Phase 14's `0122` REPLACED the first
+(the Phase 03 version predates `FIXED` and would reject every fixed-price product), ADDED the
+second, and deliberately did NOT re-create the third: `products_verified_before_publish` has existed
+since Phase 03's `0006`, and adding a duplicate under the same name fails while adding one under a
+different name gives the same rule two names. It is quoted here because it belongs to this rule set,
+not because Phase 14 wrote it.
 
 ```sql
 -- a quote-only product can never carry a number, and a priced one must carry a currency
@@ -996,8 +1006,15 @@ alter table products add constraint products_price_state_coherent check (
                                     and currency is null)
 );
 
+-- a limited edition must state a positive size; every other edition state must not carry one.
+-- STRONGER THAN THE PHASE DOCUMENT SPECIFIED, in the same direction and for the same reason:
+-- "limited edition of 0" is a typo a visitor reads as inventory, and "One of One, edition of 12"
+-- is a contradiction a product card would render straight-faced.
 alter table products add constraint products_edition_size_coherent check (
-  edition_state <> 'LIMITED_EDITION' or edition_size is not null
+  case
+    when edition_state = 'LIMITED_EDITION' then edition_size is not null and edition_size > 0
+    else edition_size is null
+  end
 );
 
 -- an unverified capability claim can never be published (D10)
@@ -1766,7 +1783,7 @@ local and hosted is isolated to one file that can never be picked up by `supabas
 | 10 | `0080` | **No new tables** — Phase 10 renders what Phases 06–09 created, and its "Database — none" is about tables, which still holds. `0080` adds a `UI_LABEL` group to `global_content_group_allowed`, for the same reason `0055` and `0071` exist: Phase 10's exit criteria require every visitor-visible string in the site chrome to come from `global_content`, and the chrome needs strings no existing group means — the accessible names of the four navigation landmarks, and of the search and announcement regions. `ACTION_LABEL` is the near miss and the first draft used it: "Open menu" is an action, but "Primary navigation" is not by any reading, and filing it under a group named for actions makes it unfindable in the one screen an editor would look at. The controls that *are* actions stayed in `ACTION_LABEL`; only the names of regions moved |
 | 11–13 | — | **None.** These phases render what Phases 06–10 created |
 | 14 | `0120`–`0122` | A `products` (`price_minor`, `availability_state`, `edition_state`, `edition_size`, `is_customizable`, `sort_order`); enums `availability_state`, `edition_state`, `price_state += FIXED`; the three coherence constraints; concept-media trigger |
-| 15 | `0130` | T `product_specs`; A `products.dimensions` constraint |
+| 15 | `0130`–`0131` | T `product_specs`; F `is_valid_dimensions()`; A `products.dimensions` shape constraint; `0131` is the generated RLS file for `product_specs`. `product_relations_source_idx` is NOT here — `0008` already created it with the definition Phase 15 asks for |
 | 16 | `0140`–`0141` | T `entity_relations`; A `collections`, `pages.kind`; enums `relation_entity`, `relation_kind`; `collection_concept_state += OWNER_CONFIRMED, RETIRED` |
 | 17 | `0150`–`0151` | T `portfolio_projects`, `portfolio_project_media`, `testimonials`; enum `client_consent_state` |
 | 18 | `0160`–`0161` | T `journal_categories`, `journal_articles`, `journal_article_categories` |

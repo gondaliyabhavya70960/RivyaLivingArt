@@ -7,8 +7,8 @@ SEED §54’s audit of what the content seed actually put in the database, read 
 database rather than from the seed modules. Its target is §54’s: **100% of intended launch
 copy mapped to a Studio editing control.**
 
-- **332** rows audited
-- **80** await owner verification and cannot be published until it is given
+- **363** rows audited
+- **68** await owner verification and cannot be published until it is given
 - **22** are authored and deferred to a later phase’s tables
 - **0** carry a bound media asset
 
@@ -26,9 +26,9 @@ the phase that creates its table.
 | / | home.02.manifesto | eyebrow | Yes | Yes | `/studio/content/pages/home` | Yes | — | — | DRAFT |
 | / | home.02.manifesto | heading | Yes | Yes | `/studio/content/pages/home` | Yes | — | — | DRAFT |
 | / | home.02.manifesto | cta_label | Yes | Yes | `/studio/content/pages/home` | Yes | — | — | DRAFT |
-| / | home.03.signature-collections | body | Yes | Yes | `/studio/content/pages/home` | Yes | — | — | DRAFT |
-| / | home.03.signature-collections | eyebrow | Yes | Yes | `/studio/content/pages/home` | Yes | — | — | DRAFT |
-| / | home.03.signature-collections | heading | Yes | Yes | `/studio/content/pages/home` | Yes | — | — | DRAFT |
+| / | home.03.signature-collections | body | Yes | Yes | `/studio/content/pages/home` | No | — | — | DRAFT |
+| / | home.03.signature-collections | eyebrow | Yes | Yes | `/studio/content/pages/home` | No | — | — | DRAFT |
+| / | home.03.signature-collections | heading | Yes | Yes | `/studio/content/pages/home` | No | — | — | DRAFT |
 | / | home.04.selected-works | body | Yes | Yes | `/studio/content/pages/home` | No | — | — | DRAFT |
 | / | home.04.selected-works | eyebrow | Yes | Yes | `/studio/content/pages/home` | No | — | — | DRAFT |
 | / | home.04.selected-works | heading | Yes | Yes | `/studio/content/pages/home` | No | — | — | DRAFT |
@@ -36,11 +36,11 @@ the phase that creates its table.
 | / | home.05.material-story | eyebrow | Yes | Yes | `/studio/content/pages/home` | No | — | — | DRAFT |
 | / | home.05.material-story | heading | Yes | Yes | `/studio/content/pages/home` | No | — | — | DRAFT |
 | / | home.05.material-story | cta_label | Yes | Yes | `/studio/content/pages/home` | No | — | — | DRAFT |
-| / | home.06.material-palette | heading | Yes | Yes | `/studio/content/pages/home` | Yes | — | — | DRAFT |
-| / | home.07.custom-commission | body | Yes | Yes | `/studio/content/pages/home` | Yes | — | — | DRAFT |
-| / | home.07.custom-commission | eyebrow | Yes | Yes | `/studio/content/pages/home` | Yes | — | — | DRAFT |
-| / | home.07.custom-commission | heading | Yes | Yes | `/studio/content/pages/home` | Yes | — | — | DRAFT |
-| / | home.07.custom-commission | cta_label | Yes | Yes | `/studio/content/pages/home` | Yes | — | — | DRAFT |
+| / | home.06.material-palette | heading | Yes | Yes | `/studio/content/pages/home` | No | — | — | DRAFT |
+| / | home.07.custom-commission | body | Yes | Yes | `/studio/content/pages/home` | No | — | — | DRAFT |
+| / | home.07.custom-commission | eyebrow | Yes | Yes | `/studio/content/pages/home` | No | — | — | DRAFT |
+| / | home.07.custom-commission | heading | Yes | Yes | `/studio/content/pages/home` | No | — | — | DRAFT |
+| / | home.07.custom-commission | cta_label | Yes | Yes | `/studio/content/pages/home` | No | — | — | DRAFT |
 | / | home.08.three-d-resin | body | Yes | Yes | `/studio/content/pages/home` | Yes | — | — | DRAFT |
 | / | home.08.three-d-resin | eyebrow | Yes | Yes | `/studio/content/pages/home` | Yes | — | — | DRAFT |
 | / | home.08.three-d-resin | heading | Yes | Yes | `/studio/content/pages/home` | Yes | — | — | DRAFT |
@@ -49,9 +49,9 @@ the phase that creates its table.
 | / | home.09.portfolio | eyebrow | Yes | Yes | `/studio/content/pages/home` | No | — | — | DRAFT |
 | / | home.09.portfolio | heading | Yes | Yes | `/studio/content/pages/home` | No | — | — | DRAFT |
 | / | home.09.portfolio | cta_label | Yes | Yes | `/studio/content/pages/home` | No | — | — | DRAFT |
-| / | home.10.process | eyebrow | Yes | Yes | `/studio/content/pages/home` | Yes | — | — | DRAFT |
-| / | home.10.process | heading | Yes | Yes | `/studio/content/pages/home` | Yes | — | — | DRAFT |
-| / | home.10.process | cta_label | Yes | Yes | `/studio/content/pages/home` | Yes | — | — | DRAFT |
+| / | home.10.process | eyebrow | Yes | Yes | `/studio/content/pages/home` | No | — | — | DRAFT |
+| / | home.10.process | heading | Yes | Yes | `/studio/content/pages/home` | No | — | — | DRAFT |
+| / | home.10.process | cta_label | Yes | Yes | `/studio/content/pages/home` | No | — | — | DRAFT |
 | / | home.11.secondary-objects | body | Yes | Yes | `/studio/content/pages/home` | No | — | — | DRAFT |
 | / | home.11.secondary-objects | eyebrow | Yes | Yes | `/studio/content/pages/home` | No | — | — | DRAFT |
 | / | home.11.secondary-objects | heading | Yes | Yes | `/studio/content/pages/home` | No | — | — | DRAFT |
@@ -127,7 +127,7 @@ the phase that creates its table.
 | /large-format | large-format.01.hero | cta_label | Yes | Yes | `/studio/content/pages/large-format` | No | — | — | DRAFT |
 | /large-format | large-format.02.category-intro | body | Yes | Yes | `/studio/content/pages/large-format` | No | — | — | DRAFT |
 | /large-format | large-format.02.category-intro | heading | Yes | Yes | `/studio/content/pages/large-format` | No | — | — | DRAFT |
-| /large-format | large-format.03.categories | (no copy fields) | Yes | Yes | `/studio/content/pages/large-format` | Yes | — | — | DRAFT |
+| /large-format | large-format.03.categories | (no copy fields) | Yes | Yes | `/studio/content/pages/large-format` | No | — | — | DRAFT |
 | /large-format | large-format.04.customization | body | Yes | Yes | `/studio/content/pages/large-format` | Yes | — | — | DRAFT |
 | /large-format | large-format.04.customization | heading | Yes | Yes | `/studio/content/pages/large-format` | Yes | — | — | DRAFT |
 | /large-format | large-format.05.cta | body | Yes | Yes | `/studio/content/pages/large-format` | No | — | — | DRAFT |
@@ -161,6 +161,27 @@ the phase that creates its table.
 | /process | process.08.final-review | body | Yes | Yes | `/studio/content/pages/process` | Yes | — | — | DRAFT |
 | /process | process.08.final-review | eyebrow | Yes | Yes | `/studio/content/pages/process` | Yes | — | — | DRAFT |
 | /process | process.08.final-review | heading | Yes | Yes | `/studio/content/pages/process` | Yes | — | — | DRAFT |
+| Global content | catalog:action_label.catalog.apply | ACTION_LABEL.catalog.apply | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | catalog:action_label.catalog.clear | ACTION_LABEL.catalog.clear | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | catalog:action_label.catalog.next | ACTION_LABEL.catalog.next | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | catalog:action_label.catalog.previous | ACTION_LABEL.catalog.previous | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | catalog:ui_label.catalog.facet.availability | UI_LABEL.catalog.facet.availability | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | catalog:ui_label.catalog.facet.collection | UI_LABEL.catalog.facet.collection | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | catalog:ui_label.catalog.facet.customization | UI_LABEL.catalog.facet.customization | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | catalog:ui_label.catalog.facet.edition | UI_LABEL.catalog.facet.edition | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | catalog:ui_label.catalog.facet.material | UI_LABEL.catalog.facet.material | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | catalog:ui_label.catalog.facet.price | UI_LABEL.catalog.facet.price | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | catalog:ui_label.catalog.facet.scale | UI_LABEL.catalog.facet.scale | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | catalog:ui_label.catalog.filters | UI_LABEL.catalog.filters | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | catalog:ui_label.catalog.pagination | UI_LABEL.catalog.pagination | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | catalog:ui_label.catalog.pagination.position | UI_LABEL.catalog.pagination.position | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | catalog:ui_label.catalog.results | UI_LABEL.catalog.results | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | catalog:ui_label.catalog.sort | UI_LABEL.catalog.sort | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | catalog:ui_label.catalog.sort.curated | UI_LABEL.catalog.sort.curated | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | catalog:ui_label.catalog.sort.newest | UI_LABEL.catalog.sort.newest | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | catalog:ui_label.catalog.sort.title | UI_LABEL.catalog.sort.title | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | catalog:ui_label.catalog.value.large_format | UI_LABEL.catalog.value.large_format | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | catalog:ui_label.catalog.value.open_edition | UI_LABEL.catalog.value.open_edition | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | chrome:action_label.close_menu | ACTION_LABEL.close_menu | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | chrome:action_label.dismiss_announcement | ACTION_LABEL.dismiss_announcement | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | chrome:action_label.open_menu | ACTION_LABEL.open_menu | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
@@ -217,6 +238,7 @@ the phase that creates its table.
 | Global content | global:CTA.view_project | CTA.view_project | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | global:CTA.view_the_collection | CTA.view_the_collection | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | global:EMPTY_STATE.collection | EMPTY_STATE.collection | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:EMPTY_STATE.collection.no_results | EMPTY_STATE.collection.no_results | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | global:EMPTY_STATE.journal | EMPTY_STATE.journal | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | global:EMPTY_STATE.portfolio | EMPTY_STATE.portfolio | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | global:EMPTY_STATE.search.body | EMPTY_STATE.search.body | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
@@ -260,6 +282,15 @@ the phase that creates its table.
 | Global content | global:STUDIO_HELP.login.body | STUDIO_HELP.login.body | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | global:STUDIO_HELP.login.button | STUDIO_HELP.login.button | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | global:STUDIO_HELP.login.heading | STUDIO_HELP.login.heading | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:STUDIO_HELP.verification.about.03.scale | STUDIO_HELP.verification.about.03.scale | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:STUDIO_HELP.verification.about.04.bespoke | STUDIO_HELP.verification.about.04.bespoke | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:STUDIO_HELP.verification.process.02.brief | STUDIO_HELP.verification.process.02.brief | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:STUDIO_HELP.verification.process.03.material-direction | STUDIO_HELP.verification.process.03.material-direction | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:STUDIO_HELP.verification.process.04.form-development | STUDIO_HELP.verification.process.04.form-development | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:STUDIO_HELP.verification.process.05.fabrication | STUDIO_HELP.verification.process.05.fabrication | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:STUDIO_HELP.verification.process.06.resin-work | STUDIO_HELP.verification.process.06.resin-work | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:STUDIO_HELP.verification.process.07.finishing | STUDIO_HELP.verification.process.07.finishing | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:STUDIO_HELP.verification.process.08.final-review | STUDIO_HELP.verification.process.08.final-review | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | global:WHATSAPP_TEMPLATE.commission | WHATSAPP_TEMPLATE.commission | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | global:WHATSAPP_TEMPLATE.inquiry | WHATSAPP_TEMPLATE.inquiry | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Navigation | nav:footer.contact | FOOTER · Contact | Yes | Yes | `/studio/content/navigation` | No | — | — | PUBLISHED |
