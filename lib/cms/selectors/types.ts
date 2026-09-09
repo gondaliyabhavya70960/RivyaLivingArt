@@ -55,9 +55,30 @@ export type SelectorResult = {
   readonly reason: 'OK' | 'EMPTY' | 'NOT_YET_BUILT'
 }
 
+/**
+ * What a selector may be asked to narrow by.
+ *
+ * EVERY FIELD IS OPTIONAL AND EVERY SELECTOR IGNORES THE ONES IT DOES NOT USE. One options type
+ * rather than one per selector is what keeps `lib/cms/references.ts` free of a union to switch on:
+ * it builds the options from the block's payload and hands them over. A selector that reads
+ * `collectionId` and one that reads `categorySlug` have the same signature, so adding a fifth
+ * reference block is an entry in that map and nothing else.
+ *
+ * `collectionId` IS AN ID WHERE THE OTHERS ARE SLUGS, and deliberately so. A category slug travels
+ * from the payload to the query untouched; a collection is resolved BEFORE the selector runs —
+ * from `collections.page_id` when the band belongs to its page, from the slug when it names one —
+ * because those are two different lookups and neither belongs inside a selector whose job is to
+ * fetch cards.
+ */
+export type SelectorOptions = {
+  readonly limit: number
+  readonly categorySlug?: string | null
+  readonly collectionId?: string | null
+}
+
 export type EntitySelector = (
   client: SelectorClient,
-  options: { readonly limit: number; readonly categorySlug?: string | null },
+  options: SelectorOptions,
 ) => Promise<SelectorResult>
 
 /** The answer every selector gives for a table that does not exist yet. */

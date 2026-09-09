@@ -101,3 +101,48 @@ export async function getCollectionPageId(
   if (error) throw toRepositoryError(ENTITY, 'get-page', collectionId, error)
   return data?.page_id ?? null
 }
+
+/**
+ * The collection an exhibition page belongs to, by `pages.id`.
+ *
+ * THE REVERSE OF `getCollectionPageId`, AND THE ONE THE RENDERER NEEDS. A `collection-products`
+ * band on an exhibition page carries no collection slug: it asks for "the collection this page
+ * belongs to", and `collections.page_id` — unique, foreign-keyed — is the only record of that. The
+ * alternative would be to copy the slug into the block payload, where it would be a second opinion
+ * about the same fact and would go stale the moment the page was repointed.
+ *
+ * `maybeSingle`, NOT `single`: most pages belong to no collection at all, and that is the ordinary
+ * case rather than an error. The column is unique, so there is never more than one.
+ */
+export async function getCollectionIdForPage(
+  client: Client,
+  pageId: string,
+): Promise<string | null> {
+  const { data, error } = await client
+    .from('collections')
+    .select('id')
+    .eq('page_id', pageId)
+    .maybeSingle()
+
+  if (error) throw toRepositoryError(ENTITY, 'for-page', pageId, error)
+  return data?.id ?? null
+}
+
+/**
+ * A collection's id from its slug, for a band that names one explicitly.
+ *
+ * A SLUG THAT MATCHES NOTHING IS `null`, NOT AN ERROR. It is typed into Studio by a person, and it
+ * may name a collection that is unpublished, retired or misspelt — all of which are an empty band
+ * on the public site, not a 500. The distinction the visitor sees is none; the distinction the
+ * band reports through `data-empty-reason` is `EMPTY`.
+ */
+export async function getCollectionIdBySlug(client: Client, slug: string): Promise<string | null> {
+  const { data, error } = await client
+    .from('collections')
+    .select('id')
+    .eq('slug', slug)
+    .maybeSingle()
+
+  if (error) throw toRepositoryError(ENTITY, 'id-by-slug', slug, error)
+  return data?.id ?? null
+}

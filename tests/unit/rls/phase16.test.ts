@@ -111,6 +111,45 @@ describeDb('the collection publish gates', () => {
   })
 })
 
+describeDb('the curated products a collection shows', () => {
+  beforeAll(loadFixture)
+  afterAll(disconnect)
+
+  /**
+   * THE PREMISE `listCuratedProducts` RESTS ON. That read joins `product_collections` to `products`
+   * with `!inner` and relies on RLS to drop the pieces a visitor may not see — so if `products`
+   * ever became publicly readable in DRAFT, an exhibition page would start listing unfinished work
+   * and the repository would look entirely correct. The fixture curates BOTH a published and a
+   * draft product into the published collection precisely so this can be asserted.
+   */
+  it('hides a draft piece curated into a published collection from an anonymous visitor', async () => {
+    const rows = await asAnon((sql) =>
+      sql.rows<{ slug: string }>(
+        `select p.slug
+           from product_collections pc
+           join products p on p.id = pc.product_id
+          where pc.collection_id = $1
+          order by pc.sort_order, pc.product_id`,
+        [FIXTURE_IDS.publishedCollection],
+      ),
+    )
+    expect(rows.map((row) => row.slug)).toEqual(['rls-published'])
+  })
+
+  it('shows staff both, so the assertion above is about RLS and not about the fixture', async () => {
+    const rows = await asOwner((sql) =>
+      sql.rows<{ slug: string }>(
+        `select p.slug
+           from product_collections pc
+           join products p on p.id = pc.product_id
+          where pc.collection_id = $1`,
+        [FIXTURE_IDS.publishedCollection],
+      ),
+    )
+    expect(rows.map((row) => row.slug).sort()).toEqual(['rls-draft', 'rls-published'])
+  })
+})
+
 describeDb('entity_relations', () => {
   beforeAll(loadFixture)
   afterAll(disconnect)

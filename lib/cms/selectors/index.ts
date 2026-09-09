@@ -1,6 +1,7 @@
 import 'server-only'
 
 import {
+  listCuratedProducts,
   listReferenceArticles,
   listReferenceProducts,
   listReferenceProjects,
@@ -70,5 +71,27 @@ export const selectArticles: EntitySelector = async (client, { limit }) => {
   const rows = await listReferenceArticles(client, limit)
   if (rows === null) return NOT_YET_BUILT
   const cards = toCards(rows, '/journal')
+  return cards.length === 0 ? EMPTY : { cards, reason: 'OK' }
+}
+
+/**
+ * The pieces curated into one collection, for `collection-products`.
+ *
+ * THE ONLY SELECTOR THAT CAN ANSWER `EMPTY` FOR TWO DIFFERENT REASONS, and it treats them the
+ * same on purpose. No `collectionId` means the band could not be tied to a collection at all —
+ * a slug naming nothing, or an exhibition block on a page that belongs to no collection — and a
+ * collection with no curated products means the owner has not attached any yet. A visitor sees
+ * the same seeded sentence for both, because both are "there is nothing to show here", and
+ * neither is a fault the visitor can do anything about. Whoever is diagnosing the page reads the
+ * difference from the CMS, where the slug either resolves or does not.
+ *
+ * IT DOES NOT FALL BACK TO "SOME OTHER PRODUCTS". A band on an exhibition page that quietly showed
+ * the newest three pieces instead of the collection's own would be presenting them as part of a
+ * collection nobody put them in — the fabrication of a business fact in its quietest form.
+ */
+export const selectCollectionProducts: EntitySelector = async (client, { limit, collectionId }) => {
+  if (!collectionId) return EMPTY
+  const rows = await listCuratedProducts(client, collectionId, limit)
+  const cards = toCards(rows, '/product')
   return cards.length === 0 ? EMPTY : { cards, reason: 'OK' }
 }

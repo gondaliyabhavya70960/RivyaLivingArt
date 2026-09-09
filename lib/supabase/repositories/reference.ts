@@ -118,3 +118,48 @@ export async function listReferenceArticles(
 ): Promise<ReferenceRow[] | null> {
   return readMaybeMissing(client, 'journal_articles', limit)
 }
+
+/**
+ * The products curated into one collection, in the curator's order.
+ *
+ * IT IS IN THIS FILE FOR THE SECOND REASON THE HEADER GIVES, not the first. `products` and
+ * `product_collections` both exist and are both typed, so this read needs none of the
+ * missing-table escape hatch above. What it shares with the other three is the SHAPE that matters
+ * more: the narrow card select list. A collection band shows a name, a line and a picture, never a
+ * price or a dimension, and keeping that select list beside the others is what stops one of them
+ * quietly acquiring a fourth column.
+ *
+ * `!inner` IS LOAD-BEARING. A draft product curated into a published collection must not appear on
+ * the exhibition page, and RLS already hides the product row — an inner join drops the join row
+ * with it. A left join would keep the row with a null product and render a card with no name.
+ *
+ * ORDERED BY THE JOIN, NOT THE PRODUCT. `product_collections.sort_order` is what the Studio
+ * curator drag-reorders; `products.created_at` is an accident of data entry. `product_id` breaks
+ * the tie so the order is total and a page does not reshuffle between requests.
+ */
+export async function listCuratedProducts(
+  client: Client,
+  collectionId: string,
+  limit: number,
+): Promise<ReferenceRow[]> {
+  const { data, error } = await client
+    .from('product_collections')
+    .select('sort_order, product_id, products!inner(id, slug, title, summary, hero_media_id)')
+    .eq('collection_id', collectionId)
+    .order('sort_order', { ascending: true })
+    .order('product_id', { ascending: true })
+    .limit(limit)
+
+  if (error !== null) throw error
+
+  return (data ?? []).map((row) => {
+    const product = row.products as unknown as ReferenceRow
+    return {
+      id: product.id,
+      slug: product.slug,
+      title: product.title,
+      summary: product.summary,
+      hero_media_id: product.hero_media_id,
+    }
+  })
+}

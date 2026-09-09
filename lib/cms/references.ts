@@ -1,10 +1,20 @@
 import 'server-only'
 
-import { selectArticles, selectProducts, selectProjects } from '@/lib/cms/selectors'
+import {
+  selectArticles,
+  selectCollectionProducts,
+  selectProducts,
+  selectProjects,
+} from '@/lib/cms/selectors'
 import type { EntityCard, SelectorClient, SelectorResult } from '@/lib/cms/selectors'
+import {
+  getCollectionIdBySlug,
+  getCollectionIdForPage,
+} from '@/lib/supabase/repositories/collections'
 import { listMediaAssetsByIds } from '@/lib/supabase/repositories/media'
 import type { MediaAsset, PageSection } from '@/lib/supabase/schemas'
 
+import { collectionProductsBlock } from '@/content/blocks/collection-products'
 import { journalStripBlock } from '@/content/blocks/journal-strip'
 import { portfolioStripBlock } from '@/content/blocks/portfolio-strip'
 import { selectedWorksBlock } from '@/content/blocks/selected-works'
@@ -64,6 +74,27 @@ const SELECTORS = {
     categorySlug: (section: PageSection) =>
       parseBlockPayload(journalStripBlock, section.payload).category_slug,
   },
+  /**
+   * The one entry whose narrowing costs a query, which is why `collectionId` exists at all.
+   *
+   * A slug in the payload is looked up; an empty one means "the collection this page belongs to"
+   * and is answered from `collections.page_id`. Both resolve to an id BEFORE the selector runs, so
+   * `selectCollectionProducts` stays a single read and the two readings differ in one line here
+   * rather than in a branch inside the selector.
+   */
+  'collection-products': {
+    select: selectCollectionProducts,
+    limit: (section: PageSection) =>
+      parseBlockPayload(collectionProductsBlock, section.payload).limit,
+    categorySlug: () => null,
+    collectionId: async (client: SelectorClient, section: PageSection, pageId: string) => {
+      const slug = parseBlockPayload(collectionProductsBlock, section.payload).collection_slug
+      const named = slug?.trim() ?? ''
+      return named === ''
+        ? getCollectionIdForPage(client, pageId)
+        : getCollectionIdBySlug(client, named)
+    },
+  },
 } as const
 
 export type ReferenceBlockType = keyof typeof SELECTORS
@@ -72,19 +103,38 @@ export function isReferenceBlock(blockType: string): blockType is ReferenceBlock
   return Object.hasOwn(SELECTORS, blockType)
 }
 
+/**
+ * `pageId` IS REQUIRED, NOT OPTIONAL, AND THAT IS THE POINT. A `collection-products` band with no
+ * slug means "the collection this page belongs to", so the page is part of the question rather
+ * than context — and a call site that did not have one would silently render every exhibition
+ * band empty. Making it optional would have made that a runtime surprise instead of a compile
+ * error at every call site.
+ */
 export async function loadPageReferences(
   client: SelectorClient,
   sections: readonly PageSection[],
+  pageId: string,
 ): Promise<PageReferences> {
   const referencing = sections.filter((section) => isReferenceBlock(section.block_type))
   if (referencing.length === 0) return new Map()
 
   const resolved = await Promise.all(
     referencing.map(async (section) => {
-      const config = SELECTORS[section.block_type as ReferenceBlockType]
+      const config: {
+        select: (typeof SELECTORS)[ReferenceBlockType]['select']
+        limit: (section: PageSection) => number
+        categorySlug: (section: PageSection) => string | null
+        collectionId?: (
+          client: SelectorClient,
+          section: PageSection,
+          pageId: string,
+        ) => Promise<string | null>
+      } = SELECTORS[section.block_type as ReferenceBlockType]
+
       const result = await config.select(client, {
         limit: config.limit(section),
         categorySlug: config.categorySlug(section),
+        collectionId: await config.collectionId?.(client, section, pageId),
       })
 
       // One media query per block rather than one per card. With no cards it issues none at all,
