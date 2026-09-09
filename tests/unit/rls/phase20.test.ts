@@ -296,7 +296,12 @@ describeDb('attaching a visitor’s references', () => {
 
 describeDb('recording the handoff', () => {
   beforeAll(seedInquiry)
-  afterAll(cleanup)
+  // The last block in the file closes the shared connection as well as removing the fixture: the
+  // harness pools one client, and a suite that leaves it open leaves the runner waiting on it.
+  afterAll(async () => {
+    await cleanup()
+    await disconnect()
+  })
 
   it('writes the two columns once and refuses to write them twice', async () => {
     const result = await asSession('service_role', undefined, async (sql) => {
