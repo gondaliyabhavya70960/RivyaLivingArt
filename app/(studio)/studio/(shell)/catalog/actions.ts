@@ -13,6 +13,7 @@ import {
   type ProductDraft,
   type ValidationIssue,
 } from '@/lib/catalog/validation'
+import { currencyExponent } from '@/lib/catalog/price'
 import { createClient } from '@/lib/supabase/server'
 import { productDraft } from './product-values'
 import {
@@ -84,13 +85,28 @@ function text(form: FormData, name: string): string | null {
  * AN EDITOR TYPES 12500, NOT 1250000. Asking someone to type an amount in paise is asking for a
  * price wrong by two orders of magnitude, and the catalogue would show it without complaint. The
  * conversion happens once, here, and `lib/catalog/price.ts` reverses it once, there.
+ *
+ * THE SCALE COMES FROM THE CURRENCY, NOT FROM 100. This multiplied by 100 and accepted two decimal
+ * places whatever the row's currency said, while `formatMinor` divides by the exponent `Intl`
+ * reports. The two agree for INR and USD and disagree for every zero-decimal currency: ¥1,200
+ * typed here became 120000 and rendered as ¥120,000. Both directions now read the same
+ * `currencyExponent`, and the accepted number of decimal places follows it — "1200.50" is not a
+ * yen amount and is refused rather than silently rounded.
+ *
+ * An unknown or absent currency falls back to 2, which is the ISO 4217 default and what the field
+ * did before. `validateProduct` is what refuses a priced row with no currency; this only decides
+ * how to read the digits.
  */
-function money(form: FormData, name: string): number | null | 'invalid' {
+function money(form: FormData, name: string, currency: string | null): number | null | 'invalid' {
   const raw = text(form, name)
   if (raw === null) return null
   const cleaned = raw.replace(/[\s,]/g, '')
-  if (!/^\d+(\.\d{1,2})?$/.test(cleaned)) return 'invalid'
-  return Math.round(Number(cleaned) * 100)
+
+  const exponent = (currency === null ? null : currencyExponent(currency)) ?? 2
+  const pattern = exponent === 0 ? /^\d+$/ : new RegExp(`^\\d+(\\.\\d{1,${String(exponent)}})?$`)
+  if (!pattern.test(cleaned)) return 'invalid'
+
+  return Math.round(Number(cleaned) * 10 ** exponent)
 }
 
 function integer(form: FormData, name: string): number | null | 'invalid' {
@@ -154,8 +170,10 @@ function parseProductForm(form: FormData): ParsedProductForm {
     })
   }
 
-  const priceMinor = money(form, 'price_major')
-  const priceFromMinor = money(form, 'price_from_major')
+  // Read before the amounts, because the amounts are scaled by it.
+  const currency = text(form, 'currency')?.toUpperCase() ?? null
+  const priceMinor = money(form, 'price_major', currency)
+  const priceFromMinor = money(form, 'price_from_major', currency)
   for (const [field, value] of [
     ['price_major', priceMinor],
     ['price_from_major', priceFromMinor],
@@ -207,7 +225,7 @@ function parseProductForm(form: FormData): ParsedProductForm {
     price_state: priceState.success ? priceState.data : 'REQUEST_QUOTE',
     price_minor: priceMinor === 'invalid' ? null : priceMinor,
     price_from_minor: priceFromMinor === 'invalid' ? null : priceFromMinor,
-    currency: text(form, 'currency')?.toUpperCase() ?? null,
+    currency,
     availability_state: availability.success ? availability.data : null,
     edition_state: edition.success ? edition.data : null,
     edition_size: editionSize === 'invalid' ? null : editionSize,

@@ -174,6 +174,51 @@ export async function setProductMaterials(
   if (error) throw toRepositoryError(PRODUCT, 'set-materials', productId, error)
 }
 
+/**
+ * Material and gallery counts for MANY products at once, for the Studio list's readiness column.
+ *
+ * TWO QUERIES, NOT TWO PER ROW. The list renders the whole catalogue, and asking per product would
+ * make the screen's cost grow with it. Both joins are read in one round trip each and grouped here.
+ *
+ * A product with no rows is simply absent from the map, and the caller reads that as zero — which
+ * is the honest answer and the one `readinessChecklist` wants.
+ */
+export async function joinCountsForProducts(
+  client: Client,
+  productIds: readonly string[],
+): Promise<{ materials: Map<string, number>; gallery: Map<string, number> }> {
+  const empty = { materials: new Map<string, number>(), gallery: new Map<string, number>() }
+  if (productIds.length === 0) return empty
+
+  const [materialRows, mediaRows] = await Promise.all([
+    client
+      .from('product_materials')
+      .select('product_id')
+      .in('product_id', [...productIds]),
+    client
+      .from('product_media')
+      .select('product_id')
+      .in('product_id', [...productIds]),
+  ])
+
+  // The "id" is the batch rather than one row, so it names the batch.
+  const batch = `${String(productIds.length)} products`
+  if (materialRows.error) {
+    throw toRepositoryError(PRODUCT, 'list-material-counts', batch, materialRows.error)
+  }
+  if (mediaRows.error) {
+    throw toRepositoryError(PRODUCT, 'list-media-counts', batch, mediaRows.error)
+  }
+
+  const tally = (rows: readonly { product_id: string }[]): Map<string, number> => {
+    const counts = new Map<string, number>()
+    for (const row of rows) counts.set(row.product_id, (counts.get(row.product_id) ?? 0) + 1)
+    return counts
+  }
+
+  return { materials: tally(materialRows.data ?? []), gallery: tally(mediaRows.data ?? []) }
+}
+
 /** The gallery: every `product_media` row for one product, hero excluded by the caller. */
 export async function listProductMediaIds(client: Client, productId: string): Promise<string[]> {
   const { data, error } = await client

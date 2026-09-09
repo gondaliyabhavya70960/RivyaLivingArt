@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { formatMinor, presentPrice, productBadges } from '@/lib/catalog/price'
+import { currencyExponent, formatMinor, presentPrice, productBadges } from '@/lib/catalog/price'
 import { siteStrings } from '@/lib/cms/strings'
 import type { GlobalContent } from '@/lib/supabase/schemas'
 
@@ -161,5 +161,44 @@ describe('productBadges', () => {
       labels({ ready_stock: null }),
     )
     expect(badges).toEqual([])
+  })
+})
+
+/**
+ * The exponent, which is the number the Studio and this module must agree on.
+ *
+ * The write side used to multiply by 100 whatever the currency said while this side divided by the
+ * exponent Intl reports. They agree for INR and USD, which is why it survived review: every price
+ * anyone had entered was in rupees. They disagree for every zero-decimal currency, and the
+ * disagreement is a factor of a hundred in the direction that inflates a price.
+ */
+describe('currencyExponent', () => {
+  it('is 2 for the two-decimal currencies the catalogue actually uses', () => {
+    expect(currencyExponent('INR')).toBe(2)
+    expect(currencyExponent('USD')).toBe(2)
+    expect(currencyExponent('EUR')).toBe(2)
+  })
+
+  it('is 0 for a currency with no minor unit', () => {
+    expect(currencyExponent('JPY')).toBe(0)
+  })
+
+  it('is null for a code Intl does not know, so a caller can refuse rather than guess', () => {
+    expect(currencyExponent('NOTACURRENCY')).toBeNull()
+  })
+
+  it('round-trips a major amount through the exponent that formatMinor will divide by', () => {
+    // What the Studio now does: scale by the currency's own exponent.
+    const store = (major: number, currency: string) =>
+      Math.round(major * 10 ** (currencyExponent(currency) ?? 2))
+
+    expect(formatMinor(store(12_500, 'INR'), 'INR')).toContain('12,500')
+    // The case the old ×100 got wrong: ¥1,200 stored as 120000 rendered as ¥120,000.
+    expect(store(1_200, 'JPY')).toBe(1_200)
+    expect(formatMinor(store(1_200, 'JPY'), 'JPY')).toContain('1,200')
+  })
+
+  it('formatMinor refuses an unknown currency rather than dividing by a guess', () => {
+    expect(formatMinor(1_250_000, 'NOTACURRENCY')).toBeNull()
   })
 })

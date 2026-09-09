@@ -12,6 +12,7 @@ import { roleHasPermission } from '@/lib/auth/permissions'
 import { requirePermission } from '@/lib/auth/require'
 import { unmetForPublish, readinessChecklist } from '@/lib/catalog/validation'
 import {
+  joinCountsForProducts,
   listCategoriesForStudio,
   listProductsForStudio,
 } from '@/lib/supabase/repositories/catalog-admin'
@@ -32,6 +33,13 @@ import { productDraft } from '../product-values'
  * written on save; a row edited by any other route would carry a stale snapshot, and a list that
  * quietly lies about what is missing is worse than one that costs a few microseconds per row.
  *
+ * WHICH IS WHY IT LOADS THE JOIN COUNTS. Computing from the row is only honest if the row is the
+ * whole story, and two of the ten readiness items — Materials and Gallery — live in join tables.
+ * Calling `readinessChecklist(draft)` with no context made both of them read as unmet on EVERY
+ * product, so a fully-finished piece was listed as missing its materials and its gallery: the
+ * exact lie the paragraph above refuses, arrived at from the other direction. `joinCountsForProducts`
+ * reads both joins for the whole page in one round trip each.
+ *
  * READS THROUGH THE REQUEST-SCOPED CLIENT, so the list is exactly what this role may see.
  */
 export const metadata = studioMetadata('/studio/catalog/products')
@@ -49,6 +57,12 @@ export default async function Page({
     listProductsForStudio(client, q === undefined ? {} : { search: q }),
     listCategoriesForStudio(client),
   ])
+
+  // Sequenced after the products because it needs their ids; one round trip per join, not per row.
+  const joinCounts = await joinCountsForProducts(
+    client,
+    products.map((product) => product.id),
+  )
 
   const categoryNames = new Map(categories.map((category) => [category.id, category.name]))
   const canWrite = roleHasPermission(session.role, 'catalog.write')
@@ -135,7 +149,12 @@ export default async function Page({
             id: 'readiness',
             header: t('studio.catalog.products.colReadiness'),
             cell: (product) => {
-              const unmet = unmetForPublish(readinessChecklist(productDraft(product)))
+              const unmet = unmetForPublish(
+                readinessChecklist(productDraft(product), {
+                  materialIds: new Array<string>(joinCounts.materials.get(product.id) ?? 0),
+                  galleryMediaIds: new Array<string>(joinCounts.gallery.get(product.id) ?? 0),
+                }),
+              )
               return unmet.length === 0 ? (
                 <Text as="span" size="sm">
                   {t('studio.catalog.products.readyToPublish')}

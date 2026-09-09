@@ -66,7 +66,34 @@ export interface PresentedPrice {
  * Returns null rather than throwing on a currency code `Intl` does not know: a malformed row must
  * cost a visitor a price line, never the whole page.
  */
+/**
+ * How many minor units make one major unit of `currency`, as a power of ten.
+ *
+ * EXPORTED SO THE TWO DIRECTIONS CANNOT DISAGREE. The Studio converts an editor's major-unit
+ * amount INTO minor units and this file converts it back OUT for display. When the write side
+ * hard-coded 100 and the read side asked `Intl`, the two agreed for INR and USD and disagreed for
+ * every zero-decimal currency: ¥1,200 typed into the form was stored as 120000 and rendered as
+ * ¥120,000, a hundredfold error the catalogue would show without complaint. One source, both ways.
+ *
+ * Null for a code `Intl` does not know, so a caller can refuse rather than guess.
+ */
+export function currencyExponent(currency: string, locale = 'en-IN'): number | null {
+  try {
+    // `maximumFractionDigits` is optional in the TypeScript lib types even though every runtime
+    // resolves it for a currency format; 2 is the ISO 4217 default for the codes that omit it.
+    return (
+      new Intl.NumberFormat(locale, { style: 'currency', currency }).resolvedOptions()
+        .maximumFractionDigits ?? 2
+    )
+  } catch {
+    return null
+  }
+}
+
 export function formatMinor(minor: number, currency: string, locale = 'en-IN'): string | null {
+  const exponent = currencyExponent(currency, locale)
+  if (exponent === null) return null
+
   try {
     const format = new Intl.NumberFormat(locale, {
       style: 'currency',
@@ -75,11 +102,6 @@ export function formatMinor(minor: number, currency: string, locale = 'en-IN'): 
       // and every price this site shows is a round number in the smallest unit anyway.
       maximumFractionDigits: 0,
     })
-    // `maximumFractionDigits` is optional in the TypeScript lib types even though every runtime
-    // resolves it for a currency format; 2 is the ISO 4217 default for the codes that omit it.
-    const exponent =
-      new Intl.NumberFormat(locale, { style: 'currency', currency }).resolvedOptions()
-        .maximumFractionDigits ?? 2
     return format.format(minor / 10 ** exponent)
   } catch {
     return null
