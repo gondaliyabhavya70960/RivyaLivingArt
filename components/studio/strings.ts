@@ -3175,6 +3175,23 @@ export const STUDIO_STRINGS = {
       'A new form starts as a draft with no steps. Add a contact step before publishing it: a brief that arrives with no way to reply cannot be answered.',
     contentKey: 'studio_help.catalog_forms_new_note',
   },
+  'studio.catalog.forms.duplicateHeading': {
+    value: 'Copy an existing form',
+    contentKey: 'studio_help.catalog_forms_duplicate_heading',
+  },
+  'studio.catalog.forms.duplicateNote': {
+    value:
+      'The copy carries every step and question of the original, arrives as a draft, and is never the default for its kind. Editing it does not touch the form it came from.',
+    contentKey: 'studio_help.catalog_forms_duplicate_note',
+  },
+  'studio.catalog.forms.duplicateSource': {
+    value: 'Copy from',
+    contentKey: 'studio_help.catalog_forms_duplicate_source',
+  },
+  'studio.catalog.forms.duplicate': {
+    value: 'Copy form',
+    contentKey: 'studio_help.catalog_forms_duplicate',
+  },
   'studio.catalog.form.name': {
     value: 'Name',
     contentKey: 'studio_help.catalog_form_name',

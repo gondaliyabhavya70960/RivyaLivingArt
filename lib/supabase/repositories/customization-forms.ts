@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { z } from 'zod'
 
 import type { ResolvedForm } from '@/lib/cms/forms'
 
@@ -21,6 +22,9 @@ export type FormKind = Database['public']['Enums']['form_kind']
 export type FormFieldType = Database['public']['Enums']['form_field_type']
 
 const ENTITY = 'customization form'
+
+/** An RPC's return is `Json` to the generated types, so the id it hands back is checked. */
+const uuidSchema = z.string().uuid()
 
 /**
  * `customization_forms` and its three companions — the only module that reads or writes them.
@@ -419,4 +423,36 @@ export async function removeBinding(client: Client, bindingId: string): Promise<
 
   if (readError) throw toRepositoryError('form binding', 'delete', bindingId, readError)
   if (data !== null) throw new PermissionError('delete', 'form binding')
+}
+
+/**
+ * Copy a form, its steps and its questions under a new name and address.
+ *
+ * ONE RPC, NOT THREE WRITES FROM HERE. Each PostgREST call is its own transaction, so a form, then
+ * its steps, then its fields is three of them — and an interruption between the second and the
+ * third leaves a form whose steps ask nothing. `cms_duplicate_customization_form` does the whole
+ * copy in a single statement chain, so the duplicate either exists whole or was never created.
+ *
+ * IT IS SECURITY INVOKER, so a session without `catalog.write` is refused by the insert policy
+ * itself rather than by a check written here. The returned id is validated because an RPC's return
+ * type is `Json` as far as the generated types are concerned: a function that returned something
+ * other than a uuid would otherwise be discovered by a redirect to a broken URL.
+ */
+export async function duplicateForm(
+  client: Client,
+  sourceId: string,
+  slug: string,
+  name: string,
+): Promise<string> {
+  const { data, error } = await client.rpc('cms_duplicate_customization_form', {
+    p_source_id: sourceId,
+    p_slug: slug,
+    p_name: name,
+  })
+
+  if (error) throw toRepositoryError(ENTITY, 'duplicate', sourceId, error)
+
+  const parsed = uuidSchema.safeParse(data)
+  if (!parsed.success) throw new PermissionError('duplicate', ENTITY)
+  return parsed.data
 }

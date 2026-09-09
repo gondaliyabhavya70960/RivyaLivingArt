@@ -2964,6 +2964,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cms_duplicate_customization_form: {
+        Args: Record<string, unknown>
+        Returns: Json
+      }
       cms_publish_section: {
         Args: Record<string, unknown>
         Returns: Json

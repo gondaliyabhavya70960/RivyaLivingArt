@@ -3,6 +3,7 @@ import 'server-only'
 import { createHash } from 'node:crypto'
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import { consumeRateLimit } from '@/lib/supabase/repositories/rate-limits'
 
 /**
  * Fixed-window rate limiting for public endpoints.
@@ -94,12 +95,7 @@ export async function consume(
 
   for (const window of windows) {
     try {
-      const { data, error } = await client.rpc('consume_rate_limit', {
-        p_bucket_key: key,
-        p_window_seconds: window.seconds,
-        p_limit: window.limit,
-      })
-      if (error !== null || data !== true) allowed = false
+      if (!(await consumeRateLimit(client, key, window.seconds, window.limit))) allowed = false
     } catch {
       // Fail closed. See the header: a database that cannot be reached is the moment an endpoint is
       // least able to absorb whatever is hitting it.

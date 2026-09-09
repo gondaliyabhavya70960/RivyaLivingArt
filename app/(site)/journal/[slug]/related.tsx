@@ -9,7 +9,7 @@ import { optionalEnv } from '@/lib/env'
 import { JOURNAL_KEYS, articleCardCopy } from '@/lib/journal/labels'
 import { getSiteChrome } from '@/lib/site/chrome'
 import { createPublicClient } from '@/lib/supabase/public'
-import { listCategories } from '@/lib/supabase/repositories/journal'
+import { listArticlesByIds, listCategories } from '@/lib/supabase/repositories/journal'
 import { listMediaAssetsByIds } from '@/lib/supabase/repositories/media'
 import type { JournalArticle } from '@/lib/supabase/schemas'
 
@@ -113,10 +113,11 @@ async function resolveCuratedArticles(
     .map((edge) => edge.target_id)
   if (ids.length === 0) return []
 
-  const { data, error } = await client.from('journal_articles').select('*').in('id', ids)
-  if (error !== null) return []
+  // A read that throws here would take the whole article page down for the sake of a strip beneath
+  // it. An unreachable database means no curated articles, which is what the empty state is for.
+  const rows = await listArticlesByIds(client, ids).catch(() => [])
 
-  const byId = new Map((data ?? []).map((row) => [row.id, row as unknown as JournalArticle]))
+  const byId = new Map(rows.map((row) => [row.id, row]))
   // The editor's order, not the database's: `in (…)` returns rows in whatever order it likes.
   return ids.flatMap((id) => {
     const row = byId.get(id)

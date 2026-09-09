@@ -22,7 +22,7 @@ import {
 import { createClient } from '@/lib/supabase/server'
 import type { CustomizationForm } from '@/lib/supabase/schemas'
 
-import { createFormAction } from './actions'
+import { createFormAction, duplicateFormAction } from './actions'
 
 /**
  * /studio/catalog/customization-forms — the questions a bespoke brief asks.
@@ -160,6 +160,40 @@ export default async function Page() {
               />
               <div>
                 <Button type="submit">{t('studio.catalog.form.create')}</Button>
+              </div>
+            </ActionForm>
+
+            <Divider />
+            <PageHeader level={2} title={t('studio.catalog.forms.duplicateHeading')} />
+            <HelpText>{t('studio.catalog.forms.duplicateNote')}</HelpText>
+            {/*
+              THE SOURCE LIST IS EVERY FORM, not only the three seeded templates. A studio that has
+              built a fourth brief will want to start the fifth from it, and restricting the list to
+              rows carrying a `seed_key` would make the templates permanently more privileged than
+              the work done since.
+            */}
+            <ActionForm action={duplicateFormAction} className="grid max-w-md gap-4">
+              <SelectField
+                name="source_id"
+                label={t('studio.catalog.forms.duplicateSource')}
+                options={forms.map((form) => ({ value: form.id, label: form.name }))}
+              />
+              <TextField
+                name="name"
+                label={t('studio.catalog.form.name')}
+                required
+                requiredLabel={t('studio.catalog.form.requiredLabel')}
+              />
+              <TextField
+                name="slug"
+                label={t('studio.catalog.form.slug')}
+                required
+                requiredLabel={t('studio.catalog.form.requiredLabel')}
+              />
+              <div>
+                <Button type="submit" disabled={forms.length === 0}>
+                  {t('studio.catalog.forms.duplicate')}
+                </Button>
               </div>
             </ActionForm>
           </>

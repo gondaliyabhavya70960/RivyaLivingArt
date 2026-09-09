@@ -207,7 +207,13 @@ export function Configurator({ definition, form, copy, uploadLimits, prefill }: 
   if (entry === undefined) return null
 
   return (
-    <Stack gap={8}>
+    /*
+     * THE TWO `data-` HOOKS ARE FOR THE END-TO-END SUITE AND NOTHING ELSE. `tests/e2e` cannot
+     * select this island by its copy — every visible string comes from `global_content`, so a
+     * selector written against the words would break the moment an editor changed them, which is
+     * exactly the freedom D2 exists to give. The step key is the one stable name a step has.
+     */
+    <Stack gap={8} data-configurator data-configurator-step={reviewing ? 'review' : entry.step.key}>
       <div ref={headingRef} tabIndex={-1} className="outline-none">
         {definition.introHeading === null ? null : (
           <Stack gap={2}>
@@ -279,7 +285,7 @@ export function Configurator({ definition, form, copy, uploadLimits, prefill }: 
            * shape of the ending; the whole configurator is behind a flag that Phase 20's exit
            * criteria switch on, so no visitor sees this before the button works.
            */
-          <Button type="button" variant="primary" disabled>
+          <Button type="button" variant="primary" disabled data-configurator-submit>
             {copy.submit}
           </Button>
         ) : (
