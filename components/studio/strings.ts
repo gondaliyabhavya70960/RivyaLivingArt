@@ -1573,6 +1573,10 @@ export const STUDIO_STRINGS = {
     value: 'Owner verification',
     contentKey: 'studio_help.content_section_verification_label',
   },
+  'studio.content.section.verificationBannerTitle': {
+    value: 'The owner has to confirm this claim before it can be published:',
+    contentKey: 'studio_help.content_section_verification_banner_title',
+  },
   'studio.content.section.verificationHelp': {
     value:
       'A block asserting an unverified business claim cannot be published until the owner confirms it.',

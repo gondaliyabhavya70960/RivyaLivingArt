@@ -158,6 +158,19 @@ Reference draft, from SEED §43:
 
 > Sculptural resin dining table presented in a minimal architectural interior.
 
+### 5.2a The same rules apply to a caption, and Phase 12 made them testable
+
+A caption is alt text a sighted visitor also reads, so rule 6 binds it identically: it describes the
+**material or the process in the frame** and never names a piece, a price, a dimension, a lead time,
+a client or an award. `/about` and `/process` are where this bites, because every asset on both
+pages is `is_concept = true` — AI-developed concept media — and a caption naming a delivered object
+would be describing something that does not exist.
+
+`tests/e2e/{about,process}.spec.ts` scan the whole rendered `<main>` for a currency symbol, a number
+followed by `mm`, `cm`, `m`, `in` or `ft`, and the words *client*, *customer*, *award*, *warranty*
+and *guarantee*. It is a blunt instrument by choice: it will occasionally object to an innocent
+sentence, and a false objection costs a conversation while a missed one ships a claim nobody made.
+
 ### 5.3 The 250 imported drafts are not compliant
 
 `alt_text_draft` in the manifest is the leading ~160 characters of the prompt.

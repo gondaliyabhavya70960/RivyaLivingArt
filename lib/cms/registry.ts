@@ -14,6 +14,7 @@ import { emptyStateBlock } from '@/content/blocks/empty-state'
 import { heroBlock } from '@/content/blocks/hero'
 import { PLANNED_BLOCKS } from '@/content/blocks/planned'
 import { processStepsBlock } from '@/content/blocks/process-steps'
+import { scaleStatementBlock } from '@/content/blocks/scale-statement'
 import { statementBlock } from '@/content/blocks/statement'
 
 import { type AnyBlockModule, type BlockModule } from './block-module'
@@ -44,6 +45,7 @@ const BUILT_BLOCKS = {
   'secondary-objects': secondaryObjectsBlock,
   'journal-strip': journalStripBlock,
   'final-cta': finalCtaBlock,
+  'scale-statement': scaleStatementBlock,
   statement: statementBlock,
   'empty-state': emptyStateBlock,
   divider: dividerBlock,

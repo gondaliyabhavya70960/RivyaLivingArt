@@ -59,11 +59,6 @@ function planned(type: BlockType, label: string, description: string): BlockModu
  * descriptions are the catalogue's own, so they are already right when a block ships.
  */
 export const PLANNED_BLOCKS = {
-  'scale-statement': planned(
-    'scale-statement',
-    'Scale statement',
-    'A piece shown against a human reference for scale.',
-  ),
   'category-intro': planned(
     'category-intro',
     'Category introduction',

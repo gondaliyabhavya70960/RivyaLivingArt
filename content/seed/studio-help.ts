@@ -87,6 +87,74 @@ const EDITOR_HELP: readonly [string, string, string][] = [
   ],
 ]
 
+/**
+ * What the owner is being asked to confirm, per flagged section. Phase 12.
+ *
+ * KEYED BY THE SECTION'S OWN KEY — `verification.about.03.scale` for the section seeded
+ * `section:about.03.scale`. The `section:` prefix is added back at the lookup rather than stored,
+ * because a seed key carries exactly one colon and `tests/unit/seed-modules.test.ts` asserts it.
+ * The note travels with the section rather than with a page
+ * or a block type: `/process` is seven sections of one block type asserting seven different
+ * things, and one note for `process-steps` would be no note at all.
+ *
+ * ONLY WHERE THE SPECIFICATION HAS WORDING OF ITS OWN, or where the claim is not obvious from the
+ * heading. SEED §16 marks exactly one of the seven process steps — step 04 — and its sentence is
+ * reproduced verbatim below. The other six carry notes this project wrote when Phase 09 extended
+ * the flag to all seven under D10, and each says what the step would be asserting if published;
+ * the attribution matters, so the `description` on each row records which is which.
+ *
+ * A SECTION WITH NO ROW GETS NO NOTE. `VerificationBanner` quotes the section's own heading in
+ * every case, which is the claim itself; a generic sentence added underneath would be boilerplate
+ * beside a specific claim, and boilerplate is what an editor learns to skip.
+ */
+const VERIFICATION_NOTES: readonly [string, string, string][] = [
+  [
+    'about.03.scale',
+    'Confirm that large-format functional art is the studio’s primary direction today, and that smaller décor, preservation and personalised pieces are genuinely offered.',
+    'SEED §11 flags this section; the wording of the note is this project’s.',
+  ],
+  [
+    'about.04.bespoke',
+    'Confirm that bespoke work can respond to a particular interior, requirement or idea — that proportion, materials, colour and detail are genuinely variable per project.',
+    'SEED §11 flags this section; the wording of the note is this project’s.',
+  ],
+  [
+    'process.02.brief',
+    'Confirm that Rivya defines purpose, dimensions, context and visual direction with a client before work begins.',
+    'SEED §16 does not flag this step; Phase 09 extended the flag to all seven under D10.',
+  ],
+  [
+    'process.03.material-direction',
+    'Confirm that material, colour and structural direction are explored and agreed before fabrication.',
+    'SEED §16 does not flag this step; Phase 09 extended the flag to all seven under D10.',
+  ],
+  [
+    'process.04.form-development',
+    'Confirm that form and proportion are developed as a distinct stage of the work.',
+    'SEED §16 does not flag this step; Phase 09 extended the flag to all seven under D10.',
+  ],
+  [
+    'process.05.fabrication',
+    'Avoid specific production claims until verified.',
+    'SEED §16, verbatim — the only step the specification itself flags.',
+  ],
+  [
+    'process.06.resin-work',
+    'Confirm that the resin processes described — pouring, colour work and curing — are performed as stated.',
+    'SEED §16 does not flag this step; Phase 09 extended the flag to all seven under D10.',
+  ],
+  [
+    'process.07.finishing',
+    'Confirm that surfaces, edges and material transitions are finished in-house as described.',
+    'SEED §16 does not flag this step; Phase 09 extended the flag to all seven under D10.',
+  ],
+  [
+    'process.08.final-review',
+    'Confirm that a completed piece is reviewed against its intended form, finish and project requirements before handover.',
+    'SEED §16 does not flag this step; Phase 09 extended the flag to all seven under D10.',
+  ],
+]
+
 export const studioHelpSeed: SeedModule = {
   name: 'studio-help',
   description:
@@ -126,5 +194,10 @@ export const studioHelpSeed: SeedModule = {
 
     // --- §40 editor helpers ---------------------------------------------------------------------
     ...EDITOR_HELP.map(([key, label, value]) => helpRow(key, value, label, 'SEED §40.')),
+
+    // --- Phase 12: per-section verification notes -----------------------------------------------
+    ...VERIFICATION_NOTES.map(([sectionKey, value, source]) =>
+      helpRow(`verification.${sectionKey}`, value, `Verification note — ${sectionKey}`, source),
+    ),
   ],
 }

@@ -29,6 +29,19 @@ export type SectionRenderProps = {
   /** True for the first section on the page: it alone may load its media eagerly. */
   readonly isFirst: boolean
   /**
+   * This section's 1-based position among the sections of ITS OWN block type on this page.
+   *
+   * WHAT IT IS FOR: a `/process` chapter is one section carrying one stage, and its number has to
+   * be its position among the chapters that actually rendered. All seven are
+   * `OWNER_VERIFICATION_REQUIRED`, so a page with three verified would read 01, 04, 06 if the
+   * number came from the seed — which tells a visitor something is missing and invites them to
+   * wonder what. Counting here, over what the list was given, renumbers to 01, 02, 03.
+   *
+   * PER BLOCK TYPE, NOT PER PAGE, because it answers "which chapter is this" rather than "which
+   * band is this". A hero between two chapters must not push the second chapter to 03.
+   */
+  readonly ordinal: number
+  /**
    * What this section's reference selector found, for the three blocks that have one, and
    * `undefined` for every other block.
    *

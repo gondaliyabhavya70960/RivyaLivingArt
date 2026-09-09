@@ -12,6 +12,7 @@ import { MaterialPaletteSection } from './MaterialPaletteSection'
 import { MaterialStorySection } from './MaterialStorySection'
 import { PortfolioStripSection } from './PortfolioStripSection'
 import { ProcessStepsSection } from './ProcessStepsSection'
+import { ScaleStatementSection } from './ScaleStatementSection'
 import { SecondaryObjectsSection } from './SecondaryObjectsSection'
 import { SelectedWorksSection } from './SelectedWorksSection'
 import { StatementSection } from './StatementSection'
@@ -46,7 +47,7 @@ export const SECTION_RENDERERS = {
   'journal-strip': JournalStripSection,
   'final-cta': FinalCtaSection,
   statement: StatementSection,
-  'scale-statement': null,
+  'scale-statement': ScaleStatementSection,
   'category-intro': null,
   'category-list': null,
   'customization-note': null,

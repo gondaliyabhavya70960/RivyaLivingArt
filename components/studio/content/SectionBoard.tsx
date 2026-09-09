@@ -14,6 +14,7 @@ import { ConfirmDialog } from '@/components/studio/ConfirmDialog'
 import { EmptyState } from '@/components/studio/EmptyState'
 import type { PickerAsset } from '@/components/studio/MediaPicker'
 import { StatusPill } from '@/components/studio/StatusPill'
+import { VerificationBanner } from './VerificationBanner'
 import { t } from '@/components/studio/strings'
 import { blockModuleFor } from '@/lib/cms/registry'
 import { allowedTransitions } from '@/lib/cms/transitions'
@@ -54,6 +55,14 @@ export type SectionBoardProps = {
    * this only decides what is drawn.
    */
   readonly permissions: readonly Permission[]
+  /**
+   * Seeded verification notes by `seed_key` — `STUDIO_HELP.verification.<seed key>`.
+   *
+   * Loaded on the server by the page route and passed down, because this is a Client Component and
+   * a client component cannot read `global_content`. Absent for a page whose sections carry no
+   * specification wording, which is most of them.
+   */
+  readonly verificationNotes?: ReadonlyMap<string, string>
   readonly onSave: (values: SectionFormValues) => Promise<{ ok: boolean; error?: string }>
   readonly onDelete: (sectionId: string) => Promise<{ ok: boolean; error?: string }>
   readonly onReorder: (sectionIds: readonly string[]) => Promise<{ ok: boolean; error?: string }>
@@ -72,6 +81,7 @@ export function SectionBoard({
   canWrite,
   canDelete,
   permissions,
+  verificationNotes,
   onSave,
   onDelete,
   onReorder,
@@ -210,6 +220,15 @@ export function SectionBoard({
                   </Cluster>
 
                   {section.heading === null ? null : <Text size="sm">{section.heading}</Text>}
+
+                  <VerificationBanner
+                    section={section}
+                    note={
+                      section.seed_key === null
+                        ? null
+                        : (verificationNotes?.get(section.seed_key) ?? null)
+                    }
+                  />
 
                   {block === null || block.state !== 'BUILT' ? (
                     <Text size="sm" tone="tertiary">

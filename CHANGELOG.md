@@ -6,6 +6,48 @@ Every phase adds an entry; see `docs/architecture/CANONICAL-DECISIONS.md` D9 for
 
 ## [Unreleased]
 
+### Phase 12 — About + Process
+
+The two pages that explain who Rivya is and how a piece is made now render from the CMS, and both
+are built to read as complete while the claims inside them wait for the owner.
+
+**`scale-statement` is built**, so seventeen of the twenty-eight blocks have renderers and `/about`
+needs nothing further. It is the site's one editorial 21:9 crop, paired with a separate 4:5 mobile
+asset rather than a CSS crop of the wide one — 21:9 squeezed into a phone is a letterbox forty
+pixels tall.
+
+**A `/process` chapter is one section carrying one stage.** That shape is what lets the owner verify
+one stage without verifying the rest, and it is why the chapter's number is now drawn from its
+position among the chapters that actually rendered. Seeded as "01 — BRIEF", a page with the first,
+fourth and sixth verified would have read 01, 04, 06; it now reads 01, 02, 03, and the bands
+alternate on the same rendered index. `tests/unit/process-numbering.test.tsx` asserts both at 1, 3,
+5 and 7 chapters through the real `SectionList`, and the page was walked through the same states
+against a live database.
+
+**A verification banner in Studio names the claim, not the rule.** An owner opening `/process` saw
+seven sections all marked `OWNER_VERIFICATION_REQUIRED` with nothing to say that they are seven
+different claims. Each flagged section now shows its own sentence, plus the specification's wording
+where it has some — SEED §16's "Avoid specific production claims until verified" is seeded verbatim
+against step 04, and the six notes this project wrote are labelled as ours rather than the
+specification's.
+
+**`ChapterMedia` (RC-216) is a Client Component and is loaded on demand.** It was planned as a
+server composition; the coordination it does cannot be known on the server, because `/process` is
+seven chapters and the library holds thirteen process videos, so only the chapter crossing the
+middle of the viewport may hold the page's one motion slot.
+
+### Fixed
+
+- **The homepage would have shipped the chapter island.** `ProcessStepsSection` is imported by every
+  page with a process band, so a static import of `ChapterMedia` put it in the homepage's initial
+  JavaScript for a branch that page never renders. Caught by `check-island-budget.mjs` on its first
+  run after the component landed. The renderer now reaches it through `next/dynamic`, and the gate
+  distinguishes islands in the initial bundle from those loaded on demand rather than counting them
+  alike.
+- **`/process` rendered every sentence twice.** Each chapter's step repeated the section's own
+  heading and body, because the block had no media fields of its own and a step was the only place
+  to put a picture. The block gained the media shared fields and the chapters carry no steps.
+
 ### Phase 11 — Homepage + Material Experience
 
 The homepage stops being thirteen correct boxes. All thirteen SEED §10 sections render from the

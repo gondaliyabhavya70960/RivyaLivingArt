@@ -15,6 +15,7 @@ import { requirePermission } from '@/lib/auth/require'
 import { MEDIA_SLOTS } from '@/content/media-slots'
 import { resolveStudioPage } from '@/lib/cms/resolve'
 import { imageUrl } from '@/lib/media/url'
+import { listGlobalContent } from '@/lib/supabase/repositories/cms'
 import { listMediaAssets } from '@/lib/supabase/repositories/media'
 import { createClient } from '@/lib/supabase/server'
 
@@ -48,6 +49,21 @@ export default async function Page({ params }: { params: Promise<{ pageId: strin
   if (resolved === null) notFound()
 
   const assets = await listMediaAssets(client, { kind: 'IMAGE', limit: 200 })
+
+  /*
+   * THE VERIFICATION NOTES ARE READ HERE, NOT IN THE BOARD. `SectionBoard` is a Client Component —
+   * it holds the editing state — and a Client Component cannot query. The rows are the
+   * specification's own wording for the claims it names, keyed `verification.<section seed key>`
+   * under `STUDIO_HELP`; a section with no row gets no note rather than a generic sentence.
+   */
+  const VERIFICATION_PREFIX = 'verification.'
+  const verificationNotes = new Map(
+    (await listGlobalContent(client, 'STUDIO_HELP'))
+      .filter((row) => row.is_enabled && row.key.startsWith(VERIFICATION_PREFIX))
+      // Keyed to match `page_sections.seed_key`, which carries the `section:` prefix the row's own
+      // key cannot (a seed key holds exactly one colon).
+      .map((row) => [`section:${row.key.slice(VERIFICATION_PREFIX.length)}`, row.value] as const),
+  )
 
   const pickerAssets: readonly PickerAsset[] = assets.map((asset) => ({
     id: asset.id,
@@ -96,6 +112,7 @@ export default async function Page({ params }: { params: Promise<{ pageId: strin
         assets={pickerAssets}
         slotKeys={MEDIA_SLOTS.map((slot) => slot.key)}
         permissions={ROLE_PERMISSIONS[session.role]}
+        verificationNotes={verificationNotes}
       />
     </Stack>
   )
