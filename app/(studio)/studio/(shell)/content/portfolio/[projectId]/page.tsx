@@ -11,6 +11,7 @@ import { Stack } from '@/components/primitives/Stack'
 import { Text } from '@/components/primitives/Text'
 import { ActionForm } from '@/components/studio/ActionForm'
 import { ProjectGalleryPanel } from '@/components/studio/content/ProjectGalleryPanel'
+import { ProjectPublishControls } from '@/components/studio/content/ProjectPublishControls'
 import { SelectField, TextAreaField, TextField } from '@/components/studio/FormField'
 import { OwnerVerificationPanel } from '@/components/studio/OwnerVerificationPanel'
 import { PageHeader } from '@/components/studio/PageHeader'
@@ -40,11 +41,13 @@ import { createClient } from '@/lib/supabase/server'
 import {
   createProjectStoryPageAction,
   detachProjectMediaAction,
+  publishProjectAction,
   saveProjectClientAction,
   saveProjectIdentityAction,
   saveProjectMediaAction,
   setProjectRelationAction,
   setProjectVerificationAction,
+  unpublishProjectAction,
 } from './actions'
 
 /**
@@ -114,6 +117,7 @@ export default async function Page({
 
   const canWrite = roleHasPermission(session.role, 'content.write')
   const canVerify = roleHasPermission(session.role, 'content.verify')
+  const canPublish = roleHasPermission(session.role, 'content.publish')
   const verified = project.owner_verification === 'VERIFIED'
 
   return (
@@ -156,6 +160,14 @@ export default async function Page({
                 </Button>
               </ActionForm>
             </>
+          ) : null}
+          {canPublish ? (
+            <ProjectPublishControls
+              projectId={project.id}
+              isPublished={project.status === 'PUBLISHED'}
+              publishAction={publishProjectAction}
+              unpublishAction={unpublishProjectAction}
+            />
           ) : null}
         </Stack>
 

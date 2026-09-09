@@ -3,8 +3,9 @@
 import { revalidatePath } from 'next/cache'
 
 import { projectStorySections } from '@/content/templates/project-story'
-import { withAudit } from '@/lib/auth/audit'
+import { withAudit, writeAudit } from '@/lib/auth/audit'
 import { AuthenticationError, AuthorizationError, requirePermission } from '@/lib/auth/require'
+import { projectPublishGates, unmetGates, type PublishGate } from '@/lib/portfolio/gates'
 import type { StudioFormState } from '@/components/studio/form-state'
 import {
   RELATION_ENTITIES,
@@ -102,6 +103,27 @@ const SOURCE = 'PORTFOLIO_PROJECT' as const
  * message, never a wrong outcome — the write was refused either way, by the database.
  * `tests/unit/rls/phase17.test.ts` asserts the wording so the drift is caught rather than shipped.
  */
+/**
+ * The sentence a refused publish shows, for one unmet gate.
+ *
+ * IT IS NOT `t()`. This module is a Server Action, and the Studio strings are a client-safe map the
+ * panel already renders from — but the action's issues travel as data through `useActionState`, so
+ * the words have to exist here. They deliberately repeat what `OwnerVerificationPanel` says above,
+ * because an editor who pressed Publish is looking at the button, not at the panel.
+ */
+function gateMessage(gate: PublishGate): string {
+  switch (gate.id) {
+    case 'owner_verification':
+      return 'Nobody has confirmed this project happened.'
+    case 'consent_withdrawn':
+      return 'Consent has been withdrawn. This cannot be published.'
+    case 'client_consent':
+      return 'This names a client whose consent is not recorded as granted.'
+    case 'attribution_consent':
+      return 'This names a person whose consent is not recorded as granted.'
+  }
+}
+
 function isConceptRefusal(error: unknown): boolean {
   if (!(error instanceof ValidationError)) return false
   return error.issues.some((detail) => detail.message.includes('concept media cannot be attached'))
@@ -129,7 +151,7 @@ export async function saveProjectIdentityAction(
     const client = await createClient()
     await withAudit(
       {
-        action: 'content.page.update',
+        action: 'content.project.update',
         actorUserId: session.userId,
         actorRole: session.role,
         entityType: 'portfolio_projects',
@@ -227,7 +249,7 @@ export async function saveProjectClientAction(
 
     await withAudit(
       {
-        action: 'content.page.update',
+        action: 'content.project.update',
         actorUserId: session.userId,
         actorRole: session.role,
         entityType: 'portfolio_projects',
@@ -286,7 +308,7 @@ export async function setProjectVerificationAction(
     const client = await createClient()
     await withAudit(
       {
-        action: 'content.page.update',
+        action: 'content.project.update',
         actorUserId: session.userId,
         actorRole: session.role,
         entityType: 'portfolio_projects',
@@ -381,7 +403,7 @@ export async function setProjectRelationAction(
 
     await withAudit(
       {
-        action: 'content.page.update',
+        action: 'content.project.relation',
         actorUserId: session.userId,
         actorRole: session.role,
         entityType: 'entity_relations',
@@ -527,7 +549,7 @@ export async function saveProjectMediaAction(
 
     await withAudit(
       {
-        action: 'content.page.update',
+        action: 'content.project.media',
         actorUserId: session.userId,
         actorRole: session.role,
         entityType: 'portfolio_project_media',
@@ -575,7 +597,7 @@ export async function detachProjectMediaAction(
 
     await withAudit(
       {
-        action: 'content.page.update',
+        action: 'content.project.media',
         actorUserId: session.userId,
         actorRole: session.role,
         entityType: 'portfolio_project_media',
@@ -585,6 +607,124 @@ export async function detachProjectMediaAction(
     )
 
     revalidatePath(editorPath(id))
+    return { status: 'saved' }
+  } catch (error) {
+    return issue(refusalMessage(error))
+  }
+}
+
+/**
+ * Publish the project, or refuse and say why.
+ *
+ * THE GATES ARE RECOMPUTED FROM THE SAVED ROW, never from the form and never from what the page was
+ * rendered with. A visitor to this endpoint has a session cookie and whatever body they chose; the
+ * only trustworthy account of whether this project may be published is the row itself, read now.
+ *
+ * A REFUSAL WRITES A `DENIED` AUDIT ROW. The attempt is the interesting event — somebody tried to
+ * publish a project naming a client who had not agreed — and an attempt that leaves no trace is one
+ * nobody can review later. `publishProductAction` does the same for the same reason.
+ *
+ * THE TRIGGER STILL REFUSES UNDERNEATH. This is the sentence an editor can act on, computed from a
+ * mirror of the trigger that `tests/unit/rls/phase17.test.ts` holds to agreement with it. If the two
+ * ever disagree, the database wins and the editor sees the generic refusal — worse copy, correct
+ * outcome.
+ */
+export async function publishProjectAction(
+  _previous: ProjectActionState,
+  form: FormData,
+): Promise<ProjectActionState> {
+  try {
+    const session = await requirePermission('content.publish')
+    const id = uuid(form, 'id')
+    if (id === null) return issue('That project could not be identified.', 'id_missing')
+
+    const client = await createClient()
+    const project = await getProjectByIdForStudio(client, id)
+    const unmet = unmetGates(projectPublishGates(project))
+
+    if (unmet.length > 0) {
+      await writeAudit({
+        action: 'content.project.publish',
+        result: 'DENIED',
+        actorUserId: session.userId,
+        actorRole: session.role,
+        entityType: 'portfolio_projects',
+        entityId: id,
+        summary: `Publication refused: ${unmet.map((gate) => gate.id).join(', ')}`,
+      })
+      return {
+        status: 'error',
+        issues: unmet.map((gate) => ({
+          field: 'publish',
+          code: `gate_${gate.id}`,
+          message: gateMessage(gate),
+        })),
+      }
+    }
+
+    await withAudit(
+      {
+        action: 'content.project.publish',
+        actorUserId: session.userId,
+        actorRole: session.role,
+        entityType: 'portfolio_projects',
+        entityId: id,
+        summary: `Published project ${project.slug}`,
+      },
+      async () =>
+        updateProjectRow(client, id, {
+          status: 'PUBLISHED',
+          published_at: new Date().toISOString(),
+          published_by: session.userId,
+          updated_by: session.userId,
+        }),
+    )
+
+    revalidatePath(editorPath(id))
+    revalidatePath('/portfolio')
+    return { status: 'saved' }
+  } catch (error) {
+    return issue(refusalMessage(error))
+  }
+}
+
+/**
+ * Take the project back off the public site.
+ *
+ * NO GATE AND NO CONFIRMATION. Unpublishing is always allowed and always safe: the failure mode of
+ * an accidental unpublish is a page that 404s until somebody publishes it again, and the failure
+ * mode of a hesitant one is a project staying up that somebody wanted down. Those are not
+ * comparable, so this button never argues.
+ */
+export async function unpublishProjectAction(
+  _previous: ProjectActionState,
+  form: FormData,
+): Promise<ProjectActionState> {
+  try {
+    const session = await requirePermission('content.publish')
+    const id = uuid(form, 'id')
+    if (id === null) return issue('That project could not be identified.', 'id_missing')
+
+    const client = await createClient()
+    await withAudit(
+      {
+        action: 'content.project.unpublish',
+        actorUserId: session.userId,
+        actorRole: session.role,
+        entityType: 'portfolio_projects',
+        entityId: id,
+      },
+      async () =>
+        updateProjectRow(client, id, {
+          status: 'DRAFT',
+          published_at: null,
+          published_by: null,
+          updated_by: session.userId,
+        }),
+    )
+
+    revalidatePath(editorPath(id))
+    revalidatePath('/portfolio')
     return { status: 'saved' }
   } catch (error) {
     return issue(refusalMessage(error))

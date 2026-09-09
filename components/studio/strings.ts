@@ -2460,6 +2460,14 @@ export const STUDIO_STRINGS = {
     value: 'This consent decision was recorded on',
     contentKey: 'studio_help.portfolio_consent_recorded',
   },
+  'studio.portfolio.publish': {
+    value: 'Publish this project',
+    contentKey: 'studio_help.portfolio_publish',
+  },
+  'studio.portfolio.unpublish': {
+    value: 'Take it off the site',
+    contentKey: 'studio_help.portfolio_unpublish',
+  },
   'studio.portfolio.verifySet': {
     value: 'Confirm this project happened',
     contentKey: 'studio_help.portfolio_verify_set',
@@ -2598,6 +2606,87 @@ export const STUDIO_STRINGS = {
   'studio.testimonials.unattributed': {
     value: 'Unattributed',
     contentKey: 'studio_help.testimonials_unattributed',
+  },
+
+  // The testimonials editor.
+  'studio.testimonials.newHeading': {
+    value: 'Record a quote',
+    contentKey: 'studio_help.testimonials_new_heading',
+  },
+  'studio.testimonials.newHelp': {
+    value:
+      'Type what the person actually said, as they said it. A quote arrives unverified and without consent, and it cannot be published until an owner confirms it is real and — if it names anyone — that they agreed to be named.',
+    contentKey: 'studio_help.testimonials_new_help',
+  },
+  'studio.testimonials.quoteLabel': {
+    value: 'What they said',
+    contentKey: 'studio_help.testimonials_quote_label',
+  },
+  'studio.testimonials.quoteHelp': {
+    value: 'Their words, not a summary of them and not an improvement on them.',
+    contentKey: 'studio_help.testimonials_quote_help',
+  },
+  'studio.testimonials.attributedLabel': {
+    value: 'Who said it',
+    contentKey: 'studio_help.testimonials_attributed_label',
+  },
+  'studio.testimonials.attributedHelp': {
+    value:
+      'Leave empty to publish the quote without naming anyone. A name here makes their recorded consent a condition of publishing.',
+    contentKey: 'studio_help.testimonials_attributed_help',
+  },
+  'studio.testimonials.roleLabel': {
+    value: 'How to describe them',
+    contentKey: 'studio_help.testimonials_role_label',
+  },
+  'studio.testimonials.orderLabel': {
+    value: 'Order',
+    contentKey: 'studio_help.testimonials_order_label',
+  },
+  'studio.testimonials.save': {
+    value: 'Save this quote',
+    contentKey: 'studio_help.testimonials_save',
+  },
+  'studio.testimonials.consentLabel': {
+    value: 'Consent to be quoted',
+    contentKey: 'studio_help.testimonials_consent_label',
+  },
+  'studio.testimonials.consentRefLabel': {
+    value: 'Where that consent is held',
+    contentKey: 'studio_help.testimonials_consent_ref_label',
+  },
+  'studio.testimonials.consentRefHelp': {
+    value:
+      'An email, a message thread, a signed note — enough that somebody could find it a year from now. Required before consent can be marked granted.',
+    contentKey: 'studio_help.testimonials_consent_ref_help',
+  },
+  'studio.testimonials.consentSave': {
+    value: 'Record this consent',
+    contentKey: 'studio_help.testimonials_consent_save',
+  },
+  'studio.testimonials.verifySet': {
+    value: 'Confirm this was really said',
+    contentKey: 'studio_help.testimonials_verify_set',
+  },
+  'studio.testimonials.verifyClear': {
+    value: 'Withdraw that confirmation',
+    contentKey: 'studio_help.testimonials_verify_clear',
+  },
+  'studio.testimonials.publish': {
+    value: 'Publish this quote',
+    contentKey: 'studio_help.testimonials_publish',
+  },
+  'studio.testimonials.unpublish': {
+    value: 'Take it off the site',
+    contentKey: 'studio_help.testimonials_unpublish',
+  },
+  'studio.testimonials.newSubmit': {
+    value: 'Record it',
+    contentKey: 'studio_help.testimonials_new_submit',
+  },
+  'studio.testimonials.requiredLabel': {
+    value: 'Required',
+    contentKey: 'studio_help.testimonials_required_label',
   },
 
   // --- Phase 17: the verification panel ---------------------------------------------------------
