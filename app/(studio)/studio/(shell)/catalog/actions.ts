@@ -384,6 +384,34 @@ export async function publishProductAction(
       }
     }
 
+    // READY_STOCK is an inventory claim, and `products_ready_stock_verified` in 0122 refuses to
+    // store it on a published row the owner has not marked VERIFIED. Catching it here is not a
+    // second copy of the rule so much as a translation of it: without this the editor's only
+    // feedback would be a raw 23514 naming a constraint, and the thing they need to be told is
+    // that a claim about stock is theirs to confirm.
+    if (product.availability_state === 'READY_STOCK' && product.owner_verification !== 'VERIFIED') {
+      await writeAudit({
+        action: 'catalog.product.publish',
+        result: 'DENIED',
+        actorUserId: session.userId,
+        actorRole: session.role,
+        entityType: 'products',
+        entityId: productId,
+        summary: 'Publication refused: unverified READY_STOCK claim',
+      })
+      return {
+        status: 'error',
+        issues: [
+          {
+            field: 'availability_state',
+            code: 'stock_unverified',
+            message:
+              'This piece claims Ready Stock. Mark the product owner-verified before publishing that claim.',
+          },
+        ],
+      }
+    }
+
     await withAudit(
       {
         action: 'catalog.product.publish',

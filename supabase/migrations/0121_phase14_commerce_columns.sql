@@ -65,9 +65,17 @@ comment on column products.is_customizable is
 comment on column products.sort_order is
   'Curation handle for the default listing order. Null sorts last — unplaced, not first.';
 
+-- The trailing `nulls last` and `id` are not decoration; they are what lets this index ORDER the
+-- listing instead of merely filtering it. PostgreSQL's `desc` means DESC NULLS FIRST, and the
+-- curated sort asks for `published_at desc nulls last` (an unpublished draft sorts last, not
+-- first), so an index storing NULLS FIRST cannot supply that order. Measured on 5 000 synthetic
+-- rows: without them the plan is an Incremental Sort with `Presorted Key: sort_order`, re-sorting
+-- every group by published_at and id; with them it is a bare Index Only Scan and no sort node at
+-- all. `id` is included because every sort in `catalog-listing.ts` ends with it to make the order
+-- total, and a sort key the index omits forces the sort back.
 drop index products_listing_idx;
 create index products_listing_idx
-  on products (category_id, status, sort_order nulls last, published_at desc);
+  on products (category_id, status, sort_order nulls last, published_at desc nulls last, id);
 
 drop index products_facets_idx;
 create index products_facets_idx

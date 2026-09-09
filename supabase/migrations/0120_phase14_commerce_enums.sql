@@ -27,9 +27,12 @@
 
 alter type price_state add value if not exists 'FIXED';
 
--- READY_STOCK is a claim about inventory. It is seeded OWNER_VERIFICATION_REQUIRED in
--- `content/seed/commerce-labels.ts` and 0122 refuses to publish a product asserting it until the
--- owner has confirmed it (D10: never fabricate a business fact).
+-- READY_STOCK is a claim about inventory. Its label is seeded OWNER_VERIFICATION_REQUIRED in
+-- `content/seed/commerce-labels.ts`, and `products_ready_stock_verified` in 0122 refuses to publish
+-- a product asserting it until the owner has marked that product VERIFIED (D10: never fabricate a
+-- business fact). Those are two separate guards on two different rows — the label and the claim —
+-- and the second one is named here because an earlier draft of this comment described a gate that
+-- did not exist anywhere.
 create type availability_state as enum ('READY_STOCK', 'MADE_TO_ORDER');
 
 -- ONE_OF_ONE and LIMITED_EDITION are scarcity claims; OPEN_EDITION is the absence of one. 0122

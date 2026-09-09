@@ -402,3 +402,122 @@ describeDb('product_materials — a filtered DELETE succeeds while removing noth
     expect(outcome.after).toBe(0)
   })
 })
+
+/**
+ * The two edges the concept guard originally missed, and the stock gate it claimed but never had.
+ *
+ * `products.hero_media_id` is the column the public card renders. The Studio filters concept
+ * renders out of the picker and `validation.ts` refuses the id, but `products_update_staff` admits
+ * `merchandiser` and PostgREST takes a PATCH straight to the table — so neither of those runs on
+ * the path that matters. Every statement below is that PATCH.
+ */
+describeDb('0122 — the concept guard on the hero, and the invariant read backwards', () => {
+  beforeAll(loadFixture)
+  afterAll(disconnect)
+
+  it('refuses a concept render as a product hero, naming the asset', async () => {
+    const result = await asMerchandiser(async (sql) =>
+      sql.attempt('update products set hero_media_id = $1 where id = $2', [
+        FIXTURE_IDS.conceptAsset,
+        FIXTURE_IDS.draftProduct,
+      ]),
+    )
+    expect(result.ok).toBe(false)
+    expect(result.error).toContain('concept media cannot be a product hero image')
+    expect(result.error).toContain(FIXTURE_IDS.conceptAsset)
+  })
+
+  it('refuses one arriving on INSERT as well', async () => {
+    const result = await asMerchandiser(async (sql) =>
+      sql.attempt(
+        `insert into products (slug, title, price_state, hero_media_id)
+         values ('concept-hero', 'Concept hero', 'REQUEST_QUOTE', $1)`,
+        [FIXTURE_IDS.conceptAsset],
+      ),
+    )
+    expect(result.ok).toBe(false)
+  })
+
+  it('allows a real asset as a hero', async () => {
+    const result = await asMerchandiser(async (sql) =>
+      sql.attempt('update products set hero_media_id = $1 where id = $2', [
+        FIXTURE_IDS.publishedAsset,
+        FIXTURE_IDS.draftProduct,
+      ]),
+    )
+    expect(result.ok).toBe(true)
+  })
+
+  it('refuses flagging an attached asset as a concept render — the same end state by the other door', async () => {
+    const result = await asSession('authenticated', FIXTURE_USERS.owner, async (sql) =>
+      sql.attempt('update media_assets set is_concept = true where id = $1', [
+        FIXTURE_IDS.publishedAsset,
+      ]),
+    )
+    expect(result.ok).toBe(false)
+    expect(result.error).toContain('attached to a product')
+  })
+
+  // Not `draftAsset`: the fixture attaches that one to `draftProduct`, so it is guarded too. This
+  // needs an asset genuinely nobody uses, which means making one.
+  it('allows flagging an asset no product uses', async () => {
+    const result = await asSession('authenticated', FIXTURE_USERS.owner, async (sql) => {
+      await sql.attempt(
+        `insert into media_assets (id, resource_type, public_id, folder, kind, alt_text,
+                                   is_ai_generated, is_concept, status, source)
+         values ('00000000-0000-4000-8000-0000000000c1', 'image', 'rls-unused', 'rivya/test',
+                 'IMAGE', 'unattached asset', true, false, 'PUBLISHED', 'FALLBACK')`,
+      )
+      return sql.attempt('update media_assets set is_concept = true where id = $1', [
+        '00000000-0000-4000-8000-0000000000c1',
+      ])
+    })
+    expect(result.ok).toBe(true)
+  })
+})
+
+describeDb('0122 — products_ready_stock_verified', () => {
+  beforeAll(loadFixture)
+  afterAll(disconnect)
+
+  it('refuses publishing a READY_STOCK claim the owner has not verified', async () => {
+    const result = await asMerchandiser(async (sql) =>
+      sql.attempt(
+        `insert into products (slug, title, price_state, availability_state, status, owner_verification)
+         values ('stock-unverified', 'In stock, allegedly', 'REQUEST_QUOTE', 'READY_STOCK', 'PUBLISHED', 'NOT_REQUIRED')`,
+      ),
+    )
+    expect(result.ok).toBe(false)
+    expect(result.error).toContain('products_ready_stock_verified')
+  })
+
+  it('allows the same claim once the product is VERIFIED', async () => {
+    const result = await asMerchandiser(async (sql) =>
+      sql.attempt(
+        `insert into products (slug, title, price_state, availability_state, status, owner_verification)
+         values ('stock-verified', 'In stock, confirmed', 'REQUEST_QUOTE', 'READY_STOCK', 'PUBLISHED', 'VERIFIED')`,
+      ),
+    )
+    expect(result.ok).toBe(true)
+  })
+
+  it('leaves an unpublished READY_STOCK draft alone — the claim is not public yet', async () => {
+    const result = await asMerchandiser(async (sql) =>
+      sql.attempt(
+        `insert into products (slug, title, price_state, availability_state, status, owner_verification)
+         values ('stock-draft', 'Stock draft', 'REQUEST_QUOTE', 'READY_STOCK', 'DRAFT', 'NOT_REQUIRED')`,
+      ),
+    )
+    expect(result.ok).toBe(true)
+  })
+
+  it('does not touch MADE_TO_ORDER, which asserts no inventory', async () => {
+    const result = await asMerchandiser(async (sql) =>
+      sql.attempt(
+        `insert into products (slug, title, price_state, availability_state, status, owner_verification)
+         values ('made-to-order', 'Made to order', 'REQUEST_QUOTE', 'MADE_TO_ORDER', 'PUBLISHED', 'NOT_REQUIRED')`,
+      ),
+    )
+    expect(result.ok).toBe(true)
+  })
+})
