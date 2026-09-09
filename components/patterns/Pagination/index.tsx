@@ -66,11 +66,20 @@ export function Pagination({
   const numbers = pageNumbers(page, pageCount)
   const step = 'inline-flex min-w-11 items-center justify-center px-3 py-2 rv-hit-44'
   const link = `${step} text-ink underline-offset-4 hover:underline`
-  const disabled = `${step} text-ink-muted`
+  // `text-ink-disabled`, not `text-ink-muted`: there is no --color-ink-muted token, so the class
+  // generated no CSS and a disabled Previous rendered in full ink — a dead control that looked
+  // live, which is the one thing a disabled control must not do.
+  const disabled = `${step} text-ink-disabled`
 
   return (
     <nav aria-label={regionName} data-pagination="" className="mt-12">
-      <ul className="flex flex-wrap items-center justify-center gap-1">
+      {/*
+        `role="list"` is not redundant on a `ul` here. Tailwind's preflight sets `list-style: none`,
+        and Safari drops list semantics from a list styled that way — so VoiceOver announces the
+        page numbers as loose links and never says how many there are. `Breadcrumbs` and `Stack`
+        both restore it for the same reason; this list was the one that did not.
+      */}
+      <ul role="list" className="flex flex-wrap items-center justify-center gap-1">
         <li>
           {page > 1 && previous !== null ? (
             <a rel="prev" href={catalogUrl(basePath, query, { page: page - 1 })} className={link}>
@@ -89,7 +98,7 @@ export function Pagination({
           return (
             <React.Fragment key={n}>
               {gap ? (
-                <li aria-hidden="true" className="text-ink-muted hidden min-[430px]:block">
+                <li aria-hidden="true" className="hidden text-ink-tertiary min-[430px]:block">
                   …
                 </li>
               ) : null}

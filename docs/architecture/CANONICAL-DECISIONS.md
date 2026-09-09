@@ -96,6 +96,23 @@ Seeded categories, in priority order:
 
 Navigation is role-aware; every page re-checks permission server-side.
 
+**The list above is the LEAF map, not every file under `app/(studio)`.** Three kinds of route sit
+beneath a leaf and are deliberately absent from it, because none of them is a place the sidebar can
+link to:
+
+- a **detail** route — `/studio/catalog/products/[productId]`, `/studio/content/pages/[pageId]` —
+  where there is no one record to link to;
+- a **create** route — `/studio/catalog/products/new` — which is an action on a list, not a second
+  destination for it;
+- a **tab of a detail** route — `/studio/catalog/products/[productId]/{media,materials,
+  specifications,related}`, added in Phase 15 — which is a section of one record.
+
+Governance still flows from the leaf: each of these is reachable only beneath a route this map
+names, and each re-checks permission for itself. `tests/unit/studio-nav.test.ts` enforces both
+halves — a static route whose parent is static must appear above, and every detail route and tab
+must call `requirePermission`.
+
+
 ## D5 — Database naming (fixed)
 
 - `snake_case` tables and columns; plural table names; `id uuid primary key default gen_random_uuid()`.

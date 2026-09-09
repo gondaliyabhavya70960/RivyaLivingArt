@@ -1,4 +1,5 @@
 import type { ProductFormValues } from '@/components/studio/catalog/ProductForm'
+import { currencyExponent } from '@/lib/catalog/price'
 import { DIMENSION_KEYS, type ProductDraft } from '@/lib/catalog/validation'
 import type { Product } from '@/lib/supabase/schemas'
 
@@ -10,17 +11,31 @@ import type { Product } from '@/lib/supabase/schemas'
  * the mapping to the browser and give the server a second copy.
  *
  * AMOUNTS COME BACK IN MAJOR UNITS, matching what the form asks for and what `actions.ts` converts
- * on the way in. The exponent is fixed at two here rather than asked of `Intl`: this is an input
- * field, not a rendered price, and a currency with no minor unit would still round-trip correctly
- * because the stored value is a whole number of minor units either way.
+ * on the way in — AND BY THE SAME EXPONENT IT USED. An earlier version fixed the divisor at 100 and
+ * argued that a currency with no minor unit would round-trip anyway. That argument was true only
+ * while the write path also multiplied by 100; it stopped being true the moment `money()` started
+ * asking `Intl` for the currency's exponent, and it left the two halves of one conversion
+ * disagreeing:
+ *
+ *     JPY (exponent 0)   editor types 1200  → stored 1200     → form reads back "12"
+ *     KWD (exponent 3)   editor types 1200  → stored 1200000  → form reads back "12000.00"
+ *
+ * Neither is a save the editor made, and the second one saves BACK on the next submit — so a
+ * merchandiser who opens a Kuwaiti product and presses Save with no edits multiplies its price by
+ * a thousand. The exponent has to come from the same place at both ends, so it comes from
+ * `currencyExponent` here too, off the row's own `currency`.
+ *
+ * A NULL CURRENCY FALLS BACK TO TWO and cannot actually be reached: `products_price_state_coherent`
+ * permits a number only beside FIXED or STARTING_FROM, and both of those require a currency, so a
+ * row with an amount and no currency does not exist. The fallback is there because the column is
+ * nullable in the type, not because the case is real.
  */
 
-const MINOR_PER_MAJOR = 100
-
-function major(minor: number | null): string {
+function major(minor: number | null, currency: string | null): string {
   if (minor === null) return ''
-  const value = minor / MINOR_PER_MAJOR
-  return Number.isInteger(value) ? String(value) : value.toFixed(2)
+  const exponent = (currency === null ? null : currencyExponent(currency)) ?? 2
+  const value = minor / 10 ** exponent
+  return Number.isInteger(value) ? String(value) : value.toFixed(exponent)
 }
 
 /** The empty form: every field blank, both booleans false, and no price state chosen for them. */
@@ -74,8 +89,8 @@ export function productFormValues(
     description: product.description ?? '',
     categoryId: product.category_id ?? '',
     priceState: product.price_state,
-    priceMajor: major(product.price_minor),
-    priceFromMajor: major(product.price_from_minor),
+    priceMajor: major(product.price_minor, product.currency),
+    priceFromMajor: major(product.price_from_minor, product.currency),
     currency: product.currency ?? '',
     availabilityState: product.availability_state ?? '',
     editionState: product.edition_state ?? '',
@@ -110,6 +125,7 @@ export function productDraft(product: Product): ProductDraft {
     edition_size: product.edition_size,
     is_customizable: product.is_customizable,
     is_large_format: product.is_large_format,
+    specifications_omitted: product.specifications_omitted,
     sort_order: product.sort_order,
     dimensions: product.dimensions,
     hero_media_id: product.hero_media_id,

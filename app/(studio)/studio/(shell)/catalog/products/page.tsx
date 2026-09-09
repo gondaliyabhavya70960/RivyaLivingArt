@@ -44,13 +44,32 @@ import { productDraft } from '../product-values'
  */
 export const metadata = studioMetadata('/studio/catalog/products')
 
+/**
+ * The search box's term, from a query string that may not contain what the type says.
+ *
+ * `?q=a&q=b` HANDS NEXT AN ARRAY, and this page used to be typed `{ q?: string }` and read it
+ * straight. The type is a claim about the URL, not a guarantee from it: two `q` parameters made
+ * `filter.search.trim()` a call on an array, and the Studio's product list answered 500. A visitor
+ * cannot reach this page, but an editor with two tabs and a stale form can produce the URL, and a
+ * server error is the wrong answer to a duplicated parameter either way.
+ *
+ * THE LAST ONE WINS, matching how a browser treats a repeated form field. Not comma-split, unlike
+ * `values()` in `lib/catalog/query.ts`: that helper serves filters where `?material=oak,resin` is
+ * two selections, whereas this is a free-text box and "chair, oak" is one thing to look for.
+ */
+function searchTerm(raw: string | string[] | undefined): string | undefined {
+  if (raw === undefined) return undefined
+  const last = Array.isArray(raw) ? raw[raw.length - 1] : raw
+  return last === undefined || last.trim() === '' ? undefined : last
+}
+
 export default async function Page({
   searchParams,
 }: {
-  readonly searchParams: Promise<{ q?: string }>
+  readonly searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
   const session = await requirePermission('catalog.read')
-  const { q } = await searchParams
+  const q = searchTerm((await searchParams).q)
 
   const client = await createClient()
   const [products, categories] = await Promise.all([
@@ -153,6 +172,7 @@ export default async function Page({
                 readinessChecklist(productDraft(product), {
                   materialIds: new Array<string>(joinCounts.materials.get(product.id) ?? 0),
                   galleryMediaIds: new Array<string>(joinCounts.gallery.get(product.id) ?? 0),
+                  specCount: joinCounts.specs.get(product.id) ?? 0,
                 }),
               )
               return unmet.length === 0 ? (

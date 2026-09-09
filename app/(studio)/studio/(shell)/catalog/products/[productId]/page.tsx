@@ -1,15 +1,9 @@
-import type { Route } from 'next'
-import Link from 'next/link'
 import { notFound } from 'next/navigation'
 
 import { Stack } from '@/components/primitives/Stack'
-import { Text } from '@/components/primitives/Text'
 import { ProductForm } from '@/components/studio/catalog/ProductForm'
 import { PublishControls } from '@/components/studio/catalog/PublishControls'
 import { ReadinessChecklist } from '@/components/studio/catalog/ReadinessChecklist'
-import { PageHeader } from '@/components/studio/PageHeader'
-import { StatusPill } from '@/components/studio/StatusPill'
-import { t } from '@/components/studio/strings'
 import { roleHasPermission } from '@/lib/auth/permissions'
 import { requirePermission } from '@/lib/auth/require'
 import { readinessChecklist } from '@/lib/catalog/validation'
@@ -19,6 +13,7 @@ import {
   listProductMaterialIds,
   listProductMediaIds,
 } from '@/lib/supabase/repositories/catalog-admin'
+import { countProductSpecs } from '@/lib/supabase/repositories/product-specs'
 import { createClient } from '@/lib/supabase/server'
 
 import { publishProductAction, saveProductAction, unpublishProductAction } from '../../actions'
@@ -53,29 +48,23 @@ export default async function Page({ params }: { params: Promise<{ productId: st
   })
   if (product === null) notFound()
 
-  const [materialIds, galleryMediaIds, options] = await Promise.all([
+  const [materialIds, galleryMediaIds, specCount, options] = await Promise.all([
     listProductMaterialIds(client, product.id),
     listProductMediaIds(client, product.id),
+    countProductSpecs(client, product.id),
     productFormOptions(),
   ])
 
-  const checklist = readinessChecklist(productDraft(product), { materialIds, galleryMediaIds })
+  const checklist = readinessChecklist(productDraft(product), {
+    materialIds,
+    galleryMediaIds,
+    specCount,
+  })
 
+  // The title, the status pill and the section strip belong to `layout.tsx`, which every tab
+  // shares. What is left here is the overview itself.
   return (
     <Stack gap={8}>
-      <PageHeader
-        level={1}
-        title={product.title ?? t('studio.catalog.products.untitled')}
-        description={product.slug}
-        actions={<StatusPill status={product.status} />}
-      />
-
-      <Link href={'/studio/catalog/products' as Route} className="underline underline-offset-4">
-        <Text size="sm" as="span">
-          {t('studio.catalog.products.caption')}
-        </Text>
-      </Link>
-
       <ReadinessChecklist checklist={checklist} />
 
       <PublishControls

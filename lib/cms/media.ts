@@ -2,7 +2,6 @@ import 'server-only'
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 
-import type { MediaRef } from '@/lib/media/types'
 import type { Database } from '@/lib/supabase/database.types'
 import { listMediaAssetsByIds } from '@/lib/supabase/repositories/media'
 import type { MediaAsset, PageSection } from '@/lib/supabase/schemas'
@@ -45,17 +44,13 @@ export async function loadPageMedia(
 }
 
 /**
- * The `MediaRef` a URL builder needs, from a row.
+ * Re-exported from `lib/media/ref.ts`, which has no server dependency.
  *
- * NO `version`, BECAUSE `media_assets` HAS NO VERSION COLUMN. `MediaRef.version` is optional and
- * is left off rather than guessed: a wrong version is a URL Cloudinary resolves to nothing, which
- * is worse than an unversioned one. The cost is that re-uploading under the same public id changes
- * what a cached page shows — acceptable while `public_id` is unique per asset and the uploader
- * never reuses one. If that ever stops holding, the column comes first and this line second.
+ * It moved because the gallery's client components need it and this module opens with
+ * `import 'server-only'` — a Client Component importing anything from here fails `next build`.
+ * The re-export keeps every existing caller working and keeps one implementation.
  */
-export function mediaRefOf(asset: MediaAsset): MediaRef {
-  return { publicId: asset.public_id, resourceType: asset.resource_type }
-}
+export { mediaRefOf } from '@/lib/media/ref'
 
 /**
  * The alt text to render, given the section may override it.

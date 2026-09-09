@@ -27,14 +27,56 @@ export default defineConfig({
     },
   },
   test: {
-    environment: 'jsdom',
-    globals: true,
-    setupFiles: ['./tests/setup/vitest.setup.ts'],
-    include: [
-      'components/**/*.test.{ts,tsx}',
-      'lib/**/*.test.{ts,tsx}',
-      'tests/unit/**/*.test.{ts,tsx}',
+    /**
+     * TWO PROJECTS, BECAUSE ONE OF THEM SHARES A DATABASE.
+     *
+     * Everything under `tests/unit/rls/**` talks to the same local PostgreSQL cluster, and each of
+     * those files calls `loadFixture` in `beforeAll` — which runs committed DDL and re-inserts the
+     * fixture rows outside any transaction. Two of them overlapping means one file's wipe lands in
+     * the middle of another's assertions.
+     *
+     * THE SPLIT IS FOR CLARITY, NOT FOR CORRECTNESS. It was originally introduced as the fix,
+     * carrying `fileParallelism: false` on this project — which vitest silently ignores inside a
+     * project. `maxWorkers` did not isolate it either, and neither did `fileParallelism` at the
+     * root. What actually serialises these files is a PostgreSQL advisory lock taken in `connect`
+     * and released in `disconnect`; see the long note on `FIXTURE_LOCK` in
+     * `tests/unit/rls/harness.ts`. IN `connect`, NOT IN `loadFixture` — this comment said
+     * `loadFixture` and that was the second bug inside the first: `phase08-render.test.tsx` builds
+     * its own rows and never calls `loadFixture`, so locking there left the one suite that was
+     * actually failing unprotected. The lock holds however the runner schedules anything, so both
+     * projects stay parallel and the suite keeps its speed.
+     *
+     * What the split still buys is a named `|rls|` prefix in the output, so a database failure is
+     * distinguishable from a pure one at a glance, and a way to run either half alone.
+     */
+    projects: [
+      {
+        extends: true,
+        test: {
+          name: 'unit',
+          environment: 'jsdom',
+          globals: true,
+          setupFiles: ['./tests/setup/vitest.setup.ts'],
+          include: [
+            'components/**/*.test.{ts,tsx}',
+            'lib/**/*.test.{ts,tsx}',
+            'tests/unit/**/*.test.{ts,tsx}',
+          ],
+          exclude: ['tests/unit/rls/**'],
+          css: false,
+        },
+      },
+      {
+        extends: true,
+        test: {
+          name: 'rls',
+          environment: 'jsdom',
+          globals: true,
+          setupFiles: ['./tests/setup/vitest.setup.ts'],
+          include: ['tests/unit/rls/**/*.test.{ts,tsx}'],
+          css: false,
+        },
+      },
     ],
-    css: false,
   },
 })

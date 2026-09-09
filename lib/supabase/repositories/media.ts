@@ -5,6 +5,7 @@ import type { Database } from '../database.types'
 import { mediaAssetSchema, type MediaAsset } from '../schemas'
 import { NotFoundError } from '../errors'
 import { parseRow, parseRows, toRepositoryError } from './support'
+import { containsValue } from '../filter'
 
 type Client = SupabaseClient<Database>
 
@@ -101,11 +102,13 @@ export async function listMediaAssets(
   if (filters.kind !== undefined) query = query.eq('kind', filters.kind)
   if (filters.source !== undefined) query = query.eq('source', filters.source)
   if (filters.search !== undefined && filters.search.trim() !== '') {
-    // `%` and `,` are PostgREST's own separators inside an `or` filter, so a search containing one
-    // would change the shape of the query rather than the value being matched. Escaped, not
-    // rejected: an editor searching for "50%" is asking a reasonable question.
-    const term = filters.search.trim().replace(/[%,]/g, '\\$&')
-    query = query.or(`filename.ilike.%${term}%,title.ilike.%${term}%`)
+    // An editor searching for "50%" is asking a reasonable question, so the term is escaped rather
+    // than rejected. It is NOT escaped here, though: this block used to backslash `%` and `,`
+    // itself, and a backslash does not escape a comma in PostgREST's filter grammar — only a
+    // double-quoted value does, so "chair, oak" still split the `or` list and returned a 400.
+    // `containsValue` does both layers in the one order that works. See lib/supabase/filter.ts.
+    const value = containsValue(filters.search.trim())
+    query = query.or(`filename.ilike.${value},title.ilike.${value}`)
   }
 
   const { data, error } = await query

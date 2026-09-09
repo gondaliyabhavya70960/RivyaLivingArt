@@ -1,7 +1,7 @@
 # PROJECT_STATE — what is actually built
 
 > Verified against the repository, not against intent. Update at the end of every phase.
-> Last verified: Phase 14 (Product Catalog), 2026-09-09.
+> Last verified: Phase 15 (Product Detail Experience), 2026-09-09.
 
 ## Summary
 
@@ -58,20 +58,30 @@ taking yet.
 answer, every process step, and every sentence that asserts what Rivya can physically make.
 `cms_publish_section` refuses them with RV002. That is D10 as a schema rule.
 
-**Two things block the site going live, both owner-side.** The 250 Higgsfield assets are still on
-the Higgsfield CDN — the migration that moves them is written and tested but has never executed,
-because this sandbox's proxy refuses CONNECT to both Cloudinary and the CDN origin. And every one
-of those assets is APPROVED *and* `OWNER_VERIFICATION_REQUIRED`, so `cms_publish_section` refuses
-(RV006) any section that binds one. Both are recorded in *Remaining Work*.
+**The media migration has RUN.** All 250 Higgsfield assets are in Cloudinary — 231 uploaded, 19
+adopted from an earlier partial run, 0 failed — and `media_assets` holds 250 rows on the local
+cluster and on hosted, verified by two independent fingerprints (structural and full-text) that
+matched exactly. Fidelity was checked against the plan before any database write: the id set matches
+the manifest exactly, no id was invented, no `rivya_asset_id` or `generation_id` drifted, and all 26
+videos carry a duration.
 
-**The hosted project is one phase behind.** 28 migrations are applied to `ccvarsmzickdkryoakdg`
-and recorded in `public.schema_migrations` with checksums; the latest is
-`0080_phase10_global_content_ui_label_group.sql`. **Phase 14's `0120`–`0122` are NOT applied there**
-— they exist locally and in the repository only, so the hosted catalogue has no `price_minor`, no
-`availability_state`, no `edition_state` and no concept-media trigger. Applying them is the same
-owner-side task as every migration since `0050`: `npm run db:migrate -- --apply --allow-remote` from
-a machine that can reach the pooler, or the Supabase MCP server. Hosted still carries **no content**
-— the seed has only ever run against the local cluster.
+**What still blocks the site going live is owner-side and is one thing, not two.** Every one of
+those assets is APPROVED *and* `OWNER_VERIFICATION_REQUIRED`, so `cms_publish_section` refuses
+(RV006) any section that binds one until the owner verifies it. Recorded in *Remaining Work*.
+
+**The hosted project is level with the repository.** Every migration through
+`0132_phase15_specifications_omitted.sql` is applied to `ccvarsmzickdkryoakdg` and recorded in
+`public.schema_migrations` with the runner's own SHA-256, so `db:migrate` treats them as applied
+rather than pending. Phase 14's `0120`–`0122` and Phase 15's `0130`–`0132` were applied through the
+Supabase MCP server — this sandbox cannot reach the pooler — and each set was then verified against
+local by fingerprint rather than assumed: column hash, constraint definitions, policy expressions,
+index definitions, trigger names, enum values and the `is_valid_dimensions` function body all match,
+and the function refuses `{"length_inches": 90}`, a zero, a negative, a string value and an array
+identically on both.
+
+Hosted content has been replayed and fingerprint-matched across all seven content tables.
+`content_seed_runs` is deliberately EMPTY there: copying the local audit row would assert a seed run
+that never happened on that database.
 
 `0050`–`0055` and `0070`–`0071` were applied through the Supabase MCP server rather than by
 `npm run db:migrate`, because the workflow that runs it lives on GitHub Actions, which has never
@@ -147,27 +157,33 @@ docs/SESSION-STATE.md
 
 ## What does NOT exist yet
 
-No product page under `app/(site)` — `/product/[slug]` is Phase 15, which is also why a product card
-is not a link — and **no media delivery**: `media_assets` is empty on both databases, so every
-`MediaSlot` on every page renders its reserved box and the SEED §47 fallback label. Eight of the
-twenty-eight blocks have no renderer; the eight are listed as `null` in
+Eight of the twenty-eight blocks have no renderer; the eight are listed as `null` in
 `components/sections/registry.ts` and the two registries are asserted to agree, so a block cannot be
 forgotten, only explicitly declared unbuilt.
 
-**`products` holds zero rows, and that is the finished state of Phase 14, not a gap.** A product
-exists because an owner types one into `/studio/catalog/products/new` (SEED §32); nothing seeds one,
-nothing imports one, and `tests/e2e/collection-empty.spec.ts` counts `[data-product-card]` elements
-on all seven category pages to keep it that way. What the catalogue is still missing is the product
-DETAIL surface (Phase 15), the gallery editor with media roles (Phase 15), the relationship editor
-(Phase 23), the customization form builder (Phase 19) and bulk import (Phase 24) — every one of
-which has a stub route with a real permission check rather than a dead link.
+`/product/[slug]` EXISTS as of Phase 15, and a product card is a link. What it does not have is
+anything to render: see the paragraph below.
+
+**`products` holds zero rows, and that is the finished state of Phases 14 and 15, not a gap.** A
+product exists because an owner types one into `/studio/catalog/products/new` (SEED §32); nothing
+seeds one, nothing imports one, and `tests/e2e/collection-empty.spec.ts` counts `[data-product-card]`
+elements on all seven category pages to keep it that way. Phase 15's three e2e specs skip for the
+same reason, and say so rather than passing silently.
+
+Phase 15 closed two of the five gaps this paragraph used to list: the product DETAIL surface and the
+gallery editor with media roles both exist, along with the Specifications and Related editors. What
+the catalogue is still missing is the relationship ENGINE (Phase 23 — the editor exists, the
+suggestions do not), the customization form builder (Phase 19), the 3D viewer (Phase 21) and bulk
+import (Phase 24) — every one of which has a stub route with a real permission check rather than a
+dead link.
 
 The Studio shell EXISTS but most leaves below `/studio` are stubs: a real route with a real
 permission check and a notice naming the phase that will fill it, which is what stops navigation
-dead-ending — except `/studio/media/higgsfield` (Phase 07) and the content surfaces (Phase 08). All
-28 migrations are applied to BOTH the local cluster and the hosted project; the earlier claim that
-the hosted schema was empty was true only until 2026-09-08. **The hosted project still carries no
-content**, so the deployed preview renders a wordless shell and 404s every CMS route until
+dead-ending — except `/studio/media/higgsfield` (Phase 07), the content surfaces (Phase 08) and the
+catalogue (Phases 14–15). Every migration is applied to BOTH the local cluster and the hosted
+project. Hosted now carries content as well, replayed and fingerprint-matched; what it does not
+carry is anything PUBLISHED, so the deployed preview renders a wordless shell and 404s every CMS
+route until
 `npm run seed:content` runs against it.
 
 **CI still cannot run — no run has ever executed a step.** Each job is created with its

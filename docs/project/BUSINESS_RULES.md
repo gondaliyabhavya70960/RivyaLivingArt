@@ -331,6 +331,30 @@ explicitly marked decorative. `image 1`, `hero`, `photo` and truncated prompt te
 | Test | `tests/unit/alt-text-coverage.test.ts`: every asset bound to a published surface has non-empty alt text or `is_decorative = true`; a database test asserts the constraint rejects an empty string |
 | Note | The manifest's `alt_text_draft` values are truncated prompt text ending in an ellipsis. They satisfy the constraint but not the rule; rewriting them is Phase 43 work and is tracked as such |
 
+### BR-D8 — No inference: nothing is computed, converted or estimated
+
+**Rule.** A measurement, a material, a lead time or any other product fact is displayed exactly as
+the owner entered it. Nothing on the site computes, converts, rounds, infers or defaults one. A
+millimetre value is displayed in millimetres; there is no centimetre toggle, no inch conversion, no
+derived volume, no computed seating capacity, no "approximately", no "typically".
+
+**A null value produces no row.** Not an em dash, not `N/A`, not `TBD`, not "Contact us for
+details" — each of those tells a visitor that a value exists and is being withheld, which is a claim
+about the object nobody made. Zero rows means the whole specification block is ABSENT from the DOM,
+not rendered empty with a heading over nothing.
+
+**And nobody is pushed into inventing one to publish.** The Phase 15 readiness checklist makes
+Specifications a required item, which would be an incentive to estimate a number if a spec row were
+the only way to satisfy it. It is not: `products.specifications_omitted` records the owner's
+deliberate decision that a piece publishes no specifications, and satisfies the item with no
+measurement at all. **What is required is the decision, never the value.**
+
+| | |
+|---|---|
+| Enforced by | **Schema:** `products_dimensions_shape` (DATA_MODEL §8.5) refuses any key outside the seven declared measurements, so `{"length_inches": 90}` cannot be stored and no renderer ever meets a unit it would have to convert. The unit is part of the key, and `product_specs.unit` is whatever the owner typed. **Code:** `ProductSpecifications` has no placeholder branch and no arithmetic in it at all — there is no prop to change and no fallback expression to edit. **Studio:** the Specifications tab offers no "not applicable" option, no converter and no estimate control; its helper string is "Leave a field blank to omit the row" |
+| Test | `tests/unit/spec-rendering.test.tsx`: a null dimension key produces no row, an empty dimensions object means the block is absent rather than empty, 1800 mm never renders as 180 cm or 70.87 in, and no rendered value is `—`, `-`, `N/A` or `TBD`. `tests/unit/rls/phase15.test.ts` asserts the database refuses `{"length_inches": 90}`, a zero and a negative. `tests/e2e/product-detail.spec.ts` asserts no placeholder wording reaches the page |
+| Note | The hyphen is checked per rendered VALUE rather than across the page, because it occurs legitimately inside ordinary copy — "Hand-rubbed oil" is a finish, not a placeholder |
+
 ---
 
 ## E. Media and asset rules

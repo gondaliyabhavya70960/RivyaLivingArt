@@ -1601,6 +1601,7 @@ export type Database = {
           edition_size: number | null
           is_customizable: boolean
           sort_order: number | null
+          specifications_omitted: boolean
         }
         Insert: {
           id?: string
@@ -1640,6 +1641,7 @@ export type Database = {
           edition_size?: number | null
           is_customizable?: boolean
           sort_order?: number | null
+          specifications_omitted?: boolean
         }
         Update: {
           id?: string
@@ -1679,6 +1681,7 @@ export type Database = {
           edition_size?: number | null
           is_customizable?: boolean
           sort_order?: number | null
+          specifications_omitted?: boolean
         }
         Relationships: [
           {

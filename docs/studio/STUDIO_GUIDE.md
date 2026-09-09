@@ -629,10 +629,11 @@ and the refusal names the items. The Specifications item is satisfied by *at lea
 by a deliberate "no published specifications" choice, so an owner is never pushed into inventing a
 value in order to publish.
 
-**Phase 14 ships TEN of those eleven.** Specifications joins the list in Phase 15, with the
-`product_specs` table it describes — an item that always reads "Missing" because the table it counts
-does not exist would train an owner to ignore the checklist, which is the one thing a checklist
-cannot survive. The ten are FEAT §22's own list, in its order.
+**Phase 14 shipped TEN of those eleven; Phase 15 added the eleventh.** Specifications waited for the
+`product_specs` table it counts — an item that always reads "Missing" because the table does not
+exist would train an owner to ignore the checklist, which is the one thing a checklist cannot
+survive. The first ten are FEAT §22's own list, in its order. Specifications is **required**, and
+§7.1.2 explains why that is safe: it is satisfiable with no measurement at all.
 
 Eight of the ten are **required** and block publishing: Title, Description, Category, Price state,
 Dimensions, Materials, Hero image, SEO. Two are **advisory** and are shown, labelled, and never
@@ -651,8 +652,8 @@ The surface above was written before the phase. Where the two differ, this is wh
 |---|---|---|
 | Detail **tabs** — Identity · Pricing · … · Publishing | One page of labelled sections in that order, with the readiness checklist and the publish control above the form | Tabs hide the unmet items behind whichever tab is not open, which is the opposite of what a transparent checklist is for. The publish refusal has to be visible from wherever the missing field is |
 | List columns including `owner_verification`, Price state, Large format, Updated by | Title · SKU · Category · Status · **Not ready** · Updated | "Not ready" lists the unmet REQUIRED items by name, per row. It is the column the screen exists for: a status says a product is a draft, and this says why. The rest are one click away on the product itself |
-| `product_media` rows with `role` and `sort_order` | `hero_media_id` only | The gallery editor is Phase 15's, with the product detail page that renders it. The Gallery readiness item already reads `product_media`, so it lights up the moment that editor exists |
-| `model_media_id`, `product_specs`, `product_relations` | Not editable | Phases 21, 15 and 23 respectively |
+| `product_media` rows with `role` and `sort_order` | Phase 14: `hero_media_id` only. **Phase 15 added the Media tab** (§7.1.2) | The gallery editor waited for the product detail page that renders it. The Gallery readiness item already read `product_media`, so it lit up the moment the editor existed |
+| `model_media_id`, `product_specs`, `product_relations` | Phase 14: none editable. **Phase 15 added the Specifications and Related tabs** (§7.1.2); `model_media_id` remains Phase 21's | The 3D slot renders nothing until there is a viewer — a control for a field no route displays is a promise the site cannot keep |
 | Categories: `slug`, `parent_id`, `is_primary` editable | Name · Subtitle · Description · Order · Hero image · SEO | The seven are D3's taxonomy AND the route map — `/collection/[category]` pre-renders exactly these slugs. Editing a slug breaks a published URL; adding an eighth category creates a page nobody designed. What an owner legitimately changes is the wording and the order |
 | — | Collections have **no publish control at all** | FEAT §9 keeps every collection a `DRAFT_COLLECTION_CONCEPT` until Phase 16 adds owner confirmation. A disabled button that never enables reads as a broken interface rather than as a rule |
 | — | The hero-image picker **never offers a concept render** | The trigger and the validator both refuse one. An interface that offers a choice and then blames you for making it is the wrong shape; the two guards stay for the request that did not come from this form |
@@ -678,6 +679,75 @@ catalogue would show it without complaint.
 - Write-time validation (FEAT §21) rejects, each with a named error: duplicate SKU, duplicate slug,
   impossible dimensions, malformed URL, broken media reference, invalid price state, a quote-only
   product carrying a price, and missing required publication data.
+
+### 7.1.2 What Phase 15 added — the four tabs, and how a specification is entered
+
+Phase 14 built one page of labelled sections and §7.1.1 explains why it refused tabs: tabs hide the
+unmet items behind whichever tab is not open. Phase 15 adds four, and the reasoning is not reversed —
+it is scoped. The readiness checklist and the publish control stay on the Overview tab with the
+fields they describe. What moved out are the four **collections of rows** that were never fields on
+that form: media edges, material links, specification rows and relation edges.
+
+| Route | What it edits |
+|---|---|
+| `…/[productId]` | Overview — the readiness checklist, the publish control, and the product's own columns |
+| `…/[productId]/media` | `product_media` — attach, detach, `role`, `sort_order` |
+| `…/[productId]/materials` | `product_materials` — attach, detach, and the optional note |
+| `…/[productId]/specifications` | `product_specs`, plus the read-only dimensions panel and the omission control |
+| `…/[productId]/related` | `product_relations` — create, order and remove edges by hand |
+
+**Each tab is a URL, not a pane.** An editor can bookmark one piece's specification table, open two
+products' Media tabs side by side, and use the back button as a back button. The active tab carries
+`aria-current="page"`, not only a colour.
+
+**One form per row, not one per tab.** A concept asset refused by the database costs the editor that
+row's submission and nothing else; a whole-tab form would lose every other edit on the screen to one
+refusal.
+
+#### Entering a specification
+
+This is the strictest surface in the Studio, and what is ABSENT from it is the design.
+
+- **There is no "not applicable" option, no unit converter, no "estimate" checkbox and no
+  placeholder to choose from.** Each of those is a way to publish a sentence nobody measured.
+- **A row exists when you have something to say, and does not exist otherwise.** Leave a field blank
+  to omit the row. The block on the product page then has one fewer line, and a visitor reads
+  nothing at all rather than a dash implying a value is being withheld.
+- **The value is text and stays text.** "450", "45–50" and "made to order" are all valid and all
+  stored exactly as typed. Nothing parses a number out of it, which is what keeps unit conversion
+  one refactor further away than it would otherwise be.
+- **The unit is what you type.** A millimetre is displayed in millimetres. There is no centimetre
+  toggle and no inch conversion anywhere on the site (BR-D8).
+- **Dimensions are entered on the Overview tab** and shown here read-only, only for the keys that
+  have a value. Showing all seven with the empty ones greyed would teach an editor that the block
+  has a fixed shape with gaps in it, which is the impression the whole rule exists to prevent.
+- **Two rows cannot share a label on one product.** A block listing "Seat height" twice with two
+  different numbers is worse than one that omits it — which of the two is true is not a question a
+  visitor can answer.
+
+#### If a piece publishes no specifications
+
+Say so, deliberately, with the control at the bottom of the tab. It records
+`products.specifications_omitted` and satisfies the required Specifications readiness item with no
+row at all.
+
+**This exists so that the checklist is never a reason to invent a number.** A required item whose
+only satisfaction is a spec row is an incentive to estimate one, and an estimate presented as a
+measurement is exactly what D10 forbids. What the checklist requires is the DECISION, never the
+value. The decision has its own action and its own audit entry, and saving an unrelated field on the
+Overview form cannot clear it.
+
+It is not a claim about the object. It says "we are not publishing specifications for this piece",
+never "this piece has no dimensions". Nothing on the public site renders it. Changing your mind
+later is ordinary: add a row and the item is satisfied the other way.
+
+#### Relations
+
+Relations are made by hand and render as "Related". A product with none falls back to up to six
+other published products in the same category, under its own heading — "More in {Category}", never
+"Related" and never "You may also like". The distinction is the point: "Related" is a claim an
+editor made, and the fallback is an observation about a category. Nothing suggests an edge; the
+relationship engine is Phase 23's.
 
 ### 7.2 `/studio/catalog/categories`
 

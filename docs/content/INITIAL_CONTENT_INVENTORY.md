@@ -7,7 +7,7 @@ SEED §54’s audit of what the content seed actually put in the database, read 
 database rather than from the seed modules. Its target is §54’s: **100% of intended launch
 copy mapped to a Studio editing control.**
 
-- **363** rows audited
+- **379** rows audited
 - **68** await owner verification and cannot be published until it is given
 - **22** are authored and deferred to a later phase’s tables
 - **0** carry a bound media asset
@@ -291,6 +291,22 @@ the phase that creates its table.
 | Global content | global:STUDIO_HELP.verification.process.06.resin-work | STUDIO_HELP.verification.process.06.resin-work | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | global:STUDIO_HELP.verification.process.07.finishing | STUDIO_HELP.verification.process.07.finishing | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | global:STUDIO_HELP.verification.process.08.final-review | STUDIO_HELP.verification.process.08.final-review | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.product.dimension.depth_mm | UI_LABEL.product.dimension.depth_mm | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.product.dimension.diameter_mm | UI_LABEL.product.dimension.diameter_mm | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.product.dimension.height_mm | UI_LABEL.product.dimension.height_mm | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.product.dimension.length_mm | UI_LABEL.product.dimension.length_mm | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.product.dimension.seats | UI_LABEL.product.dimension.seats | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.product.dimension.weight_g | UI_LABEL.product.dimension.weight_g | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.product.dimension.width_mm | UI_LABEL.product.dimension.width_mm | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.product.gallery.heading | UI_LABEL.product.gallery.heading | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.product.gallery.lightbox | UI_LABEL.product.gallery.lightbox | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.product.gallery.position | UI_LABEL.product.gallery.position | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.product.gallery.thumbnails | UI_LABEL.product.gallery.thumbnails | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.product.materials.caption | UI_LABEL.product.materials.caption | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.product.materials.heading | UI_LABEL.product.materials.heading | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.product.related.curated | UI_LABEL.product.related.curated | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.product.related.same_category | UI_LABEL.product.related.same_category | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.product.specifications.heading | UI_LABEL.product.specifications.heading | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | global:WHATSAPP_TEMPLATE.commission | WHATSAPP_TEMPLATE.commission | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | global:WHATSAPP_TEMPLATE.inquiry | WHATSAPP_TEMPLATE.inquiry | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Navigation | nav:footer.contact | FOOTER · Contact | Yes | Yes | `/studio/content/navigation` | No | — | — | PUBLISHED |

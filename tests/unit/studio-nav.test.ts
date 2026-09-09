@@ -141,16 +141,42 @@ describe('the Studio navigation manifest', () => {
      * other create surface in the Studio (a section, a menu item, a material) is a control on its
      * list rather than a leaf of its own. The segment is matched exactly — `new`, not any static
      * child — so this cannot be used to smuggle in an ungoverned surface by naming it `/settings`.
+     *
+     * A TAB OF A DETAIL ROUTE IS EXEMPT ON THE SAME PRINCIPLE, added in Phase 15 for
+     * `/studio/catalog/products/[productId]/{media,materials,specifications,related}`. These are
+     * sections of one record, not destinations: the sidebar cannot link to "the Media tab" any more
+     * than it can link to "the product", because in both cases there is no one record to link to.
+     *
+     * THE PRINCIPLE IS UNCHANGED AND THE RULE IS NOT LOOSER. Governance still flows from a leaf —
+     * the tab is exempt only because its parent is a detail route whose OWN parent the manifest
+     * names, so the chain from a governed leaf is unbroken. It cannot be used to add an ungoverned
+     * top-level surface: a static route whose parent is static must still be in the manifest, and
+     * every route reached this way is required to call `requirePermission` by the test below, which
+     * was widened to cover them rather than left checking detail routes alone.
      */
+    const isDetail = (route: string): boolean => route.endsWith(']')
+    const parentOf = (route: string): string => route.slice(0, route.lastIndexOf('/'))
+
     for (const route of disk) {
-      if (route.endsWith(']') || route.endsWith('/new')) {
-        const parent = route.slice(0, route.lastIndexOf('/'))
+      if (isDetail(route) || route.endsWith('/new')) {
+        const parent = parentOf(route)
         expect(
           manifest,
           `${route} is a detail or create route whose parent ${parent} is not a leaf`,
         ).toContain(parent)
         continue
       }
+
+      const parent = parentOf(route)
+      if (isDetail(parent)) {
+        const leaf = parentOf(parent)
+        expect(
+          manifest,
+          `${route} is a tab of detail route ${parent}, whose parent ${leaf} is not a leaf`,
+        ).toContain(leaf)
+        continue
+      }
+
       expect(manifest, `${route} exists on disk but is not in the manifest`).toContain(route)
     }
   })
@@ -161,8 +187,13 @@ describe('the Studio navigation manifest', () => {
    * staff member whatever their role — and being nested under a governed leaf would not save it,
    * because a URL can be typed.
    */
-  it('gives every detail route its own permission check', () => {
-    for (const route of disk.filter((r) => r.endsWith(']'))) {
+  it('gives every detail route and every tab of one its own permission check', () => {
+    // Tabs are included because the exemption above lets them exist without a manifest entry. An
+    // exemption that did not carry this obligation would be a way to add an unguarded Studio page.
+    const governed = disk.filter(
+      (r) => r.endsWith(']') || r.slice(0, r.lastIndexOf('/')).endsWith(']'),
+    )
+    for (const route of governed) {
       const file = join(SHELL, route.replace('/studio/', ''), 'page.tsx')
       const source = readFileSync(file, 'utf8')
       expect(source, `${route} does not call requirePermission`).toContain('requirePermission(')

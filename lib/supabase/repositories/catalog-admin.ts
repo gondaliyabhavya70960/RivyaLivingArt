@@ -13,6 +13,7 @@ import {
 } from '../schemas'
 import { NotFoundError, PermissionError } from '../errors'
 import { parseRow, parseRows, toRepositoryError } from './support'
+import { containsValue } from '../filter'
 
 type Client = SupabaseClient<Database>
 
@@ -59,10 +60,11 @@ export async function listProductsForStudio(
   if (filter.status !== undefined) query = query.eq('status', filter.status)
   if (filter.categoryId !== undefined) query = query.eq('category_id', filter.categoryId)
   if (filter.search !== undefined && filter.search.trim() !== '') {
-    // `%` and `_` inside the term are pattern metacharacters; escaped, or a search for "50%"
-    // matches every product. The same guard `searchProductsByTitle` applies.
-    const escaped = filter.search.trim().replace(/([\\%_])/g, '\\$1')
-    query = query.or(`title.ilike.%${escaped}%,slug.ilike.%${escaped}%`)
+    // Quoted AND pattern-escaped by `containsValue`, which is not the same thing done twice: the
+    // quotes keep a comma or a `)` from restructuring this `or` list, and the backslashes keep a
+    // `%` or `_` from matching more than the editor typed. See lib/supabase/filter.ts.
+    const value = containsValue(filter.search.trim())
+    query = query.or(`title.ilike.${value},slug.ilike.${value}`)
   }
 
   const { data, error } = await query
@@ -186,17 +188,29 @@ export async function setProductMaterials(
 export async function joinCountsForProducts(
   client: Client,
   productIds: readonly string[],
-): Promise<{ materials: Map<string, number>; gallery: Map<string, number> }> {
-  const empty = { materials: new Map<string, number>(), gallery: new Map<string, number>() }
+): Promise<{
+  materials: Map<string, number>
+  gallery: Map<string, number>
+  specs: Map<string, number>
+}> {
+  const empty = {
+    materials: new Map<string, number>(),
+    gallery: new Map<string, number>(),
+    specs: new Map<string, number>(),
+  }
   if (productIds.length === 0) return empty
 
-  const [materialRows, mediaRows] = await Promise.all([
+  const [materialRows, mediaRows, specRows] = await Promise.all([
     client
       .from('product_materials')
       .select('product_id')
       .in('product_id', [...productIds]),
     client
       .from('product_media')
+      .select('product_id')
+      .in('product_id', [...productIds]),
+    client
+      .from('product_specs')
       .select('product_id')
       .in('product_id', [...productIds]),
   ])
@@ -209,6 +223,9 @@ export async function joinCountsForProducts(
   if (mediaRows.error) {
     throw toRepositoryError(PRODUCT, 'list-media-counts', batch, mediaRows.error)
   }
+  if (specRows.error) {
+    throw toRepositoryError(PRODUCT, 'list-spec-counts', batch, specRows.error)
+  }
 
   const tally = (rows: readonly { product_id: string }[]): Map<string, number> => {
     const counts = new Map<string, number>()
@@ -216,7 +233,11 @@ export async function joinCountsForProducts(
     return counts
   }
 
-  return { materials: tally(materialRows.data ?? []), gallery: tally(mediaRows.data ?? []) }
+  return {
+    materials: tally(materialRows.data ?? []),
+    gallery: tally(mediaRows.data ?? []),
+    specs: tally(specRows.data ?? []),
+  }
 }
 
 /** The gallery: every `product_media` row for one product, hero excluded by the caller. */
