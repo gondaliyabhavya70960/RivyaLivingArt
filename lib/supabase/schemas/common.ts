@@ -126,6 +126,21 @@ export const relationKindSchema = z.enum([
   'PART_OF',
 ]) satisfies z.ZodType<Enums<'relation_kind'>>
 
+/**
+ * Phase 17 `0150`. Whether the person or client a row names has agreed to be named.
+ *
+ * `GRANTED` IS THE ONLY VALUE THAT PERMITS PUBLICATION of a row carrying a name, and the two tables
+ * that use it default differently on purpose: a project defaults to `NOT_APPLICABLE` because most
+ * projects name nobody, while a testimonial defaults to `PENDING` because a quote always came from
+ * someone. `WITHDRAWN` is not merely a refusal — it archives the row on the same statement.
+ */
+export const clientConsentStateSchema = z.enum([
+  'NOT_APPLICABLE',
+  'PENDING',
+  'GRANTED',
+  'WITHDRAWN',
+]) satisfies z.ZodType<Enums<'client_consent_state'>>
+
 export const collectionConceptStateSchema = z.enum([
   'DRAFT_COLLECTION_CONCEPT',
   'OWNER_CONFIRMED',
