@@ -275,6 +275,16 @@ export async function loadFixture(): Promise<void> {
   await db.query('alter table staff_profiles disable trigger staff_profiles_last_owner_update')
   await db.query('alter table staff_profiles disable trigger staff_profiles_last_owner_delete')
   try {
+    // BEFORE THE USERS, NOT WITH THE CONTENT WIPE BELOW. `entity_relations.created_by` references
+    // auth.users with no ON DELETE action — the house convention for attribution, and right: an
+    // edge is curation, and losing who made it silently is worse than a blocked delete. But the
+    // fixture COMMITS an edge naming the fixture owner, so on the second run the user wipe fails
+    // with `violates foreign key constraint "entity_relations_created_by_fkey"` — in whichever
+    // suite happened to run first, about a table it does not test.
+    //
+    // The rule this stands for: any row the fixture commits with a `created_by` is wiped up here,
+    // not in the content list. Nothing else committed by this fixture carries one today.
+    await db.query('delete from entity_relations')
     await db.query('delete from staff_profiles where user_id = any($1::uuid[])', [Object.values(u)])
     // `content_revisions.created_by` references auth.users with no ON DELETE action, and the table
     // is append-only by design — nothing ever removes a revision in production. So any suite that
@@ -418,5 +428,24 @@ export async function loadFixture(): Promise<void> {
        ($1,'Draft fact','no',null,1,'DRAFT'),
        ($2,'Leaked fact','yes',null,0,'PUBLISHED')`,
     [f.publishedProduct, f.draftProduct],
+  )
+
+  /**
+   * One committed `entity_relations` edge, for the assertions that span two roles.
+   *
+   * Same reason as the specifications above: `asSession` rolls back, so an edge inserted as the
+   * owner does not exist for the anonymous read or the merchandiser DELETE that follows. Those two
+   * assertions are the whole point of the table's policy — that it is invisible rather than
+   * filtered, and that a merchandiser's DELETE matches nothing while reporting success — and both
+   * are vacuous against an empty table. This row is what makes them mean something.
+   *
+   * It points from the PUBLISHED collection at the PUBLISHED product, so nothing about the edge's
+   * own visibility can be explained away by either end being a draft.
+   */
+  await db.query(
+    `insert into entity_relations
+       (source_type, source_id, target_type, target_id, relation_type, created_by)
+     values ('COLLECTION',$1,'PRODUCT',$2,'RELATED',$3)`,
+    [f.publishedCollection, f.publishedProduct, u.owner],
   )
 }
