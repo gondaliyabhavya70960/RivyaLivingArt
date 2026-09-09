@@ -3,7 +3,7 @@
 import * as React from 'react'
 
 import { MediaImage } from '@/components/patterns/MediaImage'
-import { mediaRefOf } from '@/lib/cms/media'
+import { mediaRefOf } from '@/lib/media/ref'
 import type { MediaAsset } from '@/lib/supabase/schemas'
 
 /**

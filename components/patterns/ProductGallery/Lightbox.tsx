@@ -6,7 +6,7 @@ import { Dialog } from '@/components/patterns/Dialog'
 import { MediaImage } from '@/components/patterns/MediaImage'
 import { Text } from '@/components/primitives/Text'
 import { useReducedMotion } from '@/components/primitives/motion/useReducedMotion'
-import { mediaRefOf } from '@/lib/cms/media'
+import { mediaRefOf } from '@/lib/media/ref'
 import type { MediaAsset } from '@/lib/supabase/schemas'
 
 /**
