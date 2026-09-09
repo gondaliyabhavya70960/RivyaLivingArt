@@ -117,7 +117,34 @@ const EXPECTED = {
   // shape as the four Phase 03 join tables. A `status` here would let a relation be draft,
   // which is a state nobody can act on — either an editor made the connection or they did not.
   entity_relations: ['created_at', 'created_by'],
+
+  // Phase 17. Tier A + B but NOT C, for the same reason as product_specs one line of reasoning
+  // along: `portfolio_projects` and `testimonials` are never seeded. SEED §17 says so in capitals
+  // and D10 lists delivered projects, named customers and testimonials among the things that may
+  // never be fabricated — so the seed columns are absent, and a seeder has no key to address a row
+  // by. That is the rule made structural rather than remembered.
+  portfolio_projects: [...TIER_A, ...TIER_B],
+  testimonials: [...TIER_A, ...TIER_B],
+  // The gallery join is an edge, like the four above it.
+  portfolio_project_media: ['created_at', 'created_by'],
+
+  // Phase 18. Both journal tables ARE seeded — SEED §19's nine categories and §20's ten article
+  // ideas — so unlike the portfolio pair they carry Tier C. What the seed writes is a title and an
+  // angle; the body is the owner's, and no seed record can publish one.
+  journal_categories: [...TIER_A, ...TIER_B, ...TIER_C],
+  journal_articles: [...TIER_A, ...TIER_B, ...TIER_C],
+  // The secondary-category join is an edge, like the gallery one above.
+  journal_article_categories: ['created_at', 'created_by'],
   content_seed_runs: ['started_at', 'finished_at', 'is_dry_run', 'report'],
+
+  // `db:migrate`'s own bookkeeping, and a §1.4 exemption for the same reason `content_seed_runs` is
+  // one: what it records is an INVOCATION, and an invocation has no publication workflow, no owner
+  // verification and nothing to seed. It is created by the runner rather than by a migration —
+  // which is why `gen-types.mjs` excludes it too (amendment A13·4): whether it exists at generation
+  // time depends on how a database was built, and that made the same schema produce two type files.
+  // The runner enables RLS on it at creation, with no policy, so the anon key cannot read the
+  // schema's history.
+  schema_migrations: ['version', 'checksum', 'applied_at'],
 
   // Phase 07. A RUN RECORD, the same §1.4 exemption as content_seed_runs above and deliberately
   // the same shape: no content_status, no owner_verification, no Tier C. What is being recorded is

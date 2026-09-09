@@ -11,10 +11,12 @@ import {
   getCollectionIdBySlug,
   getCollectionIdForPage,
 } from '@/lib/supabase/repositories/collections'
+import { getProjectIdForPage, listProjectMedia } from '@/lib/supabase/repositories/portfolio'
 import { listMediaAssetsByIds } from '@/lib/supabase/repositories/media'
 import type { MediaAsset, PageSection } from '@/lib/supabase/schemas'
 
 import { collectionProductsBlock } from '@/content/blocks/collection-products'
+import { projectGalleryBlock } from '@/content/blocks/project-gallery'
 import { journalStripBlock } from '@/content/blocks/journal-strip'
 import { portfolioStripBlock } from '@/content/blocks/portfolio-strip'
 import { selectedWorksBlock } from '@/content/blocks/selected-works'
@@ -45,6 +47,26 @@ export type SectionReference = {
   readonly result: SelectorResult
   /** Hero assets for the cards, by `media_assets.id`. Absent where RLS hid one. */
   readonly assets: ReadonlyMap<string, MediaAsset>
+  /**
+   * ORDERED MEDIA, for a block that renders pictures rather than entity cards.
+   *
+   * `project-gallery` is the only user today, and it needed something the card shape cannot carry:
+   * a gallery draws `portfolio_project_media` in the curator's order, each row with its own caption
+   * and alt override, and an `EntityCard` has neither of those nor an order that means anything.
+   * Squeezing it into `cards` with an empty `href` was the alternative and it would have made every
+   * consumer of `cards` handle a case that is not a card.
+   *
+   * RESOLVED HERE FOR THE SAME REASON EVERYTHING ELSE IS: one pass, before render, so a gallery
+   * does not become a round trip per photograph inside an async component.
+   */
+  readonly media?: readonly ProjectGalleryItem[]
+}
+
+/** One picture in a project gallery: the asset, plus what the editor said about it HERE. */
+export type ProjectGalleryItem = {
+  readonly asset: MediaAsset
+  readonly caption: string | null
+  readonly altOverride: string | null
 }
 
 /** By `page_sections.id`. A section with no entry here is not a reference block. */
@@ -131,6 +153,15 @@ export async function loadPageReferences(
         ) => Promise<string | null>
       } = SELECTORS[section.block_type as ReferenceBlockType]
 
+      /*
+       * THE GALLERY IS NOT A SELECTOR, so it is answered here rather than through `SELECTORS`.
+       * A selector returns cards for entities that may not exist; this returns the pictures of one
+       * project, in the order its curator arranged them, and there is no card in it.
+       */
+      if (section.block_type === 'project-gallery') {
+        return [section.id, await loadProjectGallery(client, section, pageId)] as const
+      }
+
       const result = await config.select(client, {
         limit: config.limit(section),
         categorySlug: config.categorySlug(section),
@@ -150,3 +181,48 @@ export async function loadPageReferences(
 
   return new Map(resolved)
 }
+
+/**
+ * A project's gallery, for the page it belongs to.
+ *
+ * NOTHING AT ALL WHEN THE PAGE BELONGS TO NO PROJECT, which is every page but a project's own
+ * story. The block declares `allowedPages: ['/portfolio/[slug]']` so Studio will not offer it
+ * elsewhere; this is the other half of that, for a row that got there some other way.
+ *
+ * RLS DOES THE FILTERING TWICE OVER AND NEITHER IS RESTATED HERE: `portfolio_project_media` is
+ * readable only when its parent project is published, and `media_assets` has its own policy on top,
+ * so a picture attached to an unannounced project resolves to nothing for a visitor. An asset the
+ * policy hid is DROPPED rather than rendered as a gap.
+ */
+async function loadProjectGallery(
+  client: SelectorClient,
+  section: PageSection,
+  pageId: string,
+): Promise<SectionReference> {
+  const payload = parseBlockPayload(projectGalleryBlock, section.payload)
+  const projectId = await getProjectIdForPage(client, pageId)
+  if (projectId === null) return { result: EMPTY_GALLERY, assets: new Map(), media: [] }
+
+  const wanted = new Set<string>(payload.roles)
+  const rows = (await listProjectMedia(client, projectId))
+    .filter((row) => wanted.has(row.role))
+    .slice(0, payload.limit)
+
+  const assets = await listMediaAssetsByIds(
+    client,
+    rows.map((row) => row.media_asset_id),
+  )
+
+  const media = rows.flatMap((row) => {
+    const asset = assets.get(row.media_asset_id)
+    return asset === undefined
+      ? []
+      : [{ asset, caption: row.caption, altOverride: row.alt_override }]
+  })
+
+  return { result: media.length === 0 ? EMPTY_GALLERY : OK_GALLERY, assets, media }
+}
+
+/** A gallery has no cards; `reason` still travels, so `data-empty-reason` reads the same as elsewhere. */
+const EMPTY_GALLERY: SelectorResult = { cards: [], reason: 'EMPTY' }
+const OK_GALLERY: SelectorResult = { cards: [], reason: 'OK' }

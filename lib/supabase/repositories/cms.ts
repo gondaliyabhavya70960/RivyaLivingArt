@@ -568,11 +568,17 @@ export async function restoreRevisionRow(
  * would collide on insert with a uniqueness error naming neither, so the plural keeps the two
  * families apart by construction rather than by hoping they never overlap.
  *
- * THE PATH IS WRITTEN HERE AND AGAIN BY A TRIGGER. `collections_sync_page_path` sets it from the
- * collection the moment `page_id` is linked; passing the same value here means the row satisfies
- * `pages_path_present` at insert time, before any link exists. Lowercased for `pages_path_shape`,
- * which refuses an upper-case character — the collection slug is `citext` and keeps whatever case
- * was typed.
+ * THE PATH IS WRITTEN HERE AND AGAIN BY A TRIGGER. `collections_sync_page_path` and, for a project,
+ * `sync_project_page_path` set it from the owning row the moment `page_id` is linked; passing the
+ * same value here means the row satisfies `pages_path_present` at insert time, before any link
+ * exists. Lowercased for `pages_path_shape`, which refuses an upper-case character — both entity
+ * slugs are `citext` and keep whatever case was typed.
+ *
+ * `kind` IS A UNION OF THE TWO ENTITY KINDS, NOT `PageKind`. `PAGE`, `CATEGORY` and `SYSTEM` pages
+ * are not owned by an entity row and have no path trigger behind them, so admitting them here would
+ * offer a caller a shape this function cannot honour. It widened from the single literal
+ * `'COLLECTION'` when Phase 17 gave projects the same pattern; the next entity kind adds a third
+ * member and nothing else.
  */
 export async function insertEntityPage(
   client: Client,
@@ -580,7 +586,7 @@ export async function insertEntityPage(
     readonly slug: string
     readonly path: string
     readonly title: string
-    readonly kind: 'COLLECTION'
+    readonly kind: 'COLLECTION' | 'PROJECT'
   },
 ): Promise<Page> {
   const { data, error } = await client

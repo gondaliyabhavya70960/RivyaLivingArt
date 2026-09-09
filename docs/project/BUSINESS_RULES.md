@@ -301,12 +301,27 @@ column (SEED §1, D2). Changing normal website copy must never require a code ch
 ### BR-D5 — A named person is never published without consent
 
 **Rule.** A portfolio project, testimonial or case study that names a client, a person or a private
-address may be published only when `client_consent_state = 'GRANTED'`.
+address may be published only when that person's consent is recorded as `GRANTED`, with a reference
+saying where the consent is held.
+
+**Withdrawal is immediate and is not a request.** Moving consent to `WITHDRAWN` archives the row on
+the same statement — it does not raise, it does not wait for someone to unpublish, and it does not
+depend on a deploy or a cache expiry. A person who asks not to be named stops being named.
+
+**The two tables carry the rule through different columns**, and that is why it is enforced by two
+functions rather than one: `portfolio_projects.client_display_name` / `client_consent` and
+`testimonials.attributed_to` / `consent`. A shared plpgsql function referencing both compiles and
+then fails at runtime with `record "new" has no field …` on the first write to whichever table it
+was not written for — see `DATA_MODEL.md` §8.12.
+
+**The consent state and the display name must agree even in draft.**
+`portfolio_projects_consent_coherent` refuses to STORE a client name beside
+`client_consent = 'NOT_APPLICABLE'`: that combination is a contradiction rather than a draft.
 
 | | |
 |---|---|
-| Enforced by | **Schema:** `client_consent_state` on `portfolio_projects` and `testimonials`, with a publish gate |
-| Test | `tests/integration/publish-gates.test.ts` asserts publication is refused for `PENDING`, `WITHDRAWN` and `NOT_APPLICABLE`-with-a-name |
+| Enforced by | **Schema:** `client_consent_state` enum on `portfolio_projects.client_consent` and `testimonials.consent`; the publish gates `enforce_project_evidence_gate()` and `enforce_testimonial_evidence_gate()` (`0150`), both BEFORE triggers so the withdrawal branch can rewrite `status`; the `portfolio_projects_consent_coherent` check constraint. **Server guard:** setting either consent to `GRANTED` requires `content.verify` (owner or admin) AND a non-empty consent reference; a publish attempt that fails a gate writes a `DENIED` audit row. **Type:** `lib/portfolio/gates.ts` names the unmet gate in the Studio before Publish is pressed |
+| Test | `tests/unit/rls/phase17.test.ts` — an agreement test: for every combination of verification, name and consent it asks `lib/portfolio/gates.ts` whether the row may publish, asks the DATABASE to publish the same row, and requires the two answers to match; separately it asserts that withdrawing consent on a PUBLISHED, consented project archives it rather than being refused |
 
 ### BR-D6 — Content seeding is idempotent and never overwrites an owner
 
@@ -356,6 +371,29 @@ measurement at all. **What is required is the decision, never the value.**
 | Note | The hyphen is checked per rendered VALUE rather than across the page, because it occurs legitimately inside ordinary copy — "Hand-rubbed oil" is a finish, not a placeholder |
 
 ---
+
+### BR-D9 — A delivered project is not published until somebody says it happened
+
+**Rule.** `portfolio_projects` and `testimonials` default to
+`owner_verification = 'OWNER_VERIFICATION_REQUIRED'` — the INVERSE of every other content table,
+which defaults to `NOT_REQUIRED` and flags the rows that make claims. A portfolio project IS a
+claim, that Rivya delivered this; a testimonial IS a claim, that a named person said this. So the
+safe default is that nobody has confirmed it, and the owner clears it per row.
+
+**This is a separate gate from consent, and both apply.** Owner verification asks *did this
+happen*; consent asks *may we say whose it was*. A project can be entirely real and still not
+publishable under someone's name, and a consented quote from a real client is still not publishable
+until somebody confirms they said it. Two columns, two refusals, two sentences in the Studio.
+
+**Nothing seeds either table.** Neither is a member of the seed runner's `SeedableTable` union, so
+a seed record targeting one does not compile. The archive is empty because no verified project
+exists, which is the correct state of a studio that has not entered one — not a gap awaiting
+content.
+
+| | |
+|---|---|
+| Enforced by | **Schema:** the inverted `owner_verification` default on both tables; the same two gate functions as BR-D5. **Type:** `portfolio_projects` and `testimonials` are absent from `SeedableTable`. **Server guard:** `content.verify` — owner and admin only — is required to set `VERIFIED` |
+| Test | `tests/unit/rls/phase17.test.ts` (the agreement test above covers verification as one of its axes); `tests/unit/portfolio-empty.test.ts` asserts that nothing seeds a project, a project photograph or a testimonial, and that the `/portfolio` empty state carries SEED §28's two lines verbatim with no "Coming Soon" anywhere |
 
 ## E. Media and asset rules
 
@@ -667,9 +705,15 @@ not by the interface.
 
 ### BR-H3 — Verification is an act, not a default
 
-**Rule.** Only a human with `content.publish` (or the relevant domain publish permission) may move a
-row to `VERIFIED`, and the transition is audited. No script, seed run, import or migration may set
-`VERIFIED`.
+**Rule.** Only a human may move a row to `VERIFIED`, and the transition is audited. No script, seed
+run, import or migration may set it.
+
+**The permission is `content.verify`, which is OWNER AND ADMIN ONLY — narrower than
+`content.publish`.** An earlier version of this rule said `content.publish`, which also admits
+`editor`. That was wrong for the case the rule exists for: confirming that Rivya delivered a
+project, or that a named person really said something, is a claim made on the business's own
+behalf, and an editor may not make it. Publishing and verifying are separate permissions precisely
+so that an editor can prepare a page they cannot vouch for.
 
 | | |
 |---|---|
@@ -815,9 +859,11 @@ rule, without deleting the rule, is a rejection.
 | BR-D2 | Capability claims are owner-verified | Schema trigger |
 | BR-D3 | Empty states, never invented content | Schema + content |
 | BR-D4 | No marketing copy in JSX | Build guard + review |
-| BR-D5 | No named person without consent | Schema gate |
+| BR-D5 | No named person without consent | Schema gate (two, one per table) |
 | BR-D6 | Idempotent seed, never overwrites owner | Data + runner algorithm |
 | BR-D7 | Alt text is real text | Schema constraint |
+| BR-D8 | No inference: nothing computed, converted or estimated | Schema (absence) + review |
+| BR-D9 | Delivered work is unverified until an owner says otherwise | Schema default + gate + `content.verify` |
 | BR-E1 | Asset-priority ladder | Data + process |
 | BR-E2 | Never regenerate a manifest asset | Schema unique + build guard |
 | BR-E3 | Concept media is never delivered work | Schema trigger |

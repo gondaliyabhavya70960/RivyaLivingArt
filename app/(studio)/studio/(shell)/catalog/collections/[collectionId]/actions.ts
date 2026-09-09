@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache'
 
 import { withAudit } from '@/lib/auth/audit'
 import { AuthenticationError, AuthorizationError, requirePermission } from '@/lib/auth/require'
-import type { ValidationIssue } from '@/lib/catalog/validation'
+import type { StudioFormState } from '@/components/studio/form-state'
 import { exhibitionSections } from '@/content/templates/exhibition'
 import { updateCollectionRow } from '@/lib/supabase/repositories/catalog-admin'
 import { insertEntityPage, insertSection } from '@/lib/supabase/repositories/cms'
@@ -47,10 +47,8 @@ import { createClient } from '@/lib/supabase/server'
  * zero published collections either way.
  */
 
-export type CollectionActionState =
-  | { readonly status: 'idle' }
-  | { readonly status: 'saved' }
-  | { readonly status: 'error'; readonly issues: readonly ValidationIssue[] }
+/** The shared Studio form contract, under this editor's own name. See `components/studio/form-state.ts`. */
+export type CollectionActionState = StudioFormState
 
 const IDLE_ISSUE = (message: string, code = 'refused'): CollectionActionState => ({
   status: 'error',

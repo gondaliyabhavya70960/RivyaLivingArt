@@ -4,6 +4,7 @@ import type { Tables } from '../database.types'
 import {
   auditColumns,
   availabilityStateSchema,
+  clientConsentStateSchema,
   collectionConceptStateSchema,
   relationEntitySchema,
   relationKindSchema,
@@ -305,3 +306,176 @@ export type MediaAsset = z.infer<typeof mediaAssetSchema>
 export type Product = z.infer<typeof productSchema>
 export type ProductRelation = z.infer<typeof productRelationSchema>
 export type ProductSpec = z.infer<typeof productSpecSchema>
+
+/**
+ * A delivered project. Phase 17 `0150`.
+ *
+ * ZERO ROWS EXIST AND NONE IS SEEDED. SEED §17 forbids fictional customer projects in capitals and
+ * D10 lists delivered projects and named customers as the first two things that may never be
+ * fabricated — so this table has no Tier C columns at all, and a seed module cannot address a row
+ * in it even if someone wrote one.
+ *
+ * TWO INDEPENDENT GATES STAND BETWEEN A ROW AND `PUBLISHED`, both enforced by
+ * `enforce_project_evidence_gate()`: the owner has verified it happened, and anyone it names has
+ * consented to be named. Nothing here re-implements them — a repository that re-tested them would
+ * be a second copy of a rule that could drift from the trigger.
+ */
+export const portfolioProjectSchema = z.object({
+  id: uuidSchema,
+  slug: z.string(),
+  /** The project's story page, if one has been created. Null until it is. */
+  page_id: uuidSchema.nullable(),
+  title: z.string(),
+  subtitle: z.string().nullable(),
+  summary: z.string().nullable(),
+  project_type: z.string().nullable(),
+  /** A LABEL, NEVER AN ADDRESS — "a private residence in Ahmedabad", not a street. */
+  location_label: z.string().nullable(),
+  completed_on: z.string().nullable(),
+  is_client_project: z.boolean(),
+  client_display_name: z.string().nullable(),
+  client_consent: clientConsentStateSchema,
+  client_consent_reference: z.string().nullable(),
+  client_consent_recorded_at: timestampSchema.nullable(),
+  client_consent_recorded_by: uuidSchema.nullable(),
+  /**
+   * What proves this project happened. NEVER RENDERED PUBLICLY — it exists so that "is this real"
+   * has an answer written down, for the owner and for whoever asks later.
+   */
+  evidence_note: z.string().nullable(),
+  hero_media_id: uuidSchema.nullable(),
+  seo_entry_id: uuidSchema.nullable(),
+  sort_order: z.number().int(),
+  ...auditColumns,
+  ...contentColumns,
+  /**
+   * NOT NULL ON THIS TABLE, so the schema follows the column rather than the shared helper —
+   * `contentColumns` types it nullable because the six Phase 03 tables declare it that way, and
+   * `cms.ts` records the same override for the same reason. A project row always classifies as
+   * something; there is no honest null.
+   */
+  fact_classification: factClassificationSchema,
+}) satisfies z.ZodType<Tables<'portfolio_projects'>>
+
+export type PortfolioProject = z.infer<typeof portfolioProjectSchema>
+
+/** One picture in a project's gallery. A concept render may never be one — see 0150's trigger. */
+export const portfolioProjectMediaSchema = z.object({
+  project_id: uuidSchema,
+  media_asset_id: uuidSchema,
+  role: z.string(),
+  caption: z.string().nullable(),
+  /** What this picture is doing HERE, which is a different sentence from what it is of. */
+  alt_override: z.string().nullable(),
+  sort_order: z.number().int(),
+  created_at: timestampSchema,
+  created_by: uuidSchema.nullable(),
+}) satisfies z.ZodType<Tables<'portfolio_project_media'>>
+
+export type PortfolioProjectMedia = z.infer<typeof portfolioProjectMediaSchema>
+
+/**
+ * A quote from a real person. Phase 17 `0150`.
+ *
+ * ZERO ROWS, AND `consent` DEFAULTS TO `PENDING` rather than `NOT_APPLICABLE`: a quote always came
+ * from someone, so consent is always a live question here in a way it is not for a project with no
+ * client. D10 names testimonials outright, and one written in-house is the purest form of what it
+ * forbids.
+ */
+export const testimonialSchema = z.object({
+  id: uuidSchema,
+  attributed_to: z.string().nullable(),
+  attribution_role: z.string().nullable(),
+  quote: z.string(),
+  project_id: uuidSchema.nullable(),
+  consent: clientConsentStateSchema,
+  consent_reference: z.string().nullable(),
+  sort_order: z.number().int(),
+  ...auditColumns,
+  ...contentColumns,
+  /** NOT NULL here too — see the note on `portfolioProjectSchema`. */
+  fact_classification: factClassificationSchema,
+}) satisfies z.ZodType<Tables<'testimonials'>>
+
+export type Testimonial = z.infer<typeof testimonialSchema>
+
+/**
+ * A journal category. Phase 18 `0160`.
+ *
+ * NINE OF THEM, SEEDED PUBLISHED, and the slug is an identity rather than a label. Renaming a
+ * category edits `name`; changing `slug` changes a public URL, which needs a redirect row and is
+ * Phase 39's work. The two are separate columns so that "rename this" and "move this" cannot be the
+ * same act by accident.
+ */
+export const journalCategorySchema = z.object({
+  id: uuidSchema,
+  slug: z.string(),
+  name: z.string(),
+  /** What a listing says ABOUT the category. */
+  description: z.string().nullable(),
+  /** What the category page says AS itself. A different sentence, deliberately. */
+  intro_heading: z.string().nullable(),
+  position: z.number().int(),
+  ...auditColumns,
+  ...contentColumns,
+  ...seedColumns,
+  /** NOT NULL on this table — see the note on `portfolioProjectSchema`. */
+  fact_classification: factClassificationSchema,
+}) satisfies z.ZodType<Tables<'journal_categories'>>
+
+export type JournalCategory = z.infer<typeof journalCategorySchema>
+
+/**
+ * A journal article. Phase 18 `0160`.
+ *
+ * TEN OF THEM ARE SEEDED, AND ALL TEN ARE A TITLE AND AN ANGLE. SEED §20 supplies ideas and says
+ * "Do NOT publish automatically"; the body is written by the owner in the Studio, into the linked
+ * `ARTICLE` page. Nothing here can create a published article.
+ *
+ * `reading_minutes` IS DERIVED AND MAY NOT BE WRITTEN. `set_article_reading_minutes()` overwrites it
+ * on every write from the linked page's visible sections, so a value sent by a caller does not
+ * survive the statement that sent it. The field is present on this schema because it is a column
+ * that comes BACK; nothing in the repository layer sends it.
+ *
+ * `angle_note` IS NEVER RENDERED PUBLICLY. It is the brief — what the piece is meant to be about,
+ * for whoever writes it — and it is deliberately not `excerpt`, which is what a card shows. An angle
+ * read as a summary would put the studio's editorial notes on the website.
+ */
+export const journalArticleSchema = z.object({
+  id: uuidSchema,
+  slug: z.string(),
+  /** The article's body page. Null until one is created. */
+  page_id: uuidSchema.nullable(),
+  title: z.string(),
+  /** The line under the title on the article itself. */
+  standfirst: z.string().nullable(),
+  /** The line a CARD shows — read in a grid beside other cards, not alone. */
+  excerpt: z.string().nullable(),
+  angle_note: z.string().nullable(),
+  primary_category_id: uuidSchema.nullable(),
+  /** Desktop and mobile are separate slots (D6), never one asset cropped by CSS. */
+  cover_media_id: uuidSchema.nullable(),
+  cover_mobile_media_id: uuidSchema.nullable(),
+  /** The organisation, until somebody verifies a person. */
+  byline: z.string(),
+  reading_minutes: z.number().int().nullable(),
+  seo_entry_id: uuidSchema.nullable(),
+  ...auditColumns,
+  ...contentColumns,
+  ...seedColumns,
+  /** NOT NULL on this table — see the note on `portfolioProjectSchema`. */
+  fact_classification: factClassificationSchema,
+}) satisfies z.ZodType<Tables<'journal_articles'>>
+
+export type JournalArticle = z.infer<typeof journalArticleSchema>
+
+/** A secondary category on an article. The primary one lives on the article row. */
+export const journalArticleCategorySchema = z.object({
+  article_id: uuidSchema,
+  category_id: uuidSchema,
+  position: z.number().int(),
+  created_at: timestampSchema,
+  created_by: uuidSchema.nullable(),
+}) satisfies z.ZodType<Tables<'journal_article_categories'>>
+
+export type JournalArticleCategory = z.infer<typeof journalArticleCategorySchema>

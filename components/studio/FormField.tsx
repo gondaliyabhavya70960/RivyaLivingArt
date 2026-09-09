@@ -69,7 +69,7 @@ export function TextField({
   requiredLabel,
   type = 'text',
   autoComplete,
-}: Common & { type?: 'text' | 'email' | 'password' | 'url'; autoComplete?: string }) {
+}: Common & { type?: 'text' | 'email' | 'password' | 'url' | 'date'; autoComplete?: string }) {
   const error = errorFor(issues, name)
   return (
     <Field

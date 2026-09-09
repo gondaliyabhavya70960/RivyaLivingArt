@@ -2304,6 +2304,422 @@ export const STUDIO_STRINGS = {
     value: 'New collection',
     contentKey: 'studio_help.catalog_collections_new_heading',
   },
+  // --- Phase 17: the portfolio and testimonials -------------------------------------------------
+  'studio.portfolio.caption': {
+    value: 'Delivered projects. Every one is a claim that Rivya made something for someone.',
+    contentKey: 'studio_help.portfolio_caption',
+  },
+  'studio.portfolio.emptyHeading': {
+    value: 'No projects yet',
+    contentKey: 'studio_help.portfolio_empty_heading',
+  },
+  'studio.portfolio.emptyBody': {
+    value:
+      'The portfolio is empty because no project has been entered and verified. That is the correct state, not a fault — the public page says so in its own words. Add a project when there is real work to show.',
+    contentKey: 'studio_help.portfolio_empty_body',
+  },
+  'studio.portfolio.colTitle': {
+    value: 'Project',
+    contentKey: 'studio_help.portfolio_col_title',
+  },
+  'studio.portfolio.colClient': {
+    value: 'Client',
+    contentKey: 'studio_help.portfolio_col_client',
+  },
+  'studio.portfolio.colConsent': {
+    value: 'Consent',
+    contentKey: 'studio_help.portfolio_col_consent',
+  },
+  'studio.portfolio.colStatus': {
+    value: 'Status',
+    contentKey: 'studio_help.portfolio_col_status',
+  },
+  'studio.portfolio.untitled': {
+    value: 'Untitled project',
+    contentKey: 'studio_help.portfolio_untitled',
+  },
+  'studio.portfolio.noClient': {
+    value: 'Not a client project',
+    contentKey: 'studio_help.portfolio_no_client',
+  },
+  // The project editor. These are labels and button words, deliberately distinct from the column
+  // headings above: a table column reads "Project", and a button that says "Project" tells nobody
+  // what pressing it does.
+  'studio.portfolio.backToList': {
+    value: 'All projects',
+    contentKey: 'studio_help.portfolio_back_to_list',
+  },
+  'studio.portfolio.identityHeading': {
+    value: 'What this project is',
+    contentKey: 'studio_help.portfolio_identity_heading',
+  },
+  'studio.portfolio.identitySave': {
+    value: 'Save these details',
+    contentKey: 'studio_help.portfolio_identity_save',
+  },
+  'studio.portfolio.clientHeading': {
+    value: 'Client and consent',
+    contentKey: 'studio_help.portfolio_client_heading',
+  },
+  'studio.portfolio.clientSave': {
+    value: 'Save client and consent',
+    contentKey: 'studio_help.portfolio_client_save',
+  },
+  'studio.portfolio.relationsHeading': {
+    value: 'Related content',
+    contentKey: 'studio_help.portfolio_relations_heading',
+  },
+  'studio.portfolio.requiredLabel': {
+    value: 'Required',
+    contentKey: 'studio_help.portfolio_required_label',
+  },
+  'studio.portfolio.fieldTitle': {
+    value: 'Title',
+    contentKey: 'studio_help.portfolio_field_title',
+  },
+  'studio.portfolio.fieldSubtitle': {
+    value: 'Subtitle',
+    contentKey: 'studio_help.portfolio_field_subtitle',
+  },
+  'studio.portfolio.fieldSummary': {
+    value: 'Summary',
+    contentKey: 'studio_help.portfolio_field_summary',
+  },
+  'studio.portfolio.fieldType': {
+    value: 'Kind of project',
+    contentKey: 'studio_help.portfolio_field_type',
+  },
+  'studio.portfolio.fieldLocation': {
+    value: 'Location label',
+    contentKey: 'studio_help.portfolio_field_location',
+  },
+  'studio.portfolio.fieldLocationHelp': {
+    value:
+      'A label, not an address — "a private residence in Ahmedabad". Where somebody lives is not ours to publish.',
+    contentKey: 'studio_help.portfolio_field_location_help',
+  },
+  'studio.portfolio.fieldCompleted': {
+    value: 'Completed on',
+    contentKey: 'studio_help.portfolio_field_completed',
+  },
+  'studio.portfolio.fieldCompletedHelp': {
+    value: 'Leave this empty if you are not certain. An approximate date reads as a fact.',
+    contentKey: 'studio_help.portfolio_field_completed_help',
+  },
+  'studio.portfolio.fieldEvidence': {
+    value: 'Evidence note',
+    contentKey: 'studio_help.portfolio_field_evidence',
+  },
+  'studio.portfolio.fieldEvidenceHelp': {
+    value:
+      'What proves this happened — an invoice number, a delivery date, where the photographs came from. Never shown on the website, and unreadable to a visitor even through a crafted request.',
+    contentKey: 'studio_help.portfolio_field_evidence_help',
+  },
+  'studio.portfolio.fieldIsClient': {
+    value: 'This was made for a client',
+    contentKey: 'studio_help.portfolio_field_is_client',
+  },
+  'studio.portfolio.fieldClientName': {
+    value: 'Client name, as they want it written',
+    contentKey: 'studio_help.portfolio_field_client_name',
+  },
+  'studio.portfolio.fieldClientNameHelp': {
+    value: 'Leave empty to publish the project without naming anyone.',
+    contentKey: 'studio_help.portfolio_field_client_name_help',
+  },
+  'studio.portfolio.fieldConsent': {
+    value: 'Consent to be named',
+    contentKey: 'studio_help.portfolio_field_consent',
+  },
+  'studio.portfolio.fieldConsentRef': {
+    value: 'Where that consent is held',
+    contentKey: 'studio_help.portfolio_field_consent_ref',
+  },
+  'studio.portfolio.fieldConsentRefHelp': {
+    value:
+      'An email, a signed note, a message thread — enough that somebody could find it a year from now. Required before consent can be marked granted.',
+    contentKey: 'studio_help.portfolio_field_consent_ref_help',
+  },
+  'studio.portfolio.consent.NOT_APPLICABLE': {
+    value: 'Names nobody',
+    contentKey: 'studio_help.portfolio_consent_not_applicable',
+  },
+  'studio.portfolio.consent.PENDING': {
+    value: 'Asked, not yet answered',
+    contentKey: 'studio_help.portfolio_consent_pending',
+  },
+  'studio.portfolio.consent.GRANTED': {
+    value: 'Granted',
+    contentKey: 'studio_help.portfolio_consent_granted',
+  },
+  'studio.portfolio.consent.WITHDRAWN': {
+    value: 'Withdrawn',
+    contentKey: 'studio_help.portfolio_consent_withdrawn',
+  },
+  'studio.portfolio.consentRecorded': {
+    value: 'This consent decision was recorded on',
+    contentKey: 'studio_help.portfolio_consent_recorded',
+  },
+  'studio.portfolio.publish': {
+    value: 'Publish this project',
+    contentKey: 'studio_help.portfolio_publish',
+  },
+  'studio.portfolio.unpublish': {
+    value: 'Take it off the site',
+    contentKey: 'studio_help.portfolio_unpublish',
+  },
+  'studio.portfolio.verifySet': {
+    value: 'Confirm this project happened',
+    contentKey: 'studio_help.portfolio_verify_set',
+  },
+  'studio.portfolio.verifyClear': {
+    value: 'Withdraw that confirmation',
+    contentKey: 'studio_help.portfolio_verify_clear',
+  },
+  'studio.portfolio.verifyHelp': {
+    value:
+      'Confirming is a statement that Rivya delivered this piece of work. Nothing publishes without it.',
+    contentKey: 'studio_help.portfolio_verify_help',
+  },
+  // The Gallery panel.
+  'studio.portfolio.gallery.heading': {
+    value: 'Photographs',
+    contentKey: 'studio_help.portfolio_gallery_heading',
+  },
+  'studio.portfolio.gallery.help': {
+    value:
+      'The pictures of the finished work, in the order they should appear. The number decides the order; the smallest goes first.',
+    contentKey: 'studio_help.portfolio_gallery_help',
+  },
+  'studio.portfolio.gallery.conceptExcluded': {
+    value:
+      'Concept renders are not offered here, and the database refuses them: a project gallery shows work that was delivered, never an image of what something could look like.',
+    contentKey: 'studio_help.portfolio_gallery_concept_excluded',
+  },
+  'studio.portfolio.gallery.empty': {
+    value: 'No photographs attached yet.',
+    contentKey: 'studio_help.portfolio_gallery_empty',
+  },
+  'studio.portfolio.gallery.nothingAttachable': {
+    value:
+      'There is nothing left to attach. Every photograph in the library that is not a concept render is already on this project.',
+    contentKey: 'studio_help.portfolio_gallery_nothing_attachable',
+  },
+  'studio.portfolio.gallery.roleLabel': {
+    value: 'What this picture is',
+    contentKey: 'studio_help.portfolio_gallery_role_label',
+  },
+  'studio.portfolio.gallery.captionLabel': {
+    value: 'Caption',
+    contentKey: 'studio_help.portfolio_gallery_caption_label',
+  },
+  'studio.portfolio.gallery.altLabel': {
+    value: 'Alt text for this project',
+    contentKey: 'studio_help.portfolio_gallery_alt_label',
+  },
+  'studio.portfolio.gallery.altHelp': {
+    value:
+      "What the picture is doing here, which is a different sentence from what the picture is of. Leave it empty to use the asset's own words.",
+    contentKey: 'studio_help.portfolio_gallery_alt_help',
+  },
+  'studio.portfolio.gallery.orderLabel': {
+    value: 'Order',
+    contentKey: 'studio_help.portfolio_gallery_order_label',
+  },
+  'studio.portfolio.gallery.save': {
+    value: 'Save this picture',
+    contentKey: 'studio_help.portfolio_gallery_save',
+  },
+  'studio.portfolio.gallery.detach': {
+    value: 'Remove from this project',
+    contentKey: 'studio_help.portfolio_gallery_detach',
+  },
+  'studio.portfolio.gallery.attachLabel': {
+    value: 'Picture to attach',
+    contentKey: 'studio_help.portfolio_gallery_attach_label',
+  },
+  'studio.portfolio.gallery.attach': {
+    value: 'Attach',
+    contentKey: 'studio_help.portfolio_gallery_attach',
+  },
+  // The Story panel.
+  'studio.portfolio.story.heading': {
+    value: 'Story page',
+    contentKey: 'studio_help.portfolio_story_heading',
+  },
+  'studio.portfolio.story.help': {
+    value:
+      "A project's page is an ordered list of blocks, the same as any other page on the site. Creating it lays down four bands to start from — a hero, a statement, the photographs and a way to get in touch — every one of which can be reordered or removed.",
+    contentKey: 'studio_help.portfolio_story_help',
+  },
+  'studio.portfolio.story.create': {
+    value: 'Create the story page',
+    contentKey: 'studio_help.portfolio_story_create',
+  },
+  'studio.portfolio.story.edit': {
+    value: 'Edit the story page',
+    contentKey: 'studio_help.portfolio_story_edit',
+  },
+  // Creating a project.
+  'studio.portfolio.newHeading': {
+    value: 'Add a project',
+    contentKey: 'studio_help.portfolio_new_heading',
+  },
+  'studio.portfolio.newHelp': {
+    value:
+      'A new project starts as a draft that nobody has confirmed. It cannot be published until an owner confirms it happened, and — if it names a client — until that client has agreed to be named.',
+    contentKey: 'studio_help.portfolio_new_help',
+  },
+  'studio.portfolio.newSlug': {
+    value: 'Address (the last part of the web address)',
+    contentKey: 'studio_help.portfolio_new_slug',
+  },
+  'studio.portfolio.newSubmit': {
+    value: 'Add project',
+    contentKey: 'studio_help.portfolio_new_submit',
+  },
+  'studio.portfolio.openEditor': {
+    value: 'Open',
+    contentKey: 'studio_help.portfolio_open_editor',
+  },
+  'studio.testimonials.caption': {
+    value: 'Quotes from real people. Never written in-house.',
+    contentKey: 'studio_help.testimonials_caption',
+  },
+  'studio.testimonials.emptyHeading': {
+    value: 'No testimonials yet',
+    contentKey: 'studio_help.testimonials_empty_heading',
+  },
+  'studio.testimonials.emptyBody': {
+    value:
+      'A testimonial is something a real person said and agreed to have published. There is no way to write one here, and that is deliberate: an invented quote is the plainest kind of fabricated evidence.',
+    contentKey: 'studio_help.testimonials_empty_body',
+  },
+  'studio.testimonials.colQuote': {
+    value: 'Quote',
+    contentKey: 'studio_help.testimonials_col_quote',
+  },
+  'studio.testimonials.colAttribution': {
+    value: 'Attributed to',
+    contentKey: 'studio_help.testimonials_col_attribution',
+  },
+  'studio.testimonials.unattributed': {
+    value: 'Unattributed',
+    contentKey: 'studio_help.testimonials_unattributed',
+  },
+
+  // The testimonials editor.
+  'studio.testimonials.newHeading': {
+    value: 'Record a quote',
+    contentKey: 'studio_help.testimonials_new_heading',
+  },
+  'studio.testimonials.newHelp': {
+    value:
+      'Type what the person actually said, as they said it. A quote arrives unverified and without consent, and it cannot be published until an owner confirms it is real and — if it names anyone — that they agreed to be named.',
+    contentKey: 'studio_help.testimonials_new_help',
+  },
+  'studio.testimonials.quoteLabel': {
+    value: 'What they said',
+    contentKey: 'studio_help.testimonials_quote_label',
+  },
+  'studio.testimonials.quoteHelp': {
+    value: 'Their words, not a summary of them and not an improvement on them.',
+    contentKey: 'studio_help.testimonials_quote_help',
+  },
+  'studio.testimonials.attributedLabel': {
+    value: 'Who said it',
+    contentKey: 'studio_help.testimonials_attributed_label',
+  },
+  'studio.testimonials.attributedHelp': {
+    value:
+      'Leave empty to publish the quote without naming anyone. A name here makes their recorded consent a condition of publishing.',
+    contentKey: 'studio_help.testimonials_attributed_help',
+  },
+  'studio.testimonials.roleLabel': {
+    value: 'How to describe them',
+    contentKey: 'studio_help.testimonials_role_label',
+  },
+  'studio.testimonials.orderLabel': {
+    value: 'Order',
+    contentKey: 'studio_help.testimonials_order_label',
+  },
+  'studio.testimonials.save': {
+    value: 'Save this quote',
+    contentKey: 'studio_help.testimonials_save',
+  },
+  'studio.testimonials.consentLabel': {
+    value: 'Consent to be quoted',
+    contentKey: 'studio_help.testimonials_consent_label',
+  },
+  'studio.testimonials.consentRefLabel': {
+    value: 'Where that consent is held',
+    contentKey: 'studio_help.testimonials_consent_ref_label',
+  },
+  'studio.testimonials.consentRefHelp': {
+    value:
+      'An email, a message thread, a signed note — enough that somebody could find it a year from now. Required before consent can be marked granted.',
+    contentKey: 'studio_help.testimonials_consent_ref_help',
+  },
+  'studio.testimonials.consentSave': {
+    value: 'Record this consent',
+    contentKey: 'studio_help.testimonials_consent_save',
+  },
+  'studio.testimonials.verifySet': {
+    value: 'Confirm this was really said',
+    contentKey: 'studio_help.testimonials_verify_set',
+  },
+  'studio.testimonials.verifyClear': {
+    value: 'Withdraw that confirmation',
+    contentKey: 'studio_help.testimonials_verify_clear',
+  },
+  'studio.testimonials.publish': {
+    value: 'Publish this quote',
+    contentKey: 'studio_help.testimonials_publish',
+  },
+  'studio.testimonials.unpublish': {
+    value: 'Take it off the site',
+    contentKey: 'studio_help.testimonials_unpublish',
+  },
+  'studio.testimonials.newSubmit': {
+    value: 'Record it',
+    contentKey: 'studio_help.testimonials_new_submit',
+  },
+  'studio.testimonials.requiredLabel': {
+    value: 'Required',
+    contentKey: 'studio_help.testimonials_required_label',
+  },
+
+  // --- Phase 17: the verification panel ---------------------------------------------------------
+  'studio.verification.heading': {
+    value: 'Before this can be published',
+    contentKey: 'studio_help.verification_heading',
+  },
+  'studio.verification.ready': {
+    value: 'Everything this needs is in place.',
+    contentKey: 'studio_help.verification_ready',
+  },
+  'studio.verification.ownerOnly': {
+    value: 'Only an owner or an administrator can clear this.',
+    contentKey: 'studio_help.verification_owner_only',
+  },
+  'studio.verification.gate.owner_verification': {
+    value: 'Nobody has confirmed this happened.',
+    contentKey: 'studio_help.verification_gate_owner',
+  },
+  'studio.verification.gate.client_consent': {
+    value: 'This names a client, and their consent is not recorded as granted.',
+    contentKey: 'studio_help.verification_gate_client_consent',
+  },
+  'studio.verification.gate.attribution_consent': {
+    value: 'This names a person, and their consent is not recorded as granted.',
+    contentKey: 'studio_help.verification_gate_attribution',
+  },
+  'studio.verification.gate.consent_withdrawn': {
+    value:
+      'Consent has been withdrawn. This cannot be published, and publishing it will archive it instead.',
+    contentKey: 'studio_help.verification_gate_withdrawn',
+  },
+
   // --- Phase 16: the collection editor ---------------------------------------------------------
   'studio.catalog.collection.back': {
     value: 'All collections',

@@ -206,6 +206,41 @@ boundary, and a gate that excluded it would be measuring something other than wh
   from the shell, which is the layout; a walk from the page alone would report one island and pass
   while the shell grew four more.
 
+**2026-09-09 · A15 — four corrections raised by Phase 17 (PHASE-16-22 §Phase 17).**
+
+*A15·a — the evidence gate is TWO functions, one per table, and the phase document's ordering of
+its branches is wrong.* PHASE-16-22 §Phase 17 supplies pseudo-code putting the `WITHDRAWN` branch
+LAST, after the publish checks. With that ordering, withdrawing consent on a row that is currently
+PUBLISHED is REFUSED: the statement passes through the publish check on its way to the withdrawal
+branch, the check fails, and the write is rejected — leaving the project live under the name of the
+person who has just asked not to be named. The branch runs FIRST and unconditionally in `0150`.
+`DATA_MODEL.md` §8.12 records this, and it also corrects that document's own description of a
+single shared `enforce_evidence_gate()`, which cannot work: plpgsql resolves a record field at
+execution, so one function referencing both tables' columns raises
+`record "new" has no field …` on the first write to whichever table it was not written for.
+
+*A15·b — the `/portfolio` empty state carries SEED §7's CTA label, not §28's.* §28 writes "Explore
+the Collection". §7 is the reusable CTA vocabulary and contains "View the Collection" and "Start a
+Custom Project", which is what the rest of the site already says for these two destinations. The
+seed uses §7's labels: one label per destination is worth more than one section's phrasing. §28's
+heading and body are seeded verbatim and are asserted as such by
+`tests/unit/portfolio-empty.test.ts` — which found that the heading was not seeded at all, so the
+page had been rendering half the empty state since Phase 09.
+
+*A15·c — setting `owner_verification = 'VERIFIED'` requires `content.verify`, not
+`content.publish`.* BUSINESS_RULES BR-H3 said `content.publish`, which also admits `editor`.
+Confirming that Rivya delivered a project, or that a named person really said something, is a claim
+made on the business's own behalf; `content.verify` is owner and admin only, and the two
+permissions are separate precisely so an editor can prepare a page they cannot vouch for. The
+implementation was already the stricter of the two; the rule now says so.
+
+*A15·d — the gallery orders by a number, not by dragging.* The phase document asks for "drag
+ordering" on `portfolio_project_media`. A drag-only reorder is unreachable by keyboard and by
+screen reader, needs a client-side library and a persistence path of its own, and does not work
+with JavaScript disabled — which every other Studio form does. The panel uses a numeric order field,
+as `ProductMediaTab` already does. Drag may be added on top of it later; it may not be the only way
+in.
+
 **2026-09-09 · A14 — the block catalogue is 30, not 28, and the exhibition template is ten
 elements rather than eleven (supersedes A8's count; PHASE-16-22 §Phase 16).**
 
@@ -243,6 +278,14 @@ the social image is a thing an editor picks in Studio. Next gives file-based met
 over the `metadata` export, so adding that route would override the editor's choice on exactly these
 pages: the owner would change the image in Studio and watch nothing happen. No other route in the
 project has one, for the same reason.
+
+*Phase 17 takes the catalogue to 32 and builds no `ProjectCard`.* `project-gallery` and
+`testimonial-strip` join it; `components/patterns/ProjectCard.tsx`, which the Phase 17 deliverables
+table lists, is NOT built. `portfolio-strip` already renders project cards through `ReferenceCards`
+with `marker="data-project-card"` — the same component that draws product and article cards, tested
+once and behaving identically for all three. A second card component under a different name would
+be a duplicate of working, tested code, and the two would drift the first time one was restyled.
+The marker the phase's own e2e assertions use is already emitted.
 
 *A third, smaller correction.* The phase document names the two renderers
 `components/sections/CollectionProducts.tsx` and `SignatureMedia.tsx`. Every one of the other

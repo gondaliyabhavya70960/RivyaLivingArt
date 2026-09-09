@@ -270,8 +270,19 @@ Each is written unchanged when that phase runs `npm run seed:content -- --only=<
 - **No products, ever.** `products` is not a member of the `SeedableTable` union, so a module
   targeting it does not compile. SEED §32: live products come from owner entry, an approved import
   or the confirmed-product workflow.
-- **No portfolio projects and no testimonials.** `/portfolio` ships §28's empty state and nothing
-  else.
+- **No portfolio projects, no project photographs and no testimonials.** None of the three tables
+  is in the `SeedableTable` union, so a module targeting one does not compile. `/portfolio` ships
+  §28's empty state and nothing else.
+
+  §28's copy is split between two places, deliberately: the HEADING —
+  *The project archive is being prepared.* — is the page's own and sits on the `empty-state`
+  section, while the BODY is the shared `EMPTY_STATE.portfolio` row in `global_content`, so
+  `/portfolio`, `/journal` and `/collection` say the same kind of thing in the same voice and the
+  owner rewords it once. The heading was missing until Phase 17 and the page had been rendering
+  half the empty state; `tests/unit/portfolio-empty.test.ts` now asserts both lines verbatim.
+
+  The CTA is §7's reusable *View the Collection*, not §28's *Explore the Collection* — one label per
+  destination, recorded as amendment A15·b.
 - **No placeholder media.** A slot with no asset is left null and reported as a gap. A binding
   naming an asset that is not in `media_assets` *fails the run* — that is a typo, which is a
   different thing from a gap.

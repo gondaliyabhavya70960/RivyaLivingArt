@@ -15,6 +15,7 @@ import { largeFormatSeed } from './large-format'
 import { navigationSeed } from './navigation'
 import { pagesSeed } from './pages'
 import { portfolioSeed } from './portfolio'
+import { portfolioUiSeed } from './portfolio-ui'
 import { processSeed } from './process'
 import { seoSeed } from './seo'
 import { siteChromeSeed } from './site-chrome'
@@ -63,6 +64,8 @@ export const seedModules: readonly SeedModule[] = [
   catalogUiSeed,
   // Phase 15's product-page words, for the same reason.
   productDetailUiSeed,
+  // Phase 17's project-gallery and testimonial words, for the same reason again.
+  portfolioUiSeed,
   navigationSeed,
   seoSeed,
   // Page content: every section references a page by seed_key.
