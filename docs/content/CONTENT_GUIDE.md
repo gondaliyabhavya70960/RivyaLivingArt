@@ -33,19 +33,26 @@ chrome has to render before any content exists. The public site has no such excu
 
 ---
 
-## 2. The 28 blocks, and the six that are built
+## 2. The 28 blocks, and the sixteen that are built
 
-`lib/cms/block-types.ts` lists the whole PHASE-05-09 §08 catalogue. Six are built; 22 are declared
-`PLANNED` (amendment A8).
+`lib/cms/block-types.ts` lists the whole PHASE-05-09 §08 catalogue. Sixteen are built; 12 are
+declared `PLANNED` (amendment A8). Phase 08 built the first six; Phase 11 added the ten the
+homepage needed.
 
 | Built | Payload family it proves |
 |---|---|
-| `hero` | Media-only — the desktop/mobile pair, plus a poster slot for video |
+| `hero` | Media-only — the desktop/mobile pair, a poster slot, and two motion slots |
 | `statement` | No payload at all |
-| `category-grid` | Repeating items with indexed media references |
+| `category-grid` | Repeating items with indexed media references, and entry-level verification |
 | `process-steps` | Repeating items, ordered — the number is the content |
 | `empty-state` | Query-and-global: its message comes from `global_content` |
 | `divider` | No payload **and** no copy fields |
+| `manifesto`, `final-cta` | No payload — everything they show is a shared copy field |
+| `selected-works`, `portfolio-strip`, `journal-strip` | **Reference blocks**: they render entities that may not exist, and show a seeded `EMPTY_STATE.*` sentence when there are none |
+| `material-story` | Media positions with no labels — the words are the section's own heading |
+| `material-palette`, `secondary-objects` | Repeating items with entry-level verification |
+| `commission-cta` | Chips, each verifiable on its own |
+| `three-d-resin` | A reserved slot for Phase 21's viewer that renders nothing while empty |
 
 A planned block cannot be added in Studio, and renders **nothing** on the public site — not a
 placeholder, not a grey box. Studio lists them separately so the outstanding catalogue is visible
@@ -273,6 +280,35 @@ descriptions, the homepage's manifesto, material palette, commission, 3D + resin
 sections, the announcement bar, the brand introduction, `Ready Stock`, and the contact details.
 `docs/content/INITIAL_CONTENT_INVENTORY.md` lists every one.
 
+**A CARD CAN BE WITHHELD WITHOUT WITHHOLDING ITS SECTION** (Phase 11). The column above is the
+right mechanism when the claim IS the section — the homepage's manifesto and its 3D + resin band
+are each one assertion, so the whole row waits. It is the wrong mechanism when a published band
+holds one unconfirmed item among five: the homepage's category grid lists five families and two of
+them assert production capability, and refusing the section would take the confirmed three off the
+front page to withhold the other two.
+
+So a repeating item carries its own flag, inside the payload:
+
+```json
+{ "key": "3d-resin", "title": "3D + Resin", "owner_verification": "OWNER_VERIFICATION_REQUIRED" }
+```
+
+- Set it in the block's JSON field on any block whose editor mentions it — `category-grid`,
+  `material-palette`, `secondary-objects`, `commission-cta`, `process-steps`.
+- `NOT_REQUIRED` and `VERIFIED` both render. They are different statements: one says the item makes
+  no claim that needs checking, the other that it makes one and the owner has confirmed it. An
+  ABSENT flag means `NOT_REQUIRED`, so nothing seeded before this existed disappeared when it
+  shipped.
+- Clearing a flag is an edit to that one entry, and the item appears on the next revalidation. No
+  deploy, no migration.
+- Fifteen homepage entries carry it today: two category cards, one material, six commission chips,
+  five process statements and one secondary object. They are absent from the live page and their
+  five sections are not.
+
+Every repeating item also carries a `key` — a stable name that does not move when the list is
+reordered. It becomes `data-entry-key` in the rendered markup, which is how a test can assert that
+a withheld item is absent by name rather than by a position that shifts.
+
 ### The inventory
 
 `npm run content:inventory` regenerates SEED §54's audit **from the database**, not from the
@@ -284,9 +320,9 @@ without updating the file fails the build.
 
 ## 9. What Phase 10 inherits
 
-- **The 22 unbuilt blocks.** Ten of the homepage's thirteen sections are seeded against block types
-  that have no renderer yet, so the copy is in the database and the page shows three of them. That
-  is the split amendment A8 records; Phases 10–13 build the rest.
+- **The 12 unbuilt blocks.** Phase 11 built the ten the homepage needed, so all thirteen of its
+  sections now render; the remaining twelve belong to pages Phases 12–19 compose. That is the split
+  amendment A8 records.
 - **A repeater UI.** A block with repeating items is edited as JSON today — validated on save
   against its own schema and refused rather than coerced. An honest admission, not a placeholder.
 - **The `t()` swap.** `components/studio/strings.ts` still serves Studio copy from constants, and

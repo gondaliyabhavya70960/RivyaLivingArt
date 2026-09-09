@@ -10,7 +10,7 @@ import { listMediaAssetsByIds } from '@/lib/supabase/repositories/media'
 import { resolveSpec } from '@/lib/media/transform'
 import { imageUrl } from '@/lib/media/url'
 import { mediaRefOf } from '@/lib/cms/media'
-import { requiredEnv } from '@/lib/env'
+import { optionalEnv } from '@/lib/env'
 import type { SeoEntry } from '@/lib/supabase/schemas'
 
 /**
@@ -69,14 +69,21 @@ async function socialImage(entry: SeoEntry | null): Promise<string | null> {
   const assets = await listMediaAssetsByIds(createPublicClient(), [entry.og_media_id])
   const asset = assets.get(entry.og_media_id)
   if (asset === undefined) return null
+  /*
+   * NO CLOUD NAME MEANS NO CARD IMAGE, NOT A FAILED PAGE. `requiredEnv` here would throw inside
+   * `generateMetadata` — so a deployment without the variable would 500 on exactly those pages
+   * whose SEO entry names an image, which is the opposite of how a missing OPTIONAL asset should
+   * behave. Phase 10 made the same change in the site layout and `MediaSlot` for the same reason;
+   * this call was the one left holding `requiredEnv`, and it only fires once an entry has an
+   * `og_media_id`, which is why nothing had caught it.
+   */
+  const cloudName = optionalEnv('NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME')
+  if (cloudName === null) return null
+
   // The `og` preset, not an ad-hoc size: it fixes 1200x630 and `f_jpg` rather than `f_auto`,
   // because format negotiation needs an `Accept` header and the crawlers that fetch a card do
   // not send a useful one.
-  return imageUrl(
-    requiredEnv('NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME'),
-    mediaRefOf(asset),
-    resolveSpec('og'),
-  )
+  return imageUrl(cloudName, mediaRefOf(asset), resolveSpec('og'))
 }
 
 export async function buildPageMetadata(input: PageMetadataInput): Promise<Metadata> {

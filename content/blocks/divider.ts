@@ -42,6 +42,7 @@ export const dividerBlock: BlockModule<DividerPayload> = {
     },
     { name: 'rule', kind: 'boolean', label: 'Draw a line' },
   ],
+  entryArrays: [],
   mediaSlots: [],
   layoutVariants: [],
   allowedPages: null,

@@ -214,14 +214,17 @@ export const commissionsSeed: SeedModule = {
         steps: [
           { title: 'Enquiry', body: 'Share the basic idea, dimensions and references.' },
           {
+            key: 'discussion',
             title: 'Discussion',
             body: 'Rivya reviews the requirement and continues the conversation through WhatsApp.',
           },
           {
+            key: 'direction',
             title: 'Direction',
             body: 'Materials, design direction, feasibility and commercial details are discussed.',
           },
           {
+            key: 'confirmation',
             title: 'Confirmation',
             body: 'Price, production details, payment and delivery are confirmed manually.',
           },

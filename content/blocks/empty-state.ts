@@ -52,6 +52,7 @@ export const emptyStateBlock: BlockModule<EmptyStatePayload> = {
     },
     { name: 'show_cta', kind: 'boolean', label: 'Show the call to action' },
   ],
+  entryArrays: [],
   mediaSlots: [],
   layoutVariants: [],
   allowedPages: null,

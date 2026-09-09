@@ -275,8 +275,8 @@ and Phase 10's site shell then reuses it.
 | RC-211 | `MobileNav` | navigation | 10 | BUILT | §7.9 |
 | RC-212 | `SiteFooter` | navigation | 10 | BUILT | index only — server |
 | RC-213 | `MediaSlot` | material understanding | 10 | BUILT | §7.10 — moved from `components/sections/SectionMedia.tsx`, not written anew |
-| RC-214 | `HeroMotion` | brand perception | 11 | PLANNED | §7.11 |
-| RC-215 | `MaterialSequence` | material understanding | 11 | PLANNED | §7.12 |
+| RC-214 | `HeroMotion` | brand perception | 11 | BUILT | §7.11 |
+| RC-215 | `MaterialSequence` | material understanding | 11 | BUILT | §7.12 |
 | RC-216 | `ChapterMedia` | storytelling | 12 | PLANNED | index only — composes RC-213/RC-207 |
 | RC-217 | `ProductCard` | product understanding | 14 | PLANNED | §7.13 |
 | RC-218 | `CollectionCard` | navigation | 16 | PLANNED | §7.14 |
@@ -296,6 +296,8 @@ and Phase 10's site shell then reuses it.
 | RC-232 | `MediaImage` | material understanding | 06 | BUILT | §7.37 |
 | RC-233 | `MediaVideo` | material understanding | 06 | BUILT | §7.38 |
 | RC-234 | `Pagination` | navigation | 14 | PLANNED | §7.39 |
+| RC-235 | `BlockVideo` | material understanding | 11 | BUILT | index only — server; split out of RC-213 so a route with no video does not carry the `MediaVideo` island |
+| RC-236 | `EditorialFallback` | conversion | 11 | BUILT | index only — server; renders a seeded `EMPTY_STATE.*` string where a reference block has nothing real to show |
 
 `Breadcrumbs` and `DropdownMenu` are Phase 02, not Phase 10. `docs/project/phases/PHASE-00-04.md`
 pulls both forward on purpose and requires their rows to be opened in that phase: Phase 05's
@@ -547,7 +549,7 @@ time; `—` and `UNASSIGNED` mean the review has not happened, not that it passe
 |---|---|
 | Registry ID | RC-213 |
 | Source | Rivya first-party |
-| Link | `components/patterns/MediaSlot/index.tsx` — exports `BlockImage`, `BlockVideo` and `ResponsiveMedia`. It arrived in Phase 08 as `components/sections/SectionMedia.tsx` and MOVED here in Phase 10 rather than being written a second time: the header's category cards need exactly this behaviour, and two ratio-box implementations are how two components come to disagree about what happens when an asset is null |
+| Link | `components/patterns/MediaSlot/index.tsx` — exports `BlockImage` and `ResponsiveMedia`. `BlockVideo` moved OUT in Phase 11 to RC-235 and the reason was measured rather than tidy: this module is a Server Component that nearly every section renderer imports, and its import of `MediaVideo` (a Client Component) pulled that island into the client bundle of every route with any section at all, whether or not a video was ever rendered. It arrived in Phase 08 as `components/sections/SectionMedia.tsx` and MOVED here in Phase 10 rather than being written a second time: the header's category cards need exactly this behaviour, and two ratio-box implementations are how two components come to disagree about what happens when an asset is null |
 | Licence | N/A — first-party |
 | Dependencies | none — Cloudinary URLs are built by `lib/media`, no SDK reaches the client |
 | Page | every route rendering media |
@@ -566,16 +568,16 @@ time; `—` and `UNASSIGNED` mean the review has not happened, not that it passe
 |---|---|
 | Registry ID | RC-214 |
 | Source | Rivya first-party |
-| Link | `components/patterns/HeroMotion.tsx` |
+| Link | `components/patterns/HeroMotion/index.tsx` — a directory, like every other pattern in this table; the flat path this row carried was written before Phase 10 settled the convention |
 | Licence | N/A — first-party |
 | Dependencies | none |
 | Page | `/`, `/large-format`, `/about` |
 | Purpose | brand perception |
-| Adaptation | ART + SPACE classes. Mounts **after** the still has painted, so the LCP element is always the image. Parallax capped at `--rv-motion-parallax-max` (24px) |
+| Adaptation | Mounts **after** the still has painted (`useAfterPaint`, two animation frames), so the LCP element is always the image. It renders nothing or a clip that is already playing — never a poster and never a play control, because `MediaVideo`'s own refusal would put a third button on top of the hero's two calls to action. NO PARALLAX WAS BUILT: the planned row named `--rv-motion-parallax-max`, and a scroll-coupled transform on the largest element of the page is a repaint per frame for decoration — the phase's budget names LCP, CLS and INP, and parallax spends all three |
 | Mobile behaviour | The motion layer does not mount below 768px. The still is the whole experience, and it is a complete one |
-| Performance | budget ≤ 2 kB gz, client (unmeasured — PLANNED), loaded after paint. The video itself is `preload="none"` with a poster |
-| Accessibility | Muted, inline, loop, no controls when decorative and `aria-hidden`; under `prefers-reduced-motion: reduce`, `saveData`, or a narrow viewport **no `<video>` element mounts at all** and the poster renders with an explicit play control |
-| Reviewed on | — |
+| Performance | One of the homepage's five islands (`scripts/site/check-island-budget.mjs`). It imports `MediaVideo`, which is therefore inside this island's bundle rather than a boundary of its own. Nothing is fetched until every gate passes; the video is `preload="none"` and its poster is the still already on screen |
+| Accessibility | Muted, inline, loop, no controls, and the layer is `aria-hidden` — the still beneath it carries the section's alt text and announcing both would read the hero's picture twice. Under `prefers-reduced-motion: reduce`, `saveData`, `deviceMemory < 4`, below 768px, or for a clip whose duration is unknown, **no `<video>` element mounts at all** and the still stands alone. Asserted by `tests/unit/hero-motion.test.tsx`, one gate per case |
+| Reviewed on | Phase 11 |
 | Reviewer | UNASSIGNED |
 | Verdict | FIRST_PARTY |
 
@@ -585,16 +587,16 @@ time; `—` and `UNASSIGNED` mean the review has not happened, not that it passe
 |---|---|
 | Registry ID | RC-215 |
 | Source | Rivya first-party |
-| Link | `components/patterns/MaterialSequence.tsx` |
+| Link | `components/patterns/MaterialSequence/index.tsx` |
 | Licence | N/A — first-party |
 | Dependencies | none |
 | Page | `/`, `/process` |
 | Purpose | material understanding, storytelling |
-| Adaptation | Expresses WOOD → RESIN → LIGHT → FORM → SPACE → ART as scroll-observed stages. It **observes** scroll; it never captures it. No pinning, no scroll-jacking, no `preventDefault` on wheel |
-| Mobile behaviour | Below 768px the stages render as a plain vertical list with their media — no scroll effects at all |
-| Performance | budget ≤ 3 kB gz, client (unmeasured — PLANNED). One `IntersectionObserver`; at most one motion layer plays at a time |
-| Accessibility | Every stage's content is in the DOM and reachable by `Tab` in both branches; under reduced motion the complete static list renders and no observer attaches. Asserted by `tests/e2e/homepage-motion.spec.ts` |
-| Reviewed on | — |
+| Adaptation | The stages are server-rendered and passed in as `children`; this component writes one attribute, `data-active`, on whichever stage is crossing a 10%-tall band across the middle of the viewport. It **observes** scroll; it never captures it. No pinning, no scroll-jacking, no `preventDefault` on wheel. On `/` the stages are the LIQUID → FORM → CRAFT → OBJECT sequence of SEED §10-05; FEAT §4's longer WOOD → … → ART progression belongs to `/process`, which Phase 12 builds |
+| Mobile behaviour | The stages are a single column at every width; the observer runs at all of them, because marking the stage in view costs nothing and is as useful on a phone as on a desktop. What it never does is move the page |
+| Performance | One `IntersectionObserver` for all four stages, not one each. One of the homepage's five islands. It renders no media of its own — the pictures are Server Components passed through as children |
+| Accessibility | Every stage's content is in the DOM and reachable by `Tab` in both branches; under reduced motion no observer attaches and any `data-active` left behind is removed. The dimming is written as `data-[active=false]`, which matches nothing until the island runs — so an unenhanced page renders every stage at full strength. Asserted by `tests/unit/material-sequence.test.tsx` |
+| Reviewed on | Phase 11 |
 | Reviewer | UNASSIGNED |
 | Verdict | FIRST_PARTY |
 

@@ -22,6 +22,7 @@ export const statementBlock: BlockModule<StatementPayload> = {
   schema,
   defaults: {},
   payloadFields: [],
+  entryArrays: [],
   mediaSlots: [],
   layoutVariants: ['centred', 'left'],
   allowedPages: null,

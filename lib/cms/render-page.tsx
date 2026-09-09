@@ -19,6 +19,7 @@ import type { ResolvedPage } from './resolve'
 
 import { isBlockType } from './block-types'
 import { loadPageMedia } from './media'
+import { loadPageReferences } from './references'
 import { resolvePage } from './resolve'
 
 /**
@@ -148,8 +149,15 @@ export async function renderCmsPage(path: string): Promise<React.ReactElement> {
   if (!draft && resolved.sections.length === 0) notFound()
 
   const client = draft ? await createClient() : createPublicClient()
-  const [assets, chrome] = await Promise.all([
+  /*
+   * THREE PARALLEL LOADS, AND NONE OF THEM INSIDE A RENDERER. Media and entity references are both
+   * hydrated before rendering starts, for the reason `components/sections/types.ts` gives: a
+   * renderer that fetched its own data would issue a round trip per section, in sequence, inside
+   * the render. `loadPageReferences` issues nothing at all for a page with no reference block.
+   */
+  const [assets, references, chrome] = await Promise.all([
     loadPageMedia(client, resolved.sections),
+    loadPageReferences(client, resolved.sections),
     getSiteChrome(),
   ])
 
@@ -164,6 +172,7 @@ export async function renderCmsPage(path: string): Promise<React.ReactElement> {
         // must not fail to render because an image setting is absent. Empty resolves to the §47
         // fallback wherever an asset would have been drawn.
         cloudName={optionalEnv('NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME') ?? ''}
+        references={references}
       />
     </>
   )

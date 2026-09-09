@@ -1,6 +1,7 @@
 import { z } from 'zod'
 
 import type { BlockModule } from '@/lib/cms/block-module'
+import { entryVerificationSchema } from '@/lib/cms/entry-visibility'
 
 /**
  * Numbered stages, each with copy and a picture. SEED §10-10 and §16.
@@ -17,6 +18,13 @@ const stepSchema = z.object({
   title: z.string(),
   body: z.string(),
   media_index: z.number().int().min(0).nullable(),
+  /** Stable across reordering. Optional for the reason `category-grid`'s `key` is optional. */
+  key: z.string().min(1).optional(),
+  /**
+   * A step that states what Rivya can physically do is a capability claim, and five of the
+   * homepage's process statements are exactly that. Withheld until the owner confirms.
+   */
+  owner_verification: entryVerificationSchema,
 })
 
 const schema = z.object({
@@ -50,7 +58,7 @@ export const processStepsBlock: BlockModule<ProcessStepsPayload> = {
       name: 'steps',
       kind: 'json',
       label: 'Steps',
-      help: 'title, body and media_index for each step. The order of this list is the order on the page.',
+      help: 'key, title, body and media_index for each step. The order of this list is the order on the page. Set owner_verification to OWNER_VERIFICATION_REQUIRED on a step that claims a capability not yet confirmed.',
     },
     {
       name: 'media',
@@ -62,6 +70,7 @@ export const processStepsBlock: BlockModule<ProcessStepsPayload> = {
   mediaSlots: [
     { id: 'steps', role: 'GALLERY', repeating: true, desktopRatio: '4:3', mobileRatio: '4:5' },
   ],
+  entryArrays: ['steps'],
   layoutVariants: ['alternating', 'stacked'],
   allowedPages: null,
 }

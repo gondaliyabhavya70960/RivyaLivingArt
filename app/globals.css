@@ -95,7 +95,25 @@
   --container-prose: var(--rv-container-prose);
   --container-default: var(--rv-container-default);
   --container-wide: var(--rv-container-wide);
-  --container-full: var(--rv-container-full);
+  /*
+   * `--container-full` IS NOT BRIDGED, AND THAT IS A FIX RATHER THAN AN OMISSION.
+   *
+   * Tailwind v4 reads the `--container-*` namespace for BOTH `max-w-*` AND `w-*`, so bridging
+   * `full` here redefined `w-full` — a built-in utility meaning `width: 100%` — as
+   * `width: 120rem`. Every `w-full` in the product became 1920px: `AspectBox` is `w-full`, so
+   * every media frame on every page was 1920px wide inside whatever column contained it, and the
+   * homepage's two-column bands pushed the document to 2672px at a 1440px viewport. Nothing
+   * caught it because nothing measured horizontal overflow until Phase 11's homepage spec did.
+   *
+   * `Accordion` and `Disclosure` each carry a comment about avoiding `w-full` for this exact
+   * reason — the symptom was known and worked around twice, one component at a time, rather than
+   * removed. This line is the cause.
+   *
+   * NOTHING NEEDED THE BRIDGE. `Container` sets `max-inline-size: var(--rv-container-full)` as an
+   * inline style from the raw token, which is what its own header says and why the four sizes are
+   * inline styles rather than utilities. A surface that wants the 120rem bound writes
+   * `max-w-(--rv-container-full)`, which is the arbitrary-property syntax used everywhere else.
+   */
 
   --breakpoint-sm: 26.875rem;
   --breakpoint-md: 48rem;

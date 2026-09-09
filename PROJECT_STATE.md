@@ -1,7 +1,7 @@
 # PROJECT_STATE — what is actually built
 
 > Verified against the repository, not against intent. Update at the end of every phase.
-> Last verified: Phase 10 (Public Website Foundation), 2026-09-08.
+> Last verified: Phase 11 (Homepage + Material Experience), 2026-09-08.
 
 ## Summary
 
@@ -13,8 +13,8 @@ drift gate, a repository layer with Zod at its boundary, an idempotent seed runn
 overwrite an owner's edit, the Studio shell with its ⌘K palette and user management, the media
 layer end to end, the Higgsfield migration, gap engine and tracker, **the CMS engine — pages,
 blocks, the status workflow, media binding, scheduling, revisions and the Studio surfaces that
-drive them** — a forward-only migration runner, and **27 gates** that fail the build on the
-mistakes they were written for.
+drive them** — a forward-only migration runner, and **28 gates** that fail the build on the
+mistakes they were written for, the newest of which counts the client islands a route ships.
 
 **A page can now be built and rendered, and the copy is written.** `/studio/content/pages/[pageId]`
 adds, edits, reorders and removes blocks; `lib/cms/resolve.ts` is the single server read path;
@@ -35,15 +35,24 @@ entries and the global string library — 231 records, every one from the specif
 more authored and deferred to Phases 18 and 19. `docs/content/INITIAL_CONTENT_INVENTORY.md` audits
 all 332 of them, generated from the database.
 
-What does not exist: **a page a visitor can read**. Every route renders, and every one answers 404,
-because Phase 09 seeds all 53 sections `DRAFT` and `renderCmsPage` refuses to serve a published
-route with nothing on it — SEED §55, as code. Publishing is an editorial act in Studio, and 25 of
-those sections cannot be published at all until the owner verifies what they claim. Twenty-two of
-the twenty-eight blocks are declared and unbuilt (amendment A8), so ten of the homepage's thirteen
-seeded sections have no renderer; a block with repeating items is edited as JSON until a repeater is
-built. No product rows, and there will be none from a seed — `products` is not a member of the
-`SeedableTable` union. No page's finished appearance: Phase 10 proves a page renders, Phases 11–13
-make it good.
+**The homepage is a composition.** Sixteen of the twenty-eight blocks are built — Phase 11 added
+the ten the homepage needed — and all thirteen SEED §10 sections render from the CMS in seeded
+order. Verified on a production build against a local PostgREST, with the sections walked to their
+launch-day state: eleven publish, two are refused by the publish gate because the claim IS the
+section, all fifteen entry-level withholdings are absent from the page, and the five sections around
+them still render. 171.7 kB of gzipped client JavaScript, five client islands, no horizontal
+overflow at any of the eight QA widths.
+
+What does not exist: **a page a visitor can read**, and the reason is unchanged. Every route
+renders, and every one answers 404, because Phase 09 seeds all 53 sections `DRAFT` and
+`renderCmsPage` refuses to serve a published route with nothing on it — SEED §55, as code.
+Publishing is an editorial act in Studio, and 25 of those sections cannot be published at all until
+the owner verifies what they claim. Twelve of the twenty-eight blocks are still declared and
+unbuilt (amendment A8); a block with repeating items is edited as JSON until a repeater is built. No
+product rows, and there will be none from a seed — `products` is not a member of the
+`SeedableTable` union. **No media**: `media_assets` is empty until the Higgsfield migration runs, so
+every image on every page is the SEED §47 fallback well and no visual baseline of a page is worth
+taking yet.
 
 **80 seeded rows await owner verification** and cannot be published until it is given — every FAQ
 answer, every process step, and every sentence that asserts what Rivya can physically make.
@@ -103,9 +112,11 @@ in this document is from a local run.
 | 05 | Studio Foundation | **SUBSTANTIALLY COMPLETE** | The D4 route map as one manifest (58 leaves + `/studio`), the shell and top bar, the Overview with all three tabs, migrations `0020`/`0021`, 15 Studio primitives, the ⌘K palette with its provider registry and search endpoint, per-user chrome. 8 of 10 D9 points; the two gaps are the per-role e2e matrix and the shell's visual baselines, both needing a reachable Supabase project. |
 | 06 | Cloudinary Media Architecture | **COMPLETE** | `MediaProvider` behind `getMediaProvider()`, with a build gate proving `lib/media/providers/cloudinary.ts` is the only SDK importer. Migrations `0022`/`0030`/`0031` applied to both databases. Six presets and the srcSet ladder matching `CLOUDINARY.md` §5. `app/api/media/sign` with five gates before the signature. `MediaImage` + `MediaVideo` (RC-232/233, both BUILT). Six Media Manager sections from one component. **All three canaries uploaded to the live account**, which is how the `g_auto` defect was found. 5 new gates, 656 unit tests. The §8 rate limit is Phase 41's table and is not enforced; `/studio/media/higgsfield` is Phase 07's. |
 | 07 | Higgsfield Asset Audit + Initial Asset Plan | **CODE COMPLETE; MIGRATION NOT RUN** | The migration script, its committed ledger, migrations `0040`/`0041` on both databases, the 26-slot registry and `computeGaps()`, the tracker at `/studio/media/higgsfield` with all thirteen FEAT §34 columns and six filters, a read-only drawer with no regenerate control, and two guards wired into CI and `npm run check` — the regeneration guard verified to FAIL on a planted `WALL-ART-001` brief, and the status-document generator verified idempotent. 733 tests, no skips. **What is missing is the run itself**: `higgsfield_migration_runs` holds 0 rows on both databases and the 250 assets are still on the Higgsfield CDN. Proxy-blocked here; see `docs/SESSION-STATE.md` → *Next Exact Action*. |
-| 08 | CMS / Editable Content System | **PLANNED** | — |
-| 09 | Initial Website Content Seed | **PLANNED** | `docs/content/INITIAL_CONTENT_INVENTORY.md` maps every field to a Studio control; no seed modules written. |
-| 10–46 | Public site, Studio, research, ops, launch | **PLANNED** | Specified in `docs/project/phases/`. |
+| 08 | CMS / Editable Content System | **COMPLETE** | Migrations `0050`–`0055` on both databases. The status trigger, revision writer, `sync_media_usages`, four `cms_*` SECURITY DEFINER functions, the block registry with 28 declared types, six built renderers, the Studio content surfaces, the preview route and the schedule cron. Amendments A7/A8. |
+| 09 | Initial Website Content Seed | **COMPLETE** | Migration `0070`/`0071`, 15 seed modules, 231 records applied locally and 22 authored-and-deferred, the four-outcome runner contract, and `INITIAL_CONTENT_INVENTORY.md` generated from the database — 332 rows, 80 awaiting verification. Hosted carries none of it yet. |
+| 10 | Public Website Foundation | **COMPLETE** | `app/(site)/` with the shell and thirteen route files, `renderCmsPage`, `MediaSlot`, the metadata/robots/sitemap/revalidate plumbing, the WhatsApp module and its usage gate. Verified against a local PostgREST on a production build; amendments A9/A10. |
+| 11 | Homepage + Material Experience | **CODE COMPLETE; NOT MEASURED** | Ten new renderers (16 of 28 blocks built), entry-level owner verification, the three reference selectors and their editorial fallback, `HeroMotion` and `MaterialSequence`, the island-budget gate, the homepage JSON-LD. 8 e2e specs across 8 widths, 924 unit tests. Amendments A11/A12. **What is not done is the measurement**: LCP, CLS and INP are unmeasured because there is no media to measure, and `tests/e2e/homepage.visual.spec.ts` is deferred for the same reason. |
+| 12–46 | Public site, Studio, research, ops, launch | **PLANNED** | Specified in `docs/project/phases/`. |
 
 ## What exists on disk
 
@@ -129,12 +140,19 @@ docs/SESSION-STATE.md
 
 ## What does NOT exist yet
 
-No product page under `app/(site)`, no CMS block renderer, no media delivery. The Studio shell
-EXISTS but every leaf below `/studio` is a stub: a real route with a real permission check and a
-notice naming the phase that will fill it, which is what stops navigation dead-ending — except
-`/studio/media/higgsfield`, which Phase 07 filled. All 19 migrations are applied to BOTH the local
-cluster and the hosted project; the earlier claim that the hosted schema was empty was true only
-until 2026-09-08.
+No product page under `app/(site)` — `/product/[slug]` is Phase 15 — and **no media delivery**:
+`media_assets` is empty on both databases, so every `MediaSlot` on every page renders its reserved
+box and the SEED §47 fallback label. Twelve of the twenty-eight blocks have no renderer; the twelve
+are listed as `null` in `components/sections/registry.ts` and the two registries are asserted to
+agree, so a block cannot be forgotten, only explicitly declared unbuilt.
+
+The Studio shell EXISTS but most leaves below `/studio` are stubs: a real route with a real
+permission check and a notice naming the phase that will fill it, which is what stops navigation
+dead-ending — except `/studio/media/higgsfield` (Phase 07) and the content surfaces (Phase 08). All
+28 migrations are applied to BOTH the local cluster and the hosted project; the earlier claim that
+the hosted schema was empty was true only until 2026-09-08. **The hosted project still carries no
+content**, so the deployed preview renders a wordless shell and 404s every CMS route until
+`npm run seed:content` runs against it.
 
 **CI still cannot run — no run has ever executed a step.** Each job is created with its
 `ubuntu-latest` label intact and dies 2-3 seconds later, unassigned: no `runner_id`, no steps, no

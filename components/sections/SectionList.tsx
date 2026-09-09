@@ -2,6 +2,7 @@ import * as React from 'react'
 
 import { isBlockType } from '@/lib/cms/block-types'
 import { sectionMediaFor } from '@/lib/cms/media'
+import type { PageReferences } from '@/lib/cms/references'
 import type { SiteStrings } from '@/lib/cms/strings'
 import type { MediaAsset, PageSection } from '@/lib/supabase/schemas'
 
@@ -26,6 +27,8 @@ export type SectionListProps = {
   readonly assets: ReadonlyMap<string, MediaAsset>
   readonly strings: SiteStrings
   readonly cloudName: string
+  /** By section id. Empty for a page with no reference block, which is most of them. */
+  readonly references?: PageReferences
 }
 
 export function SectionList({
@@ -33,6 +36,7 @@ export function SectionList({
   assets,
   strings,
   cloudName,
+  references,
 }: SectionListProps): React.ReactElement {
   return (
     <>
@@ -49,6 +53,7 @@ export function SectionList({
             strings={strings}
             cloudName={cloudName}
             isFirst={index === 0}
+            reference={references?.get(section.id)}
           />
         )
       })}

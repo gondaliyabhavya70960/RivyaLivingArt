@@ -6,6 +6,88 @@ Every phase adds an entry; see `docs/architecture/CANONICAL-DECISIONS.md` D9 for
 
 ## [Unreleased]
 
+### Phase 11 — Homepage + Material Experience
+
+The homepage stops being thirteen correct boxes. All thirteen SEED §10 sections render from the
+CMS, the ten blocks Phase 08 declared and left unbuilt have renderers, and the two things that were
+withheld are withheld at the right size: a section where the claim is the section, an entry where
+it is one item among several.
+
+**Entry-level owner verification.** `page_sections.owner_verification` is a column, and the publish
+trigger refuses a flagged row — right when the whole band is the claim, wrong when a published band
+contains one unverified item among five. `lib/cms/entry-visibility.ts` moves the flag inside the
+payload, so the homepage's category grid publishes three of five families, the material palette
+three of four materials, the commission band its invitation with none of its six capability chips,
+and the process band its heading and its link with none of its five draft statements. Fifteen
+entries across five sections, each addressable in a test by `data-entry-key` rather than by a
+position that moves.
+
+**Three reference blocks that render nothing rather than something invented.** `selected-works`,
+`portfolio-strip` and `journal-strip` ask a selector for entities that may not exist: `products` is
+empty and stays empty until Phase 14, `portfolio_projects` and `journal_articles` do not exist until
+Phases 17 and 18. All three render a sentence the owner wrote — not a skeleton, which says
+"loading" when nothing is loading, and not a placeholder card, which is a product that does not
+exist. The reason travels as far as `data-empty-reason` for whoever needs to know whether the site
+is broken or merely young.
+
+**The hero's still is the LCP element by construction.** Until this phase a hero marked `is_video`
+rendered a `<video>` INSTEAD of the still, so the largest element on the page was a media element
+most visitors are never allowed to play. There is now one media path and a motion layer over it:
+`HeroMotion` (RC-214) mounts after paint, above 768px, under no reduced-motion preference, off Data
+Saver, and only for a clip whose duration is known — and renders nothing at all otherwise, because
+`MediaVideo`'s poster-and-play-button refusal would put a third call to action on top of the hero's
+two.
+
+**`MaterialSequence` (RC-215) observes scroll and never captures it.** The four stages are
+server-rendered and passed in as children; the island writes one attribute. The dimming is
+`data-[active=false]`, which matches nothing until the island runs, so a page without JavaScript
+shows all four stages at full strength.
+
+**An island budget that counts modules, not chunks.** `scripts/site/check-island-budget.mjs` walks
+the homepage's layouts and page and fails on a client component nobody budgeted for. It found a
+real cost immediately: `MediaSlot`, a Server Component nearly every renderer imports, imported
+`MediaVideo` — so every route with any section at all carried the video island whether or not a
+video was rendered. `BlockVideo` moved into its own module (RC-235). The budget is five rather than
+the phase document's four, and the fifth is named in amendment A11.
+
+**Structured data that names only what the owner supplied.** One `application/ld+json` block on `/`
+with a `WebSite` and an `Organization`, each carrying a name and a URL. No `aggregateRating`, no
+`award`, no `founder`, no `foundingDate`, no `logo` — a search engine reads structured data as the
+business's own assertion and keeps showing it, so it is the worst possible place to invent a fact.
+
+**Measured, not estimated:** 171.7 kB of gzipped client JavaScript on `/`, inside the phase's
+180 kB budget. LCP, CLS and INP stay NOT YET MEASURED in `PERFORMANCE.md` §8 on purpose — with no
+media bound, a Lighthouse run would measure a page whose every image is a fallback well and would
+be wrong in the flattering direction.
+
+### Fixed
+
+- **`w-full` meant 1920px everywhere in the product.** `app/globals.css` bridged
+  `--container-full` into Tailwind's `@theme`, and Tailwind v4 reads that namespace for `w-*` as
+  well as `max-w-*` — so the built-in `width: 100%` utility was redefined as `width: 120rem`.
+  `AspectBox` is `w-full`, so every media frame on every page was 1920px wide inside whatever
+  column contained it; the homepage's document was 2672px across at a 1440px viewport, and the
+  design-system gallery's own visual baseline had been recording a 2264px-wide page since Phase 02.
+  The symptom was known and worked around twice — `Accordion` and `Disclosure` each carry a comment
+  explaining why they avoid `w-full` — but the cause was never removed. Found by the new homepage
+  spec's horizontal-overflow assertion; recorded as amendment A12; the eight design-system
+  baselines were regenerated, because the old ones recorded the bug.
+- **Seeded entries with no key.** Widening `tests/unit/entry-verification.test.ts` to read
+  `entryArrays` from the block registry — instead of guessing that an editorial entry is "an object
+  with a `title`", which missed the commission band's six `label`-carrying capabilities — found
+  seven collection cards and seven process steps carrying no `key` at all.
+- **A missing Cloudinary cloud name could 500 a page.** `lib/seo/metadata.ts` still called
+  `requiredEnv` for the OpenGraph image, inside `generateMetadata`. Phase 10 fixed the same call in
+  the layout and in `MediaSlot`; this one only fires once an SEO entry names an image, which is why
+  nothing had caught it.
+- **Editors' line breaks were being collapsed.** SEED §10 writes two homepage headings as line
+  sequences — the hero's two beats and `LIQUID. FORM. CRAFT. OBJECT.` — and in HTML a newline is
+  whitespace. `SectionCopy` now preserves them and splits blank-line-separated paragraphs into
+  real `<p>` elements.
+- **`ResponsiveMedia` always requested a full-viewport image.** Its `sizes` was hard-coded to
+  `100vw`, which is right for a hero and wrong for a half-width portrait: the page looked correct
+  and weighed several times what it should.
+
 ### Phase 10 — Public Website Foundation
 
 Rivya becomes a website a stranger can load. One public shell, thirteen static routes, the

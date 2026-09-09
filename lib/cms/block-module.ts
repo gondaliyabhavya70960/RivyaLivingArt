@@ -109,6 +109,20 @@ export type BlockModule<Payload = unknown> = {
   /** The editor for `payload`. Empty for a block whose payload is `z.object({})`. */
   readonly payloadFields: readonly BlockField[]
   readonly mediaSlots: readonly BlockMediaSlot[]
+  /**
+   * Which payload arrays hold EDITORIAL ENTRIES — the repeating items a visitor reads, each of
+   * which can carry its own `key` and `owner_verification` (`lib/cms/entry-visibility.ts`).
+   *
+   * DECLARED BY THE BLOCK RATHER THAN INFERRED, because inference gets it wrong in both
+   * directions. "An object array in the payload" sweeps in `/contact`'s form `fields`, which are a
+   * schema rather than something anyone reads; "an object with a `title`" misses the commission
+   * band's capabilities, which have a `label`. Both were tried. The block is the only thing that
+   * actually knows, and saying so here means a test, a Studio surface and a future audit all ask
+   * the same question and get the same answer.
+   *
+   * Empty for a block with no repeating editorial content, which is most of them.
+   */
+  readonly entryArrays: readonly string[]
   /** `layout_variant` values this block accepts. Empty means the column stays null. */
   readonly layoutVariants: readonly string[]
   /**
