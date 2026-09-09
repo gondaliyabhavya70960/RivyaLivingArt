@@ -2342,6 +2342,238 @@ export const STUDIO_STRINGS = {
     value: 'Not a client project',
     contentKey: 'studio_help.portfolio_no_client',
   },
+  // The project editor. These are labels and button words, deliberately distinct from the column
+  // headings above: a table column reads "Project", and a button that says "Project" tells nobody
+  // what pressing it does.
+  'studio.portfolio.backToList': {
+    value: 'All projects',
+    contentKey: 'studio_help.portfolio_back_to_list',
+  },
+  'studio.portfolio.identityHeading': {
+    value: 'What this project is',
+    contentKey: 'studio_help.portfolio_identity_heading',
+  },
+  'studio.portfolio.identitySave': {
+    value: 'Save these details',
+    contentKey: 'studio_help.portfolio_identity_save',
+  },
+  'studio.portfolio.clientHeading': {
+    value: 'Client and consent',
+    contentKey: 'studio_help.portfolio_client_heading',
+  },
+  'studio.portfolio.clientSave': {
+    value: 'Save client and consent',
+    contentKey: 'studio_help.portfolio_client_save',
+  },
+  'studio.portfolio.relationsHeading': {
+    value: 'Related content',
+    contentKey: 'studio_help.portfolio_relations_heading',
+  },
+  'studio.portfolio.requiredLabel': {
+    value: 'Required',
+    contentKey: 'studio_help.portfolio_required_label',
+  },
+  'studio.portfolio.fieldTitle': {
+    value: 'Title',
+    contentKey: 'studio_help.portfolio_field_title',
+  },
+  'studio.portfolio.fieldSubtitle': {
+    value: 'Subtitle',
+    contentKey: 'studio_help.portfolio_field_subtitle',
+  },
+  'studio.portfolio.fieldSummary': {
+    value: 'Summary',
+    contentKey: 'studio_help.portfolio_field_summary',
+  },
+  'studio.portfolio.fieldType': {
+    value: 'Kind of project',
+    contentKey: 'studio_help.portfolio_field_type',
+  },
+  'studio.portfolio.fieldLocation': {
+    value: 'Location label',
+    contentKey: 'studio_help.portfolio_field_location',
+  },
+  'studio.portfolio.fieldLocationHelp': {
+    value:
+      'A label, not an address — "a private residence in Ahmedabad". Where somebody lives is not ours to publish.',
+    contentKey: 'studio_help.portfolio_field_location_help',
+  },
+  'studio.portfolio.fieldCompleted': {
+    value: 'Completed on',
+    contentKey: 'studio_help.portfolio_field_completed',
+  },
+  'studio.portfolio.fieldCompletedHelp': {
+    value: 'Leave this empty if you are not certain. An approximate date reads as a fact.',
+    contentKey: 'studio_help.portfolio_field_completed_help',
+  },
+  'studio.portfolio.fieldEvidence': {
+    value: 'Evidence note',
+    contentKey: 'studio_help.portfolio_field_evidence',
+  },
+  'studio.portfolio.fieldEvidenceHelp': {
+    value:
+      'What proves this happened — an invoice number, a delivery date, where the photographs came from. Never shown on the website, and unreadable to a visitor even through a crafted request.',
+    contentKey: 'studio_help.portfolio_field_evidence_help',
+  },
+  'studio.portfolio.fieldIsClient': {
+    value: 'This was made for a client',
+    contentKey: 'studio_help.portfolio_field_is_client',
+  },
+  'studio.portfolio.fieldClientName': {
+    value: 'Client name, as they want it written',
+    contentKey: 'studio_help.portfolio_field_client_name',
+  },
+  'studio.portfolio.fieldClientNameHelp': {
+    value: 'Leave empty to publish the project without naming anyone.',
+    contentKey: 'studio_help.portfolio_field_client_name_help',
+  },
+  'studio.portfolio.fieldConsent': {
+    value: 'Consent to be named',
+    contentKey: 'studio_help.portfolio_field_consent',
+  },
+  'studio.portfolio.fieldConsentRef': {
+    value: 'Where that consent is held',
+    contentKey: 'studio_help.portfolio_field_consent_ref',
+  },
+  'studio.portfolio.fieldConsentRefHelp': {
+    value:
+      'An email, a signed note, a message thread — enough that somebody could find it a year from now. Required before consent can be marked granted.',
+    contentKey: 'studio_help.portfolio_field_consent_ref_help',
+  },
+  'studio.portfolio.consent.NOT_APPLICABLE': {
+    value: 'Names nobody',
+    contentKey: 'studio_help.portfolio_consent_not_applicable',
+  },
+  'studio.portfolio.consent.PENDING': {
+    value: 'Asked, not yet answered',
+    contentKey: 'studio_help.portfolio_consent_pending',
+  },
+  'studio.portfolio.consent.GRANTED': {
+    value: 'Granted',
+    contentKey: 'studio_help.portfolio_consent_granted',
+  },
+  'studio.portfolio.consent.WITHDRAWN': {
+    value: 'Withdrawn',
+    contentKey: 'studio_help.portfolio_consent_withdrawn',
+  },
+  'studio.portfolio.consentRecorded': {
+    value: 'This consent decision was recorded on',
+    contentKey: 'studio_help.portfolio_consent_recorded',
+  },
+  'studio.portfolio.verifySet': {
+    value: 'Confirm this project happened',
+    contentKey: 'studio_help.portfolio_verify_set',
+  },
+  'studio.portfolio.verifyClear': {
+    value: 'Withdraw that confirmation',
+    contentKey: 'studio_help.portfolio_verify_clear',
+  },
+  'studio.portfolio.verifyHelp': {
+    value:
+      'Confirming is a statement that Rivya delivered this piece of work. Nothing publishes without it.',
+    contentKey: 'studio_help.portfolio_verify_help',
+  },
+  // The Gallery panel.
+  'studio.portfolio.gallery.heading': {
+    value: 'Photographs',
+    contentKey: 'studio_help.portfolio_gallery_heading',
+  },
+  'studio.portfolio.gallery.help': {
+    value:
+      'The pictures of the finished work, in the order they should appear. The number decides the order; the smallest goes first.',
+    contentKey: 'studio_help.portfolio_gallery_help',
+  },
+  'studio.portfolio.gallery.conceptExcluded': {
+    value:
+      'Concept renders are not offered here, and the database refuses them: a project gallery shows work that was delivered, never an image of what something could look like.',
+    contentKey: 'studio_help.portfolio_gallery_concept_excluded',
+  },
+  'studio.portfolio.gallery.empty': {
+    value: 'No photographs attached yet.',
+    contentKey: 'studio_help.portfolio_gallery_empty',
+  },
+  'studio.portfolio.gallery.nothingAttachable': {
+    value:
+      'There is nothing left to attach. Every photograph in the library that is not a concept render is already on this project.',
+    contentKey: 'studio_help.portfolio_gallery_nothing_attachable',
+  },
+  'studio.portfolio.gallery.roleLabel': {
+    value: 'What this picture is',
+    contentKey: 'studio_help.portfolio_gallery_role_label',
+  },
+  'studio.portfolio.gallery.captionLabel': {
+    value: 'Caption',
+    contentKey: 'studio_help.portfolio_gallery_caption_label',
+  },
+  'studio.portfolio.gallery.altLabel': {
+    value: 'Alt text for this project',
+    contentKey: 'studio_help.portfolio_gallery_alt_label',
+  },
+  'studio.portfolio.gallery.altHelp': {
+    value:
+      "What the picture is doing here, which is a different sentence from what the picture is of. Leave it empty to use the asset's own words.",
+    contentKey: 'studio_help.portfolio_gallery_alt_help',
+  },
+  'studio.portfolio.gallery.orderLabel': {
+    value: 'Order',
+    contentKey: 'studio_help.portfolio_gallery_order_label',
+  },
+  'studio.portfolio.gallery.save': {
+    value: 'Save this picture',
+    contentKey: 'studio_help.portfolio_gallery_save',
+  },
+  'studio.portfolio.gallery.detach': {
+    value: 'Remove from this project',
+    contentKey: 'studio_help.portfolio_gallery_detach',
+  },
+  'studio.portfolio.gallery.attachLabel': {
+    value: 'Picture to attach',
+    contentKey: 'studio_help.portfolio_gallery_attach_label',
+  },
+  'studio.portfolio.gallery.attach': {
+    value: 'Attach',
+    contentKey: 'studio_help.portfolio_gallery_attach',
+  },
+  // The Story panel.
+  'studio.portfolio.story.heading': {
+    value: 'Story page',
+    contentKey: 'studio_help.portfolio_story_heading',
+  },
+  'studio.portfolio.story.help': {
+    value:
+      "A project's page is an ordered list of blocks, the same as any other page on the site. Creating it lays down four bands to start from — a hero, a statement, the photographs and a way to get in touch — every one of which can be reordered or removed.",
+    contentKey: 'studio_help.portfolio_story_help',
+  },
+  'studio.portfolio.story.create': {
+    value: 'Create the story page',
+    contentKey: 'studio_help.portfolio_story_create',
+  },
+  'studio.portfolio.story.edit': {
+    value: 'Edit the story page',
+    contentKey: 'studio_help.portfolio_story_edit',
+  },
+  // Creating a project.
+  'studio.portfolio.newHeading': {
+    value: 'Add a project',
+    contentKey: 'studio_help.portfolio_new_heading',
+  },
+  'studio.portfolio.newHelp': {
+    value:
+      'A new project starts as a draft that nobody has confirmed. It cannot be published until an owner confirms it happened, and — if it names a client — until that client has agreed to be named.',
+    contentKey: 'studio_help.portfolio_new_help',
+  },
+  'studio.portfolio.newSlug': {
+    value: 'Address (the last part of the web address)',
+    contentKey: 'studio_help.portfolio_new_slug',
+  },
+  'studio.portfolio.newSubmit': {
+    value: 'Add project',
+    contentKey: 'studio_help.portfolio_new_submit',
+  },
+  'studio.portfolio.openEditor': {
+    value: 'Open',
+    contentKey: 'studio_help.portfolio_open_editor',
+  },
   'studio.testimonials.caption': {
     value: 'Quotes from real people. Never written in-house.',
     contentKey: 'studio_help.testimonials_caption',

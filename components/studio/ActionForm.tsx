@@ -7,9 +7,7 @@ import { Stack } from '@/components/primitives/Stack'
 import { Text } from '@/components/primitives/Text'
 import { errorFor } from '@/components/studio/FormField'
 
-import type { CollectionActionState } from '@/app/(studio)/studio/(shell)/catalog/collections/[collectionId]/actions'
-
-import { fieldIssues } from './catalog/tab-issues'
+import { IDLE_FORM_STATE, formIssues, type StudioFormAction } from './form-state'
 
 /**
  * A form around a `useActionState` action, for the buttons that are not their own component.
@@ -28,23 +26,25 @@ import { fieldIssues } from './catalog/tab-issues'
  * silently does nothing — because a trigger refused it — is the worst outcome available on this
  * screen; the message goes directly under the control that caused it.
  *
+ * ITS STATE TYPE IS `StudioFormState`, WHICH IS NOT ANY ONE EDITOR'S. It used to be the collection
+ * editor's `CollectionActionState`, imported across the tree — see `components/studio/form-state.ts`
+ * for why that was worth undoing.
+ *
  * THE CHILDREN ARE SERVER-RENDERED. They are passed through the boundary as an already-rendered
  * tree, so the buttons and their copy stay on the server and this component adds only the state.
  */
-
-const IDLE: CollectionActionState = { status: 'idle' }
 
 export function ActionForm({
   action,
   children,
   className,
 }: {
-  readonly action: (state: CollectionActionState, form: FormData) => Promise<CollectionActionState>
+  readonly action: StudioFormAction
   readonly children: React.ReactNode
   readonly className?: string
 }): React.ReactElement {
-  const [state, submit] = useActionState(action, IDLE)
-  const error = errorFor(fieldIssues(state), '_form')
+  const [state, submit] = useActionState(action, IDLE_FORM_STATE)
+  const error = errorFor(formIssues(state), '_form')
 
   return (
     <Stack gap={2}>

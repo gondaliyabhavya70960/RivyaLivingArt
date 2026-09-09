@@ -2,7 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { z } from 'zod'
 
 import type { Database } from '../database.types'
-import { NotFoundError } from '../errors'
+import { NotFoundError, PermissionError } from '../errors'
 import {
   portfolioProjectMediaSchema,
   portfolioProjectSchema,
@@ -154,4 +154,188 @@ export async function getProjectByIdForStudio(
   if (error) throw toRepositoryError(ENTITY, 'get', id, error)
   if (data === null) throw new NotFoundError(ENTITY, id)
   return parseRow(ENTITY, portfolioProjectSchema, data)
+}
+
+/** Update one project. The gates are triggers, so a refusal arrives as a thrown error. */
+export async function updateProjectRow(
+  client: Client,
+  id: string,
+  values: Partial<PortfolioProject>,
+): Promise<PortfolioProject> {
+  const { data, error } = await client
+    .from('portfolio_projects')
+    .update(values)
+    .eq('id', id)
+    .select('*')
+    .single()
+
+  if (error) throw toRepositoryError(ENTITY, 'update', id, error)
+  return parseRow(ENTITY, portfolioProjectSchema, data)
+}
+
+/** Create one project, as a DRAFT that has been verified by nobody. Both defaults come from the
+ *  table, and neither is overridable here: a project that arrives already confirmed is the thing
+ *  the evidence gate exists to prevent. */
+export async function insertProject(
+  client: Client,
+  values: { readonly slug: string; readonly title: string; readonly createdBy: string },
+): Promise<PortfolioProject> {
+  const { data, error } = await client
+    .from('portfolio_projects')
+    .insert({ slug: values.slug, title: values.title, updated_by: values.createdBy })
+    .select('*')
+    .single()
+
+  if (error) throw toRepositoryError(ENTITY, 'insert', values.slug, error)
+  return parseRow(ENTITY, portfolioProjectSchema, data)
+}
+
+/**
+ * Point a project at its story page.
+ *
+ * A READ-BACK, NOT A FIRE-AND-FORGET, for the reason every join write in this repository is one:
+ * RLS filters an UPDATE rather than refusing it, so a role that may not write this row gets zero
+ * rows changed, no error, and a page that exists but belongs to nothing. `0153` derives
+ * `pages.path` from the slug on this write, so a silent failure would also leave the page at
+ * whatever path it was created with.
+ */
+export async function linkProjectPage(
+  client: Client,
+  projectId: string,
+  pageId: string,
+): Promise<void> {
+  const { data, error } = await client
+    .from('portfolio_projects')
+    .update({ page_id: pageId })
+    .eq('id', projectId)
+    .select('page_id')
+    .maybeSingle()
+
+  if (error) throw toRepositoryError(ENTITY, 'link-page', projectId, error)
+  if (data?.page_id !== pageId) throw new PermissionError('link-page', ENTITY)
+}
+
+/**
+ * The roles a project photograph may carry.
+ *
+ * A SECOND COPY OF `portfolio_project_media_role_allowed`, and named here so a grep for one finds
+ * the other. It is deliberately NOT `PRODUCT_MEDIA_ROLES`: that list has `lifestyle`, this one does
+ * not, and sharing the constant would offer an editor a role the check constraint refuses.
+ */
+export const PROJECT_MEDIA_ROLES = [
+  'hero',
+  'gallery',
+  'detail',
+  'process',
+  'video',
+  'model',
+] as const
+
+export type ProjectMediaRole = (typeof PROJECT_MEDIA_ROLES)[number]
+
+/** One row of a project's gallery, as the Studio edits it. */
+export interface ProjectMediaEdge {
+  readonly mediaAssetId: string
+  readonly role: ProjectMediaRole
+  readonly caption: string | null
+  readonly altOverride: string | null
+  readonly sortOrder: number
+}
+
+/**
+ * Replace a project's gallery with exactly this set, in exactly this order.
+ *
+ * THE SAME VERIFIED DIFF AS `setProductMediaEdges`, and the same three reasons: an edge that only
+ * moved is UPDATEd rather than deleted and reinserted, so rearranging a gallery needs no destructive
+ * permission; a DELETE is filtered by RLS rather than refused, so removals are read back; and an
+ * UPDATE is filtered the same way, so changes are too.
+ *
+ * NOTHING HERE CHECKS `is_concept`. `reject_concept_project_media` refuses a concept render on
+ * insert or update and the picker filters them out of the choices offered. A third copy of the rule
+ * in this file would be a third place for it to drift; what this file owes the caller is that the
+ * trigger's refusal arrives unswallowed, which `toRepositoryError` does.
+ */
+export async function setProjectMediaEdges(
+  client: Client,
+  projectId: string,
+  edges: readonly ProjectMediaEdge[],
+  actorId: string,
+): Promise<void> {
+  // Last write wins on a duplicated asset id, matching the composite primary key, rather than
+  // sending two rows and letting the insert fail with a 23505 no editor can read.
+  const wanted = new Map(edges.map((edge) => [edge.mediaAssetId, edge]))
+  const current = await listProjectMedia(client, projectId)
+  const currentById = new Map(current.map((row) => [row.media_asset_id, row]))
+
+  const removed = current.filter((row) => !wanted.has(row.media_asset_id))
+  if (removed.length > 0) {
+    const { error } = await client
+      .from('portfolio_project_media')
+      .delete()
+      .eq('project_id', projectId)
+      .in(
+        'media_asset_id',
+        removed.map((row) => row.media_asset_id),
+      )
+    if (error) throw toRepositoryError(ENTITY, 'set-media', projectId, error)
+
+    const survivors = new Set(
+      (await listProjectMedia(client, projectId)).map((row) => row.media_asset_id),
+    )
+    if (removed.some((row) => survivors.has(row.media_asset_id))) {
+      throw new PermissionError('set-media', ENTITY)
+    }
+  }
+
+  const added = [...wanted.values()].filter((edge) => !currentById.has(edge.mediaAssetId))
+  if (added.length > 0) {
+    const { error } = await client.from('portfolio_project_media').insert(
+      added.map((edge) => ({
+        project_id: projectId,
+        media_asset_id: edge.mediaAssetId,
+        role: edge.role,
+        caption: edge.caption,
+        alt_override: edge.altOverride,
+        sort_order: edge.sortOrder,
+        created_by: actorId,
+      })),
+    )
+    if (error) throw toRepositoryError(ENTITY, 'set-media', projectId, error)
+  }
+
+  const differs = (edge: ProjectMediaEdge, row: PortfolioProjectMedia) =>
+    row.role !== edge.role ||
+    row.caption !== edge.caption ||
+    row.alt_override !== edge.altOverride ||
+    row.sort_order !== edge.sortOrder
+
+  const changed = [...wanted.values()].filter((edge) => {
+    const existing = currentById.get(edge.mediaAssetId)
+    return existing !== undefined && differs(edge, existing)
+  })
+
+  for (const edge of changed) {
+    const { error } = await client
+      .from('portfolio_project_media')
+      .update({
+        role: edge.role,
+        caption: edge.caption,
+        alt_override: edge.altOverride,
+        sort_order: edge.sortOrder,
+      })
+      .eq('project_id', projectId)
+      .eq('media_asset_id', edge.mediaAssetId)
+    if (error) throw toRepositoryError(ENTITY, 'set-media', projectId, error)
+  }
+
+  if (changed.length > 0) {
+    const after = new Map(
+      (await listProjectMedia(client, projectId)).map((row) => [row.media_asset_id, row]),
+    )
+    const stale = changed.some((edge) => {
+      const now = after.get(edge.mediaAssetId)
+      return now === undefined || differs(edge, now)
+    })
+    if (stale) throw new PermissionError('set-media', ENTITY)
+  }
 }
