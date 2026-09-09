@@ -66,7 +66,10 @@ export function Pagination({
   const numbers = pageNumbers(page, pageCount)
   const step = 'inline-flex min-w-11 items-center justify-center px-3 py-2 rv-hit-44'
   const link = `${step} text-ink underline-offset-4 hover:underline`
-  const disabled = `${step} text-ink-muted`
+  // `text-ink-disabled`, not `text-ink-muted`: there is no --color-ink-muted token, so the class
+  // generated no CSS and a disabled Previous rendered in full ink — a dead control that looked
+  // live, which is the one thing a disabled control must not do.
+  const disabled = `${step} text-ink-disabled`
 
   return (
     <nav aria-label={regionName} data-pagination="" className="mt-12">
@@ -89,7 +92,7 @@ export function Pagination({
           return (
             <React.Fragment key={n}>
               {gap ? (
-                <li aria-hidden="true" className="text-ink-muted hidden min-[430px]:block">
+                <li aria-hidden="true" className="hidden text-ink-tertiary min-[430px]:block">
                   …
                 </li>
               ) : null}
