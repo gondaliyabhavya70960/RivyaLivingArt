@@ -176,6 +176,31 @@ const EXPECTED = {
    * store a value `window_start` already bounds, and `updated_by` would name an actor that by
    * definition has no account.
    */
+  /*
+   * Phase 20's three. `inquiries` carries TIER A AND NOTHING ELSE, and both absences are decisions
+   * recorded in DATA_MODEL §1.4.
+   *
+   * NO TIER B, because an enquiry is not content. It is never published, never scheduled, never
+   * revised and never verified — it moves through a SALES pipeline, which is what `pipeline_status`
+   * is and why it is not `content_status`. Giving it `owner_verification` would ask the owner to
+   * confirm that a customer really said what they said.
+   *
+   * NO TIER C, because nothing seeds a customer. A seeded enquiry is a fabricated conversation with
+   * a fabricated person, which is D10 at its most direct; the absence of a `seed_key` is what makes
+   * that structural rather than a rule somebody has to remember.
+   */
+  inquiries: [...TIER_A],
+  // An attachment is an edge, like every other join table here — and it has no `created_by`,
+  // because the visitor who created it is not a user and never will be (D1).
+  inquiry_attachments: ['created_at'],
+  /*
+   * APPEND-ONLY, SO IT HAS NO `updated_at` AND NO `updated_by` — a §1.4 exemption of the same kind
+   * as `activity_events`. The trigger refuses UPDATE outright, so a column recording when a row was
+   * last changed would name a moment that can never arrive. `occurred_at` is the whole timestamp
+   * story and `actor_id` is the whole actor story.
+   */
+  inquiry_events: ['occurred_at'],
+
   rate_limit_buckets: ['bucket_key', 'window_start', 'count'],
 
   // `db:migrate`'s own bookkeeping, and a §1.4 exemption for the same reason `content_seed_runs` is

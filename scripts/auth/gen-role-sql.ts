@@ -31,6 +31,7 @@ import {
   PHASE_17_POLICIES,
   PHASE_18_POLICIES,
   PHASE_19_LIMIT_POLICIES,
+  PHASE_20_POLICIES,
   PHASE_19_POLICIES,
   TABLE_POLICY_MAP,
   type ManagedTable,
@@ -210,6 +211,31 @@ const GENERATED: Record<string, { title: string; preamble: string }> = {
 -- permission. Nothing public reads it, and publishing it would hand a visitor the list of features
 -- being prepared with the date each one was switched.`,
   },
+  [PHASE_20_POLICIES]: {
+    title: `-- ${PHASE_20_POLICIES} — Phase 20`,
+    preamble: `-- Policies for the three tables migration 0190 creates. GENERATED from
+-- lib/auth/table-permissions.ts and rewritten whole, so it may hold nothing a human wrote.
+--
+-- \`inquiries\` IS THE ONLY TABLE ON THIS SITE A STRANGER MAY WRITE, and the only one whose write
+-- has no session behind it. D1 forbids customer accounts, so the person filling in the form is
+-- nobody: the \`with check\` below is doing the work \`requirePermission\` does everywhere else.
+--
+-- THERE IS NO ANON SELECT ON ANY OF THE THREE, and that absence is the most load-bearing thing in
+-- this file. An enquiry carries a name, a phone number, a city and whatever a visitor chose to say
+-- about their home; one \`using (true)\` and the customer list is a GET away through PostgREST,
+-- with the publishable key that ships in every browser. anon INSERTS and never reads back — not
+-- even the row it has just written.
+--
+-- READ IS \`inquiries.read\`, WHICH THE RESEARCHER DOES NOT HOLD. table-permissions.ts used this
+-- table as its worked example years before it existed: \`using (is_staff())\` here would hand every
+-- customer's phone number to a role whose entire remit is looking at competitors.
+--
+-- \`inquiry_attachments\` HAS NO ANON INSERT despite the phase document naming one. An attachment
+-- references \`media_assets\`, and anon cannot create one of those — so the policy would describe a
+-- path with no way to satisfy its own foreign key. \`attach_inquiry_references()\` is SECURITY
+-- DEFINER instead (amendment A20). \`inquiry_events\` has no write policy at all: it is written by
+-- triggers and refuses UPDATE and DELETE outright.`,
+  },
   [PHASE_19_LIMIT_POLICIES]: {
     title: `-- ${PHASE_19_LIMIT_POLICIES} — Phase 19`,
     preamble: `-- Policies for \`rate_limit_buckets\`, which migration 0182 creates. GENERATED from
@@ -285,7 +311,25 @@ function policiesFor(table: ManagedTable): string {
     out.push(`    ${policy.parentClause});`)
     out.push('')
   } else {
-    out.push(`-- No anon policy. Shape C tables are never publicly readable.`)
+    // The sentence changes when an anon INSERT is declared, because "no anon policy" would then be
+    // false three lines above one. What stays true either way is the half that matters: nothing
+    // shape C holds is publicly READABLE.
+    out.push(
+      policy.anonInsert
+        ? `-- No anon SELECT policy. Shape C tables are never publicly readable; this one is written by anon and read by nobody outside the studio.`
+        : `-- No anon policy. Shape C tables are never publicly readable.`,
+    )
+    out.push('')
+  }
+
+  // --- policy 1b: the anon write leg ------------------------------------------------------------
+  // Emitted only where declared, which today is one table. It sits between the public read leg and
+  // the staff legs because that is the order a reader asks the questions in: who may read this
+  // without a session, who may write it without one, and then who may do either with one.
+  if (policy.anonInsert) {
+    for (const line of wrap(`ANON INSERT. ${policy.anonInsert.why}`, 96)) out.push(`-- ${line}`)
+    out.push(`create policy ${table}_insert_public on ${table} for insert`)
+    out.push(`  to anon, authenticated with check (${policy.anonInsert.withCheck});`)
     out.push('')
   }
 

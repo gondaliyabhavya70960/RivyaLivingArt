@@ -107,6 +107,33 @@ type PolicyRow = {
   check: string
 }
 const byTable = new Map<string, PolicyRow[]>()
+/**
+ * Is the predicate the database re-printed the same rule the map declares?
+ *
+ * POSTGRES DOES NOT STORE WHAT YOU WROTE. It stores a parse tree and prints it back with its own
+ * parentheses, its own casts (`'NEW'::inquiry_status`) and its own spacing, so a literal string
+ * comparison fails on a policy nobody has touched. This normalises both sides to the parts that
+ * carry meaning — column names, operators and literal values — and compares those as a set, which
+ * is strict about WHAT is pinned and forgiving about how the parser chose to print it.
+ */
+function equivalentPredicate(seen: string, want: string): boolean {
+  const normalise = (text: string): string =>
+    text
+      .toLowerCase()
+      .replace(/::[a-z_ ]+/g, '')
+      .replace(/[()]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+  const parts = (text: string): string[] =>
+    normalise(text)
+      .split(' and ')
+      .map((p) => p.trim())
+      .sort()
+  const a = parts(seen)
+  const b = parts(want)
+  return a.length === b.length && a.every((part, i) => part === b[i])
+}
+
 for (const [table, name, cmd, grantees, using, check] of policies) {
   const row = {
     table: table!,
@@ -193,9 +220,54 @@ for (const [table, rlsEnabled] of tables) {
     if (!declared.deviation || declared.deviation.trim().length === 0) {
       problems.push(`${name}: shape C requires a stated deviation reason, and it is empty`)
     }
-    if (anonPolicies.length > 0) {
+    /*
+     * A DECLARED ANON INSERT IS THE ONE ANON POLICY A SHAPE-C TABLE MAY CARRY, and it is still not
+     * permission to be read. `inquiries` is written by a visitor with no account, so the policy is
+     * the whole guard on that write — but the check below stays absolute in the direction that
+     * matters: any anon policy that can SELECT is a failure whether or not an insert was declared.
+     * A stranger writing an enquiry and a stranger reading the customer list are not the same
+     * concession, and one must never become a licence for the other.
+     */
+    const anonReads = anonPolicies.filter((p) => p.cmd === 'SELECT' || p.cmd === 'ALL')
+    const anonWrites = anonPolicies.filter((p) => p.cmd !== 'SELECT' && p.cmd !== 'ALL')
+
+    if (anonReads.length > 0) {
       problems.push(
-        `${name}: shape C must have NO anon policy, found ${anonPolicies.map((p) => p.name).join(', ')}`,
+        `${name}: shape C must have NO anon read policy, found ${anonReads.map((p) => p.name).join(', ')}`,
+      )
+    }
+    if (declared.anonInsert) {
+      const inserts = anonWrites.filter((p) => p.cmd === 'INSERT')
+      if (inserts.length !== 1) {
+        problems.push(
+          `${name}: declares an anon insert and has ${inserts.length} anon INSERT policies on the database`,
+        )
+      }
+      for (const policy of inserts) {
+        // The predicate is the guard, so it is compared rather than merely counted. Whitespace is
+        // normalised because Postgres re-prints an expression its own way.
+        const seen = policy.check.replace(/\s+/g, ' ').trim()
+        const want = declared.anonInsert.withCheck.replace(/\s+/g, ' ').trim()
+        if (!equivalentPredicate(seen, want)) {
+          problems.push(
+            `${name}.${policy.name}: anon insert check has drifted from table-permissions.ts\n` +
+              `        declared: ${want}\n` +
+              `        database: ${seen}`,
+          )
+        }
+      }
+      if (anonWrites.some((p) => p.cmd !== 'INSERT')) {
+        problems.push(
+          `${name}: an anon policy may only INSERT here, found ` +
+            anonWrites
+              .filter((p) => p.cmd !== 'INSERT')
+              .map((p) => `${p.name} (${p.cmd})`)
+              .join(', '),
+        )
+      }
+    } else if (anonWrites.length > 0) {
+      problems.push(
+        `${name}: shape C must have NO anon policy, found ${anonWrites.map((p) => p.name).join(', ')}`,
       )
     }
   } else if (anonPolicies.length === 0) {

@@ -63,6 +63,19 @@ export type TablePolicy = {
    */
   deviation?: string
   /**
+   * An `anon` INSERT policy, with the `with check` that constrains what a stranger may write.
+   *
+   * ONE TABLE NEEDS THIS AND IT IS THE ONE THE WHOLE SITE EXISTS TO FILL. `inquiries` is written by
+   * a visitor who has no account — D1 forbids giving them one — so the policy IS the guard: there is
+   * no session to check and no permission to hold. The predicate is what stops a crafted payload
+   * arriving pre-triaged, pre-assigned, or claiming to have been edited by a member of staff.
+   *
+   * It is deliberately NOT a shape. A shape describes how a table is READ, and this table is read
+   * by nobody outside the studio: `inquiries` is shape C with an anon insert bolted on, which is
+   * exactly what it is, rather than a fourth shape implying a family that has one member.
+   */
+  anonInsert?: { withCheck: string; why: string }
+  /**
    * Roles allowed to SELECT beyond those from readPermission, with the predicate that admits them.
    * Exactly one table needs this and it is not a general escape hatch — see staff_profiles.
    */
@@ -102,6 +115,7 @@ export const PHASE_17_POLICIES = '0151_phase17_portfolio_rls.sql'
 export const PHASE_18_POLICIES = '0161_phase18_journal_rls.sql'
 export const PHASE_19_POLICIES = '0172_phase19_rls.sql'
 export const PHASE_19_LIMIT_POLICIES = '0183_phase19_rate_limit_rls.sql'
+export const PHASE_20_POLICIES = '0191_phase20_inquiries_rls.sql'
 
 export const TABLE_POLICIES = {
   // --- Shape A: content tables ------------------------------------------------------------------
@@ -665,6 +679,86 @@ export const TABLE_POLICIES = {
       'this asset" — which is a Studio question. Exposing it to anon would publish the shape of ' +
       'every unpublished page: which slots exist, how many gallery items a draft has, which ' +
       'entities reference an asset nobody has seen.',
+  },
+
+  /**
+   * `inquiries` — Phase 20. Shape C with an `anon` INSERT, and it is the only table on the site
+   * that a stranger may write.
+   *
+   * NO ANON SELECT, EVER. An enquiry carries a name, a phone number, a city and whatever a visitor
+   * chose to say about their home. One `using (true)` here and the whole customer list is a GET
+   * away through PostgREST — no session, no key beyond the publishable one that ships in the
+   * browser. The absence of a select policy is the single most load-bearing line in this file.
+   *
+   * THE INSERT POLICY IS THE ONLY GUARD ON THE WRITE, because there is no session to check: D1
+   * forbids customer accounts, so the person filling in the form is nobody. The `with check` is
+   * therefore doing the work `requirePermission` does everywhere else, and it pins the three
+   * columns a crafted payload would otherwise use to arrive pre-triaged, pre-assigned, or bearing a
+   * staff member's id as its editor.
+   *
+   * READ IS `inquiries.read`, WHICH THE RESEARCHER DOES NOT HOLD. That is this file's own header
+   * example, written before the table existed: `using (is_staff())` copied onto this table would
+   * hand every customer's phone number to a role whose entire remit is competitor research.
+   */
+  inquiries: {
+    policiesIn: PHASE_20_POLICIES,
+    shape: 'C',
+    readPermission: 'inquiries.read',
+    writePermission: 'inquiries.write',
+    anonInsert: {
+      withCheck:
+        "pipeline_status = 'NEW' and assigned_to is null and updated_by is null and whatsapp_state = 'NOT_SENT'",
+      why:
+        'The public write path. A visitor has no account, so this predicate is the whole guard: it ' +
+        'pins the enquiry to the start of the pipeline, unassigned, with no claimed editor and no ' +
+        'claimed handoff. `reference_code` is not pinned here because the BEFORE trigger overwrites ' +
+        'it, which is stronger than a check — a caller cannot supply one at all.',
+    },
+    deviation:
+      'No anon SELECT of any kind. An enquiry carries a name, a phone number and a city; a public ' +
+      'read policy would publish the customer list through PostgREST with the publishable key that ' +
+      'ships in every browser. anon INSERTS and never reads back — not even the row it just wrote.',
+  },
+
+  /**
+   * `inquiry_attachments` — Phase 20. Shape C, staff-read, and NO anon insert despite the phase
+   * document naming one.
+   *
+   * THE REASON IS MECHANICAL. An attachment references `media_assets`, and `anon` cannot create a
+   * `media_assets` row — Phase 06's policies do not admit it and should not, because that table is
+   * the studio's library. An anon insert policy here would describe a path with no way to satisfy
+   * its own foreign key. `attach_inquiry_references()` is SECURITY DEFINER instead, checks the
+   * enquiry is one created in the last ten minutes, and refuses any `public_id` outside the folder
+   * `upload-sign` signs. Recorded as amendment A20.
+   */
+  inquiry_attachments: {
+    policiesIn: PHASE_20_POLICIES,
+    shape: 'C',
+    readPermission: 'inquiries.read',
+    deviation:
+      'No anon policy of either kind. A public read would list what a customer sent; a public ' +
+      'insert could not satisfy its foreign key, because anon cannot create the media_assets row ' +
+      'an attachment points at. Rows arrive through attach_inquiry_references(), which is SECURITY ' +
+      'DEFINER, checks the enquiry is fresh, and refuses a public_id outside the incoming folder.',
+  },
+
+  /**
+   * `inquiry_events` — Phase 20. Shape C, staff-read, and NO write policy for any session role.
+   *
+   * APPEND-ONLY IS ENFORCED BY TRIGGER AND THE ABSENCE OF A WRITE POLICY IS THE OTHER HALF. Rows
+   * are written by the three triggers and by `record_inquiry_handoff()`, all SECURITY DEFINER, so
+   * the timeline records what happened rather than what somebody later wished had happened. An
+   * insert policy here would let a session write an event by hand — including one saying an enquiry
+   * was answered.
+   */
+  inquiry_events: {
+    policiesIn: PHASE_20_POLICIES,
+    shape: 'C',
+    readPermission: 'inquiries.read',
+    deviation:
+      'No anon policy and no write policy for any session role. The timeline is written by SECURITY ' +
+      'DEFINER triggers and refuses UPDATE and DELETE outright; a session able to append an event ' +
+      'by hand could record a reply that never happened.',
   },
 } as const satisfies Record<string, TablePolicy>
 
