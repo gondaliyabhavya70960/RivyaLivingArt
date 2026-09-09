@@ -1741,6 +1741,192 @@ export const STUDIO_STRINGS = {
     value: 'Search',
     contentKey: 'studio_help.catalog_products_search_submit',
   },
+  // --- Phase 15: the four product tabs -----------------------------------------------------------
+  //
+  // EVERY HELPER SENTENCE HERE IS A RULE THE DATABASE ALSO ENFORCES, said in words an editor can act
+  // on. The specification tab's helper is the one that carries weight: "Leave a field blank to omit
+  // the row" is what makes the no-placeholder rule usable rather than merely strict, because an
+  // editor who cannot express "I do not know this" will write something that looks like knowing.
+  'studio.catalog.product.tabs.overview': {
+    value: 'Overview',
+    contentKey: 'studio_help.catalog_product_tab_overview',
+  },
+  'studio.catalog.product.tabs.media': {
+    value: 'Media',
+    contentKey: 'studio_help.catalog_product_tab_media',
+  },
+  'studio.catalog.product.tabs.materials': {
+    value: 'Materials',
+    contentKey: 'studio_help.catalog_product_tab_materials',
+  },
+  'studio.catalog.product.tabs.specifications': {
+    value: 'Specifications',
+    contentKey: 'studio_help.catalog_product_tab_specifications',
+  },
+  'studio.catalog.product.tabs.related': {
+    value: 'Related',
+    contentKey: 'studio_help.catalog_product_tab_related',
+  },
+  'studio.catalog.product.tabs.label': {
+    value: 'Product sections',
+    contentKey: 'studio_help.catalog_product_tabs_label',
+  },
+
+  'studio.catalog.product.media.heading': {
+    value: 'Media',
+    contentKey: 'studio_help.catalog_product_media_heading',
+  },
+  'studio.catalog.product.media.help': {
+    value:
+      'Attach the photographs of this piece and give each one a role. The first gallery image is what a visitor sees after the hero. Concept renders cannot be attached to a product.',
+    contentKey: 'studio_help.catalog_product_media_help',
+  },
+  'studio.catalog.product.media.roleLabel': {
+    value: 'Role',
+    contentKey: 'studio_help.catalog_product_media_role_label',
+  },
+  'studio.catalog.product.media.orderLabel': {
+    value: 'Position',
+    contentKey: 'studio_help.catalog_product_media_order_label',
+  },
+  'studio.catalog.product.media.attachLabel': {
+    value: 'Attach an image or video',
+    contentKey: 'studio_help.catalog_product_media_attach_label',
+  },
+  'studio.catalog.product.media.detachLabel': {
+    value: 'Remove from this product',
+    contentKey: 'studio_help.catalog_product_media_detach_label',
+  },
+  'studio.catalog.product.media.empty': {
+    value: 'No media attached yet.',
+    contentKey: 'studio_help.catalog_product_media_empty',
+  },
+  'studio.catalog.product.media.conceptExcluded': {
+    value:
+      'Concept renders are not listed here. They may illustrate a material or a process, never a product.',
+    contentKey: 'studio_help.catalog_product_media_concept_excluded',
+  },
+
+  'studio.catalog.product.materials.heading': {
+    value: 'Materials',
+    contentKey: 'studio_help.catalog_product_materials_heading',
+  },
+  'studio.catalog.product.materials.help': {
+    value:
+      'Attach the materials this piece is made from. The note is optional and describes how the material is used here — leave it blank if there is nothing to add.',
+    contentKey: 'studio_help.catalog_product_materials_help',
+  },
+  'studio.catalog.product.materials.noteLabel': {
+    value: 'Note (optional)',
+    contentKey: 'studio_help.catalog_product_materials_note_label',
+  },
+  'studio.catalog.product.materials.empty': {
+    value: 'No materials attached yet.',
+    contentKey: 'studio_help.catalog_product_materials_empty',
+  },
+
+  'studio.catalog.product.specs.heading': {
+    value: 'Specifications',
+    contentKey: 'studio_help.catalog_product_specs_heading',
+  },
+  'studio.catalog.product.specs.help': {
+    value:
+      'Only what you have measured. Nothing here is converted, rounded or filled in for you, and a blank field means the row is not shown at all — there is no dash and no "contact us" placeholder.',
+    contentKey: 'studio_help.catalog_product_specs_help',
+  },
+  'studio.catalog.product.specs.omitHelp': {
+    value:
+      'Leave a field blank to omit the row. If this piece publishes no specifications at all, say so below rather than entering an estimate.',
+    contentKey: 'studio_help.catalog_product_specs_omit_help',
+  },
+  'studio.catalog.product.specs.labelLabel': {
+    value: 'Label',
+    contentKey: 'studio_help.catalog_product_specs_label_label',
+  },
+  'studio.catalog.product.specs.valueLabel': {
+    value: 'Value',
+    contentKey: 'studio_help.catalog_product_specs_value_label',
+  },
+  'studio.catalog.product.specs.unitLabel': {
+    value: 'Unit (optional)',
+    contentKey: 'studio_help.catalog_product_specs_unit_label',
+  },
+  'studio.catalog.product.specs.groupLabel': {
+    value: 'Group (optional)',
+    contentKey: 'studio_help.catalog_product_specs_group_label',
+  },
+  'studio.catalog.product.specs.orderLabel': {
+    value: 'Position',
+    contentKey: 'studio_help.catalog_product_specs_order_label',
+  },
+  'studio.catalog.product.specs.addLabel': {
+    value: 'Add a specification',
+    contentKey: 'studio_help.catalog_product_specs_add_label',
+  },
+  'studio.catalog.product.specs.deleteLabel': {
+    value: 'Delete this row',
+    contentKey: 'studio_help.catalog_product_specs_delete_label',
+  },
+  'studio.catalog.product.specs.empty': {
+    value: 'No specifications entered. The block will not appear on the product page.',
+    contentKey: 'studio_help.catalog_product_specs_empty',
+  },
+  'studio.catalog.product.specs.omitLabel': {
+    value: 'This piece publishes no specifications',
+    contentKey: 'studio_help.catalog_product_specs_omit_label',
+  },
+  'studio.catalog.product.specs.omitSubmit': {
+    value: 'Save this decision',
+    contentKey: 'studio_help.catalog_product_specs_omit_submit',
+  },
+  'studio.catalog.product.specs.dimensionsHeading': {
+    value: 'Dimensions',
+    contentKey: 'studio_help.catalog_product_specs_dimensions_heading',
+  },
+  'studio.catalog.product.specs.dimensionsHelp': {
+    value:
+      'Entered on the Overview tab and shown on the product page in the unit each field names. No conversion is performed.',
+    contentKey: 'studio_help.catalog_product_specs_dimensions_help',
+  },
+
+  'studio.catalog.product.related.heading': {
+    value: 'Related',
+    contentKey: 'studio_help.catalog_product_related_heading',
+  },
+  'studio.catalog.product.related.help': {
+    value:
+      'Relations are made by hand and shown as "Related". A product with none falls back to other pieces in the same category, under its own heading — never as a claim that they are related.',
+    contentKey: 'studio_help.catalog_product_related_help',
+  },
+  'studio.catalog.product.related.targetTypeLabel': {
+    value: 'Points at',
+    contentKey: 'studio_help.catalog_product_related_target_type_label',
+  },
+  'studio.catalog.product.related.targetLabel': {
+    value: 'Target',
+    contentKey: 'studio_help.catalog_product_related_target_label',
+  },
+  'studio.catalog.product.related.relationTypeLabel': {
+    value: 'Relation',
+    contentKey: 'studio_help.catalog_product_related_relation_type_label',
+  },
+  'studio.catalog.product.related.orderLabel': {
+    value: 'Position',
+    contentKey: 'studio_help.catalog_product_related_order_label',
+  },
+  'studio.catalog.product.related.addLabel': {
+    value: 'Add a relation',
+    contentKey: 'studio_help.catalog_product_related_add_label',
+  },
+  'studio.catalog.product.related.deleteLabel': {
+    value: 'Remove this relation',
+    contentKey: 'studio_help.catalog_product_related_delete_label',
+  },
+  'studio.catalog.product.related.empty': {
+    value: 'No relations created. The product page will show other pieces in the same category.',
+    contentKey: 'studio_help.catalog_product_related_empty',
+  },
+
   'studio.catalog.product.identityHeading': {
     value: 'Identity',
     contentKey: 'studio_help.catalog_product_identity_heading',
