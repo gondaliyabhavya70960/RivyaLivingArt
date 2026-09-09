@@ -8,6 +8,108 @@
 
 ## Current Phase
 
+**Phase 16 — Collections as Exhibitions. CODE COMPLETE; NOTHING IS PUBLISHED, WHICH IS THE FINISHED
+STATE.** Ten collection concepts exist as a name, a slug and an order. None is confirmed, none is
+published, none has an exhibition page, and `/collections/<any slug>` answers 404. FEAT §9 asks for
+exactly that: a collection is a concept until the owner says it is real, and nothing in this
+repository may say so on their behalf.
+
+### Phase 16: what is built
+
+**Migrations `0140`–`0142`, LOCAL ONLY.** `0140` adds `OWNER_CONFIRMED` and `RETIRED` to
+`collection_concept_state` and nothing else — `db:migrate` runs each file in one transaction and
+PostgreSQL refuses to USE an enum value added in it, so the transaction boundary has to be a file
+(measured; Phase 14 needed the same split). `0141` adds the eight `collections` columns,
+`entity_relations`, the two new enums, `COLLECTION` on the `pages.kind` check, the publish gate, the
+concept-authority trigger and the two sync triggers. `0142` is the GENERATED RLS file.
+**Not yet applied to hosted** — that is the next action.
+
+**The two gates.** `enforce_collection_publish_gate()` refuses PUBLISHED unless the concept is
+OWNER_CONFIRMED; `enforce_collection_concept_authority()` refuses the confirmation to anyone but
+owner or admin and stamps `owner_confirmed_at`/`_by` from the session, clearing them on withdrawal.
+A merchandiser CAN update `collections` under RLS — only this trigger stops the confirm — which is
+why the Studio checks `content.verify` as well.
+
+**`sync_entity_page_status` runs PAGE → COLLECTION**, and the direction is measured rather than
+preferred: the reverse has no legal transition edge and crosses two disjoint permission sets that
+`SECURITY DEFINER` cannot bridge. Verified: publishing an unconfirmed concept's page raises
+`collection unconf cannot be published while concept_state = DRAFT_COLLECTION_CONCEPT`, naming the
+collection, and the page stays unpublished.
+
+**Two blocks, taking the catalogue to 30** (amendment A14): `collection-products` and
+`signature-media`, each with a renderer, both registries and the type tuple in agreement.
+
+**The exhibition route** `/collections/[slug]` is a CMS page — every band is a `page_sections` row,
+rendered by the same `renderCmsPage` that serves `/about`. It adds only the `CollectionPage`
+JSON-LD. The sitemap needed no change.
+
+**The Studio editor** at `/studio/catalog/collections/[collectionId]`: the confirmation in its own
+band, exhibition fields, the curator, `RelatedContentPicker` (built to be reused by Phases 17 and
+18) and "Create exhibition page", which inserts the ten template bands empty and in order.
+
+### Phase 16: what is NOT built, and why
+
+- **No published collection, and no exhibition page.** Both are owner acts. The phase says so and
+  the database enforces it.
+- **No `rich-text` renderer**, so the template inserts ten bands rather than eleven. Building one
+  needs a sanitiser, an element allow-list, an embedded-media decision and a real editor — none of
+  which is this phase's subject. A14.
+- **No `opengraph-image.tsx`.** The metadata path already serves `og:image` from the editor's chosen
+  asset through the `og` preset, and file-based metadata would silently override it. A14.
+- **No drag-and-drop reordering.** Move up / Move down is the keyboard-operable half that has to
+  exist anyway; a pointer affordance can be layered on later without touching the write path.
+- **No relationship engine.** Phase 23 owns scoring and suggestion; every edge here is hand-made.
+
+### Phase 16: verification, as actually run
+
+**Tests.** 1275 unit and RLS tests pass, none skipped, including `tests/unit/rls/phase16.test.ts`
+(both publish gates, the concept authority and its stamping, the merchandiser refusal, Shape C
+invisibility, the filtered DELETE, and that RLS hides a draft piece through the curation join) and
+`tests/unit/exhibition-template.test.ts` (only BUILT blocks, FEAT §8 order, element 9's deliberate
+absence, and that the template writes no copy).
+
+**Gates.** `npm run check` passes: typecheck, eslint (0 errors), prettier, media id collisions, the
+no-regeneration assertion, the transition-SQL check, the section-copy check, the client boundary
+(123 modules reachable from 50 client components), the island budget (still five, with MediaVideo
+on demand) and the WhatsApp check. `db:check-schema` reports 25 tables; `db:check-data-layer` finds
+no `.from(`/`.rpc(` outside the repositories.
+
+**The seed, against the database.** Ten rows, all DRAFT / DRAFT_COLLECTION_CONCEPT; zero with any
+of `statement`, `statement_long`, `subtitle`, `page_id`, `hero_media_id` or `signature_media_id`
+set; zero published; zero pages of kind COLLECTION. A second run reports 304 unchanged, 0 inserted.
+
+**Two gates were proved non-vacuous rather than assumed.** The studio-nav gate was shown to name
+`/studio/catalog/collections/[collectionId]` when its `requirePermission` is removed; the
+`entity_relations` anonymity and filtered-DELETE assertions were rewritten against a COMMITTED
+fixture edge after the first draft passed against an empty table — `asSession` rolls back, so a row
+inserted in a previous block does not exist for the next.
+
+**The e2e suite cannot run in this sandbox, and the spec now says so rather than failing.** The
+network policy denies the Supabase host, so `/`, `/about`, `/collection` and every other route
+answer 500. The first run of the new spec reported `expected 404, received 500` and pointed at
+collections; it now checks a baseline route first and skips with the real reason, never in CI. The
+three Phase 15 specs are in the same position and have never executed here either.
+
+### Phase 16: the D9 ten, recorded
+
+1. **Scope implemented** — migrations, gates, triggers, schemas, repositories, two blocks, the
+   route, the template, the Studio editor and the ten concepts. Three spec departures recorded in
+   A14 rather than taken silently.
+2. **Relevant tests run** — 1275 pass, none skipped; the e2e suite skips for a stated environmental
+   reason, not a silent one.
+3. **No known scope-breaking error.**
+4. **Documentation updated** — DATA_MODEL §12 and the `collections` table, STUDIO_GUIDE §7.3,
+   CONTENT_GUIDE §2, CANONICAL-DECISIONS A14.
+5. **CHANGELOG updated.**
+6. **PROJECT_STATE updated.**
+7. **SESSION-STATE updated** — this section.
+8. **Remaining issues documented** — hosted migrations outstanding; `verify` red on the account's
+   Actions runner; the e2e suite unrunnable here; six secrets still unrotated.
+9. **Next phase identified** — Phase 17, Portfolio.
+10. **Repository recoverable** — every commit pushed to `claude/rivya-living-art-phases-64hq5i`.
+
+### Superseded — Phase 15's state
+
 **Phase 15 — Product Detail Experience. CODE COMPLETE; THE ROUTE RENDERS FOR NOBODY, WHICH IS THE
 FINISHED STATE.** `/product/[slug]` serves published products only and 404s otherwise, and
 `products` holds zero rows — so today it serves nothing. That is the intended end of this phase: a

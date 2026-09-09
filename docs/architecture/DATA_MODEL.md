@@ -938,6 +938,19 @@ Exhibitions, not filtered grids (FEAT §8). The ten FEAT §9 concept names may b
 **Gate** — `enforce_collection_publish_gate()` refuses `status = 'PUBLISHED'` unless
 `concept_state = 'OWNER_CONFIRMED'`. Only `owner` or `admin` may set `OWNER_CONFIRMED`.
 
+**Seeded** — `content/seed/collection-concepts.ts` writes the ten FEAT §9 names (Ocean, Earth,
+Aurora, Midnight, Monsoon, Geode, Forest, Clear, Botanical, Bespoke) as slug, name and `sort_order`
+only. No statement, no media, no products, no page: a statement describing work nobody has made is
+a claim about the business (D10). `concept_state` is left at its default rather than stated, so no
+edit to that module can confirm a concept.
+
+`owner_verification` is seeded `NOT_REQUIRED`, **and that is the deliberate reading**. A collection
+already carries a stronger gate in `concept_state`, which only an owner or admin can advance.
+Seeding `OWNER_VERIFICATION_REQUIRED` as well would mean the owner confirms the concept and the
+collection still cannot publish — refused by `collections_verified_before_publish` (Phase 03), a
+constraint that names neither the concept nor the owner. Two gates for one decision, one invisible.
+`tests/unit/rls/phase16.test.ts` asserts the interaction so the choice cannot be undone silently.
+
 ### `materials` — Phase 03 · migration `0004` · RLS-PUBLIC (`catalog.write`)
 
 | Column | Type | Notes |

@@ -769,7 +769,7 @@ A collection is an exhibition, not a filtered grid (FEAT §8). The editor has fi
 |---|---|
 | Identity | `name` · `slug` · `sort_order` · `concept_state`, with an owner-only confirm control |
 | Statement | `statement` · `statement_long` · `fact_classification` · `owner_verification` |
-| Curation | Product search and a drag-ordered list writing `product_collections` |
+| Curation | A list writing `product_collections`, ordered with Move up / Move down (see below) |
 | Related content | `RelatedContentPicker` over `entity_relations` |
 | Exhibition page | Link into `/studio/content/pages/[pageId]`, plus "Create exhibition page from template" |
 
@@ -778,6 +778,36 @@ A collection is an exhibition, not a filtered grid (FEAT §8). The editor has fi
 `status = 'PUBLISHED'` unless `concept_state = 'OWNER_CONFIRMED'`, and only an owner or admin may set
 that. A concept collection cannot be featured in merchandising. Any collection still in
 `DRAFT_COLLECTION_CONCEPT` carries a persistent notice reading it as a concept, not a product line.
+
+**As built in Phase 16, with three departures worth knowing.**
+
+*The confirm control is absent for a role that may not use it, not disabled.* A disabled confirm
+button on a merchandiser's screen reads as "ask someone to enable this", when the decision is not
+theirs to make at all. The Server Action re-checks `content.verify` regardless — the control is the
+affordance, not the guard — and `enforce_collection_concept_authority()` refuses in the database
+independently, admitting the same two roles.
+
+*Reordering is Move up / Move down, not drag.* A drag handle needs a keyboard equivalent to be
+operable at all (WCAG 2.1.1), so the buttons must exist whatever else is built; they are what works
+with no JavaScript, announce correctly, and cannot lose an arrangement to a dropped pointer event.
+The action takes "move this piece one place", so a pointer affordance can be layered over it later
+without touching the write path. Every move renumbers the whole list, because `sort_order` has no
+unique constraint and two equal values let the list reshuffle itself between requests.
+
+*A piece is added by pasting a product id, not by search-as-you-type.* Phase 23 builds the picker.
+A half-built search here would be the surface where an automatic suggestion first appears, which
+FEAT §11 reserves for a person.
+
+**Creating the exhibition page** inserts TEN bands, not eleven. FEAT §8's element 9, "Editorial
+copy", maps to the `rich-text` block, which is declared and unbuilt — it renders nothing on the
+public site — so inserting it would hand an editor a band indistinguishable from one they have not
+filled in. Amendment A14 records it; `statement` carries editorial copy meanwhile. The template
+writes no copy at all: ten empty bands in the right order is what a starting point is.
+
+**The identity form is split across two screens, deliberately.** `name`, `slug`, `sort_order` and
+the short `statement` are edited on the LIST screen, which is where a collection is created; the
+detail screen owns `subtitle`, `statement_long` and the two media bindings. Neither form writes the
+other's fields, so they cannot disagree about who owns one.
 
 ### 7.4 `/studio/catalog/materials`
 

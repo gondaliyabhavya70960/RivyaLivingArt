@@ -1,14 +1,14 @@
 # PROJECT_STATE — what is actually built
 
 > Verified against the repository, not against intent. Update at the end of every phase.
-> Last verified: Phase 15 (Product Detail Experience), 2026-09-09.
+> Last verified: Phase 16 (Collections as Exhibitions), 2026-09-09.
 
 ## Summary
 
 The design system is built; the database spine exists, carries RLS policies for all six roles, and
 has been verified against a real PostgreSQL **and against the hosted Supabase project**. What
 exists: the toolchain, the token layer, 32 primitives, 3 motion helpers, 7 behavioural patterns, a
-dev-only gallery, **twenty-three tables, all with RLS on, and 90 policies**, generated types with a
+dev-only gallery, **twenty-five tables, all with RLS on**, generated types with a
 drift gate, a repository layer with Zod at its boundary, an idempotent seed runner proved not to
 overwrite an owner's edit, the Studio shell with its ⌘K palette and user management, the media
 layer end to end, the Higgsfield migration, gap engine and tracker, **the CMS engine — pages,
@@ -47,8 +47,8 @@ What does not exist: **a page a visitor can read**, and the reason is unchanged.
 renders, and every one answers 404, because Phase 09 seeds all 53 sections `DRAFT` and
 `renderCmsPage` refuses to serve a published route with nothing on it — SEED §55, as code.
 Publishing is an editorial act in Studio, and 25 of those sections cannot be published at all until
-the owner verifies what they claim. Twelve of the twenty-eight blocks are still declared and
-unbuilt (amendment A8); a block with repeating items is edited as JSON until a repeater is built. No
+the owner verifies what they claim. Eight of the thirty blocks are still declared and
+unbuilt (amendments A8 and A14); a block with repeating items is edited as JSON until a repeater is built. No
 product rows, and there will be none from a seed — `products` is not a member of the
 `SeedableTable` union. **No media**: `media_assets` is empty until the Higgsfield migration runs, so
 every image on every page is the SEED §47 fallback well and no visual baseline of a page is worth
@@ -68,6 +68,26 @@ videos carry a duration.
 **What still blocks the site going live is owner-side and is one thing, not two.** Every one of
 those assets is APPROVED *and* `OWNER_VERIFICATION_REQUIRED`, so `cms_publish_section` refuses
 (RV006) any section that binds one until the owner verifies it. Recorded in *Remaining Work*.
+
+**Collections are exhibitions, and none of them is published.** Phase 16 promoted `collections` from
+a Phase 03 stub: eight new columns, a linked exhibition page, `entity_relations` for hand-made edges,
+and two gates in the database — a collection cannot reach PUBLISHED unless its concept is
+OWNER_CONFIRMED, and only an owner or admin can confirm one. The ten FEAT §9 concepts are seeded as
+a name, a slug and an order, with no statement, no media, no products and no page: verified against
+the database as ten rows, all DRAFT, zero with any content column set, zero published, zero pages of
+kind COLLECTION. `/collections/<slug>` therefore answers 404 for all ten, which is the finished state
+of the phase rather than an unfinished one. The block catalogue is now 30, of which 22 are built
+(amendment A14); the exhibition template inserts ten of FEAT §8's eleven elements, because the
+eleventh maps to a block that renders nothing.
+
+**The Playwright suite cannot execute in this sandbox.** The network policy denies the Supabase host,
+so every route answers 500 and no page can be measured — the first run of the Phase 16 spec reported
+`expected 404, received 500` and pointed at collections before that was diagnosed. The spec now
+checks a baseline route and skips with the reason, never in CI. Phase 15's three specs are in the
+same position. Unit, RLS, seed and gate verification all run here and pass.
+
+**The hosted project is level with the repository through `0143`, and NOT through Phase 16.**
+`0140`–`0142` are applied locally only and are the next hosted action.
 
 **The hosted project is level with the repository.** Every migration through
 `0132_phase15_specifications_omitted.sql` is applied to `ccvarsmzickdkryoakdg` and recorded in
