@@ -143,11 +143,16 @@ interface Atom {
 }
 
 /**
- * `4' 6"`, `4 ft 6 in`, `1 m 20`.
+ * `4' 6"`, `4 ft 6 in`.
  *
  * TRIED FIRST, ALONE, BECAUSE IT IS THE ONE MEASUREMENT WRITTEN AS TWO NUMBERS THAT MEAN ONE
  * LENGTH. The general scan would read it as two atoms — 1 219 mm and 152 mm — which is two wrong
  * answers where there is one right one.
+ *
+ * IMPERIAL ONLY. The metric equivalent — `1 m 20` for 1 200 mm — is NOT read here, and the header
+ * claimed otherwise until a review checked it against `parseFeetInches`. It is rare in the sources
+ * this pipeline reads, and reading it wrongly would be worse than leaving it `AMBIGUOUS`, which is
+ * where the general scan puts it: two atoms in one segment with incompatible units.
  */
 function readCompositeImperial(segment: string): number | null {
   return parseFeetInches(segment)
@@ -200,6 +205,29 @@ function labelBefore(text: string, index: number): DimensionMmKey | null {
     }
   }
   return best?.key ?? null
+}
+
+/**
+ * The axis an unlabelled number takes, given what the string has already named.
+ *
+ * A LABELLED MEASUREMENT MUST MOVE THE CURSOR PAST ITS OWN AXIS, and not doing so was a defect.
+ * The cursor only advanced for UNLABELLED atoms, so the first unlabelled number after a labelled
+ * one always took `POSITIONAL_ORDER[0]` — `Ø 120 x 45 cm` came out as a diameter of 1 200 mm AND a
+ * length of 450 mm, giving a round table a length no page ever claimed and making it look
+ * rectangular to every later shape comparison.
+ *
+ * A DIAMETER CHANGES WHAT THE REMAINING NUMBER CAN BE. `length` and `width` are alternatives to a
+ * diameter rather than companions to it (see `DIMENSION_MM_KEYS`), so once a diameter is named the
+ * only axis an unlabelled number can honestly take is the height — which is what `Ø 120 x 45` says
+ * to a person reading it.
+ */
+function nextPositionalKey(assigned: Readonly<Record<string, number>>): DimensionMmKey | undefined {
+  const order: readonly DimensionMmKey[] =
+    assigned['diameter_mm'] === undefined ? POSITIONAL_ORDER : ['height_mm']
+  // THE FIRST AXIS NOT YET NAMED — no separate cursor. Filtering by what is already assigned walks
+  // the order on its own, and keeping a second counter beside it is how the first attempt at this
+  // fix skipped `width_mm` on a plain `120 x 60 x 45 cm`.
+  return order.find((key) => assigned[key] === undefined)
 }
 
 function withinRange(value: number): boolean {
@@ -263,7 +291,6 @@ export function parseDimensions(texts: readonly string[]): DimensionReading {
   }
 
   const dimensions: Record<string, number> = {}
-  let positional = 0
   let impossible = false
   let ambiguous = false
 
@@ -286,8 +313,7 @@ export function parseDimensions(texts: readonly string[]): DimensionReading {
     }
 
     const labelled = labelBefore(text, atom.index)
-    const key = labelled ?? POSITIONAL_ORDER[positional]
-    if (labelled === null) positional += 1
+    const key = labelled ?? nextPositionalKey(dimensions)
     // Past the third unlabelled number there is no axis left to assign. A fourth measurement is a
     // seat height, a leg width or a packed depth, and guessing which would put it on an axis.
     if (key === undefined) continue

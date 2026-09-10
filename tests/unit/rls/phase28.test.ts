@@ -369,6 +369,37 @@ describeDb('Phase 28 — the lexicon is editable, and deleting one is destructiv
     expect(result.ok).toBe(false)
   })
 
+  it('REFUSES AN UPPER-CASE TOKEN, which the citext column used to admit', async () => {
+    /*
+     * `token` is `citext`, and citext overloads `~` to the case-INSENSITIVE operator — so the
+     * anchored lower-case pattern `^[a-z][a-z0-9_]*$` read as watertight and admitted `OAK`.
+     * `material_tokens` is compared and grouped as an exact string across thousands of rows, so a
+     * lexicon holding both `oak` and `OAK` splits every material breakdown built from them.
+     * `0262` casts to text, which resolves the operator the pattern was written for.
+     */
+    for (const token of ['OAK_PROBE', 'Oak_Probe', 'oakPROBE']) {
+      const result = await asResearcher((sql) =>
+        sql.attempt(
+          `insert into research_material_lexicon (token, patterns) values ($1, array['probe'])`,
+          [token],
+        ),
+      )
+      expect(result.ok, token).toBe(false)
+    }
+  })
+
+  it('REFUSES A NULL ELEMENT IN patterns, which is the same NULL-passes-a-CHECK trap again', async () => {
+    // `btrim(null) = ''` is NULL, not TRUE, so a null element was filtered out of the EXISTS and
+    // `not exists (...)` returned true. Third instance of this family in one migration; `0262`
+    // tests for the null explicitly instead of letting it evaporate through a comparison.
+    const result = await asResearcher((sql) =>
+      sql.attempt(
+        `insert into research_material_lexicon (token, patterns) values ('p28_null', array['x', null])`,
+      ),
+    )
+    expect(result.ok).toBe(false)
+  })
+
   it('REFUSES A BLANK PATTERN, which would tag every product in the system', async () => {
     // `matchMaterials` builds a word-boundary expression per pattern; an empty one is two
     // look-arounds with nothing between them, which matches at almost any word boundary. One blank

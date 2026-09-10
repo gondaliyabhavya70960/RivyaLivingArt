@@ -111,6 +111,13 @@ const config = [
       'app/(studio)/studio/(shell)/content/actions.ts',
       'app/(studio)/studio/(shell)/research/scrape/actions.ts',
       'app/(studio)/studio/(shell)/research/sources/actions.ts',
+      /*
+       * Phase 28. `research_pipeline_events` has no insert policy for a session, and the normalised
+       * columns of `research_products` sit behind a policy written for `research.confirm` while the
+       * phase document gives them to `research.write` — RLS gates a table, not a column. Both writes
+       * therefore need the service role, with the column split enforced by the action's own check.
+       */
+      'app/(studio)/studio/(shell)/research/explorer/actions.ts',
     ],
     rules: {
       'no-restricted-imports': [

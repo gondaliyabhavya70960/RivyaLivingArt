@@ -1594,6 +1594,11 @@ export const STUDIO_STRINGS = {
     value: 'Title contains',
     contentKey: 'studio_help.research_filter_title',
   },
+  'studio.research.severityTruncated': {
+    value:
+      'Showing the products with the most recently detected findings. Narrow the filters to see the rest.',
+    contentKey: 'studio_help.research_severity_truncated',
+  },
   'studio.research.rawValue': {
     value: 'As the page said it',
     contentKey: 'studio_help.research_raw_value',

@@ -189,6 +189,65 @@ failure rather than a skip — which is the posture both files' own headers said
 why it was broken quietly. The gate was verified to fail on both offence shapes before being wired
 into `npm run check` and into CI.
 
+### Phase 28: nineteen review findings, and the eleven that were real
+
+After the phase merged, the diff was re-read adversarially rather than declared finished. Nineteen
+findings came back; each was checked by execution or by SQL rather than taken on its word, eight
+were wrong, and **eleven were real and are fixed here**. They fall into four families, and three of
+the families are one mistake made repeatedly.
+
+**A CHECK constraint refuses only on FALSE — NULL passes.** `0260` documents this once and then
+broke it twice more. `research_material_lexicon_token_shape` was case-INSENSITIVE, because `token`
+is `citext` and citext overloads `~` to `texticregexeq`; a token of `Teak` satisfied a constraint
+written to demand lower case. And `has_no_blank_pattern` let a SQL NULL element through, because
+`btrim(null) = ''` is NULL rather than TRUE. **Migration `0262`** fixes both — `token::text` to
+resolve the case-sensitive operator, and an explicit `p.entry is null` test — and two RLS
+regression tests now insert exactly the rows that used to be accepted.
+
+**The pipeline event violated its own table's constraint.** `research_pipeline_events_moves_somewhere`
+requires `from_stage` and `to_stage` to differ OR both to be present; three call sites in
+`match.ts` wrote an event with neither. `recordEventAtCurrentStage()` in `lib/scraper/core/stage.ts`
+now reads the product and writes its current stage into both columns, and it is the only way those
+three sites record anything.
+
+**A merchandiser could not clear a duplicate they were permitted to clear**, because the event write
+went through the session client and the events table is service-role-only. The two-client model is
+now explicit and documented at the top of `explorer/actions.ts`: **the domain write runs as the
+person, so RLS still judges it; only the audit event runs as the system.** The lockout that had been
+added to work around the symptom is gone.
+
+**Five parser defects, all of the same species: a confident wrong answer where the design calls for
+`AMBIGUOUS`.** `readCurrency` welded a currency word to an adjacent number and read `CHF` out of
+`chfront`; a real ISO 4217 allowlist of ~155 codes replaced an 18-word denylist, and a code counts
+only when it sits within four characters of a digit. `readPrice` invented a range from a VAT line or
+a discount percentage; it now scans amounts with percentages excluded and a range token required
+between them. The zero guard tested the first amount rather than any of them. And the dimension
+parser's positional cursor mis-assigned the third number of a `W × D × H` triple once a diameter had
+claimed a slot.
+
+**Three defects the review found in the review's own subject matter**, all fixed here:
+
+- The severity filter inlined up to twenty thousand product uuids into a PostgREST `in.(…)` filter —
+  which lives in the QUERY STRING, so it would have started failing at a few hundred findings, in an
+  opaque way, at exactly the moment an operator needed it. It is capped at two hundred ids ordered
+  by most recent detection, **and the screen says when the cap bites** rather than showing a
+  truncated list that looks complete.
+- `?row=` and `?source=` reached `.eq()` on `uuid` columns unvalidated, so a typed-in value threw a
+  500 where every other filter on the screen ignores what names nothing. Both are shape-checked now.
+- **The new offline gate had the hole it exists to close.** It read `*.test.ts` and nothing else, so
+  a unit test could reach a database through one `import './helper'` and pass — and the same commit
+  that added the gate added a shared module beside the tests. It now walks each test's import
+  closure through relative and `@/` specifiers (136 tests, 473 modules) and names the test that
+  pulls an offending module in. `tests/unit/db/unit-offline-gate.test.ts` holds six cases including
+  that exact indirection; the fixtures assemble the offending strings at run time, because spelling
+  them out would make the gate fail on its own test — and exempting the path is how a gate stops
+  being one.
+
+Verification after the fixes: `npm run check` green; unit project **136 files / 2,279 tests**; RLS project **479 passed** with `RLS_TESTS_REQUIRED=1` against a freshly reset and seeded
+database; `db:check-migrations`, `db:check-schema`, `db:check-types` and `research:check-isolation`
+(all four invariants, database included) green; a production build against that database through a
+local PostgREST, then `security:check-bundle` clean.
+
 ### The next exact action
 
 **Phases 29 and 30 are stopped at the owner's instruction (2026-09-11) and no work has begun on

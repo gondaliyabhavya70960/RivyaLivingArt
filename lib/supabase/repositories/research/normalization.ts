@@ -99,6 +99,14 @@ export async function writeNormalizedProduct(admin: Client, input: NormalizedWri
  * is the question the explorer exists to answer.
  */
 export async function writeNormalizedOverride(
+  /**
+   * AN ADMIN CLIENT, AND THAT IS NOT A CONVENIENCE. `research_products_update_staff` requires
+   * `research.confirm` because the table also carries `disposition` and `duplicate_of_id`; the
+   * phase document gives a normalised-VALUE correction to `research.write`. RLS gates a table, not
+   * a column, so the split is drawn by the Server Action's own check plus the strict column
+   * allowlist in `overrideSchema`, and the write goes round a policy that cannot express it.
+   * Passing a session client here silently matched zero rows while the action reported success.
+   */
   client: Client,
   input: {
     readonly productId: string

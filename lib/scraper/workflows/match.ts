@@ -7,8 +7,8 @@ import {
   normaliseLabel,
   type CategoryMapping,
 } from '@/lib/scraper/core/category-map'
+import { recordEventAtCurrentStage } from '@/lib/scraper/core/stage'
 import type { DimensionsMm } from '@/lib/scraper/normalization'
-import { recordPipelineEvent } from '@/lib/supabase/repositories/research/events'
 import {
   decideCandidate,
   proposeCandidates,
@@ -330,11 +330,8 @@ export async function applyDuplicateProposals(
       duplicateOfId: automatic.other.id,
       actorId: null,
     })
-    await recordPipelineEvent(admin, {
-      entityType: 'research_product',
-      entityId: input.subject.id,
-      fromStage: null,
-      toStage: null,
+    await recordEventAtCurrentStage(admin, {
+      productId: input.subject.id,
       actorUserId: null,
       reason:
         `Marked a duplicate of ${automatic.other.id} by ${automatic.proposal.method} at ` +
@@ -365,6 +362,7 @@ export async function applyDuplicateProposals(
  */
 export async function acceptCandidateAsDuplicate(
   client: Client,
+  admin: Client,
   input: { readonly candidateRowId: string; readonly userId: string },
 ): Promise<void> {
   const row = await decideCandidate(client, {
@@ -383,11 +381,11 @@ export async function acceptCandidateAsDuplicate(
     duplicateOfId: row.candidate_id,
     actorId: input.userId,
   })
-  await recordPipelineEvent(client, {
-    entityType: 'research_product',
-    entityId: row.research_product_id,
-    fromStage: null,
-    toStage: null,
+  // THE DOMAIN WRITES RUN AS THE PERSON so RLS applies to them; the RECORD of what they did runs
+  // as the system, because `research_pipeline_events` has no insert policy for a session and an
+  // event a merchandiser could forge is not a record of anything.
+  await recordEventAtCurrentStage(admin, {
+    productId: row.research_product_id,
     actorUserId: input.userId,
     reason: `Confirmed a duplicate of ${row.candidate_id} from a ${row.method} candidate.`,
   })
@@ -402,6 +400,7 @@ export async function acceptCandidateAsDuplicate(
  */
 export async function clearDuplicate(
   client: Client,
+  admin: Client,
   input: { readonly productId: string; readonly userId: string; readonly reason: string },
 ): Promise<void> {
   await setDuplicateOf(client, { id: input.productId, duplicateOfId: null, actorId: input.userId })
@@ -410,11 +409,8 @@ export async function clearDuplicate(
     disposition: 'NONE',
     actorId: input.userId,
   })
-  await recordPipelineEvent(client, {
-    entityType: 'research_product',
-    entityId: input.productId,
-    fromStage: null,
-    toStage: null,
+  await recordEventAtCurrentStage(admin, {
+    productId: input.productId,
     actorUserId: input.userId,
     reason: `Duplicate flag cleared: ${input.reason}`,
   })
