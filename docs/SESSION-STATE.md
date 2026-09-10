@@ -8,6 +8,140 @@
 
 ## Current Phase
 
+**Phase 26 — Comparator Source Management. COMPLETE.** Adding a competitor is now a Studio task
+rather than an engineering one. All twenty-three FEAT §26 fields are stored, validated, editable and
+consumed by the Phase 25 engine, and the claim that matters is proved rather than asserted: the
+end-to-end spec builds a complete second source through the interface — politeness settings, three
+URL patterns, four category mappings, a schedule — and then asserts `git status --porcelain` is
+**empty**.
+
+**Nothing has changed about what is fetched: still nothing, and still behind the same three gates.**
+This repository ships zero source rows and seeds none. What Phase 26 added is the workflow around
+the gate, never a way past it.
+
+### Phase 26: what is built
+
+**Migrations `0240`–`0241`, applied locally AND to hosted through the Supabase MCP, with the ledger
+rows.** Four enums. Three child tables — `research_source_url_patterns`,
+`research_source_category_map`, `research_source_schedules` — each carrying its own constraints and
+audit trail rather than three keys in a jsonb blob nobody can review. Eight new columns on
+`research_sources`. Three politeness ceilings tightened to FEAT §26's numbers (60 rpm, a 1,000 ms
+floor, four at a time), so a form stricter than its table is no longer possible in either direction.
+
+**Health is a VIEW, and it is the first derived relation in this schema.**
+`research_source_health_v` computes last run, seven-day success rate, queue depth, schedule cadence
+and health on READ — `DISABLED → FAILING → DEGRADED → STALE → HEALTHY`, in that precedence.
+`security_invoker = true` is the load-bearing word: without it a relation over nine staff-only
+tables is readable by anyone PostgREST will speak to. Because a view has no policies, its GRANTS are
+the whole of its access control, and `check-research-isolation.mjs` gained a fifth assertion for
+exactly that — anon holding any privilege on any research view fails the build. Tables are
+deliberately out of that check's scope: Supabase grants every role every privilege on every new
+table in `public`, and RLS, not the grant, is the boundary there. The first draft of the check
+included tables and would have failed on all twelve.
+
+**Six hours, parsed in SQL.** `research_source_schedules_min_interval` calls
+`research_cron_min_interval_minutes()`, which reads the minute and hour fields and returns the
+smallest gap between two fires — **0, not null, for an expression it cannot read**, because a null
+would make the CHECK `null >= 360`, which PostgreSQL treats as satisfied. The rule exists twice on
+purpose: as a constraint nothing can bypass, and in `lib/scraper/core/cron.ts` so a form can say
+what is wrong before the write. A 21-row table runs both implementations against each other and the
+database half really runs.
+
+**EXCLUDE wins, always, whatever the priority**, and an EXCLUDE that will not compile still
+excludes. Folding the four pattern kinds into one ordering would have made the priority column a way
+to configure a refusal away. Patterns are matched against the absolute URL *and* the
+path-and-query, because a leading-slash glob is what an operator actually writes and an anchored
+expression compiled against the whole address matched nothing, silently.
+
+**An unmapped category is a first-class result, never a guess.** `normaliseLabel` lowercases,
+collapses whitespace and does nothing else — no stemming, no synonyms, no defaulting to the first
+category — and the dashboard counts what is left over.
+
+**The tester makes no request; the probe makes exactly one.** The tester is a plain GET on the
+page, answered from stored patterns and the cached robots file, so twenty candidate URLs can be
+checked without a packet — including the ones that turn out to be disallowed — and the result is a
+link somebody can share. The probe goes through `lib/scraper/workflows/probe.ts`, which uses the
+same fetcher the drain loop does, so robots.txt, the source's delay and the circuit breaker all
+apply; it writes an audit row with the operator's name on it.
+
+**Readiness and policy status are two columns because they are two questions.** A researcher marks a
+source `READY_FOR_REVIEW`; an owner or admin records `APPROVED`, `RESTRICTED` or `BLOCKED` with a
+mandatory note. Both acts need `research.write` AND `system.settings.write`, checked as a pair in
+the server action because RLS gates a row rather than a column.
+
+**Surfaces**: `/studio/research/sources` (list with derived health), `/sources/new`,
+`/sources/[sourceId]` (all 23 fields, the three child editors, the tester, the probe, readiness, the
+policy panel and the enable control rendered *disabled with its reason*), plus health pills and an
+unmapped-category count on the dashboard.
+
+### Phase 26: what is NOT built, and why
+
+- **Any adapter.** `lib/scraper/adapters/registry.ts` holds a DESCRIPTOR — key, version,
+  capabilities, `supports()` — with exactly one entry, `generic`, declaring `DISCOVER` only.
+  Claiming `EXTRACT` before Phase 27 writes the extractor would advertise a capability the engine
+  cannot honour.
+- **`SITEMAP`, `CATEGORY_CRAWL` and `FEED` collection modes.** In the enum so adding them is code
+  rather than a migration; `SEED_URLS` is the only one the engine runs today.
+- **A timezone other than UTC.** The column exists because FEAT §26 field 19 names it, and the
+  CHECK refuses anything else: `nextCronRun` evaluates every field in UTC, so a stored zone would
+  be a column the scheduler silently ignores.
+- **A rendered builder for the three extraction configs.** They are JSON textareas with Zod schemas
+  behind them, because their shape belongs to the Phase 27 adapter that reads them.
+- **A signed-in e2e path.** Guarded by `STUDIO_STORAGE_STATE` and skipped, for the reason Phases 23,
+  24 and 25 record: a real session needs an auth server the local shim does not run.
+
+### Phase 26: verification, as actually run
+
+1. `npm run db:reset` — **73 migrations** apply from clean; `seed:content` — 486 inserted;
+   `db:types` regenerated and `db:check-types` clean.
+2. Local and hosted both report **73 migrations, 66 tables, 230 policies**, zero `anon` policies on
+   any `research_*` table, zero `anon` grants on the health view, and zero source rows.
+3. `node scripts/research/check-research-isolation.mjs` → exits 0 with **exactly one** allowlisted
+   crossing, `research_source_category_map_category_fk`, pointing at `categories`.
+4. The five health states proved by inserting run histories and reading the view back, plus the
+   circuit-open case that must be `FAILING` whatever the run history says.
+5. `psql` refuses `*/5 * * * *`, `0 */4 * * *` and `not a cron`; accepts `0 */6 * * *`, the
+   wrap-around `0 0,18 * * *` and `30 3 * * *`.
+6. **Two constraint defects found by their own tests and fixed.** `check (category_id is not null or
+   is_ignored)` turned `on delete set null` into `on delete restrict`, so a merchandiser could not
+   delete a category a researcher had once mapped to; it is replaced by a generated `mapping_state`
+   with three values and a CHECK on the one thing that is never true. And the pattern matcher only
+   ever tested the absolute URL, so `/collection/*` matched nothing at all.
+7. `npm run test` — **2,158 passing, none skipped**, including 334 across six new unit suites and
+   `tests/unit/rls/phase26.test.ts` (24 cases).
+8. `npm run check` — all **33** gates green. A production build against the seeded database through
+   the local PostgREST shim renders all three new routes; `security:check-bundle` clean.
+
+### Phase 26: the D9 ten, recorded
+
+1. Code exists and is committed — two migrations, five `lib/scraper` modules, three repositories,
+   three Studio routes with eleven server actions, seven components, six unit suites, one RLS
+   suite, two e2e specs.
+2. Migrations applied locally and to hosted, with ledger rows and matching counts (73 / 66 / 230).
+3. Tests written and passing: 2,158, none skipped.
+4. Gates pass, including the widened `research:check-isolation`.
+5. Documentation updated: SCRAPER §17 (the field table verbatim plus what shipped), DATA_MODEL,
+   STUDIO_GUIDE, CANONICAL-DECISIONS **A26**, CHANGELOG, PROJECT_STATE, this file.
+6. No business fact fabricated: zero sources, zero competitor names, zero domains. Every fixture
+   uses an `example`-reserved host or loopback.
+7. Nothing in the manifest regenerated; no competitor image fetched, and none ever will be.
+8. Remaining issues documented — see "what is NOT built" above.
+9. The next phase is named: **27 — Scraper Extraction**.
+10. Hosted is level with the repository through `0241`.
+
+### Phase 26: what the owner must do before anything is fetched
+
+Unchanged from Phase 25, and now with a screen for each step:
+
+1. Set `CRON_SECRET` and `SCRAPER_USER_AGENT` in Vercel — see ENVIRONMENT §5.2.
+2. Decide, per website, whether its terms permit Rivya to read it. **This is not an engineering
+   question and this repository has not answered it.**
+3. Add the source in Studio → Research → Sources, record the policy review, enable it, and switch
+   `research_enabled` on.
+
+
+### Superseded — Phase 25's state
+
 **Phase 25 — Product Scraper Foundation. COMPLETE.** Rivya can now read a competitor's website —
 politely, on a schedule, under a kill switch — and store what came back somewhere no visitor can
 reach. It extracts nothing structured (Phase 27) and normalises nothing (Phase 28).
@@ -18,7 +152,7 @@ an owner records a policy review approving a source, that source is enabled, and
 That is the shipped state, not a gap — a source row is an assertion that Rivya may read a real
 third party's website, and that judgement is the owner's.
 
-### Phase 25: what is built
+#### Phase 25: what is built
 
 **Migrations `0230`–`0234`, applied locally AND to hosted through the Supabase MCP, with the ledger
 rows.** Six enums. Nine tables: `research_sources` (politeness settings as columns, because they
@@ -54,7 +188,7 @@ a public CDN — content-addressed, date-partitioned, 180-day retention, pruned 
 providers against `research_search_documents`, and `app/api/cron/research` on a five-minute Vercel
 cron.
 
-### Phase 25: what is NOT built, and why
+#### Phase 25: what is NOT built, and why
 
 - **Structured extraction.** `research_raw_items.raw` accepts ONLY `{ title, canonicalUrl, links }`
   and its Zod schema is `.strict()`, so a "quick price regex" fails at the write rather than at
@@ -73,7 +207,7 @@ cron.
 - **A signed-in e2e path.** Guarded by `STUDIO_STORAGE_STATE` and skipped, for the reason Phases 23
   and 24 record: a real session needs an auth server the local shim does not run.
 
-### Phase 25: verification, as actually run
+#### Phase 25: verification, as actually run
 
 1. `npm run db:reset` — 71 migrations apply from clean; `seed:content` — 486 inserted;
    `db:types` regenerated with no drift.
@@ -105,7 +239,7 @@ cron.
    the sitemap containing no research route.
 7. `npm run check` — all **33** gates green.
 
-### Phase 25: two things this phase found in existing code
+#### Phase 25: two things this phase found in existing code
 
 - **`tests/unit/rls/function-grants.test.ts` never loaded the fixture.** Its last test inserts a
   product as the owner, and it only worked because some other suite happened to run first. The
@@ -117,7 +251,7 @@ cron.
   triggers. A gate written two phases ago failing on code written today is the whole point of
   having it.
 
-### Phase 25: the D9 ten, recorded
+#### Phase 25: the D9 ten, recorded
 
 1. Code exists and is committed — five migrations, `lib/scraper/**` (core and workflows), eight
    research repositories, six Studio surfaces, two command providers, the cron route, two scripts.
@@ -135,7 +269,7 @@ cron.
 9. The next phase is named: **26 — Comparator Source Management**.
 10. Hosted is level with the repository through `0234`.
 
-### Phase 25: what the owner must do before anything is fetched
+#### Phase 25: what the owner must do before anything is fetched
 
 1. Set `CRON_SECRET` (Sensitive) and `SCRAPER_USER_AGENT` (plain) in Vercel — see ENVIRONMENT §5.2.
    Until then the cron refuses itself, which is the intended behaviour.

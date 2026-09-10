@@ -38,6 +38,7 @@ import {
   PHASE_23_SEARCH_POLICIES,
   PHASE_24_POLICIES,
   PHASE_25_POLICIES,
+  PHASE_26_POLICIES,
   PHASE_19_POLICIES,
   TABLE_POLICY_MAP,
   type ManagedTable,
@@ -371,6 +372,28 @@ const GENERATED: Record<string, { title: string; preamble: string }> = {
 -- pipeline's own history: no write policy at all, and 0231 revokes update and delete outright.
 -- \`lib/scraper/core/stage.ts\` writes it in the same call that moves the stage, so a move without
 -- an event is not something that can happen.`,
+  },
+  [PHASE_26_POLICIES]: {
+    title: `-- ${PHASE_26_POLICIES} — Phase 26`,
+    preamble: `-- Policies for the three source-configuration child tables, which migration 0240 creates.
+-- GENERATED from lib/auth/table-permissions.ts and rewritten whole, so it may hold nothing a human
+-- wrote. Its own file for the reason every generated policy file has one: 0240 carries the DDL and
+-- a shipped generated file is never re-opened.
+--
+-- ISOLATION INVARIANT I2 AGAIN, AND IT IS WORTH RESTATING HERE RATHER THAN ASSUMED FROM 0233. One
+-- of these three tables holds the first foreign key from the research schema into a public one —
+-- \`research_source_category_map.category_id\` — and the temptation a reader should not have to
+-- resist is that a table pointing at \`categories\` might reasonably be readable wherever
+-- \`categories\` is. It is not. The pointer is Rivya's private reading of a competitor's taxonomy;
+-- the direction of the reference says nothing about who may see it.
+--
+-- ALL THREE ARE \`research.write\`, NOT \`research.confirm\`. They are configuration, and
+-- configuration is what a researcher operates. The confirm/write split the phase document draws is
+-- about columns that carry a DISPOSITION, and no column in these three tables does.
+--
+-- DELETE IS \`destructive.execute\` ON ALL THREE, which is stricter than it first looks for the URL
+-- patterns: deleting an EXCLUDE row does not remove information, it WIDENS what Rivya will fetch.
+-- That is the same class of act as unpublishing live content, and it takes the same permission.`,
   },
   [PHASE_24_POLICIES]: {
     title: `-- ${PHASE_24_POLICIES} — Phase 24`,

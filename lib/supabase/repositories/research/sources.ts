@@ -1,5 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 
+import type { ReadinessState, SourceInput } from '@/lib/scraper/core/source-schema'
+
 import type { Database } from '../../database.types'
 import { toRepositoryError } from '../support'
 
@@ -20,11 +22,28 @@ const ENTITY = 'research source'
 
 export type ResearchSourceRow = Database['public']['Tables']['research_sources']['Row']
 
+/**
+ * Phase 26 appends eight columns — FEAT §26 fields 6, 8, 12, 13, 14, 15 and 23, plus `readiness` —
+ * rather than interleaving them, so the diff reads as an addition and every existing reader keeps
+ * the shape it already had.
+ *
+ * AND IT REMOVES ONE THAT NEVER EXISTED. This list named `owner_verification`, and
+ * `research_sources` has no such column: `0231` refuses it by name, at length, because
+ * `policy_status` already answers that question with a constraint behind it and two columns
+ * answering one question drift. PostgREST resolves a select list against the real relation, so
+ * every read in this file — the sources page, the source drawer, the drain loop's runnable query —
+ * was answering `42703 column research_sources.owner_verification does not exist`. Removing it is
+ * a correction, not a change of behaviour: there is no prior behaviour to preserve. It survived
+ * because nothing typechecks a select string; `SOURCE_HEALTH_COLUMNS` in `source-health.ts` is
+ * read back against `information_schema.columns` by a test for exactly this reason.
+ */
 const SOURCE_COLUMNS =
   'id, slug, name, base_url, region, currency, source_type, is_enabled, adapter_key, ' +
   'rate_limit_rpm, request_delay_ms, concurrency, next_fetch_not_before, in_flight_count, ' +
   'consecutive_failures, circuit_open_until, policy_status, policy_reviewed_by, ' +
-  'policy_reviewed_at, policy_notes, status, owner_verification, created_at, updated_at, updated_by'
+  'policy_reviewed_at, policy_notes, status, created_at, updated_at, updated_by, ' +
+  'analytics_league, collection_mode, image_extraction_mode, price_extraction, sku_extraction, ' +
+  'attribute_extraction, notes, readiness'
 
 export async function listResearchSources(client: Client): Promise<ResearchSourceRow[]> {
   const { data, error } = await client
@@ -81,7 +100,14 @@ export async function createResearchSource(
     readonly baseUrl: string
     readonly region: string | null
     readonly currency: string | null
-    readonly sourceType: string | null
+    /**
+     * `research_source_type` SINCE `0240`, WHERE IT WAS `text` BEFORE. Phase 25 left the column
+     * text because the vocabulary was FEAT §26's to fix; narrowing the parameter to match is a
+     * type correction, not a behaviour change — the only caller passes `sourceInputSchema`'s
+     * `sourceType`, which is that enum's six values, and a wider parameter would have let a
+     * seventh through to be refused by the database instead of by the compiler.
+     */
+    readonly sourceType: Database['public']['Enums']['research_source_type'] | null
     readonly actorId: string
   },
 ): Promise<string> {
@@ -100,6 +126,84 @@ export async function createResearchSource(
     .single()
   if (error) throw toRepositoryError(ENTITY, 'create', input.slug, error)
   return data.id
+}
+
+/**
+ * Every FEAT §26 field a researcher may edit, in one write.
+ *
+ * WHAT IS DELIBERATELY ABSENT IS THE POINT OF THIS FUNCTION. `policy_status`, `policy_reviewed_by`,
+ * `policy_reviewed_at`, `policy_notes` and `is_enabled` are not here, and they keep the two narrow
+ * functions below instead. RLS gates a ROW, not a COLUMN: as far as PostgreSQL is concerned a
+ * researcher who may edit a source's request delay may also write its `policy_status`. The pair of
+ * permission checks in the server action is what draws that line, and this signature is what keeps
+ * the line drawable — a general update that could carry `policy_status` would let any caller of it
+ * move a source towards approval, and every future caller would have to remember not to. A caller
+ * cannot forget a field this function does not accept.
+ *
+ * `slug`, `name` and `base_url` ARE here, because `sourceInputSchema` carries them and the drawer
+ * that posts it is the screen where a source is renamed. `createResearchSource` stays narrow for
+ * the opposite reason: it exists to guarantee one thing — a new source is UNREVIEWED and disabled —
+ * and widening it to twenty-three arguments would give that guarantee twenty-three reasons to be
+ * edited.
+ *
+ * THE THREE `jsonb` FIELDS ARE WRITTEN AS THE VALIDATED OBJECTS THEY ALREADY ARE. `0240` checks
+ * only that each is an object, an object and an array; the shape is `priceExtractionSchema`,
+ * `skuExtractionSchema` and `attributeExtractionSchema`'s to enforce, and it did so at the form.
+ */
+export async function updateResearchSource(
+  client: Client,
+  id: string,
+  input: SourceInput & { readonly actorId: string },
+): Promise<void> {
+  const { error } = await client
+    .from('research_sources')
+    .update({
+      slug: input.slug,
+      name: input.name,
+      base_url: input.baseUrl,
+      region: input.region,
+      currency: input.currency,
+      source_type: input.sourceType,
+      analytics_league: input.analyticsLeague,
+      collection_mode: input.collectionMode,
+      adapter_key: input.adapterKey,
+      image_extraction_mode: input.imageExtractionMode,
+      price_extraction: input.priceExtraction,
+      sku_extraction: input.skuExtraction,
+      attribute_extraction: input.attributeExtraction,
+      rate_limit_rpm: input.rateLimitRpm,
+      request_delay_ms: input.requestDelayMs,
+      concurrency: input.concurrency,
+      notes: input.notes,
+      readiness: input.readiness,
+      updated_by: input.actorId,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', id)
+  if (error) throw toRepositoryError(ENTITY, 'update', id, error)
+}
+
+/**
+ * Move a source along the researcher's half of the policy workflow.
+ *
+ * ITS OWN FUNCTION RATHER THAN A FIELD OF THE UPDATE ABOVE, because `readiness` is a REQUEST and
+ * `policy_status` is the ANSWER, and `0240` separates the two columns so that one may not be both.
+ * The values this accepts are not all equal: a researcher posts `READY_FOR_REVIEW` (or `DRAFT` to
+ * withdraw), while `REVIEWED` is written only by the policy decision, which is an owner's act. That
+ * distinction is enforced in the server action, where the session is known — this layer takes the
+ * value it is given and records who gave it, exactly as `setPolicyReview` does.
+ */
+export async function setSourceReadiness(
+  client: Client,
+  id: string,
+  readiness: ReadinessState,
+  actorId: string,
+): Promise<void> {
+  const { error } = await client
+    .from('research_sources')
+    .update({ readiness, updated_by: actorId, updated_at: new Date().toISOString() })
+    .eq('id', id)
+  if (error) throw toRepositoryError(ENTITY, 'readiness', id, error)
 }
 
 /**

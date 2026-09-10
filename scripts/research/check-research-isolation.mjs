@@ -48,14 +48,17 @@ const checked = { I1: false, I2: false }
 // I1 — no foreign key crosses the research/public boundary
 // ================================================================================================
 //
-// THE ALLOWLIST IS EMPTY AT THIS PHASE AND THAT IS THE POINT. Phase 26 adds
-// `research_source_category_map.category_id` and Phase 28 adds
-// `research_products.matched_category_id`; both are staff-written taxonomy pointers rather than
-// scraped values, both are `on delete set null`, and both need a dated amendment to D5 before they
-// ship (the phase document's Open question 4). Naming them individually here means a THIRD such
-// reference — the one nobody argued about — fails the build.
+// THE ALLOWLIST HOLDS EXACTLY THE CROSSINGS SOMEBODY ARGUED FOR, BY CONSTRAINT NAME. Phase 26
+// adds the first and Phase 28 adds the second and last; both are staff-written taxonomy pointers
+// rather than scraped values, both are `on delete set null`, and amendment **A26** in
+// docs/architecture/CANONICAL-DECISIONS.md records the exception in D5's own terms — a scraped
+// VALUE never joins to a public table, while a staff-authored taxonomy pointer may. Naming them
+// individually means a THIRD such reference — the one nobody argued about — fails the build, and
+// so does the same column re-pointed at `products` under a different constraint name.
 const ALLOWED_CROSSINGS = new Set([
-  // (empty at Phase 25)
+  // Phase 26 (A26). A researcher maps "Dining Tables" at some source to Rivya's `furniture`
+  // category. Taxonomy, typed by a person, `on delete set null`.
+  'research_source_category_map_category_fk',
 ])
 
 const CROSSING_SQL = `
@@ -186,6 +189,60 @@ function checkAnonPolicies() {
     }
   } catch (error) {
     notes.push(`I2 database check skipped: psql could not run (${error.message.split('\n')[0]}).`)
+  }
+
+  checkAnonGrants(url)
+}
+
+/**
+ * I2's blind spot, closed in Phase 26: A VIEW HAS NO POLICIES.
+ *
+ * `research_source_health_v` reads nine staff-only tables and `pg_policies` knows nothing about it,
+ * so every check above would report a clean pass over a relation an anonymous caller could select
+ * from. Two things stop that — `security_invoker = true`, which makes the Phase 25 policies apply
+ * underneath, and the absence of a GRANT to `anon`, which is what PostgREST consults before it ever
+ * gets there — and only the second is visible to a gate.
+ *
+ * SO THE QUESTION ASKED HERE IS: does `anon` hold ANY privilege on any research_* VIEW. On Supabase
+ * a new view is exposed through PostgREST by default, which means the failure this catches is an
+ * omission rather than a decision — exactly the kind a review does not see.
+ *
+ * TABLES ARE DELIBERATELY OUT OF SCOPE, AND THE FIRST DRAFT OF THIS CHECK INCLUDED THEM AND WAS
+ * WRONG. Supabase grants every role every privilege on every new table in `public`; RLS is the
+ * boundary, not the grant, and a table with row security on and no `anon` policy denies an
+ * anonymous caller whatever the ACL says. Flagging those would have failed on all twelve research
+ * tables and taught whoever met it that this gate cries wolf. The policy check above is the one
+ * that speaks for tables.
+ */
+function checkAnonGrants(url) {
+  const sql =
+    'select c.relname, c.relkind, a.privilege_type ' +
+    'from pg_class c ' +
+    'join pg_namespace n on n.oid = c.relnamespace ' +
+    "cross join lateral aclexplode(coalesce(c.relacl, acldefault('r', c.relowner))) a " +
+    'join pg_roles g on g.oid = a.grantee ' +
+    "where n.nspname = 'public' and c.relname like 'research\\_%' " +
+    "  and c.relkind in ('v', 'm') and g.rolname = 'anon'"
+
+  let output
+  try {
+    output = execFileSync('psql', [url, '-At', '-F', '|', '-c', sql], {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+    })
+  } catch (error) {
+    notes.push(`I2 grant check skipped: psql could not run (${error.message.split('\n')[0]}).`)
+    return
+  }
+
+  for (const line of output.trim().split('\n').filter(Boolean)) {
+    const [relation, kind, privilege] = line.split('|')
+    problems.push(
+      `I2: anon holds ${privilege} on ${relation} (${kind === 'v' ? 'a view' : 'a relation'}).\n` +
+        '      A view carries no policies, so its GRANTS are the whole of its access control, and\n' +
+        '      Supabase exposes a new one through PostgREST by default. Revoke it: there is no\n' +
+        "      visitor-facing view of a competitor's catalogue, in either sense of the word.",
+    )
   }
 }
 

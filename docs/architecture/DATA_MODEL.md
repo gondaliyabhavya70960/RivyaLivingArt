@@ -2,7 +2,7 @@
 doc: DATA_MODEL
 status: CURRENT
 owning_phase: 01
-last_reviewed: 2026-09-07
+last_reviewed: 2026-09-10
 owner_verification: NOT_REQUIRED
 ---
 
@@ -327,6 +327,10 @@ migration transaction; a check constraint can be replaced in place, which is why
 | `research_work_items.state` | `PENDING · LEASED · DONE · FAILED · SKIPPED` |
 | `research_fetches.robots_decision` | `ALLOWED · DISALLOWED · NO_ROBOTS · ERROR` |
 | `research_products.scale_band` | `DINING · CONSOLE · COFFEE · SEATING · SIDE · MONUMENTAL · WALL · UNKNOWN` |
+| `research_sources.readiness` | `DRAFT · READY_FOR_REVIEW · REVIEWED` (Phase 26; the researcher's half of the policy workflow, kept apart from `policy_status`) |
+| `research_source_url_patterns.kind` | `PRODUCT · CATEGORY · EXCLUDE · PAGINATION` (Phase 26; a child table's local vocabulary, so a check rather than four values in the global type namespace for one column) |
+| `research_source_schedules.timezone` | `UTC`, and nothing else. Not a vocabulary so much as a refusal: the scheduler evaluates every cron field in UTC, so any other value would be a column it silently ignores |
+| `research_source_category_map.mapping_state` | `MAPPED · IGNORED · UNRESOLVED` — **generated always as … stored** rather than check-constrained, because it is derived from `is_ignored` and `category_id` and nobody writes it |
 | `research_source_health_v.health` | `HEALTHY · DEGRADED · FAILING · STALE · DISABLED` (derived, never stored) |
 | `bulk_operations.status` | `PREVIEW · QUEUED · RUNNING · SUCCEEDED · PARTIAL · FAILED · UNDONE` |
 | `analytics_snapshots.availability` | `AVAILABLE · UNAVAILABLE` |
@@ -1993,13 +1997,55 @@ Three rules govern all of it:
    `research_lease_work_items` in `0232`, which also re-applies every source-level politeness gate
    in the same statement that hands out work.
 
+**Phase 26 completed `research_sources` and added the three child tables and the view. Six notes
+the draft below does not carry, each recorded by amendment A26:**
+
+1. **`source_type` was `text` and is now the enum `research_source_type`.** Phase 25 left it text
+   because the vocabulary was FEAT §26's to fix. The conversion is written with an explicit `using`
+   clause even though there are no rows anywhere — a migration that would corrupt a populated table
+   if it ever met one is a migration that eventually does.
+2. **Three ceilings tightened, at the row.** `research_sources_rate_limit_sane` narrows from
+   `between 1 and 120` to `between 1 and 60`; `research_sources_delay_sane` from
+   `between 250 and 600000` to `between 1000 and 600000`; and `research_sources_base_url_is_http`
+   from `~* '^https?://'` to `^https://`, **or** `^http://` for `127.0.0.1`, `localhost` and `[::1]`
+   only. The first two are FEAT §26 fields 16 and 17 supplying numbers Phase 25 had no field table
+   to set them from, and a form stricter than its table is a form somebody bypasses with a server
+   action. The loopback exception is named at the constraint rather than implied: the claims that
+   matter most in this subsystem are claims about requests that must **not** happen, the only way to
+   check one is a fixture HTTP server this repository starts and reads the request log of, and such
+   a server has no certificate. `research_sources_concurrency_sane` already said `between 1 and 4`
+   and is untouched.
+3. **`analytics_league` is nullable with no default, and that is the decision.** Defaulting every
+   new source to `ADJACENT` would file every row under a classification nobody made, and Phase 31
+   would then group by it. Zod requires one when a source is saved through Studio; a row that has
+   never been through that form honestly reports that nobody has classified it.
+4. **`readiness` is a second column beside `policy_status` and is not redundancy.** `readiness` is
+   the researcher's side — `DRAFT · READY_FOR_REVIEW · REVIEWED` — and `policy_status` is the
+   owner's answer. One column cannot be both the request and the answer, or a researcher moves a
+   source towards approval by writing the column that records approval. `REVIEWED` is written only by
+   the policy decision.
+5. **`research_source_category_map` carries a third state the draft below does not name.** The
+   obvious `check (category_id is not null or is_ignored)` turns `on delete set null` back into
+   `on delete restrict` — a merchandiser could not delete a category a researcher had once mapped a
+   label to. `mapping_state` is therefore a generated stored column reading `MAPPED`, `IGNORED` or
+   `UNRESOLVED`, and `UNRESOLVED` is counted on the dashboard beside the labels nobody has mapped
+   yet. The database refuses only what is never true: a row cannot be both mapped and dismissed.
+6. **Three constraint functions live in `public`, and their grants say what that means.**
+   `research_cron_field_values`, `research_min_circular_gap` and
+   `research_cron_min_interval_minutes` are `immutable`, `search_path`-pinned, and **granted to
+   `authenticated`** — a CHECK expression is evaluated as the *writing* user, so revoking EXECUTE
+   would not harden anything; it would make `research_source_schedules` unwritable by staff with an
+   error naming a function no researcher has heard of. `public` and `anon` are revoked, because
+   PostgreSQL's default grant is what turns a new function into a PostgREST RPC endpoint (0022,
+   0143).
+
 | Table | Phase | Purpose | Key columns and constraints |
 |---|---|---|---|
-| `research_sources` | 25 · 26 | One row per approved third-party site; the twenty-three FEAT §26 fields | `id`, `slug citext unique`, `name`, `base_url`, `region`, `currency char(3)`, `source_type research_source_type`, `analytics_league research_analytics_league`, `collection_mode research_collection_mode`, `image_extraction_mode research_image_extraction_mode`, `is_enabled bool default false`, `adapter_key text not null default 'generic'`, `price_extraction jsonb`, `sku_extraction jsonb`, `attribute_extraction jsonb`, `rate_limit_rpm int default 20`, `request_delay_ms int default 3000`, `concurrency int default 1`, `next_fetch_not_before`, `in_flight_count int default 0`, `consecutive_failures int default 0`, `circuit_open_until`, `policy_status research_policy_status default 'UNREVIEWED'`, `policy_reviewed_by/at`, `policy_notes`, `notes`, `readiness text check (...)`, Tier A+B. **`check (is_enabled = false or policy_status = 'APPROVED')`** |
-| `research_source_url_patterns` | 26 | `PRODUCT · CATEGORY · EXCLUDE · PAGINATION` patterns; `EXCLUDE` always wins | `unique (source_id, kind, pattern)`; a regex is compiled and length-capped on save |
-| `research_source_category_map` | 26 | Source label → Rivya `categories.id`, or explicit ignore | `category_id uuid references categories(id) on delete set null` — **allowlisted FK 1**; `check (category_id is not null or is_ignored)`; `unique (source_id, source_label)` |
-| `research_source_schedules` | 26 | Per-source cron | `check` rejecting an interval shorter than 6 hours |
-| `research_source_health_v` | 26 | View: last run, status, 7-day success rate, queue depth, health | Derived only; health is never a stored column that can go stale |
+| `research_sources` | 25 · 26 | One row per approved third-party site; the twenty-three FEAT §26 fields | `id`, `slug citext unique`, `name`, `base_url`, `region`, `currency char(3)`, `source_type research_source_type`, `analytics_league research_analytics_league`, `collection_mode research_collection_mode`, `image_extraction_mode research_image_extraction_mode`, `is_enabled bool default false`, `adapter_key text not null default 'generic'`, `price_extraction jsonb`, `sku_extraction jsonb`, `attribute_extraction jsonb`, `rate_limit_rpm int default 20`, `request_delay_ms int default 3000`, `concurrency int default 1`, `next_fetch_not_before`, `in_flight_count int default 0`, `consecutive_failures int default 0`, `circuit_open_until`, `policy_status research_policy_status default 'UNREVIEWED'`, `policy_reviewed_by/at`, `policy_notes`, `notes`, `readiness text not null default 'DRAFT'`, Tier A+B. **`research_sources_enabled_requires_approval check (is_enabled = false or policy_status = 'APPROVED')`**; `research_sources_approval_is_attributed`; `research_sources_readiness_allowlist`; three `jsonb_typeof` shape checks (object, object, **array**); and the three ceilings `0240` tightened — see the Phase 26 notes below |
+| `research_source_url_patterns` | 26 | `PRODUCT · CATEGORY · EXCLUDE · PAGINATION` patterns; `EXCLUDE` always wins | `id`, `source_id → research_sources on delete cascade`, `kind text check (kind in ('PRODUCT','CATEGORY','EXCLUDE','PAGINATION'))`, `pattern text not null`, `is_regex bool not null default false`, `priority int not null default 0`, `notes`, Tier A + `status content_status`. `unique (source_id, kind, pattern)`; `check (char_length(pattern) between 1 and 200)`; `check (priority between 0 and 1000)`; index `(source_id, priority desc)` |
+| `research_source_category_map` | 26 | Source label → Rivya `categories.id`, or explicit ignore | `id`, `source_id → research_sources on delete cascade`, `source_label text not null`, `source_path`, `category_id uuid`, `is_ignored bool not null default false`, `mapping_state text generated always as (…) stored`, Tier A + `status content_status`. `research_source_category_map_category_fk` → `categories(id) on delete set null` — **allowlisted FK 1, by that constraint name**; `check (not (is_ignored and category_id is not null))`; `unique (source_id, source_label)`; indexes `(source_id)`, `(category_id) where category_id is not null`, `(source_id) where mapping_state = 'UNRESOLVED'` |
+| `research_source_schedules` | 26 | Per-source cron | `id`, `source_id → research_sources on delete cascade`, `job_type research_job_type`, `cron_expression text not null`, `timezone text not null default 'UTC'`, `is_enabled bool not null default false`, `next_run_at`, Tier A + `status content_status`. `unique (source_id, job_type, cron_expression)`; `check (research_cron_min_interval_minutes(cron_expression) >= 360)` — the expression is **parsed in SQL**; `check (timezone = 'UTC')`; indexes `(next_run_at) where is_enabled`, `(source_id)` |
+| `research_source_health_v` | 26 | View: last run, status, 7-day success rate, queue depth, cadence, health | `source_id`, `last_run_at`, `last_run_status text`, `success_rate_7d numeric` rounded to three places and **null** when no run fell in the window (a source nobody has run has no success rate; 0 % would read as total failure), `queue_depth int` (`PENDING` + `LEASED`), `interval_minutes` (the **most frequent** enabled schedule, not the least), `last_success_at`, `health text`. Derived only; health is never a stored column that can go stale. `with (security_invoker = true)`, and `revoke all … from public, anon` is the whole of its access control |
 | `research_jobs` | 25 | Standing job definitions | `job_type research_job_type`, `scope jsonb`, `cron_expression`, `next_run_at`, `max_urls` |
 | `research_runs` | 25 | One execution | `status research_run_status`, `trigger research_trigger`, `requested_by`, `queued_at`, `started_at`, `finished_at`, `stats jsonb`, `is_dry_run bool`; index `(source_id, started_at desc)` |
 | `research_work_items` | 25 | The URL queue, leased with `for update skip locked` | `unique (run_id, url)`; partial index `(source_id, not_before_at) where state = 'PENDING'` |
@@ -2043,11 +2089,41 @@ query when a Studio screen asks, and `check-data-layer.mjs` forbids any file out
 staff rather than scraped, each named individually in `check-research-isolation.mjs`, which fails on
 any fourth:
 
-| Column | References | Why permitted |
-|---|---|---|
-| `research_source_category_map.category_id` | `categories` | A category mapping is configuration typed by staff |
-| `research_products.matched_category_id` | `categories` | The result of applying that human-authored map |
-| `research_direction_briefs.target_category_id` | `categories` | Files a brief under one of the seven D3 categories so direction coverage can be reported per category |
+| Column | References | Constraint name | Why permitted |
+|---|---|---|---|
+| `research_source_category_map.category_id` | `categories (on delete set null)` | `research_source_category_map_category_fk` — **in the guard's allowlist today** | A category mapping is configuration typed by staff |
+| `research_products.matched_category_id` | `categories (on delete set null)` | Phase 28's to name | The result of applying that human-authored map |
+| `research_direction_briefs.target_category_id` | `categories` | **Not admitted by A26** — see below | Files a brief under one of the seven D3 categories so direction coverage can be reported per category |
+
+**Two of those three are settled and the third is not, and Phase 26 is where the discrepancy becomes
+load-bearing.** Amendment **A26** admits **exactly two** constraints and says a third fails the
+build — as do isolation invariant I1 and `check-research-isolation.mjs`, whose allowlist holds one
+entry at the end of Phase 26 and two at the end of Phase 28. The Phase 34 brief reference is a
+*draft* row copied from `PHASE-31-38.md`; it is neither built nor amended for, and on A26's own
+reasoning it is the weaker case, because a brief is filed under a category rather than being a
+reading of somebody else's taxonomy. Either A26 is extended by a dated amendment before Phase 34
+ships, or `research_direction_briefs` files the brief by category **slug** as text. Recorded here
+rather than quietly kept at three; raised as open question 12.
+
+**RLS shape for the three Phase 26 child tables — RLS-RESEARCH (§1.5), shape C, in `0241`.** No
+`anon` policy of any kind (I2), and none may ever exist: the fact that
+`research_source_category_map` points *at* `categories` says nothing about who may read it, because
+the pointer is Rivya's private reading of somebody else's taxonomy. `select` is
+`research.read` — owner, admin, merchandiser, researcher, viewer; `insert` and `update` are
+`research.write` — owner, admin, researcher, because all three tables are **configuration**, and the
+`research.confirm` split the phase document draws is about columns carrying a *disposition*, which
+none of these has. `delete` is `destructive.execute` — owner, admin — on all three, which is
+stricter than it first looks for the URL patterns: deleting an `EXCLUDE` row does not remove
+information, it **widens what Rivya will fetch**, and that is the same class of act as unpublishing
+live content. `0241` is generated from `lib/auth/table-permissions.ts` by `npm run auth:gen-policies`
+and diffed by `npm run auth:check-policies`, so a hand edit fails the build exactly as a matrix
+change that was never regenerated does.
+
+`research_source_health_v` is a **view and therefore has no policies at all**, which is why its
+grants are written out rather than left to the Supabase default: `revoke all … from public, anon`
+and `grant select … to authenticated, service_role`, with `security_invoker = true` so the policies
+on the four tables it reads — `research_sources`, `research_runs`, `research_work_items`,
+`research_source_schedules` — still decide who may read it.
 
 Snapshots are **not media**: gzipped response bodies go to a private Supabase Storage bucket keyed
 `research/<source_slug>/<yyyy>/<mm>/<dd>/<sha256>.html.gz`, never to Cloudinary, never through
@@ -2137,7 +2213,7 @@ local and hosted is isolated to one file that can never be picked up by `supabas
 | 23 | `0210`–`0214` | T `search_documents`, `research_search_documents` (empty), `search_queries`, `content_relations`, `relation_suppressions`, `product_attribute_terms`; A `product_relations` (+`origin`, `rule_key`, `note`, `paired_relation_id`, the vocabulary CHECKs); enums `search_visibility`, `relation_origin`, `attribute_taxonomy`; F `rv_unaccent()`, `refresh_search_document()` and its eleven trigger functions, `is_relation_type()`, `is_relation_target()`. **`0214` is one past the phase document's `0210`–`0213`, and the reason is mechanical: a generated policy file is rewritten whole by `auth:gen-policies`, so it cannot also hold the DDL that creates its tables. `0213` creates the relation tables, so their policies need a file of their own. `0212` is the generated RLS for the search index and `0214` for the relations — the same split Phase 19 made with `0172` and `0183` — amendment A23** |
 | 24 | `0220`–`0221` | T `bulk_operations`, `bulk_operation_items`, `bulk_imports`, `bulk_import_rows`; `revoke delete` on the two record tables; `0221` is the generated RLS. **`0221` is one past the phase document's `0220`, for the reason A23 gives for `0214`: a generated policy file is rewritten whole and cannot also carry the DDL that creates its tables — amendment A24** |
 | 25 | `0230`–`0234` | T `research_sources`, `research_jobs`, `research_runs`, `research_work_items`, `research_fetches`, `research_raw_items`, `research_products`, `research_pipeline_events`, `research_robots_cache`; six research enums; F `research_lease_work_items()`, `research_reclaim_expired_leases()`, `refresh_research_search_document()` and its four triggers. **`0233` is the generated RLS, one past the phase document's `0232`, for the reason A23 gives for `0214`. `0234` is a FIFTH file and a different reason: it corrects `research_search_documents_status_allowlist`, which 0210 wrote with only the seven pipeline stages — leaving a source and a run, both admitted by the same table's `entity_type` allowlist, unindexable. Widened to the union of the three vocabularies and the index filled by trigger — amendment A25** |
-| 26 | `0240` | A `research_sources`; T `research_source_url_patterns`, `research_source_category_map`, `research_source_schedules`, view `research_source_health_v`; four source enums |
+| 26 | `0240`–`0241` | A `research_sources` (`analytics_league`, `collection_mode`, `image_extraction_mode`, the three extraction `jsonb` columns, `notes`, `readiness`; `source_type text` → enum; three ceilings tightened); T `research_source_url_patterns`, `research_source_category_map`, `research_source_schedules`; V `research_source_health_v` (`security_invoker`); four source enums; F `research_cron_field_values()`, `research_min_circular_gap()`, `research_cron_min_interval_minutes()`, and `refresh_research_search_document()` replaced whole for the enum cast `0234` could not have anticipated. **`0241` is one past the phase document's `0240`, for the reason A23 gives for `0214`, A24 for `0221` and A25 for `0233`: a generated policy file is rewritten whole and cannot also carry the DDL that creates its tables. The four enums sit inside `0240` rather than in a file of their own, which departs from `0230` — `create type` has none of the transaction restriction `alter type … add value` has, and a second file holding four lines is a file nobody opens — amendment A26** |
 | 27 | `0250` | T `research_product_versions`, `research_adapter_runs`; A `research_products.current_version_id` |
 | 28 | `0260` | A `research_products`, `research_product_versions`; T `research_validation_issues`, `research_match_candidates`, `research_material_lexicon` |
 | 29 | `0270` | T `research_changes`, `research_change_rules`, `research_review_actions`, `research_notes`, `research_tags`, `research_product_tags`, `research_change_digests` |
@@ -2189,9 +2265,10 @@ proposes the rest. It is raised for confirmation as open question 6.
 
 ## 14. Open questions for the canonical decisions
 
-Raised, not acted on. Exactly one thing above departs from `CANONICAL-DECISIONS.md` — the three
-natural primary keys of question 11 — and it is named there, in §1.1 and on each of the three
-tables. Nothing diverges silently.
+Raised, not acted on. Exactly two things above depart from `CANONICAL-DECISIONS.md` — the three
+natural primary keys of question 11, named in §1.1 and on each of the three tables, and the drafted
+third taxonomy reference of question 12, named in §11 beside the table that carries it. Nothing
+diverges silently.
 
 1. **Three relationship tables.** Phase 03 fixed `product_relations` on `source_product_id`;
    Phase 16 introduced the general `entity_relations`; Phase 23 introduced `content_relations` for
@@ -2262,6 +2339,17 @@ tables. Nothing diverges silently.
     natural key as its primary key; every other table takes the surrogate uuid." Confirm before
     Phase 04 ships `staff_profiles` — that is the only one of the three whose key is load-bearing
     for RLS — or the three gain a surrogate `id` plus a unique constraint on the natural key.
+12. **A third research→public taxonomy reference is drafted and is not admitted** (§11). Amendment
+    **A26** settled the exception at exactly two constraints — `research_source_category_map`
+    (Phase 26, built) and `research_products.matched_category_id` (Phase 28) — and I1 and
+    `check-research-isolation.mjs` both fail on a third. `PHASE-31-38.md` nevertheless drafts
+    `research_direction_briefs.target_category_id`, which §11 has carried since before A26 existed.
+    A26's own reasoning makes it the weaker case: a mapping is a person reading somebody else's
+    taxonomy onto Rivya's, whereas a brief is simply *filed* under a category, and a slug does that
+    without a crossing. Either A26 is extended by a dated amendment before Phase 34, or the brief
+    stores the category **slug** as text and the allowlist stays at two. This is the only thing in
+    §11 that knowingly diverges from `CANONICAL-DECISIONS.md`, and it is named there rather than in
+    the table alone.
 
 
 ---

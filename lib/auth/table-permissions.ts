@@ -140,6 +140,7 @@ export const PHASE_23_SEARCH_POLICIES = '0212_phase23_search_rls.sql'
 export const PHASE_23_RELATION_POLICIES = '0214_phase23_relations_rls.sql'
 export const PHASE_24_POLICIES = '0221_phase24_bulk_rls.sql'
 export const PHASE_25_POLICIES = '0233_phase25_research_rls.sql'
+export const PHASE_26_POLICIES = '0241_phase26_source_config_rls.sql'
 
 export const TABLE_POLICIES = {
   // --- Shape A: content tables ------------------------------------------------------------------
@@ -1180,6 +1181,59 @@ export const TABLE_POLICIES = {
       'One robots.txt per host, 24-hour TTL. Readable so an operator can see what a host asked ' +
       'for; written by nobody with a session, because a hand-written row could tell the fetcher ' +
       'that a forbidden host permits everything.',
+  },
+  /*
+   * Phase 26 — the three child tables that make a source configurable without a deploy.
+   *
+   * SHAPE C, LIKE EVERY OTHER RESEARCH TABLE, AND FOR THE SAME REASON: isolation invariant I2.
+   * A URL pattern names paths at somebody else's website, a category mapping is Rivya's private
+   * reading of their taxonomy, and a schedule says when Rivya intends to read them. None of the
+   * three is a fact a visitor has any business seeing, and none of them ever gains an `anon` leg.
+   *
+   * WRITE IS `research.write` ON ALL THREE — owner, admin, researcher — because none of these
+   * tables carries a disposition. They are configuration a researcher OPERATES with, and the
+   * phase document's dividing line is the column: `disposition`, `duplicate_of_id` and `stage`
+   * are `research.confirm` work and none of them appears here.
+   *
+   * ONE THING THIS BLOCK CANNOT SAY, AND THE SERVER ACTION SAYS INSTEAD. Enabling a source and
+   * approving its policy review require `research.write` AND `system.settings.write`. RLS gates a
+   * ROW, not a COLUMN, so a researcher who may edit a source's delay may — as far as PostgreSQL is
+   * concerned — also write its `policy_status`. What stops that is `requirePermission` in the
+   * server action plus `research_sources_approval_is_attributed` at the row, which refuses an
+   * approval that names nobody.
+   */
+  research_source_url_patterns: {
+    policiesIn: PHASE_26_POLICIES,
+    shape: 'C',
+    readPermission: 'research.read',
+    writePermission: 'research.write',
+    deletePermission: 'destructive.execute',
+    deviation:
+      'What a product, category, paginated or never-to-be-fetched URL looks like at one source. ' +
+      'No anon policy may ever exist on any research_* table (isolation invariant I2). Delete is ' +
+      'destructive.execute because removing an EXCLUDE pattern widens what Rivya will fetch.',
+  },
+  research_source_category_map: {
+    policiesIn: PHASE_26_POLICIES,
+    shape: 'C',
+    readPermission: 'research.read',
+    writePermission: 'research.write',
+    deletePermission: 'destructive.execute',
+    deviation:
+      "A staff-authored mapping from a source's own category label to a Rivya category, or an " +
+      'explicit IGNORE. It carries the FIRST of exactly two research → public foreign keys ' +
+      '(amendment A26) and still has no anon policy: the pointer is staff configuration, not a ' +
+      'reason to publish anything.',
+  },
+  research_source_schedules: {
+    policiesIn: PHASE_26_POLICIES,
+    shape: 'C',
+    readPermission: 'research.read',
+    writePermission: 'research.write',
+    deletePermission: 'destructive.execute',
+    deviation:
+      'When a job type runs against a source. Staff-only, written by research.write, and bounded ' +
+      'at the row by a six-hour minimum interval the form cannot be bypassed to beat.',
   },
 } as const satisfies Record<string, TablePolicy>
 

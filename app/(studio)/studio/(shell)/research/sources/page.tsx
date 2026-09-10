@@ -1,119 +1,168 @@
+import type { Route } from 'next'
+import Link from 'next/link'
+
 import { Badge } from '@/components/primitives/Badge'
 import { Stack } from '@/components/primitives/Stack'
 import { Surface } from '@/components/primitives/Surface'
 import { Text } from '@/components/primitives/Text'
-import { EmptyState } from '@/components/studio/EmptyState'
+import { TextLink } from '@/components/primitives/TextLink'
+import { DataTable, type Column } from '@/components/studio/DataTable'
 import { PageHeader } from '@/components/studio/PageHeader'
 import { StudioPage, studioMetadata } from '@/components/studio/StudioPage'
+import { HealthPill } from '@/components/studio/research/HealthPill'
 import { t } from '@/components/studio/strings'
+import { roleHasPermission } from '@/lib/auth/permissions'
 import { requirePermission } from '@/lib/auth/require'
-import { listResearchSources } from '@/lib/supabase/repositories/research/sources'
+import {
+  listSourceHealth,
+  type SourceHealth,
+} from '@/lib/supabase/repositories/research/source-health'
+import {
+  listResearchSources,
+  type ResearchSourceRow,
+} from '@/lib/supabase/repositories/research/sources'
 import { createClient } from '@/lib/supabase/server'
 
 /**
- * /studio/research/sources — read-only until Phase 26.
+ * /studio/research/sources — the list, and the two facts anybody opening it is checking.
  *
- * WHAT IT SHOWS IS THE POLITENESS SETTINGS AND THE POLICY REVIEW, because those are the two things
- * anybody looking at this list is checking: may we read this site, and how gently. The rest of
- * FEAT §26's twenty-three fields — category mapping, URL patterns, extraction modes, the health
- * view — is Phase 26's management surface, and a half-form here would be a second place to define
- * the same source.
+ * MAY WE READ THIS SITE, AND IS IT WORKING. Phase 25 answered the first with a policy column; this
+ * phase adds the second, and it is a VIEW rather than a stored column so it cannot be out of date
+ * at the moment somebody looks — which is during an incident, when a cached health value is most
+ * likely to be wrong and most likely to be believed.
  *
- * THE OWNER-VERIFICATION NOTE IS ON THE PAGE, NOT IN THE DOCUMENTATION. Approving a source is an
- * assertion about a third party's terms of use — a legal and commercial judgement this software
- * cannot make — and the place that has to say so is the screen where somebody would do it, not a
- * file they will never open.
+ * THE HEALTH READ IS ONE QUERY FOR THE WHOLE LIST, not one per row. `research_source_health_v`
+ * aggregates run history, queue depth and schedule cadence, and asking it per source would be four
+ * joins repeated once per line of the table.
  */
 export const metadata = studioMetadata('/studio/research/sources')
 
+type Row = ResearchSourceRow & { readonly health: SourceHealth | null }
+
 export default async function Page() {
-  await requirePermission('research.read')
+  const session = await requirePermission('research.read')
   const client = await createClient()
-  const sources = await listResearchSources(client)
+
+  const [sources, health] = await Promise.all([
+    listResearchSources(client),
+    listSourceHealth(client),
+  ])
+  const byId = new Map(health.map((entry) => [entry.sourceId, entry]))
+  const rows: Row[] = sources.map((source) => ({
+    ...source,
+    health: byId.get(source.id) ?? null,
+  }))
+
+  const canWrite = roleHasPermission(session.role, 'research.write')
+
+  const columns: readonly Column<Row>[] = [
+    {
+      id: 'name',
+      header: t('studio.research.sourceName'),
+      cell: (row) => (
+        <Stack gap={1}>
+          <TextLink href={`/studio/research/sources/${row.id}` as Route}>{row.name}</TextLink>
+          <Text size="xs" tone="tertiary" className="font-mono">
+            {row.base_url}
+          </Text>
+        </Stack>
+      ),
+    },
+    {
+      id: 'health',
+      header: t('studio.research.healthHeading'),
+      cell: (row) => <HealthPill health={row.health?.health ?? null} />,
+    },
+    {
+      id: 'policy',
+      header: t('studio.research.policyHeading'),
+      cell: (row) => (
+        <Badge tone={row.policy_status === 'APPROVED' ? 'neutral' : 'danger'}>
+          {row.policy_status}
+        </Badge>
+      ),
+    },
+    {
+      id: 'readiness',
+      header: t('studio.research.readinessHeading'),
+      cell: (row) => (
+        <Text size="sm" tone="secondary">
+          {row.readiness}
+        </Text>
+      ),
+    },
+    {
+      id: 'last-run',
+      header: t('studio.research.lastRun'),
+      cell: (row) =>
+        row.health?.lastRunAt === null || row.health?.lastRunAt === undefined ? (
+          <Text size="sm" tone="tertiary">
+            —
+          </Text>
+        ) : (
+          <Text size="sm" tone="secondary">
+            {row.health.lastRunAt.slice(0, 16).replace('T', ' ')}
+          </Text>
+        ),
+    },
+    {
+      id: 'queue',
+      header: t('studio.research.queueDepth'),
+      numeric: true,
+      cell: (row) => <Text size="sm">{row.health?.queueDepth ?? 0}</Text>,
+    },
+    {
+      id: 'adapter',
+      header: t('studio.research.sourceAdapter'),
+      cell: (row) => (
+        <Text size="sm" tone="secondary" className="font-mono">
+          {row.adapter_key}
+        </Text>
+      ),
+    },
+  ]
 
   return (
     <StudioPage path="/studio/research/sources">
       <Stack gap={8}>
         <Surface level={1} className="p-6">
-          <PageHeader level={2} title={t('studio.research.policyOwnerOnly')} />
+          <PageHeader
+            level={2}
+            title={t('studio.research.policyOwnerOnly')}
+            actions={
+              canWrite ? (
+                <Link
+                  href={'/studio/research/sources/new' as Route}
+                  className="underline underline-offset-4"
+                >
+                  {t('studio.research.addSource')}
+                </Link>
+              ) : undefined
+            }
+          />
           <Text tone="secondary" className="mt-3">
             {t('studio.research.policyOwnerOnlyBody')}
           </Text>
         </Surface>
 
-        {sources.length === 0 ? (
-          <EmptyState
-            reason="empty"
-            heading={t('studio.research.noSources')}
-            body={t('studio.research.noSourcesBody')}
-          />
-        ) : (
-          <Surface level={1} className="p-6">
-            <PageHeader level={2} title={t('studio.research.sourcesHeading')} />
-            <div className="mt-4 overflow-x-auto border border-line">
-              <table className="w-full border-collapse text-sm">
-                <caption className="sr-only">{t('studio.research.sourcesHeading')}</caption>
-                <thead className="bg-surface-raised">
-                  <tr>
-                    <th scope="col" className="p-2 text-left">
-                      Name
-                    </th>
-                    <th scope="col" className="p-2 text-left">
-                      Policy
-                    </th>
-                    <th scope="col" className="p-2 text-left">
-                      Enabled
-                    </th>
-                    <th scope="col" className="p-2 text-left">
-                      Delay
-                    </th>
-                    <th scope="col" className="p-2 text-left">
-                      Concurrency
-                    </th>
-                    <th scope="col" className="p-2 text-left">
-                      Failures
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {sources.map((source) => (
-                    <tr
-                      key={source.id}
-                      className="border-t border-line"
-                      data-source-id={source.id}
-                      data-policy-status={source.policy_status}
-                    >
-                      <td className="p-2">
-                        {source.name}
-                        <span className="ml-2 font-mono text-xs text-ink-secondary">
-                          {source.base_url}
-                        </span>
-                      </td>
-                      <td className="p-2">
-                        <Badge tone={source.policy_status === 'APPROVED' ? 'neutral' : 'danger'}>
-                          {source.policy_status}
-                        </Badge>
-                      </td>
-                      <td className="p-2">{source.is_enabled ? 'yes' : 'no'}</td>
-                      <td className="p-2 text-ink-secondary">{`${source.request_delay_ms} ms`}</td>
-                      <td className="p-2 text-ink-secondary">{source.concurrency}</td>
-                      {/* THE CIRCUIT, SHOWN AS A STATE AND NOT ONLY AS A COUNT. Five failures is
-                          the threshold, and a source that has hit it is paused — which is what an
-                          operator needs to see when a run is doing nothing. */}
-                      <td className="p-2">
-                        {source.circuit_open_until === null ? (
-                          <span className="text-ink-secondary">{source.consecutive_failures}</span>
-                        ) : (
-                          <Badge tone="danger">paused</Badge>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </Surface>
-        )}
+        <DataTable
+          caption={t('studio.research.sourcesHeading')}
+          columns={columns}
+          rows={rows}
+          rowKey={(row) => row.id}
+          empty={{
+            reason: 'empty',
+            heading: t('studio.research.noSources'),
+            body: t('studio.research.noSourcesBody'),
+          }}
+        />
+
+        <Surface level={1} className="p-6">
+          <PageHeader level={2} title={t('studio.research.healthHeading')} />
+          <Text tone="secondary" className="mt-3">
+            {t('studio.research.healthBody')}
+          </Text>
+        </Surface>
       </Stack>
     </StudioPage>
   )
