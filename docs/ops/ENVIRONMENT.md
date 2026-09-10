@@ -230,7 +230,7 @@ Never compiled into client JavaScript. Every module that reads one carries `impo
 | Class | **Secret** — grants cache invalidation and scheduled-job invocation |
 | Purpose | Guards `POST /api/revalidate`, the only cache-invalidation entry point. **As built, it guards nothing else.** The paragraph this row used to carry — six of seven cron routes reusing it, and `app/api/cron/research` authenticating on `x-vercel-cron` alone — described a plan that Phase 25 settled the other way: `CRON_SECRET` now exists, and **both** cron routes that have been built (`content-schedule`, `research`) authenticate with it. See §6 open question 2, and amendment A25 |
 | Set in | Vercel (server scope) per environment, unique per environment; `.env.local` |
-| Read by | `app/api/revalidate/route.ts` and `lib/cms/publishing.ts`. The five research and ops cron routes named here previously do not exist yet (Phases 31–38); when they are built they take `CRON_SECRET`, like the two that do |
+| Read by | `app/api/revalidate/route.ts`, and nothing else. `lib/cms/publishing.ts` was listed here and does NOT read it: it takes `revalidate` as an injected dependency (Next's `revalidatePath` in production, a spy in tests), so publishing invalidates in-process without a secret. The five research and ops cron routes named here previously do not exist yet (Phases 31–38); when they are built they take `CRON_SECRET`, like the two that do |
 | Without it | Publishing still writes, but the cache is not invalidated: pages stay stale for at most their `revalidate` window and a `WARNING` is written to `system_logs` on channel `CONTENT`. Those six cron routes reject every invocation — scheduled publication, nightly snapshots, scoring, the Sheets sync and log retention all stop silently; the research drain keeps running |
 | Blast radius if leaked | Forced cache invalidation (a cost and availability nuisance, not a data breach) and the ability to trigger scheduled jobs |
 | Rotation | Engineer, 90 days. Rotate the publish service and the routes in the same window |
@@ -472,7 +472,7 @@ What a visitor and an operator see when each variable is missing or wrong.
 | `CLOUDINARY_API_KEY` / `_API_SECRET` | Existing media still delivers | Uploads and media migration fail with a named reason | Environment page |
 | `GOOGLE_SERVICE_ACCOUNT_JSON` / `_SPREADSHEET_ID` | Unaffected | Sheets sync unavailable | Environment page `NOT_CONFIGURED` |
 | `SCRAPER_USER_AGENT` | Unaffected | **No research run can start** | Environment page `NOT_CONFIGURED` |
-| `REVALIDATE_SECRET` | Stale pages for at most the `revalidate` window; six of the seven cron routes reject every invocation | Publish succeeds; a `WARNING` names the uncleared tags. A scheduled job that never fires writes nothing at all, so the absence shows as a gap in `system_logs`, not as an error | `system_logs`, channel `CONTENT`; the Vercel Cron Jobs view |
+| `REVALIDATE_SECRET` | **As built: nothing breaks.** `POST /api/revalidate` answers `503 not_configured` and nothing in the application calls it — publishing revalidates in-process through an injected `revalidatePath`. It is worth setting for the external invalidation path it exists to provide, not to keep the site correct | Publish succeeds; a `WARNING` names the uncleared tags. A scheduled job that never fires writes nothing at all, so the absence shows as a gap in `system_logs`, not as an error | `system_logs`, channel `CONTENT`; the Vercel Cron Jobs view |
 
 ---
 
