@@ -14,7 +14,7 @@
  * job in .github/workflows/ci.yml runs `next build` against it, over the database the job has just
  * migrated and seeded, because pre-rendering reads content and CI holds no Supabase project to
  * read it from — nor should it. Nothing here reads or writes
- * `.env.local`: the two variables are printed for the caller to put in front of a command, because
+ * `.env.local`: the variables are printed for the caller to put in front of a command, because
  * a script that edits the developer's environment file is a script that eventually overwrites a
  * real credential with a fake one.
  *
@@ -76,6 +76,18 @@ if (POSTGREST_BIN === 'postgrest' && !existsSync('/usr/bin/postgrest')) {
 }
 
 const anonKey = mintKey('anon')
+/**
+ * A SERVICE-ROLE KEY AS WELL, because from Phase 24 onward half the write paths do not have a
+ * session at all. The bulk engine, the search log and the research pipeline all write through
+ * `createAdminClient()`, which authenticates as `service_role` and bypasses RLS; a shim that
+ * minted only an anon key could exercise the reading half of the application and none of the
+ * writing half, and the missing half is the one that changes live content.
+ *
+ * IT IS NOT A BACK DOOR. It is signed with the same per-run throwaway secret as the anon key,
+ * against a cluster bound to 127.0.0.1, and it is printed rather than written anywhere — the same
+ * terms the anon key has always been on.
+ */
+const serviceKey = mintKey('service_role')
 
 const pgrst = spawn(
   POSTGREST_BIN,
@@ -137,9 +149,10 @@ gateway.listen(GATEWAY_PORT, '127.0.0.1', () => {
   console.log('')
   console.log(`    NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:${GATEWAY_PORT} \\`)
   console.log(`    NEXT_PUBLIC_SUPABASE_ANON_KEY=${anonKey} \\`)
+  console.log(`    SUPABASE_SERVICE_ROLE_KEY=${serviceKey} \\`)
   console.log('    npm run dev')
   console.log('')
-  console.log('  The key is a throwaway signed with a secret generated for this run only.')
+  console.log('  Both keys are throwaways signed with a secret generated for this run only.')
   console.log('')
 })
 

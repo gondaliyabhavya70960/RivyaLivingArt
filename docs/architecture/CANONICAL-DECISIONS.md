@@ -184,6 +184,50 @@ Brand and editorial copy may be written; anything asserting business capability 
 
 ## Amendments
 
+**2026-09-10 · A24 — Phase 24 takes migration `0221`, a batch of fifty is the unit of progress
+and not of atomicity, `media.move` is not destructive, confirmation is two constraints rather than
+one, and `row_version_before` holds the version the operation LEFT behind (PHASE-23-30 §Phase 24,
+DATA_MODEL §12).**
+
+Five readings the repository forced, none of which contradicts D1–D10.
+
+- **`0221`, one past the phase document's `0220`.** The reason A23 gives for `0214`, unchanged: a
+  generated policy file is rewritten whole by `npm run auth:gen-policies`, so it cannot also hold
+  the DDL that creates its tables. `0220` creates the four bulk tables and `0221` is their
+  generated RLS. Recorded in DATA_MODEL §12, which `check-migrations.mjs` reads.
+- **A batch of fifty is the unit of PROGRESS AND REPORTING, not of atomicity.** The phase document
+  describes batches "inside one transaction each". PostgREST gives the engine one statement per
+  call and no transaction handle, so what fifty actually buys is bounded memory, a progress point,
+  and a `PARTIAL` outcome that names exactly which rows landed — which is the property the phase
+  wanted the transaction for. A 500-row publish failing on row 499 still keeps its 498 good writes
+  and reports the one that failed by id. Getting real per-batch atomicity would mean an RPC per
+  operation kind, which trades eleven readable TypeScript operations for eleven PL/pgSQL functions
+  and moves the permission checks away from `requirePermission`. Stated here because a later reader
+  comparing the code with the phase document will otherwise think the transaction was forgotten.
+- **`media.move` is NOT destructive, and `media.archive` is.** Moving assets between folders
+  changes where they are filed and nothing else: no asset stops resolving, no page loses a picture,
+  and the operation is its own inverse. Requiring `destructive.execute` for it would mean a
+  merchandiser tidying a folder needs an owner, which teaches operators that the destructive
+  confirmation is paperwork rather than a warning — and that is how a real archive gets waved
+  through. `scripts/bulk/check-bulk-registry.mjs` pins the four operations that MUST be
+  destructive (`product.unpublish`, `product.archive`, `media.archive`, `research.reject`), so this
+  reading is enforced rather than remembered.
+- **Confirmation is two constraints, not one pair.** The draft tied `confirmation_token` and
+  `confirmed_at` together as an equivalence. Running the engine against a real database proved it
+  wrong in both directions: the token is minted with the PREVIEW row, before any confirmation, and
+  it is CLEARED at the finish — spending it is what makes a preview single-use against a
+  double-submitted form. What holds at every state is that a PREVIEW carries the token that makes
+  it applicable (`bulk_operations_preview_has_token`) and that nothing leaves PREVIEW without a
+  confirmation behind it (`bulk_operations_confirmed_before_running`).
+- **`row_version_before` is the version the operation LEFT the row at, read AFTER its own write.**
+  The name is the phase document's and reads correctly from the undo's point of view — it is what
+  the row held before the UNDO. The value is what nearly went wrong: recording the version the
+  operation READ meant comparing against a version the operation had itself already moved on, so
+  undo mismatched on every row it had touched, skipped all of them, and reported each as edited by
+  somebody else. An undo that restores nothing and misattributes why is worse than no undo. Nothing
+  short of running the engine against a real database caught it; the regression guard is an
+  ordering assertion (read, write, read) in `tests/unit/bulk-media-immutable.test.ts`.
+
 **2026-09-10 · A23 — Phase 23 takes migration `0214`, `search_documents.status` is `text`,
 `content_relations` is an edge and not content, the relation vocabulary becomes a CHECK, the
 suggest endpoint matches prefixes, and the island budget is six (PHASE-23-30 §Phase 23,

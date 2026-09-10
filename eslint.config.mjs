@@ -136,6 +136,28 @@ const config = [
    *                            service-role client is one careless query away from bypassing RLS on
    *                            something unrelated. Every caller runs
    *                            `withPermission('system.users.manage', …)` first.
+   *   lib/bulk/run.ts,         the bulk engine. None of the four bulk tables has an `authenticated`
+   *   lib/bulk/undo.ts         insert or update policy (0221), and that is what stops a signed-in
+   *                            merchandiser forging a preview carrying a selection nobody
+   *                            previewed, or editing the `before` snapshot that undo re-applies —
+   *                            writing anything they liked into a live row while the audit log
+   *                            recorded a restoration. Every entry point calls
+   *                            `requirePermission('bulk.execute')` first, and the engine itself
+   *                            re-checks the role, including `destructive.execute`, immediately
+   *                            before the first write. Unlike the seams above, these two DO hold a
+   *                            client that can reach any table — which is unavoidable for an
+   *                            engine that writes products, media and (from Phase 29) research
+   *                            rows, and is why the permission check is repeated inside it rather
+   *                            than trusted to the caller.
+   *   lib/bulk/import/apply.ts, the import and export pipelines, for the same reason as the engine
+   *   lib/bulk/export/index.ts  above and one more each. IMPORT writes `products` rows from a file
+   *                            and must NOT be able to write `status` or `owner_verification` — an
+   *                            allowlist in `bulk-import.ts` enforces that, and a session client
+   *                            would add nothing since RLS admits an editor to those columns
+   *                            anyway. EXPORT reads enquiries, including — only when the operator
+   *                            explicitly ticks the box — the free-text message bodies, which no
+   *                            session-scoped read of that table is meant to bulk-extract; the
+   *                            caller checks `inquiries.export` and the field list is audited.
    *   lib/search/log.ts        `search_queries` has no write policy for any session role (0212),
    *                            and the reason is the one that keeps recurring here: a PUBLIC search
    *                            has no session, so there is no user whose permissions could be
@@ -156,6 +178,10 @@ const config = [
       'lib/flags/index.ts',
       'lib/security/rate-limit.ts',
       'lib/search/log.ts',
+      'lib/bulk/run.ts',
+      'lib/bulk/undo.ts',
+      'lib/bulk/import/apply.ts',
+      'lib/bulk/export/index.ts',
       'scripts/**',
       'tests/**',
     ],

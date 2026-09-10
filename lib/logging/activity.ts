@@ -42,6 +42,15 @@ export const ACTIVITY_ACTIONS = [
   'staff.role-changed',
   'staff.status-changed',
   'preferences.updated',
+  /*
+   * Phase 24. ONE ACTION FOR EVERY BULK KIND, not one per kind, and the kind travels in
+   * `entityLabel` and `metadata`. The feed answers "what happened in the Studio today"; forty
+   * distinct actions — one per registered operation, growing with every later phase — would make
+   * that question unanswerable without a lookup table, and the `audit_logs` row already carries
+   * the specific `bulk.<kind>` action for the security log, which is the reader that needs it.
+   */
+  'bulk.applied',
+  'bulk.undone',
 ] as const
 
 export type ActivityAction = (typeof ACTIVITY_ACTIONS)[number]

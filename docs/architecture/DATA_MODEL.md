@@ -1816,14 +1816,36 @@ inverts to the project's `RELATED_PRODUCT` edge — because the name describes w
 repository functions that re-filter targets to `PUBLISHED` rows, because an edge to an unpublished
 entity must resolve to nothing rather than to a 404 link.
 
-### Bulk operations — Phase 24 · migration `0220` · RLS-SERVICE (`bulk.execute`)
+### Bulk operations — Phase 24 · migrations `0220`–`0221` · RLS-SERVICE (`bulk.execute`) · **SHIPPED**
 
 One engine, one audit trail, one undo window (FEAT §20).
+
+**Four shape-C tables and not one write policy between them.** Every write goes through
+`lib/bulk/run.ts` on the service-role client, after `requirePermission`. An `authenticated` insert
+policy would let a signed-in merchandiser hand-write a preview carrying a selection nobody
+previewed; an update policy on `bulk_operation_items` would let one edit the `before` snapshot undo
+re-applies, writing anything they liked into a live row while the audit log recorded a restoration.
+Read is `bulk.execute` (owner, admin, merchandiser) — the phase document says "`bulk.execute` or
+`operations.audit.read`", and since the second's roles are a subset of the first's, naming the wider
+one is the same policy with one fewer thing that can drift.
+
+**The two record tables are not erasable and the two import tables are.** No delete policy and a
+`revoke delete` on `bulk_operations` and `bulk_operation_items`: the account of what somebody did to
+a page of live content is not erasable by the person who did it. `bulk_imports` and
+`bulk_import_rows` are deletable under `destructive.execute`, because an import is a working file
+whose rows are pruned at thirty days rather than history.
+
+**The four state constraints worth knowing.** `bulk_operations_preview_has_token` — a PREVIEW
+carries the token Apply must present. `bulk_operations_confirmed_before_running` — nothing leaves
+PREVIEW without a confirmation behind it. `bulk_operations_selection_capped` — five hundred, at the
+row rather than in TypeScript, because the number is what makes the batching arithmetic safe.
+`bulk_operation_items_reason_present` — a skip or a failure without a reason is a row nobody can act
+on. See amendment **A24** for why confirmation is two constraints rather than one pair.
 
 | Table | Key columns | Notes |
 |---|---|---|
 | `bulk_operations` | `id`, `kind text`, `target_entity text check (target_entity in ('product','media_asset','inquiry','research_product'))`, `status text check (...)` (§2.1), `is_destructive bool not null`, `selection jsonb not null`, `params jsonb not null`, `counts jsonb not null default '{}'`, `confirmation_token text`, `confirmed_at`, `actor_user_id`, `actor_role user_role`, `requested_at`, `started_at`, `finished_at`, `undo_deadline_at`, `undone_at`, `undone_by`, `undo_of_operation_id uuid references bulk_operations(id)` | `selection` stores the exact id list that was previewed, so Apply cannot widen it. `revoke delete` |
-| `bulk_operation_items` | `id`, `operation_id fk on delete cascade`, `entity_id`, `result text check (result in ('APPLIED','SKIPPED','FAILED','UNDONE'))`, `reason`, `before jsonb`, `after jsonb`, `row_version_before timestamptz`, `error text` | `unique (operation_id, entity_id)`; index `(operation_id, result)`. The per-item `before` snapshot is what makes the 24-hour undo real. `revoke delete` |
+| `bulk_operation_items` | `id`, `operation_id fk on delete cascade`, `entity_id`, `result text check (result in ('APPLIED','SKIPPED','FAILED','UNDONE'))`, `reason`, `before jsonb`, `after jsonb`, `row_version_before timestamptz`, `error text` | `unique (operation_id, entity_id)`; index `(operation_id, result)`. The per-item `before` snapshot is what makes the 24-hour undo real. `row_version_before` is the `updated_at` the operation LEFT the row at — read after its own write, named from the undo's point of view; see **A24**. `revoke delete` |
 | `bulk_imports` | `id`, `operation_id`, `filename`, `checksum`, `delimiter`, `column_map jsonb`, `row_count`, `valid_count`, `invalid_count`, `status` | The uploaded file itself is not retained after apply |
 | `bulk_import_rows` | `id`, `import_id`, `row_number int`, `raw jsonb`, `mapped jsonb`, `issues jsonb default '[]'`, `action text check (action in ('INSERT','UPDATE','SKIP'))`, `target_entity_id uuid`, `applied bool default false` | Retained 30 days for post-hoc review, then pruned |
 
@@ -2096,7 +2118,7 @@ local and hosted is isolated to one file that can never be picked up by `supabas
 | 21 | `0194`–`0195` | T `model_variant_labels`; A `media_assets.viewer_settings`, the size/triangle/poster checks, the association-is-model check, and the `associated_project_id` foreign key Phase 06 declared ahead of its table; F `is_valid_viewer_settings()` (with `model_setting_number()`, `model_setting_vec3()`, `is_valid_model_camera()`), `guard_model_still_references()`, `guard_product_model_reference()`, `guard_variant_label_parent()`, `set_model_association()`; `0195` is the generated RLS. **Renumbered from the phase document's `0190`, which Phase 20 spent — amendment A21** |
 | 22 | `0200`–`0201` | T `merchandising_slots`, `merchandising_entries`; enum `merch_fallback`; F `guard_merchandising_entry()`, `merchandising_category_slot_key()`, `sync_category_pinned_slot()`, `merch_move_entry()`, `merch_run_schedule()`; the eleven slot rows inserted as structure under the `allow-insert` marker; `0201` is the generated RLS. **The numbers are the phase document's own; the slot count (eleven, none reusable) and the categories trigger are amendment A22** |
 | 23 | `0210`–`0214` | T `search_documents`, `research_search_documents` (empty), `search_queries`, `content_relations`, `relation_suppressions`, `product_attribute_terms`; A `product_relations` (+`origin`, `rule_key`, `note`, `paired_relation_id`, the vocabulary CHECKs); enums `search_visibility`, `relation_origin`, `attribute_taxonomy`; F `rv_unaccent()`, `refresh_search_document()` and its eleven trigger functions, `is_relation_type()`, `is_relation_target()`. **`0214` is one past the phase document's `0210`–`0213`, and the reason is mechanical: a generated policy file is rewritten whole by `auth:gen-policies`, so it cannot also hold the DDL that creates its tables. `0213` creates the relation tables, so their policies need a file of their own. `0212` is the generated RLS for the search index and `0214` for the relations — the same split Phase 19 made with `0172` and `0183` — amendment A23** |
-| 24 | `0220` | T `bulk_operations`, `bulk_operation_items`, `bulk_imports`, `bulk_import_rows` |
+| 24 | `0220`–`0221` | T `bulk_operations`, `bulk_operation_items`, `bulk_imports`, `bulk_import_rows`; `revoke delete` on the two record tables; `0221` is the generated RLS. **`0221` is one past the phase document's `0220`, for the reason A23 gives for `0214`: a generated policy file is rewritten whole and cannot also carry the DDL that creates its tables — amendment A24** |
 | 25 | `0230`–`0233` | T `research_sources`, `research_jobs`, `research_runs`, `research_work_items`, `research_fetches`, `research_raw_items`, `research_products`, `research_pipeline_events`, `research_robots_cache`; six research enums |
 | 26 | `0240` | A `research_sources`; T `research_source_url_patterns`, `research_source_category_map`, `research_source_schedules`, view `research_source_health_v`; four source enums |
 | 27 | `0250` | T `research_product_versions`, `research_adapter_runs`; A `research_products.current_version_id` |

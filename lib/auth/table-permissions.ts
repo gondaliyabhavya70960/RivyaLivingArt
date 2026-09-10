@@ -138,6 +138,7 @@ export const PHASE_22_POLICIES = '0201_phase22_merchandising_rls.sql'
  */
 export const PHASE_23_SEARCH_POLICIES = '0212_phase23_search_rls.sql'
 export const PHASE_23_RELATION_POLICIES = '0214_phase23_relations_rls.sql'
+export const PHASE_24_POLICIES = '0221_phase24_bulk_rls.sql'
 
 export const TABLE_POLICIES = {
   // --- Shape A: content tables ------------------------------------------------------------------
@@ -982,6 +983,68 @@ export const TABLE_POLICIES = {
     readPermission: 'catalog.read',
     writePermission: 'catalog.write',
     deletePermission: 'destructive.execute',
+  },
+
+  /**
+   * The four Phase 24 bulk tables. All shape C, all read under `bulk.execute`, none writable by a
+   * session.
+   *
+   * WHY `bulk.execute` AND NOT A UNION. The phase document says select requires `bulk.execute` OR
+   * `operations.audit.read`. Those hold {owner, admin, merchandiser} and {owner, admin}: the union
+   * is exactly `bulk.execute`'s set, so naming the wider permission is the same policy with one
+   * fewer thing that can drift. If `operations.audit.read` ever gains a role `bulk.execute` lacks,
+   * this becomes wrong and `check-rls.ts` says so on the next run, which is the point of deriving
+   * the role list from the matrix rather than writing it out.
+   *
+   * NO SESSION WRITE POLICY ON ANY OF THE FOUR. Every write goes through `lib/bulk/run.ts` on the
+   * admin client, AFTER `requirePermission`. An `authenticated` insert policy would let a signed-in
+   * merchandiser hand-write a `bulk_operations` row — a preview with a selection they never saw
+   * previewed, or a SUCCEEDED row for an operation that never ran — and the per-item snapshots are
+   * what the undo and the audit trail are built on.
+   *
+   * AND NO DELETE POLICY FOR THE TWO RECORD TABLES, EVER. `bulk_operations` and
+   * `bulk_operation_items` are the account of what somebody did to a page of live content; a
+   * record that the person who wrote it can erase is not a record. 0220 revokes the grant as well.
+   */
+  bulk_operations: {
+    policiesIn: PHASE_24_POLICIES,
+    shape: 'C',
+    readPermission: 'bulk.execute',
+    deviation:
+      'The record of a bulk operation. No anon policy — a visitor has no business knowing what ' +
+      'was archived — and no authenticated write policy: the engine writes through the service ' +
+      'role after requirePermission, so a session cannot forge a preview or a result. Delete is ' +
+      'absent by design and revoked in 0220.',
+  },
+  bulk_operation_items: {
+    policiesIn: PHASE_24_POLICIES,
+    shape: 'C',
+    readPermission: 'bulk.execute',
+    deviation:
+      'The per-item before/after snapshot the 24-hour undo re-applies. Same reasoning as ' +
+      'bulk_operations, and one more: a session able to edit `before` could make an undo write ' +
+      'whatever it liked into a live row while the audit log recorded a restoration.',
+  },
+  bulk_imports: {
+    policiesIn: PHASE_24_POLICIES,
+    shape: 'C',
+    readPermission: 'bulk.execute',
+    // DELETABLE, unlike the two above, and the difference is what each table is. An import is a
+    // working file whose rows are pruned at 30 days; the operation record is history.
+    deletePermission: 'destructive.execute',
+    deviation:
+      'An uploaded file and its column mapping. No anon policy and no session write: the import ' +
+      'pipeline runs through the service role after requirePermission, and the uploaded file ' +
+      'itself is not retained after apply.',
+  },
+  bulk_import_rows: {
+    policiesIn: PHASE_24_POLICIES,
+    shape: 'C',
+    readPermission: 'bulk.execute',
+    deletePermission: 'destructive.execute',
+    deviation:
+      'One row of an uploaded file, retained 30 days for post-hoc review. No anon policy — it is ' +
+      "an operator's spreadsheet — and no session write: only the import pipeline writes it.",
   },
 } as const satisfies Record<string, TablePolicy>
 

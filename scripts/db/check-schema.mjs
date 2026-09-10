@@ -309,6 +309,36 @@ const EXPECTED = {
    * CONTENT_TABLES below. No Tier C — it ships with zero rows and no seed module writes it,
    * because a wood species attached to Rivya is a capability claim only the owner may make.
    */
+  /*
+   * Phase 24 — the bulk engine. Four §1.4 exemptions of the "record of something that happened"
+   * kind, the same family as `audit_logs` and `content_seed_runs`.
+   *
+   * `bulk_operations` HAS NO `updated_at` AND NO `updated_by`, and that is the design rather than
+   * an omission: the row's lifecycle IS its timestamps — requested, started, finished, undone —
+   * and `actor_user_id` is the whole actor story. A generic "last changed" column would name a
+   * moment none of the four already covers.
+   *
+   * `bulk_operation_items` HAS NO TIMESTAMP AT ALL. An item belongs to exactly one operation and
+   * happened when that operation did; a second time would be a value that can disagree with its
+   * parent. What it carries instead is `row_version_before`, which is not a timestamp about this
+   * row — it is the ENTITY's updated_at as the operation left it, and it is what undo compares
+   * against.
+   *
+   * The two import tables carry `created_at` because a file is uploaded at a moment its operation
+   * has not happened at yet, and `bulk_import_rows` is pruned by that column at thirty days.
+   */
+  bulk_operations: [
+    'kind',
+    'target_entity',
+    'status',
+    'selection',
+    'requested_at',
+    'actor_user_id',
+  ],
+  bulk_operation_items: ['operation_id', 'entity_id', 'result', 'before', 'row_version_before'],
+  bulk_imports: ['filename', 'checksum', 'column_map', 'status', 'created_at'],
+  bulk_import_rows: ['import_id', 'row_number', 'raw', 'issues', 'action', 'created_at'],
+
   search_documents: ['entity_type', 'entity_id', 'visibility', 'status', 'indexed_at'],
   research_search_documents: ['entity_type', 'entity_id', 'visibility', 'status', 'indexed_at'],
   search_queries: ['query_text', 'normalized_query', 'scope', 'result_count', 'occurred_at'],

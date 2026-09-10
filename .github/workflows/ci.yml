@@ -141,6 +141,12 @@ jobs:
       - name: Nothing research-shaped on the public search path
         run: npm run search:check-scope
 
+      # Phase 24. Every registered bulk operation has a preview, a Zod schema and a destructive
+      # flag; no preview writes; and the removals are declared destructive by name. What a type
+      # cannot express is a preview that mutates, and a second bulk path added by a later phase.
+      - name: Every bulk operation has a write-free preview and a destructive flag
+        run: npm run bulk:check-registry
+
       # --- database gates (Phase 03) ---
       # `psql` is pre-installed on ubuntu-latest, so no apt step is needed.
       - name: Migrations apply to an empty database

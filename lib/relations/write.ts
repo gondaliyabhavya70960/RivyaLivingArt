@@ -4,6 +4,18 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 
 import type { Database } from '@/lib/supabase/database.types'
 import { PermissionError } from '@/lib/supabase/errors'
+import {
+  deleteRelationEdge,
+  deleteRelationSuppression,
+  findRelationEdge,
+  getRelationEdge,
+  insertRelationEdge,
+  nextRelationSortOrder,
+  setPairedRelation,
+  updateRelationSortOrder,
+  upsertRelationSuppression,
+  type RelationTable,
+} from '@/lib/supabase/repositories/relations'
 import { isReciprocal, type RelationTarget, type RelationVocabulary } from '@/lib/supabase/schemas'
 
 import type { RuleKey, SuggestionSource } from './rules'
@@ -13,12 +25,13 @@ type Client = SupabaseClient<Database>
 /**
  * The four editor gestures: accept, dismiss, create, remove — plus reorder.
  *
- * WHY THIS IS NOT IN A REPOSITORY. Every function here spans two tables, and two of them must span
- * them ATOMICALLY: accepting a reciprocal suggestion writes an edge, its inverse, and the pairing
- * that links them. The repositories are single-table readers and writers by the Phase 03 rule; this
- * is the transaction layer above them, and it calls SQL functions (0215 is not needed — the pairing
- * is done with two writes and a compensating delete, see `createEdge`) rather than pretending a
- * PostgREST call is a transaction.
+ * WHY THIS IS NOT A REPOSITORY, AND HOLDS NO QUERY OF ITS OWN. Every gesture here spans two
+ * tables, and two of them must span them ATOMICALLY: accepting a reciprocal suggestion writes an
+ * edge, its inverse, and the pairing that links them. The repositories are single-statement
+ * readers and writers by the Phase 03 rule, so this is the layer above them — composition,
+ * reciprocity and compensation, with every `.from()` in `lib/supabase/repositories/relations.ts`
+ * where `scripts/db/check-data-layer.mjs` requires it. The first draft held its own queries and CI
+ * refused it.
  *
  * RLS FILTERS A WRITE, IT DOES NOT REFUSE ONE. That is the finding `product-edges.ts` records at
  * length and it applies to every function below: a role the policy does not admit changes nothing
@@ -114,71 +127,33 @@ async function insertOne(
   input: EdgeInput,
   actorId: string | null,
 ): Promise<{ id: string } | null> {
-  const origin = input.ruleKey ? ('RULE_ACCEPTED' as const) : ('EDITOR' as const)
-  const sortOrder = await nextSortOrder(client, input)
+  const sortOrder = await nextRelationSortOrder(client, {
+    sourceType: input.source.type,
+    sourceId: input.source.id,
+    relationType: input.relationType,
+  })
 
-  if (input.source.type === 'product') {
-    const { data, error } = await client
-      .from('product_relations')
-      .insert({
-        source_product_id: input.source.id,
-        target_type: input.targetType,
-        target_id: input.targetId,
-        relation_type: input.relationType,
-        sort_order: sortOrder,
-        origin,
-        rule_key: input.ruleKey ?? null,
-        note: input.note ?? null,
-        created_by: actorId,
-      })
-      .select('id')
-      .maybeSingle()
-    if (error !== null) throw error
-    return data
-  }
-
-  const { data, error } = await client
-    .from('content_relations')
-    .insert({
-      source_type: input.source.type,
-      source_id: input.source.id,
-      target_type: input.targetType,
-      target_id: input.targetId,
-      relation_type: input.relationType,
-      sort_order: sortOrder,
-      origin,
-      rule_key: input.ruleKey ?? null,
+  return insertRelationEdge(
+    client,
+    {
+      sourceType: input.source.type,
+      sourceId: input.source.id,
+      targetType: input.targetType,
+      targetId: input.targetId,
+      relationType: input.relationType,
+      sortOrder,
+      origin: input.ruleKey ? 'RULE_ACCEPTED' : 'EDITOR',
+      ruleKey: input.ruleKey ?? null,
       note: input.note ?? null,
-      created_by: actorId,
-    })
-    .select('id')
-    .maybeSingle()
-  if (error !== null) throw error
-  return data
+    },
+    actorId,
+  )
 }
 
-async function nextSortOrder(client: Client, input: EdgeInput): Promise<number> {
-  if (input.source.type === 'product') {
-    const { data } = await client
-      .from('product_relations')
-      .select('sort_order')
-      .eq('source_product_id', input.source.id)
-      .eq('relation_type', input.relationType)
-      .order('sort_order', { ascending: false })
-      .limit(1)
-    return (data?.[0]?.sort_order ?? -1) + 1
-  }
-  const { data } = await client
-    .from('content_relations')
-    .select('sort_order')
-    .eq('source_type', input.source.type)
-    .eq('source_id', input.source.id)
-    .eq('relation_type', input.relationType)
-    .order('sort_order', { ascending: false })
-    .limit(1)
-  return (data?.[0]?.sort_order ?? -1) + 1
-}
+const tableFor = (isProduct: boolean): RelationTable =>
+  isProduct ? 'product_relations' : 'content_relations'
 
+/** Point the two halves of a reciprocal pair at each other. Two statements, one per direction. */
 async function pair(
   client: Client,
   aId: string,
@@ -186,16 +161,8 @@ async function pair(
   aIsProduct: boolean,
   bIsProduct: boolean,
 ): Promise<void> {
-  if (aIsProduct) {
-    await client.from('product_relations').update({ paired_relation_id: bId }).eq('id', aId)
-  } else {
-    await client.from('content_relations').update({ paired_relation_id: bId }).eq('id', aId)
-  }
-  if (bIsProduct) {
-    await client.from('product_relations').update({ paired_relation_id: aId }).eq('id', bId)
-  } else {
-    await client.from('content_relations').update({ paired_relation_id: aId }).eq('id', bId)
-  }
+  await setPairedRelation(client, tableFor(aIsProduct), aId, bId)
+  await setPairedRelation(client, tableFor(bIsProduct), bId, aId)
 }
 
 /**
@@ -295,25 +262,20 @@ export async function dismissSuggestion(
   },
   actorId: string | null,
 ): Promise<void> {
-  const { data, error } = await client
-    .from('relation_suppressions')
-    .upsert(
-      {
-        source_type: input.source.type,
-        source_id: input.source.id,
-        target_type: input.targetType,
-        target_id: input.targetId,
-        rule_key: input.ruleKey,
-        reason: input.reason ?? null,
-        suppressed_by: actorId,
-      },
-      { onConflict: 'source_type,source_id,target_type,target_id,rule_key' },
-    )
-    .select('id')
-    .maybeSingle()
+  const written = await upsertRelationSuppression(
+    client,
+    {
+      sourceType: input.source.type,
+      sourceId: input.source.id,
+      targetType: input.targetType,
+      targetId: input.targetId,
+      ruleKey: input.ruleKey,
+      reason: input.reason ?? null,
+    },
+    actorId,
+  )
 
-  if (error !== null) throw error
-  if (data === null) {
+  if (written === null) {
     throw new PermissionError(
       'relation suppression',
       'create',
@@ -332,20 +294,17 @@ export async function restoreSuggestion(
     readonly ruleKey: RuleKey
   },
 ): Promise<void> {
-  const { error } = await client
-    .from('relation_suppressions')
-    .delete()
-    .eq('source_type', input.source.type)
-    .eq('source_id', input.source.id)
-    .eq('target_type', input.targetType)
-    .eq('target_id', input.targetId)
-    .eq('rule_key', input.ruleKey)
-  if (error !== null) throw error
+  await deleteRelationSuppression(client, {
+    sourceType: input.source.type,
+    sourceId: input.source.id,
+    targetType: input.targetType,
+    targetId: input.targetId,
+    ruleKey: input.ruleKey,
+  })
 }
 
 async function removeById(client: Client, isProduct: boolean, id: string): Promise<void> {
-  if (isProduct) await client.from('product_relations').delete().eq('id', id)
-  else await client.from('content_relations').delete().eq('id', id)
+  await deleteRelationEdge(client, tableFor(isProduct), id)
 }
 
 /**
@@ -356,30 +315,26 @@ async function removeById(client: Client, isProduct: boolean, id: string): Promi
  * next visit to the workspace would propose re-creating what the editor just removed.
  */
 export async function removeEdge(client: Client, isProduct: boolean, id: string): Promise<void> {
-  const table = isProduct ? 'product_relations' : 'content_relations'
-  const { data: row } = await client
-    .from(table)
-    .select('id, paired_relation_id')
-    .eq('id', id)
-    .maybeSingle()
-
-  if (row === null || row === undefined) return
+  const table = tableFor(isProduct)
+  const row = await getRelationEdge(client, table, id)
+  if (row === null) return
 
   const pairedId = row.paired_relation_id
-  await removeById(client, isProduct, id)
+  await deleteRelationEdge(client, table, id)
 
   // The pair may live in either table, and which one is not recorded on the row — so both are
   // asked. A delete matching nothing is free, and storing the table name would be a third thing
   // that can disagree with the other two.
   if (pairedId !== null) {
-    await client.from('product_relations').delete().eq('id', pairedId)
-    await client.from('content_relations').delete().eq('id', pairedId)
+    await deleteRelationEdge(client, 'product_relations', pairedId)
+    await deleteRelationEdge(client, 'content_relations', pairedId)
   }
 
-  const { data: survivor } = await client.from(table).select('id').eq('id', id).maybeSingle()
-  if (survivor !== null && survivor !== undefined) {
-    throw new PermissionError('relation', 'delete', id)
-  }
+  // RLS FILTERS A DELETE, IT DOES NOT REFUSE ONE. Reading the row back is the only way to tell
+  // "removed it" from "matched nothing", and telling the editor a removal happened when the row
+  // is still there is the failure this line exists for.
+  const survivor = await getRelationEdge(client, table, id)
+  if (survivor !== null) throw new PermissionError('relation', 'delete', id)
 }
 
 /** Reorder within one relation type. Always available, including on accepted-from-rule edges. */
@@ -388,10 +343,9 @@ export async function reorderEdges(
   isProduct: boolean,
   orderedIds: readonly string[],
 ): Promise<void> {
-  const table = isProduct ? 'product_relations' : 'content_relations'
+  const table = tableFor(isProduct)
   for (const [index, id] of orderedIds.entries()) {
-    const { error } = await client.from(table).update({ sort_order: index }).eq('id', id)
-    if (error !== null) throw error
+    await updateRelationSortOrder(client, table, id, index)
   }
 }
 
@@ -399,27 +353,13 @@ async function findEdge(
   client: Client,
   input: EdgeInput,
 ): Promise<{ id: string; paired_relation_id: string | null } | null> {
-  if (input.source.type === 'product') {
-    const { data } = await client
-      .from('product_relations')
-      .select('id, paired_relation_id')
-      .eq('source_product_id', input.source.id)
-      .eq('target_type', input.targetType)
-      .eq('target_id', input.targetId)
-      .eq('relation_type', input.relationType)
-      .maybeSingle()
-    return data ?? null
-  }
-  const { data } = await client
-    .from('content_relations')
-    .select('id, paired_relation_id')
-    .eq('source_type', input.source.type)
-    .eq('source_id', input.source.id)
-    .eq('target_type', input.targetType)
-    .eq('target_id', input.targetId)
-    .eq('relation_type', input.relationType)
-    .maybeSingle()
-  return data ?? null
+  return findRelationEdge(client, {
+    sourceType: input.source.type,
+    sourceId: input.source.id,
+    targetType: input.targetType,
+    targetId: input.targetId,
+    relationType: input.relationType,
+  })
 }
 
 function isUniqueViolation(error: unknown): boolean {

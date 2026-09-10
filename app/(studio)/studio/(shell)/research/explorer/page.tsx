@@ -1,3 +1,4 @@
+import { UnavailableBulkToolbar } from '@/components/studio/bulk/UnavailableToolbar'
 import { StudioPage, studioMetadata } from '@/components/studio/StudioPage'
 import { requirePermission } from '@/lib/auth/require'
 
@@ -11,10 +12,20 @@ import { requirePermission } from '@/lib/auth/require'
  * audit row when it refuses, and is the same call the finished surface will make. Phase 28
  * replaces the body below; it does not add the gate, because a gate added later is a gate that was
  * missing in between.
+ *
+ * PHASE 24 ADDED THE BULK TOOLBAR IN ITS UNAVAILABLE STATE. The five research operations are
+ * registered against the one bulk engine with `available: false`, so Phase 29 fills in a `preview`
+ * and an `applyItem` and inherits the preview step, the typed-count confirmation, the per-item
+ * snapshot and the 24-hour undo — rather than building a second bulk system, which is what a phase
+ * arriving to find no registration and no toolbar would do.
  */
 export const metadata = studioMetadata('/studio/research/explorer')
 
 export default async function Page() {
   await requirePermission('research.read')
-  return <StudioPage path="/studio/research/explorer" />
+  return (
+    <StudioPage path="/studio/research/explorer">
+      <UnavailableBulkToolbar />
+    </StudioPage>
+  )
 }
