@@ -1438,6 +1438,100 @@ export const STUDIO_STRINGS = {
   'studio.research.remove': { value: 'Remove', contentKey: 'studio_help.research_remove' },
   'studio.research.add': { value: 'Add', contentKey: 'studio_help.research_add' },
   'studio.research.save': { value: 'Save', contentKey: 'studio_help.research_save' },
+
+  /*
+   * Phase 27 — extraction.
+   *
+   * THE WORDS THAT MATTER HERE ARE THE ONES ABOUT FAILURE. A run detail screen is read when
+   * something has gone wrong, and the distinctions this subsystem draws — a refusal is not a
+   * failure, an aborted source is not a failed run, a low-confidence draft is not a wrong one —
+   * are only visible if the copy draws them too. SEED §40: every one is overridable from
+   * `global_content` without a code change.
+   */
+  'studio.research.adaptersHeading': {
+    value: 'Extraction',
+    contentKey: 'studio_help.research_adapters_heading',
+  },
+  'studio.research.adaptersBody': {
+    value:
+      'What each adapter read, and what it could not. A source that stops here stops on its own \u2014 the rest of the run carries on.',
+    contentKey: 'studio_help.research_adapters_body',
+  },
+  'studio.research.noAdapterRuns': {
+    value: 'Nothing has been extracted',
+    contentKey: 'studio_help.research_no_adapter_runs',
+  },
+  'studio.research.noAdapterRunsBody': {
+    value:
+      'A run records one line here per source as soon as its first page has been read. A dry run records none, because it stores nothing derived.',
+    contentKey: 'studio_help.research_no_adapter_runs_body',
+  },
+  'studio.research.itemsSeen': { value: 'Seen', contentKey: 'studio_help.research_items_seen' },
+  'studio.research.itemsExtracted': {
+    value: 'Extracted',
+    contentKey: 'studio_help.research_items_extracted',
+  },
+  'studio.research.itemsFailed': {
+    value: 'Failed',
+    contentKey: 'studio_help.research_items_failed',
+  },
+  'studio.research.abortedNote': {
+    value:
+      'Ten items in a row failed, so this source stopped for the rest of the run. No other source was affected.',
+    contentKey: 'studio_help.research_aborted_note',
+  },
+  'studio.research.firstErrors': {
+    value: 'The first five errors',
+    contentKey: 'studio_help.research_first_errors',
+  },
+  'studio.research.firstErrorsBody': {
+    value:
+      'Five, not all of them. A broken adapter fails every page, and four hundred identical errors say nothing the first five did not \u2014 the count above is exact.',
+    contentKey: 'studio_help.research_first_errors_body',
+  },
+  'studio.research.versionsHeading': {
+    value: 'What was read',
+    contentKey: 'studio_help.research_versions_heading',
+  },
+  'studio.research.versionsBody': {
+    value:
+      'One line per page whose content changed. A page that reads the same as last time produces nothing here, which is why this list is short and worth reading.',
+    contentKey: 'studio_help.research_versions_body',
+  },
+  'studio.research.noVersions': {
+    value: 'No page changed',
+    contentKey: 'studio_help.research_no_versions',
+  },
+  'studio.research.noVersionsBody': {
+    value:
+      'Either nothing has been extracted yet, or every page read the same as the last time it was seen. Both are ordinary.',
+    contentKey: 'studio_help.research_no_versions_body',
+  },
+  'studio.research.draftHeading': {
+    value: 'As the page said it',
+    contentKey: 'studio_help.research_draft_heading',
+  },
+  'studio.research.draftBody': {
+    value:
+      'Every value here is the other site\u2019s own text, exactly as published. Nothing has been parsed, converted or interpreted \u2014 that happens later, in one place.',
+    contentKey: 'studio_help.research_draft_body',
+  },
+  'studio.research.provenance': {
+    value: 'Read from',
+    contentKey: 'studio_help.research_provenance',
+  },
+  'studio.research.confidenceLow': {
+    value: 'Little was found on this page',
+    contentKey: 'studio_help.research_confidence_low',
+  },
+  'studio.research.snapshotKept': {
+    value: 'The page is kept for 180 days',
+    contentKey: 'studio_help.research_snapshot_kept',
+  },
+  'studio.research.snapshotPruned': {
+    value: 'The page itself has been pruned; what it said is kept',
+    contentKey: 'studio_help.research_snapshot_pruned',
+  },
   'studio.imports.heading': { value: 'Import products', contentKey: 'studio_help.imports_heading' },
   'studio.imports.body': {
     value:

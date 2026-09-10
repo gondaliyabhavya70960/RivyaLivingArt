@@ -332,6 +332,7 @@ migration transaction; a check constraint can be replaced in place, which is why
 | `research_source_schedules.timezone` | `UTC`, and nothing else. Not a vocabulary so much as a refusal: the scheduler evaluates every cron field in UTC, so any other value would be a column it silently ignores |
 | `research_source_category_map.mapping_state` | `MAPPED · IGNORED · UNRESOLVED` — **generated always as … stored** rather than check-constrained, because it is derived from `is_ignored` and `category_id` and nobody writes it |
 | `research_source_health_v.health` | `HEALTHY · DEGRADED · FAILING · STALE · DISABLED` (derived, never stored) |
+| `research_adapter_runs.status` | `OK · PARTIAL · ABORTED · FAILED` (Phase 27). Four states of one adapter against one source in one run, and each says something different to an operator: nothing failed; some items failed and the source kept going; ten consecutive failures stopped **that source** for the rest of the run; the adapter could not be resolved or started at all. A check rather than an enum because it is one column's local vocabulary and `research_run_status` — which already spells six similar-looking words — means something else entirely |
 | `bulk_operations.status` | `PREVIEW · QUEUED · RUNNING · SUCCEEDED · PARTIAL · FAILED · UNDONE` |
 | `analytics_snapshots.availability` | `AVAILABLE · UNAVAILABLE` |
 | `seo_keyword_themes.research_status` | `UNRESEARCHED · RESEARCHED · TARGETED · REJECTED` |
@@ -503,6 +504,11 @@ erDiagram
   research_fetches ||--o{ research_raw_items : ""
   research_sources ||--o{ research_products : "unique (source_id, source_url)"
   research_products ||--o{ research_product_versions : "content-hashed, append-only"
+  research_products |o--o| research_product_versions : "current_version_id (set null)"
+  research_runs ||--o{ research_product_versions : "run_id null for an offline replay"
+  research_fetches ||--o{ research_product_versions : "fetch_id — the snapshot it was read from"
+  research_runs ||--o{ research_adapter_runs : "unique (run_id, source_id, adapter_key)"
+  research_sources ||--o{ research_adapter_runs : "blast-radius accounting"
   research_products ||--o{ research_validation_issues : ""
   research_products ||--o{ research_changes : ""
   research_products ||--o{ research_pipeline_events : ""
@@ -2039,6 +2045,54 @@ the draft below does not carry, each recorded by amendment A26:**
    PostgreSQL's default grant is what turns a new function into a PostgREST RPC endpoint (0022,
    0143).
 
+**Phase 27 added the two extraction tables and closed the foreign key `0231` left open. Six notes
+the rows below cannot carry, and one of them needs an amendment this document does not write:**
+
+1. **`normalized` and `normalizer_version` are declared in `0250` and written by Phase 28.** They
+   are columns nobody fills today, and that is cheaper than the alternative rather than sloppier
+   than it. The shape is already known — `SCRAPER.md` §10 fixes what a `NormalizedProduct` is — and
+   an `alter table` on an append-only table that will by then hold every observation the subsystem
+   has ever made is a migration bought for nothing. It is the same reasoning `0231` used for
+   `current_version_id`, and the same reasoning `0230` used when it created `research_stage` with
+   all seven values in a phase that could only reach the first: declare the shape once, in the
+   migration that has the table open. What is *not* declared early is any constraint
+   about their contents, because that is Phase 28's rule and a check written a phase before the code
+   is a check written against a guess.
+2. **`research_products_current_version_fk` closes the loop `0231` left open.**
+   `research_products.current_version_id` has existed since Phase 25 as a **bare uuid**, deliberately:
+   the shape was known and the table it points at was two phases away. `0250` adds the reference it
+   was always going to be, `on delete set null` rather than cascade — deleting a version must not
+   delete the product that was observed. A product with no current version is a real state —
+   discovered, not yet extracted — the explorer renders it, and a cascade would have hidden it by
+   removing the row. Note the direction: this is a research → research reference, so the isolation
+   allowlist of I1 is untouched and still holds exactly one entry until Phase 28 adds the second.
+3. **The uniqueness key is `(research_product_id, content_hash)`, and the hash is over the DRAFT.**
+   Not over the page body: two fetches of one page differing only in a session id, a rotating banner
+   or a build fingerprint are one product observation, and a version table keyed on the body hash
+   would write four hundred rows on a nightly pass over four hundred unchanged pages. Keyed on the
+   draft, an unchanged page produces **no row at all** — enforced at the row, so the rule holds
+   against a bug in the caller as well as against the caller doing it right. `confidence` and
+   `provenance` are excluded from the hashed object: they record how a value was found, not what the
+   source published, and an adapter fix that changes a field's provenance without changing one value
+   would otherwise re-version an entire source on the day nothing about it changed. They are still
+   *stored*, inside `raw`. `SCRAPER.md` §18.7 is the long form.
+4. **`run_id` and `fetch_id` are nullable, and the null is the honest value.** A version produced by
+   the offline re-extraction script belongs to no run and no fetch: it was read from a stored
+   snapshot. Inventing a run id would put a row in the run detail screen for work that never fetched
+   anything. `storage_key` is nullable for the neighbouring reason — the version outlives the
+   evidence, because the snapshot is pruned at 180 days and the draft is not.
+5. **`research_adapter_runs.first_errors` keeps five, and the counters keep all of them.** A source
+   whose adapter is broken fails every item, and four hundred identical stack traces would make the
+   run detail screen unreadable while telling an operator nothing the first five did not. The count
+   is exact; the examples are bounded. `unique (run_id, source_id, adapter_key)` is the upsert
+   target, which is what makes the counters cumulative across the many cron ticks one run is drained
+   over.
+6. **`0251` is one past the phase document's `0250`**, for the reason A23 gives for `0214`, A24 for
+   `0221`, A25 for `0233` and A26 for `0241`, unchanged: `npm run auth:gen-policies` rewrites a
+   generated policy file whole, so it cannot also carry the DDL that creates its tables. Recorded
+   here rather than left as a silent discrepancy; the dated amendment that records it belongs in
+   `CANONICAL-DECISIONS.md`, which this document does not write.
+
 | Table | Phase | Purpose | Key columns and constraints |
 |---|---|---|---|
 | `research_sources` | 25 · 26 | One row per approved third-party site; the twenty-three FEAT §26 fields | `id`, `slug citext unique`, `name`, `base_url`, `region`, `currency char(3)`, `source_type research_source_type`, `analytics_league research_analytics_league`, `collection_mode research_collection_mode`, `image_extraction_mode research_image_extraction_mode`, `is_enabled bool default false`, `adapter_key text not null default 'generic'`, `price_extraction jsonb`, `sku_extraction jsonb`, `attribute_extraction jsonb`, `rate_limit_rpm int default 20`, `request_delay_ms int default 3000`, `concurrency int default 1`, `next_fetch_not_before`, `in_flight_count int default 0`, `consecutive_failures int default 0`, `circuit_open_until`, `policy_status research_policy_status default 'UNREVIEWED'`, `policy_reviewed_by/at`, `policy_notes`, `notes`, `readiness text not null default 'DRAFT'`, Tier A+B. **`research_sources_enabled_requires_approval check (is_enabled = false or policy_status = 'APPROVED')`**; `research_sources_approval_is_attributed`; `research_sources_readiness_allowlist`; three `jsonb_typeof` shape checks (object, object, **array**); and the three ceilings `0240` tightened — see the Phase 26 notes below |
@@ -2052,9 +2106,9 @@ the draft below does not carry, each recorded by amendment A26:**
 | `research_fetches` | 25 | One row per fetch attempt | `robots_decision text check (...)`; a `DISALLOWED` row records the decision and performs **no** request; `storage_key` points at the private snapshot bucket |
 | `research_robots_cache` | 25 | Per-host robots.txt, 24-hour TTL | `host text unique`, `crawl_delay_s numeric` |
 | `research_raw_items` | 25 · 27 | Exactly what came back, uninterpreted | `raw jsonb not null`, `adapter_key`, `adapter_version` |
-| `research_products` | 25 · 28 · 30 | One row per discovered product per source | `unique (source_id, source_url)`; `stage research_stage`, `disposition research_disposition`, `title_normalized`, `brand_text`, `currency char(3)`, `price_state text`, `price_min_minor bigint`, `price_max_minor bigint`, `dimensions_mm jsonb`, `dimension_parse_state`, `material_tokens text[]`, `availability`, `lead_time_days_min/max`, `variant_count`, **`image_urls text[]` (URLs only — never downloaded)**, `category_labels text[]`, `matched_category_id uuid references categories(id) on delete set null` — **allowlisted FK 2**, `match_confidence numeric(4,3)`, `match_method`, `duplicate_of_id uuid references research_products(id)`, `normalized_overrides jsonb`, `override_by/at`, `scale_band text check (...)`, `is_large_format boolean` (nullable — three-valued), `longest_axis_mm int`, `large_format_source text check (...)`, `classified_at`, `classified_rule_id`, `current_version_id uuid references research_product_versions(id) on delete set null`; index `(stage, disposition, last_seen_at desc)`, `(is_large_format, scale_band, source_id)` |
-| `research_product_versions` | 27 · 28 | Append-only content-hashed versions — the substrate change detection diffs | `unique (research_product_id, content_hash)`; `raw jsonb`, `normalized jsonb`, `normalizer_version`, `storage_key`, `adapter_key`, `adapter_version`, `observed_at`; index `(research_product_id, observed_at desc)` |
-| `research_adapter_runs` | 27 | Per-(run, source, adapter) accounting — the unit of blast radius | `unique (run_id, source_id, adapter_key)`; `status text check (status in ('OK','PARTIAL','ABORTED','FAILED'))` |
+| `research_products` | 25 · 27 · 28 · 30 | One row per discovered product per source | `unique (source_id, source_url)`; `stage research_stage`, `disposition research_disposition`, `title_normalized`, `brand_text`, `currency char(3)`, `price_state text`, `price_min_minor bigint`, `price_max_minor bigint`, `dimensions_mm jsonb`, `dimension_parse_state`, `material_tokens text[]`, `availability`, `lead_time_days_min/max`, `variant_count`, **`image_urls text[]` (URLs only — never downloaded)**, `category_labels text[]`, `matched_category_id uuid references categories(id) on delete set null` — **allowlisted FK 2**, `match_confidence numeric(4,3)`, `match_method`, `duplicate_of_id uuid references research_products(id)`, `normalized_overrides jsonb`, `override_by/at`, `scale_band text check (...)`, `is_large_format boolean` (nullable — three-valued), `longest_axis_mm int`, `large_format_source text check (...)`, `classified_at`, `classified_rule_id`, `current_version_id uuid references research_product_versions(id) on delete set null` — the constraint is `research_products_current_version_fk`, added by `0250` to a column `0231` declared as a bare uuid two phases early; index `(stage, disposition, last_seen_at desc)`, `(is_large_format, scale_band, source_id)` |
+| `research_product_versions` | 27 · 28 | One observation of one product, kept for ever — the substrate change detection diffs | `id`, `research_product_id uuid not null references research_products on delete cascade`, `run_id uuid references research_runs on delete set null` (null for an offline replay), `fetch_id uuid references research_fetches on delete set null`, `raw jsonb not null` (the `RawProductDraft`: **every field the source's own string**), `normalized jsonb` and `normalizer_version text` (declared here, **written by Phase 28**), `content_hash text not null` (SHA-256 over the draft, not the page body), `storage_key text` (null once the snapshot is pruned), `adapter_key text not null`, `adapter_version text not null`, `observed_at timestamptz not null default now()`. **`research_product_versions_unique_content unique (research_product_id, content_hash)` — an unchanged page produces no new version**; `research_product_versions_raw_is_object`; `research_product_versions_normalized_is_object` (null or object); indexes `(research_product_id, observed_at desc)`, `(run_id)`, `(observed_at) where storage_key is not null` (the pruner's). No Tier-A common set, which is §1.2's own carve-out for an append-only log rather than an exception to it: nothing updates a version, so `updated_at` would never move and `updated_by` would name nobody |
+| `research_adapter_runs` | 27 | Per-(run, source, adapter) accounting — the unit of blast radius | `id`, `run_id uuid not null references research_runs on delete cascade`, `source_id uuid not null references research_sources on delete cascade`, `adapter_key text not null`, `adapter_version text not null`, `status text not null default 'OK'`, `items_seen int not null default 0`, `items_extracted int`, `items_failed int`, `first_errors jsonb not null default '[]'` (**the first five, with their URLs — never all of them**), `duration_ms int not null default 0`, `started_at timestamptz not null default now()`, `finished_at timestamptz`. `research_adapter_runs_status_allowlist check (status in ('OK','PARTIAL','ABORTED','FAILED'))` (§2.1); `research_adapter_runs_errors_is_array`; `research_adapter_runs_counts_sane` (all three counters `>= 0`); **`research_adapter_runs_unique unique (run_id, source_id, adapter_key)`** — the upsert target, and what makes the counters cumulative across the cron ticks one run is drained over; indexes `(run_id)`, `(source_id, started_at desc)` (the query that finds three consecutive `ABORTED` runs and opens the circuit) |
 | `research_pipeline_events` | 25 | Append-only stage transitions | `from_stage`, `to_stage`, `actor_user_id`, `actor_kind text check (actor_kind in ('STAFF','SYSTEM'))`, `reason`; `revoke update, delete` |
 | `research_validation_issues` | 28 | One row per failed FEAT §21 rule | `unique (research_product_id, version_id, rule, field)`; `severity text check (severity in ('ERROR','WARNING','INFO'))`; dismissible only with a reason; index `(severity, is_dismissed)` |
 | `research_match_candidates` | 28 | Sub-threshold duplicate candidates awaiting a human | `decided text check (decided in ('PENDING','ACCEPTED','REJECTED'))` |
@@ -2118,6 +2172,32 @@ information, it **widens what Rivya will fetch**, and that is the same class of 
 live content. `0241` is generated from `lib/auth/table-permissions.ts` by `npm run auth:gen-policies`
 and diffed by `npm run auth:check-policies`, so a hand edit fails the build exactly as a matrix
 change that was never regenerated does.
+
+**RLS shape for the two Phase 27 tables — RLS-RESEARCH (§1.5), shape C, in `0251`, which is two
+`select` policies and nothing else at all: `research.read` may look, and NO session role may write
+either table by any means.** No `anon` policy of any kind (I2), and none may ever exist.
+`select` is `research.read` — owner, admin, merchandiser, researcher, viewer — on both. There is no
+`insert` or `update` policy for `authenticated` at all, which is where these two depart from the
+`research.write` a reader would expect by analogy with `research_sources`, and the departure is the
+point: **these tables are not configuration, they are the record of what happened.**
+`research_product_versions` is what Phase 29 diffs to say a competitor's price moved, and
+`research_adapter_runs` is what proves a broken adapter stopped at its own source. A researcher able
+to edit the first could make a change appear that never happened; one able to edit the second could
+make a failure they caused look like somebody else's. Evidence its author can edit is not evidence.
+Both are written by `lib/scraper/workflows/extract.ts` through the service role, after the drain
+loop has already checked the kill switch, the policy review and robots.txt — the same arrangement
+`audit_logs` has for the same reason (C13), and the reason `AdapterContext` carries no database
+handle at all (`SCRAPER.md` §18.2). `0251` is generated and diffed exactly as `0241` is.
+
+**Append-only here is the absence of a write policy, not a `revoke`, and the difference is worth
+naming** because `research_pipeline_events` does it the other way (`revoke update, delete … from
+anon, authenticated` in `0231`). A revoke and a missing policy both stop a session write; what a
+revoke additionally buys is that a *future* generated policy file cannot quietly re-open the door,
+since the grant is gone underneath it. These two tables rely on the matrix instead — which is
+checkable, because `npm run auth:check-policies` regenerates `0251` and diffs it, so an `insert` or
+`update` leg appearing on either table fails the build the moment somebody adds one to
+`lib/auth/table-permissions.ts`. Both routes are enforced; only one of them is visible in the
+policy file, and this is where the other one is written down.
 
 `research_source_health_v` is a **view and therefore has no policies at all**, which is why its
 grants are written out rather than left to the Supabase default: `revoke all … from public, anon`
@@ -2214,7 +2294,7 @@ local and hosted is isolated to one file that can never be picked up by `supabas
 | 24 | `0220`–`0221` | T `bulk_operations`, `bulk_operation_items`, `bulk_imports`, `bulk_import_rows`; `revoke delete` on the two record tables; `0221` is the generated RLS. **`0221` is one past the phase document's `0220`, for the reason A23 gives for `0214`: a generated policy file is rewritten whole and cannot also carry the DDL that creates its tables — amendment A24** |
 | 25 | `0230`–`0234` | T `research_sources`, `research_jobs`, `research_runs`, `research_work_items`, `research_fetches`, `research_raw_items`, `research_products`, `research_pipeline_events`, `research_robots_cache`; six research enums; F `research_lease_work_items()`, `research_reclaim_expired_leases()`, `refresh_research_search_document()` and its four triggers. **`0233` is the generated RLS, one past the phase document's `0232`, for the reason A23 gives for `0214`. `0234` is a FIFTH file and a different reason: it corrects `research_search_documents_status_allowlist`, which 0210 wrote with only the seven pipeline stages — leaving a source and a run, both admitted by the same table's `entity_type` allowlist, unindexable. Widened to the union of the three vocabularies and the index filled by trigger — amendment A25** |
 | 26 | `0240`–`0241` | A `research_sources` (`analytics_league`, `collection_mode`, `image_extraction_mode`, the three extraction `jsonb` columns, `notes`, `readiness`; `source_type text` → enum; three ceilings tightened); T `research_source_url_patterns`, `research_source_category_map`, `research_source_schedules`; V `research_source_health_v` (`security_invoker`); four source enums; F `research_cron_field_values()`, `research_min_circular_gap()`, `research_cron_min_interval_minutes()`, and `refresh_research_search_document()` replaced whole for the enum cast `0234` could not have anticipated. **`0241` is one past the phase document's `0240`, for the reason A23 gives for `0214`, A24 for `0221` and A25 for `0233`: a generated policy file is rewritten whole and cannot also carry the DDL that creates its tables. The four enums sit inside `0240` rather than in a file of their own, which departs from `0230` — `create type` has none of the transaction restriction `alter type … add value` has, and a second file holding four lines is a file nobody opens — amendment A26** |
-| 27 | `0250` | T `research_product_versions`, `research_adapter_runs`; A `research_products.current_version_id` |
+| 27 | `0250`–`0251` | T `research_product_versions`, `research_adapter_runs`; A `research_products` — `research_products_current_version_fk`, the foreign key `0231` declared its column for and deferred, `on delete set null`. No new enum: `research_adapter_runs.status` is a check-constrained text vocabulary (§2.1), because four values local to one column do not belong in the global type namespace. **`0251` is one past the phase document's `0250`, for the reason A23 gives for `0214`, A24 for `0221`, A25 for `0233` and A26 for `0241`: a generated policy file is rewritten whole and cannot also carry the DDL that creates its tables. It is the shortest of them — four `select` policies and no write policy of any kind, which is the decision rather than an omission (§11)** |
 | 28 | `0260` | A `research_products`, `research_product_versions`; T `research_validation_issues`, `research_match_candidates`, `research_material_lexicon` |
 | 29 | `0270` | T `research_changes`, `research_change_rules`, `research_review_actions`, `research_notes`, `research_tags`, `research_product_tags`, `research_change_digests` |
 | 30 | `0280` | A `research_products` (scale); T `research_large_format_rules`, `research_saved_views` |
@@ -2250,7 +2330,7 @@ proposes the rest. It is raised for confirmation as open question 6.
 |---|---|---|
 | `system_logs` `INFO` / `WARNING` | 90 days | Phase 38 daily cron, which logs its own summary |
 | `system_logs` `ERROR` / `SECURITY` | 400 days | same |
-| Research HTML snapshots (private bucket) | 180 days | `app/api/cron/research` prune step |
+| Research HTML snapshots (private bucket), and the `storage_key` that pointed at one on `research_fetches` and `research_product_versions` | 180 days | `app/api/cron/research` prune step. The version row itself is **never** pruned: it outlives its evidence, which is why the draft is stored rather than re-derived on demand |
 | `search_queries` | 90 days | Phase 38 cron |
 | `web_vitals_samples` | 90 days | Phase 38 cron |
 | `bulk_import_rows` | 30 days after apply | Phase 38 cron |

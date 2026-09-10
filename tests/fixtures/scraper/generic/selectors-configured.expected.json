@@ -1,0 +1,43 @@
+{
+  "title": "Trestle Desk, Pine — Example Catalogue",
+  "priceText": "1,150.00",
+  "currencyText": null,
+  "skuText": "IJ-7890",
+  "availabilityText": null,
+  "leadTimeText": "Dispatched in 6–8 weeks",
+  "descriptionHtml": null,
+  "dimensionTexts": ["W 1600 mm", "D 700 mm", "H 740 mm"],
+  "materialTexts": [],
+  "variantTexts": ["Oiled", "Waxed"],
+  "customizationTexts": ["Made to any size"],
+  "imageUrls": [],
+  "categoryLabels": [],
+  "externalId": null,
+  "canonicalUrl": null,
+  "confidence": {
+    "title": 1,
+    "priceText": 1,
+    "currencyText": 0,
+    "skuText": 1,
+    "availabilityText": 0,
+    "leadTimeText": 1,
+    "descriptionHtml": 0,
+    "dimensionTexts": 1,
+    "materialTexts": 0,
+    "variantTexts": 1,
+    "customizationTexts": 1,
+    "imageUrls": 0,
+    "categoryLabels": 0,
+    "externalId": 0,
+    "canonicalUrl": 0
+  },
+  "provenance": {
+    "title": "title",
+    "priceText": "selector",
+    "skuText": "selector",
+    "leadTimeText": "selector",
+    "dimensionTexts": "selector",
+    "variantTexts": "selector",
+    "customizationTexts": "selector"
+  }
+}

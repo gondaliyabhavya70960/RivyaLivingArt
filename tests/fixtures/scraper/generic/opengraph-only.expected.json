@@ -1,0 +1,46 @@
+{
+  "title": "Spindle Chair, Beech",
+  "priceText": "640.00",
+  "currencyText": "GBP",
+  "skuText": null,
+  "availabilityText": "in stock",
+  "leadTimeText": null,
+  "descriptionHtml": "A spindle-backed chair in steamed beech.",
+  "dimensionTexts": [],
+  "materialTexts": [],
+  "variantTexts": [],
+  "customizationTexts": [],
+  "imageUrls": [
+    "https://images.example.com/spindle-chair-1.jpg",
+    "https://catalogue.example.com/img/spindle-chair-2.jpg"
+  ],
+  "categoryLabels": [],
+  "externalId": null,
+  "canonicalUrl": "https://catalogue.example.com/products/spindle-chair-beech",
+  "confidence": {
+    "title": 1,
+    "priceText": 1,
+    "currencyText": 1,
+    "skuText": 0,
+    "availabilityText": 1,
+    "leadTimeText": 0,
+    "descriptionHtml": 1,
+    "dimensionTexts": 0,
+    "materialTexts": 0,
+    "variantTexts": 0,
+    "customizationTexts": 0,
+    "imageUrls": 1,
+    "categoryLabels": 0,
+    "externalId": 0,
+    "canonicalUrl": 1
+  },
+  "provenance": {
+    "title": "opengraph",
+    "priceText": "opengraph",
+    "currencyText": "opengraph",
+    "availabilityText": "opengraph",
+    "descriptionHtml": "opengraph",
+    "imageUrls": "opengraph",
+    "canonicalUrl": "opengraph"
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "title": "Corner Shelf, Maple — Example Catalogue",
+  "priceText": null,
+  "currencyText": null,
+  "skuText": null,
+  "availabilityText": null,
+  "leadTimeText": null,
+  "descriptionHtml": null,
+  "dimensionTexts": [],
+  "materialTexts": [],
+  "variantTexts": [],
+  "customizationTexts": [],
+  "imageUrls": [],
+  "categoryLabels": [],
+  "externalId": null,
+  "canonicalUrl": null,
+  "confidence": {
+    "title": 1,
+    "priceText": 0,
+    "currencyText": 0,
+    "skuText": 0,
+    "availabilityText": 0,
+    "leadTimeText": 0,
+    "descriptionHtml": 0,
+    "dimensionTexts": 0,
+    "materialTexts": 0,
+    "variantTexts": 0,
+    "customizationTexts": 0,
+    "imageUrls": 0,
+    "categoryLabels": 0,
+    "externalId": 0,
+    "canonicalUrl": 0
+  },
+  "provenance": {
+    "title": "title"
+  }
+}

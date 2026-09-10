@@ -17,6 +17,7 @@
 | AI media | Higgsfield AI, catalogued in `data/higgsfield/asset-manifest.json` | — |
 | Hosting | Vercel | — |
 | 3D | `three` + `@react-three/fiber` + `drei`, dynamically imported | Always-loaded WebGL |
+| HTML parsing | `node-html-parser`, behind `lib/scraper/adapters/parse.ts` and nowhere else (amendment A27) | jsdom in production, regex over markup, a headless browser |
 | Validation | Zod at every trust boundary | Hand-rolled guards |
 | Tests | Vitest (unit), Playwright (e2e + visual QA matrix) | — |
 
@@ -183,6 +184,68 @@ Brand and editorial copy may be written; anything asserting business capability 
 `OWNER_VERIFICATION_REQUIRED`. Empty states are used instead of invented projects.
 
 ## Amendments
+
+**2026-09-10 · A27 — D1 gains an HTML parser and one place to call it, Phase 27 takes migration
+`0251`, the content hash is over the DRAFT rather than the page, an adapter is two registrations
+rather than one, and the CPU budget measures what it cannot pre-empt (PHASE-23-30 §Phase 27,
+SCRAPER.md §18, DATA_MODEL §12).**
+
+Six readings the repository forced. The first genuinely extends D1; the fifth is a defect this phase
+found in its own code and is recorded as a decision rather than a fix nobody would notice.
+
+- **D1 gains an HTML-parsing row: `node-html-parser`, and `lib/scraper/adapters/parse.ts` is the only
+  file allowed to call it.** D1 fixes the stack and named no parser because until this phase nothing
+  parsed markup — Phase 25 read a `<title>` and a list of `href`s with a regex and said in its own
+  header that a DOM parser would be "a general-purpose extraction tool one import away from every
+  quick price regex". Phase 27 is the phase that builds the architecture around it, so the
+  dependency is taken deliberately and bounded: `jsdom` stays a devDependency (it is a browser
+  emulator, not a parser, and a production dependency on one would be a much larger surface for a
+  third party's markup), a regex over markup for STRUCTURED data is rejected outright, and a
+  headless browser remains permanently prohibited.
+- **`0251`, one past the phase document's `0250`.** The reason A23 gives for `0214`, A24 for `0221`,
+  A25 for `0233` and A26 for `0241`, unchanged. It is the shortest generated policy file yet — four
+  `select` policies and no write policy of any kind — and that emptiness is the decision: these two
+  tables are the RECORD of what happened, and a record its author can edit is not a record.
+  `normalized` and `normalizer_version` are declared in `0250` though Phase 28 writes them, on the
+  reasoning `0231` used for `current_version_id`: a column added later is a migration nobody needs
+  when the shape is already known.
+- **The content hash is over the DRAFT, not over the page body, and excludes `confidence` and
+  `provenance`.** Two fetches of a page differing only in a session id, a CSRF token or a rotating
+  banner are ONE product observation, and hashing bytes would write a version a night for four
+  hundred unchanged pages until "what changed" became a question about noise. The exclusion of the
+  two bookkeeping maps is the subtle half: a strategy change that finds the same value by a
+  different route is not a change to the product, and including them would make an adapter fix look
+  like every product on every source changing at once, on the same night, in Phase 29's review
+  queue. Array order IS hashed — a re-ordered gallery is a change.
+- **An adapter registers TWICE, into two registers, and the split is what keeps the Studio bundle
+  clean.** A DESCRIPTOR — key, version, capabilities, `supports()` — goes into
+  `lib/scraper/adapters/registry.ts`, which a Client Component may import; an IMPLEMENTATION goes
+  into `lib/scraper/adapters/execution.ts`, which only the drain loop touches. A picker that
+  imported implementations would drag every adapter's parser into a Client Component in order to
+  render four strings. The cost of the split is that the two can disagree, and one test holds them
+  together. The `generic` descriptor is bumped to a MAJOR version because its output shape changed:
+  Phase 25's raw items held a title and links, these hold a `RawProductDraft`, and `adapter_version`
+  on every row is what lets a value that later looks wrong be traced to the code that read it.
+- **THE CPU BUDGET MEASURES; IT DOES NOT PRE-EMPT — AND A REAL DEFECT MADE THAT DISTINCTION
+  EXPENSIVE.** FEAT §27 asks for "a 5-second CPU budget" per item. JavaScript cannot interrupt a
+  synchronous function, so what shipped is a measurement around the call, a `budgetSpent()` predicate
+  a well-behaved adapter checks inside its own loops, and an overrun counted as an item failure.
+  That is honest but it is not a bound, and the gap showed: `node-html-parser` is super-quadratic in
+  NESTING DEPTH — 500 unclosed divs take 29 ms, 2,000 take 791 ms, 4,000 take nearly six seconds,
+  and twenty thousand take hours — so a hundred kilobytes of `<div>`, well inside the fetcher's 2 MB
+  cap and trivially served by anybody who would like Rivya to stop reading them, wedges the cron
+  invocation. The runaway is one call into a dependency with no loop of ours to ask. **The only
+  defence is to refuse the input before handing it over**, so `parse.ts` estimates nesting depth in
+  one linear pass and refuses past 200 levels. The contract suite's own malformed-input case is that
+  exact string, and it hung the test run indefinitely the first time the generic adapter was
+  actually registered — which is how this was found, and why the test was not made smaller.
+- **A work item is `DONE` when extraction fails, and the fetcher is not asked again.** A work item is
+  a URL TO FETCH, and it was fetched: the page is on disk, the fetch row is written, and retrying it
+  would ask a third party's server for a document Rivya already holds because OUR reading of it was
+  wrong. An adapter failure is accounted on `research_adapter_runs` and repaired by
+  `scripts/research/reextract.ts`, which needs no network at all. Three consecutive ABORTED adapter
+  runs open the same circuit five consecutive FETCH failures open, because from the host's point of
+  view repeatedly asking for pages Rivya cannot use is the same behaviour.
 
 **2026-09-10 · A26 — D5 admits a staff-authored taxonomy pointer, Phase 26 takes migration `0241`,
 its four enums sit in `0240`, `base_url` admits loopback so the tests that prove a request was NOT

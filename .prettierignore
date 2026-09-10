@@ -6,3 +6,10 @@ docs/requirements
 # Vendored decoders (Phase 21): third-party files, copied verbatim from three@0.186.0
 public/draco
 public/basis
+
+# Adapter fixtures (Phase 27): pages captured as a third party would serve them. One of them is
+# deliberately malformed — an unclosed `<li>` before `</body>` is exactly what the contract suite
+# needs an adapter to survive — and Prettier refuses to parse it, correctly. Formatting the rest
+# would be worse than not: a fixture reformatted to be tidy is no longer a sample of what a real
+# site sends, which is the only thing it is for.
+tests/fixtures/scraper

@@ -1,0 +1,41 @@
+{
+  "title": "Rope Stool, Ash",
+  "priceText": "320.00",
+  "currencyText": "GBP",
+  "skuText": "KL-2468",
+  "availabilityText": null,
+  "leadTimeText": null,
+  "descriptionHtml": null,
+  "dimensionTexts": [],
+  "materialTexts": [],
+  "variantTexts": [],
+  "customizationTexts": [],
+  "imageUrls": [],
+  "categoryLabels": [],
+  "externalId": "KL-2468",
+  "canonicalUrl": null,
+  "confidence": {
+    "title": 1,
+    "priceText": 1,
+    "currencyText": 1,
+    "skuText": 1,
+    "availabilityText": 0,
+    "leadTimeText": 0,
+    "descriptionHtml": 0,
+    "dimensionTexts": 0,
+    "materialTexts": 0,
+    "variantTexts": 0,
+    "customizationTexts": 0,
+    "imageUrls": 0,
+    "categoryLabels": 0,
+    "externalId": 1,
+    "canonicalUrl": 0
+  },
+  "provenance": {
+    "title": "jsonld",
+    "priceText": "jsonld",
+    "currencyText": "jsonld",
+    "skuText": "jsonld",
+    "externalId": "jsonld"
+  }
+}

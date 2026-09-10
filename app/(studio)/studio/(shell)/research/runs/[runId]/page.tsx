@@ -9,8 +9,13 @@ import { StudioPage, studioMetadata } from '@/components/studio/StudioPage'
 import { t } from '@/components/studio/strings'
 import { roleHasPermission } from '@/lib/auth/permissions'
 import { requirePermission } from '@/lib/auth/require'
+import { AdapterRunPanel } from '@/components/studio/research/AdapterRunPanel'
+import { VersionList } from '@/components/studio/research/VersionList'
+import { listAdapterRunsForRun } from '@/lib/supabase/repositories/research/adapter-runs'
 import { listFetchesForRun } from '@/lib/supabase/repositories/research/fetches'
+import { listVersionsForRun } from '@/lib/supabase/repositories/research/product-versions'
 import { getResearchRun } from '@/lib/supabase/repositories/research/runs'
+import { listResearchSources } from '@/lib/supabase/repositories/research/sources'
 import { countWorkItemsByState } from '@/lib/supabase/repositories/research/work-items'
 import { createClient } from '@/lib/supabase/server'
 
@@ -24,9 +29,17 @@ import { RunControls } from './controls'
  * that the politeness posture is a behaviour rather than a claim in a document, and it is rendered
  * as a distinct outcome rather than being folded in with the failures. A refusal is not an error.
  *
- * PHASE 27 COMPLETES THIS PAGE with the per-item extraction detail once adapters exist. What is
- * here is the fetch log, the queue counts and the two controls, which is what a run needs while it
- * is running.
+ * PHASE 27 COMPLETED IT with two panels, and the ORDER they are in is the argument. The adapter
+ * panels come first because they answer the question somebody opens this page with when a run has
+ * gone wrong — which source stopped, and did it take the others with it. The versions come second
+ * because they answer the question somebody opens it with when it has gone right. The fetch log
+ * stays last: it is the evidence, and evidence is what you read after you know what you are
+ * looking for.
+ *
+ * A SHORT VERSION LIST IS THE NORMAL CASE. A version exists only where a page's content hash
+ * differed from the last one, so a nightly run over four hundred unchanged pages produces none.
+ * The empty state says that in words rather than leaving a reader to conclude the pipeline is
+ * broken.
  */
 export const metadata = studioMetadata('/studio/research/runs')
 
@@ -38,10 +51,18 @@ export default async function Page({ params }: { params: Promise<{ runId: string
   const run = await getResearchRun(client, runId)
   if (run === null) notFound()
 
-  const [counts, fetches] = await Promise.all([
+  const [counts, fetches, adapterRuns, versions, sources] = await Promise.all([
     countWorkItemsByState(client, runId),
     listFetchesForRun(client, runId, 100),
+    listAdapterRunsForRun(client, runId),
+    listVersionsForRun(client, runId, 50),
+    listResearchSources(client),
   ])
+
+  // Source id → name, so a panel is headed by a source rather than by a uuid. One read for the
+  // whole page: a run touches one source today, and reading the list is cheaper than a join that
+  // would have to be repeated per panel when it touches several.
+  const sourceNames = new Map(sources.map((source) => [source.id, source.name]))
 
   const mayWrite = roleHasPermission(session.role, 'research.write')
   const isActive = run.status === 'QUEUED' || run.status === 'RUNNING'
@@ -75,6 +96,10 @@ export default async function Page({ params }: { params: Promise<{ runId: string
             hasFailures={(counts['FAILED'] ?? 0) > 0}
           />
         ) : null}
+
+        <AdapterRunPanel adapterRuns={adapterRuns} sourceNames={sourceNames} />
+
+        <VersionList versions={versions} />
 
         <Surface level={1} className="p-6">
           <PageHeader level={2} title="Fetches" />
