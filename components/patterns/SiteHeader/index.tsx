@@ -3,6 +3,7 @@ import * as React from 'react'
 import { MegaMenu } from '@/components/patterns/MegaMenu'
 import { NavLink } from '@/components/patterns/NavLink'
 import { MobileNav } from '@/components/patterns/MobileNav'
+import { SearchCombobox } from '@/components/patterns/SearchCombobox'
 import { BlockImage } from '@/components/patterns/MediaSlot'
 import { Container } from '@/components/primitives/Container'
 import { siteString } from '@/lib/cms/strings'
@@ -108,6 +109,16 @@ export function SiteHeader({ chrome, cloudName }: SiteHeaderProps): React.ReactE
   const openLabel = siteString(strings, 'ACTION_LABEL.open_menu')
   const closeLabel = siteString(strings, 'ACTION_LABEL.close_menu')
 
+  // Phase 23. Seven rows, and any of them missing means that part of the control is not rendered
+  // rather than falling back to a literal — the rule the whole header already follows.
+  const searchLabel = siteString(strings, 'UI_LABEL.search.label')
+  const searchPlaceholder = siteString(strings, 'FORM_COPY.search.placeholder')
+  const searchSubmit = siteString(strings, 'ACTION_LABEL.search.submit')
+  const searchListLabel = siteString(strings, 'UI_LABEL.search.suggestions.label')
+  const searchHint = siteString(strings, 'UI_LABEL.search.suggestions.hint')
+  const searchSeeAll = siteString(strings, 'ACTION_LABEL.search.see_all')
+  const searchCount = siteString(strings, 'UI_LABEL.search.count')
+
   const bySlug = new Map(categories.map((category) => [category.slug, category]))
 
   return (
@@ -186,6 +197,34 @@ export function SiteHeader({ chrome, cloudName }: SiteHeaderProps): React.ReactE
             )}
           </ul>
         </nav>
+
+        {/*
+         * PHASE 23'S SEARCH BOX, ON EVERY `(site)` ROUTE.
+         *
+         * A SIXTH HYDRATION ISLAND, WHICH IS A REAL COST AND IS PAID DELIBERATELY. It is in the
+         * shell rather than on `/search` alone because FEAT §18 asks for search from anywhere, and
+         * a control that appears only on the page you reach by searching is not that. The budget
+         * in `scripts/site/check-island-budget.mjs` was raised from five to six in the same commit,
+         * with this component named — a gate whose number moves silently is not a gate.
+         *
+         * IT IS A FORM BEFORE IT IS AN ISLAND. With no JavaScript the input submits to `/search`
+         * and the visitor gets the whole results page, so the island buys suggestions and nothing
+         * load-bearing.
+         *
+         * HIDDEN BELOW `lg`, where the drawer is the whole menu and the masthead has no room. The
+         * search field lives inside the drawer's own markup on those widths — MobileNav renders the
+         * menu, and `/search` is a menu item — rather than being squeezed beside the brand.
+         */}
+        <SearchCombobox
+          className="hidden max-w-xs flex-1 lg:block"
+          label={searchLabel}
+          placeholder={searchPlaceholder}
+          submitLabel={searchSubmit}
+          listLabel={searchListLabel}
+          hint={searchHint}
+          seeAllLabel={searchSeeAll}
+          countTemplate={searchCount}
+        />
 
         {/* Below `lg` the whole menu is the drawer. Both labels are required by MobileNav's
             signature, so a missing string means no trigger rather than an unnamed icon button. */}

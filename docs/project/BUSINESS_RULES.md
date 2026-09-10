@@ -419,6 +419,33 @@ slots level with migration `0200`; no behavioural word in the resolver) and
 **Provenance.** SEED §10-04 ("Do NOT hardcode products"), SEED §32, FEAT §17, FEAT §28, PHASE-16-22
 §Phase 22, amendment A22.
 
+### BR-D11 — No relation is invented, and no search result is
+
+**Rule.** A relationship between two pieces of content exists because a person made it. Software may
+PROPOSE a relationship where a reliable, stated rule exists (FEAT §11) — and there are exactly four
+such rules — but nothing is written until an editor accepts, a dismissed proposal never returns, and
+every persisted edge records whether a person made it (`origin = 'EDITOR'`) or agreed to it
+(`origin = 'RULE_ACCEPTED'` with the `rule_key` that proposed it).
+
+The same rule applies to search. A query that matches nothing renders the seeded SEED §26 sentence
+and no suggestion of its own: a "did you mean" the software generated would be a product name nobody
+at Rivya wrote. Results found by spelling similarity rather than by an exact match are grouped under
+their own heading, so a near match is never presented as an exact one.
+
+**Explicitly not rules**, each for a stated reason: view-count affinity (there is no view counter,
+and FEAT §28 forbids manufacturing one); price-band affinity (most pieces carry no price at all, so
+the band is absent for exactly the pieces it would matter for); title similarity (two names sharing
+a word share nothing else); image similarity (Phase 33, and research-only even then); and anything
+phrased "customers also viewed", which is false before the arithmetic starts because there are no
+customer accounts (BR-A3).
+
+| | |
+|---|---|
+| Enforced by | **Schema:** `origin relation_origin` with `*_rule_key_matches_origin`, which ties the key and the origin in both directions, so neither can exist without the other; `relation_suppressions` with a unique key on the (source, target, rule) triple. **Code:** `lib/relations/rules.ts` takes a client it only ever reads with, and writing lives in a different file behind a different permission. **Content:** the four rule reasons and the zero-result copy are seeded `global_content` rows, not sentences in the software |
+| Test | `tests/unit/relation-rules.test.ts` asserts the module exports no function whose name suggests a mutation and that its source (comments stripped) contains no `.insert(`, `.update(`, `.upsert(`, `.delete(` or `.rpc(`; `tests/unit/relation-reciprocity.test.ts` covers the inverse mapping; `tests/e2e/search-public.spec.ts` asserts the seeded empty state renders with zero result cards beside it |
+
+**Provenance.** FEAT §11, FEAT §19, SEED §26, D10, PHASE-23-30 §Phase 23.
+
 ## E. Media and asset rules
 
 ### BR-E1 — The asset-priority ladder is the default, not a suggestion
@@ -962,6 +989,7 @@ rule, without deleting the rule, is a rejection.
 | BR-D8 | No inference: nothing computed, converted or estimated | Schema (absence) + review |
 | BR-D9 | Delivered work is unverified until an owner says otherwise | Schema default + gate + `content.verify` |
 | BR-D10 | Curated, never inferred; an empty slot never fabricates | Resolver + CHECK + trigger + gate |
+| BR-D11 | No invented relation, no invented search result | Schema constraint + code separation + test |
 | BR-E1 | Asset-priority ladder | Data + process |
 | BR-E2 | Never regenerate a manifest asset | Schema unique + build guard |
 | BR-E3 | Concept media is never delivered work | Schema trigger |

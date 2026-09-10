@@ -22,6 +22,7 @@ import { pagesSeed } from './pages'
 import { portfolioSeed } from './portfolio'
 import { portfolioUiSeed } from './portfolio-ui'
 import { processSeed } from './process'
+import { searchUiSeed } from './search-ui'
 import { seoSeed } from './seo'
 import { siteChromeSeed } from './site-chrome'
 import { studioHelpSeed } from './studio-help'
@@ -74,6 +75,9 @@ export const seedModules: readonly SeedModule[] = [
   // Phase 21's viewer words. Reference nothing; every one is an accessible name or a notice.
   modelViewerUiSeed,
   merchandisingUiSeed,
+  // Phase 23's search and relationship words. Reference nothing: five group headings, the
+  // near-match band, three count sentences, the combobox instructions and the four rule reasons.
+  searchUiSeed,
   navigationSeed,
   seoSeed,
   // Page content: every section references a page by seed_key.

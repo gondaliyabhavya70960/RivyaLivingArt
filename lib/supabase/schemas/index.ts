@@ -1,4 +1,5 @@
 export * from './common'
+export * from './search'
 export * from './entities'
 export * from './cms'
 export * from './inquiry'

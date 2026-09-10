@@ -6,6 +6,88 @@ Every phase adds an entry; see `docs/architecture/CANONICAL-DECISIONS.md` D9 for
 
 ## [Unreleased]
 
+### Phase 23 — Global Search + Product Relationships
+
+Everything Rivya has published is findable, and the connections between things are data rather than
+inference. `/search` stops returning the Phase 10 placeholder and starts returning grouped, ranked,
+paginated results; the header gains an ARIA 1.2 combobox that degrades to a plain GET form; the
+Studio palette gains eight entity providers; and `product_relations` — an edge with no vocabulary
+since Phase 03 — gets a fixed nine-name relation model, a second table for non-product sources, four
+stated suggestion rules that propose but never write, and a workspace where an editor accepts,
+dismisses or removes every one of them.
+
+**Migrations `0210`–`0214`, applied locally AND to the hosted project.** `search_documents` holds one
+flattened document per indexed entity, with an `entity_type` CHECK naming the exact eight permitted
+values — so a research row cannot be inserted by a bug, a migration or a well-meaning later phase —
+and a second CHECK making the three Studio-only types structurally incapable of being `PUBLIC`.
+`research_search_documents` is created EMPTY beside it with no `anon` policy, two phases before the
+subsystem that fills it, because a boundary is far cheaper to build than to retrofit.
+`search_queries` records what was typed and how many rows came back, with no IP, no user agent, and
+a CHECK refusing an actor on a public search. `0213` adds `content_relations`,
+`relation_suppressions` and `product_attribute_terms`, and gives `product_relations` its four new
+columns and its vocabulary constraints. `0212` and `0214` are the generated RLS — two files rather
+than one, because a generated policy file is rewritten whole and cannot also carry the DDL that
+creates its tables (**amendment A23**; `0214` is one past the phase document's allocation).
+
+**The index is a trigger, not a job.** `refresh_search_document()` is `security definer` and is the
+only writer: `search_documents` has no INSERT or UPDATE policy for any session role, so a signed-in
+member of staff cannot hand-write a search result carrying a title, a URL and a picture that the
+entity itself does not say. Eleven trigger functions call it, including on the two product join
+tables (a material attached later changes what the product should match) and on both category tables
+(a rename changes every child's keywords).
+
+**What an inquiry document contains, and the list is exhaustive:** reference code, enquiry kind,
+related product title, pipeline status. `tests/unit/rls/phase23.test.ts` inserts an enquiry carrying
+a name, a phone number, an email address, a city and a message, and asserts none of the five appears
+anywhere in the indexed row. A Studio search result is the thing most likely to end up in a
+screenshot.
+
+**Four suggestion rules, and none of them writes.** `same-collection`, `shared-materials` (two
+shared materials, not one — almost everything here contains resin), `journal-linked-product` (an
+actual link, not a title mention) and `project-featured-product` (the forward edge already exists and
+somebody made it by hand). `lib/relations/rules.ts` takes a client it only ever reads with; a test
+asserts the module exports no function whose name suggests a mutation and that its source, comments
+stripped, contains no `.insert(`, `.update(`, `.upsert(`, `.delete(` or `.rpc(`. Every persisted edge
+carries `origin`, tied to `rule_key` in both directions by a CHECK.
+
+**Three things running the site found that reading the migration did not.**
+
+- `search_documents_query` is SECURITY INVOKER, so it executes as the caller — and `rv_unaccent` had
+  been revoked from `anon` along with everything else, which made every public search fail with
+  `permission denied for function rv_unaccent`. Granted back by name, on 0143's own reasoning for
+  `is_valid_dimensions`.
+- A tsquery matches whole lexemes, so typing `re` suggested nothing until the whole word was typed —
+  a type-ahead that only matches finished words is not a type-ahead. `p_prefix` builds a `:*` query
+  from tokens the function itself extracts (`to_tsquery` raises on malformed input, unlike
+  `websearch_to_tsquery`, so no character the caller typed reaches the parser). The results page
+  leaves it off and relies on the trigram fallback, as the phase document specifies.
+- The generated `search_vector` refused `array_to_string`, which is STABLE because it is generic over
+  every array type. `rv_keyword_text(text[])` narrows it to the one type where the claim is true.
+
+**A bug the tests caught before anything shipped.** `inverseOf` derived the inverse edge's relation
+type from the ORIGINAL TARGET, which produced a project claiming to be a portfolio project of itself
+— a plausible-looking row nobody would have questioned. A relation type names what is at the far end,
+and the far end of the inverse is the original SOURCE.
+
+**Gates.** `npm run search:check-scope` walks the import graph from the four public search entry
+points and fails on `research_`, `researchProduct`, `researchSearch` or `scraper`; it is in
+`npm run check` and in CI, and it is proved to fail by adding a research identifier to
+`lib/search/query.ts`. The island budget moved from five to six with `SearchCombobox` named, because
+a gate whose number moves silently is not a gate. `tests/unit/rls/function-grants.test.ts` grew from
+"every anon-callable function must be SECURITY DEFINER" to "must be definer-with-a-pinned-path or
+invoker", which is what that rule always meant: an invoker function holds no privilege to escalate.
+
+**What is empty, and that is the shipped state.** `product_attribute_terms` has zero rows and no seed
+module writes it. Public search returns categories and journal articles on a seeded database and no
+products, because the seed creates none. A published piece with no connections renders Phase 15's
+honest "More in {Category}" fallback; Phase 23 gives editors a way to replace that with real edges
+and does not upgrade the fallback's label.
+
+**Not built:** drag reordering in the relationship workspace. The reorder action, its audit row and
+its permission check all exist; the pointer interaction does not, and it would be that page's first
+client island. Recorded in STUDIO_GUIDE §7.5 rather than implied.
+
+
 ### Fix — CI runs again, and what its first honest run found
 
 The repository went public on 2026-09-10 and GitHub Actions scheduled a runner for the first time

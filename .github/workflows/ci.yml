@@ -134,6 +134,13 @@ jobs:
       - name: No dead utility classes
         run: npm run design:check-utilities
 
+      # Phase 23. The public search path may not name anything research-shaped. The schema already
+      # makes a research row uninsertable into search_documents; this catches the other half — a
+      # second query added to the suggest endpoint that reads the research index directly, which
+      # would be a disclosure of competitor research through a public, edge-cached GET.
+      - name: Nothing research-shaped on the public search path
+        run: npm run search:check-scope
+
       # --- database gates (Phase 03) ---
       # `psql` is pre-installed on ubuntu-latest, so no apt step is needed.
       - name: Migrations apply to an empty database

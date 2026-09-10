@@ -184,6 +184,51 @@ Brand and editorial copy may be written; anything asserting business capability 
 
 ## Amendments
 
+**2026-09-10 · A23 — Phase 23 takes migration `0214`, `search_documents.status` is `text`,
+`content_relations` is an edge and not content, the relation vocabulary becomes a CHECK, the
+suggest endpoint matches prefixes, and the island budget is six (PHASE-23-30 §Phase 23,
+DATA_MODEL §12).**
+
+Six readings the repository forced, none of which contradicts D1–D10.
+
+- **`0214`, one past the phase document's `0210`–`0213`.** A generated policy file is rewritten
+  whole by `npm run auth:gen-policies`, so it cannot also hold the DDL that creates its tables —
+  and `0213` creates the relation tables. `0212` is therefore the generated RLS for the search
+  index and `0214` for the relations, which is the split Phase 19 already made with `0172` and
+  `0183`. Recorded in DATA_MODEL §12, which `check-migrations.mjs` reads.
+- **`search_documents.status` is `text`, not `content_status`.** Seven of the eight indexed
+  entities carry `content_status`; `inquiries` does not — §1.4 exempts it and it carries
+  `pipeline_status` instead — so there is no legal `content_status` value an inquiry document could
+  hold. The column stores the source row's own token verbatim under a CHECK over the union of both
+  enums' twelve labels, and the anon predicate is unaffected because a second CHECK makes "only the
+  five public types are ever `PUBLIC`" structural. DATA_MODEL's draft row said `content_status`;
+  correcting it was a deliverable of this phase.
+- **`content_relations` carries `created_at` and `created_by`, not Tier A+B.** DATA_MODEL's draft
+  gave it the content tiers. It is an EDGE, and every shipped edge in the schema —
+  `product_relations`, `entity_relations`, the four Phase 03 join tables — carries those two columns
+  and nothing else. A `status` here would allow a DRAFT relation, which is a state nobody can act
+  on: either an editor made the connection or they did not. `product_attribute_terms` is the one
+  table in this phase that IS content, and it carries the full Tier B set and the D10 gate.
+- **The relation vocabulary is a CHECK now, which `product-edges.ts` recorded as a deliberate
+  non-decision.** That reasoning — the vocabulary is a component's business, and a constraint would
+  turn a UI decision into a migration — held while one screen wrote one table. Phase 23 adds a
+  second table, a suggestion engine and a workspace, so the vocabulary has four writers and "the
+  component decides" stops being true. `is_relation_type()` fixes nine names and
+  `is_relation_target()` six targets, both asserted against their TypeScript copies by test.
+- **The suggest endpoint matches PREFIXES; the results page does not.** The phase document
+  specifies `websearch_to_tsquery` for the query path, and running the site showed why that is only
+  half the story: a tsquery matches whole lexemes, so `re` suggests nothing until the whole word is
+  typed, and a type-ahead that only matches finished words is not a type-ahead. `p_prefix` builds a
+  `:*` query from tokens the function itself extracts — `to_tsquery` raises on malformed input,
+  unlike `websearch_to_tsquery`, so nothing the caller typed reaches the parser. The results page
+  leaves it off and keeps the specified behaviour, relying on the 0.30 trigram fallback for a
+  partial word.
+- **The homepage island budget is six.** FEAT §18 asks for search from anywhere, so the combobox
+  lives in the site shell and is therefore on the homepage's client graph beside the mega menu and
+  the drawer. It cannot be a Server Component: everything it adds over the plain form beneath it is
+  state that changes between keystrokes. `scripts/site/check-island-budget.mjs` names it and the
+  number was raised in the same edit, because a gate whose number moves silently is not a gate.
+
 **2026-09-10 · A22 — Phase 22 ships eleven slots and no reusable one, the categories trigger
 makes a slot, `featured-collections` joins the block catalogue as its 34th member, the EDITORIAL
 fallback draws its tiles from a named section, and the sweep records rather than publishes

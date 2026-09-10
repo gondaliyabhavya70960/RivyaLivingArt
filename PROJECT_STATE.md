@@ -1,22 +1,38 @@
 # PROJECT_STATE — what is actually built
 
 > Verified against the repository, not against intent. Update at the end of every phase.
-> Last verified: Phase 22 (Homepage / Store Merchandising), 2026-09-10.
+> Last verified: Phase 23 (Global Search + Product Relationships), 2026-09-10.
 
 ## Summary
 
 The design system is built; the database spine exists, carries RLS policies for all six roles, and
 has been verified against a real PostgreSQL **and against the hosted Supabase project**. What
 exists: the toolchain, the token layer, 32 primitives, 3 motion helpers, 7 behavioural patterns, a
-dev-only gallery, **forty-four tables, all with RLS on and 175 policies between them**, generated types with a
+dev-only gallery, **fifty tables, all with RLS on and 193 policies between them**, generated types with a
 drift gate, a repository layer with Zod at its boundary, an idempotent seed runner proved not to
 overwrite an owner's edit, the Studio shell with its ⌘K palette and user management, the media
 layer end to end, the Higgsfield migration, gap engine and tracker, **the CMS engine — pages,
 blocks, the status workflow, media binding, scheduling, revisions and the Studio surfaces that
-drive them** — a forward-only migration runner, and **29 gates** that fail the build on the
+drive them** — a forward-only migration runner, and **30 gates** that fail the build on the
 mistakes they were written for, the newest of which walks every route's client import graph and
 refuses the 3D engine anywhere but behind the viewer's dynamic boundary, and the copy gate now
 also refusing any `/product/<slug>` literal in a renderer.
+
+**Everything published is findable.** `search_documents` holds one flattened document per indexed
+entity across eight types, maintained by eleven triggers rather than by a job, and
+`research_search_documents` sits beside it — created empty, no `anon` policy — so the boundary
+between the first-party catalogue and the research corpus that Phase 25 begins is visible in the
+schema before that subsystem exists. `/search` returns grouped, ranked, paginated results and the
+seeded SEED §26 empty state; the header carries an ARIA 1.2 combobox that submits a plain GET form
+without JavaScript; the Studio palette reaches products, categories, collections, materials,
+projects, articles, media and enquiries, each behind its own permission. An enquiry's document
+carries a reference code, a kind, a product title and a status, and a test proves it carries no name,
+phone number, email address, city or message.
+
+**Relationships are data, and nothing invents one.** Nine relation names are fixed by CHECK on both
+relation tables; four suggestion rules propose and none writes; every persisted edge records whether
+a person made it or agreed to it; a dismissed suggestion never returns; and the three reciprocal
+types create and destroy their inverse together. `/studio/catalog/relationships` is built.
 
 **A page can now be built and rendered, and the copy is written.** `/studio/content/pages/[pageId]`
 adds, edits, reorders and removes blocks; `lib/cms/resolve.ts` is the single server read path;

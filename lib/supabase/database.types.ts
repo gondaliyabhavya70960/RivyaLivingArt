@@ -377,6 +377,69 @@ export type Database = {
           },
         ]
       }
+      content_relations: {
+        Row: {
+          id: string
+          source_type: string
+          source_id: string
+          target_type: string
+          target_id: string
+          relation_type: string
+          sort_order: number
+          origin: Database['public']['Enums']['relation_origin']
+          rule_key: string | null
+          note: string | null
+          paired_relation_id: string | null
+          created_at: string
+          created_by: string | null
+        }
+        Insert: {
+          id?: string
+          source_type: string
+          source_id: string
+          target_type: string
+          target_id: string
+          relation_type: string
+          sort_order?: number
+          origin?: Database['public']['Enums']['relation_origin']
+          rule_key?: string | null
+          note?: string | null
+          paired_relation_id?: string | null
+          created_at?: string
+          created_by?: string | null
+        }
+        Update: {
+          id?: string
+          source_type?: string
+          source_id?: string
+          target_type?: string
+          target_id?: string
+          relation_type?: string
+          sort_order?: number
+          origin?: Database['public']['Enums']['relation_origin']
+          rule_key?: string | null
+          note?: string | null
+          paired_relation_id?: string | null
+          created_at?: string
+          created_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'content_relations_created_by_fkey'
+            columns: ['created_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'content_relations_paired_relation_id_fkey'
+            columns: ['paired_relation_id']
+            isOneToOne: false
+            referencedRelation: 'content_relations'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       content_revisions: {
         Row: {
           id: string
@@ -2596,6 +2659,72 @@ export type Database = {
           },
         ]
       }
+      product_attribute_terms: {
+        Row: {
+          id: string
+          taxonomy: Database['public']['Enums']['attribute_taxonomy']
+          slug: string
+          name: string
+          description: string | null
+          sort_order: number
+          status: Database['public']['Enums']['content_status']
+          owner_verification: Database['public']['Enums']['owner_verification']
+          fact_classification: Database['public']['Enums']['fact_classification']
+          published_at: string | null
+          published_by: string | null
+          created_at: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          taxonomy: Database['public']['Enums']['attribute_taxonomy']
+          slug: string
+          name: string
+          description?: string | null
+          sort_order?: number
+          status?: Database['public']['Enums']['content_status']
+          owner_verification?: Database['public']['Enums']['owner_verification']
+          fact_classification?: Database['public']['Enums']['fact_classification']
+          published_at?: string | null
+          published_by?: string | null
+          created_at?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          taxonomy?: Database['public']['Enums']['attribute_taxonomy']
+          slug?: string
+          name?: string
+          description?: string | null
+          sort_order?: number
+          status?: Database['public']['Enums']['content_status']
+          owner_verification?: Database['public']['Enums']['owner_verification']
+          fact_classification?: Database['public']['Enums']['fact_classification']
+          published_at?: string | null
+          published_by?: string | null
+          created_at?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'product_attribute_terms_published_by_fkey'
+            columns: ['published_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'product_attribute_terms_updated_by_fkey'
+            columns: ['updated_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       product_collections: {
         Row: {
           product_id: string
@@ -2806,6 +2935,10 @@ export type Database = {
           sort_order: number
           created_at: string
           created_by: string | null
+          origin: Database['public']['Enums']['relation_origin']
+          rule_key: string | null
+          note: string | null
+          paired_relation_id: string | null
         }
         Insert: {
           id?: string
@@ -2816,6 +2949,10 @@ export type Database = {
           sort_order?: number
           created_at?: string
           created_by?: string | null
+          origin?: Database['public']['Enums']['relation_origin']
+          rule_key?: string | null
+          note?: string | null
+          paired_relation_id?: string | null
         }
         Update: {
           id?: string
@@ -2826,6 +2963,10 @@ export type Database = {
           sort_order?: number
           created_at?: string
           created_by?: string | null
+          origin?: Database['public']['Enums']['relation_origin']
+          rule_key?: string | null
+          note?: string | null
+          paired_relation_id?: string | null
         }
         Relationships: [
           {
@@ -2833,6 +2974,13 @@ export type Database = {
             columns: ['created_by']
             isOneToOne: false
             referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'product_relations_paired_relation_id_fkey'
+            columns: ['paired_relation_id']
+            isOneToOne: false
+            referencedRelation: 'product_relations'
             referencedColumns: ['id']
           },
           {
@@ -3099,6 +3247,195 @@ export type Database = {
           count?: number
         }
         Relationships: []
+      }
+      relation_suppressions: {
+        Row: {
+          id: string
+          source_type: string
+          source_id: string
+          target_type: string
+          target_id: string
+          rule_key: string
+          reason: string | null
+          suppressed_by: string | null
+          suppressed_at: string
+        }
+        Insert: {
+          id?: string
+          source_type: string
+          source_id: string
+          target_type: string
+          target_id: string
+          rule_key: string
+          reason?: string | null
+          suppressed_by?: string | null
+          suppressed_at?: string
+        }
+        Update: {
+          id?: string
+          source_type?: string
+          source_id?: string
+          target_type?: string
+          target_id?: string
+          rule_key?: string
+          reason?: string | null
+          suppressed_by?: string | null
+          suppressed_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'relation_suppressions_suppressed_by_fkey'
+            columns: ['suppressed_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      research_search_documents: {
+        Row: {
+          id: string
+          entity_type: string
+          entity_id: string
+          visibility: Database['public']['Enums']['search_visibility']
+          status: string
+          url_path: string | null
+          title: string
+          subtitle: string | null
+          body: string | null
+          keywords: string[]
+          source_url: string | null
+          search_vector: unknown | null
+          indexed_at: string
+        }
+        Insert: {
+          id?: string
+          entity_type: string
+          entity_id: string
+          visibility?: Database['public']['Enums']['search_visibility']
+          status: string
+          url_path?: string | null
+          title: string
+          subtitle?: string | null
+          body?: string | null
+          keywords?: string[]
+          source_url?: string | null
+          search_vector?: unknown | null
+          indexed_at?: string
+        }
+        Update: {
+          id?: string
+          entity_type?: string
+          entity_id?: string
+          visibility?: Database['public']['Enums']['search_visibility']
+          status?: string
+          url_path?: string | null
+          title?: string
+          subtitle?: string | null
+          body?: string | null
+          keywords?: string[]
+          source_url?: string | null
+          search_vector?: unknown | null
+          indexed_at?: string
+        }
+        Relationships: []
+      }
+      search_documents: {
+        Row: {
+          id: string
+          entity_type: string
+          entity_id: string
+          visibility: Database['public']['Enums']['search_visibility']
+          status: string
+          url_path: string | null
+          title: string
+          subtitle: string | null
+          body: string | null
+          keywords: string[]
+          image_media_id: string | null
+          category_slug: string | null
+          search_vector: unknown | null
+          indexed_at: string
+        }
+        Insert: {
+          id?: string
+          entity_type: string
+          entity_id: string
+          visibility: Database['public']['Enums']['search_visibility']
+          status: string
+          url_path?: string | null
+          title: string
+          subtitle?: string | null
+          body?: string | null
+          keywords?: string[]
+          image_media_id?: string | null
+          category_slug?: string | null
+          search_vector?: unknown | null
+          indexed_at?: string
+        }
+        Update: {
+          id?: string
+          entity_type?: string
+          entity_id?: string
+          visibility?: Database['public']['Enums']['search_visibility']
+          status?: string
+          url_path?: string | null
+          title?: string
+          subtitle?: string | null
+          body?: string | null
+          keywords?: string[]
+          image_media_id?: string | null
+          category_slug?: string | null
+          search_vector?: unknown | null
+          indexed_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'search_documents_image_media_id_fkey'
+            columns: ['image_media_id']
+            isOneToOne: false
+            referencedRelation: 'media_assets'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      search_queries: {
+        Row: {
+          id: string
+          query_text: string
+          normalized_query: string
+          scope: string
+          result_count: number
+          staff_user_id: string | null
+          occurred_at: string
+        }
+        Insert: {
+          id?: string
+          query_text: string
+          normalized_query: string
+          scope: string
+          result_count: number
+          staff_user_id?: string | null
+          occurred_at?: string
+        }
+        Update: {
+          id?: string
+          query_text?: string
+          normalized_query?: string
+          scope?: string
+          result_count?: number
+          staff_user_id?: string | null
+          occurred_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'search_queries_staff_user_id_fkey'
+            columns: ['staff_user_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
       }
       seo_entries: {
         Row: {
@@ -3462,6 +3799,14 @@ export type Database = {
         Args: Record<string, unknown>
         Returns: Json
       }
+      is_relation_target: {
+        Args: Record<string, unknown>
+        Returns: Json
+      }
+      is_relation_type: {
+        Args: Record<string, unknown>
+        Returns: Json
+      }
       is_staff: {
         Args: Record<string, unknown>
         Returns: Json
@@ -3502,7 +3847,27 @@ export type Database = {
         Args: Record<string, unknown>
         Returns: Json
       }
+      refresh_search_document: {
+        Args: Record<string, unknown>
+        Returns: Json
+      }
       rivya_slugify: {
+        Args: Record<string, unknown>
+        Returns: Json
+      }
+      rv_keyword_text: {
+        Args: Record<string, unknown>
+        Returns: Json
+      }
+      rv_unaccent: {
+        Args: Record<string, unknown>
+        Returns: Json
+      }
+      search_documents_count: {
+        Args: Record<string, unknown>
+        Returns: Json
+      }
+      search_documents_query: {
         Args: Record<string, unknown>
         Returns: Json
       }
@@ -3512,6 +3877,7 @@ export type Database = {
       }
     }
     Enums: {
+      attribute_taxonomy: 'DESIGN_FAMILY' | 'RESIN_STYLE' | 'WOOD_SPECIES'
       availability_state: 'READY_STOCK' | 'MADE_TO_ORDER'
       client_consent_state: 'NOT_APPLICABLE' | 'PENDING' | 'GRANTED' | 'WITHDRAWN'
       collection_concept_state: 'DRAFT_COLLECTION_CONCEPT' | 'OWNER_CONFIRMED' | 'RETIRED'
@@ -3559,6 +3925,8 @@ export type Database = {
       relation_entity:
         'PRODUCT' | 'COLLECTION' | 'CATEGORY' | 'PORTFOLIO_PROJECT' | 'JOURNAL_ARTICLE' | 'MATERIAL'
       relation_kind: 'RELATED' | 'FEATURES' | 'REFERENCES' | 'USES_MATERIAL' | 'PART_OF'
+      relation_origin: 'EDITOR' | 'RULE_ACCEPTED'
+      search_visibility: 'PUBLIC' | 'STAFF'
       user_role: 'owner' | 'admin' | 'editor' | 'merchandiser' | 'researcher' | 'viewer'
       whatsapp_state: 'NOT_SENT' | 'REDIRECTED' | 'SHORTENED' | 'UNAVAILABLE'
     }

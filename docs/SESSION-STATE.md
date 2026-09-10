@@ -8,6 +8,110 @@
 
 ## Current Phase
 
+**Phase 23 — Global Search + Product Relationships. COMPLETE.** Everything published is findable and
+the connections between things are data rather than inference. `/search` returns grouped, ranked,
+paginated results and the SEED §26 empty state in the same words it used when it could not search at
+all; the header carries an ARIA 1.2 combobox that degrades to a plain GET form; the Studio palette
+reaches eight entity types, each behind its own permission; and `product_relations` — an edge with no
+vocabulary since Phase 03 — has a fixed nine-name model, a sibling table for non-product sources,
+four suggestion rules that propose and never write, and a workspace that accepts, dismisses and
+removes.
+
+**On a seeded database public search returns categories and journal articles and no products,
+because the seed creates none.** That is the shipped state, not a gap.
+
+### Phase 23: what is built
+
+**Migrations `0210`–`0214`, applied locally AND to hosted through the Supabase MCP, with the ledger
+rows.** `search_documents` (one flattened document per entity; `entity_type` allowlisted to eight
+values by CHECK, so no research row is insertable by any path; a second CHECK making the three
+Studio-only types incapable of `PUBLIC`; a stored generated `search_vector` weighting title A,
+subtitle B, body and keywords C). `research_search_documents` created EMPTY beside it with its own
+three-value allowlist, `visibility` pinned to `STAFF` by CHECK and no `anon` policy — two phases
+before the subsystem that fills it. `search_queries` with no IP, no user agent and a CHECK refusing
+an actor on a public search. `0213`: `content_relations`, `relation_suppressions`,
+`product_attribute_terms`, and four new columns plus three CHECKs on `product_relations`. `0212` and
+`0214` are the generated RLS.
+
+**Four functions and eleven triggers.** `rv_unaccent` and `rv_keyword_text` are IMMUTABLE wrappers,
+because the generated column will not take `extensions.unaccent` (STABLE) or the generic
+`array_to_string` (STABLE). `refresh_search_document()` is `security definer` and is the ONLY writer
+of the index — there is no INSERT or UPDATE policy for any session role, so a member of staff cannot
+hand-write a search result. `search_documents_query` and `search_documents_count` are `security
+invoker`, granted to `anon`, because PostgREST cannot express `websearch_to_tsquery`, `ts_rank_cd` or
+`similarity` as filters.
+
+**`lib/search/`, `lib/relations/`, and the surfaces.** Query parsing that drops nonsense rather than
+400ing on it; grouping in a fixed order with near matches in a band of their own; the rebuilt
+`/search`; `app/api/search/suggest` (GET, anon-key, prefix-matching, capped at eight across three
+groups, `s-maxage=60`); `SearchCombobox` + `Listbox`; `SearchResultCard`; eight command providers in
+one file; `/studio/catalog/relationships` with its coverage, picker, edges and suggestions panels.
+
+**Gates and scripts.** `scripts/search/check-search-scope.mjs` (in `npm run check` and CI),
+`reindex.ts` with a `--dry-run` drift report, `prune-queries.ts` at 90 days.
+
+### Phase 23: what is NOT built, and why
+
+- **Drag reordering in the relationship workspace.** `reorderRelationsAction` exists with its audit
+  row and its permission check; the pointer interaction does not, and it would be that page's first
+  client island. STUDIO_GUIDE §7.5 says so rather than implying otherwise.
+- **Creating an edge by hand from the workspace.** It stays on the product's Related tab, where the
+  editor is already looking at the piece. A second create form is a second place for one act to go
+  wrong.
+- **Suggestions for a project, an article or a collection.** All four rules take a product on the
+  source side; `suggestRelations` returns an empty list for the others rather than inventing a rule
+  to fill the panel, which is what FEAT §11 forbids.
+- **A rendered journal body in the index.** The prose lives in `page_sections`, and flattening
+  section content is a Phase 39 question. The standfirst, excerpt and category name are indexed;
+  half a body called a whole one would be worse than neither.
+- **Rate limiting on the suggest endpoint.** Input caps and the edge cache only; a request-rate
+  limiter is Phase 41's call, as the phase document says.
+
+### Phase 23: verification, as actually run
+
+1. `npm run db:reset` — 64 migrations apply from clean. `npm run db:types` — regenerated, committed.
+2. `npm run db:check-schema` — 50 tables, tiers correct, D10 gate on all 13 content tables.
+   `npm run auth:check-rls` — 50 tables, 193 policies, every staff-select list matches the matrix.
+   `npm run auth:check-policies` — both generated files match. `npm run db:check-hosted-layout` — green.
+3. A research `entity_type` in `search_documents` → refused by CHECK, proved as the superuser (a
+   session insert is refused by RLS a step earlier, which is a different fact and is tested
+   separately). Anon policies on `research_*` → zero.
+4. `node scripts/search/check-search-scope.mjs` → exits 0; adding `research_products` to
+   `lib/search/query.ts` → exits 1 with the file and line. Restored.
+5. `npm run test` with `RLS_TESTS_REQUIRED=1` on a reset-and-seeded database — **1,611 passing, none
+   skipped**, including the four new unit suites and `tests/unit/rls/phase23.test.ts`.
+6. The three e2e specs run against a real `next dev` over the local PostgREST shim: 25 passed, 11
+   skipped (the combobox is hidden below `lg` by design; the signed-in Studio block needs a storage
+   state this repository does not yet ship).
+7. Live, by hand: `/search?q=resin` renders a category group; `?q=resim` renders the near-match band
+   under its own heading; `?q=zzzzzzqqqq` renders the SEED §26 copy with zero result cards;
+   `/api/search/suggest?q=re` returns one prefix match with `s-maxage=60`; `?q=a` returns 400.
+8. `reindex.ts --dry-run` twice → identical per-type counts, zero writes; `--apply` → rebuilt, then
+   the dry run reports no drift.
+9. `npm run check` — all 30 gates green, including the raised island budget and the new scope gate.
+10. `npm run seed:content` twice → inserted 486 then unchanged 486; `content:check-inventory`
+    regenerated with the 20 new strings.
+
+### Phase 23: the D9 ten, recorded
+
+1. Code exists and is committed — five migrations, two `lib/` domains, the public page, the suggest
+   endpoint, two patterns, eight providers, the workspace and its actions, three scripts.
+2. Migrations applied locally and to hosted, with ledger rows and matching counts.
+3. Tests written and passing: 1,611, none skipped, plus 25 e2e.
+4. Gates pass, including the new `search:check-scope`.
+5. Documentation updated: DATA_MODEL (the search and relations sections rewritten as built, §12),
+   STUDIO_GUIDE §6 and §7.5, BUSINESS_RULES BR-D11, CANONICAL-DECISIONS A23, CHANGELOG,
+   PROJECT_STATE, this file.
+6. No business fact fabricated: zero attribute terms, no generated "did you mean", no relation
+   written by a rule, no price on a search card.
+7. Nothing in the manifest regenerated; `media:assert-no-regen` green.
+8. Amendments recorded: A23 (six readings).
+9. The next phase is named: **24 — Bulk Management**.
+10. Hosted is level with the repository through `0214`.
+
+
+### Superseded — Phase 22's state
+
 **Phase 22 — Homepage / Store Merchandising. COMPLETE; EVERY SLOT EMPTY, WHICH IS THE SHIPPED
 STATE.** The owner has the controls — what appears in Selected Works, which collections are
 featured, how the store's categories are ordered, what is pinned in each, and when — and has used

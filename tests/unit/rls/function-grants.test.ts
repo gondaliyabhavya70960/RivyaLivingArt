@@ -74,7 +74,37 @@ const ANON_CALLABLE = [
   // event. Two columns only: an anon UPDATE policy wide enough to do this by hand would be wide
   // enough to edit somebody else's phone number.
   'record_inquiry_handoff(p_inquiry_id uuid, p_state whatsapp_state, p_level integer)',
+  // --- Phase 23. The two search functions, and they are a DIFFERENT SHAPE from the four above ---
+  //
+  // `/search` and `/api/search/suggest` both read with the anon key, so an anonymous caller has to
+  // be able to run the query. Unlike the Phase 20 four these are SECURITY INVOKER: they run as the
+  // caller, RLS on `search_documents` applies to them exactly as it would to a direct read, and
+  // `p_scope` can only narrow what comes back — an anon caller passing 'STAFF' still sees nothing
+  // but PUBLIC/PUBLISHED rows. There is no privilege to escalate, which is why the definer rule
+  // below now admits invoker functions explicitly rather than by exception.
+  //
+  // They exist as functions at all because PostgREST cannot express `websearch_to_tsquery`,
+  // `ts_rank_cd` or `similarity` as filters, so the alternative was ranking the catalogue in Node.
+  // The immutable unaccent both of them call. It is published for the same reason
+  // `is_valid_dimensions` keeps its grant (0143): an INVOKER function executes as the caller, so a
+  // caller without EXECUTE on the helper gets `permission denied for function rv_unaccent` on
+  // every search. It reads no table and returns a string derived from its own argument.
+  'rv_unaccent(input text)',
+  'search_documents_count(p_query text, p_scope text, p_types text[], p_category text)',
+  'search_documents_query(p_query text, p_scope text, p_types text[], p_category text, p_limit integer, p_offset integer, p_prefix boolean)',
 ]
+
+/**
+ * The subset of `ANON_CALLABLE` that runs with the OWNER'S privileges.
+ *
+ * These are the ones that can do something an anonymous caller could not do by hand — write an
+ * enquiry's media rows, read back a reference code the SELECT policy hides. Each is a deliberate
+ * hole in the anon boundary and is listed here so that a fifth is a decision somebody writes down.
+ * The Phase 23 search functions are absent because they are INVOKER: they hold no privilege at all.
+ */
+const ANON_CALLABLE_DEFINERS = ANON_CALLABLE.filter(
+  (signature) => !signature.startsWith('search_documents_'),
+)
 
 const describeDb = HAVE_DB ? describe : describe.skip
 const asOwner = <T>(fn: Parameters<typeof asSession<T>>[2]) =>
@@ -83,7 +113,7 @@ const asOwner = <T>(fn: Parameters<typeof asSession<T>>[2]) =>
 describeDb('EXECUTE grants on public functions', () => {
   afterAll(disconnect)
 
-  it('publishes to anon exactly the four functions the public submit path needs', async () => {
+  it('publishes to anon exactly the functions the public paths need, and nothing else', async () => {
     // The whole point of the rule: an anon-executable function is a PostgREST RPC endpoint whether
     // or not anyone meant to publish one. These four were meant to be.
     const rows = await asOwner((sql) =>
@@ -103,8 +133,16 @@ describeDb('EXECUTE grants on public functions', () => {
    * safe to publish. A SECURITY DEFINER function without a pinned `search_path` is the textbook
    * escalation: the caller sets the path, the function resolves an unqualified name to a table the
    * caller controls, and it executes as the owner.
+   *
+   * PHASE 23 WIDENED THIS FROM "MUST BE DEFINER" TO "DEFINER-WITH-A-PINNED-PATH, OR INVOKER", and
+   * the widening is not a relaxation. The rule was written when every anon-callable function was a
+   * definer, and "must be SECURITY DEFINER" was shorthand for "must not be able to do more than the
+   * caller can". An INVOKER function satisfies that outright: it holds no privilege of its own, so
+   * there is nothing for a hijacked `search_path` to escalate INTO. The path is still asserted for
+   * both, because an invoker function resolving `unaccent` to something a caller planted would
+   * return wrong results even if it could not return forbidden ones.
    */
-  it('grants anon nothing that is not a definer function with a pinned search_path', async () => {
+  it('grants anon nothing that can do more than the caller can, and nothing with a loose search_path', async () => {
     const rows = await asOwner((sql) =>
       sql.rows<{ signature: string; secdef: boolean; config: string | null }>(
         `select p.proname || '(' || pg_get_function_identity_arguments(p.oid) || ')' as signature,
@@ -118,12 +156,19 @@ describeDb('EXECUTE grants on public functions', () => {
     )
 
     for (const row of rows) {
-      expect(row.secdef, `${row.signature} is callable by anon and is not SECURITY DEFINER`).toBe(
-        true,
-      )
+      // EVERY anon-callable function pins its path, definer or not.
       expect(row.config ?? '', `${row.signature} does not pin search_path`).toContain(
         'search_path=',
       )
+      // A DEFINER function published to anon runs with the owner's privileges, so each one is
+      // named. An INVOKER function holds none, so it needs no entry: it can do exactly what the
+      // anonymous caller could already do by hand.
+      if (row.secdef) {
+        expect(
+          ANON_CALLABLE_DEFINERS,
+          `${row.signature} is SECURITY DEFINER and callable by anon but is not named as one`,
+        ).toContain(row.signature)
+      }
     }
   })
 

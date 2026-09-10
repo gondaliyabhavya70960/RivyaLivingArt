@@ -128,6 +128,17 @@ export const PHASE_20_POLICIES = '0191_phase20_inquiries_rls.sql'
 export const PHASE_21_POLICIES = '0195_phase21_model_rls.sql'
 export const PHASE_22_POLICIES = '0201_phase22_merchandising_rls.sql'
 
+/**
+ * Phase 23 needs TWO generated files, not one, and the reason is mechanical rather than editorial.
+ * A generated policy file is rewritten whole on every `auth:gen-policies` run, so it cannot also
+ * hold the DDL that creates its tables — and `0213` creates the relation tables. The search
+ * policies therefore sit at `0212`, after `0210`/`0211` create the index, and the relation
+ * policies at `0214`, after `0213` creates the edges. Phase 19 set the precedent with `0172` and
+ * `0183`. `0214` is recorded in DATA_MODEL §12 alongside the phase document's own `0210`–`0213`.
+ */
+export const PHASE_23_SEARCH_POLICIES = '0212_phase23_search_rls.sql'
+export const PHASE_23_RELATION_POLICIES = '0214_phase23_relations_rls.sql'
+
 export const TABLE_POLICIES = {
   // --- Shape A: content tables ------------------------------------------------------------------
   categories: {
@@ -848,6 +859,129 @@ export const TABLE_POLICIES = {
     readPermission: 'catalog.read',
     writePermission: 'merchandising.write',
     deletePermission: 'merchandising.write',
+  },
+
+  /**
+   * `search_documents` — Phase 23. THE ONE TABLE IN THE PROJECT THAT IS READ BY ANON AND WRITTEN BY
+   * NOBODY.
+   *
+   * Shape A with an overridden clause, because "published" is not the whole condition: a STAFF
+   * document — a material, a media asset, an enquiry — can perfectly well be PUBLISHED in its own
+   * table, and the visibility column is what keeps it out of a visitor's results. Both halves are
+   * in the predicate, and a CHECK on the table (0210) makes the three Studio-only entity types
+   * structurally incapable of carrying `visibility = 'PUBLIC'` in the first place.
+   *
+   * NO WRITE PERMISSION AT ALL, which is the deviation worth arguing. Every row is derived from a
+   * source table by `refresh_search_document()`, a security-definer trigger function. An
+   * `authenticated` insert policy would let a signed-in member of staff hand-write a search result
+   * — a title, a URL and a picture of their choosing — for an entity that says something else. A
+   * projection nobody may write by hand is a projection that cannot be forged, so the only writer
+   * is the trigger, and the reindex script connects as the service role.
+   */
+  search_documents: {
+    policiesIn: PHASE_23_SEARCH_POLICIES,
+    shape: 'A',
+    publicClause: `visibility = 'PUBLIC' and status = 'PUBLISHED'`,
+    readPermission: 'catalog.read',
+  },
+  /**
+   * `research_search_documents` — Phase 23, created empty, populated from Phase 25 onward.
+   *
+   * ISOLATION INVARIANT I2 AS A POLICY DECLARATION: no anon leg, and staff select requires
+   * `research.read`, which `editor` alone among the six roles does not hold. It is shape C for the
+   * same reason every research table will be — there is no visitor-facing view of a competitor's
+   * catalogue, and a `publicClause` here would be a bug with a syntax.
+   */
+  research_search_documents: {
+    policiesIn: PHASE_23_SEARCH_POLICIES,
+    shape: 'C',
+    readPermission: 'research.read',
+    deviation:
+      'The research corpus. No anon policy may ever exist on any research_* table (isolation ' +
+      'invariant I2), and no authenticated write policy either: the index is maintained by the ' +
+      'Phase 25-28 pipeline through the service role, never by a session.',
+  },
+  /**
+   * `search_queries` — Phase 23. What was typed and how many rows came back.
+   *
+   * READ UNDER `analytics.read`, WRITTEN BY NOBODY WITH A SESSION. The write path is deliberately
+   * the service role: a public search has no session at all, so an anon insert policy would be the
+   * only alternative — and an anon-writable table on the public path is an endpoint a stranger can
+   * fill with whatever text they like, attributed to a search that never happened.
+   */
+  search_queries: {
+    policiesIn: PHASE_23_SEARCH_POLICIES,
+    shape: 'C',
+    readPermission: 'analytics.read',
+    deviation:
+      'A record of searches, not content. No anon read: it would expose what other visitors ' +
+      'looked for. No authenticated write: public searches have no session, so logging runs ' +
+      'through the service role for both scopes rather than opening an anon insert policy.',
+  },
+  /**
+   * `content_relations` — Phase 23. The sibling of `product_relations`, and it takes the same shape
+   * B for the same reason: the public reads relations, so an edge is visible exactly when the row
+   * it hangs off is published.
+   *
+   * THE PARENT IS POLYMORPHIC, so the clause is three exists-tests rather than one. Written out
+   * per source type rather than generated, because which parents make an edge public is a
+   * judgement — and the judgement is that a DRAFT project's edges are as private as the project.
+   * The TARGET side is not tested here and that is deliberate: an edge to an unpublished product
+   * must resolve to nothing rather than to a broken link, and that is the repository's job, where
+   * the same filter also serves the Studio preview which this policy does not apply to.
+   */
+  content_relations: {
+    policiesIn: PHASE_23_RELATION_POLICIES,
+    shape: 'B',
+    readPermission: 'catalog.read',
+    writePermission: 'catalog.write',
+    deletePermission: 'catalog.write',
+    parentClause: `(source_type = 'portfolio_project'
+              and exists (select 1 from portfolio_projects pp
+                           where pp.id = content_relations.source_id and pp.status = 'PUBLISHED'))
+          or (source_type = 'journal_article'
+              and exists (select 1 from journal_articles ja
+                           where ja.id = content_relations.source_id and ja.status = 'PUBLISHED'))
+          or (source_type = 'collection'
+              and exists (select 1 from collections c
+                           where c.id = content_relations.source_id and c.status = 'PUBLISHED'))`,
+  },
+  /**
+   * `relation_suppressions` — Phase 23. A record of what an editor said no to.
+   *
+   * STAFF-ONLY, AND THE ABSENCE OF AN ANON LEG IS THE POINT: a suppression names a connection
+   * somebody considered and rejected, which is an editorial judgement about two pieces of content
+   * and none of a visitor's business. Written under `catalog.write` — dismissing a suggestion is an
+   * ordinary editorial act — and deletable under the same permission, because un-dismissing is how
+   * an editor changes their mind and it destroys no history that is not already in `audit_logs`.
+   */
+  relation_suppressions: {
+    policiesIn: PHASE_23_RELATION_POLICIES,
+    shape: 'C',
+    readPermission: 'catalog.read',
+    writePermission: 'catalog.write',
+    deletePermission: 'catalog.write',
+    deviation:
+      'An editorial judgement about what NOT to connect. Never publicly readable: it would tell a ' +
+      'visitor which relationships were considered and refused, which is a view of the editing ' +
+      'process rather than of the catalogue.',
+  },
+  /**
+   * `product_attribute_terms` — Phase 23. Shape A, the ordinary content shape, because a term IS
+   * read by a visitor once it is published — that is what makes it content rather than a lookup
+   * list in TypeScript.
+   *
+   * IT SHIPS WITH ZERO ROWS, so the anon leg reads nothing today. The D10 gate on the row
+   * (`*_verified_before_publish`, 0213) is what stops that changing without an owner: a term
+   * defaults to OWNER_VERIFICATION_REQUIRED and cannot be PUBLISHED until somebody with
+   * `content.verify` says the workshop really works in it.
+   */
+  product_attribute_terms: {
+    policiesIn: PHASE_23_RELATION_POLICIES,
+    shape: 'A',
+    readPermission: 'catalog.read',
+    writePermission: 'catalog.write',
+    deletePermission: 'destructive.execute',
   },
 } as const satisfies Record<string, TablePolicy>
 
