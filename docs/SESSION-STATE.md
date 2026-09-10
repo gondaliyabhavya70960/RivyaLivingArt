@@ -156,12 +156,48 @@ Both would be closed by re-applying the affected migrations with their comments 
 affects a query, a constraint, a policy or a type, so neither is worth a migration of its own — a
 phase that touches one of those functions for another reason should carry the comments back.
 
+### Phase 28: a CI failure fixed in the same branch, and it was Phase 26's
+
+`main` had been RED since Phase 26 merged — through three merges — and the reason was in this
+session's own code rather than anywhere near Phase 28.
+
+`.github/workflows/ci.yml` runs `npm run test:unit` as **step five, before `db:reset`**, and sets
+`DATABASE_URL` for the whole job so the database gates further down can use it. The workflow says in
+as many words that the unit project must therefore need no database. Phase 26 added two files that
+did: `tests/unit/source-health.test.ts` and the SQL half of `tests/unit/source-schedules.test.ts`.
+Both reasoned carefully about the fixture advisory lock and neither about the ordering — so instead
+of skipping, they connected to a database with no migrations in it and failed. Twenty-two
+assertions, every run, since 10 September.
+
+It passed locally every time because a developer's database is already migrated. It is reproducible
+in one command: point `DATABASE_URL` at an empty database and run the unit project.
+
+The fix is where a database test belongs. `tests/unit/rls/**` is the project CI runs at the very
+end, after the migrations and the seed, with `RLS_TESTS_REQUIRED=1` so a missing database is a
+failure rather than a skip — which is the posture both files' own headers said they wanted. So:
+
+- `tests/unit/source-health.test.ts` → `tests/unit/rls/source-health.test.ts`, now taking the
+  harness's client and therefore `FIXTURE_LOCK`, because it runs beside suites that wipe tables.
+- The SQL half of `source-schedules.test.ts` → `tests/unit/rls/cron-interval-sql.test.ts`.
+- The twenty-one-expression table both halves are asked moved to
+  `tests/unit/cron-interval-cases.ts`, because a table copied into two files is a table that stops
+  being the same one — and the whole point is that both implementations answer the same rows.
+
+**And the invariant is now a gate rather than a comment**, which is the durable half:
+`npm run db:check-unit-offline` fails the build if a unit-project test imports `pg` or reads
+`DATABASE_URL`. The rule was written down in `ci.yml` all along, and being written down is exactly
+why it was broken quietly. The gate was verified to fail on both offence shapes before being wired
+into `npm run check` and into CI.
+
 ### The next exact action
 
-Begin **Phase 29 — Change Detection + Review**, migrations `0270`–`0271`. It diffs consecutive
-`research_product_versions` rows — which is why Phase 28 stamped `normalized` and
-`normalizer_version` on each version rather than only on the product, so "did the page change, or
-did we start reading it differently" stays answerable.
+**Phases 29 and 30 are stopped at the owner's instruction (2026-09-11) and no work has begun on
+either.** Nothing is half-built: the repository is at a clean Phase 28.
+
+When they resume, the next phase is **29 — Change Detection + Review**, migrations `0270`–`0271`.
+It diffs consecutive `research_product_versions` rows — which is why Phase 28 stamped `normalized`
+and `normalizer_version` on each version rather than only on the product, so "did the page change,
+or did we start reading it differently" stays answerable.
 
 ---
 

@@ -1,5 +1,7 @@
-import pg from 'pg'
+import type pg from 'pg'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+
+import { connect, disconnect } from './harness'
 
 import {
   SOURCE_HEALTH_COLUMNS,
@@ -23,34 +25,52 @@ import {
  * badge on the screen an operator checks during an incident. The only way to know the CASE is right
  * is to put a source in each state and ask.
  *
- * WHY IT TALKS TO POSTGRESQL DIRECTLY AND STILL LIVES IN THE `unit` PROJECT. It needs a real
- * cluster, but not the RLS harness: it asserts what the view COMPUTES, not who may read it — that
- * question belongs to `tests/unit/rls/phase26.test.ts`, which proves `security_invoker` and the
- * missing `anon` grant. So it holds its own `pg` client rather than taking that suite's advisory
- * lock, and it touches only rows it created under its own `p26h-` slug prefix and its own id block,
- * neither of which any other suite writes.
+ * WHY IT LIVES IN THE `rls` PROJECT, AND WHY IT DID NOT — A DEFECT THIS FILE CAUSED.
  *
- * WHEN `DATABASE_URL` IS UNSET IT SKIPS, AND THE SKIP IS AN ADMISSION. Nothing here can be answered
- * without a cluster: the subject is a SQL expression. A skipped run proves nothing about the view,
- * and it must not be mistaken for one that did — `tests/unit/rls/phase26.test.ts` is the file that
- * refuses to skip in CI, and it is what makes a green pipeline mean the database was really there.
+ * Phase 26 put it in the `unit` project, reasoning that it needs a real cluster but not the RLS
+ * harness: it asserts what the view COMPUTES, not who may read it. That reasoning was about the
+ * ADVISORY LOCK and it missed the thing that actually decides where a database test belongs —
+ * WHEN CI RUNS IT. `npm run test:unit` is step five of the workflow, before `db:reset`, against a
+ * database with no migrations in it; `ci.yml` says so in as many words, because the unit project is
+ * supposed to need no database at all. So every assertion here failed on `main` from the moment
+ * Phase 26 merged, and went on failing through two more merges.
+ *
+ * `tests/unit/rls/**` is the project that runs AFTER the migrations and the seed, and it is
+ * selected by directory alone. Moving the file is the whole fix.
+ *
+ * IT TAKES THE HARNESS'S CLIENT, AND THEREFORE ITS ADVISORY LOCK. Holding a private `pg` client
+ * was safe while this file ran in a project of its own; in the `rls` project it would run beside
+ * suites whose `loadFixture` wipes tables outside any transaction, and a wipe landing mid-run is
+ * exactly what `FIXTURE_LOCK` exists to prevent. It still creates and cleans up only its own
+ * `p26h-` rows.
+ *
+ * IT NO LONGER SKIPS WHEN `DATABASE_URL` IS UNSET IN CI. Nothing here can be answered without a
+ * cluster — the subject is a SQL expression — so a skipped run proves nothing and must not be
+ * mistaken for one that did. `RLS_TESTS_REQUIRED` turns the absence into a failure, which is the
+ * posture every other file in this directory takes.
+ *
+ * `scripts/db/check-unit-tests-offline.mjs` now fails the build if a unit-project test reaches for
+ * a database again, so the invariant is enforced rather than described.
  *
  * NO REAL HOST APPEARS. Every base URL is under the reserved `.example` top-level domain and every
  * label is invented; nothing in this file names, or could be mistaken for, a real business.
  */
 
-const { Client } = pg
-const connectionString = process.env.DATABASE_URL
-const describeDb = connectionString === undefined ? describe.skip : describe
+const REQUIRE_DB = process.env.CI === 'true' || process.env.RLS_TESTS_REQUIRED === '1'
+const HAVE_DB = Boolean(process.env.DATABASE_URL)
 
-let client: pg.Client | null = null
+if (REQUIRE_DB && !HAVE_DB) {
+  throw new Error(
+    'DATABASE_URL is not set and this environment requires the database suite to run. ' +
+      'Refusing to skip: a skipped guard suite reports success while proving nothing.',
+  )
+}
 
+const describeDb = HAVE_DB ? describe : describe.skip
+
+/** The harness's client, which holds `FIXTURE_LOCK` — see the header. */
 async function db(): Promise<pg.Client> {
-  if (!client) {
-    client = new Client({ connectionString })
-    await client.connect()
-  }
-  return client
+  return connect()
 }
 
 /**
@@ -317,17 +337,17 @@ async function cleanup(): Promise<void> {
 }
 
 beforeAll(async () => {
-  if (connectionString === undefined) return
+  if (!HAVE_DB) return
   await cleanup()
   await seed()
 })
 
 afterAll(async () => {
-  if (client) {
-    await cleanup()
-    await client.end()
-    client = null
-  }
+  if (!HAVE_DB) return
+  await cleanup()
+  // Releases FIXTURE_LOCK before closing, so the next waiting suite starts immediately rather than
+  // after the server notices a dead connection. See the harness.
+  await disconnect()
 })
 
 describeDb('research_source_health_v — the five derived states', () => {

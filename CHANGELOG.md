@@ -6,6 +6,20 @@ Every phase adds an entry; see `docs/architecture/CANONICAL-DECISIONS.md` D9 for
 
 ## [Unreleased]
 
+### CI — the unit project runs without a database again
+
+`main` had been red since Phase 26 merged, through three merges, and the cause was Phase 26's.
+`ci.yml` runs `npm run test:unit` as step five — before `db:reset` — with `DATABASE_URL` set for the
+whole job, so a unit test that reaches for a cluster does not skip: it connects to a database with
+no migrations in it and fails. Phase 26 added two such files; twenty-two assertions failed on every
+run. It passed locally every time because a developer's database is already migrated.
+
+Both database suites moved to `tests/unit/rls/**`, the project CI runs after the migrations and the
+seed with `RLS_TESTS_REQUIRED=1`, and the twenty-one-expression table they share moved to a module
+so the two implementations are still asked the same rows. **`npm run db:check-unit-offline` now
+enforces the rule** the workflow had only described — being described in a comment is exactly why it
+was broken quietly.
+
 ### Phase 28 — Normalization + Validation
 
 The strings Phase 27 extracted become comparable data, and the data is judged before it is trusted.
