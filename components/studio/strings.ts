@@ -1015,6 +1015,491 @@ export const STUDIO_STRINGS = {
     value: 'The upload did not finish. Nothing was saved.',
     contentKey: 'studio_help.media_upload_failed',
   },
+  // --- 3D models (Phase 21) ------------------------------------------------------------------------
+  // The inspector's sentences, the drawer's labels and the preview viewer's chrome. The public
+  // viewer reads its words from `global_content`; the Studio preview is a Studio surface and reads
+  // them here, so the two can be reworded independently.
+  'studio.models.list.caption': {
+    value: '3D models',
+    contentKey: 'studio_help.models_list_caption',
+  },
+  'studio.models.col.name': {
+    value: 'Model',
+    contentKey: 'studio_help.models_col_name',
+  },
+  'studio.models.col.format': {
+    value: 'Format',
+    contentKey: 'studio_help.models_col_format',
+  },
+  'studio.models.col.size': {
+    value: 'Size',
+    contentKey: 'studio_help.models_col_size',
+  },
+  'studio.models.col.triangles': {
+    value: 'Triangles',
+    contentKey: 'studio_help.models_col_triangles',
+  },
+  'studio.models.col.textures': {
+    value: 'Textures',
+    contentKey: 'studio_help.models_col_textures',
+  },
+  'studio.models.col.poster': {
+    value: 'Poster',
+    contentKey: 'studio_help.models_col_poster',
+  },
+  'studio.models.col.association': {
+    value: 'Shown on',
+    contentKey: 'studio_help.models_col_association',
+  },
+  'studio.models.col.status': {
+    value: 'Status',
+    contentKey: 'studio_help.models_col_status',
+  },
+  'studio.models.inspectAction': {
+    value: 'Inspect',
+    contentKey: 'studio_help.models_inspect_action',
+  },
+  'studio.models.notInspected': {
+    value: 'Not yet inspected',
+    contentKey: 'studio_help.models_not_inspected',
+  },
+  'studio.models.posterMissing': {
+    value: 'No poster',
+    contentKey: 'studio_help.models_poster_missing',
+  },
+  'studio.models.posterSet': {
+    value: 'Set',
+    contentKey: 'studio_help.models_poster_set',
+  },
+  'studio.models.associatedProduct': {
+    value: 'Product',
+    contentKey: 'studio_help.models_associated_product',
+  },
+  'studio.models.associatedProject': {
+    value: 'Project',
+    contentKey: 'studio_help.models_associated_project',
+  },
+  'studio.models.unassociated': {
+    value: 'Nowhere yet',
+    contentKey: 'studio_help.models_unassociated',
+  },
+  'studio.models.empty.title': {
+    value: 'No 3D models',
+    contentKey: 'studio_help.models_empty_title',
+  },
+  'studio.models.empty.body': {
+    value:
+      'Upload a GLB or GLTF of an object that exists. The manifest holds none, and none will be generated.',
+    contentKey: 'studio_help.models_empty_body',
+  },
+  'studio.models.emptyFiltered.title': {
+    value: 'No models match',
+    contentKey: 'studio_help.models_empty_filtered_title',
+  },
+  'studio.models.emptyFiltered.body': {
+    value: 'Clear the search to see every model.',
+    contentKey: 'studio_help.models_empty_filtered_body',
+  },
+  'studio.models.upload.checking': {
+    value: 'Checking the file…',
+    contentKey: 'studio_help.models_upload_checking',
+  },
+  'studio.models.upload.rejectedHeading': {
+    value: 'The file was refused. Nothing was uploaded.',
+    contentKey: 'studio_help.models_upload_rejected_heading',
+  },
+  'studio.models.upload.warningsHeading': {
+    value: 'Accepted, with warnings:',
+    contentKey: 'studio_help.models_upload_warnings_heading',
+  },
+  'studio.models.upload.done': {
+    value: 'Uploaded and inspected. Format, size, triangles and textures were read from the file.',
+    contentKey: 'studio_help.models_upload_done',
+  },
+  'studio.models.rejected': {
+    value: 'The model was refused and the upload discarded',
+    contentKey: 'studio_help.models_rejected',
+  },
+  'studio.models.fetchFailed': {
+    value: 'The uploaded file could not be read back for inspection. Nothing was saved.',
+    contentKey: 'studio_help.models_fetch_failed',
+  },
+  'studio.models.reject.wrongFormat': {
+    value: 'The file is not the format its name says.',
+    contentKey: 'studio_help.models_reject_wrong_format',
+  },
+  'studio.models.reject.unparseable': {
+    value: 'The file could not be parsed as glTF 2.0.',
+    contentKey: 'studio_help.models_reject_unparseable',
+  },
+  'studio.models.reject.tooLarge': {
+    value: '{{detail}} is over the 15 MB ceiling.',
+    contentKey: 'studio_help.models_reject_too_large',
+  },
+  'studio.models.reject.compressionRequired': {
+    value: '{{detail}} without Draco or meshopt compression; compression is required above 5 MB.',
+    contentKey: 'studio_help.models_reject_compression_required',
+  },
+  'studio.models.reject.tooManyTriangles': {
+    value: '{{detail}} triangles is over the 250,000 ceiling.',
+    contentKey: 'studio_help.models_reject_too_many_triangles',
+  },
+  'studio.models.reject.textureTooLarge': {
+    value: 'A texture is {{detail}} px on a side; 2048 is the ceiling.',
+    contentKey: 'studio_help.models_reject_texture_too_large',
+  },
+  'studio.models.reject.externalResources': {
+    value:
+      'The file references buffers or images outside itself. Embed them and upload a self-contained file.',
+    contentKey: 'studio_help.models_reject_external_resources',
+  },
+  'studio.models.warn.large': {
+    value: '{{detail}} is over the 8 MB budget; it will load slowly on a phone.',
+    contentKey: 'studio_help.models_warn_large',
+  },
+  'studio.models.warn.manyTriangles': {
+    value: '{{detail}} triangles is over the 150,000 budget.',
+    contentKey: 'studio_help.models_warn_many_triangles',
+  },
+  'studio.models.warn.manyTextures': {
+    value: '{{detail}} textures; more than four is unusual for one object.',
+    contentKey: 'studio_help.models_warn_many_textures',
+  },
+  'studio.models.drawer.title': {
+    value: 'Model',
+    contentKey: 'studio_help.models_drawer_title',
+  },
+  'studio.models.drawer.close': {
+    value: 'Close',
+    contentKey: 'studio_help.models_drawer_close',
+  },
+  'studio.models.meta.heading': {
+    value: 'From the file',
+    contentKey: 'studio_help.models_meta_heading',
+  },
+  'studio.models.meta.help': {
+    value: 'Read by the inspector, never typed. Re-inspect after replacing the file.',
+    contentKey: 'studio_help.models_meta_help',
+  },
+  'studio.models.meta.format': {
+    value: 'Format',
+    contentKey: 'studio_help.models_meta_format',
+  },
+  'studio.models.meta.size': {
+    value: 'Size',
+    contentKey: 'studio_help.models_meta_size',
+  },
+  'studio.models.meta.triangles': {
+    value: 'Triangles',
+    contentKey: 'studio_help.models_meta_triangles',
+  },
+  'studio.models.meta.textures': {
+    value: 'Textures',
+    contentKey: 'studio_help.models_meta_textures',
+  },
+  'studio.models.meta.variants': {
+    value: 'Finish variants in the file',
+    contentKey: 'studio_help.models_meta_variants',
+  },
+  'studio.models.meta.none': {
+    value: '—',
+    contentKey: 'studio_help.models_meta_none',
+  },
+  'studio.models.meta.reinspect': {
+    value: 'Re-inspect from the file',
+    contentKey: 'studio_help.models_meta_reinspect',
+  },
+  'studio.models.meta.reinspected': {
+    value: 'Metadata refreshed from the file.',
+    contentKey: 'studio_help.models_meta_reinspected',
+  },
+  'studio.models.stills.heading': {
+    value: 'Poster and thumbnail',
+    contentKey: 'studio_help.models_stills_heading',
+  },
+  'studio.models.stills.poster': {
+    value: 'Poster',
+    contentKey: 'studio_help.models_stills_poster',
+  },
+  'studio.models.stills.posterHelp': {
+    value:
+      'What the page shows until the visitor asks for the viewer. Required before the model can be shown anywhere. An image, never the model.',
+    contentKey: 'studio_help.models_stills_poster_help',
+  },
+  'studio.models.stills.thumbnail': {
+    value: 'Thumbnail',
+    contentKey: 'studio_help.models_stills_thumbnail',
+  },
+  'studio.models.stills.thumbnailHelp': {
+    value: 'Optional. Shown in Studio lists.',
+    contentKey: 'studio_help.models_stills_thumbnail_help',
+  },
+  'studio.models.settings.heading': {
+    value: 'Viewer settings',
+    contentKey: 'studio_help.models_settings_heading',
+  },
+  'studio.models.settings.help': {
+    value: 'Leave a field empty to let the viewer fit the model itself.',
+    contentKey: 'studio_help.models_settings_help',
+  },
+  'studio.models.settings.exposure': {
+    value: 'Exposure',
+    contentKey: 'studio_help.models_settings_exposure',
+  },
+  'studio.models.settings.lighting': {
+    value: 'Lighting preset',
+    contentKey: 'studio_help.models_settings_lighting',
+  },
+  'studio.models.settings.environment': {
+    value: 'Environment preset',
+    contentKey: 'studio_help.models_settings_environment',
+  },
+  'studio.models.settings.autoRotate': {
+    value: 'Auto-rotate',
+    contentKey: 'studio_help.models_settings_auto_rotate',
+  },
+  'studio.models.settings.autoRotateHelp': {
+    value: 'Off under reduced motion regardless.',
+    contentKey: 'studio_help.models_settings_auto_rotate_help',
+  },
+  'studio.models.settings.minDistance': {
+    value: 'Closest distance',
+    contentKey: 'studio_help.models_settings_min_distance',
+  },
+  'studio.models.settings.maxDistance': {
+    value: 'Farthest distance',
+    contentKey: 'studio_help.models_settings_max_distance',
+  },
+  'studio.models.settings.cameraPosition': {
+    value: 'Camera position (x, y, z)',
+    contentKey: 'studio_help.models_settings_camera_position',
+  },
+  'studio.models.settings.cameraTarget': {
+    value: 'Camera target (x, y, z)',
+    contentKey: 'studio_help.models_settings_camera_target',
+  },
+  'studio.models.settings.fov': {
+    value: 'Field of view',
+    contentKey: 'studio_help.models_settings_fov',
+  },
+  'studio.models.settings.invalid': {
+    value: 'One of the settings is out of range.',
+    contentKey: 'studio_help.models_settings_invalid',
+  },
+  'studio.models.preview.heading': {
+    value: 'Preview',
+    contentKey: 'studio_help.models_preview_heading',
+  },
+  'studio.models.preview.open': {
+    value: 'Open preview',
+    contentKey: 'studio_help.models_preview_open',
+  },
+  'studio.models.preview.help': {
+    value: 'The live viewer, with the settings above. Change a value and it reloads.',
+    contentKey: 'studio_help.models_preview_help',
+  },
+  'studio.models.labels.heading': {
+    value: 'Finish labels',
+    contentKey: 'studio_help.models_labels_heading',
+  },
+  'studio.models.labels.help': {
+    value:
+      "One label per finish the file declares. A label that names a material is a product fact: it needs the owner's verification before the material name reaches a visitor.",
+    contentKey: 'studio_help.models_labels_help',
+  },
+  'studio.models.labels.none': {
+    value: 'This model declares no finish variants.',
+    contentKey: 'studio_help.models_labels_none',
+  },
+  'studio.models.labels.key': {
+    value: 'Key in the file',
+    contentKey: 'studio_help.models_labels_key',
+  },
+  'studio.models.labels.label': {
+    value: 'Label',
+    contentKey: 'studio_help.models_labels_label',
+  },
+  'studio.models.labels.material': {
+    value: 'Material',
+    contentKey: 'studio_help.models_labels_material',
+  },
+  'studio.models.labels.noMaterial': {
+    value: '— none —',
+    contentKey: 'studio_help.models_labels_no_material',
+  },
+  'studio.models.labels.verification': {
+    value: 'Verification',
+    contentKey: 'studio_help.models_labels_verification',
+  },
+  'studio.models.labels.verify.NOT_REQUIRED': {
+    value: 'Not required',
+    contentKey: 'studio_help.models_labels_verify_not_required',
+  },
+  'studio.models.labels.verify.OWNER_VERIFICATION_REQUIRED': {
+    value: 'Awaiting the owner',
+    contentKey: 'studio_help.models_labels_verify_required',
+  },
+  'studio.models.labels.verify.VERIFIED': {
+    value: 'Verified by the owner',
+    contentKey: 'studio_help.models_labels_verify_verified',
+  },
+  'studio.models.labels.materialNeedsVerification': {
+    value: "A label with a material cannot be 'Not required'.",
+    contentKey: 'studio_help.models_labels_material_needs_verification',
+  },
+  'studio.models.labels.verifyRefused': {
+    value: 'Only the owner or an admin may mark a label verified.',
+    contentKey: 'studio_help.models_labels_verify_refused',
+  },
+  'studio.models.association.heading': {
+    value: 'Shown on',
+    contentKey: 'studio_help.models_association_heading',
+  },
+  'studio.models.association.help': {
+    value: 'A model appears on one product page or one project page. It needs a poster first.',
+    contentKey: 'studio_help.models_association_help',
+  },
+  'studio.models.association.none': {
+    value: 'Nowhere',
+    contentKey: 'studio_help.models_association_none',
+  },
+  'studio.models.association.product': {
+    value: 'A product',
+    contentKey: 'studio_help.models_association_product',
+  },
+  'studio.models.association.project': {
+    value: 'A project',
+    contentKey: 'studio_help.models_association_project',
+  },
+  'studio.models.association.pick': {
+    value: 'Choose',
+    contentKey: 'studio_help.models_association_pick',
+  },
+  'studio.models.association.needsPoster': {
+    value: 'Set a poster before showing this model on a page.',
+    contentKey: 'studio_help.models_association_needs_poster',
+  },
+  'studio.models.association.productRefused': {
+    value: 'Attaching a model to a product needs catalogue write access.',
+    contentKey: 'studio_help.models_association_product_refused',
+  },
+  'studio.models.save': {
+    value: 'Save',
+    contentKey: 'studio_help.models_save',
+  },
+  'studio.models.saved': {
+    value: 'Saved.',
+    contentKey: 'studio_help.models_saved',
+  },
+  'studio.models.expired': {
+    value: 'Your session has expired. Sign in again.',
+    contentKey: 'studio_help.models_expired',
+  },
+  'studio.models.forbidden': {
+    value: 'You do not have permission to do that.',
+    contentKey: 'studio_help.models_forbidden',
+  },
+  'studio.models.failed': {
+    value: 'That change could not be saved.',
+    contentKey: 'studio_help.models_failed',
+  },
+  'studio.models.viewer.inspect': {
+    value: 'Open in the viewer',
+    contentKey: 'studio_help.models_viewer_inspect',
+  },
+  'studio.models.viewer.name': {
+    value: '{{title}} in 3D',
+    contentKey: 'studio_help.models_viewer_name',
+  },
+  'studio.models.viewer.description': {
+    value:
+      'Drag to orbit, scroll to zoom, right-drag to pan. Arrow keys orbit, Shift with arrows pans, plus and minus zoom, R resets, F fullscreen, M inspects the finish, D shows dimensions.',
+    contentKey: 'studio_help.models_viewer_description',
+  },
+  'studio.models.viewer.loading': {
+    value: 'Loading model, {{percent}}%',
+    contentKey: 'studio_help.models_viewer_loading',
+  },
+  'studio.models.viewer.failed': {
+    value: 'The model could not be loaded in the preview.',
+    contentKey: 'studio_help.models_viewer_failed',
+  },
+  'studio.models.viewer.reset': {
+    value: 'Reset view',
+    contentKey: 'studio_help.models_viewer_reset',
+  },
+  'studio.models.viewer.fullscreen': {
+    value: 'Fullscreen',
+    contentKey: 'studio_help.models_viewer_fullscreen',
+  },
+  'studio.models.viewer.exitFullscreen': {
+    value: 'Exit fullscreen',
+    contentKey: 'studio_help.models_viewer_exit_fullscreen',
+  },
+  'studio.models.viewer.close': {
+    value: 'Close preview',
+    contentKey: 'studio_help.models_viewer_close',
+  },
+  'studio.models.viewer.materialToggle': {
+    value: 'Inspect finish',
+    contentKey: 'studio_help.models_viewer_material_toggle',
+  },
+  'studio.models.viewer.materialHeading': {
+    value: 'Finish',
+    contentKey: 'studio_help.models_viewer_material_heading',
+  },
+  'studio.models.viewer.variants': {
+    value: 'Finish options',
+    contentKey: 'studio_help.models_viewer_variants',
+  },
+  'studio.models.viewer.dimensionsToggle': {
+    value: 'Show dimensions',
+    contentKey: 'studio_help.models_viewer_dimensions_toggle',
+  },
+  'studio.models.viewer.dimensionsHeading': {
+    value: 'Dimensions',
+    contentKey: 'studio_help.models_viewer_dimensions_heading',
+  },
+  'studio.models.viewer.lighting': {
+    value: 'Lighting',
+    contentKey: 'studio_help.models_viewer_lighting',
+  },
+  'studio.models.viewer.environment': {
+    value: 'Environment',
+    contentKey: 'studio_help.models_viewer_environment',
+  },
+  'studio.models.viewer.lighting.studio-soft': {
+    value: 'Studio, soft',
+    contentKey: 'studio_help.models_viewer_lighting_studio_soft',
+  },
+  'studio.models.viewer.lighting.gallery-directional': {
+    value: 'Gallery, directional',
+    contentKey: 'studio_help.models_viewer_lighting_gallery_directional',
+  },
+  'studio.models.viewer.lighting.daylight-window': {
+    value: 'Daylight from a window',
+    contentKey: 'studio_help.models_viewer_lighting_daylight_window',
+  },
+  'studio.models.viewer.lighting.low-key': {
+    value: 'Low key',
+    contentKey: 'studio_help.models_viewer_lighting_low_key',
+  },
+  'studio.models.viewer.environment.neutral-room': {
+    value: 'Neutral room',
+    contentKey: 'studio_help.models_viewer_environment_neutral_room',
+  },
+  'studio.models.viewer.environment.dark-gallery': {
+    value: 'Dark gallery',
+    contentKey: 'studio_help.models_viewer_environment_dark_gallery',
+  },
+  'studio.models.viewer.environment.warm-interior': {
+    value: 'Warm interior',
+    contentKey: 'studio_help.models_viewer_environment_warm_interior',
+  },
+  'studio.models.viewer.conceptNotice': {
+    value: 'Concept model — not a photograph of a delivered piece.',
+    contentKey: 'studio_help.models_viewer_concept_notice',
+  },
   // --- The Higgsfield tracker (Phase 07) ---------------------------------------------------------
   // The concept banner is the load-bearing string on this surface, not a caption. Every asset here
   // is `is_concept = true`: AI-generated art direction for a studio whose delivered work has not

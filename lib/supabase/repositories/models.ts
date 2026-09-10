@@ -176,6 +176,46 @@ export async function replaceVariantLabels(
 }
 
 /**
+ * Bring the label rows into line with the keys the FILE declares: a row per key, a placeholder
+ * label for a new key, and no row for a key the file no longer has. Existing labels are kept.
+ *
+ * The placeholder is the key made readable (`walnut_01` → `walnut 01`), editorial copy with no
+ * material and no verification: it names nothing the file did not already name.
+ */
+export async function syncVariantKeys(
+  client: Client,
+  assetId: string,
+  keys: readonly string[],
+  updatedBy: string,
+): Promise<void> {
+  const existing = await listVariantLabels(client, assetId)
+  const known = new Set(existing.map((row) => row.variant_key))
+  const wanted = new Set(keys)
+
+  const stale = existing.filter((row) => !wanted.has(row.variant_key)).map((row) => row.id)
+  if (stale.length > 0) {
+    const { error } = await client.from('model_variant_labels').delete().in('id', stale)
+    if (error) throw toRepositoryError(ENTITY, 'delete', assetId, error)
+  }
+
+  const missing = keys.filter((key) => !known.has(key))
+  if (missing.length === 0) return
+  const { error } = await client.from('model_variant_labels').insert(
+    missing.map((key) => ({
+      media_asset_id: assetId,
+      variant_key: key,
+      label: key.replace(/[_-]+/g, ' ').trim() || key,
+      material_id: null,
+      position: keys.indexOf(key),
+      owner_verification: 'NOT_REQUIRED' as const,
+      fact_classification: 'EDITORIAL_COPY' as const,
+      updated_by: updatedBy,
+    })),
+  )
+  if (error) throw toRepositoryError(ENTITY, 'insert', assetId, error)
+}
+
+/**
  * `set_model_association()` — both sides in one transaction. `null, null` clears. RLS inside the
  * function decides what this session may touch; a refusal surfaces as a repository error.
  */
