@@ -56,9 +56,14 @@ const checked = { I1: false, I2: false }
 // individually means a THIRD such reference — the one nobody argued about — fails the build, and
 // so does the same column re-pointed at `products` under a different constraint name.
 const ALLOWED_CROSSINGS = new Set([
-  // Phase 26 (A26). A researcher maps "Dining Tables" at some source to Rivya's `furniture`
-  // category. Taxonomy, typed by a person, `on delete set null`.
+  // Phase 26 (A26). A researcher maps a label at some source to one of Rivya's seven categories.
+  // Taxonomy, typed by a person, `on delete set null`.
   'research_source_category_map_category_fk',
+  // Phase 28 (A26). The SECOND AND FINAL one. A research row's matched category, reached through
+  // the mapping above or through a keyword rule a person can see and correct — never from anything
+  // a page said on its own. It points at taxonomy, never at `products`, and `on delete set null`
+  // means removing a category unmatches rather than deletes. THERE IS NEVER A THIRD.
+  'research_products_matched_category_fk',
 ])
 
 const CROSSING_SQL = `

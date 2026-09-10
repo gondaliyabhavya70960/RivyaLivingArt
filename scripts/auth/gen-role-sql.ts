@@ -40,6 +40,7 @@ import {
   PHASE_25_POLICIES,
   PHASE_26_POLICIES,
   PHASE_27_POLICIES,
+  PHASE_28_POLICIES,
   PHASE_19_POLICIES,
   TABLE_POLICY_MAP,
   type ManagedTable,
@@ -419,6 +420,33 @@ const GENERATED: Record<string, { title: string; preamble: string }> = {
 -- either table, and \`scripts/research/check-research-isolation.mjs\` fails the build the moment one
 -- does.`,
   },
+  [PHASE_28_POLICIES]: {
+    title: `-- ${PHASE_28_POLICIES} — Phase 28`,
+    preamble: `-- Policies for the three tables migration 0260 creates. GENERATED from
+-- lib/auth/table-permissions.ts and rewritten whole, so it may hold nothing a human wrote. Its own
+-- file for the reason every generated policy file has one: 0260 carries the DDL, and a shipped
+-- generated file is never re-opened.
+--
+-- THREE TABLES, THREE DIFFERENT WRITE POSTURES, AND THE DIFFERENCE IS THE PHASE DOCUMENT'S RULE
+-- MADE VISIBLE: the dividing line is the COLUMN, not the screen.
+--
+--   \`research_material_lexicon\`   research.write   — configuration, like a URL pattern
+--   \`research_validation_issues\`  research.write   — UPDATE ONLY. The dismissal is the person's
+--                                                    part; an ERROR raised by hand is a way to hold
+--                                                    rows back with nothing saying why
+--   \`research_match_candidates\`   research.confirm — UPDATE ONLY. Deciding one writes
+--                                                    \`duplicate_of_id\` and \`disposition\`, and a
+--                                                    researcher who may not set those directly must
+--                                                    not reach them through a candidate
+--
+-- NEITHER OF THE TWO UPDATE-ONLY TABLES HAS A DELETE POLICY. An issue that turned out to be wrong
+-- is a fact about the RULE that raised it, and deleting the row deletes the evidence that the rule
+-- needs changing; a rejected candidate is the record that somebody looked at two rows and said they
+-- were different, which is exactly what stops the matcher proposing them again as though nobody had.
+--
+-- ISOLATION INVARIANT I2 IS UNCHANGED: not one \`anon\` leg appears below, on any of the three, and
+-- \`scripts/research/check-research-isolation.mjs\` fails the build the moment one does.`,
+  },
   [PHASE_24_POLICIES]: {
     title: `-- ${PHASE_24_POLICIES} — Phase 24`,
     preamble: `-- Policies for the four bulk tables, which migration 0220 creates. GENERATED from
@@ -541,9 +569,16 @@ function policiesFor(table: ManagedTable): string {
 
   // --- policies 3: writes ------------------------------------------------------------------------
   if (policy.writePermission) {
-    out.push(`create policy ${table}_insert_staff on ${table} for insert`)
-    out.push(`  to authenticated with check (${scoped(hasRole(writeRoles))});`)
-    out.push('')
+    if (policy.writeIsUpdateOnly) {
+      for (const line of wrap(`NO INSERT POLICY. ${policy.writeIsUpdateOnly.why}`, 96)) {
+        out.push(`-- ${line}`)
+      }
+      out.push('')
+    } else {
+      out.push(`create policy ${table}_insert_staff on ${table} for insert`)
+      out.push(`  to authenticated with check (${scoped(hasRole(writeRoles))});`)
+      out.push('')
+    }
     if (policy.writeIsInsertOnly) {
       for (const line of wrap(`NO UPDATE POLICY. ${policy.writeIsInsertOnly.why}`, 96)) {
         out.push(`-- ${line}`)

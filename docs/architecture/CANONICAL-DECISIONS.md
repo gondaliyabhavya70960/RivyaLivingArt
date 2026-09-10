@@ -185,6 +185,72 @@ Brand and editorial copy may be written; anything asserting business capability 
 
 ## Amendments
 
+**2026-09-11 · A28 — the second and final research → public foreign key lands, a CHECK constraint
+cannot hold the subquery the phase document's SQL uses (twice), `AMBIGUOUS` stores nothing, an
+unlabelled triple is read positionally, and the *Scraped Products* provider is a table row rather
+than a file (PHASE-23-30 §Phase 28, SCRAPER.md §19, DATA_MODEL §12).**
+
+Six readings the repository forced. Two are defects this phase found in its own code and one is a
+defect in the phase document's illustrative SQL; all three are recorded as decisions rather than as
+fixes nobody would notice.
+
+- **`research_products.matched_category_id` is the SECOND AND FINAL allowlisted crossing, and the
+  allowlist is now closed.** A26 admitted the first — `research_source_category_map.category_id`,
+  a label a researcher typed mapped to one of Rivya's categories. This is the same kind of pointer
+  reached the same way: through that staff-authored map, or through a keyword rule that matches a
+  category's own name exactly and records `match_method = 'KEYWORD'` with a confidence of 0.6 so the
+  screen can show it as the weaker claim it is. It points at TAXONOMY and never at `products`, it is
+  `on delete set null` so removing a category unmatches rather than deletes, and nothing writes it
+  from what a page said on its own. `scripts/research/check-research-isolation.mjs` now names
+  exactly two constraints and fails on a third; four test suites assert the same set against the
+  database. **There is never a third**, and a phase that wants one is a phase that must amend this
+  file first.
+- **A CHECK CONSTRAINT MAY NOT CONTAIN A SUBQUERY, and the phase document's SQL does — twice.**
+  `research_dimensions_sane` is written in PHASE-23-30 as `not exists (select 1 from
+  jsonb_each(dimensions_mm) kv where ...)`, which PostgreSQL refuses outright with `cannot use
+  subquery in check constraint`. Walking a jsonb object or a text array needs `jsonb_each` or
+  `unnest`, and both are subqueries. So `0260` declares two IMMUTABLE functions —
+  `is_sane_research_dimensions(jsonb)` and `has_no_blank_pattern(text[])` — and the constraints call
+  them, exactly as `0130` did with `is_valid_dimensions`. The illustrative SQL in the phase document
+  is not applicable as written and this is the shape that ships.
+- **`array_length` ON AN EMPTY ARRAY IS NULL, AND A CHECK THAT EVALUATES TO NULL PASSES.**
+  `research_material_lexicon_has_patterns` was written `array_length(patterns, 1) >= 1` and admitted
+  exactly the row it was written to refuse: a lexicon term with no patterns at all, which matches
+  nothing while looking perfectly configured in the Studio editor. Found by `tests/unit/rls/
+  phase28.test.ts` asserting the refusal rather than assuming it. It reads `cardinality(patterns) >=
+  1` now. The neighbouring `has_no_blank_pattern` closes the related hazard: `matchMaterials` builds
+  a word-boundary expression per pattern, and an empty one matches at almost any boundary — a single
+  blank row would tag every scraped product in the system with that material.
+- **`AMBIGUOUS` STORES NOTHING, which is a stronger rule than the phase document states.**
+  PHASE-23-30 asks that no unit be inferred from magnitude and that an unlabelled, unconfigured
+  positional order be `AMBIGUOUS`. What ships is the invariant behind it: `dimensions_mm` is null
+  unless `dimension_parse_state = 'PARSED'`. Every downstream reader — Phase 30's scale bands, Phase
+  31's comparisons, Phase 33's similarity — reads that column and none of them can tell a guessed
+  millimetre from a read one, so the guessed one is never written. The source string survives in the
+  version's `raw` and in `normalized.sourceTexts.dimensions`, where the explorer shows it beside the
+  word "ambiguous" and a person can correct it.
+- **AN UNLABELLED TRIPLE IS READ AS LENGTH × WIDTH × HEIGHT, and that is a NAMING claim rather than
+  a measurement one.** The phase document's own result table requires it (`120 x 60 x 45 cm` →
+  `{length_mm: 1200, width_mm: 600, height_mm: 450}`) while its prose says positional order is never
+  assumed. Both are honoured by observing what the conventions actually disagree about: in L×W×H and
+  in W×D×H alike, the last number is the vertical extent and the first two are the two horizontal
+  ones — what differs is which horizontal extent is called "length". Phase 30 bands by the largest
+  extent and Phase 31 compares like with like, and neither depends on that naming. **Labels always
+  win**, and a source that states its own order overrides the convention if a later phase adds one.
+- **The *Scraped Products* provider is a third row in `providers/research.ts`, not the
+  `providers/research-products.ts` the deliverable table names.** That file's own header made the
+  argument two phases ago and `providers/index.ts` made it at length before that: near-identical
+  provider files differing in three literals each are several places to get a permission wrong, and
+  the one that matters is the one nobody re-reads. A fourth file holding six lines would contradict
+  the file it sits beside. The same header also said Phase 29 would register this provider "once
+  there is an explorer for a result to open" — the explorer landed a phase earlier than the plan
+  expected, which is the only reason this is early rather than late.
+- **`0261` is one past the phase document's `0260`**, for the reason A23 gives for `0214`, A24 for
+  `0221`, A25 for `0233`, A26 for `0241` and A27 for `0251`. Two of its three tables are UPDATE-ONLY
+  for every role including owner — rows are written by the pipeline under the service role and a
+  person may only triage what it found — which required `scripts/auth/gen-role-sql.ts` to learn a
+  `writeIsUpdateOnly` flag that skips the insert policy and emits a note saying why.
+
 **2026-09-10 · A27 — D1 gains an HTML parser and one place to call it, Phase 27 takes migration
 `0251`, the content hash is over the DRAFT rather than the page, an adapter is two registrations
 rather than one, and the CPU budget measures what it cannot pre-empt (PHASE-23-30 §Phase 27,

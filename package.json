@@ -68,7 +68,8 @@
     "check": "npm run typecheck && npm run lint && npm run format:check && npm run media:check-ids && npm run media:assert-no-regen && npm run cms:check-transitions && npm run cms:check-copy && npm run demo:check-register && npm run site:check-client-boundary && npm run site:check-islands && npm run site:check-whatsapp && npm run perf:check-bundle && npm run design:check-tokens && npm run design:check-registry && npm run design:check-utilities && npm run search:check-scope && npm run bulk:check-registry && npm run research:check-isolation && npm run db:check-data-layer",
     "research:check-isolation": "node scripts/research/check-research-isolation.mjs",
     "research:prune-snapshots": "tsx scripts/research/prune-snapshots.ts",
-    "research:reextract": "tsx scripts/research/reextract.ts"
+    "research:reextract": "tsx scripts/research/reextract.ts",
+    "research:renormalize": "tsx scripts/research/renormalize.ts"
   },
   "dependencies": {
     "@gltf-transform/core": "4.5.0",

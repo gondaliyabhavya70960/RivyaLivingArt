@@ -210,3 +210,38 @@ export async function listVersionsForRun(
   if (error !== null) throw toRepositoryError(ENTITY, 'list', runId, error)
   return (data ?? []) as unknown as ResearchProductVersionRow[]
 }
+
+/**
+ * One version, by id, with the normalised snapshot beside the evidence.
+ *
+ * THE EXPLORER'S DRAWER READ. `getCurrentVersion` follows the pointer from a product and is a
+ * different question with a different failure mode — this is "show me exactly this version",
+ * which is what a screen already holding the id is asking.
+ */
+export async function getProductVersionById(client: Client, id: string) {
+  const { data, error } = await client
+    .from('research_product_versions')
+    .select('id, raw, normalized, normalizer_version, adapter_key, adapter_version, observed_at')
+    .eq('id', id)
+    .maybeSingle()
+  if (error !== null) throw toRepositoryError(ENTITY, 'get', id, error)
+  return data ?? null
+}
+
+/**
+ * Many versions' evidence at once, for a re-normalisation pass.
+ *
+ * ONE ROUND TRIP FOR A WHOLE SOURCE rather than one per row. Five hundred sequential reads is five
+ * hundred round trips to answer a question that is one `in` list, and the pass is over rows nobody
+ * is watching — so the cost lands as a job that takes forty minutes instead of forty seconds and
+ * nobody ever profiles it.
+ */
+export async function listVersionRawByIds(admin: Client, ids: readonly string[]) {
+  if (ids.length === 0) return []
+  const { data, error } = await admin
+    .from('research_product_versions')
+    .select('id, raw')
+    .in('id', [...ids])
+  if (error !== null) throw toRepositoryError(ENTITY, 'list', 'batch', error)
+  return data ?? []
+}

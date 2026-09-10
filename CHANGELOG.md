@@ -6,6 +6,64 @@ Every phase adds an entry; see `docs/architecture/CANONICAL-DECISIONS.md` D9 for
 
 ## [Unreleased]
 
+### Phase 28 — Normalization + Validation
+
+The strings Phase 27 extracted become comparable data, and the data is judged before it is trusted.
+Three of FEAT §23's seven stages ship: `NORMALIZED`, `VALIDATED` and `MATCHED`. The governing rule is
+that **a value Rivya could not parse is recorded as unparsed, never as a guess** — because every
+downstream comparison, scale band, opportunity score and shortlist decision inherits that first
+judgement, and none of them can tell a guessed figure from a read one.
+
+**Migrations `0260`–`0261`.** Twenty-three normalisation columns on `research_products`;
+`research_validation_issues`, `research_match_candidates` and `research_material_lexicon` (forty
+seeded terms, editable in Studio); `research_products_matched_category_fk` — the **second and final**
+allowlisted research → public foreign key, closing the allowlist for good; a rewritten
+`refresh_research_search_document` so a scraped row is findable in Studio search by its normalised
+title; and two backstop constraints mirroring the first-party rules.
+
+**No currency conversion exists anywhere under `lib/scraper/`**, and a test reads every file in that
+tree to keep it that way. `$` alone records `AMBIGUOUS` rather than guessing a country. Amounts are
+integer minor units read with the source's own separators, because `1.234` is two different numbers
+in two conventions and nothing in the string distinguishes them.
+
+**`AMBIGUOUS` stores nothing.** `dimensions_mm` is null unless the parse state is `PARSED`, so no
+chart ever reads a millimetre figure arrived at by supposing. The source string survives in the
+version's `raw`, where the explorer shows it beside the word "ambiguous" and a person can correct it.
+
+**Every ERROR rule runs before the write, and the database constraints are backstops.** A row that
+fails a check is written, kept at `VALIDATED` with the finding attached, listed in the explorer's
+Issues view and counted on the data-quality tab — never dropped, never a raised database error, never
+quietly promoted on a later run.
+
+**Matching proposes; it never decides.** Auto-merge needs the source's own identifier, or an identical
+title and price, or a title above 0.95 with measurements agreeing within 5 %. Everything below becomes
+a `research_match_candidates` row a merchandiser decides, and every duplicate flag is reversible with
+an audited reversal. Cross-source deduplication stays out of scope on purpose: two competitors listing
+similar objects is the signal Phase 31 reads.
+
+**`research.write` corrects a value; `research.confirm` decides an identity** — drawn by the Server
+Actions and, underneath them, by `0261`, which makes the candidates table `research.confirm` to write
+so a researcher cannot reach the decision sideways. Two of the three new tables have **no insert
+policy for any role, owner included**.
+
+**Three defects were found and fixed rather than worked around.** `array_length` on an empty array is
+NULL and a CHECK evaluating to NULL passes, so the lexicon's "must have patterns" constraint admitted
+exactly the row it refused — caught by an RLS test asserting the refusal rather than assuming it. The
+phase document's illustrative SQL puts a subquery inside a CHECK, which PostgreSQL refuses outright;
+two IMMUTABLE functions carry what the constraints cannot. And `image_url_unreachable_shape` was
+written to catch shapes the draft schema already refuses, which would have made it unreachable — this
+phase's own named risk, found by a test.
+
+**Studio.** `/studio/research/explorer` shows raw beside normalised beside provenance, with filters in
+the URL and permission-gated correction controls; `/studio/operations/data-quality` gains a Research
+tab with issue counts, per-source parse coverage and the material lexicon editor;
+`npm run research:renormalize` rolls a lexicon or parser fix over stored evidence with **zero network
+traffic**, respecting every hand-corrected field and reporting how many it left alone.
+
+**Verification.** 33 gates green; 2,727 unit and RLS tests pass, including six new normalisation
+suites and 38 new RLS cases; production build succeeds against a local PostgREST with both new routes
+present. Amendment **A28** records the six readings the repository forced.
+
 ### Phase 27 — Scraper Extraction
 
 The pipeline starts producing structured rows. FEAT §27's adapter architecture is built as an

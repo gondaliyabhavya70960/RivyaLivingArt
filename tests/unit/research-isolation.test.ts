@@ -62,7 +62,12 @@ describe('the guard still guards', () => {
     const block = /const ALLOWED_CROSSINGS = new Set\(\[([\s\S]*?)\]\)/.exec(code)
     expect(block).not.toBeNull()
     const entries = [...block![1]!.matchAll(/'([^']+)'/g)].map((match) => match[1])
-    expect(entries).toEqual(['research_source_category_map_category_fk'])
+    // TWO, AND THE ORDER IS THE GUARD'S OWN SOURCE ORDER rather than an alphabetical one — this
+    // reads the file, so what it asserts is what a reviewer sees in the diff.
+    expect(entries).toEqual([
+      'research_source_category_map_category_fk',
+      'research_products_matched_category_fk',
+    ])
   })
 
   it('names the browser-automation and proxy packages it refuses', () => {
