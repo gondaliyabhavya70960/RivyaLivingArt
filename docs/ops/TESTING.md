@@ -22,10 +22,11 @@ writing your first test.
 
 **Implementation status (end of Phase 06).** `vitest.config.ts` and `playwright.config.ts` both
 exist. **656 unit tests across 60 files**, and three Playwright specs — `design-system.spec.ts`,
-`studio-access.spec.ts`, `media-upload.spec.ts`. CI does not run them: GitHub Actions has never
-executed a step on this repository (see `docs/SESSION-STATE.md`), so every figure here is from a
-local run. Phase 42 still completes the system; every phase between adds specs that fit these
-layers.
+`studio-access.spec.ts`, `media-upload.spec.ts`. Since the repository went public on 2026-09-10,
+CI runs the unit project, the RLS project against a real PostgreSQL, and the build
+(`docs/ops/ENVIRONMENT.md`, "GitHub Actions"); the Playwright specs still run locally only, so
+every browser figure here is from a local run. Phase 42 still completes the system; every phase
+between adds specs that fit these layers.
 
 **Two things a first run needs, neither of which is obvious from a failure message:**
 

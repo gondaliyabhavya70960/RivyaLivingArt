@@ -299,10 +299,13 @@ Hand-inserting those rows here would have written them without the `seed_content
 uses to tell its own writes from an owner's edit, which would make every future run skip them
 permanently. The schema is ready for them; nothing else is needed.
 
-**GitHub Actions has still never executed a step** on this repository — 57 runs, every one dead in
-2–3 seconds with a 404 on its logs, unchanged after a payment method was added. Vercel builds the
-same commits successfully, which isolates the fault to Actions at the account layer. Every figure
-in this document is from a local run.
+**GitHub Actions executes since the repository went public on 2026-09-10.** Every earlier run died
+unassigned in 2–3 seconds with a 404 on its logs — 57 of them when this was first written,
+unchanged after a payment method was added — because a private repository's minutes are metered
+and the allowance was spent. The first real runs found five defects the local `npm run check` never
+ran, all fixed (`CHANGELOG.md`, "CI runs again"); the `verify` job now migrates, seeds, builds
+against `scripts/db/local-rest.mjs` and runs the RLS suites on every push. Playwright is still
+local only, so every browser figure in this document is from a local run.
 
 ## Phase status
 
@@ -392,19 +395,14 @@ carry is anything PUBLISHED, so the deployed preview renders a wordless shell an
 route until
 `npm run seed:content` runs against it.
 
-**CI still cannot run — no run has ever executed a step.** Each job is created with its
-`ubuntu-latest` label intact and dies 2-3 seconds later, unassigned: no `runner_id`, no steps, no
-logs. Every run since has the identical signature, **including after a payment method was added to the
-account**, so the payment method alone did not resolve it. Vercel builds and deploys the same
-commits from the same branch successfully, which isolates the fault to Actions rather than to the
-code. The
-full gate sequence passes locally from a clean `npm ci`; this is an account-level condition and
-only the owner can see the page that explains it.
-
-The consequence is not only that gates go unverified remotely. `.github/workflows/db-migrate.yml`
-exists to apply migrations to hosted Supabase **from a runner**, because a runner has the outbound
-network access this sandbox lacks. Until Actions provisions a runner, that route is unavailable
-too, and the hosted project cannot be migrated from here by any means.
+**CI runs; the hosted migration workflow has still never been dispatched.** GitHub Actions
+executed its first step on 2026-09-10, when the repository went public, and the `verify` job is a
+gate from that point (`docs/ops/ENVIRONMENT.md`, "GitHub Actions").
+`.github/workflows/db-migrate.yml`, which applies migrations to hosted Supabase from a runner,
+remains built and undispatched: it needs the `SUPABASE_DB_URL` repository secret, and the database
+password that secret would carry is one of the six credentials awaiting rotation. Hosted migrations
+have gone through the Supabase MCP server instead, and their ledger rows carry the same per-file
+SHA-256 the runner computes.
 
 ## Verified facts
 
@@ -460,8 +458,8 @@ too, and the hosted project cannot be migrated from here by any means.
    2026-09-08.** All fifteen migrations are applied to `ccvarsmzickdkryoakdg` (PostgreSQL 17.6),
    verified field-by-field against the local schema, with RLS confirmed per role on the real
    project. Reached through the Supabase MCP server; ordinary egress to `*.supabase.co` is still
-   blocked, and GitHub Actions still cannot provision a runner, so `db-migrate.yml` remains built
-   and undispatched.
+   blocked from this sandbox, and `db-migrate.yml` remains built and undispatched — it needs the
+   `SUPABASE_DB_URL` secret, which waits on the rotation in item 2.
 2. **Six pasted secrets are still unrotated.** The Supabase service-role key, secret key, JWT
    secret and database password, plus the Cloudinary API key and API secret, were exposed in chat
    transcripts on 2026-09-08. Treat all six as compromised until rotated; `docs/SESSION-STATE.md`

@@ -39,6 +39,15 @@ here rather than waited out:
   returns null where the document has no value and three's own default shows the mistake — the
   registry gate knows `components/three/`, the class and the copy are corrected, and all three
   gates are in `npm run check` so this cannot recur unseen.
+- **The build had never run in CI, and could not have.** `next build` pre-renders the public
+  site, and pre-rendering reads content through PostgREST; the job had no
+  `NEXT_PUBLIC_SUPABASE_URL`, so the first build ever to execute here (run 152) died collecting
+  page data for `/collections/[slug]`. The step now runs after the seed, against the PostgREST
+  that `scripts/db/local-rest.mjs` starts over the job's own database — the tool Phase 10 used
+  to verify the site without a Supabase project — with the binary pinned by version and
+  checksum and a throwaway key minted per run. No hosted project and no repository secret are
+  involved, and `security:check-bundle` now inspects a real `.next/static` rather than a
+  missing one.
 
 ### Phase 22 — Homepage / Store Merchandising
 

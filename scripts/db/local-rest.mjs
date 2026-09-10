@@ -9,8 +9,11 @@
  * can be observed, and every e2e test is unrunnable. This closes that gap with the same component
  * Supabase itself runs, pointed at the same local cluster.
  *
- * IT IS A DEVELOPMENT TOOL AND NOTHING ELSE. It binds to 127.0.0.1, it mints its own throwaway JWT
- * secret on every run, and it is never imported by application code. Nothing here reads or writes
+ * IT IS A DEVELOPMENT AND CI TOOL, NEVER A DEPLOYMENT. It binds to 127.0.0.1, it mints its own
+ * throwaway JWT secret on every run, and it is never imported by application code. The `verify`
+ * job in .github/workflows/ci.yml runs `next build` against it, over the database the job has just
+ * migrated and seeded, because pre-rendering reads content and CI holds no Supabase project to
+ * read it from — nor should it. Nothing here reads or writes
  * `.env.local`: the two variables are printed for the caller to put in front of a command, because
  * a script that edits the developer's environment file is a script that eventually overwrites a
  * real credential with a fake one.

@@ -77,9 +77,6 @@ jobs:
       - name: Unit tests
         run: npm run test:unit
 
-      - name: Build
-        run: npm run build
-
       # --- media gates (CANONICAL-DECISIONS D6, amendment A1) ---
       - name: Manifest is deterministic
         run: npm run manifest:verify
@@ -192,6 +189,74 @@ jobs:
       - name: Content inventory is up to date
         run: npm run content:check-inventory
 
+      # --- the build, against the database this job has just migrated and seeded ---
+      #
+      # `next build` pre-renders the public site, and pre-rendering reads content: every static
+      # route's page data, `generateStaticParams` on the dynamic routes, the sitemap. The
+      # application speaks HTTP to PostgREST, never SQL to PostgreSQL, so the service container
+      # alone is not enough, and there is no NEXT_PUBLIC_SUPABASE_URL here to point it at. The
+      # first build ever to execute on this repository (run 152) died collecting page data for
+      # /collections/[slug] on exactly that.
+      #
+      # So the build runs against the PostgREST Supabase itself runs, over the database above,
+      # through scripts/db/local-rest.mjs — the tool Phase 10 built for running the site without
+      # a Supabase project. It mints a throwaway JWT secret per run; no hosted project is
+      # involved and no repository secret is needed. What the build sees is what the seed wrote,
+      # which is what a fresh deployment sees. It sits here, after the seed and the inventory
+      # check, because that is the state a build should read: the owner-edit step below changes
+      # a row on purpose, and the migration-runner step works in a database of its own.
+      #
+      # The binary is pinned by version and checksum. The checksum is of the release asset as
+      # downloaded on 2026-09-10 and run locally to validate this step; a changed asset fails
+      # here rather than running.
+      - name: Install PostgREST (pinned)
+        env:
+          POSTGREST_VERSION: v13.0.4
+          POSTGREST_SHA256: a0052c8d4726f52349e0298f98da51140ef4941855548590ee88331afa617811
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/postgrest"
+          curl -sSfL -o "$RUNNER_TEMP/postgrest/postgrest.tar.xz" \
+            "https://github.com/PostgREST/postgrest/releases/download/${POSTGREST_VERSION}/postgrest-${POSTGREST_VERSION}-linux-static-x86-64.tar.xz"
+          echo "${POSTGREST_SHA256}  $RUNNER_TEMP/postgrest/postgrest.tar.xz" | sha256sum --check --strict
+          tar -xJf "$RUNNER_TEMP/postgrest/postgrest.tar.xz" -C "$RUNNER_TEMP/postgrest"
+          "$RUNNER_TEMP/postgrest/postgrest" --version
+
+      - name: Build against the seeded database
+        env:
+          POSTGREST_BIN: ${{ runner.temp }}/postgrest/postgrest
+          LOCAL_REST_PORT: '3001'
+          NEXT_PUBLIC_SITE_URL: http://127.0.0.1:3000
+          NEXT_TELEMETRY_DISABLED: '1'
+        run: |
+          set -euo pipefail
+          node scripts/db/local-rest.mjs > /tmp/local-rest.log 2>&1 &
+          rest_pid=$!
+          trap 'kill "$rest_pid" 2>/dev/null || true' EXIT
+
+          # PostgREST answers its root with the OpenAPI document once the schema cache is loaded
+          # and with 503 before that; the gateway in front answers 502 until PostgREST listens at
+          # all. Either would fail the build's first query, so wait for the 200.
+          for _ in $(seq 1 60); do
+            curl -sf -o /dev/null http://127.0.0.1:3001/rest/v1/ && break
+            sleep 1
+          done
+          curl -sf -o /dev/null http://127.0.0.1:3001/rest/v1/
+
+          # The shim prints the two variables for the caller to put in front of a command. The key
+          # is a throwaway signed with a secret minted for this run only, so reading it from the
+          # log is the intended use, not a leak.
+          anon_key=$(sed -n 's/^ *NEXT_PUBLIC_SUPABASE_ANON_KEY=\(.*\) \\$/\1/p' /tmp/local-rest.log)
+          test -n "$anon_key"
+
+          NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:3001 \
+          NEXT_PUBLIC_SUPABASE_ANON_KEY="$anon_key" \
+          npm run build
+
+      # Runs on the real output of the build above. .next/static is what ships to browsers.
+      - name: No service-role key in the client bundle
+        run: npm run security:check-bundle
+
       # Proves the rule the whole seed runner exists for: an owner's edit is never overwritten.
       - name: Seeding does not overwrite an owner edit
         run: |
@@ -268,7 +333,3 @@ jobs:
         run: npm run test
         env:
           RLS_TESTS_REQUIRED: '1'
-
-      # Runs after the build, on the real output. .next/static is what ships to browsers.
-      - name: No service-role key in the client bundle
-        run: npm run security:check-bundle

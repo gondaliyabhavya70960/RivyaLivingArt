@@ -500,55 +500,42 @@ the shell can reach neither Higgsfield nor Cloudinary: Cloudinary fetched the so
 server to server, with this environment never touching the bytes.
 
 Migrations, seeds and integration checks therefore run from a machine with ordinary egress, or
-from CI once GitHub Actions can provision a runner.
+from CI, which has executed since the repository went public on 2026-09-10 (next section).
 
 ---
 
-## GitHub Actions cannot provision a runner
+## GitHub Actions — resolved 2026-09-10
 
-Measured 2026-09-08. Recorded here so the next session does not re-derive it.
+**From 2026-09-08 until the repository went public on 2026-09-10, no run of the `CI` workflow was
+assigned a runner.** Every job died about two seconds after creation with `runner_id: 0`, no steps
+and `HTTP 404` for its logs — the signature GitHub emits when Actions is refused at the account
+layer. The repository was private, so its minutes were metered against the account's allowance,
+and that allowance was spent; adding a payment method did not change it. Making the repository
+public did: public repositories get standard runners unmetered, and the next run executed. The
+diagnosis that ruled out the code, the workflow file, the Actions permissions and a flake is kept
+in this section's git history and on PR #3, and is not repeated here.
 
-Every run of the `CI` workflow — **40 of 40**, on `main` and on feature branches alike — fails
-about two seconds after it is created, having never been assigned a runner:
+The first runs that did execute were red for real reasons — the unit step ran the RLS project
+before `db:reset`, the idempotency step asserted a pre-Phase-09 shape, the seed failed on a
+database without the Higgsfield media rows, three design gates were outside `npm run check`, and
+the build had nothing to pre-render from. All five are fixed (`CHANGELOG.md`, "CI runs again").
 
-| Observation | Value |
-|---|---|
-| `runner_id` / `runner_name` | `0` / empty string |
-| Steps executed | none |
-| Job logs | `HTTP 404` — no log stream is ever opened |
-| Check-run `output` | `title`, `summary` and `text` all empty |
-| Duration | 2 s from `created_at` to `completed_at` |
+### What the CI build reads
 
-### What this rules out
+`next build` pre-renders the public site, and pre-rendering reads content — page data for every
+static route, `generateStaticParams` on the dynamic ones, the sitemap — through PostgREST, never
+through `DATABASE_URL`. CI holds no Supabase project, and it should not: a build gate that read
+hosted content would change its answer with the owner's edits. So the `verify` job builds against
+`scripts/db/local-rest.mjs`, the PostgREST shim Phase 10 wrote for running the site without a
+Supabase project, pointed at the PostgreSQL service container the job has just migrated and
+seeded. The binary is pinned by version and SHA-256 in the workflow; the shim mints a throwaway JWT
+secret per run and prints the anon key for the build step to read. The only variables the build
+receives are `NEXT_PUBLIC_SUPABASE_URL` (the shim), `NEXT_PUBLIC_SUPABASE_ANON_KEY` (the minted
+key) and `NEXT_PUBLIC_SITE_URL`; none of the secrets in §5 is set in CI, and none is needed. What
+the build sees is what the seed wrote, which is what a fresh deployment sees.
 
-- **Not the code.** No step runs, so nothing in the repository executes. All nine gates the
-  workflow would run pass locally, and Vercel builds the same commits successfully.
-- **Not the workflow file.** An unparseable workflow produces a run with *zero* jobs. Here the
-  `verify` job is created with its `ubuntu-latest` label intact and only then dies unassigned,
-  so the YAML is valid and the job was scheduled.
-- **Not Actions permissions.** Settings → Actions → General is set to "Allow all actions and
-  reusable workflows"; runs created after that change fail identically.
-- **Not a flake.** A re-run of the same job reproduced the signature to the second.
-
-### What remains
-
-The repository is **private**, so its Actions minutes are metered against the account's included
-allowance; public repositories get standard runners unmetered. *Run created → job never assigned →
-immediate failure → no logs* is the signature GitHub emits when Actions is refused at the billing
-or account layer — allowance exhausted, spending limit at $0 and reached, payment method failed,
-or the account otherwise restricted.
-
-**Resolution is owner-side, not in this repository.** Check `github.com/settings/billing` (Actions
-section) and any account-level banner; making the repository public would bypass the metering
-entirely. If all three look clean, it is a GitHub Support matter.
-
-### Consequence for phase work
-
-Until a runner can be provisioned, **CI is not a gate we can rely on**. The nine `verify` steps
-must be run locally before every push — `npm run typecheck lint format:check test build`, then
-`manifest:verify`, `media:check-ids`, `design:check-tokens`, `design:check-registry` — and the
-D9 completion contract is satisfied by those local runs, evidenced in the phase record, not by a
-green check on GitHub.
+Playwright still does not run in CI (`docs/ops/TESTING.md`); every browser figure is from a local
+run.
 
 ---
 
