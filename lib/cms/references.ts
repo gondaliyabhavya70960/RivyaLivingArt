@@ -17,7 +17,9 @@ import {
 } from '@/lib/supabase/repositories/collections'
 import { getProjectIdForPage, listProjectMedia } from '@/lib/supabase/repositories/portfolio'
 import { listMediaAssetsByIds } from '@/lib/supabase/repositories/media'
-import type { MediaAsset, PageSection } from '@/lib/supabase/schemas'
+import { listMaterials } from '@/lib/supabase/repositories/materials'
+import { type PublicModel, loadPublicModel } from '@/lib/supabase/repositories/models'
+import type { Material, MediaAsset, PageSection } from '@/lib/supabase/schemas'
 
 import { collectionProductsBlock } from '@/content/blocks/collection-products'
 import { commissionConfiguratorBlock } from '@/content/blocks/commission-configurator'
@@ -25,6 +27,7 @@ import { projectGalleryBlock } from '@/content/blocks/project-gallery'
 import { journalStripBlock } from '@/content/blocks/journal-strip'
 import { portfolioStripBlock } from '@/content/blocks/portfolio-strip'
 import { selectedWorksBlock } from '@/content/blocks/selected-works'
+import { threeDResinBlock } from '@/content/blocks/three-d-resin'
 import { parseBlockPayload } from './registry'
 
 /**
@@ -89,6 +92,17 @@ export type SectionReference = {
    * they want has been told something about their own brief that nobody checked.
    */
   readonly prefill?: Readonly<Record<string, string>>
+  /**
+   * Phase 21: the model a `three-d-resin` band's slot names, with the published materials its
+   * labels may cite. `null` when the slot is empty, the flag is off, or the model is not public —
+   * the renderer then draws its scene imagery as before.
+   */
+  readonly model?: ModelReference | null
+}
+
+export type ModelReference = {
+  readonly model: PublicModel
+  readonly materials: readonly Material[]
 }
 
 /** One picture in a project gallery: the asset, plus what the editor said about it HERE. */
@@ -174,11 +188,16 @@ export async function loadPageReferences(
    */
   productSlug: string | null = null,
 ): Promise<PageReferences> {
-  const referencing = sections.filter((section) => isReferenceBlock(section.block_type))
+  const referencing = sections.filter(
+    (section) => isReferenceBlock(section.block_type) || section.block_type === MODEL_SLOT_BLOCK,
+  )
   if (referencing.length === 0) return new Map()
 
   const resolved = await Promise.all(
     referencing.map(async (section) => {
+      if (section.block_type === MODEL_SLOT_BLOCK) {
+        return [section.id, await loadModelSlot(client, section)] as const
+      }
       const config: {
         select: (typeof SELECTORS)[ReferenceBlockType]['select']
         limit: (section: PageSection) => number
@@ -345,3 +364,30 @@ async function loadProjectGallery(
 /** A gallery has no cards; `reason` still travels, so `data-empty-reason` reads the same as elsewhere. */
 const EMPTY_GALLERY: SelectorResult = { cards: [], reason: 'EMPTY' }
 const OK_GALLERY: SelectorResult = { cards: [], reason: 'OK' }
+
+// --- Phase 21: the three-d-resin model slot ---------------------------------------------------------
+
+const MODEL_SLOT_BLOCK = 'three-d-resin'
+
+/**
+ * The model a `three-d-resin` band mounts, or nothing.
+ *
+ * THREE GATES, ALL HERE. The flag (`three_d_viewer`), the slot (`payload.model_media_id`), and the
+ * public read (`loadPublicModel`, which returns null for a model that is not PUBLISHED, has no
+ * PUBLISHED poster, or does not exist). Any of the three failing yields `model: null`, and the
+ * renderer draws the band's own imagery as it always has — the same "no empty slot" rule every
+ * mount point follows.
+ */
+async function loadModelSlot(
+  client: SelectorClient,
+  section: PageSection,
+): Promise<SectionReference> {
+  const empty: SectionReference = { result: EMPTY_GALLERY, assets: new Map(), model: null }
+  const modelId = parseBlockPayload(threeDResinBlock, section.payload).model_media_id
+  if (modelId === null) return empty
+  if (!(await isEnabled('three_d_viewer'))) return empty
+  const model = await loadPublicModel(client, modelId)
+  if (model === null) return empty
+  const materials = await listMaterials(client)
+  return { ...empty, result: OK_GALLERY, model: { model, materials } }
+}

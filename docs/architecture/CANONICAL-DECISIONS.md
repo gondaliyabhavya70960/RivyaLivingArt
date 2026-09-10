@@ -218,6 +218,11 @@ actually does.
   leading letter (Phase 19), so the key was registered as `three_d_viewer` in Phase 19 and every
   `3d_viewer` reference reads as that.
 
+- **Posters are chosen, not captured.** The phase document's "poster capture action" is not built.
+  A frame captured from the viewer is a rendering of a model presented as a photograph — the claim
+  BR-E3 exists to prevent — so the poster is an `IMAGE` asset chosen from the library, enforced by
+  `guard_model_still_references()`, and the mount renders it with the same srcset a hero gets.
+
 Also recorded here rather than in the phase document, because each is a rule the database now
 holds: the three model ceilings are CHECK constraints as well as inspector rules;
 `associated_project_id` gains the foreign key Phase 06 said it would once its table existed; the

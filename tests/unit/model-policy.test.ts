@@ -314,10 +314,32 @@ describe('what the files must not contain', () => {
     expect(source).not.toMatch(/from ['"]@react-three/)
   })
 
-  it('renders dimensions from products.dimensions and never from geometry', () => {
+  it('renders dimensions the server parsed from products.dimensions and never from geometry', () => {
     const source = read('components/three/DimensionOverlay.tsx')
-    expect(source).toContain("from '@/lib/catalog/dimensions'")
-    expect(source).not.toMatch(/Box3|boundingBox|geometry|\.scene\b/)
+    expect(source).toMatch(/import type \{ DimensionFact \} from '\.\/types'/)
+    expect(source).not.toMatch(/Box3|boundingBox|geometry|\.scene\b|useLoader|useThree/)
+    const mount = read('components/patterns/ModelViewerMount/index.tsx')
+    expect(mount).toContain("from '@/lib/catalog/dimensions'")
+  })
+
+  it('keeps zod out of the viewer chunk and the island', () => {
+    // The viewer and the island read `lib/media/viewer-settings`, which has no schema library;
+    // `lib/media/model.ts` is the Zod boundary and is the server's and the Studio's to import.
+    expect(read('lib/media/viewer-settings.ts')).not.toMatch(/from ['"]zod['"]/)
+    for (const path of [
+      'components/three/ModelViewer.tsx',
+      'components/three/ViewerCanvas.tsx',
+      'components/three/loader.ts',
+      'components/three/LoadingProgress.tsx',
+      'components/three/DimensionOverlay.tsx',
+      'components/three/presets.ts',
+      'components/patterns/ModelViewerMount/Island.tsx',
+    ]) {
+      const source = read(path)
+      expect(source, path).not.toMatch(/from ['"]zod['"]/)
+      expect(source, path).not.toMatch(/^import (?!type).*from '@\/lib\/media\/model'/m)
+      expect(source, path).not.toMatch(/^import (?!type).*from '@\/lib\/catalog\/dimensions'/m)
+    }
   })
 })
 

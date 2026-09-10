@@ -470,6 +470,32 @@ never derived by CSS from a 21:9 desktop asset. Permitted ratios are exactly the
 
 ---
 
+### BR-E7 — A 3D model is supplied, never generated, and shows nothing it did not come with
+
+**Rule.** A `MODEL_3D` asset arrives only by upload from the owner's side; no phase generates,
+sources or approximates one, because a model has a form and dimensions and those are product
+specifications (BR-D1). The viewer shows what the file carries and what the owner entered — and
+nothing derived: dimension indicators render `products.dimensions` only, never a bounding box; a
+finish label is words matched to the file's `KHR_materials_variants` key, and the material it may
+name reaches a visitor only once the owner has marked the label `VERIFIED`; a concept model
+carries the concept notice in the viewer chrome. A model may not be shown on any page without a
+poster, and the poster is a photograph chosen from the library, never a frame captured from the
+viewer (BR-E3).
+
+**Enforcement.** Schema: `media_assets_model_poster_before_association`,
+`model_variant_labels_material_needs_verification`, `guard_model_still_references()`,
+`enforce_verification_authority()` on `model_variant_labels` (migration `0194`). Code:
+`publicVariantLabels()` strips the material below `VERIFIED`; `DimensionOverlay` can only receive
+values the server parsed from `products.dimensions` and imports no engine — asserted on the source
+by `tests/unit/model-policy.test.ts`. Content: the manifest holds no model and `assert-no-regen`
+guards the manifest. Process: the inspector writes format, size, triangles and textures from the
+file; nothing lets a person type them.
+
+**Tested by.** `tests/unit/model-policy.test.ts`, `tests/unit/model-inspect.test.ts`,
+`tests/unit/rls/phase21.test.ts`, `tests/e2e/model-viewer.spec.ts`.
+
+---
+
 ## F. Research (scraped) data rules
 
 The research subsystem exists to inform decisions. Its output is evidence, never inventory.
@@ -917,6 +943,7 @@ rule, without deleting the rule, is a rejection.
 | BR-E4 | Asset IDs never collide | Build guard |
 | BR-E5 | Desktop and mobile are separate slots | Schema |
 | BR-E6 | No deletion while in use | Schema trigger + permission |
+| BR-E7 | A 3D model is supplied, never generated, and shows nothing it did not come with | Schema + source-level test |
 | BR-F1 | Research never published | RLS + build guard |
 | BR-F2 | Research never auto-imported | Schema (FK allowlist) + permission |
 | BR-F3 | Research never publicly searchable | Schema + RLS |

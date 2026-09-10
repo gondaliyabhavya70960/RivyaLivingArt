@@ -3,7 +3,7 @@
 import * as React from 'react'
 
 import { Select } from '@/components/primitives/Select'
-import { LIGHTING_PRESET_KEYS, type LightingPresetKey } from '@/lib/media/model'
+import { LIGHTING_PRESET_KEYS, type LightingPresetKey } from '@/lib/media/viewer-settings'
 
 /** A native select: the keyboard model comes free and matches the FEAT §12 table. */
 export function LightingPresetSelect({

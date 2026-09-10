@@ -21,6 +21,10 @@ const config = [
       'next-env.d.ts',
       'playwright-report/**',
       'test-results/**',
+      // Vendored decoders (Phase 21, RC-905/906): third-party Emscripten output, byte-for-byte from
+      // three@0.186.0. Not ours to lint, and never edited by hand.
+      'public/draco/**',
+      'public/basis/**',
     ],
   },
   ...next,

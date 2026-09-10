@@ -163,6 +163,7 @@ the rules in executable form.
 | BR-D7 | `tests/unit/alt-text-coverage.test.ts` | Every bound asset has non-empty alt text or `is_decorative = true`; the constraint refuses an empty string |
 | BR-E2/E3/E6 | `manifest:verify`, `tests/integration/publish-gates.test.ts` | Manifest byte-identical; a concept asset cannot be attached to a product; a used asset cannot be deleted |
 | BR-E4 | `scripts/media/check-asset-ids.py` | No gap ID reuses a manifest family prefix |
+| **BR-E7** | `tests/unit/model-policy.test.ts`, `tests/unit/model-inspect.test.ts`, `tests/unit/model-mount.test.tsx`, `tests/unit/rls/phase21.test.ts` | The FEAT §14 ceilings as numbers and against the 0194 CHECKs; the Zod settings shape names exactly the keys and presets `is_valid_viewer_settings()` names; the inspector builds its own GLBs (a Draco-compressed one encoded and decoded end to end) and refuses the 20 MB uncompressed case with both reasons; `DimensionOverlay`, `PosterFallback`, `types.ts` and the mount import no engine, and the viewer and its island import no `zod`; a label is public exactly when its model is, a merchandiser cannot mark one VERIFIED, and `set_model_association()` fails as a whole for an editor |
 | **BR-F1/F2/F3/F4** | `tests/unit/rls/research.test.ts`, `check-research-isolation.mjs`, `check-data-layer.mjs`, `tests/integration/rls-policies.test.ts` | No `anon` policy on any `research_*` table; no FK to `products`; the research→public FK inventory **equals** the guard's constraint-name allowlist, so a missing entry fails as loudly as an extra one (`BUSINESS_RULES.md` BR-F2 names the entries; §M open question 7 records that `DATA_MODEL.md` disagrees on how many there are, which this assertion will surface as a red test rather than a review comment); no research term in a public search result; no image is downloaded |
 | BR-G1/G2 | `tests/unit/rls/*.test.ts`, `tests/e2e/studio-authz.spec.ts` | One client per role, allow/deny per table; forbidden POSTs return 403 **and** write `DENIED` audit rows |
 | BR-G4 | `tests/e2e/bulk.spec.ts` | Typed confirmation, exact preview count, undo within 24 h restores byte-identically |
@@ -205,8 +206,9 @@ it does not redefine them.
 
 | Check | Asserts |
 |---|---|
+| `tests/e2e/model-performance.spec.ts` | No script, module or WebAssembly request in the product page's first load names the engine, the viewer or a decoder; the LCP element is never a canvas, at every QA width |
 | Lighthouse CI matrix | Every route within its `perf/budgets.json` LCP, CLS, INP and JS budget; the reported LCP element is an `<img>` |
-| `scripts/perf/check-bundle.mjs` | Baseline + 5 %; **no `three`, `@react-three/*`, Draco or meshopt module in any first-load graph** |
+| `scripts/perf/check-bundle.mjs` | **Built in Phase 21**: a static walk of every route's CLIENT import graph — through `'use client'` files, stopping at `'use server'` and `server-only` — that fails on any `three`, `@react-three/*` or `meshoptimizer` specifier, on a missing vendored decoder, and on the viewer reached other than through the island's `import()` with `ssr: false`. Proved to fail on a planted static import. In `npm run check` and CI. The baseline + 5 % comparison is Phase 42's |
 | `scripts/perf/count-islands.mjs` | Every route at or under its island budget |
 | `scripts/perf/check-image-props.mjs` / `check-video-props.mjs` | `sizes` everywhere; one `priority` per route; posters and gates on every video |
 | `scripts/perf/check-cache-headers.mjs` | Every row of the caching contract, against a running production build |

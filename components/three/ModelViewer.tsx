@@ -10,13 +10,12 @@ import { VariantSwitcher } from './VariantSwitcher'
 import { ViewerCanvas, type ViewerCanvasHandle } from './ViewerCanvas'
 import { ViewerControls } from './ViewerControls'
 import { FocusTrap } from '@/components/primitives/FocusTrap'
-import { dimensionEntries } from '@/lib/catalog/dimensions'
 import {
   type EnvironmentPresetKey,
   type LightingPresetKey,
   fallbackVariantLabel,
   resolveViewerSettings,
-} from '@/lib/media/model'
+} from '@/lib/media/viewer-settings'
 import { cn } from '@/lib/ui/cn'
 
 /**
@@ -71,7 +70,7 @@ export function ModelViewer(props: ModelViewerProps): React.ReactElement {
   const stageId = `${id}-stage`
   const descriptionId = `${id}-description`
 
-  const hasDimensions = dimensionEntries(props.dimensions).length > 0
+  const hasDimensions = props.dimensions.length > 0
 
   // The switcher's options: the keys the FILE declares, in the order Studio positioned them and
   // then the file's own order, each with the Studio label or the key made readable.

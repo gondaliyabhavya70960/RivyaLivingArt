@@ -14,7 +14,7 @@ import {
   resolveTokenColour,
 } from './presets'
 import { selectVariant, variantNames } from './variants'
-import type { ResolvedViewerSettings } from '@/lib/media/model'
+import type { ResolvedViewerSettings } from '@/lib/media/viewer-settings'
 
 /**
  * The WebGL half of the viewer: the canvas, the model, the lights, the ground and the camera rig.

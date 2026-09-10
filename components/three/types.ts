@@ -1,11 +1,11 @@
 import type { DimensionKey } from '@/lib/catalog/dimensions'
+import type { ModelFormat } from '@/lib/media/model'
 import type {
   EnvironmentPresetKey,
   LightingPresetKey,
-  ModelFormat,
   PublicVariantLabel,
   ViewerSettings,
-} from '@/lib/media/model'
+} from '@/lib/media/viewer-settings'
 
 /**
  * The viewer's contract with the page that mounts it.
@@ -49,6 +49,13 @@ export type ModelViewerCopy = {
   readonly conceptNotice: string | null
 }
 
+/** One owner-entered measurement, ready to print. */
+export type DimensionFact = {
+  readonly key: DimensionKey
+  readonly value: number
+  readonly unit: string | null
+}
+
 /** What a mount point knows about the model, serialisable across the dynamic boundary. */
 export type ModelViewerData = {
   readonly modelUrl: string
@@ -57,8 +64,12 @@ export type ModelViewerData = {
   readonly variants: readonly PublicVariantLabel[]
   /** `materials.id` → `materials.name`, for the VERIFIED associations only. */
   readonly materialNames: Readonly<Record<string, string>>
-  /** `products.dimensions`, unparsed, or null where there is no product. */
-  readonly dimensions: unknown
+  /**
+   * `products.dimensions`, already parsed and labelled by the server through
+   * `lib/catalog/dimensions`; empty where there is no product or the owner entered none. The
+   * viewer receives values, never the column, and never anything read from the model.
+   */
+  readonly dimensions: readonly DimensionFact[]
   readonly isConcept: boolean
 }
 

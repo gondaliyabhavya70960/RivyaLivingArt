@@ -8,7 +8,7 @@ import { useMinViewportWidth } from '@/components/primitives/motion/useMinViewpo
 import { useReducedMotion } from '@/components/primitives/motion/useReducedMotion'
 import { PosterFallback } from '@/components/three/PosterFallback'
 import type { ModelViewerCopy, ModelViewerData } from '@/components/three/types'
-import { VIEWER_MIN_VIEWPORT, probeCapability } from '@/lib/media/model'
+import { VIEWER_MIN_VIEWPORT, probeCapability } from '@/lib/media/viewer-settings'
 
 /**
  * The intent gate (registry RC-228, client half).

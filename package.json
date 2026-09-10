@@ -55,11 +55,12 @@
     "media:check-status": "npm run media:build-status && git diff --exit-code docs/media/HIGGSFIELD_ASSET_STATUS.md",
     "perf:check-image-props": "node scripts/perf/check-image-props.mjs",
     "perf:check-video-props": "node scripts/perf/check-video-props.mjs",
+    "perf:check-bundle": "node scripts/perf/check-bundle.mjs",
     "site:check-client-boundary": "node scripts/site/check-client-boundary.mjs",
     "site:check-islands": "node scripts/site/check-island-budget.mjs",
     "site:check-whatsapp": "node scripts/site/check-whatsapp-usage.mjs",
     "site:rest": "node scripts/db/local-rest.mjs",
-    "check": "npm run typecheck && npm run lint && npm run format:check && npm run media:check-ids && npm run media:assert-no-regen && npm run cms:check-transitions && npm run cms:check-copy && npm run demo:check-register && npm run site:check-client-boundary && npm run site:check-islands && npm run site:check-whatsapp"
+    "check": "npm run typecheck && npm run lint && npm run format:check && npm run media:check-ids && npm run media:assert-no-regen && npm run cms:check-transitions && npm run cms:check-copy && npm run demo:check-register && npm run site:check-client-boundary && npm run site:check-islands && npm run site:check-whatsapp && npm run perf:check-bundle"
   },
   "dependencies": {
     "@gltf-transform/core": "4.5.0",

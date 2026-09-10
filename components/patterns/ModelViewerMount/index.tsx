@@ -3,8 +3,13 @@ import * as React from 'react'
 import { ModelViewerIsland } from './Island'
 import { BlockImage } from '@/components/patterns/MediaSlot'
 import { VisuallyHidden } from '@/components/primitives/VisuallyHidden'
-import type { ModelViewerCopy, ModelViewerData } from '@/components/three/types'
-import { DIMENSION_KEYS, type DimensionKey } from '@/lib/catalog/dimensions'
+import type { DimensionFact, ModelViewerCopy, ModelViewerData } from '@/components/three/types'
+import {
+  DIMENSION_KEYS,
+  DIMENSION_UNIT,
+  type DimensionKey,
+  dimensionEntries,
+} from '@/lib/catalog/dimensions'
 import { interpolate, siteString, type SiteStrings } from '@/lib/cms/strings'
 import {
   ENVIRONMENT_PRESET_KEYS,
@@ -40,7 +45,7 @@ export type ModelViewerMountProps = {
   readonly model: PublicModel
   /** Published materials; only those a VERIFIED label names are handed to the viewer. */
   readonly materials: readonly Material[]
-  /** `products.dimensions` for a product mount; null on a project or a section. */
+  /** `products.dimensions`, unparsed, for a product mount; null on a project or a section. */
   readonly dimensions: unknown
   readonly title: string
   readonly strings: SiteStrings
@@ -63,6 +68,15 @@ function presetNames<K extends string>(
     out[key] = value
   }
   return out as Readonly<Record<K, string>>
+}
+
+/** `products.dimensions` as printable facts. Only the seven declared keys, only positive numbers. */
+export function dimensionFacts(dimensions: unknown): readonly DimensionFact[] {
+  return dimensionEntries(dimensions).map((entry) => ({
+    key: entry.key,
+    value: entry.value,
+    unit: DIMENSION_UNIT[entry.key],
+  }))
 }
 
 /** Null when a name the viewer cannot do without is missing. */
@@ -196,7 +210,7 @@ export function ModelViewerMount({
     settings: parseViewerSettings(model.model.viewer_settings),
     variants,
     materialNames,
-    dimensions,
+    dimensions: dimensionFacts(dimensions),
     isConcept: model.model.is_concept,
   }
 

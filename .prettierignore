@@ -3,3 +3,6 @@ node_modules
 data/higgsfield
 docs/requirements
 *.md
+# Vendored decoders (Phase 21): third-party files, copied verbatim from three@0.186.0
+public/draco
+public/basis

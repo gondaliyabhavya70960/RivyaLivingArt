@@ -22,15 +22,15 @@ import { Stack } from '@/components/primitives/Stack'
 import { Text } from '@/components/primitives/Text'
 import { useReducedMotion } from '@/components/primitives/motion/useReducedMotion'
 import type { ModelViewerCopy } from '@/components/three/types'
+import { parseViewerSettings } from '@/lib/media/model'
 import {
   ENVIRONMENT_PRESET_KEYS,
   LIGHTING_PRESET_KEYS,
   type EnvironmentPresetKey,
   type LightingPresetKey,
   type ViewerSettings,
-  parseViewerSettings,
   publicVariantLabels,
-} from '@/lib/media/model'
+} from '@/lib/media/viewer-settings'
 import type { MediaAsset, ModelVariantLabel } from '@/lib/supabase/schemas'
 
 /**
@@ -557,7 +557,7 @@ export function ModelInspectorDrawer({
                 settings={settings}
                 variants={previewVariants}
                 materialNames={Object.fromEntries(materials.map((m) => [m.id, m.label]))}
-                dimensions={null}
+                dimensions={[]}
                 isConcept={asset.is_concept}
                 copy={copy}
                 reducedMotion={reducedMotion}

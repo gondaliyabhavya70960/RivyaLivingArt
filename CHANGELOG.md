@@ -6,6 +6,69 @@ Every phase adds an entry; see `docs/architecture/CANONICAL-DECISIONS.md` D9 for
 
 ## [Unreleased]
 
+### Phase 21 — 3D Product Experience
+
+A visitor can pick an object up and turn it over — where a model exists, and none does yet. The
+phase ships the whole capability with **zero models**: the manifest holds no GLB, none is generated
+(a model has a form and dimensions, which is a product specification, D10), and the first upload
+path for one now exists, inspected before it is saved.
+
+**The viewer costs the page nothing until it is asked for.** Routes import the mount through
+`LazyModelViewerMount` (`next/dynamic`, so the mount's own client half is an on-demand chunk and
+not a homepage island — the island-budget gate stays at five), and `components/three/**` is reached
+only through that island: a dynamic import with `ssr: false`, on a press of the poster's
+control or on an intersection the capability probe allows (viewport ≥ 768 px, motion not reduced,
+`saveData` off, `deviceMemory` ≥ 4, WebGL present). A new gate, `scripts/perf/check-bundle.mjs`,
+walks every route's client import graph and fails on any `three`, `@react-three/*` or
+`meshoptimizer` specifier — proved to fail on a planted import — and is in `npm run check` and CI.
+The chunk measures **303.6 kB gzipped** against the 350 kB budget; a first measurement of 391 kB
+found `zod` in the graph, so the viewer now reads a zod-free `lib/media/viewer-settings.ts` and a
+unit test keeps it that way.
+
+**Every FEAT §12 control has a pointer, touch and keyboard route.** Orbit, zoom, pan, reset,
+fullscreen, finish inspection, variant switching, dimension indicators, four lighting and three
+environment presets built from Phase 02 palette tokens with no HDR and no fetch. The canvas is
+`role="img"` with a name and a description that lists every key; fullscreen is a fixed surface with
+a focus trap; under reduced motion there is no auto-rotate, no damping and no intro. Draco is
+served from `public/draco/`, the Basis transcoder from `public/basis/` (only for a KTX2 texture),
+meshopt bundled — all vendored from `three@0.186.0`, licences recorded as RC-905/906/907.
+
+**Metadata is parsed, never typed.** `lib/media/inspect.ts` reads a GLB's JSON chunk without a
+decoder — bytes, extensions, declared triangles, textures, variants, self-containment — so the
+browser refuses a 20 MB uncompressed file with both reasons named before anything is signed.
+`saveModelAction` then reads the uploaded bytes back from the delivery origin, runs the decoder
+pass (gltf-transform, the Node Draco decoder, the same meshopt module the viewer bundles), writes
+`model_format`, `file_size_bytes`, `poly_count` and `texture_count` from what it read, and
+destroys a refused file rather than recording it. The same ceilings are CHECK constraints in
+migration `0194`.
+
+**D10 at the finish switcher.** `model_variant_labels` gives each `KHR_materials_variants` key words
+a visitor can read. A label that also names a `materials` row asserts that material is in a real
+object, so the CHECK forces it to at least `OWNER_VERIFICATION_REQUIRED`, the Phase 08 authority
+trigger keeps `VERIFIED` for the owner and admin, and the public read hands the material to the
+viewer only at `VERIFIED`. Dimension indicators receive values the server parsed from
+`products.dimensions` and the component that prints them imports no engine — asserted on its source.
+
+**A poster gates association, not existence.** A model may be uploaded and inspected with no
+poster; it may not be attached to a product or a project without one, because the poster is what
+every page renders first and is the LCP element by contract. Posters are chosen from the image
+library, never captured from the viewer (amendment A21). `set_model_association()` writes both
+sides of a product association in one `SECURITY INVOKER` transaction, so an editor who holds
+`media.write` but not `catalog.write` fails as a whole rather than leaving the asset pointing at a
+product that does not know it.
+
+**Studio.** `/studio/media/models` fills its 3D half: the uploader with the inspector in front of
+it, a list of what was read, and a drawer with re-inspect, poster and thumbnail, viewer settings
+with the real viewer as live preview, finish labels and association. Four mount points on the site:
+the product page, the `three-d-resin` block's slot, the project page and `/collection/3d-resin`.
+
+**Also in this phase.** Migrations renumbered to `0194`–`0195` (amendment A21); React pinned at
+19.2.8 while `@react-three/fiber` caps it below 19.3; the flag is `three_d_viewer`;
+`scripts/seed/emit-sql.ts` emits the runner's `global_content` INSERTs with their hashes for a
+database `DATABASE_URL` cannot reach — which found and closed a 56-row gap on the hosted project
+(31 Phase 17–20 strings had never been seeded there). Migrations applied to hosted through the
+Supabase MCP; 42 tables, 165 policies on both.
+
 ### Phase 20 — Inquiry + WhatsApp Flow
 
 The conversion model becomes real, and becomes safe. Every enquiry — from the contact form, from a

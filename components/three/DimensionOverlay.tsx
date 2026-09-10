@@ -2,14 +2,15 @@
 
 import * as React from 'react'
 
-import { DIMENSION_UNIT, dimensionEntries } from '@/lib/catalog/dimensions'
+import type { DimensionFact } from './types'
 import type { DimensionKey } from '@/lib/catalog/dimensions'
 
 /**
  * Owner-entered measurements beside the model. Exactly `products.dimensions`, nothing derived.
  *
  * THIS COMPONENT CANNOT SEE THE MODEL, and that is a property the unit suite asserts on the source:
- * no `three` import, no bounds, no scene. A bounding box is a fact about a file; a dimension is a
+ * no `three` import, no bounds, no scene graph, no mesh data. It receives values the SERVER parsed from
+ * `products.dimensions` and prints them; a bounding box is a fact about a file, a dimension is a
  * fact about a product, and only the owner supplies the second (D10). When the product has none,
  * the toggle that opens this panel is not rendered at all.
  */
@@ -18,19 +19,18 @@ export function DimensionOverlay({
   heading,
   labels,
 }: {
-  readonly dimensions: unknown
+  readonly dimensions: readonly DimensionFact[]
   readonly heading: string
   readonly labels: Readonly<Partial<Record<DimensionKey, string>>>
 }): React.ReactElement | null {
-  const rows = dimensionEntries(dimensions).flatMap((entry) => {
-    const label = labels[entry.key]
+  const rows = dimensions.flatMap((fact) => {
+    const label = labels[fact.key]
     if (label === undefined) return []
-    const unit = DIMENSION_UNIT[entry.key]
     return [
       {
-        key: entry.key,
+        key: fact.key,
         label,
-        value: unit === null ? String(entry.value) : `${entry.value} ${unit}`,
+        value: fact.unit === null ? String(fact.value) : `${fact.value} ${fact.unit}`,
       },
     ]
   })

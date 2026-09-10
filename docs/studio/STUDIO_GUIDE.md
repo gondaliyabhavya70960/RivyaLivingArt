@@ -1318,6 +1318,37 @@ with a product or a project.
   specification**.
 - The 3D viewer as a whole sits behind the `three_d_viewer` feature flag.
 
+**Built in Phase 21**, with five differences from the sentences above, each a decision:
+
+- **Posters are chosen, not captured.** The phase document names a "poster capture action"; the
+  built surface offers the image library instead (`MediaPicker` over `IMAGE` assets). A frame
+  captured from the viewer is a rendering of a model presented as a photograph — the claim BR-E3
+  exists to prevent — and `guard_model_still_references()` refuses anything but an `IMAGE` asset as
+  a poster or thumbnail in any case. The owner supplies a photograph of the object that exists.
+- **"A mobile fallback" is the poster.** There is no second asset to require: below 768 px the
+  poster is the whole experience until a tap, and the viewer then opens fullscreen. The one thing
+  the constraint requires before a model can be shown anywhere is the poster
+  (`media_assets_model_poster_before_association`), and the drawer says so.
+- **The metadata block has no inputs.** Format, size, triangles and textures are read from the
+  file by the inspector — in the browser before the signature (`quickInspect`) and on the server
+  from the uploaded bytes (`inspectModel`) — and written by `saveModelAction`. *Re-inspect from the
+  file* is the only way the block changes. A refused file is destroyed at the provider and gets no
+  row; the reasons come back in words (`studio.models.reject.*`).
+- **Association is one transaction.** *Shown on* calls `set_model_association()`, which writes the
+  asset side and `products.model_media_id` together under the caller's own row policies: an editor
+  holds `media.write` but not `catalog.write`, so attaching to a product fails as a whole for that
+  role, and the action says so before the round trip. A project association needs `media.write`
+  alone.
+- **Marking a finish label VERIFIED is the owner's and admin's.** The drawer disables the option for
+  every other role, the action refuses it with a `DENIED` audit row, and the Phase 08 authority
+  trigger refuses it underneath both. A label that names a material cannot be *Not required*: the
+  form lifts it to *Awaiting the owner* the moment a material is chosen, mirroring the CHECK.
+
+The list (`ModelTable`) shows what the inspector read, whether a poster is set, and where the
+model is shown; *Inspect* opens the drawer through `?asset=<id>`, so the page is one server render
+with no client fetch. The drawer's *Preview* is the public viewer itself, imported dynamically here
+as it is on the site, reloaded with each settings change.
+
 ---
 
 ## 11. `/studio/inquiries/*` — the conversion inbox

@@ -1,4 +1,4 @@
-import type { EnvironmentPresetKey, LightingPresetKey } from '@/lib/media/model'
+import type { EnvironmentPresetKey, LightingPresetKey } from '@/lib/media/viewer-settings'
 
 /**
  * Lighting and environment presets, as data.

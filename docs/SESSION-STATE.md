@@ -8,6 +8,151 @@
 
 ## Current Phase
 
+**Phase 21 — 3D Product Experience. CODE COMPLETE; ZERO MODELS, WHICH IS THE FINISHED STATE; THE
+FLAG IS OFF.** A visitor can pick an object up and turn it over wherever a model exists, and none
+does: the manifest holds no GLB, none is generated (a model's form and dimensions are a product
+specification, D10), and the phase ships the viewer, the inspector, the Studio surface and four
+mount points that all render nothing until the owner supplies a model with a poster.
+`three_d_viewer` is OFF on both databases and stays off until then.
+
+### Phase 21: what is built
+
+**Migrations `0194` and `0195`, applied locally AND to hosted through the Supabase MCP, with the
+ledger rows.** `media_assets.viewer_settings jsonb` shape-checked by `is_valid_viewer_settings()`;
+the FEAT §14 ceilings (15 MB, 250,000 triangles) as CHECK constraints beside the inspector's words;
+`media_assets_model_poster_before_association` — a model may exist without a poster and may not be
+put on a page without one; `media_assets_association_is_model`; the `associated_project_id`
+foreign key Phase 06 declared ahead of its table; image guards on the poster and thumbnail
+references; `model_variant_labels` with `material_id is null or owner_verification <>
+'NOT_REQUIRED'` and the Phase 08 authority trigger; `set_model_association()`, SECURITY INVOKER,
+writing the asset side and `products.model_media_id` in one transaction. Renumbered from the phase
+document's `0190` — amendment **A21**.
+
+**THE VIEWER COSTS THE PAGE NOTHING UNTIL ASKED FOR, AND THAT IS PROVED THREE WAYS.**
+`LazyModelViewerMount` puts the mount's client half behind `next/dynamic`; the island imports
+`components/three/ModelViewer` with `ssr: false` only on a press or on an intersection the probe
+allows (viewport ≥ 768 px, motion not reduced, `saveData` off, `deviceMemory` ≥ 4, WebGL present);
+and `scripts/perf/check-bundle.mjs` walks every route's CLIENT import graph — through `'use
+client'`, stopping at `'use server'` and `server-only` — and fails on any `three`,
+`@react-three/*` or `meshoptimizer` specifier, proved on a planted import. The chunk measures
+**303.6 kB gzipped** against the 350 kB budget. The first measurement was 391 kB: `zod` had reached
+the viewer through `lib/media/model.ts`, so the viewer now reads the zod-free
+`lib/media/viewer-settings.ts` and `tests/unit/model-policy.test.ts` reads the sources to keep it so.
+
+**EVERY FEAT §12 CONTROL, BY POINTER, TOUCH AND KEYBOARD.** Orbit, zoom, pan, reset, fullscreen,
+finish inspection, variant switching (a tab list with roving focus), dimension indicators, four
+lighting and three environment presets built from Phase 02 palette tokens resolved from the
+document at mount — no HDR, no fetch. The canvas is `role="img"` with a name and a description
+listing every key; fullscreen is a fixed surface under `FocusTrap`; `Escape` leaves it, and below
+768 px closes the viewer outright; under reduced motion there is no auto-rotate, no damping and no
+intro. `KHR_materials_variants` is read by a first-party loader plugin (three lists the extension as
+external). Draco from `public/draco/`, the Basis transcoder from `public/basis/` (fetched only for a
+KTX2 texture), meshopt bundled — all from `three@0.186.0`, licences in the registry as RC-905/906/907.
+
+**METADATA IS PARSED, NEVER TYPED.** `lib/media/inspect.ts` reads a GLB's JSON chunk with no
+decoder — bytes, extensions, declared triangles (accessor counts survive compression), textures,
+variants, self-containment — so the browser refuses a 20 MB uncompressed file with both reasons
+named before the signature. `saveModelAction` reads the uploaded bytes back from the delivery
+origin, runs the decoder pass (`lib/media/inspect-server.ts`: gltf-transform, the Node Draco
+decoder `draco3d`, the same meshopt module the viewer bundles), writes `model_format`,
+`file_size_bytes`, `poly_count` and `texture_count` from what it read, creates a placeholder
+finish label per variant key, and DESTROYS a refused file rather than recording it.
+`POST /api/studio/models/inspect` runs the same inspection without saving; `scripts/media/inspect-model.ts`
+does it from the shell.
+
+**D10 AT THE SWITCHER AND THE OVERLAY.** A label that names a material is a product fact: the CHECK
+lifts it to at least `OWNER_VERIFICATION_REQUIRED`, the trigger keeps `VERIFIED` for owner and
+admin, the Server Action refuses other roles with a `DENIED` audit row, and `publicVariantLabels()`
+hands the material to the viewer only at `VERIFIED`. `DimensionOverlay` receives values the server
+parsed from `products.dimensions` and imports no engine; a test reads its source. Posters are
+chosen from the image library, never captured from the viewer (A21, BR-E3): a captured frame is a
+rendering presented as a photograph.
+
+**STUDIO.** `/studio/media/models` — `ModelUploader` (the decoder-free inspection in front of
+`MediaUploader`, which gained a `preflight` step and notes), `ModelTable`, and
+`ModelInspectorDrawer` opened through `?asset=`: re-inspect, poster and thumbnail, viewer settings
+with the public viewer as live preview, finish labels, association. 119 Studio strings; 25 public
+strings seeded under `UI_LABEL.model.*`.
+
+**FOUR MOUNT POINTS.** `/product/[slug]` below the gallery; `/collections/[slug]` through the
+`three-d-resin` block's slot (`lib/cms/references.ts` resolves the model and the materials, and the
+band draws its own imagery when there is none); `/portfolio/[slug]` after the story;
+`/collection/3d-resin` below the grid for every product on the page with a public model.
+
+**A GAP FOUND AND CLOSED ON HOSTED.** 31 `global_content` rows seeded in Phases 17–20 had never
+reached the hosted project — the contact form's labels among them — because `seed:content` needs a
+`DATABASE_URL` the sandbox cannot open. `scripts/seed/emit-sql.ts` emits the runner's INSERTs with
+the runner's own `seed_content_hash`, so the rows are indistinguishable from a runner's; 56 rows
+(31 + this phase's 25) went through the MCP, and hosted holds 213, level with local.
+
+### Phase 21: what is NOT built, and why
+
+- **No model.** None exists, none is generated, and the phase document says so twice. The owner
+  supplies the first GLB through `/studio/media/models`; until then every mount renders nothing.
+- **No poster capture.** A frame rendered from a model and presented as the poster is a rendering
+  presented as a photograph (BR-E3). Posters are `IMAGE` assets chosen from the library, enforced by
+  `guard_model_still_references()`. Amendment A21.
+- **No AR, room visualisation or 3D configurator** — out of scope by the phase document.
+- **The mid-range-device timing in PERFORMANCE §8.3 is NOT YET MEASURED**, because there is no
+  model to time. The chunk size is measured; the first-interactive-frame number waits for the first
+  GLB.
+- **The e2e suites cannot run here** (the proxy blocks the dev server's Supabase reads). Both are
+  written with two branches — no mount (prove the absence is clean) and a mount (drive the poster,
+  the control, the keys) — and skip with a stated reason rather than passing silently.
+
+### Phase 21: verification, as actually run
+
+1. `npm run typecheck`, `npm run lint` (0 errors; 6 pre-existing `no-html-link-for-pages`
+   warnings in e2e fixtures), `npm run format:check`, every `npm run check` gate including the new
+   `perf:check-bundle` — green.
+2. `npm test` with `DATABASE_URL` on the local PostgreSQL 16 cluster: **1,502 tests across 113
+   files, none skipped** — 1,234 in the unit project (34 in `model-policy`, 19 in `model-inspect`
+   including a Draco file encoded and decoded end to end, 7 in `model-mount`) and 268 in the RLS
+   project (11 in `phase21`: a label is readable by anon exactly while its model is PUBLISHED; anon
+   and the researcher cannot write one; an editor can; a material on a NOT_REQUIRED label is
+   refused for every role; a merchandiser can mark a label awaiting the owner and cannot mark it
+   VERIFIED; the owner can; `set_model_association()` is not callable by anon, fails as a whole for
+   an editor with both sides unchanged, writes both sides for the owner, and is refused without a
+   poster).
+3. `db:check-migrations` (57 migrations to `0195`), `db:check-schema` (42 tables, RLS on all),
+   `auth:check-rls` (165 policies) and `auth:check-policies` — green locally; the same counts
+   confirmed on hosted by query after the MCP apply.
+4. Every 0194 constraint, trigger and the association function probed by SQL with savepoints:
+   eighteen expectations, all met (viewer_settings shape, min < max, unknown key, bad camera, 16 MB,
+   250,001 triangles, association without a poster, self as poster, label with material and
+   NOT_REQUIRED, label on an IMAGE, both targets, moving a model between products releases the
+   first, clearing releases both sides, a product pointing at an IMAGE).
+5. The viewer chunk bundled standalone with esbuild 0.24 and measured: 303.6 kB gzipped, 252 kB
+   brotli, with the composition recorded in PERFORMANCE §8.3.
+6. `scripts/perf/check-bundle.mjs` run clean, then run against a planted static import of the
+   viewer in `ProductGallery` — it named the file, the chain and the specifier — then restored.
+7. Hosted: `0194` and `0195` applied through the Supabase MCP and recorded in
+   `public.schema_migrations` with the files' SHA-256; queried afterwards for 5 label policies, 9
+   media_assets checks, 8 functions, 165 policies total, and `anon` unable to execute
+   `set_model_association()`. Feature flags on hosted: `commission_configurator` ON,
+   `three_d_viewer` OFF.
+
+### Phase 21: the D9 ten, recorded
+
+1. Code exists and is committed — the viewer, the inspector, the Studio surface, the four mounts.
+2. Migrations applied locally and to hosted, with ledger rows and matching counts.
+3. Tests written and passing: 1,502, none skipped.
+4. Gates pass, including the one this phase added.
+5. Documentation updated: PERFORMANCE §4.3/§8.3, MEDIA_GUIDE §7.3 and §8, COMPONENT_REGISTRY
+   (RC-228, RC-401 built; RC-904/905/906 approved with licences; RC-907 added), DATA_MODEL
+   (§12 re-registered, `model_variant_labels`, the media_assets checks), STUDIO_GUIDE §10.3,
+   SECURITY §3 and §7.1, BUSINESS_RULES BR-E7, TESTING §4 and §6, ENVIRONMENT (the emitter),
+   CANONICAL-DECISIONS A21, CHANGELOG, PROJECT_STATE, this file.
+6. No business fact fabricated: zero models, no captured posters, material names only at VERIFIED,
+   dimensions only from `products.dimensions`, every viewer string a `global_content` row.
+7. Nothing in the manifest regenerated; `media:assert-no-regen` green.
+8. Amendments recorded: A21.
+9. The next phase is named: **22 — Homepage / Store Merchandising**.
+10. Hosted is level with the repository through `0195`, and level on seeded strings for the first
+    time since Phase 17.
+
+### Superseded — Phase 20's state
+
 **Phase 20 — Inquiry + WhatsApp Flow. CODE COMPLETE; THE INBOX IS EMPTY, WHICH IS THE FINISHED
 STATE.** The conversion model is real: an enquiry is validated, written and given a reference code
 BEFORE any WhatsApp message is composed, and a failed write produces no URL because the failure
@@ -116,6 +261,11 @@ flag-off state and `tests/e2e/configurator.spec.ts` describe.
     merged to `main` at the owner's instruction.
 
 ### Standing issues, carried
+
+- **Hosted seeded strings were 56 rows behind local until Phase 21** — 31 of them from Phases
+  17–20, including the contact form's field labels. Closed through `scripts/seed/emit-sql.ts`
+  and the MCP; the two databases now hold 213 each. Any future seed module needs the same step
+  until `DATABASE_URL` to hosted is reachable from where the runner runs.
 
 - `verify` is red on the account's Actions runner with a signature that is not a code failure
   (`runner_id: 0`, ~2s, no steps, red on `main` too) and is **not re-run**, per the free-tier
@@ -1836,6 +1986,22 @@ the CTA library's reserved page id or add a D4 route leaf, and whether `analytic
 on `/studio` rather than a route segment.
 
 ## Next Exact Action
+
+**Start Phase 22 — Homepage / Store Merchandising**, on the owner's word. Phase 22 assumes the
+catalogue (14), the product page (15), the homepage composition (11) and the flags table (19); all
+exist. Its migrations are `0200`–`0201`, unspent. Nothing in the repository blocks it.
+
+Owner-side, unchanged in kind:
+
+1. **Supply the first GLB** of an object that exists, through `/studio/media/models`, with a
+   photograph as its poster; then switch `three_d_viewer` on in `/studio/system/flags`. Until then
+   the viewer is built and silent.
+2. **Publish a commission template** (all three are DRAFT) for `/custom-commissions` to show one.
+3. **Decide the 20-of-30 hosted demo products** — finish, roll back or leave.
+4. **Rotate the six exposed secrets** — still outstanding, and still recorded under *Known Issues*;
+   the owner asked for this to wait until all phase work is finished.
+
+### Superseded — the Phase 16 plan
 
 **Start Phase 16 — Collections / Exhibitions**, or run the owner-side actions below.
 

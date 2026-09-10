@@ -1,6 +1,7 @@
 import * as React from 'react'
 
 import { ResponsiveMedia } from '@/components/patterns/MediaSlot'
+import { LazyModelViewerMount } from '@/components/patterns/ModelViewerMount/lazy'
 import { Stack } from '@/components/primitives/Stack'
 
 import { SectionActions } from './SectionActions'
@@ -17,10 +18,11 @@ import type { SectionRenderProps } from './types'
  * on `page_sections.owner_verification` and the Phase 08 publish trigger refuses the row. The
  * owner confirming it must then be one field in Studio, not a phase of engineering.
  *
- * THE MODEL SLOT RENDERS NOTHING AT ALL. `payload.model_media_id` is reserved for the Phase 21
- * viewer and this file does not read it: no frame, no placeholder, no "3D coming soon". A reserved
- * box drawn for a viewer that does not exist is a promise made by a layout, and Phase 21 is where
- * the promise gets kept.
+ * THE MODEL SLOT IS PHASE 21's, AND IT IS KEPT HERE. When `reference.model` arrives — the flag is
+ * on, `payload.model_media_id` names a model, and that model is public with a poster — the band's
+ * media column becomes the viewer's mount: the model's poster first, the viewer on intent. When it
+ * does not arrive, the band draws its scene imagery exactly as before: no frame, no placeholder, no
+ * "3D coming soon". The editor's imagery is the fallback and the default, not a leftover.
  */
 export function ThreeDResinSection({
   section,
@@ -28,8 +30,10 @@ export function ThreeDResinSection({
   strings,
   cloudName,
   livePaths,
+  reference,
 }: SectionRenderProps): React.ReactElement | null {
   const fullBleed = (section.layout_variant ?? 'split') === 'full-bleed'
+  const model = reference?.model ?? null
 
   const copy = (
     <Stack gap={6}>
@@ -38,19 +42,32 @@ export function ThreeDResinSection({
     </Stack>
   )
 
-  const scene = (
-    <ResponsiveMedia
-      desktop={media.desktop}
-      mobile={media.mobile}
-      desktopRatio="16:9"
-      mobileRatio="4:5"
-      preset={fullBleed ? 'hero' : 'grid'}
-      sizes={fullBleed ? '100vw' : '(min-width: 768px) 50vw, 100vw'}
-      altOverride={section.media_alt_override}
-      strings={strings}
-      cloudName={cloudName}
-    />
-  )
+  const scene =
+    model !== null ? (
+      <LazyModelViewerMount
+        model={model.model}
+        materials={model.materials}
+        dimensions={null}
+        title={section.heading ?? ''}
+        strings={strings}
+        cloudName={cloudName}
+        enabled
+        ratio={fullBleed ? '16:9' : '4:3'}
+        sizes={fullBleed ? '100vw' : '(min-width: 768px) 50vw, 100vw'}
+      />
+    ) : (
+      <ResponsiveMedia
+        desktop={media.desktop}
+        mobile={media.mobile}
+        desktopRatio="16:9"
+        mobileRatio="4:5"
+        preset={fullBleed ? 'hero' : 'grid'}
+        sizes={fullBleed ? '100vw' : '(min-width: 768px) 50vw, 100vw'}
+        altOverride={section.media_alt_override}
+        strings={strings}
+        cloudName={cloudName}
+      />
+    )
 
   if (fullBleed) {
     return (

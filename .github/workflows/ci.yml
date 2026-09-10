@@ -119,6 +119,8 @@ jobs:
 
       - name: Every WhatsApp link goes through lib/whatsapp
         run: npm run site:check-whatsapp
+      - name: Viewer bundle gate (Phase 21) — no three in any first-load client graph
+        run: npm run perf:check-bundle
 
       # --- design-system gates (Phase 02) ---
       - name: Token discipline

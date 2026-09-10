@@ -3,7 +3,7 @@
 import * as React from 'react'
 
 import { Select } from '@/components/primitives/Select'
-import { ENVIRONMENT_PRESET_KEYS, type EnvironmentPresetKey } from '@/lib/media/model'
+import { ENVIRONMENT_PRESET_KEYS, type EnvironmentPresetKey } from '@/lib/media/viewer-settings'
 
 /** A native select, for the same reason as the lighting one. */
 export function EnvironmentPresetSelect({

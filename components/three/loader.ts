@@ -5,7 +5,7 @@ import type { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { KTX2Loader } from 'three/examples/jsm/loaders/KTX2Loader.js'
 
 import { variantsPlugin } from './variants'
-import { BASIS_TRANSCODER_PATH, DRACO_DECODER_PATH } from '@/lib/media/model'
+import { BASIS_TRANSCODER_PATH, DRACO_DECODER_PATH } from '@/lib/media/viewer-settings'
 
 /**
  * One place that knows how a GLB is decoded.

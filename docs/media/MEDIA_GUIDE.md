@@ -57,7 +57,10 @@ interface MediaProvider {
 | `lib/media/transform.ts` | Presets, `srcSet()`, `ratioCrop()`, the width ladder |
 | `lib/media/poster.ts` | `posterFor(video)` — explicit `poster_public_id`, else a derived first frame |
 | `lib/media/crop.ts` | `media_crops` → a `c_crop` prefix applied before the preset (Phase 43) |
-| `lib/media/model.ts` | 3D metadata helpers |
+| `lib/media/model.ts` | The 3D policy's Zod boundary: `viewerSettingsSchema` mirroring `is_valid_viewer_settings()`, `parseViewerSettings()`, format detection, the raw model URL; re-exports `viewer-settings.ts` |
+| `lib/media/viewer-settings.ts` | The same policy WITHOUT zod — decoder paths, preset keys, `resolveViewerSettings()`, the FEAT §14 capability probe, the VERIFIED-only label rule — imported by the viewer and its island so the chunk carries no schema library |
+| `lib/media/inspect.ts` | The decoder-free inspection: a GLB's JSON chunk → bytes, extensions, declared triangles, textures, variants, self-containment; `evaluateFacts()` applies the ceilings. Runs in the browser before an upload is signed |
+| `lib/media/inspect-server.ts` | The decoder pass (gltf-transform, the Node Draco decoder, meshopt): decoded triangle count and every texture's pixel size. Runs on the server against the uploaded bytes |
 | `lib/media/gaps.ts` | `computeGaps()` — declared slots minus bindings |
 | `lib/media/duplicate-guard.ts` | Refuses an upload whose checksum already exists in the folder |
 
@@ -296,29 +299,60 @@ play control. That is a complete experience, not a degraded one.
 `preload="none"`, `loop`, no controls when decorative, `aria-hidden` when decorative.
 No audio track is ever briefed or shipped.
 
-### 7.3 3D models (FEAT §12–§14)
+### 7.3 3D models (FEAT §12–§14) — built in Phase 21
 
-`kind = 'MODEL_3D'`, `resource_type = 'raw'`, `GLB` or `GLTF` only.
+`kind = 'MODEL_3D'`, `resource_type = 'raw'`, `GLB` or `GLTF` only — and a `GLTF` must be
+self-contained (data URIs), because a file that references buffers or images outside itself is
+refused by the inspector rather than fetched.
 
 Metadata, exactly FEAT §13's list: `model_format`, `file_size_bytes`, `poly_count`,
 `texture_count`, `model_thumbnail_id`, `model_poster_id`, `associated_product_id`,
-`associated_project_id`, plus `viewer_settings jsonb`.
-`check (kind <> 'MODEL_3D' or model_format is not null)`.
+`associated_project_id`, plus `viewer_settings jsonb` (shape-checked by
+`is_valid_viewer_settings()`, migration `0194`). **The first four are written by the inspector from
+the file and by nothing else** — `saveModelAction` reads the uploaded bytes back from the delivery
+origin, parses them, and writes what it read; a person cannot type a triangle count.
 Variant labels live in `model_variant_labels` so the viewer's switcher shows words, not mesh
-names; a label may reference a real `materials` row but never invents a specification.
+names; a label may reference a real `materials` row but never invents a specification, and the
+material name reaches a visitor only when the owner has marked the label `VERIFIED` (D10).
 
-Performance contract (FEAT §14):
+The ceilings (FEAT §14), applied twice — by `lib/media/inspect.ts` in words and by `0194` as CHECK
+constraints:
 
-- `components/three/**` is **dynamically imported**, client-only, behind an intent gate — a tap,
-  a click, or an intersection. It never blocks first render.
-- A **static poster** always exists and is what the page shows until the viewer mounts.
-- Under `prefers-reduced-motion: reduce`, `saveData`, or a narrow viewport the poster is the
-  whole experience and no WebGL context is created.
-- The `3d_viewer` feature flag gates the entire surface.
+| Measure | Refused | Warned |
+|---|---|---|
+| File size | > 15 MB | > 8 MB |
+| Compression (`KHR_draco_mesh_compression` or `EXT_meshopt_compression`) | required above 5 MB | — |
+| Triangles | > 250,000 | > 150,000 |
+| Textures | any side > 2048 px | more than 4 |
+| External buffers or images | always | — |
+
+**A poster is mandatory for association, not for existence.** A model may be uploaded, inspected
+and edited with no poster; it may not be attached to a product or a project without one
+(`media_assets_model_poster_before_association`). The poster is an `IMAGE` asset chosen from the
+library — never captured from the viewer, because a rendering of a model presented as a photograph
+is the claim BR-E3 exists to prevent — and it is what every page renders until the viewer is asked
+for.
+
+Performance contract (FEAT §14), as built:
+
+- `components/three/**` is **dynamically imported**, client-only, behind an intent gate — a press
+  of the poster's control, or an intersection when the viewport is at least 768 px, motion is not
+  reduced, `saveData` is off and `deviceMemory` is at least 4. `scripts/perf/check-bundle.mjs`
+  fails the build if the engine appears in any route's client graph.
+- A **static poster** always exists and is what the page shows until the viewer mounts; it is the
+  LCP element, never the canvas.
+- Under `prefers-reduced-motion: reduce`, `saveData`, low memory, a narrow viewport or no WebGL,
+  the poster is the whole experience (with the control where the probe allows one) and no WebGL
+  context is created.
+- The **`three_d_viewer`** feature flag gates every mount point (amendment A21: the phase document's
+  `3d_viewer` is not a legal key).
+- Decoders are served from the origin: Draco from `public/draco/`, the Basis transcoder from
+  `public/basis/` (fetched only for a KTX2 texture), meshopt bundled in the viewer chunk.
 
 **There are zero 3D models today, and none will be AI-generated.** A model has dimensions and a
 form; that is a product specification, and inventing one is exactly what D10 forbids. The flag
-stays off until the owner supplies a `GLB` of an object that exists.
+stays off until the owner supplies a `GLB` of an object that exists — and the upload path
+(`/studio/media/models`) is the first way one can arrive, inspected before it is saved.
 
 ---
 
@@ -341,9 +375,25 @@ Studio (MediaUploader)
 | Permission | `media.write` |
 | Folder | Must be in `lib/media/folders.ts`. Anything else → 422 |
 | MIME | Per `kind`: image `webp/avif/png/jpeg`; video `mp4`; model `model/gltf-binary`, `model/gltf+json`; document `application/pdf` |
-| Size ceiling | 25 MB image · 200 MB video · 50 MB model |
+| Size ceiling | 25 MB image · 200 MB video · 50 MB model at the signature; **the model inspector then refuses above 15 MB** and requires compression above 5 MB (§7.3) |
 | Rate limit | Per user, per minute |
 | Duplicate guard | `lib/media/duplicate-guard.ts` refuses a checksum already present in the folder |
+
+A `MODEL_3D` upload adds an inspection on each side of the signature (Phase 21):
+
+```
+ModelUploader
+   → quickInspect() in the browser   the GLB's JSON chunk: size, compression, declared triangles,
+                                     textures, external references — refused with every reason named
+                                     BEFORE anything is signed
+   → POST /api/media/sign → PUT direct to Cloudinary
+   → saveModelAction                 fetches the bytes back from the delivery origin, runs the decoder
+                                     pass, writes format/size/triangles/textures FROM THE PARSE, and
+                                     DESTROYS a refused upload rather than recording it
+```
+
+`POST /api/studio/models/inspect` runs the same inspection on a multipart body without saving
+anything, for tooling; `npx tsx scripts/media/inspect-model.ts <file>` does it from the shell.
 
 Visitor reference-image uploads (SEED §22, the commission form) go through
 `app/api/inquiries/upload-sign` — the same mechanism narrowed to one folder, no session,
