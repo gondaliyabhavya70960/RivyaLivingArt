@@ -136,6 +136,14 @@ const config = [
    *                            service-role client is one careless query away from bypassing RLS on
    *                            something unrelated. Every caller runs
    *                            `withPermission('system.users.manage', …)` first.
+   *   lib/search/log.ts        `search_queries` has no write policy for any session role (0212),
+   *                            and the reason is the one that keeps recurring here: a PUBLIC search
+   *                            has no session, so there is no user whose permissions could be
+   *                            checked, and the only alternative to the service role is an anon
+   *                            INSERT policy — a public endpoint a stranger could fill with
+   *                            arbitrary text attributed to searches nobody ran. The seam is two
+   *                            functions that return void and never expose the client, so the
+   *                            public search page holds no RLS-bypassing client of its own.
    *   scripts/**               operations tooling; runs with DATABASE_URL and no user session
    *   tests/**                 exercises RLS by comparing an anon client against a privileged one
    */
@@ -147,6 +155,7 @@ const config = [
       'lib/auth/provisioning.ts',
       'lib/flags/index.ts',
       'lib/security/rate-limit.ts',
+      'lib/search/log.ts',
       'scripts/**',
       'tests/**',
     ],

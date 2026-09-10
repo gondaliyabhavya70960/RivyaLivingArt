@@ -844,6 +844,119 @@ export const STUDIO_STRINGS = {
     value: 'Close search',
     contentKey: 'studio_help.command_close',
   },
+  /* ------------------------------------------------- command palette groups (Phase 23) */
+  /*
+   * ONE GROUP PER INDEXED ENTITY TYPE. The palette's route provider answers "where do I go"; these
+   * eight answer "where is this record". They are Studio chrome, so they live here as constants
+   * like every other Studio string — the public site's rule that copy must come from the database
+   * does not apply to an interface that has to render before any content exists.
+   *
+   * THE RESEARCH GROUPS ARE NOT HERE. Phases 25, 26 and 28 register their own providers against
+   * `research_search_documents` and bring their own group names with them. Naming them now would
+   * put a research identifier in a file the public search path can reach.
+   */
+  'studio.command.groupProducts': {
+    value: 'Pieces',
+    contentKey: 'studio_help.command_group_products',
+  },
+  'studio.command.groupCategories': {
+    value: 'Categories',
+    contentKey: 'studio_help.command_group_categories',
+  },
+  'studio.command.groupCollections': {
+    value: 'Collections',
+    contentKey: 'studio_help.command_group_collections',
+  },
+  'studio.command.groupMaterials': {
+    value: 'Materials',
+    contentKey: 'studio_help.command_group_materials',
+  },
+  'studio.command.groupPortfolio': {
+    value: 'Projects',
+    contentKey: 'studio_help.command_group_portfolio',
+  },
+  'studio.command.groupJournal': {
+    value: 'Journal',
+    contentKey: 'studio_help.command_group_journal',
+  },
+  'studio.command.groupMedia': {
+    value: 'Media',
+    contentKey: 'studio_help.command_group_media',
+  },
+  'studio.command.groupInquiries': {
+    value: 'Enquiries',
+    contentKey: 'studio_help.command_group_inquiries',
+  },
+  /* --------------------------------------------- the relationship workspace (Phase 23) */
+  /*
+   * THE RULE REASONS ARE NOT HERE. Those four sentences describe what a rule OBSERVED about the
+   * catalogue, so an editor may reword them — they are seeded `global_content` rows read at render
+   * time. What is here is the workspace's own furniture: panel names, control labels, and the
+   * sentence shown when a piece has no connections yet. Studio chrome, like every other string in
+   * this file.
+   */
+  'studio.relationships.pickerLabel': {
+    value: 'Choose a piece',
+    contentKey: 'studio_help.relationships_picker_label',
+  },
+  'studio.relationships.edgesHeading': {
+    value: 'Connections',
+    contentKey: 'studio_help.relationships_edges_heading',
+  },
+  'studio.relationships.suggestionsHeading': {
+    value: 'Suggestions',
+    contentKey: 'studio_help.relationships_suggestions_heading',
+  },
+  'studio.relationships.coverageHeading': {
+    value: 'Coverage',
+    contentKey: 'studio_help.relationships_coverage_heading',
+  },
+  'studio.relationships.accept': {
+    value: 'Accept',
+    contentKey: 'studio_help.relationships_accept',
+  },
+  'studio.relationships.dismiss': {
+    value: 'Dismiss',
+    contentKey: 'studio_help.relationships_dismiss',
+  },
+  'studio.relationships.remove': {
+    value: 'Remove',
+    contentKey: 'studio_help.relationships_remove',
+  },
+  'studio.relationships.inverse': {
+    value: 'Two-way',
+    contentKey: 'studio_help.relationships_inverse',
+  },
+  'studio.relationships.fromRule': {
+    value: 'Accepted from a suggestion',
+    contentKey: 'studio_help.relationships_from_rule',
+  },
+  'studio.relationships.emptyHeading': {
+    value: 'No connections yet',
+    contentKey: 'studio_help.relationships_empty_heading',
+  },
+  'studio.relationships.emptyBody': {
+    value:
+      'This piece renders the "More in {Category}" fallback until somebody makes a connection. That is a correct page, not a broken one.',
+    contentKey: 'studio_help.relationships_empty_body',
+  },
+  'studio.relationships.noSuggestionsHeading': {
+    value: 'Nothing to suggest',
+    contentKey: 'studio_help.relationships_no_suggestions_heading',
+  },
+  'studio.relationships.noSuggestionsBody': {
+    value:
+      'The four rules found nothing, or everything they found is already connected or already dismissed.',
+    contentKey: 'studio_help.relationships_no_suggestions_body',
+  },
+  'studio.relationships.pickHeading': {
+    value: 'Choose a piece to see its connections',
+    contentKey: 'studio_help.relationships_pick_heading',
+  },
+  'studio.relationships.pickBody': {
+    value: 'Every published piece is listed. Suggestions are computed when you open one.',
+    contentKey: 'studio_help.relationships_pick_body',
+  },
   'studio.shell.searchHint': {
     value: 'Press Ctrl-K or Cmd-K to search',
     contentKey: 'studio_help.shell_search_hint',

@@ -285,6 +285,37 @@ const EXPECTED = {
   // no publication lifecycle of its own. It carries created_at/created_by and nothing else,
   // deliberately: it is rewritten wholesale by the Phase 08 trigger on every save, so an
   // `updated_at` would only ever record when the page was last saved, which the page already knows.
+  /*
+   * Phase 23 — the search index and the relationship model. Five §1.4 exemptions and one ordinary
+   * content table, and the split is the phase in miniature.
+   *
+   * THE TWO INDEXES ARE PROJECTIONS. Every row is derived from a source table by a trigger, so a
+   * `status` of their own would be a second publication switch that could disagree with the first,
+   * an `updated_by` would name a person for a row no person wrote, and Tier C would let a seeder
+   * address search results for content that does not exist. `indexed_at` is the whole timestamp
+   * story: when this projection was last rebuilt.
+   *
+   * `search_queries` IS A RECORD OF SOMETHING THAT HAPPENED, the same exemption as
+   * `activity_events` — and deliberately the thinnest one in the schema, because every column it
+   * does not have is a column that could identify a visitor.
+   *
+   * THE TWO EDGES CARRY `created_at` AND `created_by` AND NOTHING ELSE, exactly like
+   * `product_relations`, `entity_relations` and the four Phase 03 join tables. An edge that is
+   * DRAFT is a state nobody can act on: either an editor made the connection or they did not.
+   * `relation_suppressions` names its own pair `suppressed_by`/`suppressed_at` rather than
+   * `created_*`, because the row records a refusal rather than a creation.
+   *
+   * `product_attribute_terms` IS THE ONE CONTENT TABLE: Tier A + Tier B, plus the D10 gate in
+   * CONTENT_TABLES below. No Tier C — it ships with zero rows and no seed module writes it,
+   * because a wood species attached to Rivya is a capability claim only the owner may make.
+   */
+  search_documents: ['entity_type', 'entity_id', 'visibility', 'status', 'indexed_at'],
+  research_search_documents: ['entity_type', 'entity_id', 'visibility', 'status', 'indexed_at'],
+  search_queries: ['query_text', 'normalized_query', 'scope', 'result_count', 'occurred_at'],
+  content_relations: ['created_at', 'created_by'],
+  relation_suppressions: ['rule_key', 'suppressed_by', 'suppressed_at'],
+  product_attribute_terms: [...TIER_A, ...TIER_B],
+
   media_usages: [
     'media_id',
     'context_type',
@@ -389,6 +420,10 @@ const CONTENT_TABLES = [
   // Phase 15. A spec row can be PUBLISHED, so it needs the same D10 gate as any other row that can
   // carry a claim to the public site.
   'product_specs',
+  // Phase 23. A term names something the workshop can supposedly work in — a wood species, a resin
+  // style — which is exactly the class of claim D10 exists for. It defaults to
+  // OWNER_VERIFICATION_REQUIRED, so without this gate the default would be decorative.
+  'product_attribute_terms',
 ]
 const gates = q(`
   select conrelid::regclass::text

@@ -550,20 +550,33 @@ itself never queries. Phase 05 ships the route provider; later phases register e
 without touching the palette. The server endpoint is `POST /api/studio/search/route.ts` — Zod body,
 permission-scoped, never cached, capped at 20 results with a 200 ms budget per provider.
 
+**Phase 23 registered the eight entity providers, in ONE file rather than the eight the phase
+document's deliverable table named** (`components/studio/command/providers/index.ts`). Eight files
+differing in three literals each — an entity type, a permission and a group name — is eight places
+for the permission to be got wrong, and the one that matters (`inquiries.read`, which a researcher
+does NOT hold) would be the one nobody re-read. The table in that file IS the configuration and
+every provider is built from it, so a reviewer checks eight rows instead of eight files.
+
+**They query as the reader, not as the service role.** `search_documents` has one staff-select
+policy admitting every active role, so the service role would return the same rows and would put an
+RLS-bypassing client inside a component that renders. The narrowing that the palette needs and RLS
+cannot express — "may search enquiries but not materials", about one table — happens in the registry
+BEFORE the provider runs. Two layers, in the Phase 04 order: permission first, RLS underneath.
+
 FEAT §18 lists twelve things Studio search must cover. They map to eleven providers plus one indexed
 field:
 
 | FEAT §18 target | Provider | Index | Required permission |
 |---|---|---|---|
-| Products | `products` | `search_documents` (`PUBLIC`) | `catalog.read` |
+| Products | `entity-products` | `search_documents` (`PUBLIC`) | `catalog.read` |
 | SKUs | — (indexed inside the `product` document) | `search_documents` | `catalog.read` |
-| Categories | `categories` | `search_documents` (`PUBLIC`) | `catalog.read` |
-| Collections | `collections` | `search_documents` (`PUBLIC`) | `catalog.read` |
-| Materials | `materials` | `search_documents` (`STAFF`) | `catalog.read` |
-| Portfolio | `portfolio` | `search_documents` (`PUBLIC`) | `content.read` |
-| Journal | `journal` | `search_documents` (`PUBLIC`) | `content.read` |
-| Media | `media` | `search_documents` (`STAFF`) | `media.read` |
-| Inquiries | `inquiries` | `search_documents` (`STAFF`) | `inquiries.read` |
+| Categories | `entity-categories` | `search_documents` (`PUBLIC`) | `catalog.read` |
+| Collections | `entity-collections` | `search_documents` (`PUBLIC`) | `catalog.read` |
+| Materials | `entity-materials` | `search_documents` (`STAFF`) | `catalog.read` |
+| Portfolio | `entity-portfolio` | `search_documents` (`PUBLIC`) | `content.read` |
+| Journal | `entity-journal` | `search_documents` (`PUBLIC`) | `content.read` |
+| Media | `entity-media` | `search_documents` (`STAFF`) | `media.read` |
+| Inquiries | `entity-inquiries` | `search_documents` (`STAFF`) | `inquiries.read` |
 | Scraped Products | `research_products` | `research_search_documents` | `research.read` |
 | Competitor Sources | `research_sources` | `research_search_documents` | `research.read` |
 | Workflow Runs | `research_runs` | `research_search_documents` | `research.read` |
@@ -582,10 +595,21 @@ field:
   body.
 - **Public search and Studio search are different surfaces.** Public search
   (`/search`, `app/api/search/suggest`) covers products, categories, collections, portfolio and
-  journal, and never exposes internal research data (FEAT §19).
+  journal, and never exposes internal research data (FEAT §19). `npm run search:check-scope` walks
+  the import graph from the four public entry points and fails the build on a `research_` or
+  `scraper` identifier anywhere in it.
+- **The public suggest endpoint reads with the anon key even for a signed-in member of staff.** A
+  response that varied by session could not be cached at the edge, and the first staff member to
+  type would otherwise poison a shared cache with draft titles.
 - **Index maintenance is a trigger, not a job.** `refresh_search_document(entity_type, entity_id)`
-  fires on insert, update and delete of every source table. `scripts/search/reindex.ts` is the only
-  supported repair path.
+  fires on insert, update and delete of every source table, and on the two product join tables and
+  the two category tables, because a material attached or a category renamed changes what a product
+  should match. `scripts/search/reindex.ts` is the only supported repair path; `--dry-run` reports
+  source-versus-index counts per type and is the drift check.
+- **A row with no derivable title is not indexed, rather than refusing the write.** The index's
+  `title` is NOT NULL, and a media asset may legitimately have no title, no Rivya id and no
+  filename. Making that an index-time omission instead of a constraint violation is what stops a
+  search trigger failing a write that has nothing to do with search.
 - **Keyboard and screen reader.** The overlay traps focus, closes on `Esc`, is arrow-navigable, and
   announces its result count through a polite live region.
 
@@ -816,11 +840,23 @@ Fields: `slug` · `name` · `family` (`resin · timber · metal · stone · fini
 **Guardrail.** `description` is `EDITORIAL_COPY`. **No durability, certification or performance claim
 may be entered here** (D10). A material story is prose about a material, not a specification.
 
-### 7.5 `/studio/catalog/relationships`
+### 7.5 `/studio/catalog/relationships` — **BUILT, Phase 23**
 
-The FEAT §10/§11 relationship workspace: an entity picker, edges grouped by relation type with drag
-reordering, a Suggestions panel per rule with Accept / Dismiss, an inverse-edge indicator, and a
-coverage panel counting published products with zero manual edges.
+The FEAT §10/§11 relationship workspace: a coverage panel, a piece picker, the selected piece's
+edges, and a Suggestions panel with Accept / Dismiss.
+
+**What shipped, and one thing that did not.** The picker is a list of links and the page is
+server-rendered per piece, so a piece's relationships have a URL somebody can send to a colleague
+and the suggestions are always computed from the database the editor is looking at. Every control
+is a form posting to a Server Action; the page carries no client state at all. **Reordering exists
+as an action (`reorderRelationsAction`) but not yet as a drag handle** — the ordering contract, the
+audit row and the permission check are all in place, and what is missing is the pointer interaction,
+which would be this workspace's first client island. Recorded here rather than implied, because
+§7.5 previously described the drag as though it existed.
+
+**Creating an edge by hand is still done on the product's own Related tab** (§7.1.2), where the
+editor is already looking at the piece. A second create form here would be a second place for the
+same act to go wrong.
 
 Relation vocabulary (`check`-constrained on both relation tables): `RELATED_PRODUCT ·
 PORTFOLIO_PROJECT · JOURNAL_ARTICLE · DESIGN_FAMILY · RESIN_STYLE · WOOD_SPECIES ·
@@ -844,7 +880,18 @@ similarity, and anything phrased "customers also viewed" — there are no custom
 
 `product_attribute_terms` (design families, resin styles, wood species) ships with **zero rows**. The
 vocabulary is the owner's; a term surfaced publicly carries `OWNER_VERIFICATION_REQUIRED` until
-verified.
+verified — it is the column's DEFAULT here, not something an editor has to remember to set.
+
+**The four rule reasons are seeded `global_content` rows**, not sentences compiled into the
+software: what a rule claims to have observed is copy an editor may need to reword. Each suggestion
+also shows its EVIDENCE — the collection's name, the two shared materials, the linked path — so an
+editor can check the rule's working rather than trust it. A suggestion whose reason row has not been
+seeded renders no sentence at all rather than its key.
+
+**A piece with no connections is not a defect.** The coverage panel counts published pieces with no
+hand-made edges and says so in a seeded sentence; those pieces render Phase 15's honest
+"More in {Category}" fallback, which is a correct page. Phase 23 gives editors a way to replace that
+fallback with real edges — it does not upgrade the fallback's label.
 
 ### 7.6 `/studio/catalog/customization-forms` and `/[formId]`
 

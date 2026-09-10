@@ -1743,18 +1743,47 @@ Studio preview reads with a staff client the public clause does not bind.
 
 ## 10. Search, relations, bulk and operations
 
-### Search — Phase 23 · migrations `0210`–`0212`
+### Search — Phase 23 · migrations `0210`–`0212` · **SHIPPED**
 
 | Table | Key columns | Keys / RLS |
 |---|---|---|
-| `search_documents` | `id`, `entity_type text check (entity_type in ('product','category','collection','portfolio_project','journal_article','material','media_asset','inquiry'))`, `entity_id uuid`, `visibility search_visibility`, `status content_status`, `url_path`, `title text not null`, `subtitle`, `body`, `keywords text[]`, `image_media_id`, `category_slug citext`, `search_vector tsvector generated always as (…) stored`, `indexed_at` | `unique (entity_type, entity_id)`; GIN on `search_vector`; GIN `gin_trgm_ops` on `title`. RLS-SERVICE **plus the one named `anon` grant permitted by §1.5**: anon `select using (visibility = 'PUBLIC' and status = 'PUBLISHED')`; staff `select` for any active role; writes by `security definer` triggers only, never by a role policy |
+| `search_documents` | `id`, `entity_type text check (entity_type in ('product','category','collection','portfolio_project','journal_article','material','media_asset','inquiry'))`, `entity_id uuid`, `visibility search_visibility`, `status text` (see below), `url_path`, `title text not null`, `subtitle`, `body`, `keywords text[]`, `image_media_id`, `category_slug citext`, `search_vector tsvector generated always as (…) stored`, `indexed_at` | `unique (entity_type, entity_id)`; GIN on `search_vector`; GIN `gin_trgm_ops` on `title`. RLS-SERVICE **plus the one named `anon` grant permitted by §1.5**: anon `select using (visibility = 'PUBLIC' and status = 'PUBLISHED')`; staff `select` for any active role; writes by `security definer` triggers only, never by a role policy |
 | `research_search_documents` | Same shape; `entity_type check (entity_type in ('research_product','research_source','research_run'))` | Created **empty** in Phase 23 so the separation is visible in the schema from day one. RLS-RESEARCH. **No `anon` policy, ever** |
 | `search_queries` | `id`, `query_text`, `normalized_query`, `scope text check (scope in ('PUBLIC','STUDIO'))`, `result_count int`, `staff_user_id uuid null`, `occurred_at` | No IP, no user agent, no visitor identifier. 90-day retention. `select` requires `analytics.read` |
 
 Two indexes, two audiences, one boundary: public search covers products, categories, collections,
 portfolio and journal; Studio search additionally covers media, inquiries and the research corpus.
 Nothing under `app/(site)/**` may reference a `research_` identifier — enforced by
-`check-data-layer.mjs`.
+`scripts/search/check-search-scope.mjs`, which walks the import graph from the four public search
+entry points and fails on `research_`, `researchProduct`, `researchSearch` or `scraper`. It is
+wired into `npm run check` and into CI. (The phase document named `check-data-layer.mjs`; that
+script enforces a different rule — no `.from()` outside the repositories — and was never going to
+catch this one.)
+
+**`status` is `text`, not `content_status`, and the row above was corrected in Phase 23.** Seven of
+the eight indexed entities carry `content_status`; `inquiries` does not — §1.4 exempts it and it
+carries `pipeline_status inquiry_status` instead. There is therefore no legal `content_status` value
+an inquiry document could hold, and `refresh_search_document('inquiry', …)` would have to invent a
+mapping. It does not: `status` stores the source row's own token verbatim, under a CHECK over the
+union of both enums' twelve labels. The anon predicate is unaffected, because
+`check (entity_type not in ('material','media_asset','inquiry') or visibility = 'STAFF')` makes
+"only public types are ever PUBLIC" structural rather than conventional.
+
+**What actually shipped, beyond the table shapes.**
+
+- `rv_unaccent(text)` and `rv_keyword_text(text[])` — IMMUTABLE wrappers, because the generated
+  `search_vector` column will not accept `extensions.unaccent` (STABLE) or the generic
+  `array_to_string` (STABLE). `rv_unaccent` is granted to `anon`; `rv_keyword_text` is not, because
+  only the definer trigger evaluates it.
+- `refresh_search_document(entity_type, entity_id)` — `security definer`, the ONLY writer of
+  `search_documents`, plus eleven trigger functions calling it (one per source table, two for the
+  product join tables, two for a category rename that changes every child's keywords). A row with no
+  derivable title is deleted from the index rather than refused at the source, so an untitled media
+  asset stays writable.
+- `search_documents_query(...)` and `search_documents_count(...)` — `security invoker`, granted to
+  `anon`, because PostgREST cannot express `websearch_to_tsquery`, `ts_rank_cd` or `similarity` as
+  filters. `p_prefix` builds a `:*` query from sanitised tokens for the type-ahead; the results page
+  leaves it off and relies on the 0.30 trigram fallback for a partial word.
 
 ### Relations — Phases 16 and 23
 
@@ -1765,8 +1794,23 @@ their owning phases define them, with a consolidation proposal in §14 (open que
 |---|---|---|---|
 | `product_relations` | 03, altered 23 | `products` only | Product → anything (§6) |
 | `entity_relations` | 16 | any `relation_entity` | The general edge introduced for collection exhibitions: `id`, `source_type relation_entity`, `source_id`, `target_type relation_entity`, `target_id`, `relation_type relation_kind`, `note`, `sort_order`, `created_at`, `created_by`; `unique (source_type, source_id, target_type, target_id, relation_type)`; `check (not (source_type = target_type and source_id = target_id))` |
-| `content_relations` | 23 | `portfolio_project`, `journal_article`, `collection` | `id`, `source_type text check (...)`, `source_id`, `target_type`, `target_id`, `relation_type`, `sort_order`, `origin relation_origin not null default 'EDITOR'`, `rule_key`, `note`, `paired_relation_id`, plus Tier A+B; `unique (source_type, source_id, target_type, target_id, relation_type)` |
-| `relation_suppressions` | 23 | — | `id`, `source_type`, `source_id`, `target_type`, `target_id`, `rule_key text not null`, `reason`, `suppressed_by`, `suppressed_at`. A dismissed suggestion never returns |
+| `content_relations` | 23 | `portfolio_project`, `journal_article`, `collection` | `id`, `source_type text check (...)`, `source_id`, `target_type`, `target_id`, `relation_type`, `sort_order`, `origin relation_origin not null default 'EDITOR'`, `rule_key`, `note`, `paired_relation_id`, plus `created_at`/`created_by`; `unique (source_type, source_id, target_type, target_id, relation_type)`. **Tier A+B was the draft and is wrong: this is an EDGE, and every shipped edge in the schema — `product_relations`, `entity_relations`, the four Phase 03 join tables — carries `created_at` and `created_by` and nothing else. A `status` here would allow a DRAFT relation, which is a state nobody can act on: either an editor made the connection or they did not. Corrected when the table shipped** |
+| `relation_suppressions` | 23 | — | `id`, `source_type`, `source_id`, `target_type`, `target_id`, `rule_key text not null`, `reason`, `suppressed_by`, `suppressed_at`; `unique (source_type, source_id, target_type, target_id, rule_key)`. A dismissed suggestion never returns |
+| `product_attribute_terms` | 23 | — | FEAT §10's three vocabularies in one table under a `taxonomy attribute_taxonomy` enum. Tier A + Tier B, the D10 gate, `unique (taxonomy, slug)`. **Ships with zero rows and no seed module writes it**; `owner_verification` defaults to `OWNER_VERIFICATION_REQUIRED`, which is the opposite of most tables and deliberate — the default state of a claim about what this workshop can make is "unconfirmed" |
+
+**The relation vocabulary is now a CHECK, which `product-edges.ts` previously recorded as a
+deliberate non-decision.** `is_relation_type()` fixes nine names — `RELATED_PRODUCT ·
+PORTFOLIO_PROJECT · JOURNAL_ARTICLE · DESIGN_FAMILY · RESIN_STYLE · WOOD_SPECIES ·
+CUSTOMIZATION_FORM · MATERIAL_STORY · DESIGN_DIRECTION` — and `is_relation_target()` fixes six
+lower-case targets. Both are asserted against their TypeScript copies by
+`tests/unit/relation-rules.test.ts`. The old four-item lower-case list was a UI vocabulary with one
+writer; Phase 23 gives it four, at which point "the component decides" stops being true.
+
+**Reciprocity.** `RELATED_PRODUCT`, `PORTFOLIO_PROJECT` and `JOURNAL_ARTICLE` create the inverse
+edge with a shared `paired_relation_id`; removing either removes both. The inverse's relation TYPE
+is derived from the original SOURCE, not the original target — a product's `PORTFOLIO_PROJECT` edge
+inverts to the project's `RELATED_PRODUCT` edge — because the name describes what is at the far end.
+
 
 **RLS** — none of these is publicly readable *by itself*. The public reads them only through
 repository functions that re-filter targets to `PUBLISHED` rows, because an edge to an unpublished
@@ -2051,7 +2095,7 @@ local and hosted is isolated to one file that can never be picked up by `supabas
 | 20 | `0190`–`0191` | T `inquiries`, `inquiry_attachments`, `inquiry_events`; enums `inquiry_kind`, `inquiry_status`, `whatsapp_state`, `inquiry_event_kind`; S `inquiry_reference_seq`; F `allocate_inquiry_reference()`, `log_inquiry_created()`, `log_inquiry_status_change()`, `reject_inquiry_event_mutation()`, `inquiry_is_fresh()`, `attach_inquiry_references()`, `record_inquiry_handoff()`; `0191` is the generated RLS, the first to carry an anon INSERT policy. **Renumbered from the phase document's `0180`–`0182`, which Phase 19's session had already spent, and there is no third migration: SEED §21's contact facts already have one home in the `contact-details` section and a `global_content` CONTACT group would be a second — amendment A20** |
 | 21 | `0194`–`0195` | T `model_variant_labels`; A `media_assets.viewer_settings`, the size/triangle/poster checks, the association-is-model check, and the `associated_project_id` foreign key Phase 06 declared ahead of its table; F `is_valid_viewer_settings()` (with `model_setting_number()`, `model_setting_vec3()`, `is_valid_model_camera()`), `guard_model_still_references()`, `guard_product_model_reference()`, `guard_variant_label_parent()`, `set_model_association()`; `0195` is the generated RLS. **Renumbered from the phase document's `0190`, which Phase 20 spent — amendment A21** |
 | 22 | `0200`–`0201` | T `merchandising_slots`, `merchandising_entries`; enum `merch_fallback`; F `guard_merchandising_entry()`, `merchandising_category_slot_key()`, `sync_category_pinned_slot()`, `merch_move_entry()`, `merch_run_schedule()`; the eleven slot rows inserted as structure under the `allow-insert` marker; `0201` is the generated RLS. **The numbers are the phase document's own; the slot count (eleven, none reusable) and the categories trigger are amendment A22** |
-| 23 | `0210`–`0213` | T `search_documents`, `research_search_documents` (empty), `search_queries`, `content_relations`, `relation_suppressions`, `product_attribute_terms`; A `product_relations`; enums `search_visibility`, `relation_origin`, `attribute_taxonomy` |
+| 23 | `0210`–`0214` | T `search_documents`, `research_search_documents` (empty), `search_queries`, `content_relations`, `relation_suppressions`, `product_attribute_terms`; A `product_relations` (+`origin`, `rule_key`, `note`, `paired_relation_id`, the vocabulary CHECKs); enums `search_visibility`, `relation_origin`, `attribute_taxonomy`; F `rv_unaccent()`, `refresh_search_document()` and its eleven trigger functions, `is_relation_type()`, `is_relation_target()`. **`0214` is one past the phase document's `0210`–`0213`, and the reason is mechanical: a generated policy file is rewritten whole by `auth:gen-policies`, so it cannot also hold the DDL that creates its tables. `0213` creates the relation tables, so their policies need a file of their own. `0212` is the generated RLS for the search index and `0214` for the relations — the same split Phase 19 made with `0172` and `0183` — amendment A23** |
 | 24 | `0220` | T `bulk_operations`, `bulk_operation_items`, `bulk_imports`, `bulk_import_rows` |
 | 25 | `0230`–`0233` | T `research_sources`, `research_jobs`, `research_runs`, `research_work_items`, `research_fetches`, `research_raw_items`, `research_products`, `research_pipeline_events`, `research_robots_cache`; six research enums |
 | 26 | `0240` | A `research_sources`; T `research_source_url_patterns`, `research_source_category_map`, `research_source_schedules`, view `research_source_health_v`; four source enums |

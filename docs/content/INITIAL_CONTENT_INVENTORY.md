@@ -7,7 +7,7 @@ SEED §54’s audit of what the content seed actually put in the database, read 
 database rather than from the seed modules. Its target is §54’s: **100% of intended launch
 copy mapped to a Studio editing control.**
 
-- **531** rows audited
+- **550** rows audited
 - **68** await owner verification and cannot be published until it is given
 - **0** are authored and deferred to a later phase’s tables
 - **0** carry a bound media asset
@@ -217,6 +217,8 @@ the phase that creates its table.
 | Global content | global:ACTION_LABEL.media.play | ACTION_LABEL.media.play | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | global:ACTION_LABEL.place_order | ACTION_LABEL.place_order | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | global:ACTION_LABEL.request_a_quote | ACTION_LABEL.request_a_quote | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:ACTION_LABEL.search.see_all | ACTION_LABEL.search.see_all | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:ACTION_LABEL.search.see_more_in_group | ACTION_LABEL.search.see_more_in_group | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | global:ACTION_LABEL.view_details | ACTION_LABEL.view_details | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | global:ANNOUNCEMENT.bar.cta_href | ANNOUNCEMENT.bar.cta_href | Yes | Yes | `/studio/content/pages/global` | No | — | — | DRAFT |
 | Global content | global:ANNOUNCEMENT.bar.cta_label | ANNOUNCEMENT.bar.cta_label | Yes | Yes | `/studio/content/pages/global` | No | — | — | DRAFT |
@@ -384,6 +386,23 @@ the phase that creates its table.
 | Global content | global:UI_LABEL.product.specifications.heading | UI_LABEL.product.specifications.heading | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | global:UI_LABEL.project.gallery.caption | UI_LABEL.project.gallery.caption | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | global:UI_LABEL.project.gallery.heading | UI_LABEL.project.gallery.heading | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.relations.coverage | UI_LABEL.relations.coverage | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.relations.rule.journal_linked_product | UI_LABEL.relations.rule.journal_linked_product | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.relations.rule.project_featured_product | UI_LABEL.relations.rule.project_featured_product | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.relations.rule.same_collection | UI_LABEL.relations.rule.same_collection | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.relations.rule.shared_materials | UI_LABEL.relations.rule.shared_materials | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.search.count | UI_LABEL.search.count | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.search.count.none | UI_LABEL.search.count.none | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.search.count.one | UI_LABEL.search.count.one | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.search.group.category | UI_LABEL.search.group.category | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.search.group.collection | UI_LABEL.search.group.collection | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.search.group.journal_article | UI_LABEL.search.group.journal_article | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.search.group.portfolio_project | UI_LABEL.search.group.portfolio_project | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.search.group.product | UI_LABEL.search.group.product | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.search.similar.body | UI_LABEL.search.similar.body | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.search.similar.heading | UI_LABEL.search.similar.heading | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.search.suggestions.hint | UI_LABEL.search.suggestions.hint | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.search.suggestions.label | UI_LABEL.search.suggestions.label | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | global:UI_LABEL.testimonial.attribution | UI_LABEL.testimonial.attribution | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | global:UI_LABEL.testimonial.heading | UI_LABEL.testimonial.heading | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | global:WHATSAPP_TEMPLATE.commission | WHATSAPP_TEMPLATE.commission | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |

@@ -88,16 +88,36 @@ const ALLOWED = new Map([
     'components/patterns/SiteErrorCopy/index.tsx',
     "carries the error boundary's seeded copy across a boundary Next requires",
   ],
+  /**
+   * THE SIXTH, ADDED BY PHASE 23, AND THE BUDGET BELOW WAS RAISED IN THE SAME EDIT.
+   *
+   * FEAT §18 asks for search from anywhere on the site, so the box lives in the shell and is
+   * therefore on the homepage's graph like the mega menu and the drawer. It cannot be a Server
+   * Component: the whole of what it adds over the plain form beneath it — suggestions as you type,
+   * arrow-key navigation, `aria-activedescendant` — is state that changes between keystrokes.
+   *
+   * What it does NOT buy is the search itself. Without JavaScript the input is a
+   * `<form method="get" action="/search">` and submits to the full results page, so a failed
+   * bundle costs suggestions and nothing else.
+   */
+  [
+    'components/patterns/SearchCombobox/index.tsx',
+    'the header search box: suggestions, arrow-key navigation and the ARIA combobox state',
+  ],
 ])
 
 /**
  * The number, kept separate from `ALLOWED.size` on purpose.
  *
  * Deriving it would make the budget whatever the allowlist happens to contain, so adding an island
- * would raise the budget in the same edit and nothing would ever fail. Written out, a sixth island
- * fails this gate even if somebody remembered to list it.
+ * would raise the budget in the same edit and nothing would ever fail. Written out, a seventh
+ * island fails this gate even if somebody remembered to list it.
+ *
+ * RAISED FROM FIVE TO SIX BY PHASE 23, which added the header search box. That is the edit this
+ * comment describes and it is the only way the number is allowed to move: deliberately, with the
+ * new island named above and a sentence saying why it cannot be a Server Component.
  */
-const BUDGET = 5
+const BUDGET = 6
 
 const EXTENSIONS = ['.tsx', '.ts', '.mjs', '.js', '.jsx']
 

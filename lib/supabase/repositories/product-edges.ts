@@ -2,7 +2,14 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 
 import type { Database } from '../database.types'
 import { PermissionError } from '../errors'
-import { productRelationSchema, type ProductRelation } from '../schemas'
+import {
+  productRelationSchema,
+  RELATION_TARGETS,
+  RELATION_VOCABULARY,
+  type ProductRelation,
+  type RelationTarget,
+  type RelationVocabulary,
+} from '../schemas'
 import { parseRows, toRepositoryError } from './support'
 
 type Client = SupabaseClient<Database>
@@ -273,20 +280,20 @@ export async function setProductMaterialLinks(
  * table the renderer has never heard of; an open `relation_type` would let one write "customers
  * also bought", which is a claim about behaviour this business does not measure.
  *
- * LOWERCASE, AND THAT IS NOT A STYLE CHOICE. `product_relations.target_type` is plain `text` with
- * no constraint, and until this file there was exactly one concrete value anywhere in the
- * repository: the `edge.target_type === 'product'` filter on `/product/[slug]`. A tidier-looking
- * `'PRODUCT'` here would have matched nothing — every hand-curated relation an editor created would
+ * LOWERCASE TARGETS, AND THAT IS NOT A STYLE CHOICE. `product_relations.target_type` held plain
+ * lower-case text from Phase 03, and the `/product/[slug]` route filters on `'product'`. A tidier
+ * `'PRODUCT'` would have matched nothing — every hand-curated relation an editor created would
  * have silently fallen through to the same-category fallback, on a route whose entire promise is
- * that the curated set wins. The route now imports `RELATION_TARGET.product` from here rather than
- * holding its own literal, so the two cannot drift apart again.
+ * that the curated set wins. Phase 23 fixed the list as a CHECK constraint (`is_relation_target()`,
+ * 0213) and kept the case for exactly that reason.
  *
- * NOT A DATABASE CONSTRAINT, deliberately, unlike the Phase 14 commerce guards. Those defend
- * business FACTS a visitor reads as true — a price, a stock claim — where a row written around the
- * application is the hazard. This is a UI vocabulary: every row comes from the Related tab, nothing
- * seeds or imports the table, and Phase 23's suggestion engine will widen the list, which a CHECK
- * would turn into a migration for what is really a component's business. `DATA_MODEL.md` records
- * that decision so Phase 23 can revisit it deliberately.
+ * IT IS NOW A DATABASE CONSTRAINT, WHICH THIS COMMENT USED TO SAY IT DELIBERATELY WAS NOT. The old
+ * reasoning was that the vocabulary is a component's business and a CHECK would turn a UI decision
+ * into a migration — sound while there was one screen writing one table. Phase 23 adds a second
+ * table (`content_relations`), a suggestion engine that proposes edges, and a workspace that
+ * accepts them, so the vocabulary is now shared by four writers and "the component decides" stops
+ * being true. The list below and `is_relation_type()` in SQL are the same nine names, and
+ * `tests/unit/relation-rules.test.ts` asserts they have not drifted.
  */
 export const RELATION_TARGET = {
   product: 'product',
@@ -294,14 +301,15 @@ export const RELATION_TARGET = {
   portfolio: 'portfolio',
   journal: 'journal',
   material: 'material',
+  attributeTerm: 'attribute_term',
 } as const
 
-export const RELATION_TARGET_TYPES = Object.values(RELATION_TARGET)
+export const RELATION_TARGET_TYPES = RELATION_TARGETS
 
-export const RELATION_TYPES = ['related', 'part_of', 'made_from', 'featured_in'] as const
+export const RELATION_TYPES = RELATION_VOCABULARY
 
-export type RelationTargetType = (typeof RELATION_TARGET)[keyof typeof RELATION_TARGET]
-export type RelationType = (typeof RELATION_TYPES)[number]
+export type RelationTargetType = RelationTarget
+export type RelationType = RelationVocabulary
 
 export async function listProductRelations(
   client: Client,

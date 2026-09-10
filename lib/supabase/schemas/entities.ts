@@ -1,5 +1,7 @@
 import { z } from 'zod'
 
+import { relationOriginSchema, relationTargetSchema, relationVocabularySchema } from './search'
+
 import type { Tables } from '../database.types'
 import {
   auditColumns,
@@ -298,13 +300,26 @@ export const productSpecSchema = z.object({
   fact_classification: factClassificationSchema,
 }) satisfies z.ZodType<Tables<'product_specs'>>
 
+/**
+ * A product's outward edges. Phase 03 `0006`, extended by Phase 23 `0213`.
+ *
+ * `target_type` AND `relation_type` NARROW TO THE PHASE 23 VOCABULARIES, which they did not before:
+ * both columns were plain `text` with no constraint, and the only list anywhere was four lower-case
+ * strings in a repository whose own comment deferred the decision to this phase. `0213` fixes both
+ * as CHECK constraints, so parsing may narrow them here — and narrowing them is what makes the
+ * renderer's switch exhaustive instead of falling through on a value nobody drew.
+ */
 export const productRelationSchema = z.object({
   id: uuidSchema,
   source_product_id: uuidSchema,
-  target_type: z.string(),
+  target_type: relationTargetSchema,
   target_id: uuidSchema,
-  relation_type: z.string(),
+  relation_type: relationVocabularySchema,
   sort_order: z.number().int(),
+  origin: relationOriginSchema,
+  rule_key: z.string().nullable(),
+  note: z.string().nullable(),
+  paired_relation_id: uuidSchema.nullable(),
   created_at: timestampSchema,
   created_by: uuidSchema.nullable(),
 }) satisfies z.ZodType<Tables<'product_relations'>>

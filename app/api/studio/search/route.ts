@@ -5,6 +5,9 @@ import { runProviders } from '@/components/studio/command/registry'
 // Imported for its side effect: registering the route provider. Without this the endpoint would
 // answer every query with an empty list and nothing would say why.
 import '@/components/studio/command/route-provider'
+// And Phase 23's eight entity providers, registered the same way and for the same reason: an
+// import for its side effect, so the endpoint answers with records as well as with routes.
+import '@/components/studio/command/providers'
 import { AuthenticationError, AuthorizationError, requirePermission } from '@/lib/auth/require'
 
 /**
