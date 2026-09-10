@@ -11,7 +11,7 @@ Every phase adds an entry; see `docs/architecture/CANONICAL-DECISIONS.md` D9 for
 The merged phase was re-read adversarially. Nineteen findings came back, each was verified by
 execution or by SQL rather than accepted, eight were wrong and eleven were real.
 
-**Migration `0262`** corrects two CHECK constraints in `0260` that passed what they were written to
+**Migration `0262`, applied locally AND to the hosted project,** corrects two CHECK constraints in `0260` that passed what they were written to
 refuse — the same NULL-evaluates-to-PASS family `0260` documents once and then broke twice more.
 `research_material_lexicon_token_shape` was case-insensitive because `token` is `citext` and citext
 overloads `~` to the case-insensitive operator; `has_no_blank_pattern` let a SQL NULL element

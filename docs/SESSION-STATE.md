@@ -204,6 +204,13 @@ written to demand lower case. And `has_no_blank_pattern` let a SQL NULL element 
 resolve the case-sensitive operator, and an explicit `p.entry is null` test — and two RLS
 regression tests now insert exactly the rows that used to be accepted.
 
+**`0262` is applied to the hosted project as well as locally, and was proved to BEHAVE there rather
+than merely to exist.** Against `ccvarsmzickdkryoakdg`: `OAK` is refused by the token shape and `oak`
+accepted; `has_no_blank_pattern` refuses an array containing a SQL NULL and one containing
+whitespace, and accepts a good one. The ledger row carries the local file's SHA-256
+(`ae6146e1…`), so `db:migrate` sees the two databases at the same version rather than re-running it.
+The forty seeded rows are untouched and none of them is non-lower-case.
+
 **The pipeline event violated its own table's constraint.** `research_pipeline_events_moves_somewhere`
 requires `from_stage` and `to_stage` to differ OR both to be present; three call sites in
 `match.ts` wrote an event with neither. `recordEventAtCurrentStage()` in `lib/scraper/core/stage.ts`
