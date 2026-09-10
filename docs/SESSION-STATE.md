@@ -94,7 +94,9 @@ never overwrites a hand-corrected field.
 1. Code exists and is committed — two migrations, eight normalisation modules, two validation
    modules, two workflows, five repositories, the re-normalisation script, three Studio surfaces, a
    command-palette provider, six unit suites, one RLS suite, one e2e spec.
-2. Migrations applied locally; hosted apply is the next action (see below).
+2. Migrations applied locally **and to the hosted project**, with ledger rows carrying the files'
+   real SHA-256 checksums. Hosted now reads 77 ledger rows / 71 tables / 240 policies / 40 lexicon
+   terms — level with local on every figure. See the parity note below.
 3. Tests written and passing: 2,727, none skipped.
 4. Gates pass, including `research:check-isolation` with its now-closed two-entry allowlist.
 5. Documentation updated: SCRAPER §19, DATA_MODEL §12 and the vocabulary table, STUDIO_GUIDE §12.5
@@ -104,7 +106,7 @@ never overwrites a hand-corrected field.
 7. Nothing in the manifest regenerated; no competitor image fetched — `image_urls` are strings.
 8. Remaining issues documented — see "what is NOT built" above.
 9. The next phase is named: **29 — Change Detection + Review**.
-10. Hosted apply of `0260`–`0261` is the one outstanding step and is the next exact action.
+10. Hosted is level with the repository through `0261`.
 
 ### Phase 28: three defects found and fixed rather than worked around
 
@@ -117,11 +119,49 @@ never overwrites a hand-corrected field.
   which would have made the rule unreachable — this phase's own named risk, arrived at from the
   inside. It now catches what actually survives that filter: a reference a broken template built.
 
+### Phase 28: hosted parity, measured rather than assumed
+
+The two migrations were transcribed into `mcp__Supabase__apply_migration` with their `--` and
+`/* */` comments stripped — **and the stripper was itself proved** before it was trusted: the
+stripped files were replayed into a scratch database alongside every other migration, and a
+structure digest over 2,514 objects (columns, constraints, policies, function definitions, indexes,
+comments, triggers) came back byte-identical to the database the originals produce.
+
+Compared against local afterwards, with the same `search_path` on both:
+
+| Category | Objects | Result |
+|---|---|---|
+| Columns | 1,068 | identical |
+| Constraints | 552 | identical |
+| Indexes | 307 | identical |
+| Policies | 240 | identical |
+| Triggers | 108 | identical |
+| Function bodies | 95 | identical once comments and whitespace are removed |
+| Table/column comments | 144 | 143 identical, 1 pre-existing difference |
+
+**Phase 28's own objects are byte-identical**: all four functions (same md5 AND same length), all 37
+constraints on the three new tables plus `research_products`, and all 11 comments.
+
+**Two pre-existing drifts were found and are recorded rather than fixed**, because neither is this
+phase's and neither changes behaviour:
+
+- **Eighteen function bodies from Phases 08–25 carry their inline comments on local and not on
+  hosted** — an earlier session's hosted apply stripped them. The executable SQL is identical: with
+  comments and whitespace removed, all 95 function bodies hash the same on both databases
+  (`926fa225…`).
+- **`inquiries.pipeline_status`'s comment differs by one character**: local reads "DATA_MODEL §1.4",
+  hosted reads "DATA_MODEL 1.4". The section sign was lost in Phase 20's apply.
+
+Both would be closed by re-applying the affected migrations with their comments intact. Neither
+affects a query, a constraint, a policy or a type, so neither is worth a migration of its own — a
+phase that touches one of those functions for another reason should carry the comments back.
+
 ### The next exact action
 
-**Apply `0260`–`0261` to the hosted Supabase project** and record the ledger rows, then verify parity
-(expect 77 ledger rows, 71 tables, 240 policies, and exactly two research → public foreign keys).
-Then begin **Phase 29 — Change Detection + Review**, migrations `0270`–`0271`.
+Begin **Phase 29 — Change Detection + Review**, migrations `0270`–`0271`. It diffs consecutive
+`research_product_versions` rows — which is why Phase 28 stamped `normalized` and
+`normalizer_version` on each version rather than only on the product, so "did the page change, or
+did we start reading it differently" stays answerable.
 
 ---
 

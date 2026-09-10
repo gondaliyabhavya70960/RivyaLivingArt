@@ -14,7 +14,7 @@ that **a value Rivya could not parse is recorded as unparsed, never as a guess**
 downstream comparison, scale band, opportunity score and shortlist decision inherits that first
 judgement, and none of them can tell a guessed figure from a read one.
 
-**Migrations `0260`–`0261`.** Twenty-three normalisation columns on `research_products`;
+**Migrations `0260`–`0261`, applied locally AND to the hosted project.** Twenty-three normalisation columns on `research_products`;
 `research_validation_issues`, `research_match_candidates` and `research_material_lexicon` (forty
 seeded terms, editable in Studio); `research_products_matched_category_fk` — the **second and final**
 allowlisted research → public foreign key, closing the allowlist for good; a rewritten
@@ -61,8 +61,11 @@ tab with issue counts, per-source parse coverage and the material lexicon editor
 traffic**, respecting every hand-corrected field and reporting how many it left alone.
 
 **Verification.** 33 gates green; 2,727 unit and RLS tests pass, including six new normalisation
-suites and 38 new RLS cases; production build succeeds against a local PostgREST with both new routes
-present. Amendment **A28** records the six readings the repository forced.
+suites and 39 new RLS cases; production build succeeds against a local PostgREST with both new routes
+present. Hosted parity was measured rather than assumed: every column, constraint, index, policy and
+trigger is byte-identical, every Phase 28 function and comment is byte-identical, and the only
+differences anywhere are two pre-existing cosmetic drifts from Phases 08–25 recorded in
+`docs/SESSION-STATE.md`. Amendment **A28** records the six readings the repository forced.
 
 ### Phase 27 — Scraper Extraction
 
