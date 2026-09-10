@@ -228,9 +228,9 @@ Never compiled into client JavaScript. Every module that reads one carries `impo
 | | |
 |---|---|
 | Class | **Secret** — grants cache invalidation and scheduled-job invocation |
-| Purpose | Guards `POST /api/revalidate` (the only cache-invalidation entry point) and **six of the seven** cron routes. `app/api/cron/research` does not read it — it authenticates on Vercel's `x-vercel-cron` header alone and `404`s otherwise (`DEPLOYMENT.md` §3.1) |
+| Purpose | Guards `POST /api/revalidate`, the only cache-invalidation entry point. **As built, it guards nothing else.** The paragraph this row used to carry — six of seven cron routes reusing it, and `app/api/cron/research` authenticating on `x-vercel-cron` alone — described a plan that Phase 25 settled the other way: `CRON_SECRET` now exists, and **both** cron routes that have been built (`content-schedule`, `research`) authenticate with it. See §6 open question 2, and amendment A25 |
 | Set in | Vercel (server scope) per environment, unique per environment; `.env.local` |
-| Read by | `app/api/revalidate/route.ts`, `app/api/cron/{content-schedule,research-analytics,research-score,sheets-sync,analytics-snapshot,log-retention}/route.ts`, `lib/cms/publishing.ts` |
+| Read by | `app/api/revalidate/route.ts` and `lib/cms/publishing.ts`. The five research and ops cron routes named here previously do not exist yet (Phases 31–38); when they are built they take `CRON_SECRET`, like the two that do |
 | Without it | Publishing still writes, but the cache is not invalidated: pages stay stale for at most their `revalidate` window and a `WARNING` is written to `system_logs` on channel `CONTENT`. Those six cron routes reject every invocation — scheduled publication, nightly snapshots, scoring, the Sheets sync and log retention all stop silently; the research drain keeps running |
 | Blast radius if leaked | Forced cache invalidation (a cost and availability nuisance, not a data breach) and the ability to trigger scheduled jobs |
 | Rotation | Engineer, 90 days. Rotate the publish service and the routes in the same window |
@@ -482,12 +482,22 @@ What a visitor and an operator see when each variable is missing or wrong.
    `VERCEL_GIT_COMMIT_SHA`, `VERCEL_GIT_COMMIT_REF` are read by the Environment page and
    `check-env.ts`. Suggested amendment: note in D8 that platform-injected variables are permitted
    and are not project-set.
-2. **No cron secret, and two schemes for seven routes.** Six cron routes reuse `REVALIDATE_SECRET`;
-   `app/api/cron/research` uses Vercel's `x-vercel-cron` header alone and cannot be exercised outside
-   Vercel. Suggested amendment: add `CRON_SECRET` to D8's server-only list and normalise all seven onto
-   it, so one secret does not guard two unrelated capabilities and one route is not untestable.
-   (`DEPLOYMENT.md` §13 item 1, `SECURITY.md` §16 item 2, `ARCHITECTURE.md` open question 3 and
-   `SCRAPER.md` §16 item 4 are the same amendment seen from five sides.)
+2. **~~No cron secret, and two schemes for seven routes.~~ RESOLVED IN PRACTICE, NOT YET IN D8.**
+   The question was whether cron routes should reuse `REVALIDATE_SECRET` or get their own secret,
+   and whether `app/api/cron/research` should authenticate on Vercel's `x-vercel-cron` header alone.
+   Both halves are now settled by what shipped: `CRON_SECRET` exists, and **both** built cron routes
+   — `content-schedule` (Phase 08) and `research` (Phase 25) — authenticate with it through
+   `checkCronAuth`, returning `503` when it is unset and `401` when it is wrong. `REVALIDATE_SECRET`
+   guards `/api/revalidate` and nothing else. Amendment A25 records why the research route answers
+   `401` rather than the phase document's `404`: two cron endpoints answering differently to the same
+   mistake is worse than either answer, and a `404` misleads an operator debugging a missed tick into
+   hunting a routing problem that is not there.
+
+   **What remains open is only the paperwork**: `CRON_SECRET` is not in D8's server-only list, so
+   the code and the canonical decision disagree about whether it exists. A D8 amendment adding it
+   closes this. (`DEPLOYMENT.md` §13 item 1, `SECURITY.md` §16 item 2, `ARCHITECTURE.md` open
+   question 3 and `SCRAPER.md` §16 item 4 are the same item seen from five sides and should be
+   updated together.)
 3. **Two tiers inside "server-only".** D8 has one server-only list, but `SCRAPER_USER_AGENT` is not a
    secret (its value is displayed, deliberately) and `GOOGLE_SHEETS_SPREADSHEET_ID` is an identifier
    rather than a credential. Suggested amendment: record the Secret / Sensitive / Server distinction
