@@ -58,6 +58,7 @@ import pg from 'pg'
 
 import { seedModules, type SeedModule, type SeedRecord } from '../../content/seed/index'
 import { contentHash, hashRowSubset } from './hash'
+import { readManifest } from '../../lib/media/manifest'
 
 const DEFAULT_SEED_VERSION = 'rivya-v1'
 
@@ -168,6 +169,26 @@ async function tableExists(name: string): Promise<boolean> {
  */
 const plannedKeys = new Set<string>()
 
+/**
+ * A media binding left unbound because the asset is in the MANIFEST but not in THIS database.
+ *
+ * TWO DIFFERENT STATES, TWO DIFFERENT ANSWERS. A binding naming an id the manifest does not carry
+ * is a typo in a module, and the run fails on it. A binding naming an id the manifest carries but
+ * `media_assets` does not is a database the Higgsfield migration has not been run against — CI's
+ * throwaway PostgreSQL, a fresh clone, a preview branch — and the honest answer is the one
+ * CONTENT_GUIDE §8 already states for an unbound slot: leave it null, report it as a gap, and
+ * substitute nothing. The run does not fail; the next run after the migration binds it (see the
+ * rebind in `applyRecord`). No placeholder is ever written.
+ */
+type MediaGap = { readonly seedKey: string; readonly column: string; readonly rivyaAssetId: string }
+const mediaGaps: MediaGap[] = []
+
+let manifestIds: Set<string> | null = null
+function manifestHas(rivyaAssetId: string): boolean {
+  manifestIds ??= new Set(readManifest().assets.map((asset) => asset.rivya_asset_id))
+  return manifestIds.has(rivyaAssetId)
+}
+
 /** Stands in for a uuid a dry run never allocates. Never written; the insert branch returns first. */
 const DRY_RUN_PLACEHOLDER = '00000000-0000-4000-8000-000000000000'
 
@@ -200,11 +221,17 @@ async function resolveReferences(record: SeedRecord): Promise<Record<string, str
     )
     const id = rows[0]?.id
     if (id === undefined) {
-      throw new Error(
-        `${record.seedKey}: ${column} binds media "${rivyaAssetId}", which is not in media_assets. ` +
-          'A binding names an asset the migration should have imported; an unbound slot is left ' +
-          'null and recorded as a gap instead. No placeholder is ever substituted.',
-      )
+      if (!manifestHas(rivyaAssetId)) {
+        throw new Error(
+          `${record.seedKey}: ${column} binds media "${rivyaAssetId}", which is not in the manifest. ` +
+            'A binding may only name an asset data/higgsfield/asset-manifest.json carries; this one ' +
+            'is a typo in the module, not a gap.',
+        )
+      }
+      // In the manifest, not in this database: the Higgsfield migration has not run here. Left
+      // unbound and reported; never substituted.
+      mediaGaps.push({ seedKey: record.seedKey, column, rivyaAssetId })
+      continue
     }
     resolved[column] = id
   }
@@ -351,7 +378,29 @@ async function applyRecord(record: SeedRecord): Promise<RecordResult> {
    */
   const storedVersion = row['content_seed_version'] as string | null
   if (runnerStillOwnsIt && storedHash === hash && storedVersion === seedVersion) {
-    return { seedKey: record.seedKey, table: record.table, outcome: 'unchanged' }
+    /**
+     * THE ONE THING AN UNCHANGED ROW MAY STILL NEED: a media binding that was a gap on an earlier
+     * run and resolves now, because the Higgsfield migration has run since. The hash cannot see
+     * it — media ids are deliberately outside the hash — so it is compared column by column here,
+     * and written on its own, with no other field touched.
+     */
+    const rebind = Object.keys(record.media ?? {}).filter(
+      (column) => references[column] !== undefined && row[column] !== references[column],
+    )
+    if (rebind.length === 0 || dryRun) {
+      return { seedKey: record.seedKey, table: record.table, outcome: 'unchanged' }
+    }
+    const rebindAssignments = rebind.map((column, i) => `${quoteIdent(column)} = $${i + 1}`)
+    await client.query(
+      `update ${table} set ${rebindAssignments.join(', ')} where seed_key = $${rebind.length + 1}`,
+      [...rebind.map((column) => references[column]), record.seedKey],
+    )
+    return {
+      seedKey: record.seedKey,
+      table: record.table,
+      outcome: 'updated',
+      detail: `bound ${rebind.join(', ')} — a media gap on an earlier run`,
+    }
   }
 
   // --- rule 4 (or a forced rule 5): update ---
@@ -588,6 +637,16 @@ async function main(): Promise<number> {
   console.log(`  skipped (owner edit)  ${counts.skippedOwnerEdited}`)
   console.log(`  deferred              ${counts.deferred}`)
   console.log(`  failed                ${counts.failed}`)
+  if (mediaGaps.length > 0) {
+    // Not a failure and not a count the idempotency check reads: a gap is a database the media
+    // migration has not been run against, and the next seed after it binds these.
+    console.log(`  media gaps            ${mediaGaps.length}`)
+    console.log('\n  media left unbound (in the manifest, not in media_assets on this database):')
+    for (const gap of mediaGaps) {
+      console.log(`    ${gap.seedKey}  ${gap.column} → ${gap.rivyaAssetId}`)
+    }
+    console.log('    Run the Higgsfield migration (docs/media/MEDIA_GUIDE.md), then seed again.')
+  }
 
   const notable = results.filter(
     (r) => r.outcome !== 'inserted' && r.outcome !== 'updated' && r.outcome !== 'unchanged',

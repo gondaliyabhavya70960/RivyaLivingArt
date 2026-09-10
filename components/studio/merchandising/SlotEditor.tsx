@@ -137,13 +137,13 @@ export function SlotEditor({
       <PageHeader level={2} title={slot.name} description={slot.description ?? undefined} />
       <dl className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
         <div>
-          <dt className="text-tertiary">{t('studio.merchandising.slot.key')}</dt>
+          <dt className="text-ink-tertiary">{t('studio.merchandising.slot.key')}</dt>
           <dd>
             <code>{slot.key}</code>
           </dd>
         </div>
         <div>
-          <dt className="text-tertiary">{t('studio.merchandising.slot.surface')}</dt>
+          <dt className="text-ink-tertiary">{t('studio.merchandising.slot.surface')}</dt>
           <dd>
             <Link href={slot.surface as Route} className="underline underline-offset-4">
               {slot.surface}
@@ -151,11 +151,11 @@ export function SlotEditor({
           </dd>
         </div>
         <div>
-          <dt className="text-tertiary">{t('studio.merchandising.slot.readBy')}</dt>
+          <dt className="text-ink-tertiary">{t('studio.merchandising.slot.readBy')}</dt>
           <dd>{spec?.readBy ?? '—'}</dd>
         </div>
         <div>
-          <dt className="text-tertiary">{t('studio.merchandising.slot.types')}</dt>
+          <dt className="text-ink-tertiary">{t('studio.merchandising.slot.types')}</dt>
           <dd>{slot.allowed_entity_types.map((type) => TYPE_LABEL[type]).join(', ')}</dd>
         </div>
       </dl>

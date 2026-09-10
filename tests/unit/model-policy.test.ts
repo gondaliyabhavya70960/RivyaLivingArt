@@ -344,13 +344,15 @@ describe('what the files must not contain', () => {
 })
 
 describe('presets', () => {
-  it('name only tokens that tokens.css declares, with matching fallbacks', () => {
+  it('name only tokens that tokens.css declares, and carry no colour literal of their own', () => {
     const css = read('app/styles/tokens.css')
-    for (const { token, fallback } of presetTokens()) {
+    for (const { token } of presetTokens()) {
       const match = new RegExp(`${token.replace(/[-]/g, '\\-')}:\\s*([^;]+);`).exec(css)
       expect(match, token).not.toBeNull()
-      expect(match?.[1]?.trim().toLowerCase(), token).toBe(fallback.toLowerCase())
     }
+    // The palette lives in app/styles/ and nowhere else (design:check-tokens); a fallback hex here
+    // would hide a mistyped token behind a plausible colour.
+    expect(read('components/three/presets.ts')).not.toMatch(/#[0-9a-fA-F]{3,8}\b|rgba?\(/)
   })
 
   it('fetch nothing: no environment map, no texture, no URL', () => {

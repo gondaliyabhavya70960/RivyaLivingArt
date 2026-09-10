@@ -217,6 +217,10 @@ for (let i = 0; i < lines.length; i++) {
           `components/patterns/${part}/index.tsx`,
           `components/primitives/motion/${part}.tsx`,
           `components/primitives/motion/${part}.ts`,
+          // Phase 21: the 3D viewer lives in its own directory so the bundle gate can name it —
+          // `scripts/perf/check-bundle.mjs` refuses `components/three/**` in any first-load client
+          // graph, which is only expressible when the engine has a directory of its own.
+          `components/three/${part}.tsx`,
         ]
         if (!candidates.some((pth) => existsSync(join(ROOT, pth)))) {
           problems.push(

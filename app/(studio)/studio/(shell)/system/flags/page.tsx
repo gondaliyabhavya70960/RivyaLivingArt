@@ -61,7 +61,7 @@ export default async function Page() {
             <Stack
               key={flag.key}
               gap={3}
-              className="border-t border-[--color-border] pt-6"
+              className="border-t border-(--color-border) pt-6"
               data-feature-flag={flag.key}
               data-flag-state={flag.isEnabled ? 'on' : 'off'}
             >

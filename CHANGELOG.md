@@ -6,6 +6,40 @@ Every phase adds an entry; see `docs/architecture/CANONICAL-DECISIONS.md` D9 for
 
 ## [Unreleased]
 
+### Fix — CI runs again, and what its first honest run found
+
+The repository went public on 2026-09-10 and GitHub Actions scheduled a runner for the first time
+since 9 September. Every run before that had been red — first for real reasons, then because no
+runner was assigned at all — so the merge of Phases 21 and 22 was the first `verify` job to execute
+in a day and a half, and it failed on things the local `npm run check` never ran. Each is fixed
+here rather than waited out:
+
+- **The unit step ran the RLS project against an unmigrated database.** `DATABASE_URL` is a
+  job-level variable so the database gates can run, and `vitest run` therefore also ran the RLS
+  project at step nine — twelve steps before `db:reset`. The step now runs `npm run test:unit`
+  (the unit project only); the RLS project runs where it always did, after the migrations and the
+  seed, with `RLS_TESTS_REQUIRED` so a skip is a failure.
+- **The idempotency step asserted a shape the runner stopped reporting in Phase 09.** It required
+  the second seed to report `updated` equal to the first run's `inserted`; the runner has reported
+  those rows as `unchanged` since it gained that outcome, so the step could never pass. It now
+  asserts inserted 0, updated 0, unchanged equal to the first run's inserted.
+- **The seed failed on a database whose media rows were never imported.** The ten journal covers
+  bind Higgsfield assets by `rivya_asset_id`; CI's PostgreSQL has no `media_assets` rows, because
+  the Higgsfield migration needs Cloudinary credentials CI does not hold, so `seed:content` failed
+  every one of them. The runner now distinguishes the two states its own comments already named:
+  an id the manifest does not carry is a typo and fails the run; an id the manifest carries but
+  this database does not is a `media gap` — left null, reported, never substituted — and the next
+  seed after the migration binds it (`applyRecord` compares media columns on an otherwise
+  unchanged row). CONTENT_GUIDE §8 says the same.
+- **Three design gates were never in `npm run check`.** `design:check-tokens` found ten hex
+  fallbacks in `components/three/presets.ts` (Phase 21) and two arbitrary-value classes from Phase
+  19; `design:check-registry` could not find RC-401 because the viewer lives in `components/three/`;
+  `design:check-utilities` found `text-tertiary` (Phase 22) and three hyphenated words in Studio
+  copy that read as Tailwind prefixes. The presets now carry tokens only — `resolveTokenColour`
+  returns null where the document has no value and three's own default shows the mistake — the
+  registry gate knows `components/three/`, the class and the copy are corrected, and all three
+  gates are in `npm run check` so this cannot recur unseen.
+
 ### Phase 22 — Homepage / Store Merchandising
 
 The owner takes the controls. Which products appear in Selected Works and in what order, which

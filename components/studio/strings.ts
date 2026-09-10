@@ -1150,7 +1150,7 @@ export const STUDIO_STRINGS = {
   },
   'studio.models.reject.externalResources': {
     value:
-      'The file references buffers or images outside itself. Embed them and upload a self-contained file.',
+      'The file references buffers or images outside itself. Embed them and upload a single file that contains everything it needs.',
     contentKey: 'studio_help.models_reject_external_resources',
   },
   'studio.models.warn.large': {
@@ -1413,7 +1413,7 @@ export const STUDIO_STRINGS = {
   },
   'studio.models.viewer.description': {
     value:
-      'Drag to orbit, scroll to zoom, right-drag to pan. Arrow keys orbit, Shift with arrows pans, plus and minus zoom, R resets, F fullscreen, M inspects the finish, D shows dimensions.',
+      'Drag to orbit, scroll to zoom, drag with the right button to pan. Arrow keys orbit, Shift with arrows pans, plus and minus zoom, R resets, F fullscreen, M inspects the finish, D shows dimensions.',
     contentKey: 'studio_help.models_viewer_description',
   },
   'studio.models.viewer.loading': {
@@ -4686,7 +4686,7 @@ export const STUDIO_STRINGS = {
     contentKey: 'studio_help.merch_refusal_window',
   },
   'studio.merchandising.refusal.rule': {
-    value: 'Automatic top-up needs a rule written in words.',
+    value: 'Topping up automatically needs a rule written in words.',
     contentKey: 'studio_help.merch_refusal_rule',
   },
   'studio.merchandising.refusal.range': {

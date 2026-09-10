@@ -7,9 +7,9 @@ SEED §54’s audit of what the content seed actually put in the database, read 
 database rather than from the seed modules. Its target is §54’s: **100% of intended launch
 copy mapped to a Studio editing control.**
 
-- **379** rows audited
+- **531** rows audited
 - **68** await owner verification and cannot be published until it is given
-- **22** are authored and deferred to a later phase’s tables
+- **0** are authored and deferred to a later phase’s tables
 - **0** carry a bound media asset
 
 Every row that is seeded is editable: the sections through the page editor, the standalone
@@ -136,6 +136,8 @@ the phase that creates its table.
 | /portfolio | portfolio.01.hero | body | Yes | Yes | `/studio/content/pages/portfolio` | No | — | — | DRAFT |
 | /portfolio | portfolio.01.hero | eyebrow | Yes | Yes | `/studio/content/pages/portfolio` | No | — | — | DRAFT |
 | /portfolio | portfolio.01.hero | heading | Yes | Yes | `/studio/content/pages/portfolio` | No | — | — | DRAFT |
+| /portfolio | portfolio.03.projects | (no copy fields) | Yes | Yes | `/studio/content/pages/portfolio` | No | — | — | DRAFT |
+| /portfolio | portfolio.02.empty-state | heading | Yes | Yes | `/studio/content/pages/portfolio` | No | — | — | DRAFT |
 | /portfolio | portfolio.02.empty-state | cta_label | Yes | Yes | `/studio/content/pages/portfolio` | No | — | — | DRAFT |
 | /process | process.01.hero | body | Yes | Yes | `/studio/content/pages/process` | No | — | — | DRAFT |
 | /process | process.01.hero | eyebrow | Yes | Yes | `/studio/content/pages/process` | No | — | — | DRAFT |
@@ -161,6 +163,16 @@ the phase that creates its table.
 | /process | process.08.final-review | body | Yes | Yes | `/studio/content/pages/process` | Yes | — | — | DRAFT |
 | /process | process.08.final-review | eyebrow | Yes | Yes | `/studio/content/pages/process` | Yes | — | — | DRAFT |
 | /process | process.08.final-review | heading | Yes | Yes | `/studio/content/pages/process` | Yes | — | — | DRAFT |
+| Collections | collection:aurora | Aurora | Yes | Yes | `/studio/catalog/collections` | No | — | — | DRAFT |
+| Collections | collection:bespoke | Bespoke | Yes | Yes | `/studio/catalog/collections` | No | — | — | DRAFT |
+| Collections | collection:botanical | Botanical | Yes | Yes | `/studio/catalog/collections` | No | — | — | DRAFT |
+| Collections | collection:clear | Clear | Yes | Yes | `/studio/catalog/collections` | No | — | — | DRAFT |
+| Collections | collection:earth | Earth | Yes | Yes | `/studio/catalog/collections` | No | — | — | DRAFT |
+| Collections | collection:forest | Forest | Yes | Yes | `/studio/catalog/collections` | No | — | — | DRAFT |
+| Collections | collection:geode | Geode | Yes | Yes | `/studio/catalog/collections` | No | — | — | DRAFT |
+| Collections | collection:midnight | Midnight | Yes | Yes | `/studio/catalog/collections` | No | — | — | DRAFT |
+| Collections | collection:monsoon | Monsoon | Yes | Yes | `/studio/catalog/collections` | No | — | — | DRAFT |
+| Collections | collection:ocean | Ocean | Yes | Yes | `/studio/catalog/collections` | No | — | — | DRAFT |
 | Global content | catalog:action_label.catalog.apply | ACTION_LABEL.catalog.apply | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | catalog:action_label.catalog.clear | ACTION_LABEL.catalog.clear | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | catalog:action_label.catalog.next | ACTION_LABEL.catalog.next | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
@@ -252,6 +264,7 @@ the phase that creates its table.
 | Global content | global:ERROR.server_error.heading | ERROR.server_error.heading | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | global:FORM_COPY.error.generic | FORM_COPY.error.generic | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | global:FORM_COPY.error.inquiry_save | FORM_COPY.error.inquiry_save | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:FORM_COPY.error.too_many | FORM_COPY.error.too_many | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | global:FORM_COPY.error.upload | FORM_COPY.error.upload | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | global:FORM_COPY.inquiry_success.body | FORM_COPY.inquiry_success.body | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | global:FORM_COPY.inquiry_success.heading | FORM_COPY.inquiry_success.heading | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
@@ -291,6 +304,68 @@ the phase that creates its table.
 | Global content | global:STUDIO_HELP.verification.process.06.resin-work | STUDIO_HELP.verification.process.06.resin-work | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | global:STUDIO_HELP.verification.process.07.finishing | STUDIO_HELP.verification.process.07.finishing | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | global:STUDIO_HELP.verification.process.08.final-review | STUDIO_HELP.verification.process.08.final-review | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.configurator.back | UI_LABEL.configurator.back | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.configurator.next | UI_LABEL.configurator.next | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.configurator.optional | UI_LABEL.configurator.optional | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.configurator.progress | UI_LABEL.configurator.progress | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.configurator.progress.label | UI_LABEL.configurator.progress.label | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.configurator.required | UI_LABEL.configurator.required | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.configurator.review | UI_LABEL.configurator.review | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.configurator.review.edit | UI_LABEL.configurator.review.edit | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.configurator.review.empty | UI_LABEL.configurator.review.empty | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.configurator.saved | UI_LABEL.configurator.saved | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.configurator.step.errors | UI_LABEL.configurator.step.errors | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.configurator.upload.choose | UI_LABEL.configurator.upload.choose | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.configurator.upload.hint | UI_LABEL.configurator.upload.hint | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.configurator.upload.remove | UI_LABEL.configurator.upload.remove | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.configurator.upload.uploading | UI_LABEL.configurator.upload.uploading | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.inquiry.city | UI_LABEL.inquiry.city | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.inquiry.continue | UI_LABEL.inquiry.continue | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.inquiry.email | UI_LABEL.inquiry.email | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.inquiry.enquiry_type | UI_LABEL.inquiry.enquiry_type | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.inquiry.message | UI_LABEL.inquiry.message | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.inquiry.name | UI_LABEL.inquiry.name | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.inquiry.no_whatsapp | UI_LABEL.inquiry.no_whatsapp | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.inquiry.phone | UI_LABEL.inquiry.phone | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.inquiry.reference | UI_LABEL.inquiry.reference | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.inquiry.required | UI_LABEL.inquiry.required | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.inquiry.sending | UI_LABEL.inquiry.sending | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.journal.byline | UI_LABEL.journal.byline | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.journal.categories | UI_LABEL.journal.categories | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.journal.categories.all | UI_LABEL.journal.categories.all | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.journal.pagination | UI_LABEL.journal.pagination | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.journal.pagination.position | UI_LABEL.journal.pagination.position | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.journal.reading_time | UI_LABEL.journal.reading_time | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.journal.related.curated | UI_LABEL.journal.related.curated | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.journal.related.same_category | UI_LABEL.journal.related.same_category | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.journal.results | UI_LABEL.journal.results | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.merchandising.pinned | UI_LABEL.merchandising.pinned | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.merchandising.store_featured | UI_LABEL.merchandising.store_featured | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.model.close | UI_LABEL.model.close | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.model.concept_notice | UI_LABEL.model.concept_notice | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.model.dimensions.heading | UI_LABEL.model.dimensions.heading | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.model.dimensions.toggle | UI_LABEL.model.dimensions.toggle | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.model.environment | UI_LABEL.model.environment | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.model.environment.dark_gallery | UI_LABEL.model.environment.dark_gallery | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.model.environment.neutral_room | UI_LABEL.model.environment.neutral_room | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.model.environment.warm_interior | UI_LABEL.model.environment.warm_interior | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.model.exit_fullscreen | UI_LABEL.model.exit_fullscreen | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.model.failed | UI_LABEL.model.failed | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.model.fullscreen | UI_LABEL.model.fullscreen | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.model.inspect | UI_LABEL.model.inspect | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.model.lighting | UI_LABEL.model.lighting | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.model.lighting.daylight_window | UI_LABEL.model.lighting.daylight_window | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.model.lighting.gallery_directional | UI_LABEL.model.lighting.gallery_directional | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.model.lighting.low_key | UI_LABEL.model.lighting.low_key | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.model.lighting.studio_soft | UI_LABEL.model.lighting.studio_soft | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.model.loading | UI_LABEL.model.loading | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.model.material.heading | UI_LABEL.model.material.heading | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.model.material.toggle | UI_LABEL.model.material.toggle | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.model.region | UI_LABEL.model.region | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.model.reset | UI_LABEL.model.reset | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.model.variants | UI_LABEL.model.variants | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.model.viewer.description | UI_LABEL.model.viewer.description | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.model.viewer.name | UI_LABEL.model.viewer.name | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | global:UI_LABEL.product.dimension.depth_mm | UI_LABEL.product.dimension.depth_mm | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | global:UI_LABEL.product.dimension.diameter_mm | UI_LABEL.product.dimension.diameter_mm | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | global:UI_LABEL.product.dimension.height_mm | UI_LABEL.product.dimension.height_mm | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
@@ -307,6 +382,10 @@ the phase that creates its table.
 | Global content | global:UI_LABEL.product.related.curated | UI_LABEL.product.related.curated | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | global:UI_LABEL.product.related.same_category | UI_LABEL.product.related.same_category | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | global:UI_LABEL.product.specifications.heading | UI_LABEL.product.specifications.heading | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.project.gallery.caption | UI_LABEL.project.gallery.caption | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.project.gallery.heading | UI_LABEL.project.gallery.heading | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.testimonial.attribution | UI_LABEL.testimonial.attribution | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.testimonial.heading | UI_LABEL.testimonial.heading | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | global:WHATSAPP_TEMPLATE.commission | WHATSAPP_TEMPLATE.commission | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | global:WHATSAPP_TEMPLATE.inquiry | WHATSAPP_TEMPLATE.inquiry | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Navigation | nav:footer.contact | FOOTER · Contact | Yes | Yes | `/studio/content/navigation` | No | — | — | PUBLISHED |
@@ -375,25 +454,98 @@ the phase that creates its table.
 | SEO | seo:path.large-format | PATH /large-format | Yes | Yes | `/studio/content/seo` | No | — | DRAFT | DRAFT |
 | SEO | seo:path.portfolio | PATH /portfolio | Yes | Yes | `/studio/content/seo` | No | — | DRAFT | DRAFT |
 | SEO | seo:path.process | PATH /process | Yes | Yes | `/studio/content/seo` | No | — | DRAFT | DRAFT |
-| Commissions | commission-form:furniture | Furniture | Deferred | Not yet | `Phase 19` | No | — | — | DRAFT |
-| Commissions | commission-form:preservation | Preservation | Deferred | Not yet | `Phase 19` | Yes | — | — | DRAFT |
-| Commissions | commission-form:3d-resin | 3D + Resin | Deferred | Not yet | `Phase 19` | Yes | — | — | DRAFT |
-| Journal | journal-category:resin-furniture | Resin Furniture | Deferred | Not yet | `Phase 18` | No | — | — | DRAFT |
-| Journal | journal-category:collectible-design | Collectible Design | Deferred | Not yet | `Phase 18` | No | — | — | DRAFT |
-| Journal | journal-category:materials | Materials | Deferred | Not yet | `Phase 18` | No | — | — | DRAFT |
-| Journal | journal-category:3d-printing | 3D Printing | Deferred | Not yet | `Phase 18` | No | — | — | DRAFT |
-| Journal | journal-category:studio-process | Studio Process | Deferred | Not yet | `Phase 18` | No | — | — | DRAFT |
-| Journal | journal-category:custom-projects | Custom Projects | Deferred | Not yet | `Phase 18` | No | — | — | DRAFT |
-| Journal | journal-category:interior-art | Interior Art | Deferred | Not yet | `Phase 18` | No | — | — | DRAFT |
-| Journal | journal-category:preservation | Preservation | Deferred | Not yet | `Phase 18` | No | — | — | DRAFT |
-| Journal | journal-category:care-education | Care & Education | Deferred | Not yet | `Phase 18` | No | — | — | DRAFT |
-| Journal | journal-article:01 | What Makes a Resin Table More Than a Surface? | Deferred | Not yet | `Phase 18` | No | — | — | DRAFT |
-| Journal | journal-article:02 | Choosing the Right Size for a Statement Dining Table | Deferred | Not yet | `Phase 18` | Yes | — | — | DRAFT |
-| Journal | journal-article:03 | Resin and Wood: Designing Around Contrast | Deferred | Not yet | `Phase 18` | No | — | — | DRAFT |
-| Journal | journal-article:04 | From Digital Form to Physical Object | Deferred | Not yet | `Phase 18` | Yes | — | — | DRAFT |
-| Journal | journal-article:05 | What to Prepare Before Requesting a Custom Furniture Commission | Deferred | Not yet | `Phase 18` | No | — | — | DRAFT |
-| Journal | journal-article:06 | A Guide to Resin Colour, Transparency and Visual Depth | Deferred | Not yet | `Phase 18` | No | — | — | DRAFT |
-| Journal | journal-article:07 | Large Wall Art: Thinking Beyond Decoration | Deferred | Not yet | `Phase 18` | No | — | — | DRAFT |
-| Journal | journal-article:08 | Preserving Flowers in Resin: What a Custom Brief Should Include | Deferred | Not yet | `Phase 18` | Yes | — | — | DRAFT |
-| Journal | journal-article:09 | How Material Choice Changes the Character of a Space | Deferred | Not yet | `Phase 18` | No | — | — | DRAFT |
-| Journal | journal-article:10 | Why Bespoke Furniture Starts With Context | Deferred | Not yet | `Phase 18` | No | — | — | DRAFT |
+| Commissions | commission-form:furniture | Furniture Commission | Yes | Yes | `/studio/catalog/customization-forms` | No | — | — | DRAFT |
+| Commissions | commission-step:furniture.project_type | Product / Project Type | Yes | Yes | `/studio/catalog/customization-forms` | No | — | — | — |
+| Commissions | commission-step:furniture.dimensions | Approximate Dimensions | Yes | Yes | `/studio/catalog/customization-forms` | No | — | — | — |
+| Commissions | commission-step:furniture.wood | Wood Preference | Yes | Yes | `/studio/catalog/customization-forms` | No | — | — | — |
+| Commissions | commission-step:furniture.resin_direction | Resin Direction | Yes | Yes | `/studio/catalog/customization-forms` | No | — | — | — |
+| Commissions | commission-step:furniture.colour | Colour | Yes | Yes | `/studio/catalog/customization-forms` | No | — | — | — |
+| Commissions | commission-step:furniture.finish | Finish | Yes | Yes | `/studio/catalog/customization-forms` | No | — | — | — |
+| Commissions | commission-step:furniture.base_structure | Base / Structure | Yes | Yes | `/studio/catalog/customization-forms` | No | — | — | — |
+| Commissions | commission-step:furniture.references | Reference Upload | Yes | Yes | `/studio/catalog/customization-forms` | No | — | — | — |
+| Commissions | commission-step:furniture.location | Location | Yes | Yes | `/studio/catalog/customization-forms` | No | — | — | — |
+| Commissions | commission-step:furniture.notes | Notes | Yes | Yes | `/studio/catalog/customization-forms` | No | — | — | — |
+| Commissions | commission-step:furniture.contact | Contact Details | Yes | Yes | `/studio/catalog/customization-forms` | No | — | — | — |
+| Commissions | commission-field:furniture.project_type | Product / Project Type | Yes | Yes | `/studio/catalog/customization-forms` | No | — | — | — |
+| Commissions | commission-field:furniture.desired_size | Desired Size | Yes | Yes | `/studio/catalog/customization-forms` | No | — | — | — |
+| Commissions | commission-field:furniture.length | Length | Yes | Yes | `/studio/catalog/customization-forms` | No | — | — | — |
+| Commissions | commission-field:furniture.width | Width | Yes | Yes | `/studio/catalog/customization-forms` | No | — | — | — |
+| Commissions | commission-field:furniture.height | Height | Yes | Yes | `/studio/catalog/customization-forms` | No | — | — | — |
+| Commissions | commission-field:furniture.wood_preference | Wood Preference | Yes | Yes | `/studio/catalog/customization-forms` | No | — | — | — |
+| Commissions | commission-field:furniture.resin_colour_direction | Resin Colour Direction | Yes | Yes | `/studio/catalog/customization-forms` | No | — | — | — |
+| Commissions | commission-field:furniture.transparency_preference | Transparency Preference | Yes | Yes | `/studio/catalog/customization-forms` | No | — | — | — |
+| Commissions | commission-field:furniture.finish_preference | Finish Preference | Yes | Yes | `/studio/catalog/customization-forms` | No | — | — | — |
+| Commissions | commission-field:furniture.base_leg_preference | Base / Leg Preference | Yes | Yes | `/studio/catalog/customization-forms` | No | — | — | — |
+| Commissions | commission-field:furniture.reference_images | Reference Images | Yes | Yes | `/studio/catalog/customization-forms` | No | — | — | — |
+| Commissions | commission-field:furniture.delivery_city | Delivery City | Yes | Yes | `/studio/catalog/customization-forms` | No | — | — | — |
+| Commissions | commission-field:furniture.project_notes | Project Notes | Yes | Yes | `/studio/catalog/customization-forms` | No | — | — | — |
+| Commissions | commission-field:furniture.full_name | Full Name | Yes | Yes | `/studio/catalog/customization-forms` | No | — | — | — |
+| Commissions | commission-field:furniture.whatsapp_number | WhatsApp Number | Yes | Yes | `/studio/catalog/customization-forms` | No | — | — | — |
+| Commissions | commission-field:furniture.email_address | Email Address | Yes | Yes | `/studio/catalog/customization-forms` | No | — | — | — |
+| Commissions | commission-form:preservation | Preservation Commission | Yes | Yes | `/studio/catalog/customization-forms` | Yes | — | — | DRAFT |
+| Commissions | commission-step:preservation.project_type | Product / Project Type | Yes | Yes | `/studio/catalog/customization-forms` | No | — | — | — |
+| Commissions | commission-step:preservation.dimensions | Approximate Dimensions | Yes | Yes | `/studio/catalog/customization-forms` | No | — | — | — |
+| Commissions | commission-step:preservation.wood | Wood Preference | Yes | Yes | `/studio/catalog/customization-forms` | No | — | — | — |
+| Commissions | commission-step:preservation.resin_direction | Resin Direction | Yes | Yes | `/studio/catalog/customization-forms` | No | — | — | — |
+| Commissions | commission-step:preservation.colour | Colour | Yes | Yes | `/studio/catalog/customization-forms` | No | — | — | — |
+| Commissions | commission-step:preservation.finish | Finish | Yes | Yes | `/studio/catalog/customization-forms` | No | — | — | — |
+| Commissions | commission-step:preservation.base_structure | Base / Structure | Yes | Yes | `/studio/catalog/customization-forms` | No | — | — | — |
+| Commissions | commission-step:preservation.references | Reference Upload | Yes | Yes | `/studio/catalog/customization-forms` | No | — | — | — |
+| Commissions | commission-step:preservation.location | Location | Yes | Yes | `/studio/catalog/customization-forms` | No | — | — | — |
+| Commissions | commission-step:preservation.notes | Notes | Yes | Yes | `/studio/catalog/customization-forms` | No | — | — | — |
+| Commissions | commission-step:preservation.contact | Contact Details | Yes | Yes | `/studio/catalog/customization-forms` | No | — | — | — |
+| Commissions | commission-field:preservation.preservation_type | Preservation Type | Yes | Yes | `/studio/catalog/customization-forms` | No | — | — | — |
+| Commissions | commission-field:preservation.occasion | Occasion | Yes | Yes | `/studio/catalog/customization-forms` | No | — | — | — |
+| Commissions | commission-field:preservation.item_flower_type | Item / Flower Type | Yes | Yes | `/studio/catalog/customization-forms` | No | — | — | — |
+| Commissions | commission-field:preservation.preferred_shape | Preferred Shape | Yes | Yes | `/studio/catalog/customization-forms` | No | — | — | — |
+| Commissions | commission-field:preservation.preferred_size | Preferred Size | Yes | Yes | `/studio/catalog/customization-forms` | No | — | — | — |
+| Commissions | commission-field:preservation.reference_image | Reference Image | Yes | Yes | `/studio/catalog/customization-forms` | No | — | — | — |
+| Commissions | commission-field:preservation.delivery_city | Delivery City | Yes | Yes | `/studio/catalog/customization-forms` | No | — | — | — |
+| Commissions | commission-field:preservation.personalization | Personalization | Yes | Yes | `/studio/catalog/customization-forms` | No | — | — | — |
+| Commissions | commission-field:preservation.notes | Notes | Yes | Yes | `/studio/catalog/customization-forms` | No | — | — | — |
+| Commissions | commission-field:preservation.full_name | Full Name | Yes | Yes | `/studio/catalog/customization-forms` | No | — | — | — |
+| Commissions | commission-field:preservation.whatsapp_number | WhatsApp Number | Yes | Yes | `/studio/catalog/customization-forms` | No | — | — | — |
+| Commissions | commission-field:preservation.email_address | Email Address | Yes | Yes | `/studio/catalog/customization-forms` | No | — | — | — |
+| Commissions | commission-form:3d-resin | 3D + Resin Commission | Yes | Yes | `/studio/catalog/customization-forms` | Yes | — | — | DRAFT |
+| Commissions | commission-step:3d-resin.project_type | Product / Project Type | Yes | Yes | `/studio/catalog/customization-forms` | No | — | — | — |
+| Commissions | commission-step:3d-resin.dimensions | Approximate Dimensions | Yes | Yes | `/studio/catalog/customization-forms` | No | — | — | — |
+| Commissions | commission-step:3d-resin.wood | Wood Preference | Yes | Yes | `/studio/catalog/customization-forms` | No | — | — | — |
+| Commissions | commission-step:3d-resin.resin_direction | Resin Direction | Yes | Yes | `/studio/catalog/customization-forms` | No | — | — | — |
+| Commissions | commission-step:3d-resin.colour | Colour | Yes | Yes | `/studio/catalog/customization-forms` | No | — | — | — |
+| Commissions | commission-step:3d-resin.finish | Finish | Yes | Yes | `/studio/catalog/customization-forms` | No | — | — | — |
+| Commissions | commission-step:3d-resin.base_structure | Base / Structure | Yes | Yes | `/studio/catalog/customization-forms` | No | — | — | — |
+| Commissions | commission-step:3d-resin.references | Reference Upload | Yes | Yes | `/studio/catalog/customization-forms` | No | — | — | — |
+| Commissions | commission-step:3d-resin.location | Location | Yes | Yes | `/studio/catalog/customization-forms` | No | — | — | — |
+| Commissions | commission-step:3d-resin.notes | Notes | Yes | Yes | `/studio/catalog/customization-forms` | No | — | — | — |
+| Commissions | commission-step:3d-resin.contact | Contact Details | Yes | Yes | `/studio/catalog/customization-forms` | No | — | — | — |
+| Commissions | commission-field:3d-resin.object_type | Object Type | Yes | Yes | `/studio/catalog/customization-forms` | No | — | — | — |
+| Commissions | commission-field:3d-resin.intended_use | Intended Use | Yes | Yes | `/studio/catalog/customization-forms` | No | — | — | — |
+| Commissions | commission-field:3d-resin.approximate_dimensions | Approximate Dimensions | Yes | Yes | `/studio/catalog/customization-forms` | No | — | — | — |
+| Commissions | commission-field:3d-resin.resin_colour | Resin Colour | Yes | Yes | `/studio/catalog/customization-forms` | No | — | — | — |
+| Commissions | commission-field:3d-resin.preferred_form_direction | Preferred Form Direction | Yes | Yes | `/studio/catalog/customization-forms` | No | — | — | — |
+| Commissions | commission-field:3d-resin.three_d_structure_direction | 3D Structure Direction | Yes | Yes | `/studio/catalog/customization-forms` | No | — | — | — |
+| Commissions | commission-field:3d-resin.reference_images | Reference Images | Yes | Yes | `/studio/catalog/customization-forms` | No | — | — | — |
+| Commissions | commission-field:3d-resin.delivery_city | Delivery City | Yes | Yes | `/studio/catalog/customization-forms` | No | — | — | — |
+| Commissions | commission-field:3d-resin.notes | Notes | Yes | Yes | `/studio/catalog/customization-forms` | No | — | — | — |
+| Commissions | commission-field:3d-resin.full_name | Full Name | Yes | Yes | `/studio/catalog/customization-forms` | No | — | — | — |
+| Commissions | commission-field:3d-resin.whatsapp_number | WhatsApp Number | Yes | Yes | `/studio/catalog/customization-forms` | No | — | — | — |
+| Commissions | commission-field:3d-resin.email_address | Email Address | Yes | Yes | `/studio/catalog/customization-forms` | No | — | — | — |
+| Journal | journal-category:resin-furniture | Resin Furniture | Yes | Yes | `/studio/content/journal/categories` | No | — | — | PUBLISHED |
+| Journal | journal-category:collectible-design | Collectible Design | Yes | Yes | `/studio/content/journal/categories` | No | — | — | PUBLISHED |
+| Journal | journal-category:materials | Materials | Yes | Yes | `/studio/content/journal/categories` | No | — | — | PUBLISHED |
+| Journal | journal-category:3d-printing | 3D Printing | Yes | Yes | `/studio/content/journal/categories` | No | — | — | PUBLISHED |
+| Journal | journal-category:studio-process | Studio Process | Yes | Yes | `/studio/content/journal/categories` | No | — | — | PUBLISHED |
+| Journal | journal-category:custom-projects | Custom Projects | Yes | Yes | `/studio/content/journal/categories` | No | — | — | PUBLISHED |
+| Journal | journal-category:interior-art | Interior Art | Yes | Yes | `/studio/content/journal/categories` | No | — | — | PUBLISHED |
+| Journal | journal-category:preservation | Preservation | Yes | Yes | `/studio/content/journal/categories` | No | — | — | PUBLISHED |
+| Journal | journal-category:care-education | Care & Education | Yes | Yes | `/studio/content/journal/categories` | No | — | — | PUBLISHED |
+| Journal | journal-article:01 | What Makes a Resin Table More Than a Surface? | Yes | Yes | `/studio/content/journal` | No | — | — | DRAFT |
+| Journal | journal-article:02 | Choosing the Right Size for a Statement Dining Table | Yes | Yes | `/studio/content/journal` | Yes | — | — | DRAFT |
+| Journal | journal-article:03 | Resin and Wood: Designing Around Contrast | Yes | Yes | `/studio/content/journal` | No | — | — | DRAFT |
+| Journal | journal-article:04 | From Digital Form to Physical Object | Yes | Yes | `/studio/content/journal` | Yes | — | — | DRAFT |
+| Journal | journal-article:05 | What to Prepare Before Requesting a Custom Furniture Commission | Yes | Yes | `/studio/content/journal` | No | — | — | DRAFT |
+| Journal | journal-article:06 | A Guide to Resin Colour, Transparency and Visual Depth | Yes | Yes | `/studio/content/journal` | No | — | — | DRAFT |
+| Journal | journal-article:07 | Large Wall Art: Thinking Beyond Decoration | Yes | Yes | `/studio/content/journal` | No | — | — | DRAFT |
+| Journal | journal-article:08 | Preserving Flowers in Resin: What a Custom Brief Should Include | Yes | Yes | `/studio/content/journal` | Yes | — | — | DRAFT |
+| Journal | journal-article:09 | How Material Choice Changes the Character of a Space | Yes | Yes | `/studio/content/journal` | No | — | — | DRAFT |
+| Journal | journal-article:10 | Why Bespoke Furniture Starts With Context | Yes | Yes | `/studio/content/journal` | No | — | — | DRAFT |

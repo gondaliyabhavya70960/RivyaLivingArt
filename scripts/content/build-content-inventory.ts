@@ -116,6 +116,9 @@ async function main(): Promise<number> {
 
   // --- the standalone tables --------------------------------------------------------------------
   const simple: readonly [string, string, string, string][] = [
+    // Phase 16: the ten FEAT §9 concepts — a name, a slug and an order, seeded DRAFT and
+    // DRAFT_COLLECTION_CONCEPT, editable (and confirmable) at the collections screen.
+    ['collections', 'name', 'Collections', '/studio/catalog/collections'],
     ['global_content', "group_key || '.' || key", 'Global content', '/studio/content/pages/global'],
     ['navigation_items', "menu || ' · ' || label", 'Navigation', '/studio/content/navigation'],
     ['faqs', 'question', 'FAQ', '/studio/content/faqs'],
@@ -157,14 +160,76 @@ async function main(): Promise<number> {
     .flatMap((m) => m.records)
     .filter((r) => r.requiresTables !== undefined)
 
+  /**
+   * A DEFERRED RECORD STOPS BEING DEFERRED THE DAY ITS TABLE ARRIVES. The modules keep their
+   * `requiresTables` declaration for ever — it is what lets the runner apply them on any database
+   * in any order — so the declaration alone cannot say whether the row exists. The database can:
+   * a record whose key is present is seeded, editable at the screen its phase built, and reported
+   * with the status the row actually holds. Phases 18 and 19 created these tables; an inventory
+   * that still called their nineteen articles and three templates "Not yet" would be describing
+   * the seed as it was in Phase 09.
+   */
+  // The fourth member says whether the table carries `status` and `owner_verification`: a form's
+  // steps and fields are children of the form and carry neither (DATA_MODEL §1.4), so they are
+  // reported with the form's own screen and no status of their own.
+  const laterTables: readonly [string, string, string, boolean][] = [
+    ['journal_categories', 'Journal', '/studio/content/journal/categories', true],
+    ['journal_articles', 'Journal', '/studio/content/journal', true],
+    ['customization_forms', 'Commissions', '/studio/catalog/customization-forms', true],
+    ['customization_form_steps', 'Commissions', '/studio/catalog/customization-forms', false],
+    ['customization_form_fields', 'Commissions', '/studio/catalog/customization-forms', false],
+  ]
+  const written = new Map<
+    string,
+    { status: string; verify: string; page: string; studio: string }
+  >()
+  for (const [table, pageLabel, studio, hasContentColumns] of laterTables) {
+    const result = await client.query<{
+      seed_key: string
+      status: string | null
+      owner_verification: string | null
+    }>(
+      hasContentColumns
+        ? `select seed_key, status::text as status, owner_verification::text as owner_verification
+             from ${table} where seed_key is not null`
+        : `select seed_key, null::text as status, null::text as owner_verification
+             from ${table} where seed_key is not null`,
+    )
+    for (const r of result.rows) {
+      written.set(r.seed_key, {
+        status: r.status ?? '—',
+        verify: r.owner_verification === 'OWNER_VERIFICATION_REQUIRED' ? 'Yes' : 'No',
+        page: pageLabel,
+        studio,
+      })
+    }
+  }
+
   for (const record of deferred) {
+    const row = written.get(record.seedKey)
+    const page = record.table.startsWith('customization_form') ? 'Commissions' : 'Journal'
+    if (row !== undefined) {
+      rows.push({
+        page: row.page,
+        section: cell(record.seedKey),
+        field: cell(String(record.fields.title ?? record.fields.name ?? record.fields.label ?? '')),
+        seeded: 'Yes',
+        editable: 'Yes',
+        studio: row.studio,
+        verify: row.verify,
+        media: '—',
+        seo: '—',
+        status: row.status,
+      })
+      continue
+    }
     rows.push({
-      page: record.table === 'customization_forms' ? 'Commissions' : 'Journal',
+      page,
       section: cell(record.seedKey),
-      field: cell(String(record.fields.title ?? record.fields.name ?? '')),
+      field: cell(String(record.fields.title ?? record.fields.name ?? record.fields.label ?? '')),
       seeded: 'Deferred',
       editable: 'Not yet',
-      studio: record.table === 'customization_forms' ? 'Phase 19' : 'Phase 18',
+      studio: page === 'Commissions' ? 'Phase 19' : 'Phase 18',
       verify: record.fields.owner_verification === 'OWNER_VERIFICATION_REQUIRED' ? 'Yes' : 'No',
       media: '—',
       seo: '—',
@@ -188,6 +253,10 @@ async function main(): Promise<number> {
     select seed_key from faqs             where seed_key is not null
     union all
     select seed_key from categories       where seed_key is not null
+    union all
+    select seed_key from collections      where seed_key is not null
+    union all
+    select seed_key from materials        where seed_key is not null
   `)
   const seededKeys = new Set(present.rows.map((r) => r.seed_key))
 

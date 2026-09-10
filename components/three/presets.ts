@@ -3,11 +3,14 @@ import type { EnvironmentPresetKey, LightingPresetKey } from '@/lib/media/viewer
 /**
  * Lighting and environment presets, as data.
  *
- * EVERY COLOUR IS A PHASE 02 TOKEN. A preset names `--rv-color-bone` rather than `#faf9f5`; the
- * viewer resolves the token from the document at mount (`resolveTokenColour`) so a palette change
- * in `tokens.css` reaches the canvas without an edit here. The fallback hex beside each token is
- * the value tokens.css held when the preset was written, used only where there is no document —
- * the unit suite — and it must match the token or the test that compares them fails.
+ * EVERY COLOUR IS A PHASE 02 TOKEN, AND ONLY A TOKEN. A preset names `--rv-color-bone` and never a
+ * hex value; the viewer resolves the token from the document at mount (`resolveTokenColour`) so a
+ * palette change in `tokens.css` reaches the canvas without an edit here. There is no fallback
+ * colour in this file: `design:check-tokens` forbids a colour literal outside `app/styles/`, and a
+ * fallback would also hide a mistyped token behind a plausible colour. A token the document does
+ * not carry resolves to null, the canvas falls back to three's own default (white), and the
+ * mistake is visible rather than approximated. `tests/unit/model-policy.test.ts` asserts every
+ * token named here is declared in tokens.css.
  *
  * NO HDR, NO IMAGE-BASED LIGHTING, NO FETCH. An environment map is a download the FEAT §14 budget
  * did not allow for and an origin the viewer must not need. Three or four analytic lights and a
@@ -18,10 +21,8 @@ import type { EnvironmentPresetKey, LightingPresetKey } from '@/lib/media/viewer
  */
 
 export type TokenColour = {
-  /** A `--rv-*` custom property name. */
+  /** A `--rv-*` custom property name, declared in `app/styles/tokens.css`. */
   readonly token: string
-  /** The token's value at authoring time. Used with no document, and checked against tokens.css. */
-  readonly fallback: string
 }
 
 export type LightSpec =
@@ -57,16 +58,16 @@ export type EnvironmentPreset = {
   readonly fog: { readonly near: number; readonly far: number } | null
 }
 
-const OBSIDIAN: TokenColour = { token: '--rv-color-obsidian', fallback: '#080a0e' }
-const OBSIDIAN_RAISED: TokenColour = { token: '--rv-color-obsidian-raised', fallback: '#14161a' }
-const BONE: TokenColour = { token: '--rv-color-bone', fallback: '#faf9f5' }
-const BONE_SUNKEN: TokenColour = { token: '--rv-color-bone-sunken', fallback: '#eeede9' }
-const NEUTRAL_100: TokenColour = { token: '--rv-neutral-100', fallback: '#dbdad7' }
-const NEUTRAL_300: TokenColour = { token: '--rv-neutral-300', fallback: '#9f9f9f' }
-const STEEL: TokenColour = { token: '--rv-color-steel', fallback: '#79868e' }
-const CHAMPAGNE: TokenColour = { token: '--rv-color-champagne', fallback: '#b89b63' }
-const CHAMPAGNE_DEEP: TokenColour = { token: '--rv-color-champagne-deep', fallback: '#83672f' }
-const GOLD_BRIGHT: TokenColour = { token: '--rv-color-gold-bright', fallback: '#d4af37' }
+const OBSIDIAN: TokenColour = { token: '--rv-color-obsidian' }
+const OBSIDIAN_RAISED: TokenColour = { token: '--rv-color-obsidian-raised' }
+const BONE: TokenColour = { token: '--rv-color-bone' }
+const BONE_SUNKEN: TokenColour = { token: '--rv-color-bone-sunken' }
+const NEUTRAL_100: TokenColour = { token: '--rv-neutral-100' }
+const NEUTRAL_300: TokenColour = { token: '--rv-neutral-300' }
+const STEEL: TokenColour = { token: '--rv-color-steel' }
+const CHAMPAGNE: TokenColour = { token: '--rv-color-champagne' }
+const CHAMPAGNE_DEEP: TokenColour = { token: '--rv-color-champagne-deep' }
+const GOLD_BRIGHT: TokenColour = { token: '--rv-color-gold-bright' }
 
 export const LIGHTING_PRESETS: Readonly<Record<LightingPresetKey, LightingPreset>> = {
   'studio-soft': {
@@ -156,14 +157,19 @@ export function presetTokens(): readonly TokenColour[] {
 }
 
 /**
- * The token's live value, or its fallback. Read from the root element so a scheme class on an
- * ancestor cannot change what a preset means: the presets name PRIMITIVE tokens, which are
- * declared once on `:root` and never redeclared by a scheme.
+ * The token's live value, or null. Read from the root element so a scheme class on an ancestor
+ * cannot change what a preset means: the presets name PRIMITIVE tokens, which are declared once
+ * on `:root` and never redeclared by a scheme.
+ *
+ * NULL, NOT A GUESS. With no document (the unit suite) or a token the document does not declare,
+ * there is no honest colour to return; the canvas passes null through to three, whose default is
+ * white, so a missing token shows as a white light or a white background rather than as a
+ * near-miss nobody notices.
  */
-export function resolveTokenColour(colour: TokenColour): string {
+export function resolveTokenColour(colour: TokenColour): string | null {
   if (typeof document === 'undefined' || typeof getComputedStyle !== 'function') {
-    return colour.fallback
+    return null
   }
   const value = getComputedStyle(document.documentElement).getPropertyValue(colour.token).trim()
-  return value === '' ? colour.fallback : value
+  return value === '' ? null : value
 }

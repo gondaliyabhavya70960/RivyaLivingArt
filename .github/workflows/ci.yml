@@ -69,8 +69,13 @@ jobs:
       - name: Format
         run: npm run format:check
 
+      # THE UNIT PROJECT ONLY. `DATABASE_URL` is set for the whole job so the database gates below
+      # can run, and `vitest run` would therefore also run the RLS project — against a database
+      # that has no migrations yet, since `db:reset` is a later step. Every RLS suite would fail
+      # with "relation does not exist". The RLS project runs at the end of the job, after the
+      # migrations and the seed, with RLS_TESTS_REQUIRED so a skip is a failure there.
       - name: Unit tests
-        run: npm test
+        run: npm run test:unit
 
       - name: Build
         run: npm run build
@@ -165,12 +170,20 @@ jobs:
           first_inserted=$(sed -n 's/^  inserted  *\([0-9][0-9]*\)$/\1/p' /tmp/seed-first.txt)
           second_inserted=$(sed -n 's/^  inserted  *\([0-9][0-9]*\)$/\1/p' /tmp/seed-second.txt)
           second_updated=$(sed -n 's/^  updated  *\([0-9][0-9]*\)$/\1/p' /tmp/seed-second.txt)
+          second_unchanged=$(sed -n 's/^  unchanged  *\([0-9][0-9]*\)$/\1/p' /tmp/seed-second.txt)
 
           # Guards the parser itself: an output shape change that made every capture empty would
           # otherwise compare '' to '' and pass while proving nothing.
+          #
+          # THE SECOND RUN REPORTS `unchanged`, NOT `updated`. Phase 09 gave the runner a fourth
+          # steady-state outcome — a row the runner still owns whose content is byte-identical is
+          # left alone, so a re-seed does not append a no-op revision to every section — and this
+          # step kept asserting the pre-Phase-09 shape. What the contract actually says: the
+          # second run inserts nothing, rewrites nothing, and finds every row it wrote unchanged.
           test -n "$first_inserted" && test "$first_inserted" -gt 0
           test "$second_inserted" = '0'
-          test "$second_updated" = "$first_inserted"
+          test "$second_updated" = '0'
+          test "$second_unchanged" = "$first_inserted"
           grep -q 'skipped (owner edit)  0' /tmp/seed-second.txt
 
       # SEED §54's audit, generated from the database. A seed that changed what is in there and did

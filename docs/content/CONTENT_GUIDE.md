@@ -302,8 +302,11 @@ Each is written unchanged when that phase runs `npm run seed:content -- --only=<
   titles is about, because none of these articles is written.
 
 - **No placeholder media.** A slot with no asset is left null and reported as a gap. A binding
-  naming an asset that is not in `media_assets` *fails the run* — that is a typo, which is a
-  different thing from a gap.
+  naming an asset that is not in the **manifest** *fails the run* — that is a typo, which is a
+  different thing from a gap. A binding naming an asset the manifest carries but `media_assets`
+  does not — a database the Higgsfield migration has not been run against, such as CI's throwaway
+  PostgreSQL — is left null, reported under `media gaps` in the run summary, and bound by the next
+  run after the migration; the run does not fail and nothing is substituted.
 - **No invented business facts.** The contact details in `contact.ts` are the ones §21 supplies,
   seeded in one place because §21 forbids hardcoding them in several, and flagged for the owner.
   The location link §21 mentions but does not supply is left null.

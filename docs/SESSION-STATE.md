@@ -384,6 +384,16 @@ flag-off state and `tests/e2e/configurator.spec.ts` describe.
 
 ### Standing issues, carried
 
+- **CI was red on every run from 9 September until the repository went public on 10 September** —
+  real failures first (the unit step running the RLS project before `db:reset`, the idempotency
+  step asserting a pre-Phase-09 shape, the seed failing on a media-less database, three design
+  gates outside `npm run check`), then no runner at all once the private repository's Actions
+  minutes were spent. All four causes are fixed after the Phase 21/22 merge; the `verify` job on
+  the fix is the first green run of this branch's history and the reference point from here on.
+  `npm run check` now includes the three design gates. What `npm run check` still does NOT run,
+  because it needs a database or a build: `db:reset`, `db:check-types`, `content:check-inventory`,
+  the seed idempotency walk, `security:check-bundle`. Run them before a phase closeout.
+
 - **Hosted seeded strings were 56 rows behind local until Phase 21** — 31 of them from Phases
   17–20, including the contact form's field labels. Closed through `scripts/seed/emit-sql.ts`
   and the MCP; the two databases now hold 213 each. Any future seed module needs the same step

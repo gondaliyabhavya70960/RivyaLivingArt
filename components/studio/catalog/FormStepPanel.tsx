@@ -192,7 +192,7 @@ export function FormStepPanel({
   const isContact = step.key === 'contact'
 
   return (
-    <details className="border-t border-[--color-border] pt-4" data-form-step={step.key}>
+    <details className="border-t border-(--color-border) pt-4" data-form-step={step.key}>
       <summary className="cursor-pointer list-none">
         <Text size="sm" as="span">
           {step.position}. {step.title}

@@ -71,17 +71,26 @@ const MAX_POLAR = Math.PI - 0.05
 function Light({ spec, radius }: { spec: LightSpec; radius: number }): React.ReactElement {
   switch (spec.kind) {
     case 'ambient':
-      return <ambientLight color={resolveTokenColour(spec.colour)} intensity={spec.intensity} />
+      return (
+        <ambientLight
+          color={resolveTokenColour(spec.colour) ?? undefined}
+          intensity={spec.intensity}
+        />
+      )
     case 'hemisphere':
       return (
         <hemisphereLight
-          args={[resolveTokenColour(spec.sky), resolveTokenColour(spec.ground), spec.intensity]}
+          args={[
+            resolveTokenColour(spec.sky) ?? undefined,
+            resolveTokenColour(spec.ground) ?? undefined,
+            spec.intensity,
+          ]}
         />
       )
     case 'directional':
       return (
         <directionalLight
-          color={resolveTokenColour(spec.colour)}
+          color={resolveTokenColour(spec.colour) ?? undefined}
           intensity={spec.intensity}
           position={[
             spec.position[0] * radius,
@@ -96,10 +105,10 @@ function Light({ spec, radius }: { spec: LightSpec; radius: number }): React.Rea
 // --- Environment ---------------------------------------------------------------------------------
 
 function backgroundColour(environment: EnvironmentPreset): THREE.Color {
-  const colour = new THREE.Color(resolveTokenColour(environment.background))
+  const colour = new THREE.Color(resolveTokenColour(environment.background) ?? undefined)
   if (environment.tint !== null) {
     colour.lerp(
-      new THREE.Color(resolveTokenColour(environment.tint.colour)),
+      new THREE.Color(resolveTokenColour(environment.tint.colour) ?? undefined),
       environment.tint.amount,
     )
   }
@@ -114,7 +123,10 @@ function Environment({
   fit: Fit | null
 }): React.ReactElement {
   const background = React.useMemo(() => backgroundColour(preset), [preset])
-  const ground = React.useMemo(() => new THREE.Color(resolveTokenColour(preset.ground)), [preset])
+  const ground = React.useMemo(
+    () => new THREE.Color(resolveTokenColour(preset.ground) ?? undefined),
+    [preset],
+  )
 
   // Declarative, so a preset change is a prop change: the reconciler attaches the colour and the
   // fog to the scene and detaches them when the element goes, and nothing here mutates the scene.
