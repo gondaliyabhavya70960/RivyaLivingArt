@@ -1532,6 +1532,205 @@ export const STUDIO_STRINGS = {
     value: 'The page itself has been pruned; what it said is kept',
     contentKey: 'studio_help.research_snapshot_pruned',
   },
+  // --- Phase 28: normalisation, validation and the explorer ------------------------------------
+  //
+  // THE COPY HERE IS DOING MORE WORK THAN USUAL AND THAT IS DELIBERATE. Every screen this phase
+  // builds shows a value Rivya made of somebody else's words, and the difference between "we read
+  // this" and "we could not read this" is the whole product. A label that said "Price: —" would be
+  // read as a page with no price; "not read" says what actually happened.
+  'studio.research.explorerHeading': {
+    value: 'Scraped products',
+    contentKey: 'studio_help.research_explorer_heading',
+  },
+  'studio.research.explorerBody': {
+    value:
+      'Everything the pipeline has read, with what the page said beside what Rivya made of it. Nothing here is Rivya\u2019s catalogue and nothing here is published \u2014 it is research, and it stays inside Studio.',
+    contentKey: 'studio_help.research_explorer_body',
+  },
+  'studio.research.noProducts': {
+    value: 'Nothing has been read yet',
+    contentKey: 'studio_help.research_no_products',
+  },
+  'studio.research.noProductsBody': {
+    value:
+      'A source has to be approved and run before anything appears here. If runs have finished and this is still empty, the run detail screen says what each source did.',
+    contentKey: 'studio_help.research_no_products_body',
+  },
+  'studio.research.filtersHeading': {
+    value: 'Narrow this',
+    contentKey: 'studio_help.research_filters_heading',
+  },
+  'studio.research.filterAll': { value: 'All', contentKey: 'studio_help.research_filter_all' },
+  'studio.research.filterSource': {
+    value: 'Source',
+    contentKey: 'studio_help.research_filter_source',
+  },
+  'studio.research.filterStage': {
+    value: 'Stage',
+    contentKey: 'studio_help.research_filter_stage',
+  },
+  'studio.research.filterSeverity': {
+    value: 'Issue severity',
+    contentKey: 'studio_help.research_filter_severity',
+  },
+  'studio.research.filterPriceState': {
+    value: 'Price posture',
+    contentKey: 'studio_help.research_filter_price_state',
+  },
+  'studio.research.filterCurrency': {
+    value: 'Currency',
+    contentKey: 'studio_help.research_filter_currency',
+  },
+  'studio.research.filterParseState': {
+    value: 'Measurements',
+    contentKey: 'studio_help.research_filter_parse_state',
+  },
+  'studio.research.filterDisposition': {
+    value: 'Disposition',
+    contentKey: 'studio_help.research_filter_disposition',
+  },
+  'studio.research.apply': { value: 'Apply', contentKey: 'studio_help.research_apply' },
+  'studio.research.filterTitle': {
+    value: 'Title contains',
+    contentKey: 'studio_help.research_filter_title',
+  },
+  'studio.research.rawValue': {
+    value: 'As the page said it',
+    contentKey: 'studio_help.research_raw_value',
+  },
+  'studio.research.normalisedValue': {
+    value: 'What Rivya made of it',
+    contentKey: 'studio_help.research_normalised_value',
+  },
+  'studio.research.notRead': {
+    value: 'Not read',
+    contentKey: 'studio_help.research_not_read',
+  },
+  'studio.research.ambiguous': {
+    value: 'Could be read two ways',
+    contentKey: 'studio_help.research_ambiguous',
+  },
+  'studio.research.notMentioned': {
+    value: 'The page did not say',
+    contentKey: 'studio_help.research_not_mentioned',
+  },
+  'studio.research.issuesHeading': {
+    value: 'Findings',
+    contentKey: 'studio_help.research_issues_heading',
+  },
+  'studio.research.issuesBody': {
+    value:
+      'What the checks found. An error holds the row where it is until the page changes or somebody explains it away, with a reason. Nothing is ever deleted for failing a check.',
+    contentKey: 'studio_help.research_issues_body',
+  },
+  'studio.research.noIssues': {
+    value: 'Nothing found',
+    contentKey: 'studio_help.research_no_issues',
+  },
+  'studio.research.noIssuesBody': {
+    value: 'Every check passed on the version this row was last read from.',
+    contentKey: 'studio_help.research_no_issues_body',
+  },
+  'studio.research.dismiss': { value: 'Explain away', contentKey: 'studio_help.research_dismiss' },
+  'studio.research.dismissReason': {
+    value: 'Why this is not a problem',
+    contentKey: 'studio_help.research_dismiss_reason',
+  },
+  'studio.research.dismissed': {
+    value: 'Explained away',
+    contentKey: 'studio_help.research_dismissed',
+  },
+  'studio.research.overrideHeading': {
+    value: 'Correct a value',
+    contentKey: 'studio_help.research_override_heading',
+  },
+  'studio.research.overrideBody': {
+    value:
+      'A value you set by hand is never recomputed. Re-normalisation re-derives everything else from stored pages and leaves your corrections alone, and says how many it left.',
+    contentKey: 'studio_help.research_override_body',
+  },
+  'studio.research.frozen': { value: 'Set by hand', contentKey: 'studio_help.research_frozen' },
+  'studio.research.duplicateHeading': {
+    value: 'Possible duplicates',
+    contentKey: 'studio_help.research_duplicate_heading',
+  },
+  'studio.research.duplicateBody': {
+    value:
+      'Proposals, not verdicts. Accepting one hides a row from every later comparison, so it is a merchandiser\u2019s decision \u2014 and it can always be undone.',
+    contentKey: 'studio_help.research_duplicate_body',
+  },
+  'studio.research.accept': { value: 'Same product', contentKey: 'studio_help.research_accept' },
+  'studio.research.reject': {
+    value: 'Different products',
+    contentKey: 'studio_help.research_reject',
+  },
+  'studio.research.clearDuplicate': {
+    value: 'Undo duplicate',
+    contentKey: 'studio_help.research_clear_duplicate',
+  },
+  'studio.research.unmatched': {
+    value: 'No category yet',
+    contentKey: 'studio_help.research_unmatched',
+  },
+  'studio.research.dataQualityHeading': {
+    value: 'Scraped data quality',
+    contentKey: 'studio_help.research_data_quality_heading',
+  },
+  'studio.research.dataQualityBody': {
+    value:
+      'What the checks are finding across every source, and where the parser is not keeping up. A rule with a high count is usually a source that needs configuring rather than a bug.',
+    contentKey: 'studio_help.research_data_quality_body',
+  },
+  'studio.research.lexiconHeading': {
+    value: 'Material vocabulary',
+    contentKey: 'studio_help.research_lexicon_heading',
+  },
+  'studio.research.lexiconBody': {
+    value:
+      'The words the parser recognises on other people\u2019s pages. These are not Rivya\u2019s materials and none of them is ever shown publicly. Add a term here and re-run normalisation \u2014 no pages are fetched again.',
+    contentKey: 'studio_help.research_lexicon_body',
+  },
+  'studio.research.lexiconToken': {
+    value: 'Term',
+    contentKey: 'studio_help.research_lexicon_token',
+  },
+  'studio.research.lexiconPatterns': {
+    value: 'Words to recognise',
+    contentKey: 'studio_help.research_lexicon_patterns',
+  },
+  'studio.research.lexiconFamily': {
+    value: 'Family',
+    contentKey: 'studio_help.research_lexicon_family',
+  },
+  'studio.research.lexiconEnabled': {
+    value: 'In use',
+    contentKey: 'studio_help.research_lexicon_enabled',
+  },
+  'studio.research.parseFailures': {
+    value: 'Not read, by field',
+    contentKey: 'studio_help.research_parse_failures',
+  },
+  'studio.research.unmappedCategories': {
+    value: 'Categories nobody has decided about',
+    contentKey: 'studio_help.research_unmapped_categories',
+  },
+  'studio.research.tabProducts': {
+    value: 'Catalogue',
+    contentKey: 'studio_help.research_tab_products',
+  },
+  'studio.research.tabResearch': {
+    value: 'Research',
+    contentKey: 'studio_help.research_tab_research',
+  },
+  'studio.research.productsHeading': {
+    value: 'Catalogue data quality',
+    contentKey: 'studio_help.research_products_heading',
+  },
+  'studio.research.productsBody': {
+    value:
+      'Rivya\u2019s own products are checked as they are edited, and the readiness checklist on each one is where those findings appear.',
+    contentKey: 'studio_help.research_products_body',
+  },
   'studio.imports.heading': { value: 'Import products', contentKey: 'studio_help.imports_heading' },
   'studio.imports.body': {
     value:

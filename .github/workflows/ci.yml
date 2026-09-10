@@ -335,6 +335,14 @@ jobs:
       - name: No queries outside the repository layer
         run: npm run db:check-data-layer
 
+      # The `unit` project runs at step five, BEFORE `db:reset`, and DATABASE_URL is set for the
+      # whole job — so a unit test that reaches for a cluster does not skip, it connects to an empty
+      # database and fails. Phase 26 added two such files and main was red through three merges
+      # before anyone read the log. The rule was a comment on the "Unit tests" step above; this is
+      # the same rule as a gate.
+      - name: The unit project runs without a database
+        run: npm run db:check-unit-offline
+
       # The migration set must apply where it is actually going, not only where it was written.
       # Hosted Supabase projects keep citext/unaccent/pg_trgm in an `extensions` schema, where
       # `create extension if not exists` is a no-op — which made the whole Phase 03 set fail at

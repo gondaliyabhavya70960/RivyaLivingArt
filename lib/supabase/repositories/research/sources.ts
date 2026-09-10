@@ -291,3 +291,25 @@ export async function countSourcesByPolicyStatus(client: Client): Promise<Record
   }
   return counts
 }
+
+/**
+ * The two columns the normalizer needs, and nothing else.
+ *
+ * A NARROW READ RATHER THAN `getResearchSource`, because a promotion pass makes it once per source
+ * and the wide row carries twenty-three configuration fields plus policy-review state that this
+ * caller has no business holding. It is also the read `scripts/research/renormalize.ts` makes, and
+ * naming it makes the dependency legible: normalisation depends on a source's declared currency and
+ * its number separators, and on nothing else about the source.
+ */
+export async function getSourceParsingConfig(
+  client: Client,
+  sourceId: string,
+): Promise<{ readonly currency: string | null; readonly priceExtraction: unknown } | null> {
+  const { data, error } = await client
+    .from('research_sources')
+    .select('id, currency, price_extraction')
+    .eq('id', sourceId)
+    .maybeSingle()
+  if (error !== null) throw toRepositoryError(ENTITY, 'parsing config', sourceId, error)
+  return data === null ? null : { currency: data.currency, priceExtraction: data.price_extraction }
+}

@@ -401,6 +401,47 @@ const EXPECTED = {
    * CHECK that makes an enabled-but-unapproved source unstorable. A second flag on a child row
    * would be a flag nothing reads.
    */
+  /*
+   * Phase 28 — three tables, and none of them carries Tier A whole.
+   *
+   * `research_validation_issues` and `research_match_candidates` are §1.4 exemptions of the
+   * "record of something that happened" kind: a finding was found at a moment and a proposal was
+   * made at one. Neither has `updated_at`, because neither is edited — an issue is DISMISSED,
+   * which is four columns of its own recording who and why, and a candidate is DECIDED, which is
+   * three. `updated_by` on either would name a person for the row's creation, and no person
+   * created it.
+   *
+   * `research_material_lexicon` IS content-bearing in the §1.2 sense — a person adds a token, edits
+   * its patterns and is accountable for them — so it carries the full common set, `status`
+   * included, exactly as `research_source_url_patterns` does. It carries no `owner_verification`
+   * for the reason A25 records for the whole subsystem: the verification gate here is
+   * `policy_status` on the source, and a second flag on a parsing vocabulary would be a flag
+   * nothing reads.
+   */
+  research_validation_issues: [
+    'research_product_id',
+    'rule',
+    'severity',
+    'is_dismissed',
+    'detected_at',
+  ],
+  research_match_candidates: [
+    'research_product_id',
+    'candidate_id',
+    'method',
+    'score',
+    'decided',
+    'created_at',
+  ],
+  research_material_lexicon: [
+    'token',
+    'patterns',
+    'is_enabled',
+    'status',
+    'created_at',
+    'updated_at',
+    'updated_by',
+  ],
   research_source_url_patterns: [
     'source_id',
     'kind',

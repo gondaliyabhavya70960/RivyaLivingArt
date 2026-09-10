@@ -455,7 +455,7 @@ describeDb('Phase 26 — the rules a form must not be the only thing enforcing',
 })
 
 describeDb('Phase 26 — I1: exactly one foreign key crosses the boundary', () => {
-  it('names the one crossing, and it is the category mapping', async () => {
+  it('names the crossings, and Phase 26’s is the category mapping', async () => {
     const db = await connect()
     const { rows } = await db.query<{ constraint_name: string; child: string; parent: string }>(`
       select tc.constraint_name, tc.table_name as child, ccu.table_name as parent
@@ -468,10 +468,18 @@ describeDb('Phase 26 — I1: exactly one foreign key crosses the boundary', () =
         and ccu.table_schema = 'public'
         and ((tc.table_name like 'research\\_%') <> (ccu.table_name like 'research\\_%'))
     `)
-    expect(rows.map((row) => row.constraint_name)).toEqual([
+    /*
+     * TWO NOW, AND THIS SUITE STILL ASSERTS PHASE 26'S OWN. The list is unsorted by the query, so
+     * it is compared as a set; what this test is for is that `research_source_category_map` points
+     * at `categories` and at nothing else. Phase 28 added the second and final crossing
+     * (`research_products_matched_category_fk`, amendment A28) and asserts its own shape in
+     * `phase28.test.ts`. A THIRD fails in both, and in the guard.
+     */
+    expect([...rows.map((row) => row.constraint_name)].sort()).toEqual([
+      'research_products_matched_category_fk',
       'research_source_category_map_category_fk',
     ])
-    expect(rows[0]?.parent).toBe('categories')
+    for (const row of rows) expect(row.parent, row.constraint_name).toBe('categories')
   })
 
   it('still holds a published product that no research row can reach', async () => {

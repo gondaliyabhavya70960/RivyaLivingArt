@@ -226,3 +226,135 @@ export async function getResearchProductBySourceUrl(
   if (error !== null) throw toRepositoryError(ENTITY, 'get', sourceUrl, error)
   return (data ?? null) as unknown as ResearchProductRow | null
 }
+
+/* --- Phase 28: normalisation, matching and promotion ---------------------------------------- */
+
+/**
+ * The wide read `workflows/promote.ts` makes once per row.
+ *
+ * ONE READ RATHER THAN FOUR, and the column list is a literal for the reason every select in this
+ * file is: PostgREST's generated types read the string at COMPILE time, so hoisting it into a
+ * constant erases the shape and a column renamed by a migration would typecheck here and fail at
+ * runtime.
+ */
+export async function getProductForPromotion(admin: Client, id: string) {
+  const { data, error } = await admin
+    .from('research_products')
+    .select(
+      'id, source_id, source_url, source_external_id, stage, disposition, current_version_id, first_seen_at, title_normalized, currency, price_min_minor, dimensions_mm, matched_category_id, normalized_overrides',
+    )
+    .eq('id', id)
+    .single()
+  if (error) throw toRepositoryError(ENTITY, 'promotion', id, error)
+  return data
+}
+
+/**
+ * The duplicate pointer.
+ *
+ * ITS OWN FUNCTION RATHER THAN A FIELD ON `writeProductDisposition`, because the two move together
+ * and are refused separately: `research_products_duplicate_is_another` forbids a self-pointer and
+ * `research_products_duplicate_fk` forbids a pointer at nothing. A caller that set a disposition
+ * and failed to set a pointer would leave a row hidden from every comparison with nothing on any
+ * screen saying what it was hidden behind.
+ */
+export async function setDuplicateOf(
+  client: Client,
+  input: {
+    readonly id: string
+    readonly duplicateOfId: string | null
+    readonly actorId: string | null
+  },
+): Promise<void> {
+  const { error } = await client
+    .from('research_products')
+    .update({
+      duplicate_of_id: input.duplicateOfId,
+      updated_by: input.actorId,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', input.id)
+  if (error) throw toRepositoryError(ENTITY, 'duplicate', input.id, error)
+}
+
+/** Rows a duplicate check should consider. Within one source, never across — see `workflows/match.ts`. */
+export async function listSiblingsInSource(
+  admin: Client,
+  input: { readonly sourceId: string; readonly excludeId: string; readonly limit?: number },
+) {
+  const { data, error } = await admin
+    .from('research_products')
+    .select(
+      'id, source_external_id, title_normalized, currency, price_min_minor, dimensions_mm, first_seen_at',
+    )
+    .eq('source_id', input.sourceId)
+    .neq('id', input.excludeId)
+    .neq('disposition', 'DUPLICATE')
+    .not('title_normalized', 'is', null)
+    .limit(input.limit ?? 1_000)
+  if (error) throw toRepositoryError(ENTITY, 'siblings', input.sourceId, error)
+  return data ?? []
+}
+
+/**
+ * Rows in the same source discovered no later than this one, with their addresses.
+ *
+ * READ RATHER THAN FILTERED IN SQL because the comparison is on a CANONICALISED url — tracking
+ * parameters stripped, query sorted — and that canonicalisation lives in TypeScript beside the list
+ * of parameters it removes. Pushing it into PostgREST would mean either a database function nobody
+ * can read the parameter list of, or an `ilike` that matches the wrong rows.
+ */
+export async function listUrlPeersInSource(
+  admin: Client,
+  input: {
+    readonly sourceId: string
+    readonly excludeId: string
+    readonly noLaterThan: string
+    readonly limit?: number
+  },
+) {
+  const { data, error } = await admin
+    .from('research_products')
+    .select('id, source_url, first_seen_at')
+    .eq('source_id', input.sourceId)
+    .neq('id', input.excludeId)
+    .lte('first_seen_at', input.noLaterThan)
+    .limit(input.limit ?? 500)
+  if (error) throw toRepositoryError(ENTITY, 'peers', input.sourceId, error)
+  return data ?? []
+}
+
+/** The rows one promotion pass will consider, oldest first so a backlog drains in discovery order. */
+export async function listPromotableIds(
+  admin: Client,
+  input: { readonly sourceId: string; readonly limit?: number },
+): Promise<readonly string[]> {
+  const { data, error } = await admin
+    .from('research_products')
+    .select('id')
+    .eq('source_id', input.sourceId)
+    .in('stage', ['RAW', 'NORMALIZED', 'VALIDATED'])
+    .neq('disposition', 'IGNORED')
+    .order('first_seen_at', { ascending: true })
+    .limit(input.limit ?? 200)
+  if (error) throw toRepositoryError(ENTITY, 'promotable', input.sourceId, error)
+  return (data ?? []).map((row) => row.id)
+}
+
+/** What `scripts/research/renormalize.ts` re-reads: every row that has a stored page to re-read. */
+export async function listProductsWithVersionForSource(
+  admin: Client,
+  input: { readonly sourceId: string; readonly limit: number },
+) {
+  const { data, error } = await admin
+    .from('research_products')
+    .select(
+      'id, current_version_id, normalized_overrides, title_normalized, price_min_minor, material_tokens, dimension_parse_state',
+    )
+    .eq('source_id', input.sourceId)
+    .not('current_version_id', 'is', null)
+    .order('first_seen_at', { ascending: true })
+    .limit(input.limit)
+  if (error) throw toRepositoryError(ENTITY, 'renormalize', input.sourceId, error)
+  return data ?? []
+}

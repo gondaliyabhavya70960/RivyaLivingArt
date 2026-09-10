@@ -47,6 +47,17 @@ export type TablePolicy = {
    */
   writeIsInsertOnly?: { why: string }
   /**
+   * The write permission covers UPDATE and NOTHING ELSE, because nobody with a session may CREATE
+   * a row of this kind — only change one the pipeline already wrote.
+   *
+   * `research_validation_issues` is the case, and it is the mirror image of `inquiry_events`. An
+   * issue is a FINDING: it is raised by `lib/scraper/validation/rules.ts` from the evidence, and a
+   * researcher's part in it is to DISMISS one with a reason. An insert policy would let a member of
+   * staff raise an `ERROR` by hand — and an `ERROR` is what stops a row being promoted, so forging
+   * one is a way to quietly hold rows back with nothing in the pipeline log saying why.
+   */
+  writeIsUpdateOnly?: { why: string }
+  /**
    * The anon/authenticated SELECT predicate for a shape-A table, when `status = 'PUBLISHED'` is
    * not the whole story.
    *
@@ -142,6 +153,7 @@ export const PHASE_24_POLICIES = '0221_phase24_bulk_rls.sql'
 export const PHASE_25_POLICIES = '0233_phase25_research_rls.sql'
 export const PHASE_26_POLICIES = '0241_phase26_source_config_rls.sql'
 export const PHASE_27_POLICIES = '0251_phase27_extraction_rls.sql'
+export const PHASE_28_POLICIES = '0261_phase28_normalization_rls.sql'
 
 export const TABLE_POLICIES = {
   // --- Shape A: content tables ------------------------------------------------------------------
@@ -1277,6 +1289,73 @@ export const TABLE_POLICIES = {
       "The per-(run, source, adapter) accounting that makes FEAT §27's isolation claim " +
       'checkable. Staff read it on the run detail screen; nobody writes it with a session, ' +
       'because a record of what failed that the failing party can edit proves nothing.',
+  },
+  /*
+   * Phase 28 — the three tables normalisation adds, and they take three DIFFERENT write postures
+   * from one another. That is the phase document's rule expressed at the table: the dividing line
+   * is the COLUMN, not the screen.
+   *
+   *   `research_material_lexicon` is CONFIGURATION. A researcher adds a material nobody
+   *   anticipated, exactly as they add a URL pattern — `research.write`, full stop.
+   *
+   *   `research_validation_issues` is a FINDING, and a person's part in it is to DISMISS one.
+   *   Update under `research.write`, and NO INSERT POLICY AT ALL: an `ERROR` is what stops a row
+   *   being promoted, so a hand-written one is a way to hold rows back with nothing in the
+   *   pipeline log saying why.
+   *
+   *   `research_match_candidates` is a PROPOSAL a merchandiser decides, and deciding one writes
+   *   `duplicate_of_id` and `disposition` on the product — both `research.confirm` columns. So the
+   *   candidate row takes `research.confirm` too, or a researcher could accept a merge they are
+   *   not permitted to perform directly. It has no insert policy for the same reason the issues
+   *   table has none: the matcher proposes, and a proposal somebody made up is not one.
+   */
+  research_validation_issues: {
+    policiesIn: PHASE_28_POLICIES,
+    shape: 'C',
+    readPermission: 'research.read',
+    writePermission: 'research.write',
+    writeIsUpdateOnly: {
+      why:
+        'An issue is raised by lib/scraper/validation/rules.ts from the evidence, never by a ' +
+        'person. An ERROR blocks promotion past VALIDATED, so a hand-written one holds rows back ' +
+        'silently; what a person does here is dismiss one, with a reason the row demands.',
+    },
+    deviation:
+      'One finding per (product, version, rule, field). No anon policy may ever exist on any ' +
+      'research_* table (isolation invariant I2). Update under research.write is the dismissal; ' +
+      'there is no insert policy and no delete policy, because an issue that was wrong is a fact ' +
+      'about the rule that raised it and deleting it deletes the evidence that the rule needs ' +
+      'changing.',
+  },
+  research_match_candidates: {
+    policiesIn: PHASE_28_POLICIES,
+    shape: 'C',
+    readPermission: 'research.read',
+    // `research.confirm`, NOT `research.write`, and the phase document is explicit: accepting a
+    // candidate writes `duplicate_of_id` AND `disposition`, and both are disposition-bearing.
+    writePermission: 'research.confirm',
+    writeIsUpdateOnly: {
+      why:
+        'The matcher proposes; a merchandiser decides. A candidate somebody inserted by hand is ' +
+        'not a proposal the matcher made, and accepting it would write a duplicate flag on ' +
+        'evidence that never existed.',
+    },
+    deviation:
+      'A proposal, never a verdict. Write is research.confirm rather than research.write because ' +
+      'deciding one writes duplicate_of_id and disposition on the product, and a researcher who ' +
+      'may not set those directly must not be able to set them through a candidate. No insert ' +
+      'policy: the matcher writes these through the service role.',
+  },
+  research_material_lexicon: {
+    policiesIn: PHASE_28_POLICIES,
+    shape: 'C',
+    readPermission: 'research.read',
+    writePermission: 'research.write',
+    deletePermission: 'destructive.execute',
+    deviation:
+      "A parsing vocabulary for other people's words, editable in Studio so that a material " +
+      'nobody anticipated is added without a deploy. Delete is destructive.execute because ' +
+      'removing a token unmatches it on every stored row the next re-normalisation touches.',
   },
 } as const satisfies Record<string, TablePolicy>
 

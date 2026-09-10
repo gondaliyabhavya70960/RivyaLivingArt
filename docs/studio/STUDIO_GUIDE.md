@@ -1772,6 +1772,35 @@ CAPTCHA solving. If a source requires any of those to read, the answer is that R
 The corpus browser: filter, sort, saved views, the action bar and the enabled bulk toolbar. Also hosts
 the normalization and validation outcomes per row.
 
+**Built in Phase 28.** What the page said, beside what Rivya made of it, beside the rule that produced
+it — three columns per field, because a comparison table is only trustworthy if the judgements behind
+it can be checked, and they can only be checked if the source text is on the screen next to them.
+
+**Filters live in the URL** (`?source=&stage=&severity=&price_state=&currency=&parse_state=&disposition=&q=`),
+so a filtered view is a link somebody can send rather than a set of instructions. `?row=<id>` opens the
+drawer, and it is the same address `refresh_research_search_document` writes into the search index — a
+*Scraped Products* palette hit opens the row rather than the unfiltered list. A filter value that names
+nothing is ignored rather than answered with a 500: the query string is input, and `?stage=DROP` is a
+thing somebody can type.
+
+**An unread value says "not read", never a dash.** A blank cell reads as "the page did not say", and
+the difference between that and "the page said something we could not parse" is the difference between
+a competitor who publishes no measurements and a parser that needs fixing. Four states, four words:
+*not read*, *could be read two ways*, *the page did not say*, and the value itself.
+
+**The address is shown and never linked.** Opening a competitor's page from Studio is a request
+nobody's politeness clock accounted for, made from whatever network the person happens to be on.
+
+**Permissions are drawn by rendering, and checked again by the action.** `research.write` gets the
+correction form and the *explain away* control on a finding; `research.confirm` gets the duplicate
+decisions and the undo. A role without one sees no control rather than a disabled one — a disabled
+control tells somebody the action exists and they are not trusted with it. The Server Actions check
+regardless, because a control that is not rendered is not a boundary.
+
+**A corrected value is frozen.** Any field set by hand is badged *set by hand*, records `override_by`
+and `override_at` and a pipeline event, and is never recomputed by `npm run research:renormalize` —
+which reports how many it left alone.
+
 ### 12.6 `/studio/research/changes`
 
 Field-by-field change detection between stored versions (FEAT §24). Each change carries `before`,
@@ -1900,6 +1929,25 @@ quality is *computed* by `lib/catalog/validation.ts` at read time — a stored i
 the moment a product was edited — and the readiness checklist is `products.publication_readiness`, a
 transparent list of booleans. The Research tab reads `research_validation_issues`, which *is* stored,
 because it is attached to an immutable version. An issue is dismissible only with a reason.
+
+**Two tabs, and the Research one is absent without `research.read`** — not empty. An editor is the one
+role that does not hold it, and a tab rendering with no rows would tell them a research corpus exists
+and they may not see it. The same reasoning the command palette's provider registry uses.
+
+**What the Research tab shows (Phase 28).** Findings counted by rule and severity, each count linking
+to the rows behind it — a number nobody can act on is a number people learn to ignore. Unmapped
+category counts. And **parse coverage per source**, counted from the columns rather than from the issue
+table, because the two answer different questions: an issue row says a *rule fired*, a parse state says
+a *value was not read*, and a source that publishes no measurements anywhere raises nothing at all. A
+tab built only on issue counts would report it as perfectly healthy while a whole column of the
+comparison sat empty.
+
+**The material lexicon editor lives here.** `research_material_lexicon` is a parsing vocabulary for
+*other people's* words — not a claim about what Rivya makes, and never rendered outside Studio. Adding
+a term and running `npm run research:renormalize -- --source=<slug>` rolls it out over every stored
+page with **no network traffic at all**. Editing takes `research.write`; **deleting takes
+`destructive.execute`**, because removing a term unmatches it on every stored row the next
+re-normalisation touches — which is why disabling is offered first and keeps the row and its history.
 
 ### 13.3 `/studio/operations/imports` and `/exports`
 

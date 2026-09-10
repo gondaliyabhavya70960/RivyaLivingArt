@@ -20,11 +20,24 @@ import { registerCommandProvider, type CommandResult } from '../registry'
  * the one role that does not hold it — gets no research group, no count, and no query issued on
  * their behalf. Not a filtered-empty group, which would still tell them the group exists.
  *
- * TWO PROVIDERS AND NOT THREE. `research_product` is indexed by 0234's trigger and will be
- * searchable the moment Phase 28 puts real products in it, but no provider is registered for it
- * here: at this phase a research product is a URL and a stage, so a palette result would be a bare
- * link with nothing to recognise it by. Phase 29 builds the explorer those results should open,
- * and registers the provider that reaches it.
+ * THREE PROVIDERS NOW, AND THE THIRD ARRIVED WHEN IT HAD SOMETHING TO SHOW. Phase 25 registered
+ * two and wrote, here, that `research_product` was indexed but not offered "because at this phase a
+ * research product is a URL and a stage, so a palette result would be a bare link with nothing to
+ * recognise it by". Phase 28 gives it a normalised title, a source name and a stage, and builds the
+ * explorer drawer a result opens — so the condition that held it back is gone and the provider is
+ * registered. That note said Phase 29 would do it; the explorer landed a phase earlier than the
+ * plan expected, which is the only reason this is early rather than late (amendment A28).
+ *
+ * A THIRD ROW IN THE TABLE RATHER THAN THE `providers/research-products.ts` THE PHASE DOCUMENT
+ * NAMES, and `providers/index.ts` has already made the argument at length: eight near-identical
+ * files differing in three literals each is eight places to get a permission wrong, and the one
+ * that matters is the one nobody re-reads. This file is that argument applied to research; a
+ * fourth file holding six lines would contradict the file it sits beside. Recorded as amendment
+ * A28 rather than done quietly.
+ *
+ * NOTHING HERE BECOMES PUBLIC. `research_search_documents` has no `anon` policy (I2), and the
+ * public `search_documents` cannot hold a research row at all — its `entity_type` allowlist does
+ * not admit one, by a constraint Phase 23 wrote three phases before there was anything to index.
  */
 
 interface ResearchProvider {
@@ -51,6 +64,17 @@ export const RESEARCH_PROVIDERS: readonly ResearchProvider[] = [
     permission: 'research.read',
     groupKey: 'studio.research.runsHeading',
     href: (row) => row.url_path ?? `/studio/research/runs/${row.entity_id}`,
+  },
+  {
+    // FEAT §18's *Scraped Products* scope. `0260`'s search function writes `url_path` as
+    // `/studio/research/explorer?row=<id>`, so a result opens the ROW's drawer rather than the
+    // list — a palette hit that landed on an unfiltered table would make the searcher find the row
+    // twice.
+    id: 'research-products',
+    entityType: 'research_product',
+    permission: 'research.read',
+    groupKey: 'studio.research.explorerHeading',
+    href: (row) => row.url_path ?? `/studio/research/explorer?row=${row.entity_id}`,
   },
 ]
 

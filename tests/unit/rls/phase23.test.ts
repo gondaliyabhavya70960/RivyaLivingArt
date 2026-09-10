@@ -232,7 +232,9 @@ describeDb('Phase 23 — the research index is unreachable', () => {
      * `on delete set null`, recorded as A26 — and an assertion that keeps saying "none" after that
      * is one somebody deletes rather than reads.
      *
-     * Phase 28 adds the second and final entry. A third fails here and in
+     * PHASE 28 ADDED THE SECOND AND FINAL ENTRY — `research_products.matched_category_id`, a
+     * taxonomy pointer reached through that same staff-authored map or through a keyword rule a
+     * person can see and correct, `on delete set null`, recorded as A28. A THIRD fails here and in
      * `scripts/research/check-research-isolation.mjs`, which is the same rule enforced twice on
      * purpose: this reads the DATABASE, that reads the allowlist a reviewer sees in a diff.
      */
@@ -248,7 +250,10 @@ describeDb('Phase 23 — the research index is unreachable', () => {
                or (tgt.relname like 'research\\_%' and src.relname not like 'research\\_%'))
         order by c.conname`,
     )
-    expect(rows.map((row) => row.name)).toEqual(['research_source_category_map_category_fk'])
+    expect(rows.map((row) => row.name)).toEqual([
+      'research_products_matched_category_fk',
+      'research_source_category_map_category_fk',
+    ])
     // TAXONOMY, NEVER `products`. The exception D5 admits is a pointer at a category; a reference
     // to a product would be the thing the rule exists to forbid, wearing an allowlisted name.
     expect(rows[0]?.parent).toBe('categories')

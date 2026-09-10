@@ -2030,3 +2030,233 @@ it — and adding an image proxy remains a defect rather than a feature.
 An image *change* is a change to the URL **set**, never a comparison of pixels. Perceptual hashing
 is Phase 33's, needs pixels this posture does not supply, and is unresolved as *Open questions* item
 3 — not something an adapter may quietly begin supplying.
+
+---
+
+## 19. Normalization, validation and matching as built — Phase 28
+
+Phase 27 stopped at strings. Phase 28 is where they become data — and where, three times over, the
+system chooses to say *I could not read this* rather than produce a number that would look exactly
+like a real one.
+
+Its governing sentence is short: **a value Rivya could not parse is recorded as unparsed, never as a
+guess**, because every downstream comparison, scale band, opportunity score and shortlist decision
+inherits that first judgement and none of them can tell a guessed figure from a read one.
+
+### 19.1 The normalizer is pure, and that is what makes the rules arguable
+
+`lib/scraper/normalization/` takes a `RawProductDraft`, a source's configuration and a lexicon, and
+returns a value. No I/O, no clock, no database. Three consequences, and each is the reason for a
+capability elsewhere in this phase:
+
+- **Every rule is a fixture table.** `tests/unit/normalize-dimensions.test.ts` runs the phase
+  document's own eleven-row table verbatim plus twelve real malformed strings, with no database. A
+  judgement about somebody else's page will be argued with eventually, and an argument is only
+  settleable if the rule can be put beside its input.
+- **`scripts/research/renormalize.ts` needs no network.** A lexicon fix or a parser fix is rolled out
+  over months of stored evidence with **zero requests to anybody's server**, because everything the
+  normalizer needs is already held.
+- **The normalizer decides no stage and writes no row.** `workflows/promote.ts` owns the transition
+  and `validation/rules.ts` owns whether the row may take it. Keeping those apart is what stops the
+  normalizer quietly becoming the thing that both reads a page and decides it is good enough.
+
+It returns two things: the `NormalizedProduct` and a `NormalizationSignals` record of what it noticed
+on the way. The signals exist because some of them are **unrecoverable from the result** — a row with
+`dimensions_mm = null` and `dimension_parse_state = 'UNPARSED'` could be prose ("seats six") or a
+twelve-metre misread, and those are a silent nothing and an ERROR respectively.
+
+### 19.2 Money: no conversion, ever, and `$` is ambiguous
+
+There is no exchange rate anywhere under `lib/scraper/`, and
+`tests/unit/normalize-currency.test.ts` reads every file in that tree and fails if one appears.
+Comparing €1,299 with ₹64,000 requires a rate, and a rate has a date; a figure converted at today's
+rate and compared with a price captured in March is a comparison of two things that were never true
+at the same moment. Phases 31–34 compare **within** a currency and say so on the chart.
+
+`€`, `£`, `₹` and eight more are unambiguous in practice and override the source's declared currency.
+An explicit three-letter code beats a symbol beside it. **`$` alone does not**: it is the sign of at
+least a dozen currencies, and the site using it without qualification is usually the one whose
+country a reader is guessing at. It records `AMBIGUOUS`, keeps the declared currency (so the state
+says *do not compare this*, not *unknown*), and raises `currency_ambiguous`.
+
+Amounts are integer minor units read with the **source's configured separators**, because `1.234` is
+one thousand two hundred and thirty-four in one convention and one point two three four in another
+and nothing in the string distinguishes them. Phase 26 asks a person to state the convention per
+source for exactly this moment. The currency's own minor-unit exponent governs, so a yen price is not
+stored a hundred times too large.
+
+The price vocabulary mirrors the first-party one — `FIXED · STARTING_FROM · REQUEST_QUOTE ·
+PRICE_ON_REQUEST` — plus `UNKNOWN`, which is this table's alone: a first-party product always has a
+decided posture and a page Rivya could not read has not decided anything.
+
+### 19.3 Measurements: the table, and what `AMBIGUOUS` costs
+
+| Input shape | Example | Result |
+|---|---|---|
+| Triple with unit | `120 x 60 x 45 cm` | `{ length_mm: 1200, width_mm: 600, height_mm: 450 }` |
+| Labelled | `W 120cm · D 60cm · H 45cm` | labels win over position |
+| Imperial | `47" x 24" x 18"` | 25.4 mm/in, rounded to the nearest mm |
+| Feet + inches | `4' 6"` | `1372` — one length, not two measurements |
+| Diameter | `Ø 90 cm`, `dia. 90cm` | `{ diameter_mm: 900 }` |
+| Range | `120–140 cm` | `{ length_mm: 1200, length_mm_max: 1400 }`, `PARSED` |
+| Unitless | `120 x 60` | `AMBIGUOUS` — no unit is inferred from magnitude |
+| Prose | `seats six comfortably` | `UNPARSED`; the original string is retained |
+| Out of range | `1 200 x 60 x 45 cm` | `UNPARSED`, `dimensions_mm` null, `impossible_dimension` raised |
+
+Three things in that table are decisions rather than mechanics.
+
+**`AMBIGUOUS` stores nothing.** `dimensions_mm` is null unless the state is `PARSED`. The invariant is
+one line to check and it means no chart ever reads a millimetre figure arrived at by supposing. The
+source string survives in the version's `raw` and in `normalized.sourceTexts.dimensions`, where the
+explorer shows it beside the word "ambiguous" and a person can correct it — which freezes the key.
+
+**An out-of-range axis discards the whole reading.** A triple whose first number is twelve metres was
+read in the wrong unit, and the other two were read in the same wrong unit; keeping them would store
+two figures wrong by the same factor that look entirely fine.
+
+**An unlabelled triple is read positionally, and that is a naming claim.** See amendment A28: in
+L×W×H and W×D×H alike the last number is the vertical extent and the first two are the horizontals —
+what differs between conventions is which horizontal is called "length", and nothing downstream
+depends on that name. Labels always win.
+
+`1 200 x 60 x 45 cm` only *is* the out-of-range case if `1 200` reads as one thousand two hundred, so
+the number pattern admits space-grouped digits in groups of exactly three. Without that, the scanner
+finds `1` and `200`, assigns them to two axes, and reports a perfectly sane 10 mm × 2 000 mm object —
+the exact silent misread the range check exists to catch.
+
+### 19.4 The material lexicon is data, and word boundaries are the whole of it
+
+`research_material_lexicon` seeds forty terms and is edited in Studio under
+`/studio/operations/data-quality`. The first time a competitor lists "microcement", the fix is
+somebody typing it and running `npm run research:renormalize -- --source=<slug>`. A hard-coded array
+would make that a pull request, a review and a release — so it would not happen, and the field would
+read as unmatched for a year.
+
+Matching is on **word boundaries, never substrings**. `ash` is inside `ashtray`, `oak` is inside
+`oakum`, `iron` is inside `ironing board`; a substring match turns a description mentioning none of
+those materials into a row claiming all of them. Longest pattern wins and consumes its span, so
+"brushed stainless steel" is `stainless_steel` once rather than `stainless_steel` and `steel` twice —
+double-counting is how a material breakdown becomes confidently wrong.
+
+The honest limit is recorded in the test suite: "cane sugar bowl" matches `rattan`, because `cane` is
+a whole word there and nothing in this system reads context. That is what the Studio editor is for,
+and the failure is visible in the explorer beside the words that produced it rather than hidden
+behind a cleverer matcher.
+
+### 19.5 Eleven rules, and every one of them runs before the write
+
+| Rule | Severity | Effect |
+|---|---|---|
+| `missing_title` | ERROR | Blocks promotion past `VALIDATED` |
+| `malformed_source_url` | ERROR | Blocks — a broken extraction |
+| `non_https_url` | ERROR | Blocks — a page read over a channel anybody could have rewritten |
+| `price_quote_with_amount` | ERROR | Blocks; posture kept, number dropped |
+| `price_zero_or_negative` | ERROR | Blocks; nothing stored |
+| `impossible_dimension` | ERROR | Blocks; `dimensions_mm` nulled, source string kept |
+| `dimension_ambiguous` | WARNING | Promotes, flagged; excluded from Phase 30's scale bands |
+| `currency_ambiguous` | WARNING | Promotes, flagged; excluded from price comparisons |
+| `duplicate_source_url_within_source` | ERROR | Blocks; the older row wins |
+| `missing_category_mapping` | WARNING | Promotes to `VALIDATED`, never to `MATCHED` |
+| `image_url_unreachable_shape` | INFO | Informational; **no request is made** |
+| `low_confidence_extraction` | WARNING | Under three found fields; promotes, flagged |
+
+**The database constraints are backstops, not the enforcement point**, and the ordering is the whole
+design. `research_price_state_coherent` and `research_dimensions_sane` would each refuse an offending
+row outright — and a refused INSERT is a row that vanished, or a pass that crashed holding its
+leases. So the normalizer refuses the **value** (nulls it, states why) and the rules attach the
+**finding**, and the row is written, kept at `VALIDATED`, listed in the explorer's Issues view and
+counted on the data-quality tab. The constraints then fire for a hand-written `UPDATE` and for
+nothing else, which is what `tests/unit/rls/phase28.test.ts` proves and what
+`tests/unit/validation-rules.test.ts` proves from the other side.
+
+`image_url_unreachable_shape` is narrower than it sounds, and A28 says why: the draft schema already
+refuses anything not beginning `http://` or `https://`, so a rule written to catch `data:` or a bare
+path would be **unreachable** — this phase's own named risk. What survives that filter and is still
+not an address is a reference a broken template built: `https://` with no host, a URL with a space in
+it. Those are real, and no request is made to check whether any address resolves.
+
+### 19.6 Matching proposes; it never decides
+
+Two jobs, both producing candidates.
+
+**Duplicates, within a source only.** Cross-source deduplication is deliberately out of scope: two
+competitors listing similar objects is the most interesting thing this system can observe, and
+collapsing them destroys exactly the signal Phase 31 reads. Three tiers, and what auto-merge requires
+differs by tier because the evidence differs:
+
+- `EXTERNAL_ID` — the source's own statement that these are one product. Auto-merges unless the
+  measurements actively contradict, which would mean the identifier is being reused across a range.
+- `TITLE_PRICE` — identical normalised title AND identical price in the same currency. Same rule.
+- `TRIGRAM_DIMENSION` — the only heuristic, and the only one demanding **positive** agreement: title
+  similarity ≥ 0.95 AND measurements agreeing within 5 %. `UNKNOWN` measurements are not enough,
+  because a fuzzy title alone is how "Halden Dining Table 180" gets merged into "…200".
+
+`trigramSimilarity` is pg_trgm's own definition in TypeScript — padding and all — so it cannot
+disagree with the `similarity()` the trigram index on `title_normalized` will answer in Phase 31.
+Anything below auto-merge becomes a `research_match_candidates` row a **merchandiser** decides, and
+every duplicate flag is reversible with an audited reversal.
+
+**Taxonomy.** The staff-authored map first, and **its refusals are final** — somebody looked at
+"Outdoor / Parasols" and decided it maps to nothing Rivya makes, and a keyword rule that then matched
+"outdoor" would overrule a decision already taken, invisibly. The keyword fallback is an exact match
+on the normalised label against a category's own name or slug, recorded at confidence 0.6 so the
+screen can show it as the weaker claim it is. **No mapping means no match**: the row stops at
+`VALIDATED`, the dashboard's unmapped count goes up, and nothing is defaulted to a first category.
+
+### 19.7 One stage per pass, and a row that cannot move is not an error
+
+`workflows/promote.ts` moves a row `RAW → NORMALIZED → VALIDATED → MATCHED`, **one stage per call**.
+Each stage has rules that decide it and a pipeline event that records it; a function that ran all
+three would write one event for three decisions and make "why did this row stop" unanswerable,
+because it never stopped anywhere.
+
+`VALIDATED` means **judged**, not clean. A row held at `NORMALIZED` because it failed would be
+indistinguishable from one nobody has got to yet, and the count of things needing attention would be
+two different things added together. So a failing row reaches `VALIDATED` carrying its ERRORs and
+stops there — never deleted, never silently dropped, never quietly promoted on a later run unless the
+issue clears.
+
+`MATCHED` is the stage that says a category was found, so a row without one cannot be at it even
+though `missing_category_mapping` is only a WARNING.
+
+Failures are per row: one malformed stored draft does not stop the pass, which is Phase 27's adapter
+isolation applied one layer up.
+
+### 19.8 The column split, drawn twice
+
+`research.write` **corrects a value**; `research.confirm` **decides an identity**. That is not
+seniority, it is what the act costs if it is wrong: correcting a mis-parsed price is visible,
+reversible and affects one figure, while marking a row a duplicate **hides it** from every later
+comparison, score and shortlist with nothing on any screen saying why a product is missing.
+
+RLS gates a ROW, not a COLUMN, so the line is drawn by the Server Actions in
+`app/(studio)/studio/(shell)/research/explorer/actions.ts` — and underneath them by `0261`, which
+makes `research_match_candidates` (the only route to a duplicate flag that does not go through those
+actions) `research.confirm` to write. A researcher therefore cannot reach the decision sideways.
+
+Two tables have **no insert policy for any role, owner included**. An ERROR is what holds a row back,
+so a hand-written one is a way to quarantine a competitor's product with nothing in the pipeline log
+saying a person did it; a candidate somebody inserted is a duplicate claim with no evidence behind
+it, arriving in a merchandiser's queue looking exactly like a real one.
+
+Overrides freeze their keys against every future re-normalisation and record `override_by`,
+`override_at` and a pipeline event. `applyOverrides` re-derives the rules' answer and lays the
+person's keys on top, so a corrected `priceState` of `REQUEST_QUOTE` arrives with null amounts rather
+than as a constraint violation. `parseStates`, `sourceTexts` and `normalizerVersion` are never
+overridable: they are the rules' own record of what they did.
+
+### 19.9 The standing statement — nothing here reaches a public surface
+
+`research_search_documents` gains a `research_product` row per scraped product, with
+`visibility = 'STAFF'`, the normalised title, the source's name as the subtitle, the material tokens
+and category labels as keywords, and `url_path = '/studio/research/explorer?row=<id>'`. It has no
+`anon` policy (I2). The public `search_documents` cannot hold a research row at all — its
+`entity_type` allowlist does not admit one, by a constraint Phase 23 wrote three phases before there
+was anything to index.
+
+The command palette's *Scraped Products* group declares `research.read`, which the registry enforces
+**before the provider runs**, so an editor gets no group, no count and no query issued on their
+behalf — not a filtered-empty group, which would still tell them the group exists.
+
+`image_urls` is `text[]`. No competitor image is fetched, cached, hashed, measured or written to
+`media_assets`, in this phase or any other.

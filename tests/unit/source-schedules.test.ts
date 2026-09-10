@@ -1,5 +1,4 @@
-import pg from 'pg'
-import { afterAll, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import {
   MIN_SCHEDULE_INTERVAL_MINUTES,
@@ -7,6 +6,8 @@ import {
   minCircularGap,
 } from '@/lib/scraper/core/cron'
 import { nextCronRun, parseCronField } from '@/lib/scraper/workflows/schedule'
+
+import { INTERVAL_CASES, label } from './cron-interval-cases'
 
 /**
  * The six-hour minimum, asserted twice against one table.
@@ -24,134 +25,6 @@ import { nextCronRun, parseCronField } from '@/lib/scraper/workflows/schedule'
  * a SIX-hour gap across midnight rather than an eighteen-hour one inside the day, and `0x1 3` looks
  * like a daily schedule to JavaScript and like an unreadable expression to PostgreSQL.
  */
-
-interface IntervalCase {
-  /** The expression as an operator would type it into the schedule form. */
-  readonly expression: string
-  /** What BOTH implementations must answer, in minutes. */
-  readonly minutes: number
-  /** Which rule decides it — what a future reader needs, rather than the arithmetic. */
-  readonly why: string
-}
-
-/**
- * Every example the SQL function's own comments give, the phase document's refusal case, and the
- * three ways the two grammars could disagree.
- *
- * NOTHING HERE ASSERTS AN ANSWER THE DATABASE WOULD NOT GIVE. An integer literal too large for a
- * PostgreSQL `int` is the one input where the two differ — SQL raises inside the CHECK, TypeScript
- * refuses the field and answers 0 — so no row uses one. Both refuse the write; only the wording is
- * different, and a row asserting a number here would fail the database half for the wrong reason.
- */
-const INTERVAL_CASES: readonly IntervalCase[] = [
-  {
-    expression: '*/5 * * * *',
-    minutes: 5,
-    why: 'twelve minutes selected in the hour, five apart — the phase document’s refusal case',
-  },
-  {
-    expression: '0 */6 * * *',
-    minutes: 360,
-    why: 'one minute, four hours six apart: exactly the floor, and therefore acceptable',
-  },
-  {
-    expression: '0 */4 * * *',
-    minutes: 240,
-    why: 'the same shape one step too fast, which is the only reason 360 is a boundary worth having',
-  },
-  {
-    expression: '0 0,18 * * *',
-    minutes: 360,
-    why: 'the wrap IS the answer: midnight to 18:00 is eighteen hours, 18:00 to midnight is six',
-  },
-  {
-    expression: '0 0,1 * * *',
-    minutes: 60,
-    why: 'two adjacent hours — the gap inside the day, not the twenty-three-hour one around it',
-  },
-  {
-    expression: '0,45 * * * *',
-    minutes: 15,
-    why: 'minutes wrap at 60 exactly as hours wrap at 24: 45 → 00 is fifteen minutes',
-  },
-  {
-    expression: '0,30 3 * * *',
-    minutes: 30,
-    why: 'more than one minute selected means two fires inside one hour, whatever the hour says',
-  },
-  {
-    expression: '0-10/5 * * * *',
-    minutes: 5,
-    why: 'a range with a step is a list of minutes like any other',
-  },
-  {
-    expression: '30 3 * * *',
-    minutes: 1440,
-    why: 'one minute, one hour: at most once a day',
-  },
-  {
-    expression: '0 2 * * *',
-    minutes: 1440,
-    why: 'the SQL comment’s own example — hours {2} is a daily schedule, not a two-hourly one',
-  },
-  {
-    expression: '0 0 1 * *',
-    minutes: 1440,
-    why: 'a day-of-month restriction only ever makes a schedule less frequent, so it is ignored',
-  },
-  {
-    expression: '0 3 * * 1',
-    minutes: 1440,
-    why: 'and so does a day-of-week restriction — neither can admit something that fires too often',
-  },
-  {
-    expression: '  0   3   *   *   *  ',
-    minutes: 1440,
-    why: 'both sides trim and split on runs of whitespace, so padding changes nothing',
-  },
-  {
-    expression: '0 24 * * *',
-    minutes: 0,
-    why: 'hour 24 is outside 0–23, and an out-of-range value is unreadable rather than clamped',
-  },
-  {
-    expression: '0 0 * * * *',
-    minutes: 0,
-    why: 'six fields is not this grammar, and the sixth would be seconds — far below the floor',
-  },
-  {
-    expression: 'not a cron',
-    minutes: 0,
-    why: 'three fields: unreadable, and unreadable is 0 so the CHECK refuses it',
-  },
-  {
-    expression: '',
-    minutes: 0,
-    why: 'the empty string splits to one field, not five',
-  },
-  {
-    expression: 'a b c d e',
-    minutes: 0,
-    why: 'five fields that are not numbers — the shape is right and the grammar is not',
-  },
-  {
-    expression: '0x1 3 * * *',
-    minutes: 0,
-    why: 'JavaScript reads 0x1 as one; PostgreSQL’s ^[0-9]+$ reads nothing, so the answer is 0',
-  },
-  {
-    expression: '0, 3 * * *',
-    minutes: 0,
-    why: 'a blank list item is null in SQL — not a zero, which is what Number("") would make it',
-  },
-  {
-    expression: '0/ 3 * * *',
-    minutes: 1440,
-    why: 'an empty step is no step on both sides, so this is the daily schedule it looks like',
-  },
-]
-
-const label = (expression: string) => JSON.stringify(expression)
 
 describe('cronMinIntervalMinutes', () => {
   for (const { expression, minutes, why } of INTERVAL_CASES) {
@@ -238,63 +111,17 @@ describe('the grammar re-exported from workflows/schedule.ts', () => {
   })
 })
 
-/**
- * The same table, answered by the database.
+/*
+ * THE DATABASE HALF OF THIS FILE MOVED TO `tests/unit/rls/cron-interval-sql.test.ts`, and the move
+ * fixed a defect rather than tidying anything.
  *
- * SKIPPED WHEN DATABASE_URL IS UNSET, and the skip is why the SQL half is ALSO proved by
- * `tests/unit/rls/phase26.test.ts`: that file runs in the `rls` project, which refuses to skip in
- * CI, so a green run here on a machine with no cluster never stands in for the constraint being
- * exercised. What this block adds is the comparison — the two implementations answering the same
- * twenty-one expressions identically — which is the only thing that catches drift between them.
+ * It ran here, in the `unit` project, and `ci.yml` runs `npm run test:unit` as step five — BEFORE
+ * `db:reset`, against a database with no migrations in it. `DATABASE_URL` is set for the whole job
+ * so the database gates further down can use it, which is precisely why a unit test that reaches
+ * for a cluster does not skip: it connects, finds nothing, and fails. Twenty-two of them did, on
+ * every run since Phase 26 merged.
  *
- * It reads nothing and writes nothing: every query is a scalar expression against no table, so it
- * takes no fixture lock and belongs in the `unit` project beside the TypeScript it is checking.
+ * The comparison itself is unchanged and still runs against the same twenty-one expressions; it
+ * now runs in the project that starts after the migrations, where a missing database is a hard
+ * failure rather than a silent skip. What stays here is what needs no cluster at all.
  */
-const { Client } = pg
-const connectionString = process.env.DATABASE_URL
-const describeDb = connectionString === undefined ? describe.skip : describe
-
-let client: pg.Client | null = null
-
-async function db(): Promise<pg.Client> {
-  if (!client) {
-    client = new Client({ connectionString })
-    await client.connect()
-  }
-  return client
-}
-
-afterAll(async () => {
-  if (client) {
-    await client.end()
-    client = null
-  }
-})
-
-describeDb('public.research_cron_min_interval_minutes', () => {
-  for (const { expression, minutes, why } of INTERVAL_CASES) {
-    it(`${label(expression)} → ${minutes} — ${why}`, async () => {
-      const sql = await db()
-      const result = await sql.query<{ answer: number }>(
-        'select research_cron_min_interval_minutes($1) as answer',
-        [expression],
-      )
-      expect(result.rows[0]?.answer).toBe(minutes)
-      // Stated as an equality rather than as two numbers that happen to match: the point of the
-      // row is that the form and the constraint agree, not that either is 360.
-      expect(result.rows[0]?.answer).toBe(cronMinIntervalMinutes(expression))
-    })
-  }
-
-  it('checks schedules against the same floor this module exports', async () => {
-    // The constant is the form's copy of the number in the CHECK. Reading the constraint back is
-    // what stops the two being edited apart — a form that refuses at 360 while the table refuses
-    // at 720 is a form that promises what the database will not accept.
-    const sql = await db()
-    const result = await sql.query<{ definition: string }>(
-      'select pg_get_constraintdef(oid) as definition from pg_constraint where conname = $1',
-      ['research_source_schedules_min_interval'],
-    )
-    expect(result.rows[0]?.definition).toContain(`>= ${MIN_SCHEDULE_INTERVAL_MINUTES}`)
-  })
-})

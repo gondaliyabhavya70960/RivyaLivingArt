@@ -353,9 +353,17 @@ describeDb('Phase 27 — I1 is unchanged: still exactly one crossing', () => {
         and ccu.table_schema = 'public'
         and ((tc.table_name like 'research\\_%') <> (ccu.table_name like 'research\\_%'))
     `)
-    // `research_products_current_version_fk` points at another research table, which is why it does
-    // not appear here. Phase 28 adds the second and final crossing.
-    expect(rows.map((row) => row.constraint_name)).toEqual([
+    /*
+     * PHASE 27 ITSELF ADDS NONE, AND THAT IS WHAT THIS ASSERTS. `research_products_current_version_fk`
+     * points at another research table, which is why it does not appear here at all.
+     *
+     * THE LIST NAMES TWO BECAUSE PHASE 28 LATER ADDED THE SECOND AND FINAL ONE
+     * (`research_products_matched_category_fk`, amendment A28). Asserting the exact set rather than
+     * "does not contain a Phase 27 name" is deliberate: a suite that only checked for absence would
+     * pass on a schema that had quietly grown a third.
+     */
+    expect([...rows.map((row) => row.constraint_name)].sort()).toEqual([
+      'research_products_matched_category_fk',
       'research_source_category_map_category_fk',
     ])
   })

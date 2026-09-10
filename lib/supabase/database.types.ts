@@ -3730,6 +3730,111 @@ export type Database = {
           },
         ]
       }
+      research_match_candidates: {
+        Row: {
+          id: string
+          research_product_id: string
+          candidate_id: string
+          method: string
+          score: number
+          evidence: Json
+          decided: string
+          decided_by: string | null
+          decided_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          research_product_id: string
+          candidate_id: string
+          method: string
+          score: number
+          evidence?: Json
+          decided?: string
+          decided_by?: string | null
+          decided_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          research_product_id?: string
+          candidate_id?: string
+          method?: string
+          score?: number
+          evidence?: Json
+          decided?: string
+          decided_by?: string | null
+          decided_at?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'research_match_candidates_candidate_id_fkey'
+            columns: ['candidate_id']
+            isOneToOne: false
+            referencedRelation: 'research_products'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'research_match_candidates_decided_by_fkey'
+            columns: ['decided_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'research_match_candidates_research_product_id_fkey'
+            columns: ['research_product_id']
+            isOneToOne: false
+            referencedRelation: 'research_products'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      research_material_lexicon: {
+        Row: {
+          id: string
+          token: string
+          patterns: string[]
+          family: string | null
+          is_enabled: boolean
+          status: Database['public']['Enums']['content_status']
+          created_at: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          token: string
+          patterns: string[]
+          family?: string | null
+          is_enabled?: boolean
+          status?: Database['public']['Enums']['content_status']
+          created_at?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          token?: string
+          patterns?: string[]
+          family?: string | null
+          is_enabled?: boolean
+          status?: Database['public']['Enums']['content_status']
+          created_at?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'research_material_lexicon_updated_by_fkey'
+            columns: ['updated_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       research_pipeline_events: {
         Row: {
           id: string
@@ -3858,6 +3963,28 @@ export type Database = {
           created_at: string
           updated_at: string
           updated_by: string | null
+          title_normalized: string | null
+          brand_text: string | null
+          currency: string | null
+          price_state: string | null
+          price_min_minor: number | null
+          price_max_minor: number | null
+          dimensions_mm: Json | null
+          dimension_parse_state: string | null
+          material_tokens: string[]
+          availability: string | null
+          lead_time_days_min: number | null
+          lead_time_days_max: number | null
+          variant_count: number | null
+          image_urls: string[]
+          category_labels: string[]
+          matched_category_id: string | null
+          match_confidence: number | null
+          match_method: string | null
+          duplicate_of_id: string | null
+          normalized_overrides: Json
+          override_by: string | null
+          override_at: string | null
         }
         Insert: {
           id?: string
@@ -3875,6 +4002,28 @@ export type Database = {
           created_at?: string
           updated_at?: string
           updated_by?: string | null
+          title_normalized?: string | null
+          brand_text?: string | null
+          currency?: string | null
+          price_state?: string | null
+          price_min_minor?: number | null
+          price_max_minor?: number | null
+          dimensions_mm?: Json | null
+          dimension_parse_state?: string | null
+          material_tokens?: string[]
+          availability?: string | null
+          lead_time_days_min?: number | null
+          lead_time_days_max?: number | null
+          variant_count?: number | null
+          image_urls?: string[]
+          category_labels?: string[]
+          matched_category_id?: string | null
+          match_confidence?: number | null
+          match_method?: string | null
+          duplicate_of_id?: string | null
+          normalized_overrides?: Json
+          override_by?: string | null
+          override_at?: string | null
         }
         Update: {
           id?: string
@@ -3892,6 +4041,28 @@ export type Database = {
           created_at?: string
           updated_at?: string
           updated_by?: string | null
+          title_normalized?: string | null
+          brand_text?: string | null
+          currency?: string | null
+          price_state?: string | null
+          price_min_minor?: number | null
+          price_max_minor?: number | null
+          dimensions_mm?: Json | null
+          dimension_parse_state?: string | null
+          material_tokens?: string[]
+          availability?: string | null
+          lead_time_days_min?: number | null
+          lead_time_days_max?: number | null
+          variant_count?: number | null
+          image_urls?: string[]
+          category_labels?: string[]
+          matched_category_id?: string | null
+          match_confidence?: number | null
+          match_method?: string | null
+          duplicate_of_id?: string | null
+          normalized_overrides?: Json
+          override_by?: string | null
+          override_at?: string | null
         }
         Relationships: [
           {
@@ -3899,6 +4070,13 @@ export type Database = {
             columns: ['current_version_id']
             isOneToOne: false
             referencedRelation: 'research_product_versions'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'research_products_duplicate_fk'
+            columns: ['duplicate_of_id']
+            isOneToOne: false
+            referencedRelation: 'research_products'
             referencedColumns: ['id']
           },
           {
@@ -3913,6 +4091,20 @@ export type Database = {
             columns: ['last_seen_run_id']
             isOneToOne: false
             referencedRelation: 'research_runs'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'research_products_matched_category_fk'
+            columns: ['matched_category_id']
+            isOneToOne: false
+            referencedRelation: 'categories'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'research_products_override_by_fkey'
+            columns: ['override_by']
+            isOneToOne: false
+            referencedRelation: 'users'
             referencedColumns: ['id']
           },
           {
@@ -4435,6 +4627,73 @@ export type Database = {
           },
         ]
       }
+      research_validation_issues: {
+        Row: {
+          id: string
+          research_product_id: string
+          version_id: string | null
+          rule: string
+          severity: string
+          field: string | null
+          detail: string | null
+          is_dismissed: boolean
+          dismissed_by: string | null
+          dismissed_at: string | null
+          dismiss_reason: string | null
+          detected_at: string
+        }
+        Insert: {
+          id?: string
+          research_product_id: string
+          version_id?: string | null
+          rule: string
+          severity: string
+          field?: string | null
+          detail?: string | null
+          is_dismissed?: boolean
+          dismissed_by?: string | null
+          dismissed_at?: string | null
+          dismiss_reason?: string | null
+          detected_at?: string
+        }
+        Update: {
+          id?: string
+          research_product_id?: string
+          version_id?: string | null
+          rule?: string
+          severity?: string
+          field?: string | null
+          detail?: string | null
+          is_dismissed?: boolean
+          dismissed_by?: string | null
+          dismissed_at?: string | null
+          dismiss_reason?: string | null
+          detected_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'research_validation_issues_dismissed_by_fkey'
+            columns: ['dismissed_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'research_validation_issues_research_product_id_fkey'
+            columns: ['research_product_id']
+            isOneToOne: false
+            referencedRelation: 'research_products'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'research_validation_issues_version_id_fkey'
+            columns: ['version_id']
+            isOneToOne: false
+            referencedRelation: 'research_product_versions'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       research_work_items: {
         Row: {
           id: string
@@ -4939,6 +5198,10 @@ export type Database = {
         Args: Record<string, unknown>
         Returns: Json
       }
+      has_no_blank_pattern: {
+        Args: Record<string, unknown>
+        Returns: Json
+      }
       has_role: {
         Args: Record<string, unknown>
         Returns: Json
@@ -4956,6 +5219,10 @@ export type Database = {
         Returns: Json
       }
       is_relation_type: {
+        Args: Record<string, unknown>
+        Returns: Json
+      }
+      is_sane_research_dimensions: {
         Args: Record<string, unknown>
         Returns: Json
       }

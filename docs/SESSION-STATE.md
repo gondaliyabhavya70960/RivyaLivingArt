@@ -8,6 +8,201 @@
 
 ## Current Phase
 
+**Phase 28 — Normalization + Validation. COMPLETE.** The strings Phase 27 extracted are now
+comparable data, and the data is judged before it is trusted. Three of FEAT §23's seven stages ship:
+`NORMALIZED`, `VALIDATED`, `MATCHED`.
+
+**Nothing has changed about what is fetched: still nothing, still behind the same three gates.**
+There are no sources, so there is nothing to normalise. What exists is the machinery, proved against
+fixture tables and against the database.
+
+The governing sentence, and the reason almost every decision below went the way it did: **a value
+Rivya could not parse is recorded as unparsed, never as a guess.** Every downstream comparison, scale
+band, opportunity score and shortlist decision inherits that first judgement, and none of them can
+tell a guessed figure from a read one.
+
+### Phase 28: what is built
+
+**Migrations `0260`–`0261`, applied locally.** Twenty-three normalisation columns on
+`research_products`; `research_validation_issues`, `research_match_candidates` and
+`research_material_lexicon` (forty seeded terms); `research_products_matched_category_fk` — the
+**second and final** allowlisted research → public foreign key, which closes the allowlist; two
+IMMUTABLE predicate functions; a rewritten `refresh_research_search_document`; and a trigger so a new
+version reindexes its product.
+
+**The normalizer is pure.** `lib/scraper/normalization/` — `schema`, `currency`, `units`,
+`dimensions`, `materials`, `availability`, `lexicon`, `index` — takes a draft, a source's
+configuration and a lexicon and returns a value. No I/O, no clock, no database. That is what makes
+every rule a fixture table and what makes `research:renormalize` possible with zero network traffic.
+
+**No currency conversion exists anywhere under `lib/scraper/`**, asserted by a test that reads every
+file in the tree. `$` alone is `AMBIGUOUS`. Amounts are integer minor units read with the source's
+own separators.
+
+**`AMBIGUOUS` stores nothing** — `dimensions_mm` is null unless the parse state is `PARSED`.
+
+**Eleven validation rules, all reachable, all evaluated before the write.** The database constraints
+are backstops for a hand-written `UPDATE` and nothing else; a failing row is written, kept at
+`VALIDATED` with its findings attached, and counted.
+
+**Matching proposes, never decides.** Three tiers, auto-merge only on the source's own identifier, on
+an identical title-and-price, or on a title above 0.95 with measurements agreeing within 5 %.
+Everything else is a merchandiser's decision, and every duplicate flag is reversible and audited.
+
+**`workflows/promote.ts` moves one stage per pass**, each transition through `core/stage.ts` and each
+recorded as a pipeline event.
+
+**Studio.** `/studio/research/explorer` (raw beside normalised beside provenance, filters in the URL,
+`?row=<id>` drawer, permission-gated correction and duplicate controls);
+`/studio/operations/data-quality` with a Research tab and the lexicon editor; a third command-palette
+provider for *Scraped Products*.
+
+**`scripts/research/renormalize.ts`** — the second of the three offline recomputation scripts, and it
+never overwrites a hand-corrected field.
+
+### Phase 28: what is NOT built, and why
+
+- **Change detection between versions.** Phase 29. This phase normalises each version; it does not
+  compare two.
+- **Cross-source deduplication.** Out of scope permanently at this layer: two competitors listing
+  similar objects is the signal Phase 31 reads, and collapsing them destroys it.
+- **Currency conversion.** Never, without a dated rate source and an owner decision.
+- **`brand_text` from the pipeline.** `RawProductDraft` has no brand field, and the two derivations
+  that suggest themselves — the first word of a title, the source's own name — are both fabrications
+  about somebody else's business. The column is filled by hand until a phase adds brand to the draft.
+- **A saved-view or bulk action on the explorer.** Phases 29 and 30; the bulk toolbar is still
+  registered in its unavailable state.
+
+### Phase 28: verification, as actually run
+
+- `npm run db:reset` → 77 migrations applied to an empty database; `npm run seed:content` clean.
+- `npm run db:check-schema` → 71 tables, RLS on all, column tiers correct.
+- `npm run db:types` → 70 tables, 33 enums, 42 callable functions.
+- `npm run auth:check-rls` → 71 tables, 240 policies, every staff-select list matching the matrix.
+- `npm run research:check-isolation` → I1 allowlist holds **2**, I2 no anon policy in the migrations
+  **and in the database**, I3 and I4 clean.
+- `npm run db:check-migrations` → 77 migrations up to `0261`, every number allocated in DATA_MODEL §12.
+- `npm run test` → **155 files, 2,727 tests, all passing, none skipped**, including six new
+  normalisation suites and `tests/unit/rls/phase28.test.ts` (38 cases) run against the database.
+- `npm run check` → all 33 gates green, including `db:check-data-layer`, which caught thirteen
+  queries outside the repository layer and forced them all into it.
+- `npm run build` → production build succeeds against a local PostgREST, with
+  `/studio/research/explorer` and `/studio/operations/data-quality` both present.
+
+### Phase 28: the D9 ten, recorded
+
+1. Code exists and is committed — two migrations, eight normalisation modules, two validation
+   modules, two workflows, five repositories, the re-normalisation script, three Studio surfaces, a
+   command-palette provider, six unit suites, one RLS suite, one e2e spec.
+2. Migrations applied locally **and to the hosted project**, with ledger rows carrying the files'
+   real SHA-256 checksums. Hosted now reads 77 ledger rows / 71 tables / 240 policies / 40 lexicon
+   terms — level with local on every figure. See the parity note below.
+3. Tests written and passing: 2,727, none skipped.
+4. Gates pass, including `research:check-isolation` with its now-closed two-entry allowlist.
+5. Documentation updated: SCRAPER §19, DATA_MODEL §12 and the vocabulary table, STUDIO_GUIDE §12.5
+   and §13.2, CANONICAL-DECISIONS **A28**, CHANGELOG, PROJECT_STATE, this file.
+6. No business fact fabricated: no competitor, brand, domain or price anywhere. The lexicon's forty
+   terms are words to recognise on other people's pages, never a claim about what Rivya makes.
+7. Nothing in the manifest regenerated; no competitor image fetched — `image_urls` are strings.
+8. Remaining issues documented — see "what is NOT built" above.
+9. The next phase is named: **29 — Change Detection + Review**.
+10. Hosted is level with the repository through `0261`.
+
+### Phase 28: three defects found and fixed rather than worked around
+
+- **`array_length` on an empty array is NULL, and a CHECK evaluating to NULL passes.**
+  `research_material_lexicon_has_patterns` admitted exactly the row it was written to refuse. Found
+  by an RLS test asserting the refusal rather than assuming it; now `cardinality(patterns) >= 1`.
+- **A CHECK constraint may not contain a subquery**, and the phase document's illustrative SQL uses
+  one twice. Two IMMUTABLE functions carry what the constraints cannot.
+- **`image_url_unreachable_shape` was written to catch shapes the draft schema already refuses**,
+  which would have made the rule unreachable — this phase's own named risk, arrived at from the
+  inside. It now catches what actually survives that filter: a reference a broken template built.
+
+### Phase 28: hosted parity, measured rather than assumed
+
+The two migrations were transcribed into `mcp__Supabase__apply_migration` with their `--` and
+`/* */` comments stripped — **and the stripper was itself proved** before it was trusted: the
+stripped files were replayed into a scratch database alongside every other migration, and a
+structure digest over 2,514 objects (columns, constraints, policies, function definitions, indexes,
+comments, triggers) came back byte-identical to the database the originals produce.
+
+Compared against local afterwards, with the same `search_path` on both:
+
+| Category | Objects | Result |
+|---|---|---|
+| Columns | 1,068 | identical |
+| Constraints | 552 | identical |
+| Indexes | 307 | identical |
+| Policies | 240 | identical |
+| Triggers | 108 | identical |
+| Function bodies | 95 | identical once comments and whitespace are removed |
+| Table/column comments | 144 | 143 identical, 1 pre-existing difference |
+
+**Phase 28's own objects are byte-identical**: all four functions (same md5 AND same length), all 37
+constraints on the three new tables plus `research_products`, and all 11 comments.
+
+**Two pre-existing drifts were found and are recorded rather than fixed**, because neither is this
+phase's and neither changes behaviour:
+
+- **Eighteen function bodies from Phases 08–25 carry their inline comments on local and not on
+  hosted** — an earlier session's hosted apply stripped them. The executable SQL is identical: with
+  comments and whitespace removed, all 95 function bodies hash the same on both databases
+  (`926fa225…`).
+- **`inquiries.pipeline_status`'s comment differs by one character**: local reads "DATA_MODEL §1.4",
+  hosted reads "DATA_MODEL 1.4". The section sign was lost in Phase 20's apply.
+
+Both would be closed by re-applying the affected migrations with their comments intact. Neither
+affects a query, a constraint, a policy or a type, so neither is worth a migration of its own — a
+phase that touches one of those functions for another reason should carry the comments back.
+
+### Phase 28: a CI failure fixed in the same branch, and it was Phase 26's
+
+`main` had been RED since Phase 26 merged — through three merges — and the reason was in this
+session's own code rather than anywhere near Phase 28.
+
+`.github/workflows/ci.yml` runs `npm run test:unit` as **step five, before `db:reset`**, and sets
+`DATABASE_URL` for the whole job so the database gates further down can use it. The workflow says in
+as many words that the unit project must therefore need no database. Phase 26 added two files that
+did: `tests/unit/source-health.test.ts` and the SQL half of `tests/unit/source-schedules.test.ts`.
+Both reasoned carefully about the fixture advisory lock and neither about the ordering — so instead
+of skipping, they connected to a database with no migrations in it and failed. Twenty-two
+assertions, every run, since 10 September.
+
+It passed locally every time because a developer's database is already migrated. It is reproducible
+in one command: point `DATABASE_URL` at an empty database and run the unit project.
+
+The fix is where a database test belongs. `tests/unit/rls/**` is the project CI runs at the very
+end, after the migrations and the seed, with `RLS_TESTS_REQUIRED=1` so a missing database is a
+failure rather than a skip — which is the posture both files' own headers said they wanted. So:
+
+- `tests/unit/source-health.test.ts` → `tests/unit/rls/source-health.test.ts`, now taking the
+  harness's client and therefore `FIXTURE_LOCK`, because it runs beside suites that wipe tables.
+- The SQL half of `source-schedules.test.ts` → `tests/unit/rls/cron-interval-sql.test.ts`.
+- The twenty-one-expression table both halves are asked moved to
+  `tests/unit/cron-interval-cases.ts`, because a table copied into two files is a table that stops
+  being the same one — and the whole point is that both implementations answer the same rows.
+
+**And the invariant is now a gate rather than a comment**, which is the durable half:
+`npm run db:check-unit-offline` fails the build if a unit-project test imports `pg` or reads
+`DATABASE_URL`. The rule was written down in `ci.yml` all along, and being written down is exactly
+why it was broken quietly. The gate was verified to fail on both offence shapes before being wired
+into `npm run check` and into CI.
+
+### The next exact action
+
+**Phases 29 and 30 are stopped at the owner's instruction (2026-09-11) and no work has begun on
+either.** Nothing is half-built: the repository is at a clean Phase 28.
+
+When they resume, the next phase is **29 — Change Detection + Review**, migrations `0270`–`0271`.
+It diffs consecutive `research_product_versions` rows — which is why Phase 28 stamped `normalized`
+and `normalizer_version` on each version rather than only on the product, so "did the page change,
+or did we start reading it differently" stays answerable.
+
+---
+
+### Superseded — Phase 27's state
+
 **Phase 27 — Scraper Extraction. COMPLETE.** The pipeline produces structured rows. FEAT §27's
 adapter architecture is built as an EXECUTION BOUNDARY with its own record rather than as a hope
 that nothing throws, because "a broken source adapter must not break other sources" is a claim about
