@@ -8,6 +8,11 @@ import '@/components/studio/command/route-provider'
 // And Phase 23's eight entity providers, registered the same way and for the same reason: an
 // import for its side effect, so the endpoint answers with records as well as with routes.
 import '@/components/studio/command/providers'
+// Phase 25's two research providers, in their own module because the two corpora are kept apart at
+// every layer: two tables, two repository functions, two provider files. Both declare
+// `research.read`, and the registry drops a provider whose permission the reader lacks before it
+// runs — so an editor's query is never issued against the research index at all.
+import '@/components/studio/command/providers/research'
 import { AuthenticationError, AuthorizationError, requirePermission } from '@/lib/auth/require'
 
 /**

@@ -184,6 +184,59 @@ Brand and editorial copy may be written; anything asserting business capability 
 
 ## Amendments
 
+**2026-09-10 · A25 — Phase 25 takes migrations `0233` and `0234`, `research_sources` carries no
+`owner_verification`, snapshots live in Supabase Storage rather than Cloudinary, the research cron
+answers 401 rather than 404, and the flag is `research_enabled` (PHASE-23-30 §Phase 25, DATA_MODEL
+§12, SCRAPER.md).**
+
+Six readings the repository forced. None contradicts D1–D10; the third amends D8's silence rather
+than any of its names.
+
+- **`0233`, one past the phase document's `0232`, and `0234` beyond that.** The first is the reason
+  A23 gave for `0214` and A24 for `0221`: a generated policy file is rewritten whole and cannot
+  also carry the DDL that creates its tables. The second is a different and more interesting
+  reason. Phase 23 created `research_search_documents` two phases early, deliberately, so the
+  separation between the two corpora was visible in the schema from the day there was a search
+  index at all — and gave its `status` column a CHECK admitting only the seven FEAT §23 pipeline
+  stages. But the same table's `entity_type` allowlist admits `research_source` and `research_run`,
+  and neither has a stage. Under the constraint as written, neither could be indexed, so the two
+  command-palette providers this phase's deliverable names would have had nothing to query. `0234`
+  widens the allowlist to the union of the three vocabularies — each named, so a typo stays
+  unstorable — and fills the index by trigger. It is a correction to 0210, made by the first phase
+  that had to use it.
+- **`research_sources` has no `owner_verification` column.** It is the one research row D10 plainly
+  governs: it asserts that Rivya may read somebody else's website. The obvious move was the D5
+  verification flag defaulting to `OWNER_VERIFICATION_REQUIRED`, and it was wrong — it would have
+  been two columns answering one question with only one of them enforced. `policy_status` starts
+  `UNREVIEWED`, only owner and admin may move it to `APPROVED`, an approval that names nobody is
+  refused, and `research_sources_enabled_requires_approval` makes an enabled-but-unapproved source
+  unstorable. That is a stronger gate than the generic one, and in a different place: the generic
+  flag blocks publication, and this blocks the fetch.
+- **D8 gains no variable for the snapshot store, and that is worth recording even though the store
+  itself was already specified.** `SCRAPER.md` §9.2 already said "a private Supabase Storage bucket,
+  not Cloudinary" — this phase implemented it rather than decided it, and the reasoning there stands
+  (Cloudinary serves from a public CDN, so a competitor's page body would be published from a Rivya
+  origin). What is new is the consequence for D8: the bucket lives in the project
+  `SUPABASE_SERVICE_ROLE_KEY` already points at, so it needs no new vendor, no new credential and no
+  new environment name. D8 is unchanged by this phase, which is the answer to "what else do we have
+  to buy": nothing.
+- **A batch of politeness is enforced in the LEASE QUERY, not before the fetch.** Stated because a
+  reader expecting `await sleep(delay)` will not find one. On a runtime that kills a function at
+  sixty seconds, sleeping spends the invocation doing nothing and loses the delay entirely when the
+  function is terminated mid-wait. `not_before_at` on the item and `next_fetch_not_before` on the
+  source are filtered in the statement that hands out work, so the delay survives the process. It
+  also means `for update skip locked` — which PostgREST cannot express — so leasing is a SECURITY
+  DEFINER function granted to the service role alone.
+- **The research cron answers 401, not the phase document's 404.**
+  `app/api/cron/content-schedule/route.ts` established 401-with-`CRON_SECRET` for this repository,
+  and two cron endpoints answering differently to the same mistake is worse than either answer on
+  its own. A 404 also misleads the person most likely to hit this by hand: an operator debugging a
+  missed tick reads "not found" as "wrong path" and goes looking for a routing problem that is not
+  there. The endpoint's existence is not the secret; the secret is.
+- **The kill switch is `research_enabled`, not the phase document's `research.enabled`.** A flag key
+  is an identifier — call sites spell it out — and the database CHECK requires a legal one. The
+  same correction `three_d_viewer` made for `3d_viewer` in Phase 21.
+
 **2026-09-10 · A24 — Phase 24 takes migration `0221`, a batch of fifty is the unit of progress
 and not of atomicity, `media.move` is not destructive, confirmation is two constraints rather than
 one, and `row_version_before` holds the version the operation LEFT behind (PHASE-23-30 §Phase 24,

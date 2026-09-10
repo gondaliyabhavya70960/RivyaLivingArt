@@ -1976,6 +1976,23 @@ Three rules govern all of it:
 3. **`CONFIRMED` means "confirmed as a research reference".** It creates no product, no draft
    product, no media row and no obligation. The bridge to the catalogue is a human typing a product.
 
+**Phase 25 shipped the first nine of these. As built, three notes the draft above does not carry:**
+
+1. **`research_sources` has no `owner_verification` column, deliberately.** It is the one research
+   row D10 plainly governs — it asserts that Rivya may read somebody else's website — and the
+   obvious move was to give it the D5 verification flag. That would have been two columns answering
+   one question with only one of them enforced. `policy_status` IS the verification gate here, and
+   it is stronger than the generic one: the generic flag blocks publication, and this blocks the
+   fetch. See amendment **A25**.
+2. **`research_fetches` carries a constraint the draft does not name**:
+   `research_fetches_disallowed_has_no_response` refuses a `DISALLOWED` row that also carries an
+   HTTP status, a content hash or a storage key. A row saying "we did not fetch this" cannot also
+   say what came back, which is what makes the robots log evidence rather than assertion.
+3. **`research_work_items` is leased through a function, not a query.** PostgREST cannot express
+   `for update skip locked`, and that clause is the entire concurrency design — see
+   `research_lease_work_items` in `0232`, which also re-applies every source-level politeness gate
+   in the same statement that hands out work.
+
 | Table | Phase | Purpose | Key columns and constraints |
 |---|---|---|---|
 | `research_sources` | 25 · 26 | One row per approved third-party site; the twenty-three FEAT §26 fields | `id`, `slug citext unique`, `name`, `base_url`, `region`, `currency char(3)`, `source_type research_source_type`, `analytics_league research_analytics_league`, `collection_mode research_collection_mode`, `image_extraction_mode research_image_extraction_mode`, `is_enabled bool default false`, `adapter_key text not null default 'generic'`, `price_extraction jsonb`, `sku_extraction jsonb`, `attribute_extraction jsonb`, `rate_limit_rpm int default 20`, `request_delay_ms int default 3000`, `concurrency int default 1`, `next_fetch_not_before`, `in_flight_count int default 0`, `consecutive_failures int default 0`, `circuit_open_until`, `policy_status research_policy_status default 'UNREVIEWED'`, `policy_reviewed_by/at`, `policy_notes`, `notes`, `readiness text check (...)`, Tier A+B. **`check (is_enabled = false or policy_status = 'APPROVED')`** |
@@ -2119,7 +2136,7 @@ local and hosted is isolated to one file that can never be picked up by `supabas
 | 22 | `0200`–`0201` | T `merchandising_slots`, `merchandising_entries`; enum `merch_fallback`; F `guard_merchandising_entry()`, `merchandising_category_slot_key()`, `sync_category_pinned_slot()`, `merch_move_entry()`, `merch_run_schedule()`; the eleven slot rows inserted as structure under the `allow-insert` marker; `0201` is the generated RLS. **The numbers are the phase document's own; the slot count (eleven, none reusable) and the categories trigger are amendment A22** |
 | 23 | `0210`–`0214` | T `search_documents`, `research_search_documents` (empty), `search_queries`, `content_relations`, `relation_suppressions`, `product_attribute_terms`; A `product_relations` (+`origin`, `rule_key`, `note`, `paired_relation_id`, the vocabulary CHECKs); enums `search_visibility`, `relation_origin`, `attribute_taxonomy`; F `rv_unaccent()`, `refresh_search_document()` and its eleven trigger functions, `is_relation_type()`, `is_relation_target()`. **`0214` is one past the phase document's `0210`–`0213`, and the reason is mechanical: a generated policy file is rewritten whole by `auth:gen-policies`, so it cannot also hold the DDL that creates its tables. `0213` creates the relation tables, so their policies need a file of their own. `0212` is the generated RLS for the search index and `0214` for the relations — the same split Phase 19 made with `0172` and `0183` — amendment A23** |
 | 24 | `0220`–`0221` | T `bulk_operations`, `bulk_operation_items`, `bulk_imports`, `bulk_import_rows`; `revoke delete` on the two record tables; `0221` is the generated RLS. **`0221` is one past the phase document's `0220`, for the reason A23 gives for `0214`: a generated policy file is rewritten whole and cannot also carry the DDL that creates its tables — amendment A24** |
-| 25 | `0230`–`0233` | T `research_sources`, `research_jobs`, `research_runs`, `research_work_items`, `research_fetches`, `research_raw_items`, `research_products`, `research_pipeline_events`, `research_robots_cache`; six research enums |
+| 25 | `0230`–`0234` | T `research_sources`, `research_jobs`, `research_runs`, `research_work_items`, `research_fetches`, `research_raw_items`, `research_products`, `research_pipeline_events`, `research_robots_cache`; six research enums; F `research_lease_work_items()`, `research_reclaim_expired_leases()`, `refresh_research_search_document()` and its four triggers. **`0233` is the generated RLS, one past the phase document's `0232`, for the reason A23 gives for `0214`. `0234` is a FIFTH file and a different reason: it corrects `research_search_documents_status_allowlist`, which 0210 wrote with only the seven pipeline stages — leaving a source and a run, both admitted by the same table's `entity_type` allowlist, unindexable. Widened to the union of the three vocabularies and the index filled by trigger — amendment A25** |
 | 26 | `0240` | A `research_sources`; T `research_source_url_patterns`, `research_source_category_map`, `research_source_schedules`, view `research_source_health_v`; four source enums |
 | 27 | `0250` | T `research_product_versions`, `research_adapter_runs`; A `research_products.current_version_id` |
 | 28 | `0260` | A `research_products`, `research_product_versions`; T `research_validation_issues`, `research_match_candidates`, `research_material_lexicon` |

@@ -139,6 +139,7 @@ export const PHASE_22_POLICIES = '0201_phase22_merchandising_rls.sql'
 export const PHASE_23_SEARCH_POLICIES = '0212_phase23_search_rls.sql'
 export const PHASE_23_RELATION_POLICIES = '0214_phase23_relations_rls.sql'
 export const PHASE_24_POLICIES = '0221_phase24_bulk_rls.sql'
+export const PHASE_25_POLICIES = '0233_phase25_research_rls.sql'
 
 export const TABLE_POLICIES = {
   // --- Shape A: content tables ------------------------------------------------------------------
@@ -1045,6 +1046,140 @@ export const TABLE_POLICIES = {
     deviation:
       'One row of an uploaded file, retained 30 days for post-hoc review. No anon policy — it is ' +
       "an operator's spreadsheet — and no session write: only the import pipeline writes it.",
+  },
+  /*
+   * Phase 25 — the research subsystem's first nine tables, and ISOLATION INVARIANT I2 IS WHAT
+   * THIS BLOCK IS.
+   *
+   * NINE SHAPE-C TABLES, NO ANON POLICY ON ANY OF THEM, EVER. Not one of these tables has a
+   * `publicClause`, and adding one would not be a change of policy — it would be a defect with a
+   * syntax. There is no visitor-facing view of a competitor's catalogue, of what Rivya fetched
+   * from one, or of what it decided about the result. The generated file carries no `anon` leg
+   * for any of them and `scripts/research/check-research-isolation.mjs` fails the build if one
+   * ever appears.
+   *
+   * READ IS `research.read` — owner, admin, merchandiser, researcher and viewer. `editor` is the
+   * one role that does not hold it, which is the same line Phase 23 already drew for
+   * `research_search_documents`.
+   *
+   * WRITE IS `research.write` — owner, admin, researcher — EXCEPT WHERE IT IS NOT, and the
+   * exception is the point of the phase document's permission table: a researcher OPERATES the
+   * pipeline and a merchandiser JUDGES its output. `research_products` therefore takes
+   * `research.confirm` (owner, admin, merchandiser), because its editable columns in this phase
+   * are `stage` and `disposition` and both are disposition-bearing. The dividing line is the
+   * COLUMN, not the screen, and later phases add `research.write` columns to the same table —
+   * which is a column-level concern the server actions enforce, not something RLS can express.
+   *
+   * FOUR TABLES ARE WRITTEN ONLY BY THE ENGINE, THROUGH THE SERVICE ROLE, and have no session
+   * write policy at all: `research_fetches`, `research_raw_items`, `research_work_items` and
+   * `research_robots_cache`. A session able to insert a fetch row could record a request that
+   * never happened — including one claiming a `DISALLOWED` URL had been allowed — and a session
+   * able to write the robots cache could tell the fetcher that a forbidden host permits
+   * everything. Both are the politeness posture being forged from inside the building.
+   *
+   * `research_pipeline_events` IS APPEND-ONLY: insert under `research.write`, no update and no
+   * delete policy, and 0231 revokes both grants. It is the account of how a row reached CONFIRMED,
+   * and an account its author can rewrite is not one.
+   */
+  research_sources: {
+    policiesIn: PHASE_25_POLICIES,
+    shape: 'C',
+    readPermission: 'research.read',
+    writePermission: 'research.write',
+    deletePermission: 'destructive.execute',
+    deviation:
+      'A competitor website and its politeness settings. No anon policy may ever exist on any ' +
+      'research_* table (isolation invariant I2). Enabling one, and approving its policy review, ' +
+      'additionally require system.settings.write and are checked in the server action — RLS ' +
+      'cannot express a per-column rule, and the row-level CHECK refuses an enabled source that ' +
+      'was never approved whatever the session.',
+  },
+  research_jobs: {
+    policiesIn: PHASE_25_POLICIES,
+    shape: 'C',
+    readPermission: 'research.read',
+    writePermission: 'research.write',
+    deletePermission: 'destructive.execute',
+    deviation:
+      'The standing definition of work against a source. Staff-only under research.read; ' +
+      'operated by research.write, which is owner, admin and researcher.',
+  },
+  research_runs: {
+    policiesIn: PHASE_25_POLICIES,
+    shape: 'C',
+    readPermission: 'research.read',
+    writePermission: 'research.write',
+    deviation:
+      'One execution of a job. A researcher may queue and cancel one; nobody deletes one, ' +
+      'because a run is the record of what Rivya asked a third party for and when.',
+  },
+  research_work_items: {
+    policiesIn: PHASE_25_POLICIES,
+    shape: 'C',
+    readPermission: 'research.read',
+    deviation:
+      'The lease queue. Readable by staff so a run can be watched, and written by NOBODY with a ' +
+      'session: the drain loop leases and releases through the service role. A session able to ' +
+      'write here could re-point a queued URL or clear a not_before_at, which is the rate limit ' +
+      'being edited from inside the building.',
+  },
+  research_fetches: {
+    policiesIn: PHASE_25_POLICIES,
+    shape: 'C',
+    readPermission: 'research.read',
+    deviation:
+      'One attempt per row, including the ones refused before any packet left. No session write: ' +
+      'a hand-written fetch row could record a request that never happened, or claim a ' +
+      'robots-DISALLOWED URL had been ALLOWED — which is the evidence that the rules were ' +
+      'honoured being forged.',
+  },
+  research_raw_items: {
+    policiesIn: PHASE_25_POLICIES,
+    shape: 'C',
+    readPermission: 'research.read',
+    deviation:
+      'What a page said, unstructured. Written only by the pipeline through the service role, ' +
+      'after the Zod schema that refuses anything richer than a title, a canonical URL and links.',
+  },
+  research_products: {
+    policiesIn: PHASE_25_POLICIES,
+    shape: 'C',
+    readPermission: 'research.read',
+    // `research.confirm`, NOT `research.write`, and the phase document's permission table is
+    // explicit about why: a researcher operates the pipeline, a merchandiser judges its output.
+    // Both editable columns here — `stage` and `disposition` — are disposition-bearing.
+    writePermission: 'research.confirm',
+    deviation:
+      'A discovered product, carried through the seven FEAT §23 stages. Write is ' +
+      'research.confirm rather than research.write because the two columns a person edits in ' +
+      'this phase are stage and disposition, and the dividing line the phase document draws is ' +
+      'the column rather than the screen. It has no foreign key to any public table and never ' +
+      'will (isolation invariant I1).',
+  },
+  research_pipeline_events: {
+    policiesIn: PHASE_25_POLICIES,
+    shape: 'C',
+    readPermission: 'research.read',
+    // NO WRITE POLICY OF ANY KIND, which is the `audit_logs` and `activity_events` precedent
+    // applied to the pipeline's own history. A signed-in researcher able to insert here could
+    // write "merchandiser confirmed this row" naming somebody else, or emit a move that never
+    // happened — and this table is the record people would read to check. `stage.ts` writes it
+    // through the service role, after `requirePermission`, in the same call that moves the stage:
+    // that is what makes "a stage never moves without an event" true rather than customary.
+    deviation:
+      'Append-only. No anon policy, no authenticated write policy of any kind, and update and ' +
+      'delete are revoked outright in 0231. Only lib/scraper/core/stage.ts writes it, through ' +
+      'the service role, in the same call that moves the stage — so a move without an event is ' +
+      'not a thing that can happen.',
+  },
+  research_robots_cache: {
+    policiesIn: PHASE_25_POLICIES,
+    shape: 'C',
+    readPermission: 'research.read',
+    deviation:
+      'One robots.txt per host, 24-hour TTL. Readable so an operator can see what a host asked ' +
+      'for; written by nobody with a session, because a hand-written row could tell the fetcher ' +
+      'that a forbidden host permits everything.',
   },
 } as const satisfies Record<string, TablePolicy>
 

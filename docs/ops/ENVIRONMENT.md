@@ -259,7 +259,7 @@ a screenshot.
 | `SCRAPER_USER_AGENT` | Server | set | set | set | Engineer |
 | `REVALIDATE_SECRET` | Secret | unique | unique | any | Engineer, 90 d |
 
-### 5.2 Setting these in Vercel — the actual list, as of Phase 06
+### 5.2 Setting these in Vercel — the actual list, as of Phase 25
 
 The matrix above is the full D8 set, including variables whose subsystems do not exist yet. This
 section is narrower on purpose: it is what to paste into the Vercel dashboard **today**, so nobody
@@ -291,13 +291,37 @@ difference between a leaked browser session exposing a build log and exposing th
 | `NEXT_PUBLIC_SITE_URL` | Plain | The apex domain in Production; leave unset in Preview so `VERCEL_URL` is used |
 | `REVALIDATE_SECRET` | **Sensitive** | Any long random string you generate — it is a shared secret with nobody but this app (`openssl rand -base64 32`) |
 
+#### Added by Phase 25 — set these before the research cron can do anything
+
+Both are read by `app/api/cron/research/route.ts`, which Vercel Cron calls every five minutes from
+the moment this phase deploys. Until they are set the tick refuses itself, which is the intended
+behaviour and not a failure to fix in a hurry: **nothing is fetched from anybody's website until an
+owner has both configured these AND approved a source AND switched the `research_enabled` flag on.**
+Three separate gates, deliberately.
+
+| # | Variable | Vercel type | Environments | Value |
+|---|---|---|---|---|
+| 7 | `CRON_SECRET` | **Sensitive** | Production | Any long random string (`openssl rand -base64 32`). **The name is fixed by Vercel** — it attaches `Authorization: Bearer <value>` only for a variable spelled exactly this way, so renaming it makes the header silently absent and every tick 401s with nothing logged anywhere |
+| 8 | `SCRAPER_USER_AGENT` | Plain — **not secret** | Production, Preview | A string naming Rivya and a contact route, e.g. `Rivya-Research/1.0 (+https://<your-domain>/contact)`. It is the opposite of a secret: its whole job is to identify us to the sites we read, so an operator can see who we are and reach us |
+
+`SCRAPER_USER_AGENT` has no fallback anywhere in the code and a missing one throws rather than
+defaulting. That is deliberate: a default would mean an unconfigured deployment crawling
+anonymously, which is precisely the conduct this subsystem is built to avoid, arriving through a
+convenience.
+
+**The snapshot bucket is not an environment variable.** Fetched page bodies are gzipped into a
+PRIVATE Supabase Storage bucket named `research-snapshots`, in the project `SUPABASE_SERVICE_ROLE_KEY`
+already points at — so there is no new vendor, no new credential and no new line here. It is not
+Cloudinary on purpose: Cloudinary serves from a public CDN, and a competitor's page body must not be
+served from a Rivya origin. See `docs/architecture/SCRAPER.md`.
+
 **Do NOT put these in Vercel:**
 
 | Variable | Why not |
 |---|---|
 | `DATABASE_URL` | **The application never uses it.** Reads and writes go through PostgREST over HTTPS via `supabase-js`; only migrations and operations scripts open a direct connection, and those run in CI (§5's matrix says "CI only"). Putting it in Vercel adds the most powerful credential in the system to a place that has no use for it. |
 | `NEXT_PUBLIC_WHATSAPP_NUMBER` | It is the owner's real number, it is `OWNER_VERIFICATION_REQUIRED`, and no page renders it before Phase 10. A real number in a public preview build is a number that gets scraped. |
-| `GOOGLE_SERVICE_ACCOUNT_JSON`, `GOOGLE_SHEETS_SPREADSHEET_ID`, `SCRAPER_USER_AGENT` | The research subsystem is Phase 30-something. No credential exists to paste. |
+| `GOOGLE_SERVICE_ACCOUNT_JSON`, `GOOGLE_SHEETS_SPREADSHEET_ID` | The Sheets export is Phase 36. No credential exists to paste. (`SCRAPER_USER_AGENT` used to be on this list and moved to §5.2's Phase 25 table when the fetcher shipped.) |
 
 **One project, two Vercel environments, today.** §5's matrix anticipates `rivya-prod` and
 `rivya-staging`; only one Supabase project exists (`ccvarsmzickdkryoakdg`), so Production and

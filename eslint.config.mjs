@@ -80,10 +80,27 @@ const config = [
      * `service_role` alone BECAUSE they carry the media cascade and the deferrable-constraint
      * reorder — logic that must not be reachable with an anon key. Its ordinary reads and writes
      * go through the request-scoped client, so RLS still applies to everything else it does.
+     *
+     * `app/api/cron/research/route.ts` is the content-schedule case again: Vercel Cron, no user,
+     * no cookie, `CRON_SECRET` at the door. Every table it touches — the work queue, the fetch
+     * log, the robots cache — has NO session write policy at all, deliberately, because a member
+     * of staff able to write them could clear a rate limit or forge the evidence that robots.txt
+     * was honoured. There is no session whose permissions could be checked and no other client
+     * that can write those rows.
+     *
+     * `app/(studio)/studio/(shell)/research/scrape/actions.ts` is the Server Action case, with the
+     * same shape as the content actions: `requirePermission('research.write')` is its first
+     * statement, and it re-checks the source's approval and every seed URL's host before it
+     * reaches for the admin client at all. What it uses it for is the queue — `research_runs` it
+     * could write through the session, but `research_work_items` has no session write policy for
+     * the reason above, and creating a run whose URLs could not be queued would be a run that
+     * never moves.
      */
     ignores: [
       'app/api/cron/content-schedule/route.ts',
+      'app/api/cron/research/route.ts',
       'app/(studio)/studio/(shell)/content/actions.ts',
+      'app/(studio)/studio/(shell)/research/scrape/actions.ts',
     ],
     rules: {
       'no-restricted-imports': [
@@ -182,6 +199,16 @@ const config = [
       'lib/bulk/undo.ts',
       'lib/bulk/import/apply.ts',
       'lib/bulk/export/index.ts',
+      /*
+       * `lib/scraper/**` — the research pipeline. It runs from a cron tick with no user and no
+       * cookie, and four of its nine tables (the work queue, the fetch log, the raw items and the
+       * robots cache) have NO session write policy at all: a member of staff able to write them
+       * could clear a `not_before_at` and edit the rate limit, or record a request that never
+       * happened. `stage.ts` is the same story for `research_pipeline_events`, which is
+       * append-only for the `audit_logs` reason. The service role is not a shortcut past a
+       * refusal here — it is the only actor there is.
+       */
+      'lib/scraper/**',
       'scripts/**',
       'tests/**',
     ],

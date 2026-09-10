@@ -1,23 +1,24 @@
 # PROJECT_STATE — what is actually built
 
 > Verified against the repository, not against intent. Update at the end of every phase.
-> Last verified: Phase 24 (Bulk Management), 2026-09-10.
+> Last verified: Phase 25 (Product Scraper Foundation), 2026-09-10.
 
 ## Summary
 
 The design system is built; the database spine exists, carries RLS policies for all six roles, and
 has been verified against a real PostgreSQL **and against the hosted Supabase project**. What
 exists: the toolchain, the token layer, 32 primitives, 3 motion helpers, 7 behavioural patterns, a
-dev-only gallery, **fifty-four tables, all with RLS on and 199 policies between them**, generated types with a
+dev-only gallery, **sixty-three tables, all with RLS on and 218 policies between them**, generated types with a
 drift gate, a repository layer with Zod at its boundary, an idempotent seed runner proved not to
 overwrite an owner's edit, the Studio shell with its ⌘K palette and user management, the media
 layer end to end, the Higgsfield migration, gap engine and tracker, **the CMS engine — pages,
 blocks, the status workflow, media binding, scheduling, revisions and the Studio surfaces that
-drive them** — a forward-only migration runner, and **32 gates** that fail the build on the
-mistakes they were written for — the two newest walk the import graph from the four public search
-entry points and refuse any research identifier among them, and parse every registered bulk
-operation and refuse one whose preview writes, whose destructive flag is missing, or which is one
-of the four that must be destructive and is not.
+drive them** — a forward-only migration runner, and **33 gates** that fail the build on the
+mistakes they were written for — the newest enforces the four research isolation invariants, and is
+the one artefact of Phase 25 most worth having: it refuses a foreign key crossing the
+research/public boundary, an `anon` policy on any research table, a research identifier anywhere
+under the public trees, and any path from the scraper to a catalogue write or to a headless
+browser.
 
 **Everything published is findable.** `search_documents` holds one flattened document per indexed
 entity across eight types, maintained by eleven triggers rather than by a job, and
@@ -354,7 +355,8 @@ local only, so every browser figure in this document is from a local run.
 | 22 | Homepage / Store Merchandising | **COMPLETE; EVERY SLOT EMPTY, WHICH IS THE SHIPPED STATE** | Migrations `0200`–`0201` on both databases. `merchandising_slots` and `merchandising_entries`; the eleven slots inserted as structure (four global, one `CATEGORY_PINNED_<SLUG>` per D3 category, by trigger); `guard_merchandising_entry()` (type, existence, no concept collection), the rule-named CHECK, `merch_move_entry()` (SECURITY INVOKER, atomic), `merch_run_schedule()` (the cron's merchandising pass — records, archives, revalidates; never publishes). The five-step ladder in `lib/cms/merchandising.ts` with provenance; `selectProducts`/`selectArticles` swapped onto it with their signatures kept; `featured-collections` as the 34th block; the three fallback modes in the renderers; `MerchandisedRow` (RC-243) for the store row and the pinned region. Four Studio screens on one slot editor with the resolver's own answer as the preview; category order with the SEED §56 two-step and a restore. 1,534 tests, none skipped. Amendment A22. With zero published products every slot resolves to its fallback and no product card is fabricated anywhere. |
 | 23 | Global Search + Product Relationships | **COMPLETE; THE INDEX HOLDS ONLY WHAT IS PUBLISHED** | Migrations `0210`–`0214` on both databases. `search_documents` with an eight-value `entity_type` CHECK and a second CHECK making the three Studio-only types structurally incapable of being `PUBLIC`; `research_search_documents` created EMPTY beside it with no `anon` policy, two phases before the subsystem that fills it; `search_queries` with no IP, no user agent and a CHECK refusing an actor on a public search. `refresh_search_document()` is the only writer, SECURITY DEFINER, behind eleven trigger functions and twelve triggers — so a member of staff cannot hand-write a search result the entity itself does not say. `search_documents_query()` ranks with `ts_rank_cd`, falls back to trigram similarity at 0.30 only when the exact pass returns fewer than four, and marks each row `EXACT` or `SIMILAR`. `/search` grouped and paginated; the header combobox (ARIA 1.2) degrading to a plain GET form; eight Studio palette providers. `product_relations` gains `origin`, `rule_key`, `note` and `paired_relation_id` under a nine-name vocabulary CHECK; `content_relations` and `relation_suppressions` join it; four stated rules propose and never write. Amendment A23. `scripts/search/check-search-scope.mjs` walks the import graph from the four public entry points and refuses any research identifier among them. |
 | 24 | Bulk Management | **COMPLETE; NO ROWS TO OPERATE ON, WHICH IS D10 WORKING** | Migrations `0220`–`0221` on both databases. `bulk_operations` storing the exact previewed id list so Apply cannot widen it; `bulk_operation_items` holding the per-item before/after that makes the 24-hour undo real; `bulk_imports` and `bulk_import_rows`, the uploaded file not retained after apply. Four shape-C tables, read under `bulk.execute`, with no write policy for any session role and delete revoked twice over on the two record tables. Eleven registered operations across three modules — nine product, three media, five research registered `available: false` until Phase 29 — every one with a write-free preview, a Zod params schema and a destructive flag. Select → Preview → Confirm → Apply, the destructive confirmation typing the ROW COUNT as digits and the server re-checking it against a count it computes itself. Undo compares the `updated_at` the operation LEFT behind and skips rows edited since, reporting them by id. Amendment A24. `scripts/bulk/check-bulk-registry.mjs` fails the build on a preview that writes or a destructive flag that is missing or wrong. |
-| 25–46 | Research, ops, launch | **PLANNED** | Specified in `docs/project/phases/`. |
+| 25 | Product Scraper Foundation | **COMPLETE; NO SOURCE APPROVED, SO NOTHING IS FETCHED** | Migrations `0230`–`0234` on both databases. Six enums; nine tables; `research_lease_work_items()` (SECURITY DEFINER, service role only, `for update skip locked` — the concurrency design PostgREST cannot express); the research search index filled by trigger. The seven FEAT §23 stages with rejection as a separate `disposition` column; `lib/scraper/core/stage.ts` the only writer of `stage`, emitting the pipeline event in the same call. The politeness posture: one named user agent with no fallback, robots.txt cached 24 h with a `Disallow` meaning no request is made, `Crawl-delay` as a floor, rate limit and delay enforced in the lease query, backoff with jitter, `Retry-After`, a circuit breaker at five failures, and a kill switch checked before every fetch. Snapshots gzipped into a private Supabase Storage bucket, 180-day retention. Four Studio surfaces, two command providers, an isolation guard proved to fail on each of I1–I4, and an end-to-end run against a real fixture server. Amendment A25. **Three gates stand between this code and any request: a policy review the owner records, a source they enable, and a flag they switch on. None is on.** |
+| 26–46 | Source management, extraction, ops, launch | **PLANNED** | Specified in `docs/project/phases/`. |
 
 ## What exists on disk
 

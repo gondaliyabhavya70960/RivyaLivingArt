@@ -37,6 +37,7 @@ import {
   PHASE_23_RELATION_POLICIES,
   PHASE_23_SEARCH_POLICIES,
   PHASE_24_POLICIES,
+  PHASE_25_POLICIES,
   PHASE_19_POLICIES,
   TABLE_POLICY_MAP,
   type ManagedTable,
@@ -333,6 +334,43 @@ const GENERATED: Record<string, { title: string; preamble: string }> = {
 -- term reaching a visitor is not this policy but the D10 gate on the row: it defaults to
 -- OWNER_VERIFICATION_REQUIRED and cannot be PUBLISHED until somebody with \`content.verify\` says
 -- the workshop really works in it.`,
+  },
+  [PHASE_25_POLICIES]: {
+    title: `-- ${PHASE_25_POLICIES} — Phase 25`,
+    preamble: `-- Policies for the nine research tables, which migrations 0231 and 0232 create. GENERATED from
+-- lib/auth/table-permissions.ts and rewritten whole, so it may hold nothing a human wrote.
+--
+-- ISOLATION INVARIANT I2 IS THIS FILE. NOT ONE \`anon\` POLICY APPEARS BELOW, on any table, and
+-- none ever may. There is no visitor-facing view of a competitor's catalogue, of what Rivya
+-- fetched from one, or of what it decided about the result — so an anon leg here would not be a
+-- change of policy but a defect with a syntax. \`scripts/research/check-research-isolation.mjs\`
+-- reads \`pg_policies\` and fails the build the moment one exists.
+--
+-- READ IS \`research.read\` THROUGHOUT — owner, admin, merchandiser, researcher and viewer.
+-- \`editor\` is the one role that does not hold it, which is the line Phase 23 already drew for
+-- \`research_search_documents\`.
+--
+-- WRITE SPLITS THREE WAYS, AND THE SPLIT IS THE PHASE DOCUMENT'S: a researcher OPERATES the
+-- pipeline and a merchandiser JUDGES its output.
+--
+--   research.write    sources, jobs, runs — the machinery
+--   research.confirm  research_products — because its editable columns here are \`stage\` and
+--                     \`disposition\`, and both are disposition-bearing. The dividing line is the
+--                     COLUMN, not the screen
+--   nobody            fetches, raw items, work items, the robots cache and the pipeline events
+--
+-- THAT LAST GROUP IS THE POLITENESS POSTURE, AND IT IS WHY THEY HAVE NO SESSION WRITE. A row in
+-- \`research_fetches\` is the evidence that a URL was refused before any packet left; a session
+-- able to write one could record a request that never happened, or claim a robots-DISALLOWED URL
+-- had been ALLOWED. A session able to write \`research_robots_cache\` could tell the fetcher that a
+-- forbidden host permits everything. A session able to write \`research_work_items\` could clear a
+-- \`not_before_at\` and edit the rate limit from inside the building. All four are written by the
+-- engine through the service role, after \`requirePermission\`.
+--
+-- \`research_pipeline_events\` IS APPEND-ONLY, the \`audit_logs\` precedent applied to the
+-- pipeline's own history: no write policy at all, and 0231 revokes update and delete outright.
+-- \`lib/scraper/core/stage.ts\` writes it in the same call that moves the stage, so a move without
+-- an event is not something that can happen.`,
   },
   [PHASE_24_POLICIES]: {
     title: `-- ${PHASE_24_POLICIES} — Phase 24`,

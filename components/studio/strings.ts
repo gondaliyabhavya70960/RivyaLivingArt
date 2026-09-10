@@ -1012,6 +1012,106 @@ export const STUDIO_STRINGS = {
     value: 'Nothing is selected, so there is nothing to preview.',
     contentKey: 'studio_help.bulk_no_selection_body',
   },
+  /*
+   * Phase 25 — the research subsystem.
+   *
+   * THE POLICY STRINGS ARE THE ONES THAT MATTER. Approving a source is an assertion about a third
+   * party's terms of use, and the interface must say whose assertion it is: engineering cannot
+   * make that call, so the copy names the owner and the fact that it is theirs to make. SEED §40 —
+   * every one of these is overridable from `global_content` without a code change.
+   */
+  'studio.research.dashboardHeading': {
+    value: 'Research',
+    contentKey: 'studio_help.research_dashboard_heading',
+  },
+  'studio.research.noSources': {
+    value: 'No source has been approved yet',
+    contentKey: 'studio_help.research_no_sources',
+  },
+  'studio.research.noSourcesBody': {
+    value:
+      'Nothing is fetched until the owner has reviewed a website and recorded that Rivya may read it. Until then every count on this page is zero, which is correct rather than broken.',
+    contentKey: 'studio_help.research_no_sources_body',
+  },
+  'studio.research.policyOwnerOnly': {
+    value: 'Approval is the owner\u2019s decision, not a setting',
+    contentKey: 'studio_help.research_policy_owner_only',
+  },
+  'studio.research.policyOwnerOnlyBody': {
+    value:
+      'Whether a website\u2019s terms permit reading it is a legal and commercial judgement. Record it here once it has been made; this software cannot make it for you.',
+    contentKey: 'studio_help.research_policy_owner_only_body',
+  },
+  'studio.research.killSwitchOff': {
+    value: 'Research is switched off',
+    contentKey: 'studio_help.research_kill_switch_off',
+  },
+  'studio.research.killSwitchOffBody': {
+    value:
+      'No source is being fetched. Turn research on under System \u203a Feature flags once a source has been approved.',
+    contentKey: 'studio_help.research_kill_switch_off_body',
+  },
+  'studio.research.queueDepth': {
+    value: 'URLs waiting',
+    contentKey: 'studio_help.research_queue_depth',
+  },
+  'studio.research.runsHeading': { value: 'Runs', contentKey: 'studio_help.research_runs_heading' },
+  'studio.research.jobsHeading': { value: 'Jobs', contentKey: 'studio_help.research_jobs_heading' },
+  'studio.research.sourcesHeading': {
+    value: 'Sources',
+    contentKey: 'studio_help.research_sources_heading',
+  },
+  'studio.research.stagesHeading': {
+    value: 'Pipeline',
+    contentKey: 'studio_help.research_stages_heading',
+  },
+  'studio.research.noRuns': {
+    value: 'Nothing has run yet',
+    contentKey: 'studio_help.research_no_runs',
+  },
+  'studio.research.noRunsBody': {
+    value: 'A run appears here as soon as a job comes due or somebody starts one.',
+    contentKey: 'studio_help.research_no_runs_body',
+  },
+  'studio.research.noJobs': {
+    value: 'No job is defined',
+    contentKey: 'studio_help.research_no_jobs',
+  },
+  'studio.research.noJobsBody': {
+    value:
+      'A job says what to fetch from a source, and how often. Add one against an approved source.',
+    contentKey: 'studio_help.research_no_jobs_body',
+  },
+  'studio.research.startRun': {
+    value: 'Start a run',
+    contentKey: 'studio_help.research_start_run',
+  },
+  'studio.research.dryRun': {
+    value: 'Dry run \u2014 fetch and check, store nothing',
+    contentKey: 'studio_help.research_dry_run',
+  },
+  'studio.research.cancelRun': { value: 'Cancel', contentKey: 'studio_help.research_cancel_run' },
+  'studio.research.cancelNote': {
+    value: 'Cancelling stops the next page, not the one in flight.',
+    contentKey: 'studio_help.research_cancel_note',
+  },
+  'studio.research.retryFailed': {
+    value: 'Retry the failed URLs',
+    contentKey: 'studio_help.research_retry_failed',
+  },
+  'studio.research.politeness': {
+    value: 'Politeness',
+    contentKey: 'studio_help.research_politeness',
+  },
+  'studio.research.politenessBody': {
+    value:
+      'Requests are spaced by the source\u2019s delay, or by whatever robots.txt asks for if that is longer. A source is never sped up by its robots file.',
+    contentKey: 'studio_help.research_politeness_body',
+  },
+  'studio.research.disallowedNote': {
+    value: 'Refused by robots.txt \u2014 no request was made',
+    contentKey: 'studio_help.research_disallowed_note',
+  },
   'studio.imports.heading': { value: 'Import products', contentKey: 'studio_help.imports_heading' },
   'studio.imports.body': {
     value:

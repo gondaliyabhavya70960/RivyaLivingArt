@@ -8,6 +8,144 @@
 
 ## Current Phase
 
+**Phase 25 — Product Scraper Foundation. COMPLETE.** Rivya can now read a competitor's website —
+politely, on a schedule, under a kill switch — and store what came back somewhere no visitor can
+reach. It extracts nothing structured (Phase 27) and normalises nothing (Phase 28).
+
+**Nothing has been fetched from anybody, and nothing will be until three separate gates are open:**
+an owner records a policy review approving a source, that source is enabled, and the
+`research_enabled` flag is switched on. This repository ships **zero** source rows and seeds none.
+That is the shipped state, not a gap — a source row is an assertion that Rivya may read a real
+third party's website, and that judgement is the owner's.
+
+### Phase 25: what is built
+
+**Migrations `0230`–`0234`, applied locally AND to hosted through the Supabase MCP, with the ledger
+rows.** Six enums. Nine tables: `research_sources` (politeness settings as columns, because they
+are enforced in the lease query), `research_jobs`, `research_runs`, `research_work_items` (the unit
+of progress — a run is drained across many cron ticks and survives a cold start),
+`research_fetches`, `research_raw_items`, `research_products`, `research_pipeline_events`
+(append-only) and `research_robots_cache`. `research_lease_work_items()` is SECURITY DEFINER and
+granted to the service role alone: `for update skip locked` is the entire concurrency design and
+PostgREST cannot express it. `0233` is the generated RLS; `0234` corrects the `status` allowlist
+Phase 23 wrote on `research_search_documents` before it could know a source has no stage, and fills
+the index by trigger.
+
+**The stage machine.** FEAT §23's seven stages, forward one step at a time and backward by any
+amount. Rejection is NOT a stage — `disposition` is a separate column, so a rejected row keeps the
+stage it reached. `lib/scraper/core/stage.ts` is the only writer of `stage` anywhere, and it writes
+the pipeline event in the same call, event first. Moving a stage is `research.confirm`, not
+`research.write`: the dividing line is the column, not the screen.
+
+**The politeness posture** (`docs/architecture/SCRAPER.md`). One named user agent with no fallback.
+robots.txt fetched once per host per day, with a `Disallow` meaning no request is made at all and
+the refusal recorded. `Crawl-delay` as a floor, never a ceiling. Rate limit, delay and concurrency
+enforced in the lease query rather than by `sleep()` calls a killed function loses. Exponential
+backoff with jitter, `Retry-After`, a circuit breaker at five consecutive failures, and a kill
+switch checked before EVERY fetch.
+
+**Four permanent prohibitions enforced by a build gate**: no headless browser, no proxy rotation,
+no CAPTCHA solving, no browser impersonation.
+
+**Snapshots** gzipped into a PRIVATE Supabase Storage bucket — never Cloudinary, which serves from
+a public CDN — content-addressed, date-partitioned, 180-day retention, pruned by the same cron.
+
+**Surfaces**: `/studio/research/{dashboard,sources,jobs,runs,runs/[id],scrape}`, two command
+providers against `research_search_documents`, and `app/api/cron/research` on a five-minute Vercel
+cron.
+
+### Phase 25: what is NOT built, and why
+
+- **Structured extraction.** `research_raw_items.raw` accepts ONLY `{ title, canonicalUrl, links }`
+  and its Zod schema is `.strict()`, so a "quick price regex" fails at the write rather than at
+  review. Phase 27 builds the adapter architecture; this phase must not pre-empt it, and the schema
+  is the commitment device that stops it.
+- **A `research_product` command provider.** The index and the trigger exist, but at this phase a
+  research product is a URL and a stage — a palette result would be a bare link with nothing to
+  recognise it by. Phase 29 builds the explorer such results should open.
+- **Source management.** `/studio/research/sources` is read-only. The remaining FEAT §26 fields,
+  the category mapping, the URL patterns and the health view are Phase 26; a half-form here would
+  be a second place to define one source.
+- **A `system_logs` row for a circuit opening.** That table is Phase 38's. `lib/scraper/core/log.ts`
+  is the seam: it writes the line to the console — which on Vercel IS the cron invocation's log —
+  and returns the reason in the tick summary, so the route's JSON says it too. Phase 38 replaces
+  the body of one function.
+- **A signed-in e2e path.** Guarded by `STUDIO_STORAGE_STATE` and skipped, for the reason Phases 23
+  and 24 record: a real session needs an auth server the local shim does not run.
+
+### Phase 25: verification, as actually run
+
+1. `npm run db:reset` — 71 migrations apply from clean; `seed:content` — 486 inserted;
+   `db:types` regenerated with no drift.
+2. Local and hosted both report **71 migrations, 63 tables, 218 policies**, zero `anon` policies on
+   any `research_*` table, zero source rows, and seven anon-callable functions — the same seven the
+   `ANON_CALLABLE` allowlist names.
+3. `node scripts/research/check-research-isolation.mjs` → exits 0. Then **each invariant was
+   planted and proved to fail**: a foreign key from `research_products` to `categories` (I1), an
+   `anon` policy on `research_products` (I2), a `researchProduct` identifier in `lib/catalog` (I3),
+   a `puppeteer` import in `lib/scraper/core/fetch.ts` and a `lib/scraper` import in
+   `lib/supabase/repositories/products.ts` (I4). All five failed with the file and the reason named;
+   all five restored.
+4. **The drain loop run end to end against a real fixture HTTP server**, which is the only way the
+   claims that matter can be checked, because they are about requests that must NOT happen:
+   - robots.txt requested **exactly once**, served from the 24-hour cache thereafter;
+   - `/private/secret` and a `/private/x` discovered mid-run both recorded `DISALLOWED`, and
+     **neither appears in the fixture server's own request log**;
+   - the gap between two fetches was 2,312 ms against the host's 1-second `Crawl-delay` and the
+     source's configured 250 ms — the floor won;
+   - the kill switch produced zero requests and a WARNING line;
+   - a `429` with `Retry-After: 30` returned the item to `PENDING` with `attempts = 1` and a
+     129-second backoff, because the ladder beats a number supplied by the server we are already
+     struggling with.
+5. `npm run test` on a reset-and-seeded database — **1,800 passing, none skipped**, including four
+   new unit suites and `tests/unit/rls/phase25.test.ts` (31 cases, every research table seeded
+   before the anon read so a zero means a policy refused rather than an empty table).
+6. Two new e2e specs against a real `next dev` over the shim: 10 passed, 8 skipped for the
+   storage-state reason — including `/api/cron/research` refusing an unauthenticated request and
+   the sitemap containing no research route.
+7. `npm run check` — all **33** gates green.
+
+### Phase 25: two things this phase found in existing code
+
+- **`tests/unit/rls/function-grants.test.ts` never loaded the fixture.** Its last test inserts a
+  product as the owner, and it only worked because some other suite happened to run first. The
+  advisory lock serialises those files but says nothing about their order, so adding one suite was
+  enough to break it. It now loads the fixture itself.
+- **That same suite caught four SECURITY DEFINER trigger functions this phase left callable by
+  `anon`.** PostgreSQL grants EXECUTE to `public` on a new function by default, and on Supabase
+  `public` includes `anon`. `0234` revokes them, as `0211` does for the eleven public-index
+  triggers. A gate written two phases ago failing on code written today is the whole point of
+  having it.
+
+### Phase 25: the D9 ten, recorded
+
+1. Code exists and is committed — five migrations, `lib/scraper/**` (core and workflows), eight
+   research repositories, six Studio surfaces, two command providers, the cron route, two scripts.
+2. Migrations applied locally and to hosted, with ledger rows and matching counts (71 / 63 / 218).
+3. Tests written and passing: 1,800, none skipped, plus 10 e2e and the fixture-server run.
+4. Gates pass, including the new `research:check-isolation`.
+5. Documentation updated: **SCRAPER.md created**, DATA_MODEL (§12 and the research register as
+   built), SECURITY (T5 as built, and the politeness posture), STUDIO_GUIDE, ENVIRONMENT (§5.2
+   gains `CRON_SECRET` and `SCRAPER_USER_AGENT`), CANONICAL-DECISIONS A25, CHANGELOG,
+   PROJECT_STATE, this file.
+6. No business fact fabricated: zero sources, zero products, and the one row D10 governs — a source
+   — cannot be enabled without an attributed owner approval, at the row.
+7. Nothing in the manifest regenerated; no competitor image fetched, and none ever will be.
+8. Amendments recorded: A25 (six readings).
+9. The next phase is named: **26 — Comparator Source Management**.
+10. Hosted is level with the repository through `0234`.
+
+### Phase 25: what the owner must do before anything is fetched
+
+1. Set `CRON_SECRET` (Sensitive) and `SCRAPER_USER_AGENT` (plain) in Vercel — see ENVIRONMENT §5.2.
+   Until then the cron refuses itself, which is the intended behaviour.
+2. Decide, per website, whether its terms permit Rivya to read it. **This is not an engineering
+   question and this repository has not answered it.**
+3. Record the approval on a source, enable it, and switch `research_enabled` on.
+
+
+### Superseded — Phase 24's state
+
 **Phase 24 — Bulk Management. COMPLETE.** One engine, one audit trail, one undo window. Eleven
 registered operations across three modules run through `lib/bulk/run.ts` and nothing loops on its
 own: an operation without a `bulk_operations` row has no preview, no confirmation token, no
@@ -16,7 +154,7 @@ per-item snapshot and no undo, and a build gate refuses one whose preview writes
 **Every bulk surface renders with nothing to operate on, because `products` and `media_assets` hold
 no rows a seed may create.** That is D10 working, not a gap.
 
-### Phase 24: what is built
+#### Phase 24: what is built
 
 **Migrations `0220`–`0221`, applied locally AND to hosted through the Supabase MCP, with the ledger
 rows.** `bulk_operations` stores the exact previewed id list, so Apply re-reads it rather than
@@ -47,7 +185,7 @@ to fail on a preview that writes and on a destructive flag set wrong. `db:check-
 `npm run check` in the same edit — it ran in CI and not locally, which is how Phase 23 reached main
 red. The local PostgREST shim now mints a service-role key beside the anon one.
 
-### Phase 24: what is NOT built, and why
+#### Phase 24: what is NOT built, and why
 
 - **A transaction per batch.** PostgREST gives the engine one statement per call and no transaction
   handle. What fifty actually buys is bounded memory, a progress point and a `PARTIAL` outcome that
@@ -64,7 +202,7 @@ red. The local PostgREST shim now mints a service-role key beside the anon one.
   not run and a forged cookie is refused by `getUser()`. They are marked skipped in the report
   rather than omitted, so the gap is visible.
 
-### Phase 24: verification, as actually run
+#### Phase 24: verification, as actually run
 
 1. `npm run db:reset` — 66 migrations apply from clean. `npm run seed:content` — 486 inserted.
 2. `npm run db:check-schema`, `auth:check-rls`, `auth:check-policies`, `db:check-hosted-layout` —
@@ -91,7 +229,7 @@ red. The local PostgREST shim now mints a service-role key beside the anon one.
    naming the file. Restored.
 7. `npm run check` — all **32** gates green.
 
-### Phase 24: the D9 ten, recorded
+#### Phase 24: the D9 ten, recorded
 
 1. Code exists and is committed — two migrations, `lib/bulk/**` with three operations modules, five
    bulk repositories, four Studio surfaces, the five shared controls, one gate script.

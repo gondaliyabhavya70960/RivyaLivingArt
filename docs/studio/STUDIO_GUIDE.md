@@ -1565,6 +1565,42 @@ not a sourcing pipeline.
 run control need `research.write` (owner, admin, researcher). Dispositions and confirmation need
 `research.confirm` (owner, admin, merchandiser). **Editors have no research access at all.**
 
+### 12.0 What Phase 25 actually shipped — **BUILT**
+
+Six surfaces, and every number on all of them is zero on a fresh database. That is the state this
+repository ships in, not a gap: **no source is approved, so nothing has been fetched from anybody.**
+
+| Route | What it does today |
+|---|---|
+| `/studio/research/dashboard` | The seven stage counts (all seven, always — a pipeline whose shape changes as it fills is a pipeline nobody can learn), queue depth, every source with its policy status and whether its circuit is open, and the last ten runs. Surfaces the kill switch FIRST when it is off, because a still queue is most often that |
+| `/studio/research/sources` | Read-only until Phase 26. Policy status, enabled, delay, concurrency, and the failure counter — shown as **paused** once the circuit is open rather than as a number nobody reads |
+| `/studio/research/scrape` | Start a run against one approved source. The dry-run toggle **defaults ON** |
+| `/studio/research/jobs` | Read-only. Shows the cron expression BESIDE the next run time, because a null next-run against a real expression is a job whose schedule did not parse, and a null against a null is a job that is simply off — showing only one makes those indistinguishable |
+| `/studio/research/runs` | Every run, newest first |
+| `/studio/research/runs/[id]` | The queue counts, the two controls, and the fetch log |
+
+**Three things about these screens are decisions rather than layout.**
+
+*The approval note lives on the sources page, not in a document.* "Whether a website's terms permit
+reading it is a legal and commercial judgement. Record it here once it has been made; this software
+cannot make it for you." A rule that lives only in `SCRAPER.md` is a rule the person doing the thing
+will not have read.
+
+*A `DISALLOWED` row in the fetch log is toned as an outcome, not a failure.* It is the visible proof
+that robots.txt was honoured — the system doing exactly what it promised — and it carries the words
+"no request was made". Folding it in with the errors would hide the one line worth looking for.
+
+*The cancel caveat is rendered beside the button.* "Cancelling stops the next page, not the one in
+flight." Cancelling sets a status the lease query refuses and the drain loop re-reads between items;
+it does not abort a request already in flight. That is a fact an operator needs BEFORE they press,
+so it is on the control rather than in the response.
+
+**What is deliberately absent.** No source creation form (Phase 26 owns the twenty-three FEAT §26
+fields, and a half-form here would be a second place to define one source). No structured
+extraction (Phase 27 — `research_raw_items.raw` accepts only a title, a canonical URL and links,
+and its schema is `.strict()` so a shortcut fails at the write). No explorer, no change review, no
+shortlist (Phases 28–30).
+
 ### 12.1 The three rules that govern the whole group
 
 1. **Isolation.** Every table carries the `research_` prefix and **no `anon` policy is ever created on
@@ -1977,6 +2013,11 @@ enforced.
 | 24 | Audit, activity and system logs cannot be edited or deleted | `revoke update, delete`; no policy for any application role |
 | 25 | The seed never overwrites an owner edit | `set_owner_edited()` + the content-hash rule |
 | 26 | The last owner cannot be demoted or suspended | Server action + statement trigger |
+| 28 | A source cannot be scraped before its policy review | `check (is_enabled = false or policy_status = 'APPROVED')` on `research_sources`, plus a second check refusing an approval that names nobody |
+| 29 | robots.txt is honoured, and the refusal is evidence | The fetcher asks before every request; `research_fetches_disallowed_has_no_response` makes a DISALLOWED row carrying a status, a hash or a snapshot unstorable |
+| 30 | `Crawl-delay` can slow Rivya and never speed it up | `effectiveDelayMs` is a `Math.max`, with a test asserting it in those words |
+| 31 | No headless browser, proxy rotation or CAPTCHA solving, ever | `check-research-isolation.mjs` fails on an import of any of that tooling under `lib/scraper/**` |
+| 32 | A stage never moves without a record of who moved it | `lib/scraper/core/stage.ts` is the only writer of `stage` and writes the event first; the guard fails on a `writeProductStage` call anywhere else |
 | 27 | Bespoke pricing is never calculated | No price-shaped column exists in the customization schema; a unit test greps for one |
 
 ---

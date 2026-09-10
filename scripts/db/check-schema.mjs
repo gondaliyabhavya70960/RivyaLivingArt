@@ -327,6 +327,67 @@ const EXPECTED = {
    * The two import tables carry `created_at` because a file is uploaded at a moment its operation
    * has not happened at yet, and `bulk_import_rows` is pruned by that column at thirty days.
    */
+  /*
+   * Phase 25 — the research subsystem. Three tiers, and the split is not arbitrary.
+   *
+   * `research_sources`, `research_jobs` and `research_products` ARE CONTENT-BEARING in the §1.2
+   * sense — a person creates them, edits them and is accountable for them — so they carry the
+   * full common set, `status` included. NONE of them carries `owner_verification`, which for
+   * `research_sources` is a deliberate departure: it is the one research row D10 plainly governs,
+   * and `policy_status` is already its verification gate, enforced by a CHECK that makes an
+   * enabled-but-unapproved source unstorable. Two columns answering one question, only one of them
+   * enforced, is how the unenforced one ends up being the one somebody reads.
+   *
+   * `research_runs`, `research_fetches`, `research_raw_items`, `research_work_items` and
+   * `research_pipeline_events` are §1.4 exemptions of the "record of something that happened"
+   * kind — the same family as `audit_logs` and `bulk_operations`. A run has `queued_at`,
+   * `started_at` and `finished_at`, which say more than an `updated_at` could; a fetch happened at
+   * one moment and never changes; a pipeline event is append-only by construction.
+   *
+   * `research_robots_cache` IS NEITHER. It is a cache: `fetched_at` and `expires_at` are its whole
+   * lifecycle, and a `status` on a cached copy of somebody else's file would be a column nobody
+   * could answer.
+   */
+  research_sources: [
+    'slug',
+    'name',
+    'base_url',
+    'is_enabled',
+    'policy_status',
+    'status',
+    'created_at',
+    'updated_at',
+    'updated_by',
+  ],
+  research_jobs: [
+    'source_id',
+    'job_type',
+    'name',
+    'scope',
+    'is_enabled',
+    'status',
+    'created_at',
+    'updated_at',
+    'updated_by',
+  ],
+  research_products: [
+    'source_id',
+    'source_url',
+    'stage',
+    'disposition',
+    'first_seen_at',
+    'last_seen_at',
+    'status',
+    'created_at',
+    'updated_at',
+    'updated_by',
+  ],
+  research_runs: ['job_id', 'source_id', 'status', 'trigger', 'queued_at', 'stats'],
+  research_work_items: ['run_id', 'source_id', 'url', 'state', 'not_before_at', 'created_at'],
+  research_fetches: ['run_id', 'source_id', 'url', 'robots_decision', 'fetched_at'],
+  research_raw_items: ['run_id', 'source_id', 'source_url', 'raw', 'extracted_at'],
+  research_pipeline_events: ['entity_type', 'entity_id', 'actor_kind', 'occurred_at'],
+  research_robots_cache: ['host', 'fetched_at', 'expires_at'],
   bulk_operations: [
     'kind',
     'target_entity',
