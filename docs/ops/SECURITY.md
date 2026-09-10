@@ -205,7 +205,39 @@ mitigation works.
 | | |
 |---|---|
 | Mitigations | Every privileged mutation **and every denial** is audited, append-only · destructive and bulk actions require typed confirmation, a per-item snapshot and a 24-hour undo · `media.delete` is blocked while a `media_usages` row references the asset · role-scoped, not record-scoped, permissions keep the model comprehensible |
-| Proof | `tests/e2e/bulk.spec.ts`, `tests/integration/rls-policies.test.ts` |
+| Proof | `tests/unit/rls/phase24.test.ts`, `tests/unit/bulk-undo.test.ts`, `tests/e2e/bulk-destructive-confirm.spec.ts`, `tests/e2e/bulk-undo.spec.ts` |
+
+**As implemented in Phase 24.** Bulk is one engine (`lib/bulk/run.ts`) and there is no second
+loop: an operation without a `bulk_operations` row has no preview, no confirmation token, no
+per-item snapshot and no undo, and `scripts/bulk/check-bulk-registry.mjs` fails the build on a
+mutation inside a `preview` body. Four properties are load-bearing here.
+
+- **Apply cannot widen what was previewed.** The exact id list is a column on the row, and Apply
+  re-reads it rather than trusting the request. A stale tab holds a token for a preview built from
+  a different filter and is refused; a changed filter produces a new preview and a new token. The
+  token is cleared when it is spent, so a double-submitted form cannot run the same operation
+  twice.
+- **The typed confirmation is enforced at the server, not at the dialog.** A Server Action is an
+  HTTP endpoint. `run.ts` re-checks `roleHasPermission` for `bulk.execute` and, for a destructive
+  operation, `destructive.execute`, and compares the typed count against one it computes itself
+  from the stored selection. The disabled button is what makes an operator stop and read the
+  number; it is not what stops the request.
+- **No session may write the record of what was done.** All four bulk tables are shape C with a
+  read policy and no write policy for any session role: the engine writes through the service role
+  after `requirePermission`. Without that, a signed-in merchandiser could hand-write a preview
+  carrying a selection nobody previewed, or edit the `before` snapshot undo re-applies — writing
+  anything they liked into a live row while the audit log recorded a restoration. Delete on the two
+  record tables is absent from RLS *and* revoked at the grant.
+- **Undo cannot overwrite somebody else's later edit.** Each item stores the `updated_at` the
+  operation left the row at; undo re-applies `before` only where that still matches and reports the
+  rest by id. Undoing a destructive operation needs `destructive.execute` too — an un-archive is a
+  bulk write over live content that nobody previewed.
+
+Two things bulk can never do, by construction rather than by rule: hard-delete anything (no
+operation kind removes a row, and permanent deletion stays a single-row action on its own surface),
+and publish through an import (`status` is absent from `bulk-import`'s writable column allowlist,
+so an imported row takes the column's `DRAFT` default and an update leaves the row's own status
+alone).
 
 ---
 

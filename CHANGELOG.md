@@ -6,6 +6,56 @@ Every phase adds an entry; see `docs/architecture/CANONICAL-DECISIONS.md` D9 for
 
 ## [Unreleased]
 
+### Phase 24 — Bulk Management
+
+One engine, one audit trail, one undo window. Eleven registered operations across three modules —
+nine for products, three for media, five for research registered unavailable until Phase 29 — all
+running through `lib/bulk/run.ts`, because what stops a second bulk path being written is not a
+convention but the fact that an operation without a `bulk_operations` row has no preview, no
+confirmation token, no per-item snapshot and no undo.
+
+**Migrations `0220`–`0221`, applied locally AND to the hosted project.** `bulk_operations` stores
+the exact id list that was previewed, so Apply re-reads it rather than trusting the request and a
+stale tab cannot apply a preview built from a different filter. `bulk_operation_items` holds the
+per-item before/after that makes the 24-hour undo real and keeps the audit log readable — one
+`audit_logs` row per operation, five hundred item rows behind a link. `bulk_imports` and
+`bulk_import_rows` record what an uploaded file contained; the file itself is not retained after
+apply. `0221` is the generated RLS: four shape-C tables, read under `bulk.execute`, and not one
+write policy between them — every write goes through the service role after `requirePermission`, so
+a signed-in merchandiser cannot hand-write a preview nobody previewed or edit the `before` snapshot
+undo re-applies. Delete is revoked on the two record tables twice over, in policy and in grant: the
+account of what somebody did to a page of live content is not erasable by the person who did it.
+`0221` is one past the phase document's allocation, for the reason A23 gave for `0214` (**amendment
+A24**).
+
+**Four steps, always: Select → Preview → Confirm → Apply.** The preview writes nothing and reports
+per row what would happen and why not — a product that is not ready to publish is excluded with the
+readiness items it is missing named, rather than counted. A destructive operation then asks the
+operator to type the ROW COUNT as digits: a fixed word becomes muscle memory inside a week, and the
+number cannot, because it is different every time and it is the one fact they most need to have
+registered. The dialog disables a button; `lib/bulk/run.ts` re-checks the count against one it
+computes itself and refuses the request, because a Server Action is an HTTP endpoint.
+
+**Undo, and the honest version of it.** Every applied item records the `updated_at` the operation
+LEFT the row at; undo re-applies `before` only where that still matches and reports the rest by id.
+Getting that value from the wrong side of the write is a bug that no unit test caught and running
+the engine against a real database did: undo skipped every row it had itself changed and blamed an
+edit nobody made. The regression guard is an ordering assertion — read, write, read — and the
+reading is recorded in **A24**.
+
+**New gates.** `scripts/bulk/check-bulk-registry.mjs` parses every `registerBulkOperation` literal
+and fails the build on a preview that writes, a missing Zod schema or destructive flag, or any of
+the four operations that must be destructive being marked otherwise. It is wired into `npm run
+check` and into CI, and was proved to fail on both violations before it was trusted.
+`db:check-data-layer` joined `npm run check` in the same edit — it ran in CI and not locally, which
+is how Phase 23 reached main red.
+
+**The local PostgREST shim now mints a service-role key** alongside the anon one. From this phase
+onward half the write paths have no session at all, and a shim that could exercise the reading half
+of the application and none of the writing half is a shim that hides exactly the bugs this phase
+found.
+
+
 ### Phase 23 — Global Search + Product Relationships
 
 Everything Rivya has published is findable, and the connections between things are data rather than

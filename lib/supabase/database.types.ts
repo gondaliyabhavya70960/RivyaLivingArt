@@ -117,6 +117,245 @@ export type Database = {
           },
         ]
       }
+      bulk_import_rows: {
+        Row: {
+          id: string
+          import_id: string
+          row_number: number
+          raw: Json
+          mapped: Json
+          issues: Json
+          action: string
+          target_entity_id: string | null
+          applied: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          import_id: string
+          row_number: number
+          raw: Json
+          mapped?: Json
+          issues?: Json
+          action?: string
+          target_entity_id?: string | null
+          applied?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          import_id?: string
+          row_number?: number
+          raw?: Json
+          mapped?: Json
+          issues?: Json
+          action?: string
+          target_entity_id?: string | null
+          applied?: boolean
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'bulk_import_rows_import_id_fkey'
+            columns: ['import_id']
+            isOneToOne: false
+            referencedRelation: 'bulk_imports'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      bulk_imports: {
+        Row: {
+          id: string
+          operation_id: string | null
+          filename: string
+          checksum: string
+          delimiter: string
+          column_map: Json
+          row_count: number
+          valid_count: number
+          invalid_count: number
+          status: string
+          created_at: string
+          created_by: string | null
+        }
+        Insert: {
+          id?: string
+          operation_id?: string | null
+          filename: string
+          checksum: string
+          delimiter?: string
+          column_map?: Json
+          row_count?: number
+          valid_count?: number
+          invalid_count?: number
+          status?: string
+          created_at?: string
+          created_by?: string | null
+        }
+        Update: {
+          id?: string
+          operation_id?: string | null
+          filename?: string
+          checksum?: string
+          delimiter?: string
+          column_map?: Json
+          row_count?: number
+          valid_count?: number
+          invalid_count?: number
+          status?: string
+          created_at?: string
+          created_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'bulk_imports_created_by_fkey'
+            columns: ['created_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'bulk_imports_operation_id_fkey'
+            columns: ['operation_id']
+            isOneToOne: false
+            referencedRelation: 'bulk_operations'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      bulk_operation_items: {
+        Row: {
+          id: string
+          operation_id: string
+          entity_id: string
+          result: string
+          reason: string | null
+          before: Json | null
+          after: Json | null
+          row_version_before: string | null
+          error: string | null
+        }
+        Insert: {
+          id?: string
+          operation_id: string
+          entity_id: string
+          result: string
+          reason?: string | null
+          before?: Json | null
+          after?: Json | null
+          row_version_before?: string | null
+          error?: string | null
+        }
+        Update: {
+          id?: string
+          operation_id?: string
+          entity_id?: string
+          result?: string
+          reason?: string | null
+          before?: Json | null
+          after?: Json | null
+          row_version_before?: string | null
+          error?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'bulk_operation_items_operation_id_fkey'
+            columns: ['operation_id']
+            isOneToOne: false
+            referencedRelation: 'bulk_operations'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      bulk_operations: {
+        Row: {
+          id: string
+          kind: string
+          target_entity: string
+          status: string
+          is_destructive: boolean
+          selection: Json
+          params: Json
+          counts: Json
+          confirmation_token: string | null
+          confirmed_at: string | null
+          actor_user_id: string | null
+          actor_role: Database['public']['Enums']['user_role'] | null
+          requested_at: string
+          started_at: string | null
+          finished_at: string | null
+          undo_deadline_at: string | null
+          undone_at: string | null
+          undone_by: string | null
+          undo_of_operation_id: string | null
+        }
+        Insert: {
+          id?: string
+          kind: string
+          target_entity: string
+          status?: string
+          is_destructive?: boolean
+          selection: Json
+          params?: Json
+          counts?: Json
+          confirmation_token?: string | null
+          confirmed_at?: string | null
+          actor_user_id?: string | null
+          actor_role?: Database['public']['Enums']['user_role'] | null
+          requested_at?: string
+          started_at?: string | null
+          finished_at?: string | null
+          undo_deadline_at?: string | null
+          undone_at?: string | null
+          undone_by?: string | null
+          undo_of_operation_id?: string | null
+        }
+        Update: {
+          id?: string
+          kind?: string
+          target_entity?: string
+          status?: string
+          is_destructive?: boolean
+          selection?: Json
+          params?: Json
+          counts?: Json
+          confirmation_token?: string | null
+          confirmed_at?: string | null
+          actor_user_id?: string | null
+          actor_role?: Database['public']['Enums']['user_role'] | null
+          requested_at?: string
+          started_at?: string | null
+          finished_at?: string | null
+          undo_deadline_at?: string | null
+          undone_at?: string | null
+          undone_by?: string | null
+          undo_of_operation_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'bulk_operations_actor_user_id_fkey'
+            columns: ['actor_user_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'bulk_operations_undo_of_operation_id_fkey'
+            columns: ['undo_of_operation_id']
+            isOneToOne: false
+            referencedRelation: 'bulk_operations'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'bulk_operations_undone_by_fkey'
+            columns: ['undone_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       categories: {
         Row: {
           id: string

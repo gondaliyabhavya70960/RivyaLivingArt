@@ -957,6 +957,81 @@ export const STUDIO_STRINGS = {
     value: 'Every published piece is listed. Suggestions are computed when you open one.',
     contentKey: 'studio_help.relationships_pick_body',
   },
+  /* ------------------------------------------------------- the bulk engine (Phase 24) */
+  'studio.bulk.selected': { value: 'selected', contentKey: 'studio_help.bulk_selected' },
+  'studio.bulk.overCap': {
+    value: 'That is more than one operation may touch. Narrow the filter to at most',
+    contentKey: 'studio_help.bulk_over_cap',
+  },
+  'studio.bulk.preview': { value: 'Preview', contentKey: 'studio_help.bulk_preview' },
+  'studio.bulk.apply': { value: 'Apply', contentKey: 'studio_help.bulk_apply' },
+  'studio.bulk.previewCaption': {
+    value: 'What would happen to each selected row',
+    contentKey: 'studio_help.bulk_preview_caption',
+  },
+  'studio.bulk.columnRow': { value: 'Row', contentKey: 'studio_help.bulk_column_row' },
+  'studio.bulk.columnOutcome': { value: 'Outcome', contentKey: 'studio_help.bulk_column_outcome' },
+  'studio.bulk.columnReason': { value: 'Why', contentKey: 'studio_help.bulk_column_reason' },
+  'studio.bulk.willApply': { value: 'will apply', contentKey: 'studio_help.bulk_will_apply' },
+  'studio.bulk.willSkip': { value: 'will skip', contentKey: 'studio_help.bulk_will_skip' },
+  'studio.bulk.willFail': { value: 'excluded', contentKey: 'studio_help.bulk_will_fail' },
+  'studio.bulk.applied': { value: 'applied', contentKey: 'studio_help.bulk_applied' },
+  'studio.bulk.skipped': { value: 'skipped', contentKey: 'studio_help.bulk_skipped' },
+  'studio.bulk.failed': { value: 'failed', contentKey: 'studio_help.bulk_failed' },
+  /*
+   * THE CONFIRMATION ASKS FOR A NUMBER, NOT A WORD, and the copy says which number. Typing a fixed
+   * word becomes muscle memory within a week; the row count is different every time and is the one
+   * fact the operator most needs to have registered before they press the button.
+   */
+  'studio.bulk.confirmPrompt': {
+    value: 'This removes live content. To confirm, type the number of rows:',
+    contentKey: 'studio_help.bulk_confirm_prompt',
+  },
+  'studio.bulk.confirmLabel': {
+    value: 'Number of rows',
+    contentKey: 'studio_help.bulk_confirm_label',
+  },
+  'studio.bulk.undoAvailable': {
+    value: 'This can be undone for 24 hours. Rows edited since will be left as they are.',
+    contentKey: 'studio_help.bulk_undo_available',
+  },
+  'studio.bulk.undo': { value: 'Undo', contentKey: 'studio_help.bulk_undo' },
+  'studio.bulk.unavailable': {
+    value: 'Bulk actions for scraped products arrive in Phase 29.',
+    contentKey: 'studio_help.bulk_unavailable',
+  },
+  'studio.bulk.chooseOperation': {
+    value: 'Choose an action',
+    contentKey: 'studio_help.bulk_choose_operation',
+  },
+  'studio.bulk.noSelection': {
+    value: 'Select rows to act on',
+    contentKey: 'studio_help.bulk_no_selection',
+  },
+  'studio.bulk.noSelectionBody': {
+    value: 'Nothing is selected, so there is nothing to preview.',
+    contentKey: 'studio_help.bulk_no_selection_body',
+  },
+  'studio.imports.heading': { value: 'Import products', contentKey: 'studio_help.imports_heading' },
+  'studio.imports.body': {
+    value:
+      'Upload a CSV or TSV, map its columns, and read the dry run before anything is written. Every imported row lands as a draft — an import can never publish.',
+    contentKey: 'studio_help.imports_body',
+  },
+  'studio.exports.heading': { value: 'Export', contentKey: 'studio_help.exports_heading' },
+  'studio.exports.body': {
+    value:
+      'CSV of products, media or enquiries. Enquiry message bodies are excluded unless you tick the box, and the tick is recorded in the audit log with the exact field list.',
+    contentKey: 'studio_help.exports_body',
+  },
+  'studio.exports.includeMessages': {
+    value: 'Include what customers wrote',
+    contentKey: 'studio_help.exports_include_messages',
+  },
+  'studio.audit.itemsHeading': {
+    value: 'What happened to each row',
+    contentKey: 'studio_help.audit_items_heading',
+  },
   'studio.shell.searchHint': {
     value: 'Press Ctrl-K or Cmd-K to search',
     contentKey: 'studio_help.shell_search_hint',

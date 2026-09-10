@@ -8,6 +8,109 @@
 
 ## Current Phase
 
+**Phase 24 — Bulk Management. COMPLETE.** One engine, one audit trail, one undo window. Eleven
+registered operations across three modules run through `lib/bulk/run.ts` and nothing loops on its
+own: an operation without a `bulk_operations` row has no preview, no confirmation token, no
+per-item snapshot and no undo, and a build gate refuses one whose preview writes.
+
+**Every bulk surface renders with nothing to operate on, because `products` and `media_assets` hold
+no rows a seed may create.** That is D10 working, not a gap.
+
+### Phase 24: what is built
+
+**Migrations `0220`–`0221`, applied locally AND to hosted through the Supabase MCP, with the ledger
+rows.** `bulk_operations` stores the exact previewed id list, so Apply re-reads it rather than
+trusting the request and a stale tab cannot apply a preview built from a different filter; the cap
+of five hundred is a CHECK on the row, because the number is what makes the batching arithmetic
+safe. `bulk_operation_items` holds the per-item before/after that makes the 24-hour undo real and
+keeps the audit log readable — one `audit_logs` row per operation, five hundred item rows behind a
+link. `bulk_imports` and `bulk_import_rows` record what an uploaded file contained; the file itself
+is not retained after apply. `0221` is the generated RLS: four shape-C tables read under
+`bulk.execute`, no write policy for any session role, and delete revoked twice over on the two
+record tables — in policy and in grant.
+
+**The engine.** `lib/bulk/` — the `BulkOperation` contract (`kind`, `targetEntity`, a Zod
+`paramsSchema`, `isDestructive`, a write-free `preview`, `applyItem`, an optional `undoItem`), a
+registry each operations module registers into through an exported function so it can be rebuilt,
+`run.ts` (preview → token → apply, re-checking the permission and the typed count server-side and
+batching at fifty) and `undo.ts`. Nine product operations, three media, five research registered
+`available: false` with `owningPhase: 29`.
+
+**The four steps and the confirmation.** Select and Preview live on separate surfaces, reached by a
+redirect, and the confirmation token never enters the URL. A destructive operation asks for the ROW
+COUNT as digits — a fixed word becomes muscle memory inside a week and a number cannot — and the
+server re-checks it against a count it computes itself, because a Server Action is an HTTP
+endpoint.
+
+**Gates and scripts.** `scripts/bulk/check-bulk-registry.mjs` (in `npm run check` and CI), proved
+to fail on a preview that writes and on a destructive flag set wrong. `db:check-data-layer` joined
+`npm run check` in the same edit — it ran in CI and not locally, which is how Phase 23 reached main
+red. The local PostgREST shim now mints a service-role key beside the anon one.
+
+### Phase 24: what is NOT built, and why
+
+- **A transaction per batch.** PostgREST gives the engine one statement per call and no transaction
+  handle. What fifty actually buys is bounded memory, a progress point and a `PARTIAL` outcome that
+  names exactly which rows landed — the property the phase document wanted the transaction for.
+  Recorded as amendment **A24** rather than left for a reader to notice as an omission.
+- **"Select all matching filter".** The catalogue holds no products and the cap is five hundred, so
+  the list is unpaginated today. When it outgrows one page this becomes the Phase 14 filtered list,
+  which is what `MAX_SELECTION` exists to bound.
+- **The five research operations.** Registered, refusing, and naming Phase 29. `research_products`
+  does not exist until Phase 25 fills it, and a surface that pretended otherwise would be a surface
+  that could act on rows that are not there.
+- **A signed-in e2e path.** The Studio blocks of the three new specs are guarded by
+  `STUDIO_STORAGE_STATE` and skip, because a real session needs an auth server the local shim does
+  not run and a forged cookie is refused by `getUser()`. They are marked skipped in the report
+  rather than omitted, so the gap is visible.
+
+### Phase 24: verification, as actually run
+
+1. `npm run db:reset` — 66 migrations apply from clean. `npm run seed:content` — 486 inserted.
+2. `npm run db:check-schema`, `auth:check-rls`, `auth:check-policies`, `db:check-hosted-layout` —
+   green; local and hosted both report 66 migrations, 54 tables, 199 policies, and zero `anon`
+   policies on any `bulk_*` or `research_*` table.
+3. **The engine run end to end against a real PostgreSQL over the local PostgREST shim, as the
+   service role**, on two hand-seeded products — one ready to publish, one not. This is what the
+   phase's three real defects were found by, and none of them was reachable from a unit test:
+   - `bulk_operations_confirmed_pair` refused the first row the engine writes. Replaced by two
+     one-way constraints (**A24**).
+   - The same constraint then refused the finish, because the token is CLEARED when it is spent.
+   - `row_version_before` held the version the operation READ, so undo mismatched on every row it
+     had itself changed, skipped all of them, and reported each as edited by somebody else. It now
+     holds the version the operation LEFT behind; the regression guard is an ordering assertion.
+   After the fixes: preview reports 1 will apply and 1 excluded with its unmet readiness items
+   named; apply publishes one, reports the other by id and ends `PARTIAL`; undo restores it to
+   `DRAFT` and ends `SUCCEEDED`.
+4. `npm run test` on a reset-and-seeded database — **1,691 passing, none skipped**, including four
+   new unit suites and `tests/unit/rls/phase24.test.ts` (18 cases).
+5. The three new e2e specs run against a real `next dev` over the shim: 6 passed, 11 skipped for
+   the storage-state reason above.
+6. `node scripts/bulk/check-bulk-registry.mjs` → exits 0 reporting 11 operations across 3 modules;
+   planting a write in a preview and clearing a required destructive flag → exits 1 each time,
+   naming the file. Restored.
+7. `npm run check` — all **32** gates green.
+
+### Phase 24: the D9 ten, recorded
+
+1. Code exists and is committed — two migrations, `lib/bulk/**` with three operations modules, five
+   bulk repositories, four Studio surfaces, the five shared controls, one gate script.
+2. Migrations applied locally and to hosted, with ledger rows and matching counts (66 / 54 / 199).
+3. Tests written and passing: 1,691, none skipped, plus the e2e specs above.
+4. Gates pass, including the new `bulk:check-registry` and `db:check-data-layer` now in `check`.
+5. Documentation updated: DATA_MODEL (the bulk section rewritten as built, §12), STUDIO_GUIDE §7.7
+   and §7.8 and guardrail 13, CANONICAL-DECISIONS A24, CHANGELOG, PROJECT_STATE, this file.
+6. No business fact fabricated: no product invented to operate on, no import able to publish
+   (`status` is absent from the writable allowlist, enforced by absence), no concept asset
+   launderable (four immutable columns refused at the write).
+7. Nothing in the manifest regenerated; `media:assert-no-regen` green.
+8. Amendments recorded: A24 (five readings).
+9. The next phase is named: **25 — Product Scraper Foundation**.
+10. Hosted is level with the repository through `0221`.
+
+
+### Superseded — Phase 23's state
+
 **Phase 23 — Global Search + Product Relationships. COMPLETE.** Everything published is findable and
 the connections between things are data rather than inference. `/search` returns grouped, ranked,
 paginated results and the SEED §26 empty state in the same words it used when it could not search at
@@ -20,7 +123,7 @@ removes.
 **On a seeded database public search returns categories and journal articles and no products,
 because the seed creates none.** That is the shipped state, not a gap.
 
-### Phase 23: what is built
+#### Phase 23: what is built
 
 **Migrations `0210`–`0214`, applied locally AND to hosted through the Supabase MCP, with the ledger
 rows.** `search_documents` (one flattened document per entity; `entity_type` allowlisted to eight
@@ -50,7 +153,7 @@ one file; `/studio/catalog/relationships` with its coverage, picker, edges and s
 **Gates and scripts.** `scripts/search/check-search-scope.mjs` (in `npm run check` and CI),
 `reindex.ts` with a `--dry-run` drift report, `prune-queries.ts` at 90 days.
 
-### Phase 23: what is NOT built, and why
+#### Phase 23: what is NOT built, and why
 
 - **Drag reordering in the relationship workspace.** `reorderRelationsAction` exists with its audit
   row and its permission check; the pointer interaction does not, and it would be that page's first
@@ -67,7 +170,7 @@ one file; `/studio/catalog/relationships` with its coverage, picker, edges and s
 - **Rate limiting on the suggest endpoint.** Input caps and the edge cache only; a request-rate
   limiter is Phase 41's call, as the phase document says.
 
-### Phase 23: verification, as actually run
+#### Phase 23: verification, as actually run
 
 1. `npm run db:reset` — 64 migrations apply from clean. `npm run db:types` — regenerated, committed.
 2. `npm run db:check-schema` — 50 tables, tiers correct, D10 gate on all 13 content tables.
@@ -95,7 +198,7 @@ one file; `/studio/catalog/relationships` with its coverage, picker, edges and s
 10. `npm run seed:content` twice → inserted 486 then unchanged 486; `content:check-inventory`
     regenerated with the 20 new strings.
 
-### Phase 23: the D9 ten, recorded
+#### Phase 23: the D9 ten, recorded
 
 1. Code exists and is committed — five migrations, two `lib/` domains, the public page, the suggest
    endpoint, two patterns, eight providers, the workspace and its actions, three scripts.

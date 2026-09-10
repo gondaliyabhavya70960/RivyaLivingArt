@@ -36,6 +36,7 @@ import {
   PHASE_22_POLICIES,
   PHASE_23_RELATION_POLICIES,
   PHASE_23_SEARCH_POLICIES,
+  PHASE_24_POLICIES,
   PHASE_19_POLICIES,
   TABLE_POLICY_MAP,
   type ManagedTable,
@@ -332,6 +333,29 @@ const GENERATED: Record<string, { title: string; preamble: string }> = {
 -- term reaching a visitor is not this policy but the D10 gate on the row: it defaults to
 -- OWNER_VERIFICATION_REQUIRED and cannot be PUBLISHED until somebody with \`content.verify\` says
 -- the workshop really works in it.`,
+  },
+  [PHASE_24_POLICIES]: {
+    title: `-- ${PHASE_24_POLICIES} — Phase 24`,
+    preamble: `-- Policies for the four bulk tables, which migration 0220 creates. GENERATED from
+-- lib/auth/table-permissions.ts and rewritten whole, so it may hold nothing a human wrote.
+--
+-- FOUR SHAPE-C TABLES AND NOT ONE WRITE POLICY BETWEEN THEM. Every write goes through
+-- \`lib/bulk/run.ts\` on the service-role client, AFTER \`requirePermission\`. An \`authenticated\`
+-- insert policy would let a signed-in merchandiser hand-write a \`bulk_operations\` row — a preview
+-- carrying a selection nobody previewed, or a SUCCEEDED row for an operation that never ran — and
+-- an update policy on \`bulk_operation_items\` would let one edit the \`before\` snapshot that undo
+-- re-applies, writing anything they liked into a live row while the audit log recorded a
+-- restoration.
+--
+-- NO DELETE POLICY FOR THE TWO RECORD TABLES, EVER, and 0220 revokes the grant as well. They are
+-- the account of what somebody did to a page of live content, and a record its author can erase is
+-- not a record. The two IMPORT tables are deletable under \`destructive.execute\`, because an
+-- import is a working file whose rows are pruned at thirty days rather than history.
+--
+-- READ IS \`bulk.execute\` (owner, admin, merchandiser). The phase document says "bulk.execute or
+-- operations.audit.read"; those two hold {owner, admin, merchandiser} and {owner, admin}, so the
+-- union IS \`bulk.execute\`'s set and naming the wider one is the same policy with one fewer thing
+-- that can drift.`,
   },
 }
 

@@ -1,20 +1,42 @@
+import { Stack } from '@/components/primitives/Stack'
+import { Surface } from '@/components/primitives/Surface'
+import { PageHeader } from '@/components/studio/PageHeader'
 import { StudioPage, studioMetadata } from '@/components/studio/StudioPage'
+import { t } from '@/components/studio/strings'
+import { roleHasPermission } from '@/lib/auth/permissions'
 import { requirePermission } from '@/lib/auth/require'
 
+import { ExportPanel } from './panel'
+
 /**
- * /studio/operations/exports
+ * /studio/operations/exports — CSV of products, media and enquiries.
  *
- * A route stub. It exists so navigation never dead-ends — the sidebar shows this leaf to any role
- * holding `bulk.execute`, and a link that 404s is worse than a page saying it is not built.
- *
- * THE PERMISSION CHECK IS REAL, not a placeholder. It runs before anything renders, writes a DENIED
- * audit row when it refuses, and is the same call the finished surface will make. Phase 24
- * replaces the body below; it does not add the gate, because a gate added later is a gate that was
- * missing in between.
+ * THE ENQUIRY PANEL IS ABSENT FOR A ROLE WITHOUT `inquiries.export`, not disabled. That is the
+ * opposite of the bulk surface's choice and the difference is what the control would tell the
+ * reader: an unavailable "Archive" teaches a merchandiser who to ask, whereas an unavailable
+ * "Export enquiries" would tell somebody without the permission that there are enquiries and how
+ * many. The action re-checks regardless.
  */
 export const metadata = studioMetadata('/studio/operations/exports')
 
 export default async function Page() {
-  await requirePermission('bulk.execute')
-  return <StudioPage path="/studio/operations/exports" />
+  const session = await requirePermission('bulk.execute')
+  const canExportInquiries = roleHasPermission(session.role, 'inquiries.export')
+
+  return (
+    <StudioPage path="/studio/operations/exports">
+      <Stack gap={8}>
+        <Surface level={1} className="p-6">
+          <PageHeader
+            level={2}
+            title={t('studio.exports.heading')}
+            description={t('studio.exports.body')}
+          />
+          <div className="mt-6">
+            <ExportPanel canExportInquiries={canExportInquiries} />
+          </div>
+        </Surface>
+      </Stack>
+    </StudioPage>
+  )
 }

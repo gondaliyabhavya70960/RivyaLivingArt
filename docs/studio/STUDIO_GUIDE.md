@@ -947,11 +947,25 @@ Every field is enable/disable, require/optional, reorder and rename — SEED §3
 cost, multiplier or surcharge column anywhere in this group**. Bespoke pricing is never calculated
 (FEAT §15). A configurator produces a brief; the conversation produces the price.
 
-### 7.7 `/studio/catalog/bulk` — and the one bulk engine
+### 7.7 `/studio/catalog/bulk` — and the one bulk engine — **BUILT, Phase 24**
 
-See §7.8 for the engine. The page mounts the product operations: import, edit, publish, unpublish,
+See §7.8 for the engine. The page mounts the nine product operations: import, publish, unpublish,
 archive, category assignment, collection assignment, status change, tag assignment, material
-assignment, media assignment (FEAT §20).
+assignment, media assignment (FEAT §20). `/studio/operations/imports` and
+`/studio/operations/exports` mount the import and export surfaces against the same engine, and
+`/studio/operations/audit/[operationId]` is the per-item before/after viewer every result links to.
+
+**A destructive operation the role may not run is DISABLED, not hidden.** A merchandiser holds
+`bulk.execute` and not `destructive.execute`, so archive and unpublish appear in the action list
+greyed with a reason. A control that is simply absent teaches an operator that the feature does not
+exist; one that is present and explains itself teaches them who to ask. The engine refuses either
+way — the interface is the courtesy, `lib/bulk/run.ts` is the gate.
+
+**The preview is its own surface, reached by a redirect.** Selecting and reading are different
+tasks, and collapsing them onto one screen is how the reading step stops happening. The
+confirmation token never enters the URL, so a preview link pasted to a colleague opens the preview
+and cannot apply it — their own page render fetches the token, which is right, because they hold
+`bulk.execute` or they see nothing.
 
 ### 7.8 Bulk management and its confirmation requirements
 
@@ -978,14 +992,20 @@ registered operation omits a preview, a schema or a destructive flag.
 | Destructive | `product.unpublish` · `product.archive` · `product.set_status` when it leaves `PUBLISHED` · media `archive` · media `move` that breaks a live reference · research bulk `reject` | `bulk.execute` **and** `destructive.execute` | `ConfirmDialog` in which the operator must **type the row count as digits** (for example `47`); the button stays disabled until it matches |
 | Never available in bulk | Any hard delete · publishing a row that fails the readiness checklist · editing `rivya_asset_id`, `higgsfield_generation_id`, `is_ai_generated` or `is_concept` · importing straight to `PUBLISHED` | — | — |
 
-**Undo.** Every applied item stores `before` and the row's `updated_at` at read time. Undo is
-available for 24 hours (`undo_deadline_at`), re-applies each `before` in a transaction, and **skips
-any row whose `updated_at` has changed since**, reporting those ids rather than overwriting a later
-edit. Undo is itself an audited `bulk_operations` row with `undo_of_operation_id` set.
+**Undo.** Every applied item stores `before` and, in `row_version_before`, the `updated_at` the
+operation LEFT the row at. Undo is available for 24 hours (`undo_deadline_at`), re-applies each
+`before` where that version still matches, and **skips any row whose `updated_at` has moved since**,
+reporting those ids rather than overwriting a later edit. The banner says so in the same breath as
+it offers — "rows edited since will be left as they are" — because the operator needs that before
+they press, not after. Undo is itself an audited `bulk_operations` row with `undo_of_operation_id`
+set, and undoing a destructive operation needs `destructive.execute` too: an un-archive is a bulk
+write over live content that nobody previewed.
 
-**Limits.** 500 rows per apply — a larger selection is refused in preview with the count. Application
-runs in batches of 50, one transaction per batch, with `status = 'PARTIAL'` on partial failure,
-because a 500-row publish failing on row 499 must not discard 498 good writes.
+**Limits.** 500 rows per apply — a larger selection is refused in preview with the count, and
+refused again by a CHECK on the row. Application runs in batches of 50, with `status = 'PARTIAL'`
+on partial failure, because a 500-row publish failing on row 499 must not discard 498 good writes.
+A batch is the unit of progress and reporting rather than of atomicity; see amendment **A24** for
+why, and for what that does and does not buy.
 
 **Audit.** One `audit_logs` row per operation (`action = 'bulk.<kind>'`, counts in the summary, never
 the full row set) and one `activity_events` row. Per-item before/after lives in
@@ -1943,7 +1963,7 @@ enforced.
 | 10 | Bulk never hard-deletes | The engine has no delete operation; `revoke delete` on the bulk tables |
 | 11 | A destructive bulk action requires a typed row count and `destructive.execute` | `ConfirmDestructive` + server-side permission check |
 | 12 | Apply cannot widen the previewed selection | `confirmation_token` + `selection` re-read from the row |
-| 13 | Undo never overwrites a later manual edit | `row_version_before` comparison; changed rows are skipped and reported |
+| 13 | Undo never overwrites a later manual edit | `row_version_before` comparison against the version the operation LEFT behind; changed rows are skipped and reported |
 | 14 | Import can never publish | Every imported row lands `DRAFT` |
 | 15 | The public can insert an enquiry and never read one | RLS-INQUIRY: `anon` insert only, no select policy at all |
 | 16 | No WhatsApp redirect without a persisted enquiry | `buildHandoffUrl` requires a non-optional `inquiryId` |
