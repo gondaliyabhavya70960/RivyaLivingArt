@@ -3,6 +3,7 @@ import 'server-only'
 import {
   selectArticles,
   selectCollectionProducts,
+  selectFeatured,
   selectProducts,
   selectProjects,
 } from '@/lib/cms/selectors'
@@ -23,11 +24,14 @@ import type { Material, MediaAsset, PageSection } from '@/lib/supabase/schemas'
 
 import { collectionProductsBlock } from '@/content/blocks/collection-products'
 import { commissionConfiguratorBlock } from '@/content/blocks/commission-configurator'
+import { featuredCollectionsBlock } from '@/content/blocks/featured-collections'
 import { projectGalleryBlock } from '@/content/blocks/project-gallery'
 import { journalStripBlock } from '@/content/blocks/journal-strip'
 import { portfolioStripBlock } from '@/content/blocks/portfolio-strip'
 import { selectedWorksBlock } from '@/content/blocks/selected-works'
 import { threeDResinBlock } from '@/content/blocks/three-d-resin'
+import { getSection } from '@/lib/supabase/repositories/cms'
+import { tileFromSection, type EditorialTile } from './editorial-tile'
 import { parseBlockPayload } from './registry'
 
 /**
@@ -98,6 +102,16 @@ export type SectionReference = {
    * the renderer then draws its scene imagery as before.
    */
   readonly model?: ModelReference | null
+  /**
+   * Phase 22: the EDITORIAL_BLOCK tiles a `selected-works` band draws when its slot fell through.
+   *
+   * BUILT HERE, BEFORE RENDER, from the section the slot (or the block) names — by default the
+   * page's own `material-story`, which is SEED §10-05's answer to an empty Selected Works. The
+   * section must be LIVE on this page to be drawn from: a draft material story's copy does not reach
+   * the public through a fallback any more than through its own band. Empty when the mode is not
+   * EDITORIAL_BLOCK, or nothing resolved.
+   */
+  readonly tiles?: readonly EditorialTile[]
 }
 
 export type ModelReference = {
@@ -121,23 +135,78 @@ export type PageReferences = ReadonlyMap<string, SectionReference>
  * KEYED BY BLOCK TYPE so that adding a fourth reference block is one entry here plus a renderer,
  * and so that `renderCmsPage` never learns the names of any of them.
  */
+/**
+ * Phase 22: which slot answers a reference block on which page, when the block does not say.
+ *
+ * KEYED BY PAGE PATH, NOT BY BLOCK ALONE. A `journal-strip` on the homepage is SEED §10-12 and
+ * reads `HOMEPAGE_JOURNAL_STRIP`; the same block on an exhibition page is FEAT §8's element 10 and
+ * must NOT read the homepage's curation, so it keeps its Phase 11 query. The block's own `slot_key`
+ * overrides this table when an editor sets one; the table is only the default the register names.
+ */
+const DEFAULT_SLOT_KEYS: Readonly<Record<string, Readonly<Record<string, string>>>> = {
+  'selected-works': { '/': 'HOMEPAGE_SELECTED_WORKS' },
+  'journal-strip': { '/': 'HOMEPAGE_JOURNAL_STRIP' },
+  'featured-collections': { '/': 'HOMEPAGE_FEATURED_COLLECTIONS' },
+}
+
+function slotKeyFor(
+  blockType: string,
+  explicit: string | null | undefined,
+  pagePath: string | null,
+): string | null {
+  const named = explicit?.trim() ?? ''
+  if (named !== '') return named
+  if (pagePath === null) return null
+  return DEFAULT_SLOT_KEYS[blockType]?.[pagePath] ?? null
+}
+
 const SELECTORS = {
   'selected-works': {
     select: selectProducts,
     limit: (section: PageSection) => parseBlockPayload(selectedWorksBlock, section.payload).limit,
     categorySlug: (section: PageSection) =>
       parseBlockPayload(selectedWorksBlock, section.payload).category_slug,
+    slotKey: (section: PageSection, pagePath: string | null) =>
+      slotKeyFor(
+        'selected-works',
+        parseBlockPayload(selectedWorksBlock, section.payload).slot_key,
+        pagePath,
+      ),
+    fallbackSectionId: (section: PageSection) =>
+      parseBlockPayload(selectedWorksBlock, section.payload).fallback_section_id ?? null,
   },
   'portfolio-strip': {
     select: selectProjects,
     limit: (section: PageSection) => parseBlockPayload(portfolioStripBlock, section.payload).limit,
     categorySlug: () => null,
+    slotKey: () => null,
   },
   'journal-strip': {
     select: selectArticles,
     limit: (section: PageSection) => parseBlockPayload(journalStripBlock, section.payload).limit,
     categorySlug: (section: PageSection) =>
       parseBlockPayload(journalStripBlock, section.payload).category_slug,
+    slotKey: (section: PageSection, pagePath: string | null) =>
+      slotKeyFor(
+        'journal-strip',
+        parseBlockPayload(journalStripBlock, section.payload).slot_key,
+        pagePath,
+      ),
+  },
+  /**
+   * Phase 22: the merchandised half of SEED §10-03. Slot-only — see `selectFeatured`.
+   */
+  'featured-collections': {
+    select: selectFeatured,
+    limit: (section: PageSection) =>
+      parseBlockPayload(featuredCollectionsBlock, section.payload).limit,
+    categorySlug: () => null,
+    slotKey: (section: PageSection, pagePath: string | null) =>
+      slotKeyFor(
+        'featured-collections',
+        parseBlockPayload(featuredCollectionsBlock, section.payload).slot_key,
+        pagePath,
+      ),
   },
   /**
    * The one entry whose narrowing costs a query, which is why `collectionId` exists at all.
@@ -152,6 +221,7 @@ const SELECTORS = {
     limit: (section: PageSection) =>
       parseBlockPayload(collectionProductsBlock, section.payload).limit,
     categorySlug: () => null,
+    slotKey: () => null,
     collectionId: async (client: SelectorClient, section: PageSection, pageId: string) => {
       const slug = parseBlockPayload(collectionProductsBlock, section.payload).collection_slug
       const named = slug?.trim() ?? ''
@@ -187,6 +257,12 @@ export async function loadPageReferences(
    * not — which is why this arrives as an argument rather than being read here from `headers()`.
    */
   productSlug: string | null = null,
+  /**
+   * The page's public path, for the merchandising defaults above. Null — a Studio section list
+   * rendered without a page — means no slot answers by default, which is the safe reading: a band
+   * previewed in isolation shows its own query rather than the homepage's curation.
+   */
+  pagePath: string | null = null,
 ): Promise<PageReferences> {
   const referencing = sections.filter(
     (section) => isReferenceBlock(section.block_type) || section.block_type === MODEL_SLOT_BLOCK,
@@ -202,6 +278,8 @@ export async function loadPageReferences(
         select: (typeof SELECTORS)[ReferenceBlockType]['select']
         limit: (section: PageSection) => number
         categorySlug: (section: PageSection) => string | null
+        slotKey: (section: PageSection, pagePath: string | null) => string | null
+        fallbackSectionId?: (section: PageSection) => string | null
         collectionId?: (
           client: SelectorClient,
           section: PageSection,
@@ -231,20 +309,67 @@ export async function loadPageReferences(
         limit: config.limit(section),
         categorySlug: config.categorySlug(section),
         collectionId: await config.collectionId?.(client, section, pageId),
+        slotKey: config.slotKey(section, pagePath),
       })
+
+      /*
+       * Phase 22: the section an EDITORIAL_BLOCK fallback draws from, resolved only when the ladder
+       * fell through to that mode. The block's own `fallback_section_id` wins over the slot's; with
+       * neither, the page's material story. Read from the LIVE sections first — the list this page
+       * will render — and from the database only for a named id outside it, through the same client,
+       * so RLS decides whether a visitor may see it.
+       */
+      const fallbackSection =
+        result.merchandising?.fallback?.mode === 'EDITORIAL_BLOCK'
+          ? await resolveFallbackSection(
+              client,
+              sections,
+              section,
+              config.fallbackSectionId?.(section) ?? result.merchandising.fallback.sectionId,
+            )
+          : null
 
       // One media query per block rather than one per card. With no cards it issues none at all,
       // because `listMediaAssetsByIds` short-circuits an empty list.
       const mediaIds = result.cards
         .map((card: EntityCard) => card.mediaId)
         .filter((id): id is string => id !== null)
+      if (fallbackSection?.media_desktop_id) mediaIds.push(fallbackSection.media_desktop_id)
       const assets = await listMediaAssetsByIds(client, mediaIds)
 
-      return [section.id, { result, assets }] as const
+      const tile = fallbackSection === null ? null : tileFromSection(fallbackSection, assets)
+      const tiles = tile === null ? [] : [tile]
+
+      return [section.id, { result, assets, tiles }] as const
     }),
   )
 
   return new Map(resolved)
+}
+
+/**
+ * The section an EDITORIAL_BLOCK fallback draws its tiles from.
+ *
+ * NEVER THE BAND ITSELF, and never a section that is not live on the page. A named id that the
+ * page does not carry is read through the page's client, which for a visitor means RLS answers
+ * null for anything unpublished or out of window — the honest answer, since the visitor could not
+ * see that section's own band either.
+ */
+async function resolveFallbackSection(
+  client: SelectorClient,
+  sections: readonly PageSection[],
+  band: PageSection,
+  namedId: string | null,
+): Promise<PageSection | null> {
+  if (namedId !== null && namedId !== band.id) {
+    const onPage = sections.find((section) => section.id === namedId)
+    if (onPage !== undefined) return onPage
+    return getSection(client, namedId)
+  }
+  return (
+    sections.find((section) => section.block_type === 'material-story' && section.id !== band.id) ??
+    null
+  )
 }
 
 /**

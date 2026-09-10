@@ -6,6 +6,7 @@ import {
   availabilityStateSchema,
   clientConsentStateSchema,
   collectionConceptStateSchema,
+  contentStatusSchema,
   relationEntitySchema,
   relationKindSchema,
   contentColumns,
@@ -16,6 +17,7 @@ import {
   formFieldTypeSchema,
   formKindSchema,
   jsonSchema,
+  merchFallbackSchema,
   mediaKindSchema,
   mediaSourceSchema,
   priceStateSchema,
@@ -647,3 +649,60 @@ export const modelVariantLabelSchema = z.object({
 }) satisfies z.ZodType<Tables<'model_variant_labels'>>
 
 export type ModelVariantLabel = z.infer<typeof modelVariantLabelSchema>
+
+// --- Phase 22: merchandising -------------------------------------------------------------------
+
+/**
+ * A slot: the address a surface reads and a Studio screen writes.
+ *
+ * `allowed_entity_types` IS THE ONLY ARRAY COLUMN IN THE MODEL and it is one on purpose: a slot
+ * that admits products and collections is one slot with one order, not two slots interleaved by
+ * hand. The resolver reads the array to know which tables to re-check targets against; the Studio
+ * reads it to know which picker to draw.
+ */
+export const merchandisingSlotSchema = z.object({
+  id: uuidSchema,
+  key: z.string().min(1),
+  name: z.string().min(1),
+  description: z.string().nullable(),
+  surface: z.string().min(1),
+  owning_studio_route: z.string().min(1),
+  allowed_entity_types: z.array(relationEntitySchema).min(1),
+  min_items: z.number().int().min(1),
+  max_items: z.number().int().min(1),
+  auto_fill: z.boolean(),
+  auto_fill_rule: z.string().nullable(),
+  fallback_mode: merchFallbackSchema,
+  fallback_section_id: uuidSchema.nullable(),
+  status: contentStatusSchema,
+  ...auditColumns,
+}) satisfies z.ZodType<Tables<'merchandising_slots'>>
+
+export type MerchandisingSlot = z.infer<typeof merchandisingSlotSchema>
+
+/**
+ * An entry: one entity reference inside a slot, with its own half-open window.
+ *
+ * `window_state` IS BOOKKEEPING FOR THE SWEEP and nothing in the read path consults it: liveness is
+ * `status` and the window, through `lib/cms/windowing.ts`, the same rule `page_sections` uses. It
+ * is in the schema because it is on the row, and a row the schema does not cover fails the
+ * `satisfies` below — which is how the two stay level.
+ */
+export const merchandisingEntrySchema = z.object({
+  id: uuidSchema,
+  slot_id: uuidSchema,
+  entity_type: relationEntitySchema,
+  entity_id: uuidSchema,
+  position: z.number().int().nonnegative(),
+  is_pinned: z.boolean(),
+  publish_at: timestampSchema.nullable(),
+  unpublish_at: timestampSchema.nullable(),
+  window_state: z.enum(['PENDING', 'OPEN', 'CLOSED']),
+  status: contentStatusSchema,
+  note: z.string().nullable(),
+  published_at: timestampSchema.nullable(),
+  published_by: uuidSchema.nullable(),
+  ...auditColumns,
+}) satisfies z.ZodType<Tables<'merchandising_entries'>>
+
+export type MerchandisingEntry = z.infer<typeof merchandisingEntrySchema>

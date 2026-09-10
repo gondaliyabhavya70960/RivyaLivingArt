@@ -181,6 +181,16 @@ export const formFieldTypeSchema = z.enum([
   'CONTACT_EMAIL',
 ]) satisfies z.ZodType<Enums<'form_field_type'>>
 
+/**
+ * Phase 22. What a surface does when its slot resolves short: editorial tiles, nothing, or the
+ * seeded empty-state sentence. There is no fourth value and there is no placeholder card.
+ */
+export const merchFallbackSchema = z.enum([
+  'EDITORIAL_BLOCK',
+  'HIDE_SECTION',
+  'SHOW_EMPTY_STATE',
+]) satisfies z.ZodType<Enums<'merch_fallback'>>
+
 export const collectionConceptStateSchema = z.enum([
   'DRAFT_COLLECTION_CONCEPT',
   'OWNER_CONFIRMED',

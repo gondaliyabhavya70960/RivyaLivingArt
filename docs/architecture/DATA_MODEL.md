@@ -282,7 +282,7 @@ extensions, always in its own migration statement so no transaction uses a value
 | `inquiry_status` | `NEW · READ · IN_CONVERSATION · QUOTED · WON · LOST · SPAM · ARCHIVED` | 20 | — | `inquiries.pipeline_status` |
 | `whatsapp_state` | `NOT_SENT · REDIRECTED · SHORTENED · UNAVAILABLE` | 20 | — | `inquiries` |
 | `inquiry_event_kind` | `CREATED · WHATSAPP_REDIRECT · VIEWED · STATUS_CHANGED · NOTE_ADDED · ASSIGNED · EXPORTED` | 20 | — | `inquiry_events` |
-| `merch_fallback` | `EDITORIAL_BLOCK · HIDE_SECTION · SHOW_EMPTY_STATE` | 22 | — | `merchandising_slots` |
+| `merch_fallback` | `EDITORIAL_BLOCK · HIDE_SECTION · SHOW_EMPTY_STATE` | 22 | `0200` | `merchandising_slots` |
 | `search_visibility` | `PUBLIC · STAFF` | 23 | — | `search_documents` |
 | `relation_origin` | `EDITOR · RULE_ACCEPTED` | 23 | — | `content_relations`, `product_relations` |
 | `attribute_taxonomy` | `DESIGN_FAMILY · RESIN_STYLE · WOOD_SPECIES` | 23 | — | `product_attribute_terms` |
@@ -1515,6 +1515,15 @@ row, and requires the two answers to match.
 
 ---
 
+### 8.13 `guard_merchandising_entry()`, `sync_category_pinned_slot()` and `merch_run_schedule()` — Phase 22 `0200`
+
+The three rules a merchandising slot cannot be talked out of: an entry names an entity of a type
+its slot admits and that exists, and never a collection still in concept; every category has its
+pinned slot by one mechanical key rule; and a window transition is recorded once, in
+`activity_events`, by a sweep that changes nothing a visitor sees. The ladder itself is
+application code (`lib/cms/merchandising.ts`) — see §9 *Merchandising* for the columns each rule
+reads.
+
 ## 9. Portfolio, journal and conversion
 
 ### `portfolio_projects` — Phase 17 · migration `0150` · RLS-PUBLIC (`content.write`)
@@ -1675,19 +1684,60 @@ required non-optional `inquiryId`, so the bypass does not type-check.
 | `inquiry_attachments` | `(inquiry_id, media_asset_id)` PK, `position int`, `created_at` | The asset row is `source = 'USER_UPLOAD'`, `status = 'DRAFT'`, never returned by a public read path. Orphans are purged at 30 days |
 | `inquiry_events` | `id`, `inquiry_id fk`, `event inquiry_event_kind`, `actor_id uuid null`, `from_status`, `to_status`, `note text`, `metadata jsonb`, `occurred_at` | RLS-APPEND. Insert by trigger and service role; never updatable |
 
-### Merchandising — Phase 22 · migrations `0200`–`0201`
+### Merchandising — Phase 22 · migrations `0200`–`0201` · RLS-PUBLIC (`merchandising.write`)
 
-Curation of what appears where, without touching the entities themselves (FEAT §17, SEED §10/§13).
+Curation of what appears where, and when, without touching the entities themselves (FEAT §17,
+SEED §10/§13). **Built in Phase 22.** A SLOT is a named, typed, scheduled, ordered list of entity
+references bound to exactly one public surface and exactly one Studio screen; an ENTRY is one
+reference with its own half-open window. The resolution ladder — five steps, provenance, no
+placeholder card — is implemented once in `lib/cms/merchandising.ts`; this schema only makes the
+states it reads impossible to misrepresent.
 
 | Table | Key columns | Keys / notes |
 |---|---|---|
-| `merchandising_slots` | `id`, `key citext unique`, `name`, `description`, `surface text` (the D3 path), `allowed_entity_types relation_entity[]`, `min_items int not null default 3`, `max_items int not null default 12`, `auto_fill bool not null default false`, `auto_fill_rule text`, `fallback_mode merch_fallback not null`, `fallback_section_id uuid references page_sections(id)`, Tier A+B+C | `fallback_mode` is what stops an empty Selected Works from rendering fake product cards |
-| `merchandising_entries` | `id`, `slot_id fk on delete cascade`, `entity_type relation_entity`, `entity_id uuid`, `position int not null`, `is_pinned bool default false`, `publish_at`, `unpublish_at`, `note text`, Tier A+B | `unique (slot_id, entity_type, entity_id)`; `check (unpublish_at is null or publish_at is null or unpublish_at > publish_at)`; indexes `(slot_id, position)`, `(publish_at)`, `(unpublish_at)` |
+| `merchandising_slots` | `id`, `key citext unique` (`^[A-Z][A-Z0-9_]*$`), `name`, `description`, `surface text not null` (the D3 path — every slot has exactly one; there is no surface-less "reusable" slot), `owning_studio_route text not null` (the single D4 screen permitted to write it — `homepage`, `store` or `featured`), `allowed_entity_types relation_entity[] not null`, `min_items int not null default 3`, `max_items int not null default 12`, `auto_fill bool not null default false`, `auto_fill_rule text`, `fallback_mode merch_fallback not null`, `fallback_section_id uuid references page_sections(id) on delete set null`, `status content_status not null default 'PUBLISHED'`, Tier A | **Tier A + `status` only** — a slot asserts nothing (no `owner_verification`, no `fact_classification`) and is never seeded by a module (no Tier C): the rows come from the migration and from `sync_category_pinned_slot()`. CHECKs: `min_items >= 1`, `max_items >= min_items`, `max_items <= 48`; `auto_fill = false or auto_fill_rule` non-blank (**`merchandising_slots_rule_named`** — FEAT §28: a rule must be written in words before the switch can move). `fallback_mode` is what stops an empty Selected Works from rendering fake product cards |
+| `merchandising_entries` | `id`, `slot_id fk on delete cascade`, `entity_type relation_entity`, `entity_id uuid`, `position int not null` (`>= 0`), `is_pinned bool default false`, `publish_at`, `unpublish_at`, `window_state text not null default 'PENDING'` (`PENDING · OPEN · CLOSED`; the sweep's bookkeeping, never read by the resolver), `status content_status not null default 'DRAFT'`, `note text`, `published_at`, `published_by`, Tier A | `unique (slot_id, entity_type, entity_id)`; `check (unpublish_at is null or publish_at is null or unpublish_at > publish_at)`; indexes `(slot_id, position)`, `(publish_at) where not null`, `(unpublish_at) where not null`, `(entity_type, entity_id)`. No Tier C: a seeded entry would be seeded merchandising of products the seed is forbidden to create (SEED §32) |
+
+**Eleven slots, inserted by `0200` as structure** (under the `check-migrations: allow-insert`
+marker, with the reason): four global — `HOMEPAGE_SELECTED_WORKS` (`/`, PRODUCT, min 3,
+EDITORIAL_BLOCK), `HOMEPAGE_FEATURED_COLLECTIONS` (`/`, COLLECTION · CATEGORY, min 3,
+HIDE_SECTION), `HOMEPAGE_JOURNAL_STRIP` (`/`, JOURNAL_ARTICLE, min 3, HIDE_SECTION),
+`STORE_FEATURED_ROW` (`/collection`, PRODUCT · COLLECTION, min 3, HIDE_SECTION) — and one
+`CATEGORY_PINNED_<SLUG>` per D3 category (`/collection/<slug>`, PRODUCT, min 1, SHOW_EMPTY_STATE),
+the key being the slug upper-cased with `-` → `_`. `lib/cms/merchandising-register.ts` carries the
+same eleven and `tests/unit/merchandising-register.test.ts` asserts the two agree.
+
+**Functions and triggers (`0200`):**
+
+- `guard_merchandising_entry()` — BEFORE INSERT OR UPDATE on `merchandising_entries`: the entry's
+  type must be in its slot's `allowed_entity_types` (`RV061`); the entity must exist (`RV063`); a
+  COLLECTION must be `OWNER_CONFIRMED` — the Phase 16 gate re-checked at the row, so a crafted POST
+  is refused as the picker's list is (`RV062`); and `published_at` is stamped the first time the
+  entry reaches PUBLISHED.
+- `merchandising_category_slot_key(text)` and `sync_category_pinned_slot()` — AFTER INSERT OR
+  UPDATE OF `slug` on `categories`: every category brings its pinned slot with it, and a renamed
+  slug carries the slot along. The phase document placed this in "the same server action that
+  creates the category"; no such action exists (categories are seeded), and a trigger covers every
+  path — amendment A22.
+- `merch_move_entry(uuid, text)` — SECURITY INVOKER: one place up or down within the slot, both
+  position writes in one transaction, RLS deciding who may. A move at the boundary is a no-op.
+- `merch_run_schedule(timestamptz)` — SECURITY DEFINER, `service_role` only, pinned
+  `search_path`, `for update … skip locked`: the merchandising pass of the content-schedule cron.
+  It derives each windowed PUBLISHED entry's true side of its window, records every transition in
+  `activity_events` (`merchandising.window.open|closed`), ARCHIVES an entry whose window closed (so
+  Studio does not show as PUBLISHED what no visitor can reach), and returns the D3 paths to
+  revalidate. It never puts anything on or off the site by itself: the resolver and RLS honour the
+  window on every read.
 
 `categories.sort_order` is reused for store ordering; no second ordering column exists.
-**RLS** — anon `select` for published slots and in-window entries; the resolver still re-filters
-targets to published rows, because an entry pointing at an unpublished product must render nothing
-rather than a broken card. Writes require `merchandising.write`.
+
+**RLS (`0201`, generated)** — both tables are shape A. `anon` reads a slot while `status =
+'PUBLISHED'`, and an entry only while PUBLISHED, inside `[publish_at, unpublish_at)` AND inside a
+PUBLISHED slot — the window is part of "public" for the reason it is on `page_sections`. Staff
+read under `catalog.read`; writes need `merchandising.write` (owner, admin, merchandiser); removing
+an ENTRY is `merchandising.write` (curation, not destruction) and removing a SLOT is
+`destructive.execute`. The resolver still re-filters targets to PUBLISHED rows in code, because a
+Studio preview reads with a staff client the public clause does not bind.
 
 ---
 
@@ -2000,7 +2050,7 @@ local and hosted is isolated to one file that can never be picked up by `supabas
 | 20 | `0193` | F `reject_inquiry_event_mutation()` narrowed. The append-only trigger fired on the CASCADE from `inquiries` and refused it, so deleting an enquiry was impossible for anybody including a superuser — found by the Phase 20 RLS suite, which could not clean up its own fixture. An event may now be deleted only when its enquiry is already gone; UPDATE is still refused unconditionally |
 | 20 | `0190`–`0191` | T `inquiries`, `inquiry_attachments`, `inquiry_events`; enums `inquiry_kind`, `inquiry_status`, `whatsapp_state`, `inquiry_event_kind`; S `inquiry_reference_seq`; F `allocate_inquiry_reference()`, `log_inquiry_created()`, `log_inquiry_status_change()`, `reject_inquiry_event_mutation()`, `inquiry_is_fresh()`, `attach_inquiry_references()`, `record_inquiry_handoff()`; `0191` is the generated RLS, the first to carry an anon INSERT policy. **Renumbered from the phase document's `0180`–`0182`, which Phase 19's session had already spent, and there is no third migration: SEED §21's contact facts already have one home in the `contact-details` section and a `global_content` CONTACT group would be a second — amendment A20** |
 | 21 | `0194`–`0195` | T `model_variant_labels`; A `media_assets.viewer_settings`, the size/triangle/poster checks, the association-is-model check, and the `associated_project_id` foreign key Phase 06 declared ahead of its table; F `is_valid_viewer_settings()` (with `model_setting_number()`, `model_setting_vec3()`, `is_valid_model_camera()`), `guard_model_still_references()`, `guard_product_model_reference()`, `guard_variant_label_parent()`, `set_model_association()`; `0195` is the generated RLS. **Renumbered from the phase document's `0190`, which Phase 20 spent — amendment A21** |
-| 22 | `0200`–`0201` | T `merchandising_slots`, `merchandising_entries`; enum `merch_fallback` |
+| 22 | `0200`–`0201` | T `merchandising_slots`, `merchandising_entries`; enum `merch_fallback`; F `guard_merchandising_entry()`, `merchandising_category_slot_key()`, `sync_category_pinned_slot()`, `merch_move_entry()`, `merch_run_schedule()`; the eleven slot rows inserted as structure under the `allow-insert` marker; `0201` is the generated RLS. **The numbers are the phase document's own; the slot count (eleven, none reusable) and the categories trigger are amendment A22** |
 | 23 | `0210`–`0213` | T `search_documents`, `research_search_documents` (empty), `search_queries`, `content_relations`, `relation_suppressions`, `product_attribute_terms`; A `product_relations`; enums `search_visibility`, `relation_origin`, `attribute_taxonomy` |
 | 24 | `0220` | T `bulk_operations`, `bulk_operation_items`, `bulk_imports`, `bulk_import_rows` |
 | 25 | `0230`–`0233` | T `research_sources`, `research_jobs`, `research_runs`, `research_work_items`, `research_fetches`, `research_raw_items`, `research_products`, `research_pipeline_events`, `research_robots_cache`; six research enums |

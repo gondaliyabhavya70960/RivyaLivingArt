@@ -199,6 +199,20 @@ const EXPECTED = {
    * could disagree with the first. No Tier C: nothing seeds a label, because nothing seeds a model.
    */
   model_variant_labels: [...TIER_A, 'owner_verification', 'fact_classification'],
+  /*
+   * Phase 22. A SLOT IS STRUCTURE WITH A SWITCH: Tier A plus `status`, which is what makes it
+   * readable by the public resolver (PUBLISHED) or not. No `owner_verification` and no
+   * `fact_classification`, because a slot asserts nothing — it holds no copy and names no entity.
+   * No Tier C: the rows come from migration 0200 and the categories trigger, never from a seed
+   * module, because a slot an editor could create is a list nothing renders.
+   *
+   * AN ENTRY IS A SCHEDULED EDGE: Tier A, `status` and the publication pair, because "when did this
+   * piece go into the band" is a fact the Studio shows. No verification columns — an entry names an
+   * entity that carries its own — and no Tier C, because a seeded entry would be seeded
+   * merchandising of products the seed is forbidden to create (SEED §32).
+   */
+  merchandising_slots: [...TIER_A, 'status'],
+  merchandising_entries: [...TIER_A, 'status', 'published_at', 'published_by'],
   // An attachment is an edge, like every other join table here — and it has no `created_by`,
   // because the visitor who created it is not a user and never will be (D1).
   inquiry_attachments: ['created_at'],

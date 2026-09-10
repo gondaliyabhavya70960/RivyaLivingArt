@@ -8,7 +8,15 @@ import {
   type ReferenceRow,
 } from '@/lib/supabase/repositories/reference'
 
-import { EMPTY, NOT_YET_BUILT, type EntityCard, type EntitySelector } from './types'
+import { resolveSlot, type ResolvedSlot } from '@/lib/cms/merchandising'
+
+import {
+  EMPTY,
+  NOT_YET_BUILT,
+  type EntityCard,
+  type EntitySelector,
+  type SelectorResult,
+} from './types'
 
 export * from './types'
 
@@ -53,7 +61,43 @@ function toCards(rows: readonly ReferenceRow[], hrefPrefix: string): EntityCard[
  * every existing row. Ignoring them costs nothing while every selection returns the same empty
  * answer, and the day it does not, this function changes and no block does.
  */
-export const selectProducts: EntitySelector = async (client, { limit }) => {
+/**
+ * Phase 22: a slot's answer in the selector's shape.
+ *
+ * `UNKNOWN_SLOT` BECOMES `NOT_YET_BUILT`, which is what it is: the row a later migration creates is
+ * not there. The page shows the same fallback either way and `data-empty-reason` keeps the
+ * distinction for whoever is reading the deploy rather than the site.
+ */
+function fromSlot(resolved: ResolvedSlot): SelectorResult {
+  return {
+    cards: resolved.cards,
+    reason:
+      resolved.reason === 'UNKNOWN_SLOT'
+        ? 'NOT_YET_BUILT'
+        : resolved.cards.length === 0
+          ? 'EMPTY'
+          : 'OK',
+    merchandising: {
+      slotKey: resolved.key,
+      provenance: resolved.provenance,
+      rule: resolved.rule,
+      fallback: resolved.fallback,
+    },
+  }
+}
+
+/**
+ * Products for `selected-works`.
+ *
+ * PHASE 22 SWAPPED THE BODY AND KEPT THE SIGNATURE, which is what the seam was for. Handed a
+ * `slotKey`, this asks `resolveSlot` — the owner's curation in Studio → Merchandising → Homepage,
+ * through the five-step ladder — and returns the ladder's answer with its provenance. Handed none,
+ * it runs the Phase 11 read it always did (newest published), so a `selected-works` band on a page
+ * with no slot still means "some products" and never "the homepage's products". No renderer
+ * changed for the swap; `SelectedWorksSection` learned the fallback MODES afterwards, separately.
+ */
+export const selectProducts: EntitySelector = async (client, { limit, slotKey, now }) => {
+  if (slotKey) return fromSlot(await resolveSlot(client, slotKey, { limit, now }))
   const rows = await listReferenceProducts(client, limit)
   if (rows === null) return NOT_YET_BUILT
   const cards = toCards(rows, '/product')
@@ -69,7 +113,8 @@ export const selectProjects: EntitySelector = async (client, { limit }) => {
 }
 
 /** Articles for `journal-strip`. The table arrives in Phase 18. */
-export const selectArticles: EntitySelector = async (client, { limit }) => {
+export const selectArticles: EntitySelector = async (client, { limit, slotKey, now }) => {
+  if (slotKey) return fromSlot(await resolveSlot(client, slotKey, { limit, now }))
   const rows = await listReferenceArticles(client, limit)
   if (rows === null) return NOT_YET_BUILT
   const cards = toCards(rows, '/journal')
@@ -96,4 +141,17 @@ export const selectCollectionProducts: EntitySelector = async (client, { limit, 
   const rows = await listCuratedProducts(client, collectionId, limit)
   const cards = toCards(rows, '/product')
   return cards.length === 0 ? EMPTY : { cards, reason: 'OK' }
+}
+
+/**
+ * Featured collections and categories, for `featured-collections`.
+ *
+ * SLOT-ONLY. There is no "some collections" query to fall back to: which collections are featured
+ * is the owner's decision or nobody's, and a band that showed the newest published collections
+ * when no slot answered would be featuring by accident. Without a slot the band is EMPTY and its
+ * fallback mode decides what that looks like.
+ */
+export const selectFeatured: EntitySelector = async (client, { limit, slotKey, now }) => {
+  if (!slotKey) return EMPTY
+  return fromSlot(await resolveSlot(client, slotKey, { limit, now }))
 }

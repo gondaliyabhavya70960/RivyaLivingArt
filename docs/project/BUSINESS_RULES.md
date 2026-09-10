@@ -395,6 +395,30 @@ content.
 | Enforced by | **Schema:** the inverted `owner_verification` default on both tables; the same two gate functions as BR-D5. **Type:** `portfolio_projects` and `testimonials` are absent from `SeedableTable`. **Server guard:** `content.verify` — owner and admin only — is required to set `VERIFIED` |
 | Test | `tests/unit/rls/phase17.test.ts` (the agreement test above covers verification as one of its axes); `tests/unit/portfolio-empty.test.ts` asserts that nothing seeds a project, a project photograph or a testimonial, and that the `/portfolio` empty state carries SEED §28's two lines verbatim with no "Coming Soon" anywhere |
 
+### BR-D10 — What appears where is curated, never inferred, and an empty slot never fabricates
+
+**Rule.** Which products, collections and articles appear on the homepage and in the store, in
+what order, and when, is a decision a person makes in Studio → Merchandising — a slot with a
+schedule — or nobody makes. When a slot resolves to fewer than its minimum, the surface shows its
+fallback (editorial tiles, nothing, or the seeded empty-state sentence) and never a placeholder
+card. No ordering is behavioural, popular, trending or inferred, because no analytics data exists
+and manufacturing one would be an invented business fact (FEAT §28). No product slug is written in
+code.
+
+**Enforcement.** The five-step ladder in `lib/cms/merchandising.ts`, implemented once and returning
+provenance (`CURATED` · `RULE_FILLED` · `FALLBACK`); `merchandising_slots_rule_named`, which refuses
+`auto_fill` without a rule written in words, and the resolver's one rule, recency;
+`guard_merchandising_entry()`, which refuses an entry of a type the slot does not admit, an entity
+that does not exist, and a collection still in concept; `EditorialTile`, which has no field for a
+price, a product link, a SKU or a dimension; the `/product/<slug>` literal rule in
+`npm run cms:check-copy`; `tests/unit/merchandising-resolve.test.ts` (the ladder, and a fallback
+with no product route and no price label), `tests/unit/merchandising-register.test.ts` (the eleven
+slots level with migration `0200`; no behavioural word in the resolver) and
+`tests/unit/rls/phase22.test.ts`.
+
+**Provenance.** SEED §10-04 ("Do NOT hardcode products"), SEED §32, FEAT §17, FEAT §28, PHASE-16-22
+§Phase 22, amendment A22.
+
 ## E. Media and asset rules
 
 ### BR-E1 — The asset-priority ladder is the default, not a suggestion
@@ -937,6 +961,7 @@ rule, without deleting the rule, is a rejection.
 | BR-D7 | Alt text is real text | Schema constraint |
 | BR-D8 | No inference: nothing computed, converted or estimated | Schema (absence) + review |
 | BR-D9 | Delivered work is unverified until an owner says otherwise | Schema default + gate + `content.verify` |
+| BR-D10 | Curated, never inferred; an empty slot never fabricates | Resolver + CHECK + trigger + gate |
 | BR-E1 | Asset-priority ladder | Data + process |
 | BR-E2 | Never regenerate a manifest asset | Schema unique + build guard |
 | BR-E3 | Concept media is never delivered work | Schema trigger |

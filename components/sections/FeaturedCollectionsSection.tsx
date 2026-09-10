@@ -10,21 +10,22 @@ import { SectionShell } from './SectionShell'
 import type { SectionRenderProps } from './types'
 
 /**
- * Journal articles, when there are any.
+ * Featured collections and categories, chosen in Studio → Merchandising → Featured. Phase 22.
  *
- * THE THIRD REFERENCE BLOCK, AND THE ONE WITH CONTENT ALREADY WRITTEN. Phase 09 authored nineteen
- * articles and deferred every one of them, because `journal_articles` is not created until Phase
- * 18 — so the selector answers `NOT_YET_BUILT`, this renders `EMPTY_STATE.journal`, and it will
- * keep rendering it after the table arrives until an article is published. Same code path, two
- * different reasons, one honest page.
+ * THE FOURTH REFERENCE BLOCK, AND THE ONLY ONE WITH NO QUERY OF ITS OWN. `selectFeatured` answers
+ * from `HOMEPAGE_FEATURED_COLLECTIONS` and from nothing else: which collections are featured is the
+ * owner's decision or nobody's, so a page with no slot gets EMPTY rather than "the newest three".
+ * The slot's fallback is HIDE_SECTION — below three the band is absent, heading included — which is
+ * why this renderer can return null before drawing anything.
  *
- * IT HAS NO MEDIA OF ITS OWN. The block declares no slots: an article's picture belongs to the
- * article, and a decorative band above a list of nothing would be a picture standing in for
- * writing that has not been published. The copy and the CTA carry the section until it fills.
+ * A CONCEPT CANNOT REACH THIS BAND. `guard_merchandising_entry()` refuses an entry naming a
+ * collection whose `concept_state` is not OWNER_CONFIRMED, and the resolver re-checks every target
+ * is PUBLISHED on every read; a card here is a collection the owner has confirmed exists and an
+ * editor has published. The cards themselves are `ReferenceCards`: a name, a line and a picture.
  */
-const FALLBACK_KEY = 'EMPTY_STATE.journal'
+const FALLBACK_KEY = 'EMPTY_STATE.collection'
 
-export function JournalStripSection({
+export function FeaturedCollectionsSection({
   section,
   strings,
   cloudName,
@@ -32,14 +33,9 @@ export function JournalStripSection({
   livePaths,
 }: SectionRenderProps): React.ReactElement | null {
   const cards = reference?.result.cards ?? []
-  /*
-   * Phase 22: on the homepage this band is answered by `HOMEPAGE_JOURNAL_STRIP`, whose fallback is
-   * HIDE_SECTION — below three articles the band is absent rather than a heading over a sentence.
-   * On any other page the selector runs its own query and no mode arrives, so the seeded
-   * `EMPTY_STATE.journal` still renders exactly as Phase 11 wrote it.
-   */
   const outcome = reference?.result.merchandising
-  if (cards.length === 0 && outcome?.fallback?.mode === 'HIDE_SECTION') return null
+  const mode = cards.length === 0 ? (outcome?.fallback?.mode ?? null) : null
+  if (mode === 'HIDE_SECTION') return null
 
   return (
     <SectionShell section={section} spacing="lg">
@@ -57,9 +53,8 @@ export function JournalStripSection({
           <ReferenceCards
             cards={cards}
             assets={reference?.assets ?? new Map()}
-            marker="data-article-card"
-            ratio="16:9"
-            mobileRatio="4:5"
+            marker="data-collection-card"
+            ratio="4:5"
             sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
             strings={strings}
             cloudName={cloudName}

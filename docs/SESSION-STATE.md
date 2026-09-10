@@ -8,6 +8,128 @@
 
 ## Current Phase
 
+**Phase 22 — Homepage / Store Merchandising. COMPLETE; EVERY SLOT EMPTY, WHICH IS THE SHIPPED
+STATE.** The owner has the controls — what appears in Selected Works, which collections are
+featured, how the store's categories are ordered, what is pinned in each, and when — and has used
+none of them yet, because there is nothing published to curate. With zero published products
+every slot resolves to its fallback: editorial tiles with no price and no product link, or nothing
+at all. No product card is fabricated anywhere, and `npm run cms:check-copy` now refuses a
+`/product/<slug>` literal in any renderer.
+
+### Phase 22: what is built
+
+**Migrations `0200` and `0201`, applied locally AND to hosted through the Supabase MCP, with the
+ledger rows.** `merchandising_slots` (Tier A + `status`; key, surface, owning Studio route,
+allowed types, minimum, maximum, `auto_fill` with its rule-named CHECK, fallback mode, fallback
+section) and `merchandising_entries` (Tier A + status and the publication pair; type, entity,
+position, pin, half-open window, the sweep's `window_state`, note). The eleven slots inserted as
+structure under the `allow-insert` marker — four global and one `CATEGORY_PINNED_<SLUG>` per D3
+category through `sync_category_pinned_slot()`, which also fires for a category added or renamed
+later. `guard_merchandising_entry()` refuses a type the slot does not admit, an entity that does not
+exist, and a collection still in concept (`RV061`–`RV063`). `merch_move_entry()` moves one place
+atomically under RLS; `merch_run_schedule()` is the cron's merchandising pass. `0201` is generated:
+shape A on both, the entry's window and its slot's status folded into the public clause.
+
+**THE LADDER, ONCE.** `lib/cms/merchandising.ts` — live entries, re-checked targets, curated if
+the minimum is reached, a recency top-up if the owner switched it on and wrote the rule, else the
+fallback mode — with provenance `CURATED` · `RULE_FILLED` · `FALLBACK`. `lib/cms/merchandising-
+register.ts` carries the eleven keys, the three editorial CTA paths and the one rule's words;
+`tests/unit/merchandising-register.test.ts` holds it level with `0200` and reads the resolver's
+source for "popular", "trending" and "random".
+
+**THE SEAM HELD.** `selectProducts` and `selectArticles` kept their signatures and gained a slot-
+backed body; `lib/cms/references.ts` resolves the slot key from the block's `slot_key` or the
+page's default (`/` → the homepage slots), and builds the EDITORIAL_BLOCK tiles from the fallback
+section before render. Afterwards, separately, the three reference renderers learned the modes:
+`HIDE_SECTION` returns nothing, `EDITORIAL_BLOCK` adds tiles, `SHOW_EMPTY_STATE` is the Phase 11
+sentence. `featured-collections` is the 34th block (A22), addable on `/` and `/collection`, not
+seeded. `MerchandisedRow` (RC-243) renders `STORE_FEATURED_ROW` above the catalogue and a
+category's pinned region above its grid on the default view, with `global_content` headings.
+
+**FOUR STUDIO SCREENS ON ONE EDITOR.** `SlotEditor` — entries with move, pin, release, remove and
+window controls (one action, one state per row); a picker of PUBLISHED entities grouped by type,
+with concept collections withheld and the reason inline; settings; and the resolver's own answer
+as *What the public sees now*. `/homepage` owns Selected Works and the journal strip, shows the
+featured band read-only with a link, and edits the hero still and the Selected Works heading under
+`content.write`. `/store` reorders categories one place at a time — a SEED §56 inversion is
+refused once with the warning and allowed on an acknowledged second submit — with *Restore
+recommended order*, and each category's pinned slot beside it. `/featured` owns the two featured
+slots. `/scheduling` is a month table of live entries per slot per day with gaps and overflows
+marked, the windows that open or close, and a jump to the owning screen. Every form posts the
+screen it was drawn on; the action refuses a slot owned elsewhere; every write is audited, in the
+activity feed, and followed by a revalidation of the surface. 118 Studio strings; two public
+strings seeded under `UI_LABEL.merchandising.*` and applied to hosted through the emitter.
+
+**THE CRON GAINED ITS PASS.** `app/api/cron/content-schedule/route.ts` runs the content sweep and
+then `merch_run_schedule()`, unions the paths, revalidates once, and reports both.
+
+### Phase 22: what is NOT built, and why
+
+- **No curation.** Every slot is empty because nothing is published to curate. The owner curates
+  from Studio → Merchandising or nobody does.
+- **No typed entity search in the picker.** The picker is a grouped `<select>` of published rows —
+  a few dozen at most on this catalogue — which works without JavaScript and offers exactly what the
+  resolver will show. Phase 23 owns search.
+- **No drag handle.** Ordering is a button pair, keyboard-operable and atomic, as `CollectionCurator`
+  argued in Phase 16; a pointer affordance can be layered later without touching the write path.
+- **The pinned region does not reorder the grid.** `CATEGORY_PINNED_*` governs a region above the
+  grid on the category's default view; the grid keeps its own order and a pinned piece also keeps
+  its natural place. Interleaving pins into a paginated, faceted query would put pieces that fail
+  a filter above pieces that pass it.
+- **`featured-collections` is not on the homepage.** Adding a section to a seeded page is an
+  editor's act; the block reads the homepage slot by default the moment it is placed.
+- **The e2e walk cannot run here** (the proxy blocks the dev server's Supabase reads, and the
+  curation walk needs a signed-in merchandiser). It skips with a stated reason, never passes
+  silently.
+
+### Phase 22: verification, as actually run
+
+1. `npm run typecheck`, `npm run lint` (0 errors; the 6 pre-existing e2e-fixture warnings),
+   `npm run format:check`, every `npm run check` gate including the extended copy gate — green.
+2. `npm test` with `DATABASE_URL` on the local PostgreSQL 16 cluster: **1,534 tests across 116
+   files, none skipped** — 32 new: 12 in `merchandising-resolve` (the ladder step by step, the caps,
+   a DRAFT slot; `HIDE_SECTION` renders nothing, `SHOW_EMPTY_STATE` the sentence, `EDITORIAL_BLOCK`
+   tiles with no product route, no price label, a CTA only to the three paths), 8 in
+   `merchandising-register`, 12 in `rls/phase22` (anon reads an entry only while live in a
+   PUBLISHED slot; the editor cannot curate and the merchandiser can; a concept collection, a
+   wrong type, a missing entity, a backwards window and a rule-less `auto_fill` are refused for the
+   owner; the sweep is the service role's).
+3. `db:check-migrations` (59 migrations to `0201`), `db:check-schema` (44 tables, RLS on all,
+   the two new tables' tiers declared), `auth:check-rls` (175 policies) and `auth:check-policies`
+   — green locally; the same counts confirmed on hosted by query after the MCP apply.
+4. Every guard, the move function, the sweep and the categories trigger probed by SQL with
+   savepoints: wrong type, missing product, concept collection, category accepted in the featured
+   slot, backwards window, rule-less `auto_fill`, `published_at` stamped, a move swapping
+   positions, a sweep opening one window and closing another with two `activity_events` rows and
+   `paths = ["/"]`, a second sweep returning no paths, a new category creating its slot and a
+   renamed slug carrying it.
+5. `npm run seed:content` locally — the two new strings applied, 215 rows.
+6. Hosted: `0200` and `0201` applied through the Supabase MCP and recorded in
+   `public.schema_migrations` with the files' SHA-256; the two strings applied through
+   `scripts/seed/emit-sql.ts`; queried afterwards for 44 tables, 175 policies, eleven slots (seven
+   `CATEGORY_PINNED_*`), 215 strings, RLS on both tables, and `anon` unable to execute
+   `merch_run_schedule()` or `merch_move_entry()`.
+
+### Phase 22: the D9 ten, recorded
+
+1. Code exists and is committed — the tables, the ladder, the swap, the block, the row, the four
+   screens, the cron pass.
+2. Migrations applied locally and to hosted, with ledger rows and matching counts.
+3. Tests written and passing: 1,534, none skipped.
+4. Gates pass, including the extended copy gate.
+5. Documentation updated: DATA_MODEL (the merchandising section rewritten as built, §8.13, §12),
+   STUDIO_GUIDE §8 (eleven slots, the editor, the four screens), CONTENT_GUIDE §2 (34 blocks),
+   COMPONENT_REGISTRY (RC-243; RC-236's tiles), BUSINESS_RULES BR-D10, TESTING, CANONICAL-DECISIONS
+   A22, CHANGELOG, PROJECT_STATE, this file.
+6. No business fact fabricated: zero entries, no placeholder card, no behavioural ordering, the
+   editorial tiles drawn only from a section an editor wrote.
+7. Nothing in the manifest regenerated; `media:assert-no-regen` green.
+8. Amendments recorded: A22.
+9. The next phase is named: **23 — Global Search + Product Relationships**.
+10. Hosted is level with the repository through `0201`, and level on seeded strings.
+
+### Superseded — Phase 21's state
+
 **Phase 21 — 3D Product Experience. CODE COMPLETE; ZERO MODELS, WHICH IS THE FINISHED STATE; THE
 FLAG IS OFF.** A visitor can pick an object up and turn it over wherever a model exists, and none
 does: the manifest holds no GLB, none is generated (a model's form and dimensions are a product
@@ -1987,18 +2109,25 @@ on `/studio` rather than a route segment.
 
 ## Next Exact Action
 
-**Start Phase 22 — Homepage / Store Merchandising**, on the owner's word. Phase 22 assumes the
-catalogue (14), the product page (15), the homepage composition (11) and the flags table (19); all
-exist. Its migrations are `0200`–`0201`, unspent. Nothing in the repository blocks it.
+**STOP. Phase 22 is finished, and the owner asked that no new phase start until they say so.**
+The next phase is **23 — Global Search + Product Relationships** (`docs/project/phases/PHASE-23-30.md`),
+whose migrations are `0210`–`0213`, unspent. It assumes `entity_relations` and `product_relations`
+populated only by human action (16), searchable projects and articles (17, 18), queryable forms
+(19), enquiries as a Studio entity (20) and merchandising slots so search and curation cannot
+disagree about what is published (22) — all of which exist. It must not expose `research_*` data
+in public search (FEAT §19).
 
 Owner-side, unchanged in kind:
 
-1. **Supply the first GLB** of an object that exists, through `/studio/media/models`, with a
+1. **Curate.** Publish products, then arrange them under Studio → Merchandising → Homepage
+   and Store; feature owner-confirmed collections under Featured. Until then every slot shows its
+   fallback.
+2. **Supply the first GLB** of an object that exists, through `/studio/media/models`, with a
    photograph as its poster; then switch `three_d_viewer` on in `/studio/system/flags`. Until then
    the viewer is built and silent.
-2. **Publish a commission template** (all three are DRAFT) for `/custom-commissions` to show one.
-3. **Decide the 20-of-30 hosted demo products** — finish, roll back or leave.
-4. **Rotate the six exposed secrets** — still outstanding, and still recorded under *Known Issues*;
+3. **Publish a commission template** (all three are DRAFT) for `/custom-commissions` to show one.
+4. **Decide the 20-of-30 hosted demo products** — finish, roll back or leave.
+5. **Rotate the six exposed secrets** — still outstanding, and still recorded under *Known Issues*;
    the owner asked for this to wait until all phase work is finished.
 
 ### Superseded — the Phase 16 plan

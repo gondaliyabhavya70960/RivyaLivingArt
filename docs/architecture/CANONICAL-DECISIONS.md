@@ -184,6 +184,63 @@ Brand and editorial copy may be written; anything asserting business capability 
 
 ## Amendments
 
+**2026-09-10 · A22 — Phase 22 ships eleven slots and no reusable one, the categories trigger
+makes a slot, `featured-collections` joins the block catalogue as its 34th member, the EDITORIAL
+fallback draws its tiles from a named section, and the sweep records rather than publishes
+(PHASE-16-22 §Phase 22, STUDIO_GUIDE §8).**
+
+Five readings the repository forced, none of which contradicts D1–D10.
+
+- **Eleven slots, all with a surface.** STUDIO_GUIDE §8 was written with six rows, one of them a
+  reusable `FEATURED_COLLECTIONS` "for any surface" and one a single `CATEGORY_PINNED`. The phase
+  document supersedes both: a slot with no surface is a list nothing renders, so there is none;
+  `HOMEPAGE_FEATURED_COLLECTIONS` is the only featured-collections slot in the schema; and each D3
+  category has its own `CATEGORY_PINNED_<SLUG>`. The rows are inserted by migration `0200` as
+  STRUCTURE under the `check-migrations: allow-insert` marker — a slot carries no copy and names
+  no entity, and an editor can neither create nor remove one. `merchandising_slots` therefore
+  carries Tier A and `status` only: no verification columns (it asserts nothing) and no seed
+  columns (no module writes it).
+
+- **A category brings its slot by trigger.** The phase document has the per-category slot
+  "created by the same server action that creates the category". No such action exists —
+  categories are seeded — so `sync_category_pinned_slot()` fires on INSERT and on UPDATE OF `slug`,
+  covering the seed runner, a Studio action written later and a hand-typed row alike, and carrying
+  the slot along when a slug is renamed. The key rule is one function in SQL
+  (`merchandising_category_slot_key`) and one in TypeScript (`categorySlotKey`), and a test holds
+  them level.
+
+- **`featured-collections` is a block, not a rewrite of `category-grid`.** SEED §10-03's seeded
+  band is a `category-grid` of five hand-written cards, two of them withheld until the owner
+  verifies a capability claim, and that band stays an editor's copy. The merchandised half is a
+  new reference block that holds no cards, reads `HOMEPAGE_FEATURED_COLLECTIONS` by default on `/`,
+  and hides itself below three. `BLOCK_TYPES` is therefore 34 (PHASE-05-09 §08's 28, A14's two,
+  Phase 17's two, Phase 19's one, and this one); it is addable on `/` and `/collection` and is NOT
+  seeded onto the homepage — placing it is an editor's act in Studio. The selector swap itself
+  changed no renderer; the three reference renderers learned the fallback MODES afterwards,
+  separately, which is what the phase's exit criterion means.
+
+- **The editorial fallback draws from a section, and links only where a tile may.** An
+  `EDITORIAL_BLOCK` fallback renders the seeded SEED §27 sentence AND tiles built from the section
+  the slot or the block names — by default the page's own live `material-story` (SEED §10-05):
+  heading, body, desktop still, and a CTA only when it targets `/large-format`, `/collection` or
+  `/custom-commissions`. The seeded material story's "Discover Our Process" → `/process` is
+  therefore dropped from the tile and stays with its own band. `EditorialTile` has no field for a
+  price, a product link, a SKU or a dimension, so a tile cannot carry one. `HIDE_SECTION` removes
+  the whole band, heading included; `SHOW_EMPTY_STATE` is the Phase 11 sentence alone.
+
+- **The sweep records; the resolver decides.** Windows on `merchandising_entries` are honoured by
+  the resolver (`isLive`, the same rule `page_sections` uses) and by the generated RLS clause on
+  every read. `merch_run_schedule()` — the merchandising pass the Phase 08 cron gained — therefore
+  puts nothing on or off the site: it records each window transition once in `activity_events`,
+  archives an entry whose window closed so Studio tells the truth, and returns the D3 paths whose
+  caches the cron must rebuild. Two route-level regions with no block to live in — the store's
+  featured row on `/collection` and the pinned region on a category page — are rendered by
+  `MerchandisedRow` (RC-243) beneath the page's sections, with a `global_content` heading each,
+  and the pinned region is drawn on the category's default view only (page one, no facet, the
+  curated sort); the grid itself is untouched. The order of the seven categories is
+  `categories.sort_order` as Phase 03 declared it; the SEED §56 inversion is refused once with the
+  warning and allowed on a second, acknowledged submit.
+
 **2026-09-10 · A21 — Phase 21's migrations are `0194`–`0195`, React is pinned at 19.2.8 for as
 long as `@react-three/fiber` caps it, `public/basis/` holds the Basis transcoder while meshopt ships
 inside the viewer chunk, and the flag key is `three_d_viewer` (PHASE-16-22 §Phase 21).**

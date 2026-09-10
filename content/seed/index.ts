@@ -15,6 +15,7 @@ import { homepageSeed } from './homepage'
 import { journalSeed } from './journal'
 import { journalUiSeed } from './journal-ui'
 import { largeFormatSeed } from './large-format'
+import { merchandisingUiSeed } from './merchandising-ui'
 import { modelViewerUiSeed } from './model-viewer-ui'
 import { navigationSeed } from './navigation'
 import { pagesSeed } from './pages'
@@ -72,6 +73,7 @@ export const seedModules: readonly SeedModule[] = [
   portfolioUiSeed,
   // Phase 21's viewer words. Reference nothing; every one is an accessible name or a notice.
   modelViewerUiSeed,
+  merchandisingUiSeed,
   navigationSeed,
   seoSeed,
   // Page content: every section references a page by seed_key.

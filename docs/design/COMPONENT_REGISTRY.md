@@ -297,13 +297,14 @@ and Phase 10's site shell then reuses it.
 | RC-233 | `MediaVideo` | material understanding | 06 | BUILT | §7.38 |
 | RC-234 | `Pagination` | navigation | 14 | BUILT | §7.39 |
 | RC-235 | `BlockVideo` | material understanding | 11 | BUILT | index only — server; split out of RC-213 so a route with no video does not carry the `MediaVideo` island |
-| RC-236 | `EditorialFallback` | conversion | 11 | BUILT | index only — server; renders a seeded `EMPTY_STATE.*` string where a reference block has nothing real to show |
+| RC-236 | `EditorialFallback` | conversion | 11 | BUILT | index only — server; renders a seeded `EMPTY_STATE.*` string where a reference block has nothing real to show. **Phase 22** added `tiles` — heading, line and picture drawn from a section the slot names, a CTA only to `/large-format`, `/collection` or `/custom-commissions`, and no field for a price, a product link, a SKU or a dimension (`lib/cms/editorial-tile.ts`) |
 | RC-237 | `SortSelect` | navigation | 14 | BUILT | §7.42 |
 | RC-238 | `ProductGallery` (`index`, `Viewer`, `Thumbnails`, `Lightbox`) | product understanding | 15 | BUILT | §7.43 |
 | RC-239 | `ProductSpecifications` | product understanding | 15 | BUILT | §7.44 |
 | RC-240 | `ProductMaterialStory` | material understanding | 15 | BUILT | §7.45 |
 | RC-241 | `ProductInquiryRail` | conversion | 15 | BUILT | §7.46 |
 | RC-242 | `RelatedContent` | navigation | 15 | BUILT | §7.47 |
+| RC-243 | `MerchandisedRow` | conversion | 22 | BUILT | §7.49 |
 
 `Breadcrumbs` and `DropdownMenu` are Phase 02, not Phase 10. `docs/project/phases/PHASE-00-04.md`
 pulls both forward on purpose and requires their rows to be opened in that phase: Phase 05's
@@ -1451,6 +1452,25 @@ dimension, quantity or price from an uploaded file.
 | Reviewed on | 2026-09-10 |
 | Reviewer | Phase 21 session |
 | Verdict | APPROVED |
+
+### 7.49 RC-243 — `MerchandisedRow`
+
+| Field | Value |
+|---|---|
+| Registry ID | RC-243 |
+| Source | Rivya first-party |
+| Link | `components/patterns/MerchandisedRow/index.tsx` — server |
+| Licence | N/A — first-party |
+| Dependencies | none of its own; draws `ReferenceCards` (a name, a line, a picture) |
+| Page | `/collection` (the `STORE_FEATURED_ROW` region above the catalogue), `/collection/[category]` (the `CATEGORY_PINNED_*` region above the grid, on the default view only) |
+| Purpose | conversion |
+| Adaptation | A merchandising slot rendered by a ROUTE rather than by a block, beneath the page's CMS sections. Renders NOTHING when the slot resolved to nothing — the store row's fallback is HIDE_SECTION, and a pinned slot's SHOW_EMPTY_STATE is already what the listing beneath it says — so there is never a heading over nothing. The heading is a `global_content` string the route resolves (`UI_LABEL.merchandising.store_featured`, `UI_LABEL.merchandising.pinned`); provenance and slot key travel as data attributes |
+| Mobile behaviour | The cards stack to one column below 640 px, as `ReferenceCards` does everywhere |
+| Performance | 0 kB client JavaScript; server-rendered |
+| Accessibility | A level-2 heading names the region when a string exists; each card is one link with the entity's name |
+| Reviewed on | 2026-09-10 |
+| Reviewer | Phase 22 session — `tests/unit/merchandising-resolve.test.ts`, `tests/e2e/merchandising.spec.ts` |
+| Verdict | FIRST_PARTY |
 
 ## 8. Rejections ledger
 

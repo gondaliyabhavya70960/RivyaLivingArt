@@ -15,6 +15,12 @@ const schema = z.object({
   limit: z.number().int().min(1).max(12),
   /** Restrict to one journal category by slug, or null for the most recent across all of them. */
   category_slug: z.string().nullable(),
+  /**
+   * Phase 22: the merchandising slot that answers this band, or null for the page's default
+   * (`HOMEPAGE_JOURNAL_STRIP` on `/`; on any other page, the most recent articles as before).
+   * Optional so every row seeded before the key existed still parses.
+   */
+  slot_key: z.string().nullable().optional(),
 })
 
 export type JournalStripPayload = z.infer<typeof schema>
@@ -26,7 +32,7 @@ export const journalStripBlock: BlockModule<JournalStripPayload> = {
   description: 'A row of journal articles, or its editorial fallback when there are none.',
   sharedFields: ['eyebrow', 'heading', 'body', 'cta_label', 'cta_url'],
   schema,
-  defaults: { limit: 3, category_slug: null },
+  defaults: { limit: 3, category_slug: null, slot_key: null },
   payloadFields: [
     { name: 'limit', kind: 'number', label: 'How many to show' },
     {
@@ -34,6 +40,12 @@ export const journalStripBlock: BlockModule<JournalStripPayload> = {
       kind: 'text',
       label: 'Category slug',
       help: 'Leave empty for the most recent across all categories.',
+    },
+    {
+      name: 'slot_key',
+      kind: 'text',
+      label: 'Merchandising slot',
+      help: 'Leave empty for the homepage slot. Curated under Merchandising → Homepage.',
     },
   ],
   entryArrays: [],

@@ -37,7 +37,12 @@ import type { MediaAsset } from '@/lib/supabase/schemas'
  * free-string prop would let a fourth block invent `data-work-card`, and the assertion that
  * proves nothing is fabricated would quietly stop covering it.
  */
-export type ReferenceMarker = 'data-product-card' | 'data-project-card' | 'data-article-card'
+export type ReferenceMarker =
+  | 'data-product-card'
+  | 'data-project-card'
+  | 'data-article-card'
+  /** Phase 22: a featured collection or category. Same shape, same restraint, its own assertion. */
+  | 'data-collection-card'
 
 export type ReferenceCardsProps = {
   readonly cards: readonly EntityCard[]

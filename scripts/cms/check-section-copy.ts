@@ -125,6 +125,21 @@ function check(file: string): Finding[] {
       if (text !== null) report(node, text, 'string literal as a JSX child')
     }
 
+    /*
+     * PHASE 22: NO PRODUCT SLUG IS WRITTEN IN CODE. `/product/${row.slug}` is an href built from a
+     * row and passes; `/product/oak-table` is somebody making the design look full "temporarily",
+     * which PHASE-16-22 §Phase 22's risk table names. Any string literal of that shape, wherever it
+     * sits, is reported.
+     */
+    const literal = literalText(node)
+    if (literal !== null && /^\/product\/[a-z0-9][a-z0-9-]*$/.test(literal)) {
+      report(
+        node,
+        literal,
+        'product slug literal — products come from merchandising, never from code',
+      )
+    }
+
     if (ts.isJsxAttribute(node)) {
       const name = node.name.getText(source)
       if (SPOKEN_PROPS.has(name) && node.initializer !== undefined) {

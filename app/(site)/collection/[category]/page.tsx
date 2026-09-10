@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import type * as React from 'react'
 
+import { MerchandisedRow } from '@/components/patterns/MerchandisedRow'
 import { LazyModelViewerMount } from '@/components/patterns/ModelViewerMount/lazy'
 import { Container } from '@/components/primitives/Container'
 import { Stack } from '@/components/primitives/Stack'
@@ -14,10 +15,18 @@ import { optionalEnv } from '@/lib/env'
 import { isEnabled } from '@/lib/flags'
 import { listMaterials } from '@/lib/supabase/repositories/materials'
 import { loadPublicModel } from '@/lib/supabase/repositories/models'
-import { canonicalCatalogUrl, catalogUrl } from '@/lib/catalog/query'
+import {
+  canonicalCatalogUrl,
+  catalogUrl,
+  DEFAULT_SORT,
+  hasActiveFilters,
+} from '@/lib/catalog/query'
+import { categoryPinnedSlotKey, resolveSlot } from '@/lib/cms/merchandising'
 import { cmsPageMetadata, renderCmsPage } from '@/lib/cms/render-page'
+import { siteString } from '@/lib/cms/strings'
 import { createPublicClient } from '@/lib/supabase/public'
 import { listCategories } from '@/lib/supabase/repositories/categories'
+import { listMediaAssetsByIds } from '@/lib/supabase/repositories/media'
 
 /**
  * `/collection/[category]` — the seven D3 category listings.
@@ -49,6 +58,9 @@ type Props = {
 
 /** The one category whose listing mounts its products' models (PHASE-16-22 §Phase 21). */
 const MODEL_CATEGORY_SLUG = '3d-resin'
+
+/** Phase 22: the heading over the pinned region, a `global_content` string. */
+const PINNED_HEADING_KEY = 'UI_LABEL.merchandising.pinned'
 
 const BASE = '/collection'
 
@@ -116,9 +128,47 @@ export default async function CategoryPage({
   return renderCmsPage(
     path,
     <>
+      {await pinnedProducts(slug, loaded)}
       <CatalogListing basePath={path} loaded={loaded} />
       {await categoryModels(slug, loaded)}
     </>,
+  )
+}
+
+/**
+ * Phase 22: the category's pinned pieces, above the grid.
+ *
+ * ON THE DEFAULT VIEW ONLY — page one, no facet, the curated sort. A visitor who has filtered to
+ * oak or sorted by title has asked a question the pins do not answer, and a pinned region over a
+ * filtered grid would put pieces that fail the filter above pieces that pass it. The grid itself is
+ * untouched: `CATEGORY_PINNED_*` governs the pinned region and nothing else, so a pinned piece also
+ * keeps its natural place below. With no live entries the region is absent; the slot's
+ * SHOW_EMPTY_STATE is already the sentence the listing draws when the category holds nothing.
+ */
+async function pinnedProducts(
+  slug: string,
+  loaded: LoadedCatalogListing,
+): Promise<React.ReactNode> {
+  if (loaded.page !== 1 || hasActiveFilters(loaded.query) || loaded.query.sort !== DEFAULT_SORT) {
+    return null
+  }
+  const client = createPublicClient()
+  const resolved = await resolveSlot(client, categoryPinnedSlotKey(slug))
+  if (resolved.cards.length === 0) return null
+  const assets = await listMediaAssetsByIds(
+    client,
+    resolved.cards.map((card) => card.mediaId).filter((id): id is string => id !== null),
+  )
+  return (
+    <MerchandisedRow
+      resolved={resolved}
+      assets={assets}
+      heading={siteString(loaded.chrome.strings, PINNED_HEADING_KEY)}
+      marker="data-product-card"
+      ratio="4:5"
+      strings={loaded.chrome.strings}
+      cloudName={optionalEnv('NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME') ?? ''}
+    />
   )
 }
 

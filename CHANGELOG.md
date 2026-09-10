@@ -6,6 +6,68 @@ Every phase adds an entry; see `docs/architecture/CANONICAL-DECISIONS.md` D9 for
 
 ## [Unreleased]
 
+### Phase 22 — Homepage / Store Merchandising
+
+The owner takes the controls. Which products appear in Selected Works and in what order, which
+collections are featured, how the store's seven categories are ordered, which pieces are pinned
+inside a category, and when each arrangement starts and stops — all of it is now a Studio decision
+with a schedule, and none of it is written in code. **The catalogue still ships with zero published
+products, so every slot resolves to its fallback**, and the more important half of the phase is what
+that looks like: editorial tiles with no price and no product link, or nothing at all, never a
+placeholder card.
+
+**Two tables, eleven slots, one ladder.** Migration `0200` creates `merchandising_slots` and
+`merchandising_entries` and inserts the eleven slots as structure — four global
+(`HOMEPAGE_SELECTED_WORKS`, `HOMEPAGE_FEATURED_COLLECTIONS`, `HOMEPAGE_JOURNAL_STRIP`,
+`STORE_FEATURED_ROW`) and one `CATEGORY_PINNED_<SLUG>` per D3 category, the latter by a trigger on
+`categories` so a category added later brings its slot with it. Each slot has exactly one surface
+and exactly one owning Studio screen; there is no reusable slot. `lib/cms/merchandising.ts`
+resolves a slot in five ordered steps — live entries, re-checked targets, the curated list if it
+reaches the minimum, a recency top-up if the owner switched it on and wrote the rule in words, else
+the fallback mode — and returns provenance (`CURATED` · `RULE_FILLED` · `FALLBACK`). There is no
+sixth step, and `merchandising-register.test.ts` reads the resolver's source to keep "popular",
+"trending" and "random" out of it.
+
+**The seam held.** `selectProducts` and `selectArticles` kept their signatures and gained a slot-
+backed body; no renderer changed for the swap. Afterwards, separately, `SelectedWorksSection`,
+`JournalStripSection` and the new `FeaturedCollectionsSection` learned the three fallback modes:
+`HIDE_SECTION` removes the band, heading included; `EDITORIAL_BLOCK` renders the seeded sentence
+and tiles drawn from a named section (by default the page's own material story) with a CTA only to
+`/large-format`, `/collection` or `/custom-commissions`; `SHOW_EMPTY_STATE` is the Phase 11 sentence
+alone. `featured-collections` is the catalogue's 34th block (amendment A22) — a reference block
+with no query of its own, addable on `/` and `/collection`, not seeded. `MerchandisedRow`
+(RC-243) draws the two slots with no block to live in — the store's featured row and a category's
+pinned region — beneath the page's sections, with `global_content` headings.
+
+**The database refuses what the ladder could never keep.** An entry must name a type its slot
+admits and an entity that exists; a collection still in concept is refused at the row, so a
+crafted POST fails as the picker's list does; a window must close after it opens; `auto_fill`
+cannot move without a rule. `merch_move_entry()` is SECURITY INVOKER and moves one place
+atomically. `merch_run_schedule()` is the merchandising pass the content-schedule cron gained:
+it records each window transition in `activity_events`, archives an entry whose window closed, and
+returns the paths to revalidate — never putting anything on or off the site by itself, because the
+resolver and the generated RLS clause honour every window on every read.
+
+**Four Studio screens.** `/studio/merchandising/homepage` (Selected Works, the journal strip, the
+featured band read-only, the hero still and the Selected Works heading under `content.write`),
+`/store` (category order one place at a time, refused once with the SEED §56 warning and allowed
+on an acknowledged second submit, *Restore recommended order*, and each category's pinned slot
+beside it), `/featured` (published, owner-confirmed collections only, with the reason inline) and
+`/scheduling` (a month table of live entries per slot per day, gaps and overflows marked, the
+windows that open or close, a jump to the owning screen). One slot editor serves all three
+writing screens: entries with move, pin, release, remove and window controls; a picker of
+published entities; settings; and the resolver's own answer as the public preview. Every form
+posts the screen it was drawn on and the action refuses a slot owned elsewhere. Every write is
+audited, in the activity feed, and followed by a revalidation of the slot's surface.
+
+**Gates and tests.** `npm run cms:check-copy` now reports a `/product/<slug>` literal in any
+renderer or pattern. 1,534 tests across 116 files, none skipped — 32 new: the ladder and the
+fallback output (`merchandising-resolve`), the register level with `0200` and the
+no-behavioural-word rule (`merchandising-register`), and the Phase 22 RLS suite. Two e2e specs'
+worth of walks in `merchandising.spec.ts`, skipping with a stated reason where the Studio
+credentials or the products are absent. Migrations `0200`–`0201` applied locally and to hosted;
+44 tables, 175 policies, 215 seeded strings on both.
+
 ### Phase 21 — 3D Product Experience
 
 A visitor can pick an object up and turn it over — where a model exists, and none does yet. The

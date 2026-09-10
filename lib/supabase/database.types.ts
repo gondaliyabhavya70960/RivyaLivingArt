@@ -1822,6 +1822,160 @@ export type Database = {
           },
         ]
       }
+      merchandising_entries: {
+        Row: {
+          id: string
+          slot_id: string
+          entity_type: Database['public']['Enums']['relation_entity']
+          entity_id: string
+          position: number
+          is_pinned: boolean
+          publish_at: string | null
+          unpublish_at: string | null
+          window_state: string
+          status: Database['public']['Enums']['content_status']
+          note: string | null
+          published_at: string | null
+          published_by: string | null
+          created_at: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          slot_id: string
+          entity_type: Database['public']['Enums']['relation_entity']
+          entity_id: string
+          position: number
+          is_pinned?: boolean
+          publish_at?: string | null
+          unpublish_at?: string | null
+          window_state?: string
+          status?: Database['public']['Enums']['content_status']
+          note?: string | null
+          published_at?: string | null
+          published_by?: string | null
+          created_at?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          slot_id?: string
+          entity_type?: Database['public']['Enums']['relation_entity']
+          entity_id?: string
+          position?: number
+          is_pinned?: boolean
+          publish_at?: string | null
+          unpublish_at?: string | null
+          window_state?: string
+          status?: Database['public']['Enums']['content_status']
+          note?: string | null
+          published_at?: string | null
+          published_by?: string | null
+          created_at?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'merchandising_entries_published_by_fkey'
+            columns: ['published_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'merchandising_entries_slot_id_fkey'
+            columns: ['slot_id']
+            isOneToOne: false
+            referencedRelation: 'merchandising_slots'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'merchandising_entries_updated_by_fkey'
+            columns: ['updated_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      merchandising_slots: {
+        Row: {
+          id: string
+          key: string
+          name: string
+          description: string | null
+          surface: string
+          owning_studio_route: string
+          allowed_entity_types: Database['public']['Enums']['relation_entity'][]
+          min_items: number
+          max_items: number
+          auto_fill: boolean
+          auto_fill_rule: string | null
+          fallback_mode: Database['public']['Enums']['merch_fallback']
+          fallback_section_id: string | null
+          status: Database['public']['Enums']['content_status']
+          created_at: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          key: string
+          name: string
+          description?: string | null
+          surface: string
+          owning_studio_route: string
+          allowed_entity_types: Database['public']['Enums']['relation_entity'][]
+          min_items?: number
+          max_items?: number
+          auto_fill?: boolean
+          auto_fill_rule?: string | null
+          fallback_mode: Database['public']['Enums']['merch_fallback']
+          fallback_section_id?: string | null
+          status?: Database['public']['Enums']['content_status']
+          created_at?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          key?: string
+          name?: string
+          description?: string | null
+          surface?: string
+          owning_studio_route?: string
+          allowed_entity_types?: Database['public']['Enums']['relation_entity'][]
+          min_items?: number
+          max_items?: number
+          auto_fill?: boolean
+          auto_fill_rule?: string | null
+          fallback_mode?: Database['public']['Enums']['merch_fallback']
+          fallback_section_id?: string | null
+          status?: Database['public']['Enums']['content_status']
+          created_at?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'merchandising_slots_fallback_section_id_fkey'
+            columns: ['fallback_section_id']
+            isOneToOne: false
+            referencedRelation: 'page_sections'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'merchandising_slots_updated_by_fkey'
+            columns: ['updated_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       model_variant_labels: {
         Row: {
           id: string
@@ -3324,6 +3478,18 @@ export type Database = {
         Args: Record<string, unknown>
         Returns: Json
       }
+      merch_move_entry: {
+        Args: Record<string, unknown>
+        Returns: Json
+      }
+      merch_run_schedule: {
+        Args: Record<string, unknown>
+        Returns: Json
+      }
+      merchandising_category_slot_key: {
+        Args: Record<string, unknown>
+        Returns: Json
+      }
       model_setting_number: {
         Args: Record<string, unknown>
         Returns: Json
@@ -3387,6 +3553,7 @@ export type Database = {
         'NEW' | 'READ' | 'IN_CONVERSATION' | 'QUOTED' | 'WON' | 'LOST' | 'SPAM' | 'ARCHIVED'
       media_kind: 'IMAGE' | 'VIDEO' | 'MODEL_3D' | 'DOCUMENT' | 'BRAND'
       media_source: 'REAL' | 'USER_UPLOAD' | 'HIGGSFIELD' | 'RENDER' | 'FALLBACK'
+      merch_fallback: 'EDITORIAL_BLOCK' | 'HIDE_SECTION' | 'SHOW_EMPTY_STATE'
       owner_verification: 'NOT_REQUIRED' | 'OWNER_VERIFICATION_REQUIRED' | 'VERIFIED'
       price_state: 'STARTING_FROM' | 'REQUEST_QUOTE' | 'PRICE_ON_REQUEST' | 'FIXED'
       relation_entity:

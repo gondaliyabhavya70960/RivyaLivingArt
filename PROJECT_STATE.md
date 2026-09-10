@@ -1,21 +1,22 @@
 # PROJECT_STATE — what is actually built
 
 > Verified against the repository, not against intent. Update at the end of every phase.
-> Last verified: Phase 21 (3D Product Experience), 2026-09-10.
+> Last verified: Phase 22 (Homepage / Store Merchandising), 2026-09-10.
 
 ## Summary
 
 The design system is built; the database spine exists, carries RLS policies for all six roles, and
 has been verified against a real PostgreSQL **and against the hosted Supabase project**. What
 exists: the toolchain, the token layer, 32 primitives, 3 motion helpers, 7 behavioural patterns, a
-dev-only gallery, **forty-two tables, all with RLS on and 165 policies between them**, generated types with a
+dev-only gallery, **forty-four tables, all with RLS on and 175 policies between them**, generated types with a
 drift gate, a repository layer with Zod at its boundary, an idempotent seed runner proved not to
 overwrite an owner's edit, the Studio shell with its ⌘K palette and user management, the media
 layer end to end, the Higgsfield migration, gap engine and tracker, **the CMS engine — pages,
 blocks, the status workflow, media binding, scheduling, revisions and the Studio surfaces that
 drive them** — a forward-only migration runner, and **29 gates** that fail the build on the
 mistakes they were written for, the newest of which walks every route's client import graph and
-refuses the 3D engine anywhere but behind the viewer's dynamic boundary.
+refuses the 3D engine anywhere but behind the viewer's dynamic boundary, and the copy gate now
+also refusing any `/product/<slug>` literal in a renderer.
 
 **A page can now be built and rendered, and the copy is written.** `/studio/content/pages/[pageId]`
 adds, edits, reorders and removes blocks; `lib/cms/resolve.ts` is the single server read path;
@@ -330,7 +331,8 @@ in this document is from a local run.
 | — | Demonstration content | **SEEDED LOCALLY; PART-APPLIED ON HOSTED** | Owner-authorised placeholder data, marked `is_demo` by migration `0180`, registered in `docs/content/DEMO_CONTENT.md`, badged in the Studio and removable with `npm run demo:purge`. 30 products, 10 article bodies, 6 projects, 6 testimonials. **Hosted carries 20 of the 30 products and the six categories only** — the run was interrupted and awaits the owner's decision. |
 | 20 | Inquiry + WhatsApp Flow | **CODE COMPLETE; NO ENQUIRIES BY DESIGN** | Migrations `0190`, `0191`, `0193`. `inquiries`, `inquiry_attachments`, `inquiry_events`; four enums; the reference-code sequence and its overwriting trigger; the anon INSERT policy that is the only guard on the only public write, and no anon SELECT anywhere. `submitInquiry` as the one write path, returning a union whose failure member has no URL; the five-level shortening ladder; the contact form promoted from planned to built; the product enquiry through `?product=`; the configurator's Submit live; the five-view inbox, its detail screen and an audited export that omits the hashed address. `commission_configurator` switched on. Amendment A20. |
 | 21 | 3D Product Experience | **CODE COMPLETE; ZERO MODELS BY DESIGN; FLAG OFF** | Migrations `0194`–`0195` on both databases. `media_assets.viewer_settings` with `is_valid_viewer_settings()`; the FEAT §14 ceilings as CHECKs; the poster-before-association rule; `model_variant_labels` with the material-needs-verification CHECK and the Phase 08 authority trigger; `set_model_association()` writing both sides in one SECURITY INVOKER transaction. The viewer (`components/three/**`, RC-401) with every FEAT §12 control by pointer, touch and keyboard, four lighting and three environment presets from Phase 02 tokens, the mount (RC-228) behind three boundaries — a lazy mount, a probe-gated `import()` with `ssr: false`, and a static gate (`scripts/perf/check-bundle.mjs`) proved to fail on a planted import — measured at **303.6 kB gz** against 350. The inspector (`lib/media/inspect*.ts`) refuses in the browser before a signature and on the server after the upload, writes metadata from the parse, and destroys a refused file; `/studio/media/models` with uploader, list and drawer. Four mount points. Decoders vendored from `three@0.186.0`. 1,502 tests, none skipped. Amendment A21. `three_d_viewer` is OFF on both databases until the owner supplies a GLB of an object that exists. |
-| 22–46 | Merchandising, Studio, research, ops, launch | **PLANNED** | Specified in `docs/project/phases/`. |
+| 22 | Homepage / Store Merchandising | **COMPLETE; EVERY SLOT EMPTY, WHICH IS THE SHIPPED STATE** | Migrations `0200`–`0201` on both databases. `merchandising_slots` and `merchandising_entries`; the eleven slots inserted as structure (four global, one `CATEGORY_PINNED_<SLUG>` per D3 category, by trigger); `guard_merchandising_entry()` (type, existence, no concept collection), the rule-named CHECK, `merch_move_entry()` (SECURITY INVOKER, atomic), `merch_run_schedule()` (the cron's merchandising pass — records, archives, revalidates; never publishes). The five-step ladder in `lib/cms/merchandising.ts` with provenance; `selectProducts`/`selectArticles` swapped onto it with their signatures kept; `featured-collections` as the 34th block; the three fallback modes in the renderers; `MerchandisedRow` (RC-243) for the store row and the pinned region. Four Studio screens on one slot editor with the resolver's own answer as the preview; category order with the SEED §56 two-step and a restore. 1,534 tests, none skipped. Amendment A22. With zero published products every slot resolves to its fallback and no product card is fabricated anywhere. |
+| 23–46 | Search, Studio, research, ops, launch | **PLANNED** | Specified in `docs/project/phases/`. |
 
 ## What exists on disk
 
@@ -360,6 +362,12 @@ forgotten, only explicitly declared unbuilt.
 
 `/product/[slug]` EXISTS as of Phase 15, and a product card is a link. What it does not have is
 anything to render: see the paragraph below.
+
+**`merchandising_entries` holds zero rows, and that is the finished state of Phase 22.** Eleven
+slots exist and every one is empty, because there is nothing published to curate: with zero
+published products the Selected Works band renders its editorial fallback, the homepage journal
+band is hidden below three articles, the store's featured row is absent, and no category has a
+pinned region. Curation is the owner's act in Studio → Merchandising, or nobody's.
 
 **`media_assets` holds zero `MODEL_3D` rows, and that is the finished state of Phase 21.** The manifest carries no model, none is generated (a model's form and dimensions are a product specification, D10), and the viewer, the inspector and the upload path all exist and wait. `three_d_viewer` is OFF on both databases; switching it on before a model with a poster exists changes nothing on any page, because every mount point renders nothing without one.
 
@@ -416,6 +424,7 @@ too, and the hosted project cannot be migrated from here by any means.
 - The seed runner inserts 7 rows on a fresh database, updates 7 and inserts 0 on a second run,
   and after an owner edits one row reports 1 `skipped_owner_edited` with that row's value intact.
   Publishing a row and re-seeding does not un-publish it.
+- **Phase 22, as measured**: the ladder answers CURATED in position order, drops an out-of-window entry and an unpublished target, tops up by recency with the rule named and never counts a draft, and falls through to the slot's mode — against a client that answers from memory; the rendered fallback contains no `/product/` route, no price label and no product card, and a tile's CTA survives only to the three allowed paths; at the table, anon reads an entry only while PUBLISHED, inside its window, in a PUBLISHED slot, the editor cannot curate, the merchandiser can, a concept collection and a wrong type are refused for the owner, and the sweep is the service role's; every guard, the move function, the sweep (idempotent on a second run) and the categories trigger (insert and slug rename) probed by SQL with savepoints; hosted and local both hold 44 tables, 175 policies, eleven slots and 215 seeded `global_content` rows.
 - **Phase 21, as measured**: the viewer chunk bundles to 303.6 kB gzipped (esbuild, React external) against a 350 kB budget, after the first measurement of 391 kB found `zod` in the graph; the bundle gate fails on a planted static import and passes on the tree; a Draco-compressed GLB built in a test is encoded and decoded end to end by the same decoder family the viewer serves; a merchandiser cannot mark a finish label VERIFIED at the database and an editor's product association fails as a whole; hosted and local both hold 42 tables, 165 policies and 213 seeded `global_content` rows — the hosted count was 157 before this phase, the 56 missing rows applied through `scripts/seed/emit-sql.ts` with the runner's own hashes.
 - **733 unit and RLS tests** across 63 files, none skipped, with a local PostgreSQL 16.13 cluster
   reachable. All **twenty** gates pass locally. E2E: Studio access 13 passed / 4 `test.fixme`, the

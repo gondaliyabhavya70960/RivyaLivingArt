@@ -33,12 +33,14 @@ chrome has to render before any content exists. The public site has no such excu
 
 ---
 
-## 2. The 30 blocks, and the twenty-two that are built
+## 2. The 34 blocks, and the twenty-seven that are built
 
 `lib/cms/block-types.ts` lists the whole PHASE-05-09 §08 catalogue of 28, plus the two an exhibition
-page needs. Twenty-two are built; 8 are declared `PLANNED` (amendments A8 and A14). Phase 08 built
-the first six, Phase 11 added the ten the homepage needed, Phase 12 added `scale-statement` for
-`/about`, Phase 13 added the three `/large-format` needed, and Phase 16 added the two below.
+page needs (A14), the two the project archive needs (Phase 17), the configurator band (Phase 19) and
+the merchandised featured band (Phase 22, A22). Twenty-seven are built; 7 are declared `PLANNED`.
+Phase 08 built the first six, Phase 11 added the ten the homepage needed, Phase 12 added
+`scale-statement` for `/about`, Phase 13 added the three `/large-format` needed, Phase 16 added two,
+Phases 17, 19 and 20 one or two each, and Phase 22 added `featured-collections`.
 
 | Built | Payload family it proves |
 |---|---|
@@ -49,7 +51,8 @@ the first six, Phase 11 added the ten the homepage needed, Phase 12 added `scale
 | `empty-state` | Query-and-global: its message comes from `global_content` |
 | `divider` | No payload **and** no copy fields |
 | `manifesto`, `final-cta` | No payload — everything they show is a shared copy field |
-| `selected-works`, `portfolio-strip`, `journal-strip` | **Reference blocks**: they render entities that may not exist, and show a seeded `EMPTY_STATE.*` sentence when there are none |
+| `selected-works`, `portfolio-strip`, `journal-strip` | **Reference blocks**: they render entities that may not exist, and show a seeded `EMPTY_STATE.*` sentence when there are none. **Since Phase 22, `selected-works` and `journal-strip` on the homepage are answered by a merchandising slot** (`HOMEPAGE_SELECTED_WORKS`, `HOMEPAGE_JOURNAL_STRIP`), through the five-step ladder in `lib/cms/merchandising.ts`, and carry the slot's fallback mode: `HIDE_SECTION` removes the band, `EDITORIAL_BLOCK` adds tiles drawn from a named section, `SHOW_EMPTY_STATE` is the sentence alone. Both gained an optional `slot_key`; `selected-works` also a `fallback_section_id`. On any other page they run their Phase 11 query as before. **No product slug is ever written in a payload or a renderer** — `npm run cms:check-copy` reports a `/product/<slug>` literal |
+| `featured-collections` | A **reference block** with no query of its own (Phase 22): it asks `HOMEPAGE_FEATURED_COLLECTIONS` — curated under Studio → Merchandising → Featured from published, owner-confirmed collections and published categories — and hides itself below three. Not seeded onto the homepage; an editor places it on `/` or `/collection`. The seeded §10-03 band stays the editorial `category-grid` |
 | `material-story` | Media positions with no labels — the words are the section's own heading |
 | `material-palette`, `secondary-objects` | Repeating items with entry-level verification |
 | `commission-cta` | Chips, each verifiable on its own |

@@ -4205,6 +4205,498 @@ export const STUDIO_STRINGS = {
     value: 'That enquiry could not be found.',
     contentKey: 'studio_help.inquiry_not_found',
   },
+  // --- Phase 22: merchandising -----------------------------------------------------------------
+  'studio.merchandising.readOnlyNote': {
+    value:
+      'You can see the arrangements here. Changing them needs the merchandising permission (owner, admin, merchandiser).',
+    contentKey: 'studio_help.merch_read_only_note',
+  },
+  'studio.merchandising.slot.key': {
+    value: 'Slot',
+    contentKey: 'studio_help.merch_slot_key',
+  },
+  'studio.merchandising.slot.surface': {
+    value: 'Appears on',
+    contentKey: 'studio_help.merch_slot_surface',
+  },
+  'studio.merchandising.slot.readBy': {
+    value: 'Read by',
+    contentKey: 'studio_help.merch_slot_read_by',
+  },
+  'studio.merchandising.slot.types': {
+    value: 'Accepts',
+    contentKey: 'studio_help.merch_slot_types',
+  },
+  'studio.merchandising.slot.status': {
+    value: 'Slot status',
+    contentKey: 'studio_help.merch_slot_status',
+  },
+  'studio.merchandising.entries.caption': {
+    value: 'Entries in this slot, in the order the site shows them',
+    contentKey: 'studio_help.merch_entries_caption',
+  },
+  'studio.merchandising.entries.emptyHeading': {
+    value: 'Nothing curated yet',
+    contentKey: 'studio_help.merch_entries_empty_heading',
+  },
+  'studio.merchandising.entries.emptyBody': {
+    value:
+      'Add a piece below. Until the slot reaches its minimum, the site shows the fallback you choose under Settings.',
+    contentKey: 'studio_help.merch_entries_empty_body',
+  },
+  'studio.merchandising.entries.colEntity': {
+    value: 'Entity',
+    contentKey: 'studio_help.merch_entries_col_entity',
+  },
+  'studio.merchandising.entries.colType': {
+    value: 'Type',
+    contentKey: 'studio_help.merch_entries_col_type',
+  },
+  'studio.merchandising.entries.colStatus': {
+    value: 'Status',
+    contentKey: 'studio_help.merch_entries_col_status',
+  },
+  'studio.merchandising.entries.colWindow': {
+    value: 'Window',
+    contentKey: 'studio_help.merch_entries_col_window',
+  },
+  'studio.merchandising.entries.colPinned': {
+    value: 'Pinned',
+    contentKey: 'studio_help.merch_entries_col_pinned',
+  },
+  'studio.merchandising.entries.colOrder': {
+    value: 'Order',
+    contentKey: 'studio_help.merch_entries_col_order',
+  },
+  'studio.merchandising.entries.colActions': {
+    value: 'Actions',
+    contentKey: 'studio_help.merch_entries_col_actions',
+  },
+  'studio.merchandising.entry.moveUp': {
+    value: 'Move up',
+    contentKey: 'studio_help.merch_entry_move_up',
+  },
+  'studio.merchandising.entry.moveDown': {
+    value: 'Move down',
+    contentKey: 'studio_help.merch_entry_move_down',
+  },
+  'studio.merchandising.entry.remove': {
+    value: 'Remove',
+    contentKey: 'studio_help.merch_entry_remove',
+  },
+  'studio.merchandising.entry.publish': {
+    value: 'Publish',
+    contentKey: 'studio_help.merch_entry_publish',
+  },
+  'studio.merchandising.entry.unpublish': {
+    value: 'Take down',
+    contentKey: 'studio_help.merch_entry_unpublish',
+  },
+  'studio.merchandising.entry.pin': {
+    value: 'Pin',
+    contentKey: 'studio_help.merch_entry_pin',
+  },
+  'studio.merchandising.entry.unpin': {
+    value: 'Unpin',
+    contentKey: 'studio_help.merch_entry_unpin',
+  },
+  'studio.merchandising.entry.noWindow': {
+    value: 'Always',
+    contentKey: 'studio_help.merch_entry_no_window',
+  },
+  'studio.merchandising.entry.from': {
+    value: 'From',
+    contentKey: 'studio_help.merch_entry_from',
+  },
+  'studio.merchandising.entry.until': {
+    value: 'Until',
+    contentKey: 'studio_help.merch_entry_until',
+  },
+  'studio.merchandising.entry.unknownTarget': {
+    value: 'Not visible to you',
+    contentKey: 'studio_help.merch_entry_unknown_target',
+  },
+  'studio.merchandising.entry.windowHeading': {
+    value: 'Window and note',
+    contentKey: 'studio_help.merch_entry_window_heading',
+  },
+  'studio.merchandising.entry.publishAt': {
+    value: 'Opens at',
+    contentKey: 'studio_help.merch_entry_publish_at',
+  },
+  'studio.merchandising.entry.unpublishAt': {
+    value: 'Closes at',
+    contentKey: 'studio_help.merch_entry_unpublish_at',
+  },
+  'studio.merchandising.entry.windowHelp': {
+    value:
+      'Leave both empty for an entry that is live whenever it is published. Times are entered in UTC.',
+    contentKey: 'studio_help.merch_entry_window_help',
+  },
+  'studio.merchandising.entry.note': {
+    value: 'Note',
+    contentKey: 'studio_help.merch_entry_note',
+  },
+  'studio.merchandising.entry.saveWindow': {
+    value: 'Save window',
+    contentKey: 'studio_help.merch_entry_save_window',
+  },
+  'studio.merchandising.add.heading': {
+    value: 'Add to this slot',
+    contentKey: 'studio_help.merch_add_heading',
+  },
+  'studio.merchandising.add.entity': {
+    value: 'Piece',
+    contentKey: 'studio_help.merch_add_entity',
+  },
+  'studio.merchandising.add.type': {
+    value: 'Type',
+    contentKey: 'studio_help.merch_add_type',
+  },
+  'studio.merchandising.add.submit': {
+    value: 'Add',
+    contentKey: 'studio_help.merch_add_submit',
+  },
+  'studio.merchandising.add.publishedOnly': {
+    value:
+      'Only published items are offered. An entry pointing at something unpublished renders nothing until it is published.',
+    contentKey: 'studio_help.merch_add_published_only',
+  },
+  'studio.merchandising.add.conceptsNote': {
+    value:
+      'Collections still in concept are not offered: the Phase 16 gate means a concept cannot be published, so it cannot be featured. Confirm the concept under Catalogue → Collections first.',
+    contentKey: 'studio_help.merch_add_concepts_note',
+  },
+  'studio.merchandising.add.nothingToOffer': {
+    value: 'Nothing published to add yet.',
+    contentKey: 'studio_help.merch_add_nothing',
+  },
+  'studio.merchandising.settings.heading': {
+    value: 'Settings',
+    contentKey: 'studio_help.merch_settings_heading',
+  },
+  'studio.merchandising.settings.minItems': {
+    value: 'Minimum shown',
+    contentKey: 'studio_help.merch_settings_min',
+  },
+  'studio.merchandising.settings.maxItems': {
+    value: 'Maximum shown',
+    contentKey: 'studio_help.merch_settings_max',
+  },
+  'studio.merchandising.settings.autoFill': {
+    value: 'Top up automatically',
+    contentKey: 'studio_help.merch_settings_auto_fill',
+  },
+  'studio.merchandising.settings.autoFillHelp': {
+    value:
+      'When the curated list is short, fill it with the most recently published items of this type. The rule below is shown to whoever asks why a piece appeared. Nothing behavioural, popular or trending exists here.',
+    contentKey: 'studio_help.merch_settings_auto_fill_help',
+  },
+  'studio.merchandising.settings.autoFillRule': {
+    value: 'Rule, in words',
+    contentKey: 'studio_help.merch_settings_auto_fill_rule',
+  },
+  'studio.merchandising.settings.fallbackMode': {
+    value: 'When the slot is short',
+    contentKey: 'studio_help.merch_settings_fallback',
+  },
+  'studio.merchandising.settings.fallback.EDITORIAL_BLOCK': {
+    value: 'Show editorial tiles (media and copy, no products)',
+    contentKey: 'studio_help.merch_settings_fallback_editorial',
+  },
+  'studio.merchandising.settings.fallback.HIDE_SECTION': {
+    value: 'Hide the section entirely',
+    contentKey: 'studio_help.merch_settings_fallback_hide',
+  },
+  'studio.merchandising.settings.fallback.SHOW_EMPTY_STATE': {
+    value: 'Show the seeded empty-state sentence',
+    contentKey: 'studio_help.merch_settings_fallback_empty',
+  },
+  'studio.merchandising.settings.fallbackSection': {
+    value: 'Fallback section id',
+    contentKey: 'studio_help.merch_settings_fallback_section',
+  },
+  'studio.merchandising.settings.fallbackSectionHelp': {
+    value:
+      'The page section whose media and copy the editorial tiles use. Leave empty for the page’s own material story.',
+    contentKey: 'studio_help.merch_settings_fallback_section_help',
+  },
+  'studio.merchandising.settings.save': {
+    value: 'Save settings',
+    contentKey: 'studio_help.merch_settings_save',
+  },
+  'studio.merchandising.preview.heading': {
+    value: 'What the public sees now',
+    contentKey: 'studio_help.merch_preview_heading',
+  },
+  'studio.merchandising.preview.provenance.CURATED': {
+    value: 'Curated — chosen by a person, in this order',
+    contentKey: 'studio_help.merch_preview_curated',
+  },
+  'studio.merchandising.preview.provenance.RULE_FILLED': {
+    value: 'Topped up by rule',
+    contentKey: 'studio_help.merch_preview_rule_filled',
+  },
+  'studio.merchandising.preview.provenance.FALLBACK': {
+    value: 'Fallback — the slot is below its minimum',
+    contentKey: 'studio_help.merch_preview_fallback',
+  },
+  'studio.merchandising.preview.unknownSlot': {
+    value: 'This slot has no row on this database yet. Run the migrations.',
+    contentKey: 'studio_help.merch_preview_unknown',
+  },
+  'studio.merchandising.preview.empty': {
+    value: 'Nothing renders for this slot right now.',
+    contentKey: 'studio_help.merch_preview_empty',
+  },
+  'studio.merchandising.preview.rule': {
+    value: 'Rule',
+    contentKey: 'studio_help.merch_preview_rule',
+  },
+  'studio.merchandising.homepage.help': {
+    value:
+      'The homepage’s two curated bands — Selected Works and the journal strip — plus the hero still and the Selected Works heading. Featured collections live on their own screen.',
+    contentKey: 'studio_help.merch_homepage_help',
+  },
+  'studio.merchandising.homepage.heroHeading': {
+    value: 'Homepage hero still',
+    contentKey: 'studio_help.merch_homepage_hero_heading',
+  },
+  'studio.merchandising.homepage.heroHelp': {
+    value:
+      'Which image the hero paints first, on desktop and on mobile. This edits the hero section itself and needs the content permission; a merchandiser sees the current choice.',
+    contentKey: 'studio_help.merch_homepage_hero_help',
+  },
+  'studio.merchandising.homepage.heroDesktop': {
+    value: 'Desktop still',
+    contentKey: 'studio_help.merch_homepage_hero_desktop',
+  },
+  'studio.merchandising.homepage.heroMobile': {
+    value: 'Mobile still',
+    contentKey: 'studio_help.merch_homepage_hero_mobile',
+  },
+  'studio.merchandising.homepage.heroNone': {
+    value: 'Keep the current image',
+    contentKey: 'studio_help.merch_homepage_hero_none',
+  },
+  'studio.merchandising.homepage.heroSave': {
+    value: 'Save hero still',
+    contentKey: 'studio_help.merch_homepage_hero_save',
+  },
+  'studio.merchandising.homepage.headingHeading': {
+    value: 'Selected Works heading',
+    contentKey: 'studio_help.merch_homepage_heading_heading',
+  },
+  'studio.merchandising.homepage.headingHelp': {
+    value:
+      'The heading above the Selected Works band. Editing it is a content change and needs the content permission.',
+    contentKey: 'studio_help.merch_homepage_heading_help',
+  },
+  'studio.merchandising.homepage.headingField': {
+    value: 'Heading',
+    contentKey: 'studio_help.merch_homepage_heading_field',
+  },
+  'studio.merchandising.homepage.headingSave': {
+    value: 'Save heading',
+    contentKey: 'studio_help.merch_homepage_heading_save',
+  },
+  'studio.merchandising.homepage.noHomepage': {
+    value:
+      'The homepage has not been seeded on this database, so there is no hero or Selected Works section to edit.',
+    contentKey: 'studio_help.merch_homepage_none',
+  },
+  'studio.merchandising.homepage.featuredNote': {
+    value:
+      'Featured collections are curated on the Featured screen. This is what the homepage shows now.',
+    contentKey: 'studio_help.merch_homepage_featured_note',
+  },
+  'studio.merchandising.homepage.featuredLink': {
+    value: 'Open Featured',
+    contentKey: 'studio_help.merch_homepage_featured_link',
+  },
+  'studio.merchandising.homepage.contentOnly': {
+    value: 'Editing this needs the content permission.',
+    contentKey: 'studio_help.merch_homepage_content_only',
+  },
+  'studio.merchandising.store.help': {
+    value:
+      'The order of the seven categories across the site, and the pieces pinned to the top of each category page.',
+    contentKey: 'studio_help.merch_store_help',
+  },
+  'studio.merchandising.store.orderHeading': {
+    value: 'Category order',
+    contentKey: 'studio_help.merch_store_order_heading',
+  },
+  'studio.merchandising.store.orderCaption': {
+    value: 'Categories in the order the site presents them',
+    contentKey: 'studio_help.merch_store_order_caption',
+  },
+  'studio.merchandising.store.colCategory': {
+    value: 'Category',
+    contentKey: 'studio_help.merch_store_col_category',
+  },
+  'studio.merchandising.store.colOrder': {
+    value: 'Order',
+    contentKey: 'studio_help.merch_store_col_order',
+  },
+  'studio.merchandising.store.colStatus': {
+    value: 'Status',
+    contentKey: 'studio_help.merch_store_col_status',
+  },
+  'studio.merchandising.store.restore': {
+    value: 'Restore recommended order',
+    contentKey: 'studio_help.merch_store_restore',
+  },
+  'studio.merchandising.store.restoreHelp': {
+    value:
+      'Furniture, Collectible Design, 3D + Resin, Wall & Statement Art, Preservation, Décor, Gifts — the SEED §13 order, which is also the content priority.',
+    contentKey: 'studio_help.merch_store_restore_help',
+  },
+  'studio.merchandising.store.priorityWarning': {
+    value:
+      'This order puts Gifts or Décor above Furniture. The content priority (SEED §56) is large-format furniture first and gifts last, so the site does not drift back into small gift-store positioning. You can save anyway.',
+    contentKey: 'studio_help.merch_store_priority_warning',
+  },
+  'studio.merchandising.store.priorityConfirm': {
+    value: 'Move anyway',
+    contentKey: 'studio_help.merch_store_priority_confirm',
+  },
+  'studio.merchandising.store.pinnedHeading': {
+    value: 'Pinned pieces',
+    contentKey: 'studio_help.merch_store_pinned_heading',
+  },
+  'studio.merchandising.store.pinnedHelp': {
+    value:
+      'Each category page shows its pinned pieces above the grid on its default view. The grid itself is untouched.',
+    contentKey: 'studio_help.merch_store_pinned_help',
+  },
+  'studio.merchandising.store.noSlot': {
+    value:
+      'This category has no pinned slot yet. It is created with the category; run the migrations.',
+    contentKey: 'studio_help.merch_store_no_slot',
+  },
+  'studio.merchandising.featured.help': {
+    value:
+      'Which published collections and categories are featured on the homepage, and which pieces and collections lead the store. Collections still in concept cannot be featured.',
+    contentKey: 'studio_help.merch_featured_help',
+  },
+  'studio.merchandising.scheduling.help': {
+    value:
+      'Every slot and entry window in one calendar. A gap is a day a slot falls below its minimum and shows its fallback; an overflow is a day more entries are live than the slot shows.',
+    contentKey: 'studio_help.merch_scheduling_help',
+  },
+  'studio.merchandising.scheduling.month': {
+    value: 'Month',
+    contentKey: 'studio_help.merch_scheduling_month',
+  },
+  'studio.merchandising.scheduling.previous': {
+    value: 'Previous month',
+    contentKey: 'studio_help.merch_scheduling_previous',
+  },
+  'studio.merchandising.scheduling.next': {
+    value: 'Next month',
+    contentKey: 'studio_help.merch_scheduling_next',
+  },
+  'studio.merchandising.scheduling.caption': {
+    value: 'Live entries per slot per day',
+    contentKey: 'studio_help.merch_scheduling_caption',
+  },
+  'studio.merchandising.scheduling.colSlot': {
+    value: 'Slot',
+    contentKey: 'studio_help.merch_scheduling_col_slot',
+  },
+  'studio.merchandising.scheduling.gap': {
+    value: 'Below minimum',
+    contentKey: 'studio_help.merch_scheduling_gap',
+  },
+  'studio.merchandising.scheduling.over': {
+    value: 'Above maximum',
+    contentKey: 'studio_help.merch_scheduling_over',
+  },
+  'studio.merchandising.scheduling.ok': {
+    value: 'Within range',
+    contentKey: 'studio_help.merch_scheduling_ok',
+  },
+  'studio.merchandising.scheduling.warningsHeading': {
+    value: 'Warnings this month',
+    contentKey: 'studio_help.merch_scheduling_warnings',
+  },
+  'studio.merchandising.scheduling.noWarnings': {
+    value: 'No gaps or overflows this month.',
+    contentKey: 'studio_help.merch_scheduling_no_warnings',
+  },
+  'studio.merchandising.scheduling.windowsHeading': {
+    value: 'Windows this month',
+    contentKey: 'studio_help.merch_scheduling_windows',
+  },
+  'studio.merchandising.scheduling.windowsCaption': {
+    value: 'Entries whose window opens or closes this month',
+    contentKey: 'studio_help.merch_scheduling_windows_caption',
+  },
+  'studio.merchandising.scheduling.noWindows': {
+    value: 'No entry opens or closes this month.',
+    contentKey: 'studio_help.merch_scheduling_no_windows',
+  },
+  'studio.merchandising.scheduling.colEntry': {
+    value: 'Entry',
+    contentKey: 'studio_help.merch_scheduling_col_entry',
+  },
+  'studio.merchandising.scheduling.colOpens': {
+    value: 'Opens',
+    contentKey: 'studio_help.merch_scheduling_col_opens',
+  },
+  'studio.merchandising.scheduling.colCloses': {
+    value: 'Closes',
+    contentKey: 'studio_help.merch_scheduling_col_closes',
+  },
+  'studio.merchandising.scheduling.jump': {
+    value: 'Open editor',
+    contentKey: 'studio_help.merch_scheduling_jump',
+  },
+  'studio.merchandising.scheduling.gapDays': {
+    value: 'days below minimum',
+    contentKey: 'studio_help.merch_scheduling_gap_days',
+  },
+  'studio.merchandising.scheduling.overDays': {
+    value: 'days above maximum',
+    contentKey: 'studio_help.merch_scheduling_over_days',
+  },
+  'studio.merchandising.refusal.slotOwner': {
+    value: 'That slot is edited from a different screen.',
+    contentKey: 'studio_help.merch_refusal_owner',
+  },
+  'studio.merchandising.refusal.type': {
+    value: 'That slot does not accept that kind of entry.',
+    contentKey: 'studio_help.merch_refusal_type',
+  },
+  'studio.merchandising.refusal.concept': {
+    value: 'That collection is still a concept and cannot be featured.',
+    contentKey: 'studio_help.merch_refusal_concept',
+  },
+  'studio.merchandising.refusal.missing': {
+    value: 'That item could not be found.',
+    contentKey: 'studio_help.merch_refusal_missing',
+  },
+  'studio.merchandising.refusal.duplicate': {
+    value: 'That item is already in this slot.',
+    contentKey: 'studio_help.merch_refusal_duplicate',
+  },
+  'studio.merchandising.refusal.window': {
+    value: 'The window must close after it opens.',
+    contentKey: 'studio_help.merch_refusal_window',
+  },
+  'studio.merchandising.refusal.rule': {
+    value: 'Automatic top-up needs a rule written in words.',
+    contentKey: 'studio_help.merch_refusal_rule',
+  },
+  'studio.merchandising.refusal.range': {
+    value: 'The minimum must be at least one and the maximum at least the minimum.',
+    contentKey: 'studio_help.merch_refusal_range',
+  },
+  'studio.merchandising.refusal.generic': {
+    value: 'That change could not be saved.',
+    contentKey: 'studio_help.merch_refusal_generic',
+  },
 } as const satisfies Record<string, StudioStringEntry>
 
 /** Every key this module resolves. A typo is a compile error, not a blank space on the page. */

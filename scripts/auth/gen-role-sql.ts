@@ -33,6 +33,7 @@ import {
   PHASE_19_LIMIT_POLICIES,
   PHASE_20_POLICIES,
   PHASE_21_POLICIES,
+  PHASE_22_POLICIES,
   PHASE_19_POLICIES,
   TABLE_POLICY_MAP,
   type ManagedTable,
@@ -266,6 +267,25 @@ const GENERATED: Record<string, { title: string; preamble: string }> = {
 -- row (a material forces at least OWNER_VERIFICATION_REQUIRED), and who may mark it VERIFIED is
 -- the Phase 08 authority trigger (owner and admin). Neither is an access question, so neither is
 -- here; \`lib/media/model.ts\` then returns the material name to the public viewer only at VERIFIED.`,
+  },
+  [PHASE_22_POLICIES]: {
+    title: `-- ${PHASE_22_POLICIES} — Phase 22`,
+    preamble: `-- Policies for \`merchandising_slots\` and \`merchandising_entries\`, which migration 0200 creates.
+-- GENERATED from lib/auth/table-permissions.ts and rewritten whole, so it may hold nothing a human
+-- wrote.
+--
+-- THE PUBLIC RESOLVER READS WITH THE ANON KEY, so both tables are shape A rather than staff-only:
+-- a slot is readable while PUBLISHED, and an entry only while PUBLISHED, inside its half-open
+-- window, AND inside a PUBLISHED slot. The window is part of the clause for the reason it is on
+-- \`page_sections\`: a plan readable the moment it is saved makes scheduling decorative.
+--
+-- WRITES ARE \`merchandising.write\` (owner, admin, merchandiser) ON BOTH, and removing an entry is
+-- the same permission — curation, not destruction. Removing a SLOT is \`destructive.execute\`:
+-- nothing in the Studio does it, because a slot nothing reads is a dead end.
+--
+-- WHAT THE POLICY DOES NOT DECIDE. Whether an entry names a type its slot admits, whether the entity
+-- exists, and whether a collection is still a concept are all \`guard_merchandising_entry()\` on the
+-- row (0200). None is an access question, so none is here.`,
   },
 }
 
