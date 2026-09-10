@@ -9,8 +9,11 @@ import { t } from '@/components/studio/strings'
 import { requirePermission } from '@/lib/auth/require'
 import { isEnabled } from '@/lib/flags'
 import { STAGE_ORDER } from '@/lib/scraper/core/stage'
+import { HealthPill } from '@/components/studio/research/HealthPill'
 import { countProductsByStage } from '@/lib/supabase/repositories/research/products'
 import { listResearchRuns } from '@/lib/supabase/repositories/research/runs'
+import { countUnresolvedCategoryMappings } from '@/lib/supabase/repositories/research/source-config'
+import { listSourceHealth } from '@/lib/supabase/repositories/research/source-health'
 import { listResearchSources } from '@/lib/supabase/repositories/research/sources'
 import { countPendingWorkItems } from '@/lib/supabase/repositories/research/work-items'
 import { createClient } from '@/lib/supabase/server'
@@ -26,6 +29,12 @@ import { createClient } from '@/lib/supabase/server'
  * THE KILL SWITCH IS SURFACED FIRST when it is off. A researcher looking at a queue that is not
  * moving needs to know the master switch is down before they go looking at politeness settings,
  * and it is the single most common reason for a still queue.
+ *
+ * PHASE 26 ADDS TWO FIGURES AND BOTH ARE GAPS RATHER THAN ACHIEVEMENTS. Health comes from the
+ * derived view, so a source that has stopped running says so here without anything having to
+ * remember to write it down. The unmapped-category count is the number of labels a source has
+ * shown Rivya that nobody has decided about — every one of them is a row Phase 28 will stop at
+ * `VALIDATED`, and the whole reason it is counted is that guessing instead would be silent.
  */
 export const metadata = studioMetadata('/studio/research/dashboard')
 
@@ -33,13 +42,17 @@ export default async function Page() {
   await requirePermission('research.read')
 
   const client = await createClient()
-  const [sources, runs, pending, stages, researchOn] = await Promise.all([
+  const [sources, runs, pending, stages, researchOn, health, unmapped] = await Promise.all([
     listResearchSources(client),
     listResearchRuns(client, 10),
     countPendingWorkItems(client),
     countProductsByStage(client),
     isEnabled('research_enabled'),
+    listSourceHealth(client),
+    countUnresolvedCategoryMappings(client),
   ])
+
+  const healthById = new Map(health.map((entry) => [entry.sourceId, entry]))
 
   const approved = sources.filter((source) => source.policy_status === 'APPROVED')
 
@@ -77,6 +90,11 @@ export default async function Page() {
           <Text tone="secondary" className="mt-4">
             {`${pending} ${t('studio.research.queueDepth')}`}
           </Text>
+          {/* COUNTED EVEN WHEN IT IS ZERO. A figure that appears only when it is non-zero is a
+              figure nobody learns to look for. */}
+          <Text tone="secondary" className="mt-2" data-unmapped-categories={String(unmapped)}>
+            {`${unmapped} ${t('studio.research.unmappedCount')}`}
+          </Text>
         </Surface>
 
         <Surface level={1} className="p-6">
@@ -94,6 +112,7 @@ export default async function Page() {
                   data-source-id={source.id}
                 >
                   <span className="flex-1">{source.name}</span>
+                  <HealthPill health={healthById.get(source.id)?.health ?? null} />
                   <Badge tone={source.policy_status === 'APPROVED' ? 'neutral' : 'danger'}>
                     {source.policy_status}
                   </Badge>

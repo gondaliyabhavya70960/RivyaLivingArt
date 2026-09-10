@@ -223,19 +223,35 @@ describeDb('Phase 23 — the research index is unreachable', () => {
     expect(rows.length).toBeGreaterThanOrEqual(1)
   })
 
-  it('crosses no foreign key between the research index and any public table', async () => {
+  it('crosses the research boundary only where an amendment says it may', async () => {
+    /*
+     * WRITTEN AS A ZERO IN PHASE 23 AND KEPT AS A LIST FROM PHASE 26. Nothing has been relaxed:
+     * the query is unchanged and every crossing it finds still has to be named here, one by one,
+     * with an amendment behind it. What changed is that the honest answer stopped being "none" —
+     * `research_source_category_map.category_id` is a taxonomy pointer a member of staff typed,
+     * `on delete set null`, recorded as A26 — and an assertion that keeps saying "none" after that
+     * is one somebody deletes rather than reads.
+     *
+     * Phase 28 adds the second and final entry. A third fails here and in
+     * `scripts/research/check-research-isolation.mjs`, which is the same rule enforced twice on
+     * purpose: this reads the DATABASE, that reads the allowlist a reviewer sees in a diff.
+     */
     const db = await connect()
-    const { rows } = await db.query(
-      `select count(*)::int as n
+    const { rows } = await db.query<{ name: string; child: string; parent: string }>(
+      `select c.conname as name, src.relname as child, tgt.relname as parent
          from pg_constraint c
          join pg_class src on src.oid = c.conrelid
          join pg_class tgt on tgt.oid = c.confrelid
         where c.contype = 'f'
           and (   (src.relname like 'research\\_%' and tgt.relname not like 'research\\_%'
                    and tgt.relname <> 'users')
-               or (tgt.relname like 'research\\_%' and src.relname not like 'research\\_%'))`,
+               or (tgt.relname like 'research\\_%' and src.relname not like 'research\\_%'))
+        order by c.conname`,
     )
-    expect(rows[0]?.n).toBe(0)
+    expect(rows.map((row) => row.name)).toEqual(['research_source_category_map_category_fk'])
+    // TAXONOMY, NEVER `products`. The exception D5 admits is a pointer at a category; a reference
+    // to a product would be the thing the rule exists to forbid, wearing an allowlisted name.
+    expect(rows[0]?.parent).toBe('categories')
   })
 })
 

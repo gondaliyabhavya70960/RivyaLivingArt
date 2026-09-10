@@ -44,17 +44,24 @@ describe('the guard still guards', () => {
     }
   })
 
-  it('keeps the I1 allowlist EMPTY at this phase', () => {
+  it('holds exactly the crossings somebody argued for, by name', () => {
     /*
-     * THE ASSERTION MOST WORTH HAVING. Phase 26 adds `research_source_category_map.category_id`
-     * and Phase 28 adds `research_products.matched_category_id`, each with a D5 amendment. A THIRD
-     * entry — or an early one — means somebody joined the two halves of the schema without the
-     * argument. Failing here forces that argument to happen.
+     * THE ASSERTION MOST WORTH HAVING, AND IT IS NOW A LIST RATHER THAN A ZERO. It was written in
+     * Phase 25 as "the allowlist is empty", which was the right assertion for a phase with no
+     * crossings and the wrong one to keep: the point was never the number, it was that every entry
+     * is a decision somebody wrote down. Phase 26 added the first — a staff-typed taxonomy
+     * pointer, `on delete set null`, recorded as amendment A26 — and Phase 28 adds the second and
+     * last. A THIRD, or a different one, means somebody joined the two halves of the schema
+     * without the argument, and failing here is what forces that argument to happen.
      */
-    const block = /const ALLOWED_CROSSINGS = new Set\(\[([\s\S]*?)\]\)/.exec(GUARD)
+    // COMMENTS STRIPPED FIRST. The entries are read by matching quoted strings, and the block's
+    // own prose explains each one — so an apostrophe in a comment used to be read as an allowlist
+    // entry, which is a test failing on punctuation rather than on the rule it exists for.
+    const code = stripCommentsAndStrings(GUARD, { strings: false })
+    const block = /const ALLOWED_CROSSINGS = new Set\(\[([\s\S]*?)\]\)/.exec(code)
     expect(block).not.toBeNull()
-    const entries = [...block![1]!.matchAll(/'([^']+)'/g)]
-    expect(entries).toHaveLength(0)
+    const entries = [...block![1]!.matchAll(/'([^']+)'/g)].map((match) => match[1])
+    expect(entries).toEqual(['research_source_category_map_category_fk'])
   })
 
   it('names the browser-automation and proxy packages it refuses', () => {

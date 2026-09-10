@@ -184,6 +184,78 @@ Brand and editorial copy may be written; anything asserting business capability 
 
 ## Amendments
 
+**2026-09-10 · A26 — D5 admits a staff-authored taxonomy pointer, Phase 26 takes migration `0241`,
+its four enums sit in `0240`, `base_url` admits loopback so the tests that prove a request was NOT
+made can exist, three politeness ceilings tighten to FEAT §26's numbers, health is a
+`security_invoker` view, and the cron grammar leaves a server-only module (PHASE-23-30 §Phase 26,
+SCRAPER.md, DATA_MODEL §12).**
+
+Eight readings the repository forced. The first genuinely amends D5 and was a stated blocker on this
+phase — *Open question 4* in the phase document — rather than a reading discovered while building.
+
+- **D5's "scraped data … never joins directly to public product tables" gains a narrow, named
+  exception, and this is the amendment the phase document said had to exist before `0240` could
+  ship.** Two research tables reference `categories`: `research_source_category_map.category_id`
+  here, and `research_products.matched_category_id` in Phase 28. The distinction D5 was reaching for
+  is between a scraped VALUE and a STAFF-AUTHORED POINTER, and only the first is what the rule is
+  about. A category mapping is a person deciding that a label on somebody else's website corresponds
+  to one of Rivya's seven categories; nothing about it came off a page. It points at TAXONOMY, never
+  at `products`, and it is `on delete set null`, so removing a Rivya category unmaps the label rather
+  than deleting research or blocking the delete. **The exception is exactly two constraints, named
+  individually in `scripts/research/check-research-isolation.mjs`, and a third fails the build** —
+  including the same column re-pointed at `products` under another name. The alternative the phase
+  document offered — storing the category slug as text — was rejected because it buys the appearance
+  of isolation with the loss of referential integrity: a renamed category silently unmaps every
+  source label, and nothing anywhere notices.
+- **`0241`, one past the phase document's `0240`.** The reason A23 gave for `0214`, A24 for `0221`
+  and A25 for `0233`, unchanged: `npm run auth:gen-policies` rewrites a generated policy file whole,
+  so it cannot also carry the DDL that creates its tables.
+- **The four new enums sit inside `0240` rather than in a file of their own, which departs from
+  0230.** That split exists because PostgreSQL refuses to USE an enum value in the same transaction
+  that ADDS it with `alter type … add value`; it says nothing about `create type`, and each migration
+  is applied by `psql --file` in autocommit besides. 0230 separated the subsystem's vocabulary from
+  eight tables and was right to. These four are four columns' worth of allowlist on one table that
+  the same file alters, and a second file holding only them would be a file nobody opens.
+- **`research_sources.base_url` requires `https://` — or loopback `http://`, and the exception is
+  named at the constraint rather than implied.** FEAT §26 field 2 says https and means it for every
+  real source. But the claims that matter most in this subsystem are claims about requests that must
+  NOT happen: a `Disallow`ed path never requested, a kill switch that produced zero traffic, a delay
+  actually waited. The only way to check those is a fixture HTTP server this repository starts and
+  reads the request log of, and such a server cannot present a certificate. Forcing https would not
+  make the system safer; it would delete the tests that prove it is. The Zod schema carries the
+  identical rule, so the form and the table refuse the same strings.
+- **`rate_limit_rpm` narrows to 1–60, `request_delay_ms` rises to a 1,000 ms floor, and both are
+  changed at the row.** Phase 25 set them wider because it had no field table to set them from;
+  FEAT §26 fields 16–18 supply the numbers. A form stricter than its table is a form somebody
+  bypasses with a server action, so the two now refuse the same values.
+- **FEAT §26 fields 20 and 21 are not columns.** `research_source_health_v` computes last run and
+  health on read, in the precedence DISABLED → FAILING → DEGRADED → STALE → HEALTHY. A cached health
+  column is wrong between the event and the job that would update it, and the moment it is most
+  likely to be wrong is the moment somebody looks at it. **`security_invoker = true` is the
+  load-bearing word in that statement**: without it a view runs with its owner's privileges and a
+  relation over nine staff-only tables becomes readable by anyone PostgREST will speak to.
+  `check-research-isolation.mjs` gains a fifth assertion for the half a policy cannot cover — a VIEW
+  has no policies, so its GRANTS are the whole of its access control, and Supabase exposes a new one
+  through PostgREST by default. Tables are deliberately out of that check's scope: Supabase grants
+  every role every privilege on every new table in `public`, and RLS, not the grant, is the boundary.
+- **`readiness` is a second column beside `policy_status`, and the pair is not redundancy.**
+  `readiness` is the researcher's side of the workflow — DRAFT, READY_FOR_REVIEW, REVIEWED — and
+  `policy_status` is the owner's answer. Folding them into one column would let a researcher move a
+  source towards approval by writing the column that records approval. `research_source_schedules`
+  refuses any `timezone` but `UTC` for the mirror-image reason: `nextCronRun` evaluates every cron
+  field in UTC, so a stored zone would be a column the scheduler silently ignores, and refusing the
+  value is better than storing a lie.
+- **The cron grammar moves to `lib/scraper/core/cron.ts`, and the adapter registry arrives one phase
+  early.** `parseCronField` and `nextCronRun` lived in `lib/scraper/workflows/schedule.ts`, which
+  begins `import 'server-only'`; Phase 26 needs the same grammar in a form validator a Client
+  Component may reach. The module is pure, `schedule.ts` re-exports both so no caller changes, and
+  the six-hour rule now exists twice on purpose — as a CHECK that cannot be bypassed, and in
+  TypeScript so a form can say what is wrong before the write. `lib/scraper/adapters/registry.ts` is
+  the other early arrival: FEAT §26 field 11 requires the adapter key to resolve against the Phase 27
+  registry, and a picker with nothing to list is not a picker. It holds a DESCRIPTOR — key, version,
+  capabilities, `supports()` — and exactly one entry; Phase 27 fills it with adapters that register
+  an implementation beside the descriptor.
+
 **2026-09-10 · A25 — Phase 25 takes migrations `0233` and `0234`, `research_sources` carries no
 `owner_verification`, snapshots live in Supabase Storage rather than Cloudinary, the research cron
 answers 401 rather than 404, and the flag is `research_enabled` (PHASE-23-30 §Phase 25, DATA_MODEL

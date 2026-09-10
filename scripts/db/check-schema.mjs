@@ -388,6 +388,50 @@ const EXPECTED = {
   research_raw_items: ['run_id', 'source_id', 'source_url', 'raw', 'extracted_at'],
   research_pipeline_events: ['entity_type', 'entity_id', 'actor_kind', 'occurred_at'],
   research_robots_cache: ['host', 'fetched_at', 'expires_at'],
+  /*
+   * Phase 26 — the three source-configuration child tables.
+   *
+   * ALL THREE CARRY THE FULL COMMON SET, `status` INCLUDED, which follows `research_jobs` rather
+   * than the §1.4 record-of-something-that-happened exemptions above it. A URL pattern, a category
+   * mapping and a schedule are all things a PERSON writes, edits and is accountable for — the §1.2
+   * test — and `updated_by` on each is what makes "who widened this source's reach" answerable.
+   *
+   * NONE CARRIES `owner_verification`, for the reason A25 records for `research_sources` itself:
+   * the verification gate for this whole subsystem is `policy_status` on the parent, enforced by a
+   * CHECK that makes an enabled-but-unapproved source unstorable. A second flag on a child row
+   * would be a flag nothing reads.
+   */
+  research_source_url_patterns: [
+    'source_id',
+    'kind',
+    'pattern',
+    'is_regex',
+    'priority',
+    'status',
+    'created_at',
+    'updated_at',
+    'updated_by',
+  ],
+  research_source_category_map: [
+    'source_id',
+    'source_label',
+    'is_ignored',
+    'status',
+    'created_at',
+    'updated_at',
+    'updated_by',
+  ],
+  research_source_schedules: [
+    'source_id',
+    'job_type',
+    'cron_expression',
+    'timezone',
+    'is_enabled',
+    'status',
+    'created_at',
+    'updated_at',
+    'updated_by',
+  ],
   bulk_operations: [
     'kind',
     'target_entity',
@@ -418,11 +462,26 @@ const EXPECTED = {
   ],
 }
 
+/*
+ * BASE TABLES ONLY, AND THE RESTRICTION ARRIVED WITH THE FIRST VIEW (Phase 26).
+ *
+ * `information_schema.columns` reports a view's columns exactly as it reports a table's, so
+ * `research_source_health_v` showed up here as a relation nobody had decided the column tiers for
+ * — and there are no tiers to decide. A view has no `created_at` because nothing creates it and no
+ * `updated_by` because nobody writes it; §1.2 and §1.4 are both about rows somebody is accountable
+ * for, and a derived relation has none.
+ *
+ * What IS worth asserting about a view is asserted elsewhere, because it is a different question:
+ * `scripts/research/check-research-isolation.mjs` fails if any research_* view is granted to
+ * `anon`, which for a relation with no policies is the whole of its access control.
+ */
 const columnRows = q(`
-  select table_name || ' ' || column_name
-  from information_schema.columns
-  where table_schema = 'public'
-  order by table_name, column_name;
+  select c.table_name || ' ' || c.column_name
+  from information_schema.columns c
+  join information_schema.tables t
+    on t.table_schema = c.table_schema and t.table_name = c.table_name
+  where c.table_schema = 'public' and t.table_type = 'BASE TABLE'
+  order by c.table_name, c.column_name;
 `)
 
 const columnsByTable = new Map()

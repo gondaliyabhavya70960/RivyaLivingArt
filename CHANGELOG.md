@@ -6,6 +6,103 @@ Every phase adds an entry; see `docs/architecture/CANONICAL-DECISIONS.md` D9 for
 
 ## [Unreleased]
 
+### Phase 26 — Comparator Source Management
+
+Adding a competitor becomes a Studio task rather than an engineering one. All twenty-three FEAT §26
+fields are stored, validated, editable and consumed by the Phase 25 engine, and the claim that
+matters is proved rather than asserted: `tests/e2e/research-sources-crud.spec.ts` builds a complete
+second source through the interface — its politeness settings, three URL patterns, four category
+mappings and a schedule — and then asserts `git status --porcelain` is EMPTY. Every behavioural
+difference between two sources is a column or a child row; there is no branch anywhere under
+`lib/scraper/**` that names one.
+
+**Still zero sources, and still nothing fetched.** This repository ships no source row and seeds
+none. `research_sources_enabled_requires_approval` continues to make an enabled-but-unapproved
+source unstorable, and Phase 26 adds the workflow around it rather than a way past it.
+
+**Migrations `0240`–`0241`, applied locally AND to the hosted project.** Four enums. Three child
+tables — `research_source_url_patterns`, `research_source_category_map`, `research_source_schedules`
+— each with its own constraints and audit trail rather than three keys in a jsonb blob nobody can
+review. Eight new columns on `research_sources`. Three politeness ceilings tightened to FEAT §26's
+numbers (60 rpm, a 1,000 ms floor, four at a time), so the form and the table now refuse the same
+values. `0241` is the generated RLS (**amendment A26**).
+
+**FEAT §26 fields 20 and 21 are not columns.** `research_source_health_v` computes last run and
+health on read — `DISABLED · FAILING · DEGRADED · STALE · HEALTHY`, in that precedence — because a
+cached health value is wrong between the event and the job that would update it, and the moment it
+is most likely to be wrong is the moment somebody looks. **`security_invoker = true` is the
+load-bearing word in that view**: without it a relation over nine staff-only tables becomes readable
+by anyone PostgREST will speak to. The isolation guard gains a fifth assertion for the half a policy
+cannot cover — a VIEW has no policies, so its GRANTS are the whole of its access control, and
+Supabase exposes a new one by default.
+
+**Six hours, parsed in SQL.** `research_source_schedules_min_interval` calls
+`research_cron_min_interval_minutes()`, which reads the minute and hour fields of a five-field cron
+expression and returns the smallest gap between two fires — 0 for an expression it cannot read, so
+an unparseable schedule is refused rather than sailing through a `null >= 360` that PostgreSQL
+treats as satisfied. The rule exists twice on purpose: as a CHECK a server action cannot bypass, and
+in `lib/scraper/core/cron.ts` so a form can say what is wrong before the write. A 21-row table runs
+both implementations against each other, and the database half really runs.
+
+**The tester makes no request; the probe makes exactly one.** Pasting twenty candidate URLs answers
+which pattern claims each and what robots.txt says, entirely from stored configuration and the
+cached robots file — a plain GET on the page, so the answer is also a link somebody can share. The
+single-URL probe beside it goes through the same fetcher every scheduled run uses, so the delay,
+the circuit breaker and robots.txt all apply, and it writes an audit row with the operator's name on
+it. The copy says which is which *before* either is pressed.
+
+**EXCLUDE wins, always, whatever the priority.** Folding the four pattern kinds into one ordering
+would have made the priority column a way to configure a refusal away — raise a PRODUCT rule to
+1000 and start fetching the paths an earlier reviewer wrote an EXCLUDE for, with nothing in the
+audit trail saying a refusal had been overridden. An EXCLUDE that will not compile still excludes,
+for the same reason: skipping a broken PRODUCT rule fetches less, skipping a broken EXCLUDE fetches
+a path somebody wrote a rule to keep Rivya out of.
+
+**An unmapped category is a first-class result, never a guess.** `resolveCategory` matches on a
+normalised label and nothing else — no stemming, no synonyms, no defaulting to the first category —
+and the dashboard counts what is left over. A row whose Rivya category is later deleted becomes
+`UNRESOLVED` rather than vanishing: the observation is evidence, and the decision has to be made
+again. **The obvious constraint here was written first and was wrong**, and it is recorded rather
+than quietly replaced: `check (category_id is not null or is_ignored)` turned `on delete set null`
+back into `on delete restrict`, so a merchandiser could not remove a category because a researcher
+had once mapped a label to it. A test wrote the delete and found it.
+
+**D5 gains its narrow, named exception (amendment A26), which was a stated blocker on this phase.**
+`research_source_category_map.category_id` is the FIRST of exactly two references from the research
+schema into a public one. The distinction D5 was reaching for is between a scraped VALUE and a
+STAFF-AUTHORED POINTER: a category mapping is a person deciding that a label on somebody else's
+website corresponds to one of Rivya's seven categories, it points at taxonomy rather than at
+`products`, and it is `on delete set null`. The guard allowlists it by constraint name and fails on
+a third; Phase 28 adds the second and last. The slug-as-text alternative was rejected because it
+buys the appearance of isolation with the loss of referential integrity.
+
+**Readiness and policy status are two columns because they are two questions.** A researcher marks a
+source READY_FOR_REVIEW — a request, not an answer — and an owner or admin records `APPROVED`,
+`RESTRICTED` or `BLOCKED` with a mandatory note naming what they read and when. Both acts need
+`research.write` **and** `system.settings.write`, checked as a pair in the server action because RLS
+gates a row rather than a column, with the row-level `research_sources_approval_is_attributed`
+underneath. The panel carries the standing OWNER_VERIFICATION_REQUIRED statement and offers no
+pre-selected decision: the first option is empty, so submitting without choosing is refused rather
+than recorded as approval.
+
+**The cron grammar left a `server-only` module and the adapter registry arrived a phase early.**
+`parseCronField` and `nextCronRun` moved to `lib/scraper/core/cron.ts` — pure, no marker — because
+Phase 26 needs the same grammar inside a form validator a Client Component reaches;
+`workflows/schedule.ts` re-exports both so no caller changed. `lib/scraper/adapters/registry.ts`
+holds a DESCRIPTOR — key, version, capabilities, `supports()` — with exactly one entry, because
+FEAT §26 field 11 requires the adapter key to resolve and a picker with nothing to list is not a
+picker. Selecting an adapter whose `supports()` rejects the base URL needs an explicit tick, and the
+tick lands in the audit row.
+
+**Verified**: 73 migrations apply from clean; local and hosted both report 73 / 66 tables / 230
+policies, zero `anon` policies on any research table, zero anon grants on the health view, exactly
+one allowlisted boundary-crossing foreign key and zero source rows. `npm run test` — **2,158
+passing, none skipped**, including 334 across six new unit suites and `tests/unit/rls/phase26.test.ts`
+(24 cases: the view refusing `anon` outright, the view hiding rows from an `editor` *because* it is
+`security_invoker`, and every constraint a form must not be the only thing enforcing). Two new e2e
+specs. `npm run check` — all **33** gates green. A production build against the seeded database
+renders all three new routes.
+
 ### Phase 25 — Product Scraper Foundation
 
 Rivya gains the machinery to read a competitor's website — politely, on a schedule, under a kill

@@ -95,12 +95,22 @@ const config = [
      * could write through the session, but `research_work_items` has no session write policy for
      * the reason above, and creating a run whose URLs could not be queued would be a run that
      * never moves.
+     *
+     * `app/(studio)/studio/(shell)/research/sources/actions.ts` (Phase 26) reaches for it in ONE
+     * action out of eleven. `probeUrlAction` fetches a single page on purpose, and the three tables
+     * that records it — `research_fetches`, `research_robots_cache` and the source's politeness
+     * counters — have no session write policy for exactly the reason above: a member of staff able
+     * to write a fetch row could record a request that never happened, or claim a
+     * robots-DISALLOWED URL had been ALLOWED. Every other action in the file uses the
+     * request-scoped client, and the probe runs `requirePermission('research.write')`, the kill
+     * switch, the policy check and the host check before it reaches for the admin client.
      */
     ignores: [
       'app/api/cron/content-schedule/route.ts',
       'app/api/cron/research/route.ts',
       'app/(studio)/studio/(shell)/content/actions.ts',
       'app/(studio)/studio/(shell)/research/scrape/actions.ts',
+      'app/(studio)/studio/(shell)/research/sources/actions.ts',
     ],
     rules: {
       'no-restricted-imports': [

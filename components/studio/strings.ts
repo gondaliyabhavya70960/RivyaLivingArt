@@ -1112,6 +1112,332 @@ export const STUDIO_STRINGS = {
     value: 'Refused by robots.txt \u2014 no request was made',
     contentKey: 'studio_help.research_disallowed_note',
   },
+
+  /*
+   * Phase 26 — source management.
+   *
+   * THE COPY CARRIES THE POLICY, NOT JUST THE LABEL. Three of these strings are the only place a
+   * researcher is told what they may not do — that readiness is a request rather than an approval,
+   * that a probe makes a real request to somebody else's server, and that the tester does not.
+   * Each of them is a sentence somebody reads at the moment they would otherwise get it wrong,
+   * which is the only moment that counts. SEED §40 — every one is overridable from
+   * `global_content` without a code change.
+   */
+  'studio.research.addSource': {
+    value: 'Add a source',
+    contentKey: 'studio_help.research_add_source',
+  },
+  'studio.research.sourceName': { value: 'Name', contentKey: 'studio_help.research_source_name' },
+  'studio.research.sourceSlug': {
+    value: 'Reference',
+    contentKey: 'studio_help.research_source_slug',
+  },
+  'studio.research.sourceSlugHelp': {
+    value: 'Lower case, hyphens, no spaces. Used in snapshot paths and never shown to a visitor.',
+    contentKey: 'studio_help.research_source_slug_help',
+  },
+  'studio.research.sourceBaseUrl': {
+    value: 'Website',
+    contentKey: 'studio_help.research_source_base_url',
+  },
+  'studio.research.sourceBaseUrlHelp': {
+    value:
+      'The site\u2019s address, over https. Every URL pattern and every fetched page must be on this host \u2014 an approval is for one website.',
+    contentKey: 'studio_help.research_source_base_url_help',
+  },
+  'studio.research.sourceRegion': {
+    value: 'Region',
+    contentKey: 'studio_help.research_source_region',
+  },
+  'studio.research.sourceCurrency': {
+    value: 'Currency',
+    contentKey: 'studio_help.research_source_currency',
+  },
+  'studio.research.sourceCurrencyHelp': {
+    value:
+      'The currency this site states its prices in. Nothing is ever converted \u2014 prices are compared within a currency and never across one.',
+    contentKey: 'studio_help.research_source_currency_help',
+  },
+  'studio.research.sourceType': {
+    value: 'Kind of business',
+    contentKey: 'studio_help.research_source_type',
+  },
+  'studio.research.sourceLeague': {
+    value: 'Comparison group',
+    contentKey: 'studio_help.research_source_league',
+  },
+  'studio.research.sourceLeagueHelp': {
+    value:
+      'Rivya\u2019s own reading of where this business sits. Staff-only, used for grouping in analytics, and never shown outside Studio.',
+    contentKey: 'studio_help.research_source_league_help',
+  },
+  'studio.research.sourceCollectionMode': {
+    value: 'How URLs are found',
+    contentKey: 'studio_help.research_source_collection_mode',
+  },
+  'studio.research.sourceAdapter': {
+    value: 'Extraction adapter',
+    contentKey: 'studio_help.research_source_adapter',
+  },
+  'studio.research.sourceAdapterHelp': {
+    value:
+      'Which reader turns a page into fields. \u201cgeneric\u201d suits any site that publishes structured product data.',
+    contentKey: 'studio_help.research_source_adapter_help',
+  },
+  'studio.research.adapterUnsupported': {
+    value: 'This adapter does not claim to support that website',
+    contentKey: 'studio_help.research_adapter_unsupported',
+  },
+  'studio.research.adapterOverride': {
+    value: 'Use it anyway \u2014 I have checked',
+    contentKey: 'studio_help.research_adapter_override',
+  },
+  'studio.research.sourceImageMode': {
+    value: 'Image references',
+    contentKey: 'studio_help.research_source_image_mode',
+  },
+  'studio.research.sourceImageModeHelp': {
+    value:
+      'No setting downloads, copies or re-hosts an image. The most permissive keeps the address and the size the page declared.',
+    contentKey: 'studio_help.research_source_image_mode_help',
+  },
+  'studio.research.sourceNotes': {
+    value: 'Notes',
+    contentKey: 'studio_help.research_source_notes',
+  },
+  'studio.research.sourceNotesHelp': {
+    value: 'Staff-only. Never rendered outside Studio.',
+    contentKey: 'studio_help.research_source_notes_help',
+  },
+  'studio.research.rateLimit': {
+    value: 'Requests per minute',
+    contentKey: 'studio_help.research_rate_limit',
+  },
+  'studio.research.requestDelay': {
+    value: 'Delay between requests (ms)',
+    contentKey: 'studio_help.research_request_delay',
+  },
+  'studio.research.concurrency': {
+    value: 'At a time',
+    contentKey: 'studio_help.research_concurrency',
+  },
+  'studio.research.extractionHeading': {
+    value: 'Extraction',
+    contentKey: 'studio_help.research_extraction_heading',
+  },
+  'studio.research.extractionBody': {
+    value:
+      'Where on a page the price, the reference and the attributes are. These are read by the adapter; nothing here parses a number \u2014 that happens later, once, in one place.',
+    contentKey: 'studio_help.research_extraction_body',
+  },
+  'studio.research.priceExtraction': {
+    value: 'Price',
+    contentKey: 'studio_help.research_price_extraction',
+  },
+  'studio.research.skuExtraction': {
+    value: 'Reference',
+    contentKey: 'studio_help.research_sku_extraction',
+  },
+  'studio.research.attributeExtraction': {
+    value: 'Attributes',
+    contentKey: 'studio_help.research_attribute_extraction',
+  },
+  'studio.research.patternsHeading': {
+    value: 'URL patterns',
+    contentKey: 'studio_help.research_patterns_heading',
+  },
+  'studio.research.patternsBody': {
+    value:
+      'What a product page, a category page and a page never to be fetched look like here. A pattern that excludes always wins, whatever its order.',
+    contentKey: 'studio_help.research_patterns_body',
+  },
+  'studio.research.patternKind': {
+    value: 'Kind',
+    contentKey: 'studio_help.research_pattern_kind',
+  },
+  'studio.research.patternValue': {
+    value: 'Pattern',
+    contentKey: 'studio_help.research_pattern_value',
+  },
+  'studio.research.patternIsRegex': {
+    value: 'Regular expression',
+    contentKey: 'studio_help.research_pattern_is_regex',
+  },
+  'studio.research.patternPriority': {
+    value: 'Order',
+    contentKey: 'studio_help.research_pattern_priority',
+  },
+  'studio.research.noPatterns': {
+    value: 'No pattern is defined',
+    contentKey: 'studio_help.research_no_patterns',
+  },
+  'studio.research.noPatternsBody': {
+    value:
+      'Without a product pattern a run cannot tell a product page from any other page, so it will queue nothing worth extracting.',
+    contentKey: 'studio_help.research_no_patterns_body',
+  },
+  'studio.research.testerHeading': {
+    value: 'Test these patterns',
+    contentKey: 'studio_help.research_tester_heading',
+  },
+  'studio.research.testerBody': {
+    value:
+      'Paste addresses, one per line. Nothing is requested \u2014 the answer comes from the patterns above and from the robots file already on record.',
+    contentKey: 'studio_help.research_tester_body',
+  },
+  'studio.research.testerRun': {
+    value: 'Check them',
+    contentKey: 'studio_help.research_tester_run',
+  },
+  'studio.research.probeHeading': {
+    value: 'Fetch one page',
+    contentKey: 'studio_help.research_probe_heading',
+  },
+  'studio.research.probeBody': {
+    value:
+      'This one does make a real request to somebody else\u2019s server. It obeys the delay, refuses anything robots.txt disallows, and is recorded in the audit log with your name on it.',
+    contentKey: 'studio_help.research_probe_body',
+  },
+  'studio.research.probeRun': { value: 'Fetch it', contentKey: 'studio_help.research_probe_run' },
+  'studio.research.mappingHeading': {
+    value: 'Category mapping',
+    contentKey: 'studio_help.research_mapping_heading',
+  },
+  'studio.research.mappingBody': {
+    value:
+      'What this site calls a thing, and which of Rivya\u2019s categories it belongs to. A label nobody has mapped is left unmatched and counted \u2014 never guessed at.',
+    contentKey: 'studio_help.research_mapping_body',
+  },
+  'studio.research.mappingLabel': {
+    value: 'Their label',
+    contentKey: 'studio_help.research_mapping_label',
+  },
+  'studio.research.mappingPath': {
+    value: 'Where it appears',
+    contentKey: 'studio_help.research_mapping_path',
+  },
+  'studio.research.mappingCategory': {
+    value: 'Rivya category',
+    contentKey: 'studio_help.research_mapping_category',
+  },
+  'studio.research.mappingIgnore': {
+    value: 'Not something Rivya sells',
+    contentKey: 'studio_help.research_mapping_ignore',
+  },
+  'studio.research.noMappings': {
+    value: 'Nothing is mapped yet',
+    contentKey: 'studio_help.research_no_mappings',
+  },
+  'studio.research.noMappingsBody': {
+    value:
+      'Rows from this source will reach validation and stop there until their category is mapped or dismissed.',
+    contentKey: 'studio_help.research_no_mappings_body',
+  },
+  'studio.research.unmappedCount': {
+    value: 'Unmapped categories',
+    contentKey: 'studio_help.research_unmapped_count',
+  },
+  'studio.research.schedulesHeading': {
+    value: 'Schedule',
+    contentKey: 'studio_help.research_schedules_heading',
+  },
+  'studio.research.schedulesBody': {
+    value:
+      'How often each kind of job runs, in UTC. Six hours is the shortest interval this system will accept, and it is refused at the database rather than in this form.',
+    contentKey: 'studio_help.research_schedules_body',
+  },
+  'studio.research.scheduleJobType': {
+    value: 'Job',
+    contentKey: 'studio_help.research_schedule_job_type',
+  },
+  'studio.research.scheduleCron': {
+    value: 'Cron expression',
+    contentKey: 'studio_help.research_schedule_cron',
+  },
+  'studio.research.scheduleEnabled': {
+    value: 'Running',
+    contentKey: 'studio_help.research_schedule_enabled',
+  },
+  'studio.research.noSchedules': {
+    value: 'Nothing is scheduled',
+    contentKey: 'studio_help.research_no_schedules',
+  },
+  'studio.research.noSchedulesBody': {
+    value: 'This source will only be read when somebody starts a run by hand.',
+    contentKey: 'studio_help.research_no_schedules_body',
+  },
+  'studio.research.readinessHeading': {
+    value: 'Readiness',
+    contentKey: 'studio_help.research_readiness_heading',
+  },
+  'studio.research.readinessBody': {
+    value:
+      'Marking a source ready hands it to an owner. It is a request for a decision, not the decision \u2014 nothing is fetched until an owner records one.',
+    contentKey: 'studio_help.research_readiness_body',
+  },
+  'studio.research.markReady': {
+    value: 'Mark ready for review',
+    contentKey: 'studio_help.research_mark_ready',
+  },
+  'studio.research.policyHeading': {
+    value: 'Policy review',
+    contentKey: 'studio_help.research_policy_heading',
+  },
+  'studio.research.policyNotes': {
+    value: 'What you checked, and where',
+    contentKey: 'studio_help.research_policy_notes',
+  },
+  'studio.research.policyNotesHelp': {
+    value:
+      'Required. Name the terms you read and the date you read them \u2014 this note is the record that the decision was made rather than assumed.',
+    contentKey: 'studio_help.research_policy_notes_help',
+  },
+  'studio.research.policyRobots': {
+    value: 'robots.txt on record',
+    contentKey: 'studio_help.research_policy_robots',
+  },
+  'studio.research.policyRobotsMissing': {
+    value:
+      'No robots file has been fetched for this host yet. It is read once a day, on the first request of a run.',
+    contentKey: 'studio_help.research_policy_robots_missing',
+  },
+  'studio.research.policyDecide': {
+    value: 'Record the decision',
+    contentKey: 'studio_help.research_policy_decide',
+  },
+  'studio.research.enableSource': {
+    value: 'Switch this source on',
+    contentKey: 'studio_help.research_enable_source',
+  },
+  'studio.research.disableSource': {
+    value: 'Switch this source off',
+    contentKey: 'studio_help.research_disable_source',
+  },
+  'studio.research.enableBlocked': {
+    value: 'A source cannot be switched on until its policy review is recorded as approved.',
+    contentKey: 'studio_help.research_enable_blocked',
+  },
+  'studio.research.healthHeading': {
+    value: 'Health',
+    contentKey: 'studio_help.research_health_heading',
+  },
+  'studio.research.healthBody': {
+    value:
+      'Worked out as this page loads, from the runs on record. It is never stored, so it cannot be out of date.',
+    contentKey: 'studio_help.research_health_body',
+  },
+  'studio.research.lastRun': { value: 'Last run', contentKey: 'studio_help.research_last_run' },
+  'studio.research.successRate': {
+    value: 'Succeeded (7 days)',
+    contentKey: 'studio_help.research_success_rate',
+  },
+  'studio.research.sourceSaved': {
+    value: 'Saved',
+    contentKey: 'studio_help.research_source_saved',
+  },
+  'studio.research.remove': { value: 'Remove', contentKey: 'studio_help.research_remove' },
+  'studio.research.add': { value: 'Add', contentKey: 'studio_help.research_add' },
+  'studio.research.save': { value: 'Save', contentKey: 'studio_help.research_save' },
   'studio.imports.heading': { value: 'Import products', contentKey: 'studio_help.imports_heading' },
   'studio.imports.body': {
     value:

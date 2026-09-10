@@ -2,7 +2,7 @@
 doc: STUDIO_GUIDE
 status: CURRENT
 owning_phase: 05
-last_reviewed: 2026-09-07
+last_reviewed: 2026-09-10
 owner_verification: NOT_REQUIRED
 ---
 
@@ -272,7 +272,7 @@ D4's map, leaf by leaf. This table is the index to sections 5–13.
 | `/studio/inquiries/consultation` | `inquiries.read` | `inquiries.write` | 20 |
 | `/studio/inquiries/quote` | `inquiries.read` | `inquiries.write` | 20 |
 | `/studio/research/dashboard` | `research.read` | — | 25 |
-| `/studio/research/sources` | `research.read` | `research.write` (approve: owner/admin) | 25 · 26 |
+| `/studio/research/sources` (+ `/new`, `/[sourceId]`) | `research.read` | `research.write`; **approve and enable: `research.write` + `system.settings.write`**; delete a pattern, mapping or schedule: `destructive.execute` | 25 · 26 |
 | `/studio/research/scrape` | `research.read` | `research.write` | 25 |
 | `/studio/research/jobs` | `research.read` | `research.write` | 25 |
 | `/studio/research/runs` | `research.read` | `research.write` | 25 · 27 |
@@ -1573,7 +1573,7 @@ repository ships in, not a gap: **no source is approved, so nothing has been fet
 | Route | What it does today |
 |---|---|
 | `/studio/research/dashboard` | The seven stage counts (all seven, always — a pipeline whose shape changes as it fills is a pipeline nobody can learn), queue depth, every source with its policy status and whether its circuit is open, and the last ten runs. Surfaces the kill switch FIRST when it is off, because a still queue is most often that |
-| `/studio/research/sources` | Read-only until Phase 26. Policy status, enabled, delay, concurrency, and the failure counter — shown as **paused** once the circuit is open rather than as a number nobody reads |
+| `/studio/research/sources` | Read-only as Phase 25 shipped it: policy status, enabled, delay, concurrency, and the failure counter — shown as **paused** once the circuit is open rather than as a number nobody reads. **Phase 26 made it writable and added the health column; §12.3 is the current account** |
 | `/studio/research/scrape` | Start a run against one approved source. The dry-run toggle **defaults ON** |
 | `/studio/research/jobs` | Read-only. Shows the cron expression BESIDE the next run time, because a null next-run against a real expression is a job whose schedule did not parse, and a null against a null is a job that is simply off — showing only one makes those indistinguishable |
 | `/studio/research/runs` | Every run, newest first |
@@ -1595,11 +1595,12 @@ flight." Cancelling sets a status the lease query refuses and the drain loop re-
 it does not abort a request already in flight. That is a fact an operator needs BEFORE they press,
 so it is on the control rather than in the response.
 
-**What is deliberately absent.** No source creation form (Phase 26 owns the twenty-three FEAT §26
-fields, and a half-form here would be a second place to define one source). No structured
-extraction (Phase 27 — `research_raw_items.raw` accepts only a title, a canonical URL and links,
-and its schema is `.strict()` so a shortcut fails at the write). No explorer, no change review, no
-shortlist (Phases 28–30).
+**What was deliberately absent, and what has since arrived.** Phase 25 shipped no source creation
+form, because a half-form there would have been a second place to define one source; **Phase 26 built
+the whole of it, and §12.3 is its account**. Still absent: structured extraction (Phase 27 —
+`research_raw_items.raw` accepts only a title, a canonical URL and links, and its schema is
+`.strict()` so a shortcut fails at the write), the explorer, change review and the shortlist
+(Phases 28–30).
 
 ### 12.1 The three rules that govern the whole group
 
@@ -1621,28 +1622,134 @@ Source health tiles, unmapped-category count, run status, validation-issue and p
 the daily change digest, the oldest undecided item, large-format and coverage tiles, and the
 source-coverage panel. Every figure carries a coverage badge.
 
-### 12.3 `/studio/research/sources`
+**Phase 26 filled the first two, and both are gaps rather than achievements.** Each source now
+carries its derived health beside its policy status, so a source that has stopped running says so
+here without anything having had to remember to write it down. The unmapped-category count is every
+mapping row reading `UNRESOLVED` — a label nobody has decided about yet, *and* a label whose Rivya
+category was later deleted, which is the same piece of work and is deliberately counted as one. Each
+is a row Phase 28 will leave unmatched; the whole reason they are counted is that guessing instead
+would be silent. The remaining tiles arrive with Phases 28–31.
 
-One row per approved third-party site, with the twenty-three FEAT §26 fields: name, website, region,
-currency, source type, analytics league, enabled, collection mode, category mapping, URL patterns,
-extraction adapter, image extraction, price extraction, SKU extraction, attribute extraction, rate
-limit, request delay, concurrency, scheduling, last run, health, policy review, notes.
+### 12.3 `/studio/research/sources` — **BUILT, Phase 26**
 
-The editor covers all of them plus a category-mapping editor, a URL-pattern editor with a tester, a
+Three routes: the list, `/new`, and `/[sourceId]`. Between them they carry all twenty-three FEAT §26
+fields — name, website, region, currency, source type, analytics league, enabled, collection mode,
+category mapping, URL patterns, extraction adapter, image extraction, price extraction, SKU
+extraction, attribute extraction, rate limit, request delay, concurrency, scheduling, last run,
+health, policy review, notes — plus a category-mapping editor, a URL-pattern editor with a tester, a
 schedule editor and a policy-review panel.
+
+**Adding a source is now a Studio task, and this is what the task actually is.** The e2e spec
+`research-sources-crud.spec.ts` walks it end to end as `researcher` and asserts that not one source
+file changed while it did.
+
+| # | Step | Where | Permission |
+|---|---|---|---|
+| 1 | **Describe the site.** Name, address, region, currency, what kind of business it is, and Rivya's private league for it. The politeness defaults are pre-filled with the timid ones — twenty requests a minute, three seconds apart, one at a time — so a source configured by somebody in a hurry is slow rather than fast | `/new` | `research.write` |
+| 2 | **Choose an adapter and configure extraction.** The picker lists what the registry exports, with its version and capabilities; picking one whose `supports()` rejects the address shows a warning and needs an explicit override tick, recorded in the audit row. Price, SKU and attribute extraction are three separate JSON fields, pre-seeded with a skeleton — the only fields on this surface an operator edits as JSON, because their shape belongs to the Phase 27 adapter that will read them. Three separate fields rather than one box, so a rejected key is reported against the field that caused it | `/new` · source page | `research.write` |
+| 3 | **Describe its URL shapes.** One row per shape: `PRODUCT`, `CATEGORY`, `PAGINATION`, or `EXCLUDE` for anything never to be fetched. Glob by default; regex is a tick, capped at 200 characters | source page | `research.write` |
+| 4 | **Test the shapes without fetching anything.** Paste candidate addresses, one per line, and read back which pattern matched, its kind and the robots decision. See below — this is the step the phase exists for | source page | `research.read` |
+| 5 | **Map its categories.** Their label (and the path it was seen at, when there was one) → one of Rivya's seven, or an explicit **Ignore** | source page | `research.write` |
+| 6 | **Say when it should run.** One row per job type, in UTC. Six hours is the shortest interval the system accepts | source page | `research.write` |
+| 7 | **Hand it to an owner.** *Mark ready for review* sets `readiness = 'READY_FOR_REVIEW'` | source page | `research.write` |
+| 8 | **Record the decision.** `APPROVED`, `RESTRICTED` or `BLOCKED`, with mandatory notes | policy panel | `research.write` **and** `system.settings.write` |
+| 9 | **Switch it on.** Refused by the database unless step 8 said `APPROVED` | source page | `research.write` **and** `system.settings.write` |
+
+Steps 1–7 are a **researcher's** work. Steps 8 and 9 are an **owner's or admin's**, and the pair of
+permissions is checked explicitly in the server action rather than left to RLS — RLS gates a *row*,
+not a *column*, so as far as PostgreSQL is concerned a researcher who may edit a source's delay may
+also write its `policy_status`. A refusal is written to `audit_logs` with `result = 'DENIED'`,
+because a refusal nobody can review is not a control.
+
+**Readiness and policy status are two different columns, and a researcher can only write one of
+them.** *Mark ready for review* is a request for a decision, not the decision — the seeded copy says
+so: *"Marking a source ready hands it to an owner. It is a request for a decision, not the decision —
+nothing is fetched until an owner records one."* `REVIEWED` is written by the owner's decision, never
+by the researcher, because a researcher marking their own source reviewed would be answering the
+question they asked.
+
+**The tester makes no request. The probe makes exactly one.** They sit side by side so the difference
+is visible at the moment somebody chooses:
+
+- **Test these patterns** is a plain form submission that reloads the page with the addresses in the
+  query string. The pattern half is computed from the rows already stored; the robots half is read
+  from the robots file already on record. *"Nothing is requested — the answer comes from the patterns
+  above and from the robots file already on record."* This matters because the addresses being tested
+  belong to a site nobody has yet decided may be read: a tester that fetched to find out would make
+  Rivya's first twenty requests to a source the requests it made while deciding whether that source
+  may be requested at all. The result is a shareable link, which is what somebody debugging a source
+  wants to send to a colleague.
+- **Fetch one page** does make a real request, through the same fetcher every scheduled run uses.
+  *"It obeys the delay, refuses anything robots.txt disallows, and is recorded in the audit log with
+  your name on it."* It refuses an address whose host is not the source's, refuses a source that has
+  not been approved, refuses everything while the research kill switch is off, advances the source's
+  delay so a second press waits exactly as a queued item would, counts a failure towards the circuit
+  breaker, and keeps the page it fetched in the private snapshot store — a request made to somebody
+  else's server for evidence that is then discarded has all of the cost and none of the value.
+  A robots refusal returns before any packet leaves and is still recorded, as `DENIED`.
+
+**What the owner sees in the policy panel.** The standing approval sentence first. Then the site's
+robots.txt rendered **from the cache, never fetched to fill the screen** — opening a review panel is
+not a reason to make a request, and if nothing has been fetched for that host the panel says so.
+Then any previous decision's notes and date. Then the decision itself: a chooser whose first option
+is **empty and means nothing**, so submitting without choosing is refused rather than recorded as
+approval, and a notes field that will not accept fewer than twenty characters — a policy decision is
+recorded with its reasoning or it is not recorded. There is no recommended option and no default; the
+panel records a decision, it never suggests one.
+
+The URL patterns, the category mapping, the schedules and the extraction configuration are on the
+same page, above the panel. The owner reads the source, not a summary of it.
+
+`RESTRICTED` is approved-but-limited — the honest answer for a site whose terms permit some access
+and not all of it. It is a distinct value rather than "approved with a note" so that a later phase
+reading `policy_status` cannot mistake it for unqualified permission, and **only `APPROVED` satisfies
+the enable gate**, so a `RESTRICTED` source cannot be switched on.
+
+**Approving a source is a legal and commercial judgement this software cannot make.** That sentence
+is the point of the whole panel and it is rendered on it, from `global_content`, not kept in a
+document: *"Whether a website's terms permit reading it is a legal and commercial judgement. Record
+it here once it has been made; this software cannot make it for you."* — **OWNER_VERIFICATION_REQUIRED.**
 
 **Guardrails.**
 
 - **A source cannot be enabled until its policy review says `APPROVED`.** The database constraint is
-  `check (is_enabled = false or policy_status = 'APPROVED')`, and only an owner or admin may set
-  `APPROVED`, with `policy_reviewed_by`, `policy_reviewed_at` and `policy_notes`. **Whether a given
-  site may lawfully be read at the configured rate is a legal and commercial judgement this repository
-  cannot make. Approval is the owner's assertion — OWNER_VERIFICATION_REQUIRED.**
+  `research_sources_enabled_requires_approval` — `check (is_enabled = false or policy_status =
+  'APPROVED')` — and a second, `research_sources_approval_is_attributed`, makes an approval that
+  names nobody unstorable. Only an owner or admin may set `APPROVED`, and doing so records
+  `policy_reviewed_by`, `policy_reviewed_at` and `policy_notes`.
+- **The enable control is rendered DISABLED with its reason, never hidden**, beside the seeded
+  sentence *"A source cannot be switched on until its policy review is recorded as approved."* A
+  control that is simply absent teaches an operator that the feature does not exist; one that is
+  present and explains itself teaches them the rule. The server action re-checks it and the row
+  refuses it underneath both.
 - **`research_image_extraction_mode` has no value that downloads an image.** `NONE · URL_ONLY ·
   URL_AND_DIMENSIONS`. A competitor image is never downloaded or re-hosted; `image_urls text[]` holds
   URLs only.
-- Health is a derived view, never a stored column that can go stale.
-- A schedule shorter than six hours is rejected by a check constraint.
+- **Health is a derived view, never a stored column that can go stale** — *"Worked out as this page
+  loads, from the runs on record. It is never stored, so it cannot be out of date."* Five states in
+  strict precedence: `DISABLED` (it is off, not failing) → `FAILING` (circuit open, or the last two
+  runs failed) → `DEGRADED` (last run `PARTIAL`, or under 80 % over seven days) → `STALE` (no success
+  within twice the tightest enabled schedule) → `HEALTHY`. A source with no enabled schedule can
+  never read `STALE`, because nobody said when it should run.
+- **A schedule shorter than six hours is refused at the database**, by a check constraint that parses
+  the cron expression in SQL. The form says the same number first — *"Six hours is the shortest
+  interval this system will accept, and it is refused at the database rather than in this form."* — so
+  an operator is told the truth twice rather than once in the place that does not decide. An
+  expression the parser cannot read is refused rather than admitted.
+- **Timezone is UTC and is not a choice on the form.** The scheduler evaluates every cron field in
+  UTC, so a timezone control would offer a setting it ignores; the column exists because FEAT §26
+  names it, and the constraint refuses anything else rather than storing a lie.
+- **Deleting a URL pattern, a mapping or a schedule needs `destructive.execute`** — owner or admin.
+  Removing an `EXCLUDE` pattern does not delete information, it **widens what Rivya will fetch**,
+  which is the same class of act as unpublishing live content.
+- **Nothing on this surface guesses a category.** There is no *suggest mappings* control and there
+  will not be one: a suggested category accepted without thought is a category assignment nobody
+  made, and every chart from Phase 31 onwards inherits it. An unmapped label is counted on the
+  dashboard and left unmatched. A mapping whose Rivya category has since been deleted reads
+  `UNRESOLVED` and is counted beside the labels nobody has mapped yet — the observation is kept and
+  the decision is shown as needing to be made again.
+- **The sources list still ships empty.** Adding one is a deliberate act by a person; no source is
+  seeded, suggested or imported from anywhere.
 
 ### 12.4 `/studio/research/scrape` · `/jobs` · `/runs` · `/runs/[id]`
 
@@ -2018,6 +2125,9 @@ enforced.
 | 30 | `Crawl-delay` can slow Rivya and never speed it up | `effectiveDelayMs` is a `Math.max`, with a test asserting it in those words |
 | 31 | No headless browser, proxy rotation or CAPTCHA solving, ever | `check-research-isolation.mjs` fails on an import of any of that tooling under `lib/scraper/**` |
 | 32 | A stage never moves without a record of who moved it | `lib/scraper/core/stage.ts` is the only writer of `stage` and writes the event first; the guard fails on a `writeProductStage` call anywhere else |
+| 33 | A source may not be asked for anything more often than every six hours | `research_source_schedules_min_interval`, a CHECK that parses the cron expression **in SQL** — so a server action, a script or a hand-written `UPDATE` cannot step around it the way it could step around a form |
+| 34 | The URL-pattern tester never makes a request | It is a `GET` on the page; `lib/scraper/core/url-patterns.ts` holds no client, no `fetch` and no repository import, and a unit test reads the file's own source to keep it that way. Robots verdicts come from `research_robots_cache` |
+| 35 | A researcher cannot approve their own source | `readiness` and `policy_status` are separate columns; `setReadinessAction` will not write `REVIEWED`, and the approval action checks `research.write` **and** `system.settings.write`, writing a `DENIED` audit row when it refuses |
 | 27 | Bespoke pricing is never calculated | No price-shaped column exists in the customization schema; a unit test greps for one |
 
 ---

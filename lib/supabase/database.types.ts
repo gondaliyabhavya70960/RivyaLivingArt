@@ -4000,6 +4000,184 @@ export type Database = {
         }
         Relationships: []
       }
+      research_source_category_map: {
+        Row: {
+          id: string
+          source_id: string
+          source_label: string
+          source_path: string | null
+          category_id: string | null
+          is_ignored: boolean
+          mapping_state: string
+          status: Database['public']['Enums']['content_status']
+          created_at: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          source_id: string
+          source_label: string
+          source_path?: string | null
+          category_id?: string | null
+          is_ignored?: boolean
+          mapping_state: string
+          status?: Database['public']['Enums']['content_status']
+          created_at?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          source_id?: string
+          source_label?: string
+          source_path?: string | null
+          category_id?: string | null
+          is_ignored?: boolean
+          mapping_state?: string
+          status?: Database['public']['Enums']['content_status']
+          created_at?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'research_source_category_map_category_fk'
+            columns: ['category_id']
+            isOneToOne: false
+            referencedRelation: 'categories'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'research_source_category_map_source_id_fkey'
+            columns: ['source_id']
+            isOneToOne: false
+            referencedRelation: 'research_sources'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'research_source_category_map_updated_by_fkey'
+            columns: ['updated_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      research_source_schedules: {
+        Row: {
+          id: string
+          source_id: string
+          job_type: Database['public']['Enums']['research_job_type']
+          cron_expression: string
+          timezone: string
+          is_enabled: boolean
+          next_run_at: string | null
+          status: Database['public']['Enums']['content_status']
+          created_at: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          source_id: string
+          job_type: Database['public']['Enums']['research_job_type']
+          cron_expression: string
+          timezone?: string
+          is_enabled?: boolean
+          next_run_at?: string | null
+          status?: Database['public']['Enums']['content_status']
+          created_at?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          source_id?: string
+          job_type?: Database['public']['Enums']['research_job_type']
+          cron_expression?: string
+          timezone?: string
+          is_enabled?: boolean
+          next_run_at?: string | null
+          status?: Database['public']['Enums']['content_status']
+          created_at?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'research_source_schedules_source_id_fkey'
+            columns: ['source_id']
+            isOneToOne: false
+            referencedRelation: 'research_sources'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'research_source_schedules_updated_by_fkey'
+            columns: ['updated_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      research_source_url_patterns: {
+        Row: {
+          id: string
+          source_id: string
+          kind: string
+          pattern: string
+          is_regex: boolean
+          priority: number
+          notes: string | null
+          status: Database['public']['Enums']['content_status']
+          created_at: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          source_id: string
+          kind: string
+          pattern: string
+          is_regex?: boolean
+          priority?: number
+          notes?: string | null
+          status?: Database['public']['Enums']['content_status']
+          created_at?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          source_id?: string
+          kind?: string
+          pattern?: string
+          is_regex?: boolean
+          priority?: number
+          notes?: string | null
+          status?: Database['public']['Enums']['content_status']
+          created_at?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'research_source_url_patterns_source_id_fkey'
+            columns: ['source_id']
+            isOneToOne: false
+            referencedRelation: 'research_sources'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'research_source_url_patterns_updated_by_fkey'
+            columns: ['updated_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       research_sources: {
         Row: {
           id: string
@@ -4008,7 +4186,7 @@ export type Database = {
           base_url: string
           region: string | null
           currency: string | null
-          source_type: string | null
+          source_type: Database['public']['Enums']['research_source_type'] | null
           is_enabled: boolean
           adapter_key: string
           rate_limit_rpm: number
@@ -4026,6 +4204,14 @@ export type Database = {
           created_at: string
           updated_at: string
           updated_by: string | null
+          analytics_league: Database['public']['Enums']['research_analytics_league'] | null
+          collection_mode: Database['public']['Enums']['research_collection_mode']
+          image_extraction_mode: Database['public']['Enums']['research_image_extraction_mode']
+          price_extraction: Json
+          sku_extraction: Json
+          attribute_extraction: Json
+          notes: string | null
+          readiness: string
         }
         Insert: {
           id?: string
@@ -4034,7 +4220,7 @@ export type Database = {
           base_url: string
           region?: string | null
           currency?: string | null
-          source_type?: string | null
+          source_type?: Database['public']['Enums']['research_source_type'] | null
           is_enabled?: boolean
           adapter_key?: string
           rate_limit_rpm?: number
@@ -4052,6 +4238,14 @@ export type Database = {
           created_at?: string
           updated_at?: string
           updated_by?: string | null
+          analytics_league?: Database['public']['Enums']['research_analytics_league'] | null
+          collection_mode?: Database['public']['Enums']['research_collection_mode']
+          image_extraction_mode?: Database['public']['Enums']['research_image_extraction_mode']
+          price_extraction?: Json
+          sku_extraction?: Json
+          attribute_extraction?: Json
+          notes?: string | null
+          readiness?: string
         }
         Update: {
           id?: string
@@ -4060,7 +4254,7 @@ export type Database = {
           base_url?: string
           region?: string | null
           currency?: string | null
-          source_type?: string | null
+          source_type?: Database['public']['Enums']['research_source_type'] | null
           is_enabled?: boolean
           adapter_key?: string
           rate_limit_rpm?: number
@@ -4078,6 +4272,14 @@ export type Database = {
           created_at?: string
           updated_at?: string
           updated_by?: string | null
+          analytics_league?: Database['public']['Enums']['research_analytics_league'] | null
+          collection_mode?: Database['public']['Enums']['research_collection_mode']
+          image_extraction_mode?: Database['public']['Enums']['research_image_extraction_mode']
+          price_extraction?: Json
+          sku_extraction?: Json
+          attribute_extraction?: Json
+          notes?: string | null
+          readiness?: string
         }
         Relationships: [
           {
@@ -4668,7 +4870,19 @@ export type Database = {
         Args: Record<string, unknown>
         Returns: Json
       }
+      research_cron_field_values: {
+        Args: Record<string, unknown>
+        Returns: Json
+      }
+      research_cron_min_interval_minutes: {
+        Args: Record<string, unknown>
+        Returns: Json
+      }
       research_lease_work_items: {
+        Args: Record<string, unknown>
+        Returns: Json
+      }
+      research_min_circular_gap: {
         Args: Record<string, unknown>
         Returns: Json
       }
@@ -4751,10 +4965,15 @@ export type Database = {
         'PRODUCT' | 'COLLECTION' | 'CATEGORY' | 'PORTFOLIO_PROJECT' | 'JOURNAL_ARTICLE' | 'MATERIAL'
       relation_kind: 'RELATED' | 'FEATURES' | 'REFERENCES' | 'USES_MATERIAL' | 'PART_OF'
       relation_origin: 'EDITOR' | 'RULE_ACCEPTED'
+      research_analytics_league: 'PEER' | 'ASPIRATIONAL' | 'ADJACENT' | 'MASS'
+      research_collection_mode: 'SITEMAP' | 'CATEGORY_CRAWL' | 'SEED_URLS' | 'FEED'
       research_disposition: 'NONE' | 'IGNORED' | 'REJECTED' | 'DUPLICATE'
+      research_image_extraction_mode: 'NONE' | 'URL_ONLY' | 'URL_AND_DIMENSIONS'
       research_job_type: 'DISCOVERY' | 'DETAIL' | 'REFRESH'
       research_policy_status: 'UNREVIEWED' | 'APPROVED' | 'RESTRICTED' | 'BLOCKED'
       research_run_status: 'QUEUED' | 'RUNNING' | 'SUCCEEDED' | 'PARTIAL' | 'FAILED' | 'CANCELLED'
+      research_source_type:
+        'BRAND' | 'RETAILER' | 'MARKETPLACE' | 'GALLERY' | 'ARTISAN' | 'DIRECTORY'
       research_stage:
         'RAW' | 'NORMALIZED' | 'VALIDATED' | 'MATCHED' | 'REVIEW' | 'SHORTLISTED' | 'CONFIRMED'
       research_trigger: 'MANUAL' | 'SCHEDULED'

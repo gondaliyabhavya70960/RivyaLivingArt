@@ -34,11 +34,15 @@ with disposition as a separate column; the whole of §8's politeness posture; §
 the drain loop and the five-minute cron; six Studio surfaces; and the isolation guard.
 
 **Not yet**: adapters and structured extraction (§5, Phase 27), normalisation and validation (§10,
-Phase 28), change detection (§11, Phase 29), the review workflow (§12, Phase 29–30), and the
-remaining FEAT §26 source fields (§6, Phase 26). `research_raw_items.raw` accepts **only**
-`{ title, canonicalUrl, links }` under a `.strict()` Zod schema, so a "temporary" parser fails at
-the write rather than at review — which is how §5's adapter architecture is protected from being
-pre-empted by a shortcut.
+Phase 28), change detection (§11, Phase 29), and the review workflow (§12, Phase 29–30).
+`research_raw_items.raw` accepts **only** `{ title, canonicalUrl, links }` under a `.strict()` Zod
+schema, so a "temporary" parser fails at the write rather than at review — which is how §5's adapter
+architecture is protected from being pre-empted by a shortcut.
+
+**Since shipped**: the remaining FEAT §26 source fields, which §6 designs and **§17 records as
+built** — three child tables, four enums, the derived health view and the policy-review workflow,
+in migrations `0240`–`0241` (Phase 26). Where §6 and §17 disagree about a fact, §17 is the built
+system.
 
 ### 0.1 Four notes where the code and this document meet
 
@@ -393,6 +397,11 @@ belongs in a column, not a branch.
 
 ## 6. Source configuration
 
+> **Built in Phase 26. §17 is the as-built account** — which storage each of these twenty-three
+> fields actually took, why three of them are child tables, why three stayed jsonb, and the exact
+> precedence the health view computes. This section is the design it was built from and is kept at
+> this number because §7–§16 are cited by number from four other documents.
+
 The twenty-three FEAT §26 fields, each with a home. This table is the specification: the migration
 and the Studio form are both read from it.
 
@@ -430,19 +439,24 @@ A view cannot go stale the way a cached column can, and the rule is legible in S
 buried in a worker.
 
 **The URL-pattern tester makes no network request.** `testPatterns`, in
-`app/(studio)/studio/research/sources/[id]/actions.ts`, takes pasted candidate URLs and returns, per
-URL, the matched pattern, its kind and the robots decision — answered entirely from
-`research_robots_cache`. A fixture-server assertion proves it logs zero requests.
+`lib/scraper/core/url-patterns.ts`, takes pasted candidate URLs and returns, per URL, the matched
+pattern, its kind and the robots decision — answered entirely from `research_robots_cache`, which the
+caller supplies as a function. A fixture-server assertion proves it logs zero requests. It is reached
+by a `GET` on the source page rather than by a Server Action; §17.6 says why there is no
+`testPatternsAction`.
 
-**The single-URL probe is the second — and last — outbound path.** `probeUrl`, in the same file,
-performs one real fetch of one URL. It is the only request-scoped code in the repository permitted to
-contact a third-party host, and it is not a general fetcher: it calls the same
-`lib/scraper/core/fetch.ts` entry point as the cron drain and therefore applies the identical gate —
-`policy_status = 'APPROVED'` and `is_enabled`, the robots decision (a `Disallow` match refuses before
-any request is made), `rate_limit_rpm` / `request_delay_ms` / `concurrency`, the `Crawl-delay` floor,
-`circuit_open_until`, the `research.enabled` flag, `SCRAPER_USER_AGENT`, the 2 MB body cap and the
-15-second timeout. It requires `research.write`, writes one `audit_logs` row naming actor, source and
-URL, and stores no snapshot. `ARCHITECTURE.md` §1 fixes it as one of exactly two outbound paths.
+**The single-URL probe is the second — and last — outbound path.** `probeUrlAction`, in
+`app/(studio)/studio/(shell)/research/sources/actions.ts`, performs one real fetch of one URL. It is
+the only request-scoped code in the repository permitted to contact a third-party host, and it is not
+a general fetcher: it goes through `lib/scraper/workflows/probe.ts`, which calls the same
+`lib/scraper/core/fetch.ts` entry point as the cron drain, so `SCRAPER_USER_AGENT`, the 2 MB body cap
+and the 15-second timeout apply unchanged, and robots.txt, the `Crawl-delay` floor, the source's own
+`request_delay_ms` and the circuit breaker apply exactly as they do to a queued item. Before any of
+that, the action refuses a source that is not `APPROVED`, a URL that is not on the source's host, and
+every request at all while `research_enabled` is off. It requires `research.write` and writes one
+`audit_logs` row naming actor, source and URL. **It keeps the snapshot**, exactly as a scheduled fetch
+would — see §17.6, which corrects the draft sentence that said otherwise. `ARCHITECTURE.md` §1 fixes
+it as one of exactly two outbound paths.
 
 **A category mapping never guesses.** An unmapped source category is `null`, counted on the
 dashboard, and leaves the row at `VALIDATED`. It is never defaulted to `furniture` or to the first
@@ -510,7 +524,7 @@ If a source requires any prohibited technique to be read, the answer is that Riv
 sets `APPROVED`.
 
 ```sql
-alter table research_sources add constraint research_source_enable_requires_approval
+alter table research_sources add constraint research_sources_enabled_requires_approval
   check (is_enabled = false or policy_status = 'APPROVED');
 ```
 
@@ -842,13 +856,14 @@ D5 says scraped data never joins directly to public product tables. Two referenc
 exist, both written or configured by staff rather than scraped, and both allowlisted **by name** in
 `check-research-isolation.mjs`, which fails on any third:
 
-| Column | References | Why it is permitted |
-|---|---|---|
-| `research_source_category_map.category_id` | `categories (on delete set null)` | A category mapping is configuration typed by a member of staff. It points at taxonomy, not at `products` |
-| `research_products.matched_category_id` | `categories (on delete set null)` | The result of applying that human-authored map |
+| Column | References | Constraint name in the allowlist | Why it is permitted |
+|---|---|---|---|
+| `research_source_category_map.category_id` | `categories (on delete set null)` | `research_source_category_map_category_fk` (Phase 26, and the guard's **first** entry) | A category mapping is configuration typed by a member of staff. It points at taxonomy, not at `products` |
+| `research_products.matched_category_id` | `categories (on delete set null)` | Phase 28's to name, and the **second and last** | The result of applying that human-authored map |
 
-Neither is a join into product data, and neither is readable by `anon`. The narrowness is deliberate
-and is raised for confirmation in *Open questions*.
+Neither is a join into product data, and neither is readable by `anon`. The narrowness is deliberate;
+amendment **A26** now records the exception in D5's own terms — a scraped VALUE never joins to a
+public table, a staff-authored taxonomy POINTER may — and §17.8 gives the reasoning at length.
 
 ### 13.3 Images
 
@@ -1044,10 +1059,15 @@ settle it; this document does not add a ninth. Nothing else above diverges from
    `research.confirm` therefore means **a researcher can run the pipeline but cannot shortlist or
    reject a row**, which may not be intended. Suggested amendment: either grant `researcher` the
    `research.confirm` permission, or state in D5 that disposition is deliberately a merchandising act.
-6. **The two allowlisted research→public foreign keys** (§13.2). D5 says scraped data never joins
-   directly to public product tables; both references point at `categories` and both are staff-authored
-   configuration. Confirm the narrow exception, or direct that the category **slug** be stored as text
-   instead, accepting the loss of referential integrity.
+6. **The two allowlisted research→public foreign keys** (§13.2) — **SETTLED by amendment A26,
+   2026-09-10, and kept here so the reasoning is not lost.** D5 said scraped data never joins
+   directly to public product tables; both references point at `categories` and both are
+   staff-authored configuration. A26 draws the line D5 was reaching for — a scraped VALUE never joins
+   to a public table, a staff-authored taxonomy POINTER with `on delete set null` may — and fixes the
+   exception at exactly two constraints, named individually in the guard. The alternative this item
+   offered, storing the category **slug** as text, was rejected: it buys the appearance of isolation
+   with the loss of referential integrity, since a renamed category would silently unmap every source
+   label and nothing anywhere would notice. See §17.8.
 7. **`created_product_id` with no foreign key** (§12.4). Recording which product a confirmation
    started is an audit requirement; a real FK would violate D5. Suggested amendment: state explicitly
    in D5 that an unconstrained identifier recorded on the research side, with no query path into
@@ -1068,3 +1088,370 @@ settle it; this document does not add a ninth. Nothing else above diverges from
     corpus and the measured precision recorded here with its sample date and size, the Studio renders
     `PRECISION NOT YET MEASURED`. No precision figure may ever be written into this document that was
     not measured on this corpus — this line is itself **OWNER_VERIFICATION_REQUIRED**.
+
+---
+
+## 17. Source configuration as built — Phase 26
+
+> §6 is the design, read out of FEAT §26's field table before anything existed. This chapter is what
+> migration `0240` and the modules around it did with those fields, and it is a chapter of its own
+> rather than a rewrite of §6 for one reason: §7 through §16 are cited by number from
+> `ARCHITECTURE.md`, `DATA_MODEL.md`, `STUDIO_GUIDE.md` and both phase documents, and renumbering
+> eleven sections to insert one would break every one of those citations to save a reader one page
+> turn. Where this chapter and §6 disagree about a fact, this one is the built system.
+
+**Shipped**: migrations `0240`–`0241`; four enums; three child tables; one view; three tightened
+politeness ceilings; `lib/scraper/core/{source-schema,url-patterns,category-map,cron}.ts`;
+`lib/scraper/adapters/registry.ts` (descriptors only — Phase 27 fills it with implementations);
+`lib/supabase/repositories/research/{source-config,source-health}.ts`;
+`/studio/research/sources`, `/new` and `/[sourceId]`; the pattern tester, the single-URL probe, the
+category-mapping editor, the schedule editor and the policy-review panel.
+
+**Still zero sources.** Everything below describes a form nobody has yet filled in for anybody. §1's
+*Zero seeded sources* is unchanged by this phase and is not a gap to be closed by engineering.
+
+### 17.1 The twenty-three fields — the specification, and what shipped beside it
+
+The first four columns are `docs/project/phases/PHASE-23-30.md`'s own table, reproduced **verbatim**
+because that document's deliverables row instructs it ("The field table above is copied into
+`SCRAPER.md` verbatim"). The fifth column is this chapter's: the migration is written and applied,
+so each field now has an answer rather than an intention.
+
+| # | FEAT §26 field | Storage | Type / validation | As shipped in `0240` |
+|---|---|---|---|---|
+| 1 | Name | `research_sources.name` | text, required, unique with `slug` | Unchanged from Phase 25 `0231`. `name text not null`, `slug citext not null unique` |
+| 2 | Website | `research_sources.base_url` | absolute `https://` URL, host must match every URL pattern's host | `research_sources_base_url_is_http` **replaced**: `^https://`, or `^http://` for `127.0.0.1`, `localhost`, `[::1]` only. The host rule is `hostMatchesBase()` in `core/url-patterns.ts`, checked in the save action, not at the row |
+| 3 | Region | `research_sources.region` | ISO-3166-1 alpha-2, or `GLOBAL` | Unchanged column; the vocabulary is Zod's, in `sourceInputSchema.region` |
+| 4 | Currency | `research_sources.currency` | ISO-4217 alpha-3; the source's *stated* currency, never converted | Unchanged column (`char(3)`); Zod uppercases and refuses anything but three letters |
+| 5 | Source Type | `research_sources.source_type` | enum `BRAND · RETAILER · MARKETPLACE · GALLERY · ARTISAN · DIRECTORY` | `text` **became** the enum `research_source_type`, converted in place with an explicit `using` clause |
+| 6 | Analytics League | `research_sources.analytics_league` | enum `PEER · ASPIRATIONAL · ADJACENT · MASS`; drives grouping in Phase 31, never a public label | New column, enum `research_analytics_league`, **nullable with no default** — a league is a judgement, and defaulting one would file every row under a classification nobody made |
+| 7 | Enabled | `research_sources.is_enabled` | bool; blocked unless `policy_status = 'APPROVED'` (Phase 25 constraint) | Unchanged, and deliberately **absent from `sourceInputSchema`**: the researcher's drawer cannot express the request at all, and the enable action validates its one boolean under both permissions |
+| 8 | Collection Mode | `research_sources.collection_mode` | enum `SITEMAP · CATEGORY_CRAWL · SEED_URLS · FEED`; determines which discovery strategy `lib/scraper/workflows/discover.ts` uses | New column, enum `research_collection_mode`, `not null default 'SEED_URLS'` — the only mode the engine implements. A source set to one of the other three queues nothing and says so |
+| 9 | Category Mapping | `research_source_category_map` | child rows: source category label/path → Rivya `categories.id` or explicit `IGNORE` | Table created (§17.2). Carries a third state, `UNRESOLVED`, that the phase document did not anticipate — see the note on `mapping_state` |
+| 10 | URL Patterns | `research_source_url_patterns` | child rows: `kind` (`PRODUCT · CATEGORY · EXCLUDE · PAGINATION`), `pattern`, `is_regex`, `priority` | Table created (§17.2), with a 200-character cap and a 0–1000 priority bound at the row |
+| 11 | Extraction Adapter | `research_sources.adapter_key` | must resolve in the Phase 27 registry; validated on save | Unchanged column. `lib/scraper/adapters/registry.ts` arrives **one phase early**, holding descriptors (key, version, capabilities, `supports()`) and exactly one entry — see amendment **A26** |
+| 12 | Image Extraction | `research_sources.image_extraction_mode` | enum `NONE · URL_ONLY · URL_AND_DIMENSIONS`; **no mode downloads or re-hosts an image** | New column, enum `research_image_extraction_mode`, `not null default 'NONE'` — the most conservative value, as every politeness default in this subsystem is |
+| 13 | Price Extraction | `research_sources.price_extraction` | jsonb: selector or JSON-LD path, currency override, decimal separator, thousands separator | New column, `jsonb not null default '{}'`, `check (jsonb_typeof(...) = 'object')`. Shape in `priceExtractionSchema` (§17.3) |
+| 14 | SKU Extraction | `research_sources.sku_extraction` | jsonb: selector/path plus an optional strip pattern | New column, `jsonb not null default '{}'`, same object check. Shape in `skuExtractionSchema` |
+| 15 | Attribute Extraction | `research_sources.attribute_extraction` | jsonb: ordered list of `{ key, selector, kind }` for dimensions, materials, availability, lead time, variants, customization | New column, `jsonb not null default '[]'`, `check (jsonb_typeof(...) = 'array')` — an **array**, because the list is read first-match-wins and an object cannot express order |
+| 16 | Rate Limit | `research_sources.rate_limit_rpm` | int 1–60; higher values rejected outright | Ceiling **tightened** from Phase 25's 1–120 to `between 1 and 60` |
+| 17 | Request Delay | `research_sources.request_delay_ms` | int ≥ 1000; raised silently to the robots `Crawl-delay` floor | Floor **tightened** from 250 ms to `between 1000 and 600000` |
+| 18 | Concurrency | `research_sources.concurrency` | int 1–4 | `research_sources_concurrency_sane` already said `between 1 and 4` in `0231`; unchanged |
+| 19 | Scheduling | `research_source_schedules` | child rows: `job_type`, `cron_expression`, `timezone`, `is_enabled`; minimum interval 6 hours | Table created (§17.2). The six-hour rule is a CHECK that **parses the expression in SQL** (§17.5), and `timezone` is refused unless it is `'UTC'` |
+| 20 | Last Run | `research_source_health_v.last_run_at` | view column, derived from `research_runs` | View created (§17.4). Not a column anywhere, deliberately |
+| 21 | Health | `research_source_health_v.health` | view column: `HEALTHY · DEGRADED · FAILING · STALE · DISABLED` (rules below) | View created, `with (security_invoker = true)`. Five states, in the precedence §17.4 quotes |
+| 22 | Policy Review | `policy_status`, `policy_reviewed_by`, `policy_reviewed_at`, `policy_notes` | Phase 25 columns; the workflow is built here | Workflow built, and a **fifth column** joins them: `readiness`, the researcher's half (§17.7) |
+| 23 | Notes | `research_sources.notes` | free text, staff-only, never rendered outside Studio | New column, `text` nullable. No surface outside Studio reads it |
+
+Twenty-one of the twenty-three are columns or child rows; **fields 20 and 21 are not stored at all**,
+and that is the phase's one structural departure from a naïve reading of the table. §17.4 says why.
+
+### 17.2 Three child tables, and why none of them is a key in a blob
+
+The risk FEAT §26 is written against is that a source's behaviour ends up expressed as a branch in
+the engine — `if (source.slug === 'x')` somewhere under `lib/scraper/core/**`. The schema's answer is
+that **every behavioural difference between two sources is a column or a child row**. The obvious
+cheaper alternative was three keys in one `config jsonb` on `research_sources`, and it was rejected
+three times for three different reasons, each of which is a property a blob cannot have.
+
+| Table | What one row is | Why a table |
+|---|---|---|
+| `research_source_url_patterns` | One shape a URL of this source may take: `kind`, `pattern`, `is_regex`, `priority`, `notes` | **Because each row carries a constraint.** `char_length(pattern) between 1 and 200` and `priority between 0 and 1000` are row-level bounds a pathological expression cannot get past. A 200-character cap inside a jsonb array is a cap the application remembers to apply |
+| `research_source_category_map` | One label on somebody else's website, and what Rivya decided it means | **Because it holds a foreign key.** `category_id` references `categories` with `on delete set null` (§17.8); a jsonb array of category ids would be a set of identifiers nothing checks, silently pointing at a category a merchandiser deleted last week |
+| `research_source_schedules` | One (job type, cron expression) pair and whether it is on | **Because the six-hour rule is a CHECK.** `research_cron_min_interval_minutes(cron_expression) >= 360` is evaluated by PostgreSQL on every write from every caller (§17.5). Inside a blob it would be a rule a server action could be written around |
+
+Two more properties fall out of the choice and are worth naming, because they are what a reviewer
+actually uses. Each child row carries the D5 common set — `created_at`, `updated_at`, `updated_by`,
+plus `status content_status` — so **who added an `EXCLUDE` pattern and when is answerable**; and each
+has its own RLS policies in `0241`, so `delete` on all three is `destructive.execute` rather than
+`research.write`. That last
+one is stricter than it first looks: deleting an `EXCLUDE` row does not remove information, it
+**widens what Rivya will fetch**, which is the same class of act as unpublishing live content.
+
+Two rules live in the matcher rather than in a column, and both are deliberate:
+
+- **`EXCLUDE` beats everything, whatever the priority.** A priority number that could be set high
+  enough to let a `PRODUCT` rule outrank an `EXCLUDE` would be a way to configure a refusal away.
+- **Glob is the default and regex is opt-in** (`is_regex boolean not null default false`). A glob
+  compiles to an expression that cannot backtrack catastrophically; a regex an operator typed can,
+  against a URL a third party chose. `MATCH_BUDGET_MS = 25` in `core/url-patterns.ts` bounds how many
+  expressions are tried per URL — it does not, and cannot, interrupt one expression mid-match, and
+  the module says so rather than implying a bound it does not have. The 200-character cap is what
+  holds whatever the expression says.
+
+### 17.3 Three things stayed jsonb, and each is bounded by a Zod schema
+
+`price_extraction`, `sku_extraction` and `attribute_extraction` are **selector configuration whose
+shape belongs to the Phase 27 adapter that reads it**. A table per adapter-specific option list would
+mean a schema migration every time an adapter learns a new selector — which is precisely the "adding
+a source is an engineering task" failure this phase exists to remove, arriving by the other door.
+
+What keeps them from becoming the unreviewable blob §17.2 rejects is that they are not free-form:
+
+- Every object in `lib/scraper/core/source-schema.ts` is `.strict()`. An unrecognised key is refused
+  at the trust boundary rather than stored as jsonb nobody designed for, to be interpreted later by
+  an adapter that has to guess what it meant.
+- The database asserts only the outermost fact — object, object, array — because a CHECK deep enough
+  to describe a selector list would be a second schema that drifts from the first.
+- `attribute_extraction` is an **array** rather than an object because it is read in order and the
+  first rule producing a value wins. An object with keys cannot express that, and a Phase 27 adapter
+  reading one would be depending on key iteration order.
+- Each is a labelled, pre-seeded field of its own in `components/studio/research/SourceForm.tsx` —
+  `{ "strategy": "NONE" }` for the two objects, `[]` for the array — rather than one anonymous
+  `config` box, so a Zod failure is reported against the field that caused it instead of against the
+  form. **These three are the only fields on that surface an operator edits as JSON**, and they are
+  JSON because their shape belongs to a Phase 27 adapter that does not exist yet. Validation is the
+  server action's, and the drawer's job is to offer only what the schema admits: it is a Client
+  Component (the adapter-override tick has to appear and disappear as the picker changes) and it
+  imports `SOURCE_TYPES`, `ANALYTICS_LEAGUES`, `COLLECTION_MODES` and `IMAGE_EXTRACTION_MODES`
+  straight from `core/source-schema.ts`, which is why that module carries **no `server-only`
+  marker** — the marker resolves to a module that throws in a client bundle, and adding it would make
+  the form unbuildable. `core/url-patterns.ts` and `core/cron.ts` are reachable from a client for the
+  same reason, and all three are safe to be: pure, with no I/O, no database handle and no ambient
+  clock.
+
+### 17.4 Health is a view, and the precedence is the rule
+
+FEAT §26 fields 20 and 21 are **not columns**. A cached health column is wrong in the window between
+the event and the job that would update it, and the moment it is most likely to be wrong is the
+moment somebody looks at it — during an incident, when it is also most likely to be believed.
+`research_source_health_v` computes it on read, so it cannot go stale, and the rule is legible in SQL
+rather than buried in a worker nobody opens.
+
+The five states and their precedence, as the view actually writes them:
+
+```sql
+case
+  when not src.is_enabled then 'DISABLED'
+  when src.circuit_open_until is not null and src.circuit_open_until > now() then 'FAILING'
+  when coalesce(array_length(last_two.recent, 1), 0) >= 2
+       and (last_two.recent)[1] = 'FAILED' and (last_two.recent)[2] = 'FAILED' then 'FAILING'
+  when (last_two.recent)[1] = 'PARTIAL' then 'DEGRADED'
+  when coalesce(runs.runs_7d, 0) > 0
+       and runs.ok_7d::numeric / runs.runs_7d::numeric < 0.8 then 'DEGRADED'
+  when cadence.interval_minutes is not null
+       and coalesce(runs.last_success_at, src.created_at)
+           < now() - make_interval(mins => cadence.interval_minutes * 2) then 'STALE'
+  else 'HEALTHY'
+end
+```
+
+**The order is the rule, not an implementation detail**, and each branch answers a question the ones
+below it cannot: a disabled source is not failing, it is off; a source whose circuit is open is
+failing whatever its seven-day rate says; a stale source may have a perfect record and simply not
+have run. Four readings the SQL fixes that prose would leave open:
+
+1. **Staleness needs a promise to be late against.** A source with no enabled schedule cannot be
+   `STALE` — nobody said when it should run — which is why `cadence.interval_minutes is not null`
+   guards the branch.
+2. **`created_at` stands in for a source that has never succeeded.** Without it, a source configured
+   three days ago with a twelve-hour schedule and no successful run would read `HEALTHY`, which is
+   the opposite of what an operator needs to see.
+3. **The cadence is the *most frequent* enabled schedule, not the least** — `min(...)` over
+   `research_cron_min_interval_minutes`. A source asked to refresh every six hours and to discover
+   daily is late when six hours' work has not happened, not when a day's has.
+4. **`success_rate_7d` is null rather than zero when there are no runs in the window.** A source
+   nobody has run has no success rate; rendering it as 0 % would read as total failure.
+
+**`security_invoker = true` is the load-bearing word in the statement that creates it.** Without it a
+view runs with its owner's privileges, RLS on the four staff-only tables it reads —
+`research_sources`, `research_runs`, `research_work_items`, `research_source_schedules` — is
+bypassed, and a relation summarising every source Rivya reads becomes readable by anyone PostgREST
+will speak to.
+A view has no policies, so its **grants are the whole of its access control**: `revoke all … from
+public, anon` is explicit rather than left to the Supabase default, which is to expose a new view
+through PostgREST. That is I2's blind spot — `pg_policies` knows nothing about a view — so
+`check-research-isolation.mjs` gained a fifth assertion beside the four invariants, asking whether
+`anon` holds **any** privilege on any `research_*` view. Tables are deliberately out of that check's
+scope: Supabase grants every role every privilege on every new table in `public`, and there RLS, not
+the grant, is the boundary.
+
+### 17.5 Six hours, parsed in SQL
+
+`research_source_schedules_min_interval` is
+`check (public.research_cron_min_interval_minutes(cron_expression) >= 360)`, and the function it
+calls is a cron parser written in plpgsql — `research_cron_field_values`, `research_min_circular_gap`
+and `research_cron_min_interval_minutes`, all three `immutable`, all three with `search_path` pinned.
+
+**A form-only rule would not do, and the reason is what the rule is.** The minimum interval is a
+politeness setting: it bounds how often Rivya may ask a third party for anything. A rule enforced
+only in a Studio form is a rule that a server action, a seed script, a test fixture or a hand-written
+`UPDATE` steps around, and every one of those is a normal thing for this repository to contain. The
+six-hour bound therefore exists **twice on purpose** — as a CHECK that cannot be bypassed, and as
+`MIN_SCHEDULE_INTERVAL_MINUTES` in `lib/scraper/core/cron.ts` so a form can say what is wrong before
+the write rather than surrendering a database error to the operator.
+
+Three properties of the parser are decisions rather than limitations:
+
+- **It reads the minute and hour fields only.** Restricting day-of-month or day-of-week can only ever
+  make a schedule *less* frequent, so ignoring them can never admit something that fires too often.
+- **It returns `0`, never `null`, for an expression it cannot read.** A null would make the CHECK
+  `null >= 360`, which is null, which PostgreSQL treats as satisfied — so an unparseable expression
+  would sail through the very constraint written to catch it. Zero is refused, and the operator is
+  told at the write rather than discovering months later that a job never fired.
+- **The wrap is the common case, not an edge case.** Hours `{0, 18}` is a six-hour gap across
+  midnight and an eighteen-hour one inside the day, and the six is the number that decides whether
+  the schedule is polite. `research_min_circular_gap` measures it.
+
+`parseCronField` and `cronMinIntervalMinutes` in `lib/scraper/core/cron.ts` are the same grammar in
+TypeScript, and `tests/unit/source-schedules.test.ts` holds the two implementations to the same
+answers rather than testing each against its own expectations.
+
+`timezone` is refused unless it is `'UTC'`. The column exists because FEAT §26 field 19 names it, and
+because the day a zone-aware scheduler lands the data is already shaped for it — but `nextCronRun`
+evaluates every field in UTC today, so a stored `'Asia/Kolkata'` would be a column the scheduler
+silently ignores. Refusing the value is better than storing a lie.
+
+### 17.6 The tester makes no request; the probe makes exactly one
+
+These two controls sit side by side on the source page and are not remotely alike. Drawing them
+together is deliberate: the difference has to be visible at the moment somebody chooses between them.
+
+**The tester.** An operator pastes candidate URLs, one per line, and gets back per URL: which pattern
+matched, its kind, and the robots decision. **Nothing is requested.** The pattern half is
+`testPatterns` in `lib/scraper/core/url-patterns.ts`, a module that holds no client, no `fetch`, no
+repository import and nothing whatever to make a request with — `tests/unit/url-patterns.test.ts`
+reads the file's own source to keep it that way. The robots half is answered from
+`research_robots_cache`, which `testPatterns` takes as a **function the caller supplies** rather than
+reaching for itself.
+
+That prohibition is the whole value of the control, and the reason is worth stating plainly: the URLs
+being tested belong to a site nobody has yet decided may be read. A tester that fetched to find out
+would make Rivya's first twenty requests to a source the requests it made while deciding whether that
+source may be requested at all.
+
+It is **a `GET` on the source page**, not a Server Action, and there is therefore no
+`testPatternsAction` anywhere. `StudioFormState` carries no payload channel — it is idle, saved, or a
+list of issues — so an action returning twenty rows of results would need a second state shape
+invented for one screen; and a query string is shareable, which is what somebody debugging a source
+wants to send to a colleague. §6 was drafted expecting a `testPatterns` action under
+`app/(studio)/studio/research/sources/[id]/actions.ts`; there is no such action and no such path, and
+§6 has been corrected to say so.
+
+**The probe.** `probeUrlAction`, in `app/(studio)/studio/(shell)/research/sources/actions.ts`,
+performs one real fetch of one URL and is one of exactly two outbound paths in the repository
+(`ARCHITECTURE.md` §1). It is deliberately **not** a `fetch()` in a Server Action, which is what it
+would have been if written where it is used: every politeness rule in this subsystem lives on the
+path the drain loop takes, and a second route to the network is a second place for all of it to be
+missing — and the one most likely to be reached in a hurry. Four things it checks before anything
+leaves, and three the shared path applies:
+
+| Checked by the action | Applied by `workflows/probe.ts` and `core/fetch.ts` |
+|---|---|
+| `research_enabled` is on, so an owner who switched research off is not overridden by a form | The robots verdict from `research_robots_cache`. A `DISALLOWED` verdict returns **before any packet leaves**, and writes a `research_fetches` row carrying no status, no hash and no snapshot — which `research_fetches_disallowed_has_no_response` makes unstorable otherwise |
+| `policy_status = 'APPROVED'`, because approval is what makes reading the site permissible at all | `effectiveDelayMs(request_delay_ms, crawl_delay)` — the source's `next_fetch_not_before` is advanced, so pressing the button twice in a second is spaced exactly as two queued items would be. The host cannot tell the difference, and it is the host the rule is for |
+| The URL's host is the source's, because approval is per website | The circuit breaker: a failure counts towards the same five that open `circuit_open_until` |
+| `research.write`, and the audit row is written whatever the outcome — `result = 'DENIED'` when robots refused | `SCRAPER_USER_AGENT`, the 2 MB body cap and the 15-second timeout, unchanged from the drain |
+
+**It keeps the snapshot**, and §6's draft sentence saying it stores none was wrong. A request made to
+somebody else's server for evidence that is then thrown away is the one outcome with all of the cost
+and none of the value; the page is stored exactly as a scheduled fetch's would be, in the private
+bucket of §9.2. What the probe genuinely does *not* do is create a run, lease a work item or extract
+anything — a one-page run in a list whose whole purpose is to show scheduled work would be noise.
+
+Two gates named in §6 are **not** the probe's and are recorded here so nobody looks for them:
+`rate_limit_rpm` and `concurrency` are properties of the **lease query** (§7, §0.1 note 1) and have
+no meaning for a single request nobody leased; and `is_enabled` is not consulted, because
+`research_sources_enabled_requires_approval` already makes an approved source the only kind that can
+be enabled, and a probe is precisely the thing an operator runs *before* switching a source on.
+
+### 17.7 `readiness` and `policy_status` are two columns because they are two questions
+
+`readiness` is the researcher's side: `DRAFT` while a source is being configured,
+`READY_FOR_REVIEW` when it is handed over, `REVIEWED` once an owner has decided. `policy_status` is
+the owner's answer: `UNREVIEWED · APPROVED · RESTRICTED · BLOCKED`.
+
+**Folding the two into one column would let a researcher move a source towards approval by writing
+the column that records approval.** That is the whole argument, and everything else follows from it:
+
+- `setReadinessAction` accepts `DRAFT` and `READY_FOR_REVIEW` and nothing else. `REVIEWED` is written
+  by the policy decision, because a researcher marking their own source reviewed would be answering
+  the question they asked.
+- `recordPolicyReviewAction` requires `research.write` **and** `system.settings.write`. RLS gates a
+  *row*, not a *column*, so as far as PostgreSQL is concerned a researcher who may edit a source's
+  delay may also write its `policy_status`; this pair of checks is what actually draws the line. The
+  refusal is written to `audit_logs` with `result = 'DENIED'`, because a refusal nobody can review is
+  not a control.
+- `research_sources_approval_is_attributed` is the net underneath: an `APPROVED` row that names
+  nobody is unstorable whatever the session, and `research_sources_enabled_requires_approval` makes
+  an enabled-but-unapproved source unstorable at all.
+- `RESTRICTED` is a distinct value rather than "approved with a note", so a later phase reading
+  `policy_status` cannot mistake approved-but-limited for unqualified permission. Only `APPROVED`
+  satisfies the enable gate, which is the conservative reading and is the row's, not the panel's.
+
+The review panel renders the site's robots.txt **from `research_robots_cache`, never by fetching it**
+— opening a review panel is not a reason to make a request, and if no file has been fetched for that
+host the panel says so. The read goes through the service-role client because
+`research_robots_cache` has no session write policy at all: a member of staff able to write it could
+tell the fetcher that a forbidden host permits everything.
+
+Two details of the decision control are load-bearing. **Its first option is empty and means nothing**,
+so a form submitted without a choice is refused rather than recorded as approval; and
+`policyDecisionSchema` refuses notes shorter than `POLICY_NOTES_MIN_LENGTH` (twenty characters),
+because a policy decision is recorded with its reasoning or it is not recorded. §8.3 describes the
+panel as also rendering the URL patterns and the extraction configuration: those are on the same
+page, immediately above it, rather than inside the panel component — the owner reads the source, not
+a summary of it.
+
+### 17.8 The two allowlisted research → public foreign keys
+
+D5 says scraped data never joins directly to public product tables. Amendment **A26** in
+`CANONICAL-DECISIONS.md` records the narrow exception this phase needed, in D5's own terms: **a
+scraped VALUE never joins to a public table; a staff-authored taxonomy POINTER, with `on delete set
+null`, may.** The exception is exactly two constraints, and both are allowlisted individually — by
+constraint name, not by table — in `scripts/research/check-research-isolation.mjs`.
+
+| # | Reference | Constraint name | Arrives |
+|---|---|---|---|
+| 1 | `research_source_category_map.category_id` → `categories (on delete set null)` — a researcher deciding that a label on somebody else's site corresponds to one of Rivya's seven categories | `research_source_category_map_category_fk`, and the guard already holds it | Phase 26, `0240` |
+| 2 | `research_products.matched_category_id` → `categories (on delete set null)` — the result of applying that human-authored map | Phase 28's to name, and the guard's **second and last** entry | Phase 28 |
+
+**At the end of Phase 26 the allowlist holds exactly one entry.** The guard reads
+`information_schema.referential_constraints` against the live schema and fails on any crossing it
+does not name, and `tests/unit/research-isolation.test.ts` pins the allowlist's contents phase by
+phase — so an entry that arrives before its phase fails as loudly as one that arrives without an
+amendment. A **third** reference fails the build, and so does the same column re-pointed at
+`products` under another constraint name, and so does a second one added to this very table. The
+alternative the phase document offered — storing the category slug as text — was rejected because it
+buys the appearance of isolation at the cost of referential integrity: a renamed category would
+silently unmap every source label, and nothing anywhere would notice.
+
+`on delete set null` is what produces the third mapping state, and the state is a finding rather than
+a design. The obvious constraint — `check (category_id is not null or is_ignored)`, so that
+"undecided" is the absence of a row rather than a row meaning nothing — was written first, and it
+turns `on delete set null` back into `on delete restrict`: deleting a Rivya category rewrites every
+mapping that pointed at it, the CHECK refuses the rewrite, and a merchandiser cannot remove a category
+because a researcher once mapped a label to it. A test wrote the delete and found it.
+
+So `mapping_state` is a generated stored column with three values — `MAPPED`, `IGNORED`,
+`UNRESOLVED` — and `UNRESOLVED` is named, stored and counted rather than forbidden. It records a
+label somebody genuinely observed and a decision that no longer has anything to point at. It appears
+in the dashboard's unmapped figure exactly as a never-mapped label does, which is where somebody will
+see it and decide again. The Zod schema still refuses to *create* one, because a person filling in
+that form has both options in front of them; the database refuses only what is never true, which is a
+row saying both "this is our furniture" and "this is not something Rivya sells".
+
+**A category mapping never guesses.** There is no "suggest mappings" control and there will not be
+one: a suggested category accepted without thought is a category assignment nobody made, and every
+chart from Phase 31 onwards inherits it. An unmapped label is `null`, counted on the dashboard, and
+left unmatched by Phase 28 — never defaulted to `furniture` or to the first category.
+
+### 17.9 The standing statement — **OWNER_VERIFICATION_REQUIRED**
+
+**This repository ships zero sources, and it cannot determine what any third party's terms of use
+permit.** Whether a given website may lawfully be read at all, and whether it may be read at the
+configured rate, is a legal and commercial judgement that no amount of engineering turns into one
+this software can answer.
+
+Everything Phase 26 built is therefore a way to **record** that judgement and to make it hard to skip:
+every source is created `UNREVIEWED`, disabled and `DRAFT`; the enable control renders disabled with
+its reason rather than hidden; the review panel offers three outcomes with no default, no
+recommendation and no pre-selected option, and a mandatory notes field; and the constraint underneath
+refuses an enabled source that no owner approved and an approval that names nobody.
+
+Nothing in this chapter asserts that any site may be read. The seeded banner on the panel says so in
+the operator's own words — *"Whether a website's terms permit reading it is a legal and commercial
+judgement. Record it here once it has been made; this software cannot make it for you."* — and it is
+a `global_content` row (`studio_help.research_policy_owner_only_body`) rather than a sentence compiled
+into the software, because a rule that lives only in this document is a rule the person doing the
+thing will not have read.

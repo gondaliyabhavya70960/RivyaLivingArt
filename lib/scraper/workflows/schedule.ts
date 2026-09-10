@@ -12,6 +12,8 @@ import { createResearchRun, hasActiveRunForJob } from '@/lib/supabase/repositori
 import { enqueueWorkItems } from '@/lib/supabase/repositories/research/work-items'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
+import { nextCronRun, parseCronField } from '../core/cron'
+
 /**
  * Turning due jobs into runs, and runs into a queue of URLs.
  *
@@ -61,104 +63,19 @@ export function readJobScope(scope: unknown): JobScope {
 }
 
 /**
- * The next time a five-field cron expression fires after `from`.
+ * WHERE THE CRON GRAMMAR WENT, AND WHY IT COULD NOT STAY HERE.
  *
- * A MINUTE-BY-MINUTE SEARCH, BOUNDED AT ~370 DAYS, and not a cron library. The expression is
- * `minute hour day-of-month month day-of-week` with `*`, lists, ranges and steps — which is what
- * an operator types and all this needs to read. A dependency for it would be a dependency parsing
- * a string a person edits in a form, and this is fifty lines that a test can enumerate exhaustively.
- * The bound means a nonsensical-but-parseable expression (February 30th) returns null rather than
- * looping, and a null `next_run_at` is a job that never fires — visible in the Studio as "no next
- * run" rather than as a hung request.
+ * `nextCronRun` and `parseCronField` were written in this file and now live in
+ * `lib/scraper/core/cron.ts`, re-exported below so every caller and test keeps the import it had.
+ * The move is not tidying: this module begins `import 'server-only'`, a module whose whole purpose
+ * is to throw when a client bundle reaches it, and Phase 26 needs the same grammar inside the
+ * source form's validator, which a Client Component reaches. A parser cannot be both.
+ *
+ * The new home is pure — no I/O, no ambient clock, no marker — and it carries the six-hour
+ * minimum-interval rule beside the grammar it is computed from, mirroring the CHECK in migration
+ * `0240` (CANONICAL-DECISIONS.md, amendment A26).
  */
-export function nextCronRun(expression: string, from: Date): Date | null {
-  const fields = expression.trim().split(/\s+/)
-  if (fields.length !== 5) return null
-
-  const minutes = parseCronField(fields[0]!, 0, 59)
-  const hours = parseCronField(fields[1]!, 0, 23)
-  const days = parseCronField(fields[2]!, 1, 31)
-  const months = parseCronField(fields[3]!, 1, 12)
-  const weekdays = parseCronField(fields[4]!, 0, 6)
-  if (!minutes || !hours || !days || !months || !weekdays) return null
-
-  // Start at the next whole minute: a cron that fires "now" has already fired.
-  const cursor = new Date(from.getTime())
-  cursor.setUTCSeconds(0, 0)
-  cursor.setUTCMinutes(cursor.getUTCMinutes() + 1)
-
-  const limit = 370 * 24 * 60
-  for (let step = 0; step < limit; step += 1) {
-    if (
-      minutes.has(cursor.getUTCMinutes()) &&
-      hours.has(cursor.getUTCHours()) &&
-      months.has(cursor.getUTCMonth() + 1) &&
-      // CRON'S ODD RULE, AND IT IS THE STANDARD ONE: when both day-of-month and day-of-week are
-      // restricted, a match on EITHER fires. Treating it as an AND makes `0 0 1 * 1` mean "the
-      // first of the month, if it is a Monday" instead of "the first of the month, and every
-      // Monday" — which is a schedule that fires roughly one seventh as often as intended.
-      matchesDay(cursor, fields[2]!, fields[4]!, days, weekdays)
-    ) {
-      return cursor
-    }
-    cursor.setUTCMinutes(cursor.getUTCMinutes() + 1)
-  }
-  return null
-}
-
-function matchesDay(
-  at: Date,
-  dayField: string,
-  weekdayField: string,
-  days: Set<number>,
-  weekdays: Set<number>,
-): boolean {
-  const dayRestricted = dayField !== '*'
-  const weekdayRestricted = weekdayField !== '*'
-  const dayMatch = days.has(at.getUTCDate())
-  const weekdayMatch = weekdays.has(at.getUTCDay())
-
-  if (dayRestricted && weekdayRestricted) return dayMatch || weekdayMatch
-  if (dayRestricted) return dayMatch
-  if (weekdayRestricted) return weekdayMatch
-  return true
-}
-
-// `*`, `5`, `1-5`, a star with a `/15` step, `1,3,5`, `1-10/2`. Null for anything else.
-// (Written as a line comment because a step expression contains the sequence that would end a
-// block comment — which is exactly the kind of thing a cron parser has to be careful about.)
-export function parseCronField(field: string, min: number, max: number): Set<number> | null {
-  const values = new Set<number>()
-
-  for (const part of field.split(',')) {
-    const [rangePart, stepPart] = part.split('/')
-    if (rangePart === undefined) return null
-
-    const step = stepPart === undefined ? 1 : Number(stepPart)
-    if (!Number.isInteger(step) || step < 1) return null
-
-    let start: number
-    let end: number
-    if (rangePart === '*') {
-      start = min
-      end = max
-    } else if (rangePart.includes('-')) {
-      const [a, b] = rangePart.split('-')
-      start = Number(a)
-      end = Number(b)
-    } else {
-      start = Number(rangePart)
-      end = start
-    }
-
-    if (!Number.isInteger(start) || !Number.isInteger(end)) return null
-    if (start < min || end > max || start > end) return null
-
-    for (let value = start; value <= end; value += step) values.add(value)
-  }
-
-  return values.size === 0 ? null : values
-}
+export { nextCronRun, parseCronField }
 
 export interface PromotedRun {
   readonly jobId: string
