@@ -29,6 +29,15 @@ import type { SectionRenderProps } from './types'
  * is not a reference block — or for a Studio preview that rendered a section list without loading
  * references — and in both cases the honest output is the copy with neither cards nor an empty
  * state, because nothing has been asked and so nothing is known.
+ *
+ * PHASE 22 TAUGHT THIS RENDERER THE THREE FALLBACK MODES, AND NOTHING ELSE. The selector swap
+ * itself changed no line here — the seam held. What changed afterwards is what an EMPTY answer
+ * looks like when a merchandising slot gave it: `HIDE_SECTION` renders nothing at all, heading
+ * included, because a heading over nothing is a promise the page cannot keep; `EDITORIAL_BLOCK`
+ * renders the seeded sentence AND the tiles `lib/cms/references.ts` built from the fallback section;
+ * `SHOW_EMPTY_STATE` renders the sentence alone, which is what Phase 11 always did. Provenance
+ * travels as `data-provenance` so a reader of the page can tell CURATED from RULE_FILLED without
+ * opening the Studio.
  */
 const FALLBACK_KEY = 'EMPTY_STATE.collection'
 
@@ -47,10 +56,13 @@ export function SelectedWorksSection({
    * beginning of a second opinion about how many cards to show.
    */
   const cards = reference?.result.cards ?? []
+  const outcome = reference?.result.merchandising
+  const mode = cards.length === 0 ? (outcome?.fallback?.mode ?? null) : null
+  if (mode === 'HIDE_SECTION') return null
 
   return (
     <SectionShell section={section} spacing="lg">
-      <Stack gap={10}>
+      <Stack gap={10} data-provenance={outcome?.provenance} data-slot={outcome?.slotKey}>
         <SectionCopy section={section} />
         {media.desktop === null && media.mobile === null ? null : (
           <ResponsiveMedia
@@ -71,6 +83,8 @@ export function SelectedWorksSection({
               strings={strings}
               contentKey={FALLBACK_KEY}
               reason={reference.result.reason}
+              tiles={mode === 'EDITORIAL_BLOCK' ? (reference.tiles ?? []) : []}
+              cloudName={cloudName}
             />
           )
         ) : (

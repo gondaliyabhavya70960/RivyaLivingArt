@@ -6,6 +6,131 @@ Every phase adds an entry; see `docs/architecture/CANONICAL-DECISIONS.md` D9 for
 
 ## [Unreleased]
 
+### Phase 22 — Homepage / Store Merchandising
+
+The owner takes the controls. Which products appear in Selected Works and in what order, which
+collections are featured, how the store's seven categories are ordered, which pieces are pinned
+inside a category, and when each arrangement starts and stops — all of it is now a Studio decision
+with a schedule, and none of it is written in code. **The catalogue still ships with zero published
+products, so every slot resolves to its fallback**, and the more important half of the phase is what
+that looks like: editorial tiles with no price and no product link, or nothing at all, never a
+placeholder card.
+
+**Two tables, eleven slots, one ladder.** Migration `0200` creates `merchandising_slots` and
+`merchandising_entries` and inserts the eleven slots as structure — four global
+(`HOMEPAGE_SELECTED_WORKS`, `HOMEPAGE_FEATURED_COLLECTIONS`, `HOMEPAGE_JOURNAL_STRIP`,
+`STORE_FEATURED_ROW`) and one `CATEGORY_PINNED_<SLUG>` per D3 category, the latter by a trigger on
+`categories` so a category added later brings its slot with it. Each slot has exactly one surface
+and exactly one owning Studio screen; there is no reusable slot. `lib/cms/merchandising.ts`
+resolves a slot in five ordered steps — live entries, re-checked targets, the curated list if it
+reaches the minimum, a recency top-up if the owner switched it on and wrote the rule in words, else
+the fallback mode — and returns provenance (`CURATED` · `RULE_FILLED` · `FALLBACK`). There is no
+sixth step, and `merchandising-register.test.ts` reads the resolver's source to keep "popular",
+"trending" and "random" out of it.
+
+**The seam held.** `selectProducts` and `selectArticles` kept their signatures and gained a slot-
+backed body; no renderer changed for the swap. Afterwards, separately, `SelectedWorksSection`,
+`JournalStripSection` and the new `FeaturedCollectionsSection` learned the three fallback modes:
+`HIDE_SECTION` removes the band, heading included; `EDITORIAL_BLOCK` renders the seeded sentence
+and tiles drawn from a named section (by default the page's own material story) with a CTA only to
+`/large-format`, `/collection` or `/custom-commissions`; `SHOW_EMPTY_STATE` is the Phase 11 sentence
+alone. `featured-collections` is the catalogue's 34th block (amendment A22) — a reference block
+with no query of its own, addable on `/` and `/collection`, not seeded. `MerchandisedRow`
+(RC-243) draws the two slots with no block to live in — the store's featured row and a category's
+pinned region — beneath the page's sections, with `global_content` headings.
+
+**The database refuses what the ladder could never keep.** An entry must name a type its slot
+admits and an entity that exists; a collection still in concept is refused at the row, so a
+crafted POST fails as the picker's list does; a window must close after it opens; `auto_fill`
+cannot move without a rule. `merch_move_entry()` is SECURITY INVOKER and moves one place
+atomically. `merch_run_schedule()` is the merchandising pass the content-schedule cron gained:
+it records each window transition in `activity_events`, archives an entry whose window closed, and
+returns the paths to revalidate — never putting anything on or off the site by itself, because the
+resolver and the generated RLS clause honour every window on every read.
+
+**Four Studio screens.** `/studio/merchandising/homepage` (Selected Works, the journal strip, the
+featured band read-only, the hero still and the Selected Works heading under `content.write`),
+`/store` (category order one place at a time, refused once with the SEED §56 warning and allowed
+on an acknowledged second submit, *Restore recommended order*, and each category's pinned slot
+beside it), `/featured` (published, owner-confirmed collections only, with the reason inline) and
+`/scheduling` (a month table of live entries per slot per day, gaps and overflows marked, the
+windows that open or close, a jump to the owning screen). One slot editor serves all three
+writing screens: entries with move, pin, release, remove and window controls; a picker of
+published entities; settings; and the resolver's own answer as the public preview. Every form
+posts the screen it was drawn on and the action refuses a slot owned elsewhere. Every write is
+audited, in the activity feed, and followed by a revalidation of the slot's surface.
+
+**Gates and tests.** `npm run cms:check-copy` now reports a `/product/<slug>` literal in any
+renderer or pattern. 1,534 tests across 116 files, none skipped — 32 new: the ladder and the
+fallback output (`merchandising-resolve`), the register level with `0200` and the
+no-behavioural-word rule (`merchandising-register`), and the Phase 22 RLS suite. Two e2e specs'
+worth of walks in `merchandising.spec.ts`, skipping with a stated reason where the Studio
+credentials or the products are absent. Migrations `0200`–`0201` applied locally and to hosted;
+44 tables, 175 policies, 215 seeded strings on both.
+
+### Phase 21 — 3D Product Experience
+
+A visitor can pick an object up and turn it over — where a model exists, and none does yet. The
+phase ships the whole capability with **zero models**: the manifest holds no GLB, none is generated
+(a model has a form and dimensions, which is a product specification, D10), and the first upload
+path for one now exists, inspected before it is saved.
+
+**The viewer costs the page nothing until it is asked for.** Routes import the mount through
+`LazyModelViewerMount` (`next/dynamic`, so the mount's own client half is an on-demand chunk and
+not a homepage island — the island-budget gate stays at five), and `components/three/**` is reached
+only through that island: a dynamic import with `ssr: false`, on a press of the poster's
+control or on an intersection the capability probe allows (viewport ≥ 768 px, motion not reduced,
+`saveData` off, `deviceMemory` ≥ 4, WebGL present). A new gate, `scripts/perf/check-bundle.mjs`,
+walks every route's client import graph and fails on any `three`, `@react-three/*` or
+`meshoptimizer` specifier — proved to fail on a planted import — and is in `npm run check` and CI.
+The chunk measures **303.6 kB gzipped** against the 350 kB budget; a first measurement of 391 kB
+found `zod` in the graph, so the viewer now reads a zod-free `lib/media/viewer-settings.ts` and a
+unit test keeps it that way.
+
+**Every FEAT §12 control has a pointer, touch and keyboard route.** Orbit, zoom, pan, reset,
+fullscreen, finish inspection, variant switching, dimension indicators, four lighting and three
+environment presets built from Phase 02 palette tokens with no HDR and no fetch. The canvas is
+`role="img"` with a name and a description that lists every key; fullscreen is a fixed surface with
+a focus trap; under reduced motion there is no auto-rotate, no damping and no intro. Draco is
+served from `public/draco/`, the Basis transcoder from `public/basis/` (only for a KTX2 texture),
+meshopt bundled — all vendored from `three@0.186.0`, licences recorded as RC-905/906/907.
+
+**Metadata is parsed, never typed.** `lib/media/inspect.ts` reads a GLB's JSON chunk without a
+decoder — bytes, extensions, declared triangles, textures, variants, self-containment — so the
+browser refuses a 20 MB uncompressed file with both reasons named before anything is signed.
+`saveModelAction` then reads the uploaded bytes back from the delivery origin, runs the decoder
+pass (gltf-transform, the Node Draco decoder, the same meshopt module the viewer bundles), writes
+`model_format`, `file_size_bytes`, `poly_count` and `texture_count` from what it read, and
+destroys a refused file rather than recording it. The same ceilings are CHECK constraints in
+migration `0194`.
+
+**D10 at the finish switcher.** `model_variant_labels` gives each `KHR_materials_variants` key words
+a visitor can read. A label that also names a `materials` row asserts that material is in a real
+object, so the CHECK forces it to at least `OWNER_VERIFICATION_REQUIRED`, the Phase 08 authority
+trigger keeps `VERIFIED` for the owner and admin, and the public read hands the material to the
+viewer only at `VERIFIED`. Dimension indicators receive values the server parsed from
+`products.dimensions` and the component that prints them imports no engine — asserted on its source.
+
+**A poster gates association, not existence.** A model may be uploaded and inspected with no
+poster; it may not be attached to a product or a project without one, because the poster is what
+every page renders first and is the LCP element by contract. Posters are chosen from the image
+library, never captured from the viewer (amendment A21). `set_model_association()` writes both
+sides of a product association in one `SECURITY INVOKER` transaction, so an editor who holds
+`media.write` but not `catalog.write` fails as a whole rather than leaving the asset pointing at a
+product that does not know it.
+
+**Studio.** `/studio/media/models` fills its 3D half: the uploader with the inspector in front of
+it, a list of what was read, and a drawer with re-inspect, poster and thumbnail, viewer settings
+with the real viewer as live preview, finish labels and association. Four mount points on the site:
+the product page, the `three-d-resin` block's slot, the project page and `/collection/3d-resin`.
+
+**Also in this phase.** Migrations renumbered to `0194`–`0195` (amendment A21); React pinned at
+19.2.8 while `@react-three/fiber` caps it below 19.3; the flag is `three_d_viewer`;
+`scripts/seed/emit-sql.ts` emits the runner's `global_content` INSERTs with their hashes for a
+database `DATABASE_URL` cannot reach — which found and closed a 56-row gap on the hosted project
+(31 Phase 17–20 strings had never been seeded there). Migrations applied to hosted through the
+Supabase MCP; 42 tables, 165 policies on both.
+
 ### Phase 20 — Inquiry + WhatsApp Flow
 
 The conversion model becomes real, and becomes safe. Every enquiry — from the contact form, from a

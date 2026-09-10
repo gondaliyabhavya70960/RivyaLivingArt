@@ -26,7 +26,8 @@ describe('block type union', () => {
     // exhibition page needs, added in Phase 16 under amendment A14 — plus `project-gallery` and
     // `testimonial-strip`, the two the project archive needs (Phase 17), plus
     // `commission-configurator`, the band that mounts the FEAT §15 brief (Phase 19).
-    expect(BLOCK_TYPES).toHaveLength(33)
+    // …plus `featured-collections`, the merchandised half of SEED §10-03 (Phase 22, amendment A22).
+    expect(BLOCK_TYPES).toHaveLength(34)
   })
 
   it('validates only its own members', () => {
@@ -162,6 +163,7 @@ describe('built and planned', () => {
       'manifesto',
       'category-grid',
       'selected-works',
+      'featured-collections',
       'material-story',
       'material-palette',
       'commission-cta',
@@ -230,10 +232,19 @@ describe('built and planned', () => {
    */
   it('offers built blocks to an editor, minus those a page does not allow', () => {
     const addable = addableBlocks('/').map((block) => block.type)
-    const unrestricted = BUILT_BLOCK_TYPES.filter((type) => blockModule(type).allowedPages === null)
+    // Unrestricted blocks, plus the ones that name the homepage: `featured-collections` (Phase 22)
+    // is addable on `/` and `/collection` and nowhere else.
+    const onHomepage = BUILT_BLOCK_TYPES.filter((type) => {
+      const pages = blockModule(type).allowedPages
+      return pages === null || pages.includes('/')
+    })
 
-    expect(addable).toEqual(unrestricted)
+    expect(addable).toEqual(onHomepage)
     expect(addable).not.toContain('project-gallery')
+    expect(addable).toContain('featured-collections')
+    expect(addableBlocks('/process').map((block) => block.type)).not.toContain(
+      'featured-collections',
+    )
   })
 
   it('offers a page-restricted block on the page it belongs to', () => {

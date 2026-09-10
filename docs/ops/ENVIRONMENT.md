@@ -575,6 +575,15 @@ npm run db:types      # regenerates lib/supabase/database.types.ts
 npm run seed:content  # applies the taxonomy seed
 ```
 
+**Seeding a database `DATABASE_URL` cannot reach.** `npx tsx scripts/seed/emit-sql.ts [--only=key,…]`
+prints the runner's `global_content` INSERTs as SQL — the module's fields, the same
+`seed_content_hash` over the same fields, the same version stamp, guarded by `where not exists` on
+the seed key — for applying through the Supabase MCP or a SQL console. A row applied this way and a
+row applied by the runner are indistinguishable afterwards, which is what a hand-written INSERT
+cannot promise: without the hash, every later run reads the row as owner-edited and skips it for
+ever. `global_content` only, and only records with no `refs` and no `media`; the rest is the
+runner's job. Phase 21 used it to bring the hosted project level with local (56 rows).
+
 **`DATABASE_URL` is the only variable these scripts read**, and they read it from the environment
 rather than from `.env.local`. That is deliberate: `.env.local` points at the hosted Supabase
 project, and `db:reset` DROPS EVERY OBJECT in the target schema. `scripts/db/reset.mjs` additionally

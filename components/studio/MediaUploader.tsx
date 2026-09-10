@@ -45,6 +45,17 @@ export type MediaUploaderProps = {
   folders?: readonly string[]
   /** Called with the new asset's id once the row is saved, so the page can refresh. */
   onUploaded?: (assetId: string) => void
+  /**
+   * Runs on the chosen file BEFORE anything is signed. A refusal stops the upload with every reason
+   * shown; an acceptance may carry notes that are shown once the row is saved. Phase 21's model
+   * inspector is the one caller; an image surface has nothing to check that the sign endpoint
+   * does not already check.
+   */
+  preflight?: (
+    file: File,
+  ) => Promise<{ ok: true; notes: readonly string[] } | { ok: false; reasons: readonly string[] }>
+  /** Replaces the generic "saved as a draft" line once the row is written. */
+  doneMessage?: string
   /** Saves the row after Cloudinary accepts the file. A Server Action, passed in by the page. */
   saveAction: (input: {
     publicId: string
@@ -54,19 +65,21 @@ export type MediaUploaderProps = {
     altText: string
     filename: string
     mimeType: string
-  }) => Promise<{ ok: true; id: string } | { ok: false; error: string }>
+  }) => Promise<{ ok: true; id: string; notes?: readonly string[] } | { ok: false; error: string }>
 }
 
 /** D6's ladder, in D6's order. `REAL` first because it is the one an editor should reach for. */
 const SOURCES = ['REAL', 'USER_UPLOAD', 'RENDER', 'FALLBACK'] as const
 
-type Phase = 'idle' | 'signing' | 'uploading' | 'saving' | 'done'
+type Phase = 'idle' | 'checking' | 'signing' | 'uploading' | 'saving' | 'done'
 
 export function MediaUploader({
   kind,
   folders = ALLOWED_FOLDERS,
   onUploaded,
   saveAction,
+  preflight,
+  doneMessage,
 }: MediaUploaderProps): React.ReactElement {
   const limits = UPLOAD_LIMITS[kind]
 
@@ -79,11 +92,16 @@ export function MediaUploader({
   const [phase, setPhase] = React.useState<Phase>('idle')
   const [progress, setProgress] = React.useState(0)
   const [error, setError] = React.useState<string | null>(null)
+  const [reasons, setReasons] = React.useState<readonly string[]>([])
+  const [notes, setNotes] = React.useState<readonly string[]>([])
 
-  const busy = phase === 'signing' || phase === 'uploading' || phase === 'saving'
+  const busy =
+    phase === 'checking' || phase === 'signing' || phase === 'uploading' || phase === 'saving'
 
   async function upload(): Promise<void> {
     setError(null)
+    setReasons([])
+    setNotes([])
 
     if (file === null) return setError(t('studio.media.upload.needFile'))
     if (altText.trim() === '') return setError(t('studio.media.upload.needAlt'))
@@ -92,6 +110,17 @@ export function MediaUploader({
       return setError(t('studio.media.upload.wrongType'))
     }
     if (file.size > limits.maxBytes) return setError(t('studio.media.upload.tooLarge'))
+
+    if (preflight !== undefined) {
+      setPhase('checking')
+      const check = await preflight(file)
+      if (!check.ok) {
+        setPhase('idle')
+        setReasons(check.reasons)
+        return setError(t('studio.models.upload.rejectedHeading'))
+      }
+      setNotes(check.notes)
+    }
 
     setPhase('signing')
     const signResponse = await fetch('/api/media/sign', {
@@ -170,6 +199,8 @@ export function MediaUploader({
       return setError(saved.error)
     }
 
+    const extra = saved.notes ?? []
+    if (extra.length > 0) setNotes((current) => [...current, ...extra])
     setPhase('done')
     setProgress(100)
     onUploaded?.(saved.id)
@@ -253,6 +284,15 @@ export function MediaUploader({
       </Field>
 
       {error !== null && <ErrorText>{error}</ErrorText>}
+      {reasons.length > 0 && (
+        <ul data-upload-rejections="" className="list-disc pl-5">
+          {reasons.map((reason) => (
+            <li key={reason}>
+              <ErrorText>{reason}</ErrorText>
+            </li>
+          ))}
+        </ul>
+      )}
 
       {phase === 'uploading' && (
         <Stack gap={1}>
@@ -270,10 +310,32 @@ export function MediaUploader({
         </Stack>
       )}
 
-      {phase === 'done' && <Text tone="secondary">{t('studio.media.upload.done')}</Text>}
+      {phase === 'done' && (
+        <Text tone="secondary">{doneMessage ?? t('studio.media.upload.done')}</Text>
+      )}
+      {phase === 'done' && notes.length > 0 && (
+        <Stack gap={1} data-upload-notes="">
+          <Text size="sm" tone="secondary">
+            {t('studio.models.upload.warningsHeading')}
+          </Text>
+          <ul className="list-disc pl-5">
+            {notes.map((note) => (
+              <li key={note}>
+                <Text size="sm" tone="secondary">
+                  {note}
+                </Text>
+              </li>
+            ))}
+          </ul>
+        </Stack>
+      )}
 
       <Button type="button" disabled={busy} onClick={() => void upload()}>
-        {busy ? t('studio.media.upload.busy') : t('studio.media.upload.action')}
+        {phase === 'checking'
+          ? t('studio.models.upload.checking')
+          : busy
+            ? t('studio.media.upload.busy')
+            : t('studio.media.upload.action')}
       </Button>
     </Stack>
   )

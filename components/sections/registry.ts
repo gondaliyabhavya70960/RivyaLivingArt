@@ -12,6 +12,7 @@ import { CustomizationNoteSection } from './CustomizationNoteSection'
 import { CommissionCtaSection } from './CommissionCtaSection'
 import { DividerSection } from './DividerSection'
 import { EmptyStateSection } from './EmptyStateSection'
+import { FeaturedCollectionsSection } from './FeaturedCollectionsSection'
 import { FinalCtaSection } from './FinalCtaSection'
 import { HeroSection } from './HeroSection'
 import { JournalStripSection } from './JournalStripSection'
@@ -37,7 +38,7 @@ import type { SectionRenderer } from './types'
  * pull React into every Node script that wants to know what fields a hero has.
  *
  * `null` MEANS PLANNED, AND EXHAUSTIVENESS IS THE POINT: `Record<BlockType, …>` forces a decision
- * for every one of the 32. A block cannot be forgotten here — only explicitly declared as having
+ * for every one of the 34. A block cannot be forgotten here — only explicitly declared as having
  * no renderer yet. `tests/unit/cms-sections.test.tsx` asserts the two registries agree: every
  * block the module registry calls BUILT has a renderer, and every PLANNED one has null.
  */
@@ -54,6 +55,7 @@ export const SECTION_RENDERERS = {
   'process-steps': ProcessStepsSection,
   'secondary-objects': SecondaryObjectsSection,
   'journal-strip': JournalStripSection,
+  'featured-collections': FeaturedCollectionsSection,
   'final-cta': FinalCtaSection,
   statement: StatementSection,
   'scale-statement': ScaleStatementSection,

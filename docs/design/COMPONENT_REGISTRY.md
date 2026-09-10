@@ -289,7 +289,7 @@ and Phase 10's site shell then reuses it.
 | RC-225 | `RelatedContent` | storytelling | 15 | PLANNED | index only — server, composes cards |
 | RC-226 | `InquiryLauncher` | conversion | 20 | PLANNED | §7.21 |
 | RC-227 | `InquirySuccess` | conversion | 20 | PLANNED | index only — server, SEED §48 copy |
-| RC-228 | `ModelViewerMount` | product understanding | 21 | PLANNED | §7.22 |
+| RC-228 | `ModelViewerMount` | product understanding | 21 | BUILT | §7.22 |
 | RC-229 | `charts/*` (`BarSeries`, `BandStrip`, `Scatter`, `Sparkline`) | usability | 31 | PLANNED | §7.23 |
 | RC-230 | `Breadcrumbs` | navigation | 02 | BUILT | §7.35 |
 | RC-231 | `DropdownMenu` | navigation | 02 | BUILT | §7.36 |
@@ -297,13 +297,14 @@ and Phase 10's site shell then reuses it.
 | RC-233 | `MediaVideo` | material understanding | 06 | BUILT | §7.38 |
 | RC-234 | `Pagination` | navigation | 14 | BUILT | §7.39 |
 | RC-235 | `BlockVideo` | material understanding | 11 | BUILT | index only — server; split out of RC-213 so a route with no video does not carry the `MediaVideo` island |
-| RC-236 | `EditorialFallback` | conversion | 11 | BUILT | index only — server; renders a seeded `EMPTY_STATE.*` string where a reference block has nothing real to show |
+| RC-236 | `EditorialFallback` | conversion | 11 | BUILT | index only — server; renders a seeded `EMPTY_STATE.*` string where a reference block has nothing real to show. **Phase 22** added `tiles` — heading, line and picture drawn from a section the slot names, a CTA only to `/large-format`, `/collection` or `/custom-commissions`, and no field for a price, a product link, a SKU or a dimension (`lib/cms/editorial-tile.ts`) |
 | RC-237 | `SortSelect` | navigation | 14 | BUILT | §7.42 |
 | RC-238 | `ProductGallery` (`index`, `Viewer`, `Thumbnails`, `Lightbox`) | product understanding | 15 | BUILT | §7.43 |
 | RC-239 | `ProductSpecifications` | product understanding | 15 | BUILT | §7.44 |
 | RC-240 | `ProductMaterialStory` | material understanding | 15 | BUILT | §7.45 |
 | RC-241 | `ProductInquiryRail` | conversion | 15 | BUILT | §7.46 |
 | RC-242 | `RelatedContent` | navigation | 15 | BUILT | §7.47 |
+| RC-243 | `MerchandisedRow` | conversion | 22 | BUILT | §7.49 |
 
 `Breadcrumbs` and `DropdownMenu` are Phase 02, not Phase 10. `docs/project/phases/PHASE-00-04.md`
 pulls both forward on purpose and requires their rows to be opened in that phase: Phase 05's
@@ -343,7 +344,7 @@ implementation detail of RC-213.
 
 | ID | Component | Purpose | Phase | State | Record |
 |---|---|---|---|---|---|
-| RC-401 | `ModelViewer` | product understanding | 21 | PLANNED | §7.28 |
+| RC-401 | `ModelViewer` | product understanding | 21 | BUILT | §7.28 |
 | RC-402 | `ViewerControls` | product understanding | 21 | PLANNED | index only — composes RC-002 |
 
 ### 6.5 Third-party and vendored
@@ -353,9 +354,10 @@ implementation detail of RC-213.
 | RC-901 | Newsreader (display font) | Google Fonts / Production Type | 02 | PLANNED | §7.29 |
 | RC-902 | Inter (body font) | Google Fonts / rsms | 02 | PLANNED | §7.30 |
 | RC-903 | IBM Plex Mono (technical font) | Google Fonts / IBM | 02 | **REJECTED** | §7.31, §8 |
-| RC-904 | `@react-three/drei` controls | pmndrs | 21 | PLANNED | §7.32 |
-| RC-905 | Draco decoder, vendored to `public/draco/**` | google/draco via three.js | 21 | PLANNED | §7.33 |
-| RC-906 | KTX2 / Basis transcoder, vendored to `public/basis/**` | BinomialLLC via three.js | 21 | PLANNED | §7.34 |
+| RC-904 | `@react-three/drei` controls | pmndrs | 21 | BUILT | §7.32 |
+| RC-905 | Draco decoder, vendored to `public/draco/**` | google/draco via three.js | 21 | BUILT | §7.33 |
+| RC-906 | KTX2 / Basis transcoder, vendored to `public/basis/**` | BinomialLLC via three.js | 21 | BUILT | §7.34 |
+| RC-907 | meshopt decoder, bundled from `meshoptimizer` | zeux/meshoptimizer | 21 | BUILT | §7.48 |
 
 ### 6.6 Rows a later phase owes
 
@@ -856,17 +858,17 @@ payment field, no account creation exists in it or anywhere near it.
 |---|---|
 | Registry ID | RC-228 |
 | Source | Rivya first-party |
-| Link | `components/patterns/ModelViewerMount.tsx` |
+| Link | `components/patterns/ModelViewerMount/lazy.tsx` (the `next/dynamic` boundary routes import, so the mount's client half is an on-demand chunk and not a homepage island) + `index.tsx` (server: the poster and the copy) + `Island.tsx` (client: the probe, the intent gate and the boundary in front of the engine) |
 | Licence | N/A — first-party |
 | Dependencies | none of its own; it is the `next/dynamic` boundary in front of RC-401 |
-| Page | `/product/[slug]`, `/collections/[slug]` |
+| Page | `/product/[slug]` (below the gallery), `/collections/[slug]` (the `three-d-resin` block's slot), `/portfolio/[slug]` (after the story), `/collection/3d-resin` (below the grid) |
 | Purpose | product understanding |
-| Adaptation | Renders the poster and the "Inspect in 3D" control; imports RC-401 with `ssr: false` only after the capability gate passes |
+| Adaptation | The server renders the poster as a `BlockImage` with a real srcset; the island runs the FEAT §14 probe (`lib/media/viewer-settings.ts`), shows the "Inspect in 3D" control only when the browser has answered and is not declined, and imports RC-401 with `ssr: false` on a press or on an intersection the probe allows |
 | Mobile behaviour | Below 768px the viewer is opt-in only and opens fullscreen; the poster alone is the default experience |
-| Performance | **0 bytes of viewer JavaScript in the route bundle**, asserted by `tests/e2e/model-performance.spec.ts`. The poster, never the canvas, is the LCP element |
-| Accessibility | The trigger is a real button with an accessible name; loading progress is `aria-live="polite"` at 0/50/100; on failure the poster stays with a stated reason; nothing 3D is requested when the `3d_viewer` flag is off |
-| Reviewed on | — |
-| Reviewer | UNASSIGNED |
+| Performance | **0 bytes of viewer JavaScript in the route bundle**, asserted statically by `scripts/perf/check-bundle.mjs` on every route's client graph and on the wire by `tests/e2e/model-performance.spec.ts`. The poster, never the canvas, is the LCP element |
+| Accessibility | The trigger is a real button with an accessible name from `global_content`; loading progress is `aria-live="polite"` at 0/50/100; on failure the poster stays with a stated reason; nothing 3D is requested when the `three_d_viewer` flag is off, and the mount renders nothing at all in that case |
+| Reviewed on | 2026-09-10 |
+| Reviewer | Phase 21 session — `tests/unit/model-mount.test.tsx`, `tests/unit/model-policy.test.ts` |
 | Verdict | FIRST_PARTY |
 
 ### 7.23 RC-229 — `charts/*`
@@ -977,17 +979,17 @@ route the signed-in user may not open is an information leak, not a convenience.
 |---|---|
 | Registry ID | RC-401 |
 | Source | Rivya first-party, built on `three` + `@react-three/fiber` (D1 stack) |
-| Link | `components/three/ModelViewer.tsx` |
-| Licence | N/A — first-party. Its runtime dependencies are RC-904/905/906 |
-| Dependencies | `three`, `@react-three/fiber`, `@react-three/drei` — all fixed by D1, none added by this component |
-| Page | `/product/[slug]`, `/collections/[slug]` |
+| Link | `components/three/ModelViewer.tsx` (the chrome and the keyboard map) · `ViewerCanvas.tsx` (the only `<Canvas>`) · `presets.ts` · `loader.ts` · `variants.ts` · `ViewerControls`, `VariantSwitcher`, `DimensionOverlay`, `LightingPresetSelect`, `EnvironmentPresetSelect`, `LoadingProgress`, `PosterFallback` |
+| Licence | N/A — first-party. Its runtime dependencies are `three` 0.186.0 (MIT), `@react-three/fiber` 9.7.0 (MIT), RC-904, RC-905, RC-906 and RC-907 |
+| Dependencies | `three`, `@react-three/fiber`, `@react-three/drei` — all fixed by D1, none added by this component. `react` and `react-dom` are pinned at 19.2.8 while fiber caps React below 19.3 (amendment A21) |
+| Page | Wherever RC-228 mounts it |
 | Purpose | product understanding |
-| Adaptation | Renders in the `INK` scheme against the reserved `--rv-3d-*` token surface; controls are 44px `IconButton`s in a bottom bar |
-| Mobile behaviour | Opt-in only below 768px and fullscreen once opened; touch orbit, pinch zoom, two-finger pan |
-| Performance | **Budgeted at ≤ 350 kB gz** including decoders, per `docs/ops/PERFORMANCE.md` §4.3. Unmeasured — PLANNED; measured at Phase 21 and recorded in PERFORMANCE.md §8.3. **Never** in a first load. Model ceilings are the Phase 21 upload gate, not this budget: reject > 15 MB, > 250k triangles, any texture > 2048px, compression required above 5 MB; `docs/ops/PERFORMANCE.md` §4.3 budgets ≤ 8 MB per GLB after compression, which is the warn line |
-| Accessibility | Canvas is `role="img"` with an accessible name and an `aria-describedby` summary; every camera action has a keyboard route (arrows orbit, `+`/`−` zoom, `0` resets); fullscreen traps focus and `Escape` restores it; under reduced motion there is no auto-rotate, no intro and no idle motion |
-| Reviewed on | — |
-| Reviewer | UNASSIGNED |
+| Adaptation | Renders in the `INK` scheme against the `--rv-3d-*` token surface; controls are 44px `IconButton`s in a bottom bar; four lighting and three environment presets are built from Phase 02 palette tokens resolved from the document at mount, with no HDR and no fetch; `KHR_materials_variants` is read by a first-party loader plugin and the switcher shows `model_variant_labels` words |
+| Mobile behaviour | Opt-in only below 768px and fullscreen once opened; touch orbit, pinch zoom, two-finger pan through `OrbitControls` |
+| Performance | **Measured 303.6 kB gz** (brotli 252 kB) against the ≤ 350 kB budget, `docs/ops/PERFORMANCE.md` §8.3. `frameloop="demand"` unless auto-rotate is on; auto-rotate is off under reduced motion. **Never** in a first load. Model ceilings are the Phase 21 upload gate, not this budget: reject > 15 MB, > 250k triangles, any texture > 2048px, compression required above 5 MB; ≤ 8 MB per GLB is the warn line |
+| Accessibility | Canvas is `role="img"` with an accessible name and an `aria-describedby` summary that lists every key; every camera action has a keyboard route (arrows orbit 5° per press, `Shift`+arrows pan, `+`/`−` zoom, `R` resets, `F` fullscreen, `M` inspects the finish, `D` shows dimensions, `Escape` leaves fullscreen); fullscreen is a fixed surface with `FocusTrap`; under reduced motion there is no auto-rotate, no damping, no intro and no idle motion; the variant switcher is a tab list with roving focus; letter keys are ignored while a select has focus |
+| Reviewed on | 2026-09-10 |
+| Reviewer | Phase 21 session — `tests/unit/model-policy.test.ts`, `tests/e2e/model-viewer.spec.ts` |
 | Verdict | FIRST_PARTY |
 
 **Content constraint (D10).** Dimension indicators render stored, owner-verified product dimensions
@@ -1062,36 +1064,36 @@ to its budget tables (`DESIGN_SYSTEM.md` §18 open item 1). Only then does this 
 | Registry ID | RC-904 |
 | Source | pmndrs / drei |
 | Link | `https://github.com/pmndrs/drei` |
-| Licence | **VERIFY_BEFORE_USE** — read the repository licence file at the pinned version before import |
-| Dependencies | `@react-three/drei` (D1 stack), pinned exactly |
-| Page | `/product/[slug]`, `/collections/[slug]` |
+| Licence | **MIT** — `node_modules/@react-three/drei/LICENSE` at 10.7.8, read 2026-09-10 |
+| Dependencies | `@react-three/drei` 10.7.8, pinned exactly; brings `three-stdlib`'s `OrbitControls` (MIT) |
+| Page | Wherever RC-228 mounts RC-401 |
 | Purpose | product understanding |
-| Adaptation | Only the camera-control, environment and loader helpers are used, wrapped by RC-401 so no drei component is rendered directly by a page. Its default UI affordances are replaced by Rivya `IconButton`s |
-| Mobile behaviour | Touch orbit and pinch zoom via the wrapped controls; damping tuned so a slow drag does not spin the model |
-| Performance | Inside the RC-401 dynamic chunk; contributes to the 350 kB viewer budget and to nothing else |
-| Accessibility | drei's controls are pointer-only by design, so RC-401 adds the keyboard camera model on top. Auto-rotate is disabled under reduced motion |
-| Reviewed on | — |
-| Reviewer | UNASSIGNED |
-| Verdict | PENDING_AUDIT |
+| Adaptation | Two imports only: `OrbitControls` (pointer and touch orbit, dolly and pan, damping off under reduced motion) and `useProgress` (the loading store the progress bar reads). No drei UI, environment or loader helper is rendered; the GLTF, Draco and KTX2 loaders are three's own, configured in `components/three/loader.ts` |
+| Mobile behaviour | One-finger orbit, two-finger dolly-pan via the wrapped controls |
+| Performance | Inside the RC-401 dynamic chunk, ~15 kB of it |
+| Accessibility | drei's controls are pointer-only by design, so RC-401 adds the keyboard camera model on top through the public `OrbitControls` API (target, update, reset, saveState) |
+| Reviewed on | 2026-09-10 |
+| Reviewer | Phase 21 session |
+| Verdict | APPROVED |
 
 ### 7.33 RC-905 — Draco decoder (vendored)
 
 | Field | Value |
 |---|---|
 | Registry ID | RC-905 |
-| Source | google/draco, distributed with three.js as `examples/jsm/libs/draco` |
+| Source | google/draco, distributed with three.js as `examples/jsm/libs/draco/gltf` |
 | Link | `https://github.com/google/draco` |
-| Licence | **VERIFY_BEFORE_USE** — read `LICENSE` at the vendored version and record the SPDX identifier and the commit or release the files came from |
-| Dependencies | none at runtime; the decoder is static files under `public/draco/**` |
-| Page | `/product/[slug]`, `/collections/[slug]` (loaded by RC-401 only) |
+| Licence | **Apache-2.0** — `https://github.com/google/draco/blob/master/LICENSE`, per the README three ships beside the files; recorded in `public/draco/README.md` |
+| Dependencies | none at runtime; `draco_wasm_wrapper.js`, `draco_decoder.wasm` and the asm.js fallback `draco_decoder.js` under `public/draco/`, copied from `three@0.186.0` |
+| Page | Wherever RC-401 loads a Draco-compressed model |
 | Purpose | product understanding |
-| Adaptation | Vendored rather than CDN-loaded so the viewer has no third-party runtime origin. Version pinned; the version and its licence text are committed alongside the files |
-| Mobile behaviour | Only fetched when the viewer is opened, which below 768px requires an explicit tap |
-| Performance | Decoder payload counted inside the 350 kB viewer budget. Compression is required for models above 5 MB, which is what makes the decoder worth its bytes |
+| Adaptation | Vendored rather than CDN-loaded so the viewer has no third-party runtime origin; `DRACOLoader.setDecoderPath('/draco/')` from `lib/media/viewer-settings.ts`. Updated only by bumping `three` and copying the same files |
+| Mobile behaviour | Fetched only when a Draco model is opened, which below 768px requires an explicit tap |
+| Performance | Fetched on demand — 64 kB gz of WebAssembly plus an 11 kB wrapper — not part of the 303.6 kB chunk. Compression is required for models above 5 MB, which is what makes the decoder worth its bytes. The same decoder's Node build (`draco3d` 1.5.7, Apache-2.0) decodes on the server for the inspector |
 | Accessibility | No UI surface. Decode failure surfaces as RC-228's stated-reason fallback, never an empty box |
-| Reviewed on | — |
-| Reviewer | UNASSIGNED |
-| Verdict | PENDING_AUDIT |
+| Reviewed on | 2026-09-10 |
+| Reviewer | Phase 21 session — `tests/unit/model-inspect.test.ts` encodes and decodes a Draco file end to end |
+| Verdict | APPROVED |
 
 ### 7.34 RC-906 — KTX2 / Basis transcoder (vendored)
 
@@ -1100,17 +1102,17 @@ to its budget tables (`DESIGN_SYSTEM.md` §18 open item 1). Only then does this 
 | Registry ID | RC-906 |
 | Source | BinomialLLC/basis_universal, distributed with three.js as `examples/jsm/libs/basis` |
 | Link | `https://github.com/BinomialLLC/basis_universal` |
-| Licence | **VERIFY_BEFORE_USE** — read `LICENSE` at the vendored version and record the SPDX identifier and the source release |
-| Dependencies | none at runtime; static files under `public/basis/**` |
-| Page | `/product/[slug]`, `/collections/[slug]` (loaded by RC-401 only) |
+| Licence | **Apache-2.0** — `https://github.com/BinomialLLC/basis_universal/blob/master/LICENSE`, per the README three ships beside the files; recorded in `public/basis/README.md` |
+| Dependencies | none at runtime; `basis_transcoder.js` and `basis_transcoder.wasm` under `public/basis/`, copied from `three@0.186.0` |
+| Page | Wherever RC-401 loads a model with `KHR_texture_basisu` textures |
 | Purpose | product understanding |
-| Adaptation | Vendored and version-pinned for the same reason as RC-905. Loaded only when a model declares KTX2 textures |
-| Mobile behaviour | Fetched only on explicit viewer open |
-| Performance | Inside the 350 kB viewer budget; justified by the 2048px texture ceiling it makes affordable |
+| Adaptation | Vendored and version-pinned for the same reason as RC-905; `KTX2Loader.setTranscoderPath('/basis/')`. Fetched only when a model declares KTX2 textures — a model without one never requests it. Amendment A21 records that `public/basis/` holds this transcoder and NOT meshopt, which the phase document placed there |
+| Mobile behaviour | Fetched only on explicit viewer open, and only for a KTX2 model |
+| Performance | On demand — 245 kB gz of WebAssembly — never part of the chunk; justified by the 2048px texture ceiling it makes affordable |
 | Accessibility | No UI surface |
-| Reviewed on | — |
-| Reviewer | UNASSIGNED |
-| Verdict | PENDING_AUDIT |
+| Reviewed on | 2026-09-10 |
+| Reviewer | Phase 21 session |
+| Verdict | APPROVED |
 
 ### 7.35 RC-230 — `Breadcrumbs`
 
@@ -1431,6 +1433,44 @@ checkout step exists in any form containing this control, and the component neve
 dimension, quantity or price from an uploaded file.
 
 ---
+
+### 7.48 RC-907 — meshopt decoder (bundled)
+
+| Field | Value |
+|---|---|
+| Registry ID | RC-907 |
+| Source | zeux/meshoptimizer |
+| Link | `https://github.com/zeux/meshoptimizer` |
+| Licence | **MIT** — `node_modules/meshoptimizer/LICENSE.md` at 1.2.0, read 2026-09-10 |
+| Dependencies | `meshoptimizer` 1.2.0, pinned exactly; imported as `meshoptimizer/decoder`, the decoder alone |
+| Page | Wherever RC-401 loads an `EXT_meshopt_compression` model; the server inspector uses the same module |
+| Purpose | product understanding |
+| Adaptation | Not a vendored file: the decoder ships as a JavaScript module with its WebAssembly embedded, so it is bundled into the viewer chunk and served from the origin as part of it (amendment A21). `GLTFLoader.setMeshoptDecoder()` in `components/three/loader.ts`; `NodeIO.registerDependencies({ 'meshopt.decoder' })` in `lib/media/inspect-server.ts` |
+| Mobile behaviour | Arrives with the viewer chunk, on intent only |
+| Performance | 26 kB of the chunk (base64 WebAssembly compresses poorly); counted inside the measured 303.6 kB |
+| Accessibility | No UI surface |
+| Reviewed on | 2026-09-10 |
+| Reviewer | Phase 21 session |
+| Verdict | APPROVED |
+
+### 7.49 RC-243 — `MerchandisedRow`
+
+| Field | Value |
+|---|---|
+| Registry ID | RC-243 |
+| Source | Rivya first-party |
+| Link | `components/patterns/MerchandisedRow/index.tsx` — server |
+| Licence | N/A — first-party |
+| Dependencies | none of its own; draws `ReferenceCards` (a name, a line, a picture) |
+| Page | `/collection` (the `STORE_FEATURED_ROW` region above the catalogue), `/collection/[category]` (the `CATEGORY_PINNED_*` region above the grid, on the default view only) |
+| Purpose | conversion |
+| Adaptation | A merchandising slot rendered by a ROUTE rather than by a block, beneath the page's CMS sections. Renders NOTHING when the slot resolved to nothing — the store row's fallback is HIDE_SECTION, and a pinned slot's SHOW_EMPTY_STATE is already what the listing beneath it says — so there is never a heading over nothing. The heading is a `global_content` string the route resolves (`UI_LABEL.merchandising.store_featured`, `UI_LABEL.merchandising.pinned`); provenance and slot key travel as data attributes |
+| Mobile behaviour | The cards stack to one column below 640 px, as `ReferenceCards` does everywhere |
+| Performance | 0 kB client JavaScript; server-rendered |
+| Accessibility | A level-2 heading names the region when a string exists; each card is one link with the entity's name |
+| Reviewed on | 2026-09-10 |
+| Reviewer | Phase 22 session — `tests/unit/merchandising-resolve.test.ts`, `tests/e2e/merchandising.spec.ts` |
+| Verdict | FIRST_PARTY |
 
 ## 8. Rejections ledger
 

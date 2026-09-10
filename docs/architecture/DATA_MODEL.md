@@ -282,7 +282,7 @@ extensions, always in its own migration statement so no transaction uses a value
 | `inquiry_status` | `NEW · READ · IN_CONVERSATION · QUOTED · WON · LOST · SPAM · ARCHIVED` | 20 | — | `inquiries.pipeline_status` |
 | `whatsapp_state` | `NOT_SENT · REDIRECTED · SHORTENED · UNAVAILABLE` | 20 | — | `inquiries` |
 | `inquiry_event_kind` | `CREATED · WHATSAPP_REDIRECT · VIEWED · STATUS_CHANGED · NOTE_ADDED · ASSIGNED · EXPORTED` | 20 | — | `inquiry_events` |
-| `merch_fallback` | `EDITORIAL_BLOCK · HIDE_SECTION · SHOW_EMPTY_STATE` | 22 | — | `merchandising_slots` |
+| `merch_fallback` | `EDITORIAL_BLOCK · HIDE_SECTION · SHOW_EMPTY_STATE` | 22 | `0200` | `merchandising_slots` |
 | `search_visibility` | `PUBLIC · STAFF` | 23 | — | `search_documents` |
 | `relation_origin` | `EDITOR · RULE_ACCEPTED` | 23 | — | `content_relations`, `product_relations` |
 | `attribute_taxonomy` | `DESIGN_FAMILY · RESIN_STYLE · WOOD_SPECIES` | 23 | — | `product_attribute_terms` |
@@ -317,6 +317,8 @@ migration transaction; a check constraint can be replaced in place, which is why
 | `media_usages.role` | `DESKTOP · MOBILE · POSTER · THUMBNAIL · GALLERY · OG` |
 | `media_assets.resource_type` | `image · video · raw` (Cloudinary's own vocabulary, kept verbatim) |
 | `media_assets.model_format` | `GLB · GLTF` |
+| `media_assets.viewer_settings.lightingPreset` | `studio-soft · gallery-directional · daylight-window · low-key` (Phase 21; enforced by `is_valid_viewer_settings()`) |
+| `media_assets.viewer_settings.environmentPreset` | `neutral-room · dark-gallery · warm-interior` (Phase 21) |
 | `media_crops.aspect_ratio` | `21:9 · 16:9 · 4:3 · 3:2 · 1:1 · 4:5 · 3:4 · 9:16` — exactly D6's eight |
 | `product_media.role`, `portfolio_project_media.role` | `hero · gallery · detail · lifestyle · process · video · model` |
 | `materials.family` | `resin · timber · metal · stone · finish` |
@@ -1153,7 +1155,7 @@ origin; this row is the meaning. D6 makes three columns mandatory on every row.
 | Descriptive | `alt_text text not null`, `title text`, `caption text`, `tags text[] not null default '{}'`, `subject_tags text[] not null default '{}'` |
 | Technical | `mime_type text`, `bytes bigint`, `width int`, `height int`, `aspect_ratio text`, `duration_s numeric`, `poster_public_id text`, `checksum text` |
 | Governance | `is_ai_generated boolean not null`, `is_concept boolean not null`, `is_decorative boolean not null default false` (Phase 41), `uploaded_by uuid`, Tier A + B |
-| 3D (FEAT §13) | `model_format text check (model_format in ('GLB','GLTF'))`, `file_size_bytes bigint`, `poly_count int`, `texture_count int`, `model_thumbnail_id uuid references media_assets(id)`, `model_poster_id uuid references media_assets(id)`, `associated_product_id uuid`, `associated_project_id uuid`, `viewer_settings jsonb not null default '{}'` (Phase 21) |
+| 3D (FEAT §13) | `model_format text check (model_format in ('GLB','GLTF'))`, `file_size_bytes bigint`, `poly_count int`, `texture_count int`, `model_thumbnail_id uuid references media_assets(id)`, `model_poster_id uuid references media_assets(id)`, `associated_product_id uuid references products(id) on delete set null`, `associated_project_id uuid references portfolio_projects(id) on delete set null` (column from Phase 06, key from Phase 21), `viewer_settings jsonb not null default '{}'` (Phase 21) |
 | Higgsfield provenance (columns added by Phase 06 `0030`; **populated** by Phase 07 `0040`) | `higgsfield_generation_id text`, `higgsfield_model text`, `higgsfield_prompt text`, `manifest_version text`, `migrated_at timestamptz` |
 
 **Keys and indexes**
@@ -1180,7 +1182,28 @@ origin; this row is the meaning. D6 makes three columns mandatory on every row.
 check (is_decorative or (alt_text is not null and length(btrim(alt_text)) > 0))
 check (kind <> 'MODEL_3D' or model_format is not null)
 check (kind <> 'VIDEO'    or duration_s   is not null)
+-- Phase 21 (0194): the viewer_settings shape, the FEAT §14 ceilings, and the poster rule
+check (public.is_valid_viewer_settings(viewer_settings))
+check (kind <> 'MODEL_3D' or file_size_bytes is null or file_size_bytes <= 15 * 1024 * 1024)
+check (kind <> 'MODEL_3D' or poly_count is null or poly_count <= 250000)
+check (kind <> 'MODEL_3D'
+       or (associated_product_id is null and associated_project_id is null)
+       or model_poster_id is not null)                       -- a poster gates ASSOCIATION, not existence
+check (kind = 'MODEL_3D' or (associated_product_id is null and associated_project_id is null))
 ```
+
+Two Phase 21 triggers sit beside the checks because a CHECK cannot look at another row:
+`guard_model_still_references()` requires `model_poster_id` and `model_thumbnail_id` to name an
+`IMAGE` asset other than the row itself, and `guard_product_model_reference()` on `products`
+requires `model_media_id` to name a `MODEL_3D` asset. `set_model_association(asset, product,
+project)` — SECURITY INVOKER, the `0184` pattern — writes `associated_*` and
+`products.model_media_id` in one transaction, so the poster constraint fires before a page can
+read the product side.
+
+`viewer_settings` is an object whose keys are a subset of `camera` (`position`, `target`: three
+numbers each; `fov`: 10–120), `exposure` (0.1–4), `lightingPreset`, `environmentPreset`,
+`autoRotate` (boolean), `minDistance` and `maxDistance` (positive, min < max). The preset names are
+the seven of `components/three/presets.ts`, listed in §3.
 
 **RLS** — anon `select` where `status = 'PUBLISHED'`; staff read requires `media.read`; write
 `media.write`; `delete` requires `media.delete` **and** is blocked by trigger while any
@@ -1296,23 +1319,50 @@ Per-ratio crop boxes so one asset serves several CMS slots without a second uplo
 `check (gravity is not null or num_nonnulls(x, y, width, height) = 4)` — either a full box or a
 gravity, never a half-specified crop.
 
-### `model_variant_labels` — Phase 21 · migration `0190` · RLS-PUBLIC (`media.write`)
+### `model_variant_labels` — Phase 21 · migration `0194` · RLS-PUBLIC (`media.write`)
 
-Human labels for the variants a GLB exposes, so the 3D viewer's variant switcher shows words rather
-than mesh names.
+Human labels for the `KHR_materials_variants` keys a `MODEL_3D` asset exposes, so the 3D viewer's
+variant switcher shows words rather than mesh names.
 
 | Column | Type |
 |---|---|
 | `id` | `uuid pk` |
-| `media_asset_id` | `uuid not null references media_assets(id) on delete cascade` |
-| `variant_key` | `text not null` |
-| `label` | `text not null` |
+| `media_asset_id` | `uuid not null references media_assets(id) on delete cascade` — a `MODEL_3D` row, by trigger |
+| `variant_key` | `text not null` — the key declared inside the GLB; matched, never displayed |
+| `label` | `text not null` — what the visitor reads |
 | `material_id` | `uuid references materials(id) on delete set null` |
 | `position` | `int not null default 0` |
+| `fact_classification` | `fact_classification not null default 'EDITORIAL_COPY'` |
+| `owner_verification` | `owner_verification not null default 'NOT_REQUIRED'` |
+| — | Tier A |
 
-**Keys** — `unique (media_asset_id, variant_key)`.
-Labels are `EDITORIAL_COPY`. Attaching a `material_id` links to an existing `materials` row; it
-never invents a specification.
+**Keys** — `unique (media_asset_id, variant_key)`; index `(media_asset_id, position)`; partial index
+on `material_id`.
+
+**Constraints**
+
+```sql
+check (length(btrim(variant_key)) between 1 and 120)
+check (length(btrim(label)) between 1 and 120)
+check (position >= 0)
+-- D10: naming a material asserts it is present in a real object
+check (material_id is null or owner_verification <> 'NOT_REQUIRED')
+```
+
+A bare label is editorial copy and needs no verification. A label that also carries a `material_id`
+asserts that a named material is present in a real object, which is a product fact, so attaching a
+material lifts the row to at least `OWNER_VERIFICATION_REQUIRED`; the Phase 08
+`enforce_verification_authority()` trigger keeps `VERIFIED` for `owner` and `admin`; and the public
+read path in `lib/media/model.ts` returns `material_id` **only** at `VERIFIED`. An unverified
+association still renders its label; it carries no material name. `guard_variant_label_parent()`
+refuses a parent that is not `MODEL_3D`.
+
+**Tiers** — A, plus `owner_verification` and `fact_classification` from B and nothing else. A label
+is never published on its own, so it has no `status` and no publication pair (§1.4): it is public
+exactly when its model is.
+
+**RLS** — shape B: anon `select` where the owning `media_assets` row is `PUBLISHED`; staff read
+`media.read`; write `media.write`; delete `media.delete`. Migration `0195`, generated.
 
 ### `higgsfield_migration_runs` — Phase 07 · migration `0040` · RLS-SERVICE (`media.read`)
 
@@ -1464,6 +1514,15 @@ input matrix — it asks the mirror whether a row may publish, asks the database
 row, and requires the two answers to match.
 
 ---
+
+### 8.13 `guard_merchandising_entry()`, `sync_category_pinned_slot()` and `merch_run_schedule()` — Phase 22 `0200`
+
+The three rules a merchandising slot cannot be talked out of: an entry names an entity of a type
+its slot admits and that exists, and never a collection still in concept; every category has its
+pinned slot by one mechanical key rule; and a window transition is recorded once, in
+`activity_events`, by a sweep that changes nothing a visitor sees. The ladder itself is
+application code (`lib/cms/merchandising.ts`) — see §9 *Merchandising* for the columns each rule
+reads.
 
 ## 9. Portfolio, journal and conversion
 
@@ -1625,19 +1684,60 @@ required non-optional `inquiryId`, so the bypass does not type-check.
 | `inquiry_attachments` | `(inquiry_id, media_asset_id)` PK, `position int`, `created_at` | The asset row is `source = 'USER_UPLOAD'`, `status = 'DRAFT'`, never returned by a public read path. Orphans are purged at 30 days |
 | `inquiry_events` | `id`, `inquiry_id fk`, `event inquiry_event_kind`, `actor_id uuid null`, `from_status`, `to_status`, `note text`, `metadata jsonb`, `occurred_at` | RLS-APPEND. Insert by trigger and service role; never updatable |
 
-### Merchandising — Phase 22 · migrations `0200`–`0201`
+### Merchandising — Phase 22 · migrations `0200`–`0201` · RLS-PUBLIC (`merchandising.write`)
 
-Curation of what appears where, without touching the entities themselves (FEAT §17, SEED §10/§13).
+Curation of what appears where, and when, without touching the entities themselves (FEAT §17,
+SEED §10/§13). **Built in Phase 22.** A SLOT is a named, typed, scheduled, ordered list of entity
+references bound to exactly one public surface and exactly one Studio screen; an ENTRY is one
+reference with its own half-open window. The resolution ladder — five steps, provenance, no
+placeholder card — is implemented once in `lib/cms/merchandising.ts`; this schema only makes the
+states it reads impossible to misrepresent.
 
 | Table | Key columns | Keys / notes |
 |---|---|---|
-| `merchandising_slots` | `id`, `key citext unique`, `name`, `description`, `surface text` (the D3 path), `allowed_entity_types relation_entity[]`, `min_items int not null default 3`, `max_items int not null default 12`, `auto_fill bool not null default false`, `auto_fill_rule text`, `fallback_mode merch_fallback not null`, `fallback_section_id uuid references page_sections(id)`, Tier A+B+C | `fallback_mode` is what stops an empty Selected Works from rendering fake product cards |
-| `merchandising_entries` | `id`, `slot_id fk on delete cascade`, `entity_type relation_entity`, `entity_id uuid`, `position int not null`, `is_pinned bool default false`, `publish_at`, `unpublish_at`, `note text`, Tier A+B | `unique (slot_id, entity_type, entity_id)`; `check (unpublish_at is null or publish_at is null or unpublish_at > publish_at)`; indexes `(slot_id, position)`, `(publish_at)`, `(unpublish_at)` |
+| `merchandising_slots` | `id`, `key citext unique` (`^[A-Z][A-Z0-9_]*$`), `name`, `description`, `surface text not null` (the D3 path — every slot has exactly one; there is no surface-less "reusable" slot), `owning_studio_route text not null` (the single D4 screen permitted to write it — `homepage`, `store` or `featured`), `allowed_entity_types relation_entity[] not null`, `min_items int not null default 3`, `max_items int not null default 12`, `auto_fill bool not null default false`, `auto_fill_rule text`, `fallback_mode merch_fallback not null`, `fallback_section_id uuid references page_sections(id) on delete set null`, `status content_status not null default 'PUBLISHED'`, Tier A | **Tier A + `status` only** — a slot asserts nothing (no `owner_verification`, no `fact_classification`) and is never seeded by a module (no Tier C): the rows come from the migration and from `sync_category_pinned_slot()`. CHECKs: `min_items >= 1`, `max_items >= min_items`, `max_items <= 48`; `auto_fill = false or auto_fill_rule` non-blank (**`merchandising_slots_rule_named`** — FEAT §28: a rule must be written in words before the switch can move). `fallback_mode` is what stops an empty Selected Works from rendering fake product cards |
+| `merchandising_entries` | `id`, `slot_id fk on delete cascade`, `entity_type relation_entity`, `entity_id uuid`, `position int not null` (`>= 0`), `is_pinned bool default false`, `publish_at`, `unpublish_at`, `window_state text not null default 'PENDING'` (`PENDING · OPEN · CLOSED`; the sweep's bookkeeping, never read by the resolver), `status content_status not null default 'DRAFT'`, `note text`, `published_at`, `published_by`, Tier A | `unique (slot_id, entity_type, entity_id)`; `check (unpublish_at is null or publish_at is null or unpublish_at > publish_at)`; indexes `(slot_id, position)`, `(publish_at) where not null`, `(unpublish_at) where not null`, `(entity_type, entity_id)`. No Tier C: a seeded entry would be seeded merchandising of products the seed is forbidden to create (SEED §32) |
+
+**Eleven slots, inserted by `0200` as structure** (under the `check-migrations: allow-insert`
+marker, with the reason): four global — `HOMEPAGE_SELECTED_WORKS` (`/`, PRODUCT, min 3,
+EDITORIAL_BLOCK), `HOMEPAGE_FEATURED_COLLECTIONS` (`/`, COLLECTION · CATEGORY, min 3,
+HIDE_SECTION), `HOMEPAGE_JOURNAL_STRIP` (`/`, JOURNAL_ARTICLE, min 3, HIDE_SECTION),
+`STORE_FEATURED_ROW` (`/collection`, PRODUCT · COLLECTION, min 3, HIDE_SECTION) — and one
+`CATEGORY_PINNED_<SLUG>` per D3 category (`/collection/<slug>`, PRODUCT, min 1, SHOW_EMPTY_STATE),
+the key being the slug upper-cased with `-` → `_`. `lib/cms/merchandising-register.ts` carries the
+same eleven and `tests/unit/merchandising-register.test.ts` asserts the two agree.
+
+**Functions and triggers (`0200`):**
+
+- `guard_merchandising_entry()` — BEFORE INSERT OR UPDATE on `merchandising_entries`: the entry's
+  type must be in its slot's `allowed_entity_types` (`RV061`); the entity must exist (`RV063`); a
+  COLLECTION must be `OWNER_CONFIRMED` — the Phase 16 gate re-checked at the row, so a crafted POST
+  is refused as the picker's list is (`RV062`); and `published_at` is stamped the first time the
+  entry reaches PUBLISHED.
+- `merchandising_category_slot_key(text)` and `sync_category_pinned_slot()` — AFTER INSERT OR
+  UPDATE OF `slug` on `categories`: every category brings its pinned slot with it, and a renamed
+  slug carries the slot along. The phase document placed this in "the same server action that
+  creates the category"; no such action exists (categories are seeded), and a trigger covers every
+  path — amendment A22.
+- `merch_move_entry(uuid, text)` — SECURITY INVOKER: one place up or down within the slot, both
+  position writes in one transaction, RLS deciding who may. A move at the boundary is a no-op.
+- `merch_run_schedule(timestamptz)` — SECURITY DEFINER, `service_role` only, pinned
+  `search_path`, `for update … skip locked`: the merchandising pass of the content-schedule cron.
+  It derives each windowed PUBLISHED entry's true side of its window, records every transition in
+  `activity_events` (`merchandising.window.open|closed`), ARCHIVES an entry whose window closed (so
+  Studio does not show as PUBLISHED what no visitor can reach), and returns the D3 paths to
+  revalidate. It never puts anything on or off the site by itself: the resolver and RLS honour the
+  window on every read.
 
 `categories.sort_order` is reused for store ordering; no second ordering column exists.
-**RLS** — anon `select` for published slots and in-window entries; the resolver still re-filters
-targets to published rows, because an entry pointing at an unpublished product must render nothing
-rather than a broken card. Writes require `merchandising.write`.
+
+**RLS (`0201`, generated)** — both tables are shape A. `anon` reads a slot while `status =
+'PUBLISHED'`, and an entry only while PUBLISHED, inside `[publish_at, unpublish_at)` AND inside a
+PUBLISHED slot — the window is part of "public" for the reason it is on `page_sections`. Staff
+read under `catalog.read`; writes need `merchandising.write` (owner, admin, merchandiser); removing
+an ENTRY is `merchandising.write` (curation, not destruction) and removing a SLOT is
+`destructive.execute`. The resolver still re-filters targets to PUBLISHED rows in code, because a
+Studio preview reads with a staff client the public clause does not bind.
 
 ---
 
@@ -1949,8 +2049,8 @@ local and hosted is isolated to one file that can never be picked up by `supabas
 | 19 | `0170`–`0172` | T `customization_forms`, `customization_form_steps`, `customization_form_fields`, `product_customization_forms`, `feature_flags`; enums `form_kind`, `form_field_type` |
 | 20 | `0193` | F `reject_inquiry_event_mutation()` narrowed. The append-only trigger fired on the CASCADE from `inquiries` and refused it, so deleting an enquiry was impossible for anybody including a superuser — found by the Phase 20 RLS suite, which could not clean up its own fixture. An event may now be deleted only when its enquiry is already gone; UPDATE is still refused unconditionally |
 | 20 | `0190`–`0191` | T `inquiries`, `inquiry_attachments`, `inquiry_events`; enums `inquiry_kind`, `inquiry_status`, `whatsapp_state`, `inquiry_event_kind`; S `inquiry_reference_seq`; F `allocate_inquiry_reference()`, `log_inquiry_created()`, `log_inquiry_status_change()`, `reject_inquiry_event_mutation()`, `inquiry_is_fresh()`, `attach_inquiry_references()`, `record_inquiry_handoff()`; `0191` is the generated RLS, the first to carry an anon INSERT policy. **Renumbered from the phase document's `0180`–`0182`, which Phase 19's session had already spent, and there is no third migration: SEED §21's contact facts already have one home in the `contact-details` section and a `global_content` CONTACT group would be a second — amendment A20** |
-| 21 | `0190` | T `model_variant_labels`; A `media_assets.viewer_settings` and the model size/triangle/poster checks |
-| 22 | `0200`–`0201` | T `merchandising_slots`, `merchandising_entries`; enum `merch_fallback` |
+| 21 | `0194`–`0195` | T `model_variant_labels`; A `media_assets.viewer_settings`, the size/triangle/poster checks, the association-is-model check, and the `associated_project_id` foreign key Phase 06 declared ahead of its table; F `is_valid_viewer_settings()` (with `model_setting_number()`, `model_setting_vec3()`, `is_valid_model_camera()`), `guard_model_still_references()`, `guard_product_model_reference()`, `guard_variant_label_parent()`, `set_model_association()`; `0195` is the generated RLS. **Renumbered from the phase document's `0190`, which Phase 20 spent — amendment A21** |
+| 22 | `0200`–`0201` | T `merchandising_slots`, `merchandising_entries`; enum `merch_fallback`; F `guard_merchandising_entry()`, `merchandising_category_slot_key()`, `sync_category_pinned_slot()`, `merch_move_entry()`, `merch_run_schedule()`; the eleven slot rows inserted as structure under the `allow-insert` marker; `0201` is the generated RLS. **The numbers are the phase document's own; the slot count (eleven, none reusable) and the categories trigger are amendment A22** |
 | 23 | `0210`–`0213` | T `search_documents`, `research_search_documents` (empty), `search_queries`, `content_relations`, `relation_suppressions`, `product_attribute_terms`; A `product_relations`; enums `search_visibility`, `relation_origin`, `attribute_taxonomy` |
 | 24 | `0220` | T `bulk_operations`, `bulk_operation_items`, `bulk_imports`, `bulk_import_rows` |
 | 25 | `0230`–`0233` | T `research_sources`, `research_jobs`, `research_runs`, `research_work_items`, `research_fetches`, `research_raw_items`, `research_products`, `research_pipeline_events`, `research_robots_cache`; six research enums |

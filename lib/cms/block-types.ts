@@ -2,13 +2,14 @@ import { z } from 'zod'
 
 /**
  * Every block type the CMS knows: the PHASE-05-09 §08 catalogue of 28, plus the two an exhibition
- * page needs (amendment A14) and the two the project archive needs (Phase 17).
+ * page needs (amendment A14), the two the project archive needs (Phase 17), the configurator band
+ * (Phase 19) and the merchandised featured band (Phase 22, amendment A22).
  *
  * THE TUPLE IS THE SOURCE. `BlockType` is derived from it, the registry is keyed by it, and
  * `blockTypeSchema` validates against it — so adding a block means adding one string here and
  * then following the compile errors, which is a far better guide than a checklist in a document.
  *
- * ALL 32 ARE LISTED EVEN THOUGH NOT ALL ARE BUILT. The alternative — listing only what ships —
+ * ALL 34 ARE LISTED EVEN THOUGH NOT ALL ARE BUILT. The alternative — listing only what ships —
  * would make `block_type` on an unbuilt block fail validation at read time rather than render an
  * honest "not built yet", and would hide from a reader how much of the catalogue is outstanding.
  * `lib/cms/registry.ts` records each one's state; `tests/unit/cms-registry.test.ts` asserts that a
@@ -24,6 +25,8 @@ export const BLOCK_TYPES = [
   'manifesto',
   'category-grid',
   'selected-works',
+  // The merchandised half of SEED §10-03 — added in Phase 22 (amendment A22)
+  'featured-collections',
   'material-story',
   'material-palette',
   'commission-cta',

@@ -32,10 +32,18 @@ export function JournalStripSection({
   livePaths,
 }: SectionRenderProps): React.ReactElement | null {
   const cards = reference?.result.cards ?? []
+  /*
+   * Phase 22: on the homepage this band is answered by `HOMEPAGE_JOURNAL_STRIP`, whose fallback is
+   * HIDE_SECTION — below three articles the band is absent rather than a heading over a sentence.
+   * On any other page the selector runs its own query and no mode arrives, so the seeded
+   * `EMPTY_STATE.journal` still renders exactly as Phase 11 wrote it.
+   */
+  const outcome = reference?.result.merchandising
+  if (cards.length === 0 && outcome?.fallback?.mode === 'HIDE_SECTION') return null
 
   return (
     <SectionShell section={section} spacing="lg">
-      <Stack gap={10}>
+      <Stack gap={10} data-provenance={outcome?.provenance} data-slot={outcome?.slotKey}>
         <SectionCopy section={section} />
         {cards.length === 0 ? (
           reference === undefined ? null : (

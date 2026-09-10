@@ -146,7 +146,7 @@ The four surfaces where performance is hardest, with their own contracts.
 | Poster | Always present; it is what the route renders until the viewer is requested |
 | Fallbacks | Reduced motion: no auto-rotate, no intro, no idle motion. `deviceMemory < 4`: the viewer is not offered. `saveData`: not offered |
 | Progress | A loading state with real progress, not an indefinite spinner |
-| Measured by | `check-bundle.mjs`, `tests/e2e/model-viewer.spec.ts` with the flag **on and off**, and a manual mid-range-device check recorded in §8.3 |
+| Measured by | `scripts/perf/check-bundle.mjs` — a static walk of every route's CLIENT import graph that fails on any `three`, `@react-three/*` or `meshoptimizer` specifier and on a viewer reached other than through the island's dynamic import; in `npm run check` and CI since Phase 21. `tests/e2e/model-performance.spec.ts` (no engine, viewer or decoder request in the first load; LCP element never a canvas, at every QA width), `tests/e2e/model-viewer.spec.ts` with the flag **on and off**, and a manual mid-range-device check recorded in §8.3 |
 
 ### 4.4 Studio data grids
 
@@ -318,8 +318,8 @@ to the first deployment with media bound, and the workflow is there for it.
 
 | Surface | Measurement | Value | Date |
 |---|---|---|---|
-| 3D viewer chunk | Gzipped size including decoders | NOT YET MEASURED | — |
-| 3D viewer on a mid-range device | Time to first interactive frame, manual | NOT YET MEASURED | — |
+| 3D viewer chunk | Gzipped size including decoders | **303.6 kB gz** (brotli 252 kB) — `components/three/ModelViewer.tsx` bundled standalone with esbuild 0.24, minified, React external: `three` 855 kB raw, `@react-three/fiber` 153 kB, the bundled meshopt decoder 26 kB, the viewer's own files 19 kB. Under the 350 kB budget. A first measurement of 391 kB found `zod` in the graph through `lib/media/model.ts`; the viewer now reads the zod-free `lib/media/viewer-settings.ts` and a unit test keeps it so | 2026-09-10 |
+| 3D viewer on a mid-range device | Time to first interactive frame, manual | NOT YET MEASURED — no model exists to load (the manifest holds none and none is generated); measure with the owner's first GLB | — |
 | Homepage hero | CLS across the video mount | NOT YET MEASURED | — |
 | Product gallery | CLS across three frame changes | NOT YET MEASURED | — |
 

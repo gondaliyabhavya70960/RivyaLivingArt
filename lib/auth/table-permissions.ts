@@ -125,6 +125,8 @@ export const PHASE_18_POLICIES = '0161_phase18_journal_rls.sql'
 export const PHASE_19_POLICIES = '0172_phase19_rls.sql'
 export const PHASE_19_LIMIT_POLICIES = '0183_phase19_rate_limit_rls.sql'
 export const PHASE_20_POLICIES = '0191_phase20_inquiries_rls.sql'
+export const PHASE_21_POLICIES = '0195_phase21_model_rls.sql'
+export const PHASE_22_POLICIES = '0201_phase22_merchandising_rls.sql'
 
 export const TABLE_POLICIES = {
   // --- Shape A: content tables ------------------------------------------------------------------
@@ -776,6 +778,76 @@ export const TABLE_POLICIES = {
       'No anon policy, and no UPDATE or DELETE policy for any session role. Staff holding ' +
       'inquiries.write may APPEND an event; nobody may change one, because a log that can be ' +
       'edited cannot answer what happened.',
+  },
+  /**
+   * `model_variant_labels` — Phase 21. Shape B on a MEDIA parent.
+   *
+   * A LABEL HAS NO STATUS OF ITS OWN, and that is the design rather than an omission. It is public
+   * exactly when the model it names is PUBLISHED; a `status` here would be a second switch that
+   * could disagree with the first, and a variant label with no model to attach to is not a thing a
+   * visitor can see. Writes mirror `media_assets`: `media.write` adds or edits a label and
+   * `media.delete` removes one — the label set is dictated by the file's variant keys, so removal is
+   * the rare case and belongs with the role that may remove the model.
+   *
+   * WHAT THE POLICY DOES NOT DECIDE. Whether a label may carry a `material_id` is a CHECK on the row
+   * (a material forces at least OWNER_VERIFICATION_REQUIRED), and who may mark it VERIFIED is the
+   * Phase 08 authority trigger. Neither is an access question. `lib/media/model.ts` then hands the
+   * material name to the public viewer only at VERIFIED.
+   */
+  model_variant_labels: {
+    policiesIn: PHASE_21_POLICIES,
+    shape: 'B',
+    readPermission: 'media.read',
+    writePermission: 'media.write',
+    deletePermission: 'media.delete',
+    parentClause: `exists (select 1 from media_assets m
+             where m.id = model_variant_labels.media_asset_id and m.status = 'PUBLISHED')`,
+  },
+  /**
+   * `merchandising_slots` — Phase 22. Shape A, read under `catalog.read`, written under
+   * `merchandising.write`.
+   *
+   * A SLOT IS STRUCTURE THE PUBLIC RESOLVER MUST READ. `lib/cms/merchandising.ts` runs with the
+   * page's own client, which for a visitor is the anon key, so a slot must be anon-readable or every
+   * band resolves to its fallback for everyone but staff. The rows carry no copy and no entity —
+   * a key, a surface, a minimum and a fallback mode — so publishing them reveals which arrangements
+   * the site HAS, not what is in them; the entries below say what is in them, and their clause is
+   * stricter. Delete is `destructive.execute`: nothing in the Studio removes a slot, and a slot
+   * nothing reads is a dead end, so removal is the owner's act at the database.
+   */
+  merchandising_slots: {
+    policiesIn: PHASE_22_POLICIES,
+    shape: 'A',
+    readPermission: 'catalog.read',
+    writePermission: 'merchandising.write',
+    deletePermission: 'destructive.execute',
+  },
+  /**
+   * `merchandising_entries` — Phase 22. Shape A with the slot's status AND the entry's own window
+   * folded into the public clause.
+   *
+   * THE WINDOW IS PART OF "PUBLIC", exactly as it is for `page_sections`: a PUBLISHED entry with a
+   * future `publish_at` is a plan, and a plan readable through the anon key the moment it is saved
+   * would make scheduling decorative. The slot must be PUBLISHED too — an entry in a slot being
+   * prepared is not on any page. The resolver re-checks all of this in code (`isLive`) because a
+   * Studio preview reads with a staff client that this clause does not apply to; the two must agree,
+   * and `lib/cms/windowing.ts` states the rule once for both.
+   *
+   * DELETE IS `merchandising.write`, NOT `destructive.execute`. Removing a piece from a curated band
+   * is ordinary curation — the same act `product_collections` admits under `catalog.write` — and it
+   * destroys no history: the entity is untouched and `activity_events` records the change.
+   */
+  merchandising_entries: {
+    policiesIn: PHASE_22_POLICIES,
+    shape: 'A',
+    publicClause: `status = 'PUBLISHED'
+      and (publish_at is null or publish_at <= now())
+      and (unpublish_at is null or unpublish_at > now())
+      and exists (select 1 from merchandising_slots s
+                   where s.id = merchandising_entries.slot_id and s.status = 'PUBLISHED')`,
+    readPermission: 'catalog.read',
+    writePermission: 'merchandising.write',
+    deletePermission: 'merchandising.write',
   },
 } as const satisfies Record<string, TablePolicy>
 

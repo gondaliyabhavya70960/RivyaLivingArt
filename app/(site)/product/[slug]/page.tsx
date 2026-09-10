@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import * as React from 'react'
 
+import { LazyModelViewerMount } from '@/components/patterns/ModelViewerMount/lazy'
 import { ProductGallery } from '@/components/patterns/ProductGallery'
 import { ProductInquiryRail } from '@/components/patterns/ProductInquiryRail'
 import { ProductMaterialStory } from '@/components/patterns/ProductMaterialStory'
@@ -27,6 +28,7 @@ import { createPublicClient } from '@/lib/supabase/public'
 import { listCategories } from '@/lib/supabase/repositories/categories'
 import { listMaterials } from '@/lib/supabase/repositories/materials'
 import { listMediaAssetsByIds } from '@/lib/supabase/repositories/media'
+import { loadPublicModel } from '@/lib/supabase/repositories/models'
 import {
   getProductBySlug,
   listProductMaterialIdsPublic,
@@ -116,16 +118,16 @@ export default async function Page({ params }: Props): Promise<React.ReactElemen
   const chrome = await getSiteChrome()
   const cloudName = optionalEnv('NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME') ?? ''
 
-  const [mediaEdges, materialIds, specs, relations, categories, configuratorOn] = await Promise.all(
-    [
+  const [mediaEdges, materialIds, specs, relations, categories, configuratorOn, viewerOn] =
+    await Promise.all([
       listProductMediaEdges(client, product.id),
       listProductMaterialIdsPublic(client, product.id),
       listProductSpecs(client, product.id),
       listRelationsForProduct(client, product.id),
       listCategories(client),
       isEnabled('commission_configurator'),
-    ],
-  )
+      isEnabled('three_d_viewer'),
+    ])
 
   /*
    * "CUSTOMIZE THIS PIECE" NEEDS THREE THINGS TRUE, NOT ONE.
@@ -162,6 +164,17 @@ export default async function Page({ params }: Props): Promise<React.ReactElemen
 
   const allMaterials = await listMaterials(client)
   const materials = allMaterials.filter((material) => materialIds.includes(material.id))
+
+  /*
+   * THE 3D MOUNT (Phase 21). Three conditions, all server-side: the flag is on, the product names
+   * a model, and `loadPublicModel` returns it — which it does only for a PUBLISHED model with a
+   * PUBLISHED poster, because RLS filters both reads and the poster constraint gates the
+   * association. Any of the three failing means the gallery stands alone with no empty slot.
+   */
+  const model =
+    viewerOn && product.model_media_id !== null
+      ? await loadPublicModel(client, product.model_media_id)
+      : null
 
   /*
    * RELATED: editor edges first, and the same-category set ONLY when there are none.
@@ -262,6 +275,20 @@ export default async function Page({ params }: Props): Promise<React.ReactElemen
         </Stack>
 
         <ProductGallery assets={galleryAssets} strings={chrome.strings} cloudName={cloudName} />
+
+        {model === null ? null : (
+          <LazyModelViewerMount
+            model={model}
+            materials={allMaterials}
+            dimensions={product.dimensions}
+            title={product.title ?? product.slug}
+            strings={chrome.strings}
+            cloudName={cloudName}
+            enabled={viewerOn}
+            ratio="4:5"
+            sizes="(min-width: 1024px) 60vw, 100vw"
+          />
+        )}
 
         <ProductInquiryRail
           slug={product.slug}

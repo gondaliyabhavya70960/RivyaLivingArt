@@ -8,6 +8,273 @@
 
 ## Current Phase
 
+**Phase 22 — Homepage / Store Merchandising. COMPLETE; EVERY SLOT EMPTY, WHICH IS THE SHIPPED
+STATE.** The owner has the controls — what appears in Selected Works, which collections are
+featured, how the store's categories are ordered, what is pinned in each, and when — and has used
+none of them yet, because there is nothing published to curate. With zero published products
+every slot resolves to its fallback: editorial tiles with no price and no product link, or nothing
+at all. No product card is fabricated anywhere, and `npm run cms:check-copy` now refuses a
+`/product/<slug>` literal in any renderer.
+
+### Phase 22: what is built
+
+**Migrations `0200` and `0201`, applied locally AND to hosted through the Supabase MCP, with the
+ledger rows.** `merchandising_slots` (Tier A + `status`; key, surface, owning Studio route,
+allowed types, minimum, maximum, `auto_fill` with its rule-named CHECK, fallback mode, fallback
+section) and `merchandising_entries` (Tier A + status and the publication pair; type, entity,
+position, pin, half-open window, the sweep's `window_state`, note). The eleven slots inserted as
+structure under the `allow-insert` marker — four global and one `CATEGORY_PINNED_<SLUG>` per D3
+category through `sync_category_pinned_slot()`, which also fires for a category added or renamed
+later. `guard_merchandising_entry()` refuses a type the slot does not admit, an entity that does not
+exist, and a collection still in concept (`RV061`–`RV063`). `merch_move_entry()` moves one place
+atomically under RLS; `merch_run_schedule()` is the cron's merchandising pass. `0201` is generated:
+shape A on both, the entry's window and its slot's status folded into the public clause.
+
+**THE LADDER, ONCE.** `lib/cms/merchandising.ts` — live entries, re-checked targets, curated if
+the minimum is reached, a recency top-up if the owner switched it on and wrote the rule, else the
+fallback mode — with provenance `CURATED` · `RULE_FILLED` · `FALLBACK`. `lib/cms/merchandising-
+register.ts` carries the eleven keys, the three editorial CTA paths and the one rule's words;
+`tests/unit/merchandising-register.test.ts` holds it level with `0200` and reads the resolver's
+source for "popular", "trending" and "random".
+
+**THE SEAM HELD.** `selectProducts` and `selectArticles` kept their signatures and gained a slot-
+backed body; `lib/cms/references.ts` resolves the slot key from the block's `slot_key` or the
+page's default (`/` → the homepage slots), and builds the EDITORIAL_BLOCK tiles from the fallback
+section before render. Afterwards, separately, the three reference renderers learned the modes:
+`HIDE_SECTION` returns nothing, `EDITORIAL_BLOCK` adds tiles, `SHOW_EMPTY_STATE` is the Phase 11
+sentence. `featured-collections` is the 34th block (A22), addable on `/` and `/collection`, not
+seeded. `MerchandisedRow` (RC-243) renders `STORE_FEATURED_ROW` above the catalogue and a
+category's pinned region above its grid on the default view, with `global_content` headings.
+
+**FOUR STUDIO SCREENS ON ONE EDITOR.** `SlotEditor` — entries with move, pin, release, remove and
+window controls (one action, one state per row); a picker of PUBLISHED entities grouped by type,
+with concept collections withheld and the reason inline; settings; and the resolver's own answer
+as *What the public sees now*. `/homepage` owns Selected Works and the journal strip, shows the
+featured band read-only with a link, and edits the hero still and the Selected Works heading under
+`content.write`. `/store` reorders categories one place at a time — a SEED §56 inversion is
+refused once with the warning and allowed on an acknowledged second submit — with *Restore
+recommended order*, and each category's pinned slot beside it. `/featured` owns the two featured
+slots. `/scheduling` is a month table of live entries per slot per day with gaps and overflows
+marked, the windows that open or close, and a jump to the owning screen. Every form posts the
+screen it was drawn on; the action refuses a slot owned elsewhere; every write is audited, in the
+activity feed, and followed by a revalidation of the surface. 118 Studio strings; two public
+strings seeded under `UI_LABEL.merchandising.*` and applied to hosted through the emitter.
+
+**THE CRON GAINED ITS PASS.** `app/api/cron/content-schedule/route.ts` runs the content sweep and
+then `merch_run_schedule()`, unions the paths, revalidates once, and reports both.
+
+### Phase 22: what is NOT built, and why
+
+- **No curation.** Every slot is empty because nothing is published to curate. The owner curates
+  from Studio → Merchandising or nobody does.
+- **No typed entity search in the picker.** The picker is a grouped `<select>` of published rows —
+  a few dozen at most on this catalogue — which works without JavaScript and offers exactly what the
+  resolver will show. Phase 23 owns search.
+- **No drag handle.** Ordering is a button pair, keyboard-operable and atomic, as `CollectionCurator`
+  argued in Phase 16; a pointer affordance can be layered later without touching the write path.
+- **The pinned region does not reorder the grid.** `CATEGORY_PINNED_*` governs a region above the
+  grid on the category's default view; the grid keeps its own order and a pinned piece also keeps
+  its natural place. Interleaving pins into a paginated, faceted query would put pieces that fail
+  a filter above pieces that pass it.
+- **`featured-collections` is not on the homepage.** Adding a section to a seeded page is an
+  editor's act; the block reads the homepage slot by default the moment it is placed.
+- **The e2e walk cannot run here** (the proxy blocks the dev server's Supabase reads, and the
+  curation walk needs a signed-in merchandiser). It skips with a stated reason, never passes
+  silently.
+
+### Phase 22: verification, as actually run
+
+1. `npm run typecheck`, `npm run lint` (0 errors; the 6 pre-existing e2e-fixture warnings),
+   `npm run format:check`, every `npm run check` gate including the extended copy gate — green.
+2. `npm test` with `DATABASE_URL` on the local PostgreSQL 16 cluster: **1,534 tests across 116
+   files, none skipped** — 32 new: 12 in `merchandising-resolve` (the ladder step by step, the caps,
+   a DRAFT slot; `HIDE_SECTION` renders nothing, `SHOW_EMPTY_STATE` the sentence, `EDITORIAL_BLOCK`
+   tiles with no product route, no price label, a CTA only to the three paths), 8 in
+   `merchandising-register`, 12 in `rls/phase22` (anon reads an entry only while live in a
+   PUBLISHED slot; the editor cannot curate and the merchandiser can; a concept collection, a
+   wrong type, a missing entity, a backwards window and a rule-less `auto_fill` are refused for the
+   owner; the sweep is the service role's).
+3. `db:check-migrations` (59 migrations to `0201`), `db:check-schema` (44 tables, RLS on all,
+   the two new tables' tiers declared), `auth:check-rls` (175 policies) and `auth:check-policies`
+   — green locally; the same counts confirmed on hosted by query after the MCP apply.
+4. Every guard, the move function, the sweep and the categories trigger probed by SQL with
+   savepoints: wrong type, missing product, concept collection, category accepted in the featured
+   slot, backwards window, rule-less `auto_fill`, `published_at` stamped, a move swapping
+   positions, a sweep opening one window and closing another with two `activity_events` rows and
+   `paths = ["/"]`, a second sweep returning no paths, a new category creating its slot and a
+   renamed slug carrying it.
+5. `npm run seed:content` locally — the two new strings applied, 215 rows.
+6. Hosted: `0200` and `0201` applied through the Supabase MCP and recorded in
+   `public.schema_migrations` with the files' SHA-256; the two strings applied through
+   `scripts/seed/emit-sql.ts`; queried afterwards for 44 tables, 175 policies, eleven slots (seven
+   `CATEGORY_PINNED_*`), 215 strings, RLS on both tables, and `anon` unable to execute
+   `merch_run_schedule()` or `merch_move_entry()`.
+
+### Phase 22: the D9 ten, recorded
+
+1. Code exists and is committed — the tables, the ladder, the swap, the block, the row, the four
+   screens, the cron pass.
+2. Migrations applied locally and to hosted, with ledger rows and matching counts.
+3. Tests written and passing: 1,534, none skipped.
+4. Gates pass, including the extended copy gate.
+5. Documentation updated: DATA_MODEL (the merchandising section rewritten as built, §8.13, §12),
+   STUDIO_GUIDE §8 (eleven slots, the editor, the four screens), CONTENT_GUIDE §2 (34 blocks),
+   COMPONENT_REGISTRY (RC-243; RC-236's tiles), BUSINESS_RULES BR-D10, TESTING, CANONICAL-DECISIONS
+   A22, CHANGELOG, PROJECT_STATE, this file.
+6. No business fact fabricated: zero entries, no placeholder card, no behavioural ordering, the
+   editorial tiles drawn only from a section an editor wrote.
+7. Nothing in the manifest regenerated; `media:assert-no-regen` green.
+8. Amendments recorded: A22.
+9. The next phase is named: **23 — Global Search + Product Relationships**.
+10. Hosted is level with the repository through `0201`, and level on seeded strings.
+
+### Superseded — Phase 21's state
+
+**Phase 21 — 3D Product Experience. CODE COMPLETE; ZERO MODELS, WHICH IS THE FINISHED STATE; THE
+FLAG IS OFF.** A visitor can pick an object up and turn it over wherever a model exists, and none
+does: the manifest holds no GLB, none is generated (a model's form and dimensions are a product
+specification, D10), and the phase ships the viewer, the inspector, the Studio surface and four
+mount points that all render nothing until the owner supplies a model with a poster.
+`three_d_viewer` is OFF on both databases and stays off until then.
+
+### Phase 21: what is built
+
+**Migrations `0194` and `0195`, applied locally AND to hosted through the Supabase MCP, with the
+ledger rows.** `media_assets.viewer_settings jsonb` shape-checked by `is_valid_viewer_settings()`;
+the FEAT §14 ceilings (15 MB, 250,000 triangles) as CHECK constraints beside the inspector's words;
+`media_assets_model_poster_before_association` — a model may exist without a poster and may not be
+put on a page without one; `media_assets_association_is_model`; the `associated_project_id`
+foreign key Phase 06 declared ahead of its table; image guards on the poster and thumbnail
+references; `model_variant_labels` with `material_id is null or owner_verification <>
+'NOT_REQUIRED'` and the Phase 08 authority trigger; `set_model_association()`, SECURITY INVOKER,
+writing the asset side and `products.model_media_id` in one transaction. Renumbered from the phase
+document's `0190` — amendment **A21**.
+
+**THE VIEWER COSTS THE PAGE NOTHING UNTIL ASKED FOR, AND THAT IS PROVED THREE WAYS.**
+`LazyModelViewerMount` puts the mount's client half behind `next/dynamic`; the island imports
+`components/three/ModelViewer` with `ssr: false` only on a press or on an intersection the probe
+allows (viewport ≥ 768 px, motion not reduced, `saveData` off, `deviceMemory` ≥ 4, WebGL present);
+and `scripts/perf/check-bundle.mjs` walks every route's CLIENT import graph — through `'use
+client'`, stopping at `'use server'` and `server-only` — and fails on any `three`,
+`@react-three/*` or `meshoptimizer` specifier, proved on a planted import. The chunk measures
+**303.6 kB gzipped** against the 350 kB budget. The first measurement was 391 kB: `zod` had reached
+the viewer through `lib/media/model.ts`, so the viewer now reads the zod-free
+`lib/media/viewer-settings.ts` and `tests/unit/model-policy.test.ts` reads the sources to keep it so.
+
+**EVERY FEAT §12 CONTROL, BY POINTER, TOUCH AND KEYBOARD.** Orbit, zoom, pan, reset, fullscreen,
+finish inspection, variant switching (a tab list with roving focus), dimension indicators, four
+lighting and three environment presets built from Phase 02 palette tokens resolved from the
+document at mount — no HDR, no fetch. The canvas is `role="img"` with a name and a description
+listing every key; fullscreen is a fixed surface under `FocusTrap`; `Escape` leaves it, and below
+768 px closes the viewer outright; under reduced motion there is no auto-rotate, no damping and no
+intro. `KHR_materials_variants` is read by a first-party loader plugin (three lists the extension as
+external). Draco from `public/draco/`, the Basis transcoder from `public/basis/` (fetched only for a
+KTX2 texture), meshopt bundled — all from `three@0.186.0`, licences in the registry as RC-905/906/907.
+
+**METADATA IS PARSED, NEVER TYPED.** `lib/media/inspect.ts` reads a GLB's JSON chunk with no
+decoder — bytes, extensions, declared triangles (accessor counts survive compression), textures,
+variants, self-containment — so the browser refuses a 20 MB uncompressed file with both reasons
+named before the signature. `saveModelAction` reads the uploaded bytes back from the delivery
+origin, runs the decoder pass (`lib/media/inspect-server.ts`: gltf-transform, the Node Draco
+decoder `draco3d`, the same meshopt module the viewer bundles), writes `model_format`,
+`file_size_bytes`, `poly_count` and `texture_count` from what it read, creates a placeholder
+finish label per variant key, and DESTROYS a refused file rather than recording it.
+`POST /api/studio/models/inspect` runs the same inspection without saving; `scripts/media/inspect-model.ts`
+does it from the shell.
+
+**D10 AT THE SWITCHER AND THE OVERLAY.** A label that names a material is a product fact: the CHECK
+lifts it to at least `OWNER_VERIFICATION_REQUIRED`, the trigger keeps `VERIFIED` for owner and
+admin, the Server Action refuses other roles with a `DENIED` audit row, and `publicVariantLabels()`
+hands the material to the viewer only at `VERIFIED`. `DimensionOverlay` receives values the server
+parsed from `products.dimensions` and imports no engine; a test reads its source. Posters are
+chosen from the image library, never captured from the viewer (A21, BR-E3): a captured frame is a
+rendering presented as a photograph.
+
+**STUDIO.** `/studio/media/models` — `ModelUploader` (the decoder-free inspection in front of
+`MediaUploader`, which gained a `preflight` step and notes), `ModelTable`, and
+`ModelInspectorDrawer` opened through `?asset=`: re-inspect, poster and thumbnail, viewer settings
+with the public viewer as live preview, finish labels, association. 119 Studio strings; 25 public
+strings seeded under `UI_LABEL.model.*`.
+
+**FOUR MOUNT POINTS.** `/product/[slug]` below the gallery; `/collections/[slug]` through the
+`three-d-resin` block's slot (`lib/cms/references.ts` resolves the model and the materials, and the
+band draws its own imagery when there is none); `/portfolio/[slug]` after the story;
+`/collection/3d-resin` below the grid for every product on the page with a public model.
+
+**A GAP FOUND AND CLOSED ON HOSTED.** 31 `global_content` rows seeded in Phases 17–20 had never
+reached the hosted project — the contact form's labels among them — because `seed:content` needs a
+`DATABASE_URL` the sandbox cannot open. `scripts/seed/emit-sql.ts` emits the runner's INSERTs with
+the runner's own `seed_content_hash`, so the rows are indistinguishable from a runner's; 56 rows
+(31 + this phase's 25) went through the MCP, and hosted holds 213, level with local.
+
+### Phase 21: what is NOT built, and why
+
+- **No model.** None exists, none is generated, and the phase document says so twice. The owner
+  supplies the first GLB through `/studio/media/models`; until then every mount renders nothing.
+- **No poster capture.** A frame rendered from a model and presented as the poster is a rendering
+  presented as a photograph (BR-E3). Posters are `IMAGE` assets chosen from the library, enforced by
+  `guard_model_still_references()`. Amendment A21.
+- **No AR, room visualisation or 3D configurator** — out of scope by the phase document.
+- **The mid-range-device timing in PERFORMANCE §8.3 is NOT YET MEASURED**, because there is no
+  model to time. The chunk size is measured; the first-interactive-frame number waits for the first
+  GLB.
+- **The e2e suites cannot run here** (the proxy blocks the dev server's Supabase reads). Both are
+  written with two branches — no mount (prove the absence is clean) and a mount (drive the poster,
+  the control, the keys) — and skip with a stated reason rather than passing silently.
+
+### Phase 21: verification, as actually run
+
+1. `npm run typecheck`, `npm run lint` (0 errors; 6 pre-existing `no-html-link-for-pages`
+   warnings in e2e fixtures), `npm run format:check`, every `npm run check` gate including the new
+   `perf:check-bundle` — green.
+2. `npm test` with `DATABASE_URL` on the local PostgreSQL 16 cluster: **1,502 tests across 113
+   files, none skipped** — 1,234 in the unit project (34 in `model-policy`, 19 in `model-inspect`
+   including a Draco file encoded and decoded end to end, 7 in `model-mount`) and 268 in the RLS
+   project (11 in `phase21`: a label is readable by anon exactly while its model is PUBLISHED; anon
+   and the researcher cannot write one; an editor can; a material on a NOT_REQUIRED label is
+   refused for every role; a merchandiser can mark a label awaiting the owner and cannot mark it
+   VERIFIED; the owner can; `set_model_association()` is not callable by anon, fails as a whole for
+   an editor with both sides unchanged, writes both sides for the owner, and is refused without a
+   poster).
+3. `db:check-migrations` (57 migrations to `0195`), `db:check-schema` (42 tables, RLS on all),
+   `auth:check-rls` (165 policies) and `auth:check-policies` — green locally; the same counts
+   confirmed on hosted by query after the MCP apply.
+4. Every 0194 constraint, trigger and the association function probed by SQL with savepoints:
+   eighteen expectations, all met (viewer_settings shape, min < max, unknown key, bad camera, 16 MB,
+   250,001 triangles, association without a poster, self as poster, label with material and
+   NOT_REQUIRED, label on an IMAGE, both targets, moving a model between products releases the
+   first, clearing releases both sides, a product pointing at an IMAGE).
+5. The viewer chunk bundled standalone with esbuild 0.24 and measured: 303.6 kB gzipped, 252 kB
+   brotli, with the composition recorded in PERFORMANCE §8.3.
+6. `scripts/perf/check-bundle.mjs` run clean, then run against a planted static import of the
+   viewer in `ProductGallery` — it named the file, the chain and the specifier — then restored.
+7. Hosted: `0194` and `0195` applied through the Supabase MCP and recorded in
+   `public.schema_migrations` with the files' SHA-256; queried afterwards for 5 label policies, 9
+   media_assets checks, 8 functions, 165 policies total, and `anon` unable to execute
+   `set_model_association()`. Feature flags on hosted: `commission_configurator` ON,
+   `three_d_viewer` OFF.
+
+### Phase 21: the D9 ten, recorded
+
+1. Code exists and is committed — the viewer, the inspector, the Studio surface, the four mounts.
+2. Migrations applied locally and to hosted, with ledger rows and matching counts.
+3. Tests written and passing: 1,502, none skipped.
+4. Gates pass, including the one this phase added.
+5. Documentation updated: PERFORMANCE §4.3/§8.3, MEDIA_GUIDE §7.3 and §8, COMPONENT_REGISTRY
+   (RC-228, RC-401 built; RC-904/905/906 approved with licences; RC-907 added), DATA_MODEL
+   (§12 re-registered, `model_variant_labels`, the media_assets checks), STUDIO_GUIDE §10.3,
+   SECURITY §3 and §7.1, BUSINESS_RULES BR-E7, TESTING §4 and §6, ENVIRONMENT (the emitter),
+   CANONICAL-DECISIONS A21, CHANGELOG, PROJECT_STATE, this file.
+6. No business fact fabricated: zero models, no captured posters, material names only at VERIFIED,
+   dimensions only from `products.dimensions`, every viewer string a `global_content` row.
+7. Nothing in the manifest regenerated; `media:assert-no-regen` green.
+8. Amendments recorded: A21.
+9. The next phase is named: **22 — Homepage / Store Merchandising**.
+10. Hosted is level with the repository through `0195`, and level on seeded strings for the first
+    time since Phase 17.
+
+### Superseded — Phase 20's state
+
 **Phase 20 — Inquiry + WhatsApp Flow. CODE COMPLETE; THE INBOX IS EMPTY, WHICH IS THE FINISHED
 STATE.** The conversion model is real: an enquiry is validated, written and given a reference code
 BEFORE any WhatsApp message is composed, and a failed write produces no URL because the failure
@@ -116,6 +383,11 @@ flag-off state and `tests/e2e/configurator.spec.ts` describe.
     merged to `main` at the owner's instruction.
 
 ### Standing issues, carried
+
+- **Hosted seeded strings were 56 rows behind local until Phase 21** — 31 of them from Phases
+  17–20, including the contact form's field labels. Closed through `scripts/seed/emit-sql.ts`
+  and the MCP; the two databases now hold 213 each. Any future seed module needs the same step
+  until `DATABASE_URL` to hosted is reachable from where the runner runs.
 
 - `verify` is red on the account's Actions runner with a signature that is not a code failure
   (`runner_id: 0`, ~2s, no steps, red on `main` too) and is **not re-run**, per the free-tier
@@ -1836,6 +2108,29 @@ the CTA library's reserved page id or add a D4 route leaf, and whether `analytic
 on `/studio` rather than a route segment.
 
 ## Next Exact Action
+
+**STOP. Phase 22 is finished, and the owner asked that no new phase start until they say so.**
+The next phase is **23 — Global Search + Product Relationships** (`docs/project/phases/PHASE-23-30.md`),
+whose migrations are `0210`–`0213`, unspent. It assumes `entity_relations` and `product_relations`
+populated only by human action (16), searchable projects and articles (17, 18), queryable forms
+(19), enquiries as a Studio entity (20) and merchandising slots so search and curation cannot
+disagree about what is published (22) — all of which exist. It must not expose `research_*` data
+in public search (FEAT §19).
+
+Owner-side, unchanged in kind:
+
+1. **Curate.** Publish products, then arrange them under Studio → Merchandising → Homepage
+   and Store; feature owner-confirmed collections under Featured. Until then every slot shows its
+   fallback.
+2. **Supply the first GLB** of an object that exists, through `/studio/media/models`, with a
+   photograph as its poster; then switch `three_d_viewer` on in `/studio/system/flags`. Until then
+   the viewer is built and silent.
+3. **Publish a commission template** (all three are DRAFT) for `/custom-commissions` to show one.
+4. **Decide the 20-of-30 hosted demo products** — finish, roll back or leave.
+5. **Rotate the six exposed secrets** — still outstanding, and still recorded under *Known Issues*;
+   the owner asked for this to wait until all phase work is finished.
+
+### Superseded — the Phase 16 plan
 
 **Start Phase 16 — Collections / Exhibitions**, or run the owner-side actions below.
 

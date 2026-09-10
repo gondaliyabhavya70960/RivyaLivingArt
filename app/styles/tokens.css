@@ -223,6 +223,23 @@
   /* ---- focus ring geometry (§2.10) ---- */
   --rv-focus-ring-width: var(--rv-border-emphasis);
   --rv-focus-ring-offset: 2px;
+
+  /* ---- 3D viewer overlay (§14). Reserved by Phase 02, consumed by Phase 21 ----
+     The viewer renders in the INK scheme over a canvas, and its chrome sits on a translucent
+     obsidian surface rather than on --rv-surface-*: a control bar over WebGL output must read
+     against whatever the model and environment happen to be, so its surface is fixed here
+     rather than inherited from the surrounding section's scheme. */
+  --rv-3d-surface: rgb(8 10 14 / 0.72);
+  --rv-3d-surface-solid: var(--rv-color-obsidian);
+  --rv-3d-ink: var(--rv-color-bone);
+  --rv-3d-ink-muted: var(--rv-neutral-300);
+  --rv-3d-line: rgb(250 249 245 / 0.22);
+  --rv-3d-control-size: 44px;
+  --rv-3d-control-gap: var(--rv-space-2);
+  --rv-3d-hotspot: var(--rv-color-champagne);
+  --rv-3d-hotspot-ring: rgb(184 155 99 / 0.35);
+  --rv-3d-progress-track: rgb(250 249 245 / 0.18);
+  --rv-3d-progress-fill: var(--rv-color-champagne);
 }
 
 /* Grid columns step up with the viewport (§5.4). */

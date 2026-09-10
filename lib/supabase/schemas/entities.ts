@@ -6,15 +6,18 @@ import {
   availabilityStateSchema,
   clientConsentStateSchema,
   collectionConceptStateSchema,
+  contentStatusSchema,
   relationEntitySchema,
   relationKindSchema,
   contentColumns,
   demoColumn,
   editionStateSchema,
   factClassificationSchema,
+  ownerVerificationSchema,
   formFieldTypeSchema,
   formKindSchema,
   jsonSchema,
+  merchFallbackSchema,
   mediaKindSchema,
   mediaSourceSchema,
   priceStateSchema,
@@ -176,6 +179,10 @@ export const mediaAssetSchema = z.object({
   // Validated as a uuid here even though the database has no foreign key on it until Phase 17.
   // The two are independent: the column's shape is knowable now, the referent is not.
   associated_project_id: uuidSchema.nullable(),
+  // Phase 21 (0194). Shape-checked by `is_valid_viewer_settings()` at the row and parsed into a
+  // typed object by `lib/media/model.ts`; here it is only "some JSON", because the row schema's job
+  // is to mirror the column, not to be the second copy of the viewer's contract.
+  viewer_settings: jsonSchema,
 
   // Higgsfield provenance, filled by the Phase 07 import.
   higgsfield_generation_id: z.string().nullable(),
@@ -620,3 +627,82 @@ export const featureFlagSchema = z.object({
 }) satisfies z.ZodType<Tables<'feature_flags'>>
 
 export type FeatureFlag = z.infer<typeof featureFlagSchema>
+
+/**
+ * `model_variant_labels` — Phase 21 (0194).
+ *
+ * Tier A plus the two D10 columns, and no `status`: a label is public exactly when its model is.
+ * `material_id` is nullable here and constrained at the row — a material forces at least
+ * OWNER_VERIFICATION_REQUIRED — and whether it reaches a visitor is `lib/media/model.ts`'s
+ * decision (VERIFIED only), not this schema's.
+ */
+export const modelVariantLabelSchema = z.object({
+  id: uuidSchema,
+  media_asset_id: uuidSchema,
+  variant_key: z.string().min(1).max(120),
+  label: z.string().min(1).max(120),
+  material_id: uuidSchema.nullable(),
+  position: z.number().int().nonnegative(),
+  fact_classification: factClassificationSchema,
+  owner_verification: ownerVerificationSchema,
+  ...auditColumns,
+}) satisfies z.ZodType<Tables<'model_variant_labels'>>
+
+export type ModelVariantLabel = z.infer<typeof modelVariantLabelSchema>
+
+// --- Phase 22: merchandising -------------------------------------------------------------------
+
+/**
+ * A slot: the address a surface reads and a Studio screen writes.
+ *
+ * `allowed_entity_types` IS THE ONLY ARRAY COLUMN IN THE MODEL and it is one on purpose: a slot
+ * that admits products and collections is one slot with one order, not two slots interleaved by
+ * hand. The resolver reads the array to know which tables to re-check targets against; the Studio
+ * reads it to know which picker to draw.
+ */
+export const merchandisingSlotSchema = z.object({
+  id: uuidSchema,
+  key: z.string().min(1),
+  name: z.string().min(1),
+  description: z.string().nullable(),
+  surface: z.string().min(1),
+  owning_studio_route: z.string().min(1),
+  allowed_entity_types: z.array(relationEntitySchema).min(1),
+  min_items: z.number().int().min(1),
+  max_items: z.number().int().min(1),
+  auto_fill: z.boolean(),
+  auto_fill_rule: z.string().nullable(),
+  fallback_mode: merchFallbackSchema,
+  fallback_section_id: uuidSchema.nullable(),
+  status: contentStatusSchema,
+  ...auditColumns,
+}) satisfies z.ZodType<Tables<'merchandising_slots'>>
+
+export type MerchandisingSlot = z.infer<typeof merchandisingSlotSchema>
+
+/**
+ * An entry: one entity reference inside a slot, with its own half-open window.
+ *
+ * `window_state` IS BOOKKEEPING FOR THE SWEEP and nothing in the read path consults it: liveness is
+ * `status` and the window, through `lib/cms/windowing.ts`, the same rule `page_sections` uses. It
+ * is in the schema because it is on the row, and a row the schema does not cover fails the
+ * `satisfies` below — which is how the two stay level.
+ */
+export const merchandisingEntrySchema = z.object({
+  id: uuidSchema,
+  slot_id: uuidSchema,
+  entity_type: relationEntitySchema,
+  entity_id: uuidSchema,
+  position: z.number().int().nonnegative(),
+  is_pinned: z.boolean(),
+  publish_at: timestampSchema.nullable(),
+  unpublish_at: timestampSchema.nullable(),
+  window_state: z.enum(['PENDING', 'OPEN', 'CLOSED']),
+  status: contentStatusSchema,
+  note: z.string().nullable(),
+  published_at: timestampSchema.nullable(),
+  published_by: uuidSchema.nullable(),
+  ...auditColumns,
+}) satisfies z.ZodType<Tables<'merchandising_entries'>>
+
+export type MerchandisingEntry = z.infer<typeof merchandisingEntrySchema>

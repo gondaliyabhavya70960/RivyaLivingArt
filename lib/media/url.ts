@@ -147,6 +147,19 @@ export function videoUrl(cloudName: string, ref: MediaRef, spec: VideoTransformS
  * The resource type stays `video`, because that is where the asset lives. Asking for it under
  * `image/upload` is a 404: Cloudinary's resource types are separate namespaces, not a hint.
  */
+/**
+ * A raw asset — a GLB, a GLTF, a PDF — exactly as uploaded.
+ *
+ * NO TRANSFORMATION SEGMENT, BY DEFINITION. Cloudinary serves `raw` uploads byte-for-byte and
+ * accepts no derivation chain on them, so the URL is cloud, namespace, optional version, public id.
+ * The public id of a raw upload carries its own extension (`rivya/models/chair.glb`), which is
+ * why none is appended here. Phase 21's viewer fetches the model from this address and nowhere
+ * else — the origin is Cloudinary's delivery host, the same one every image on the site uses.
+ */
+export function rawUrl(cloudName: string, ref: MediaRef): string {
+  return buildUrl(cloudName, { ...ref, resourceType: 'raw' }, '')
+}
+
 export function posterUrl(cloudName: string, ref: MediaRef, spec: TransformSpec = {}): string {
   const { format, ...rest } = spec
   void format

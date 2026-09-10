@@ -963,46 +963,86 @@ operations against the same engine; it does not build a second one.
 
 **What the group is for.** Deciding what appears where, and when, without touching the entities
 themselves. Because the catalogue ships with zero published products, the more important half of this
-group is what happens when a curated slot is empty.
+group is what happens when a curated slot is empty. **Built in Phase 22.**
 
-**Who can see it.** Read under `catalog.read`; every write requires `merchandising.write` (owner,
-admin, merchandiser).
+**Who can see it.** Read under `catalog.read` (every role); every write requires
+`merchandising.write` (owner, admin, merchandiser). The two `page_sections` edits the homepage screen
+also offers — the hero still and the Selected Works heading — need `content.write` (owner, admin,
+editor); a merchandiser sees the current value and a note rather than a control that refuses.
 
-**Six seeded slots, all empty at launch:**
+**Eleven seeded slots, all empty at launch, each with exactly one surface and exactly one owning
+screen** (migration `0200`; amendment A22 replaced the six-row draft of this table):
 
-| Slot key | Surface | Entity types | Min | Fallback |
-|---|---|---|---|---|
-| `HOMEPAGE_SELECTED_WORKS` | `/` | `PRODUCT` | 3 | `EDITORIAL_BLOCK` |
-| `HOMEPAGE_FEATURED_COLLECTIONS` | `/` | `COLLECTION`, `CATEGORY` | 3 | `HIDE_SECTION` |
-| `HOMEPAGE_JOURNAL_STRIP` | `/` | `JOURNAL_ARTICLE` | 3 | `HIDE_SECTION` |
-| `STORE_FEATURED_ROW` | `/collection` | `PRODUCT`, `COLLECTION` | 3 | `HIDE_SECTION` |
-| `CATEGORY_PINNED` (one per category) | `/collection/[category]` | `PRODUCT` | 1 | `SHOW_EMPTY_STATE` |
-| `FEATURED_COLLECTIONS` | reusable | `COLLECTION` | 1 | `HIDE_SECTION` |
+| Slot key | Surface | Entity types | Min | Fallback | Owning screen |
+|---|---|---|---|---|---|
+| `HOMEPAGE_SELECTED_WORKS` | `/` §10-04 | `PRODUCT` | 3 | `EDITORIAL_BLOCK` | `/studio/merchandising/homepage` |
+| `HOMEPAGE_FEATURED_COLLECTIONS` | `/` §10-03 | `COLLECTION`, `CATEGORY` | 3 | `HIDE_SECTION` | `/studio/merchandising/featured` |
+| `HOMEPAGE_JOURNAL_STRIP` | `/` §10-12 | `JOURNAL_ARTICLE` | 3 | `HIDE_SECTION` | `/studio/merchandising/homepage` |
+| `STORE_FEATURED_ROW` | `/collection` | `PRODUCT`, `COLLECTION` | 3 | `HIDE_SECTION` | `/studio/merchandising/featured` |
+| `CATEGORY_PINNED_<SLUG>` × 7 | `/collection/<slug>` | `PRODUCT` | 1 | `SHOW_EMPTY_STATE` | `/studio/merchandising/store` |
 
-| Route | What the operator can do | Fields |
+The seven keys are `CATEGORY_PINNED_FURNITURE`, `_COLLECTIBLE_DESIGN`, `_3D_RESIN`,
+`_WALL_STATEMENT_ART`, `_PRESERVATION`, `_DECOR` and `_GIFTS` — the D3 slug upper-cased with `-`
+replaced by `_` — and a category added later gets its slot from the same rule, by trigger.
+`HOMEPAGE_FEATURED_COLLECTIONS` is the only featured-collections slot in the schema; there is no
+reusable slot without a surface.
+
+**The slot editor** (one component, drawn once per slot on the screen that owns it):
+
+- **Entries**, in the order the site shows them — pinned first, then position, then id — with the
+  entity's name, type, status, window and pin; per row, *Move up* / *Move down* (a button pair,
+  operable by keyboard, atomic in the database), *Pin* / *Unpin*, *Publish* / *Take down*, *Remove*,
+  and a *Window and note* disclosure with *Opens at* / *Closes at* (UTC) and a note.
+- **Add to this slot** — a select of the PUBLISHED entities of the types the slot admits, grouped by
+  type. An unpublished entry renders nothing until it is published, and the note says so.
+- **Settings** — minimum and maximum shown, *Top up automatically* with its rule written in words
+  (the switch cannot move without one), the fallback mode, and the fallback section id.
+- **What the public sees now** — the resolver's own answer, read with the public client: provenance
+  (*Curated* · *Topped up by rule* · *Fallback*), the rule if one applied, and the cards in order.
+
+| Route | What the operator can do | Writes |
 |---|---|---|
-| `/studio/merchandising/homepage` | Edit the three homepage slots with entity search, drag ordering, per-entry windows and a fallback-mode selector with a live preview of what the public currently sees. Also owns the homepage hero media override and the Selected Works heading | `merchandising_entries.{entity_type, entity_id, position, is_pinned, publish_at, unpublish_at, note}` · `merchandising_slots.{min_items, max_items, fallback_mode, fallback_section_id}` |
-| `/studio/merchandising/store` | Drag-order the seven categories; pin products per category | `categories.sort_order` · `CATEGORY_PINNED` entries |
-| `/studio/merchandising/featured` | Curate featured collections | `merchandising_entries` on `FEATURED_COLLECTIONS` |
-| `/studio/merchandising/scheduling` | A month calendar of every slot and entry window, with overlap and gap warnings and a jump-to-editor action | `publish_at` · `unpublish_at` |
+| `/studio/merchandising/homepage` | Edit `HOMEPAGE_SELECTED_WORKS` and `HOMEPAGE_JOURNAL_STRIP`; see `HOMEPAGE_FEATURED_COLLECTIONS` read-only with a link to Featured; change the hero's desktop and mobile still and the Selected Works heading (`content.write`) | `merchandising_entries.*`, `merchandising_slots.{min_items, max_items, auto_fill, auto_fill_rule, fallback_mode, fallback_section_id}`; `page_sections.{media_desktop_id, media_mobile_id}` on the hero, `page_sections.heading` on the band |
+| `/studio/merchandising/store` | Reorder the seven categories one place at a time, with the SEED §56 warning and *Restore recommended order*; edit each category's `CATEGORY_PINNED_*` slot beside it | `categories.sort_order` · the seven pinned slots |
+| `/studio/merchandising/featured` | Curate `HOMEPAGE_FEATURED_COLLECTIONS` and `STORE_FEATURED_ROW` from published collections, categories and products; concept collections are absent with the reason inline | the two featured slots |
+| `/studio/merchandising/scheduling` | A month table of live entries per slot per day (`?month=YYYY-MM`), with gaps (below minimum) and overflows (above maximum) marked and summarised, the windows that open or close that month, and a jump to the owning screen. Read-only by design | — |
+
+**The resolution ladder** (`lib/cms/merchandising.ts`, once): live PUBLISHED entries inside their
+window → targets re-checked as PUBLISHED → the curated list if it reaches the minimum (`CURATED`) →
+a recency top-up if the slot's owner switched it on and named the rule (`RULE_FILLED`) → the
+fallback mode (`FALLBACK`). There is no sixth step.
 
 **Guardrails.**
 
-- **An empty slot never renders a fabricated product card.** `EDITORIAL_BLOCK` renders media and copy
-  tiles with no price, no *View Product* affordance and no product link; `HIDE_SECTION` removes the
-  section; `SHOW_EMPTY_STATE` renders the seeded empty-state copy. A test asserts the fallback output
-  contains no product route and no price label.
-- **A concept collection cannot be featured.** The Phase 16 gate is re-checked here, with an inline
-  explanation rather than a silently missing option.
-- **Store order warns, with the reason.** Moving Gifts or Décor above Furniture raises the SEED §56
-  content-priority warning: the hierarchy is large-format furniture first, gifts last, and the
-  homepage must not drift back into small gift-store positioning.
+- **An empty slot never renders a fabricated product card.** `EDITORIAL_BLOCK` renders the seeded
+  SEED §27 sentence and tiles drawn from a section the slot names — by default the page's own
+  material story — with no price, no *View Product* affordance and no product link; the only CTA a
+  tile may carry targets `/large-format`, `/collection` or `/custom-commissions`. `HIDE_SECTION`
+  removes the section, heading included; `SHOW_EMPTY_STATE` renders the sentence alone.
+  `tests/unit/merchandising-resolve.test.ts` asserts the fallback output contains no product route
+  and no price label.
+- **A concept collection cannot be featured.** The picker withholds it with an inline explanation,
+  and `guard_merchandising_entry()` refuses it at the row, so a direct server-action POST fails too.
+- **No slot is edited from two places.** Every form posts the screen it was drawn on and the action
+  refuses a slot whose `owning_studio_route` is another screen.
+- **Store order warns, with the reason.** Moving Gifts or Décor above Furniture is refused once with
+  the SEED §56 content-priority warning and a *Move anyway* control; the recommended SEED §13 order
+  is restorable in one click. The order is `categories.sort_order`, which the mega menu and the
+  catalogue already read.
 - **No behavioural ordering exists.** "Popular", "trending" and "best selling" are not offered,
-  because no analytics data exists and manufacturing one would be an invented business fact.
+  because no analytics data exists and manufacturing one would be an invented business fact (FEAT
+  §28). The only rule the top-up implements is recency, and `merchandising-register.test.ts` reads
+  the resolver's source to keep it so.
 - **The resolver re-filters targets to published rows**, so an entry pointing at an unpublished
-  product renders nothing rather than a broken card.
-- Windows are honoured by `app/api/cron/content-schedule/route.ts`, which revalidates the affected
-  paths. A scheduled change and a manual one behave identically.
+  product renders nothing rather than a broken card — and the preview on each editor is the same
+  resolver's answer.
+- **Windows are honoured on every read** (`isLive`, the rule `page_sections` uses, and the generated
+  RLS clause). `app/api/cron/content-schedule/route.ts` gained the merchandising pass
+  (`merch_run_schedule()`), which records each transition in `activity_events`, archives an entry
+  whose window closed, and revalidates the affected paths. A scheduled change and a manual one look
+  identical on the site.
+- **Every write is audited and in the activity feed**, and the public surface the slot appears on
+  is revalidated immediately.
 
 ---
 
@@ -1317,6 +1357,37 @@ with a product or a project.
 - Attaching a `material_id` to a variant links to an existing `materials` row; **it never invents a
   specification**.
 - The 3D viewer as a whole sits behind the `three_d_viewer` feature flag.
+
+**Built in Phase 21**, with five differences from the sentences above, each a decision:
+
+- **Posters are chosen, not captured.** The phase document names a "poster capture action"; the
+  built surface offers the image library instead (`MediaPicker` over `IMAGE` assets). A frame
+  captured from the viewer is a rendering of a model presented as a photograph — the claim BR-E3
+  exists to prevent — and `guard_model_still_references()` refuses anything but an `IMAGE` asset as
+  a poster or thumbnail in any case. The owner supplies a photograph of the object that exists.
+- **"A mobile fallback" is the poster.** There is no second asset to require: below 768 px the
+  poster is the whole experience until a tap, and the viewer then opens fullscreen. The one thing
+  the constraint requires before a model can be shown anywhere is the poster
+  (`media_assets_model_poster_before_association`), and the drawer says so.
+- **The metadata block has no inputs.** Format, size, triangles and textures are read from the
+  file by the inspector — in the browser before the signature (`quickInspect`) and on the server
+  from the uploaded bytes (`inspectModel`) — and written by `saveModelAction`. *Re-inspect from the
+  file* is the only way the block changes. A refused file is destroyed at the provider and gets no
+  row; the reasons come back in words (`studio.models.reject.*`).
+- **Association is one transaction.** *Shown on* calls `set_model_association()`, which writes the
+  asset side and `products.model_media_id` together under the caller's own row policies: an editor
+  holds `media.write` but not `catalog.write`, so attaching to a product fails as a whole for that
+  role, and the action says so before the round trip. A project association needs `media.write`
+  alone.
+- **Marking a finish label VERIFIED is the owner's and admin's.** The drawer disables the option for
+  every other role, the action refuses it with a `DENIED` audit row, and the Phase 08 authority
+  trigger refuses it underneath both. A label that names a material cannot be *Not required*: the
+  form lifts it to *Awaiting the owner* the moment a material is chosen, mirroring the CHECK.
+
+The list (`ModelTable`) shows what the inspector read, whether a poster is set, and where the
+model is shown; *Inspect* opens the drawer through `?asset=<id>`, so the page is one server render
+with no client fetch. The drawer's *Preview* is the public viewer itself, imported dynamically here
+as it is on the site, reloaded with each settings change.
 
 ---
 

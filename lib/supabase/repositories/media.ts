@@ -176,6 +176,12 @@ export type NewMediaAsset = {
   readonly height?: number | null
   readonly duration_s?: number | null
   readonly uploaded_by?: string | null
+  // Phase 21. The FEAT §13 block, written from the inspector's parse of the uploaded file and from
+  // nowhere else; `saveModelAction` is the one caller that sets them.
+  readonly model_format?: 'GLB' | 'GLTF' | null
+  readonly file_size_bytes?: number | null
+  readonly poly_count?: number | null
+  readonly texture_count?: number | null
 }
 
 export async function insertMediaAsset(client: Client, asset: NewMediaAsset): Promise<MediaAsset> {

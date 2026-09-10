@@ -1,9 +1,17 @@
 import type { Metadata } from 'next'
 import * as React from 'react'
 
+import { LazyModelViewerMount } from '@/components/patterns/ModelViewerMount/lazy'
+import { Container } from '@/components/primitives/Container'
 import { cmsPageMetadata, renderCmsPage } from '@/lib/cms/render-page'
+import { optionalEnv } from '@/lib/env'
+import { isEnabled } from '@/lib/flags'
+import { getSiteChrome } from '@/lib/site/chrome'
+import { NotFoundError } from '@/lib/supabase/errors'
 import { createPublicClient } from '@/lib/supabase/public'
-import { listPublishedProjects } from '@/lib/supabase/repositories/portfolio'
+import { listMaterials } from '@/lib/supabase/repositories/materials'
+import { listModelIdsForProject, loadPublicModel } from '@/lib/supabase/repositories/models'
+import { getProjectBySlug, listPublishedProjects } from '@/lib/supabase/repositories/portfolio'
 
 /**
  * `/portfolio/[slug]` — one delivered project.
@@ -88,5 +96,47 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function ProjectPage({ params }: Props): Promise<React.ReactElement> {
   const { slug } = await params
-  return renderCmsPage(pathFor(slug))
+  return renderCmsPage(pathFor(slug), await projectModel(slug))
+}
+
+/**
+ * The Phase 21 mount: the first published model associated with this project, after the story's
+ * sections. Null — and nothing rendered — when the flag is off, the project has no model, or the
+ * model is not public with a poster. A project's page is a CMS page, so the mount arrives as the
+ * page's trailing child rather than as a block: associating a model is a media decision made in
+ * `/studio/media/models`, not an editorial one made on the page.
+ */
+async function projectModel(slug: string): Promise<React.ReactNode> {
+  if (!(await isEnabled('three_d_viewer'))) return null
+  const client = createPublicClient()
+  let project
+  try {
+    project = await getProjectBySlug(client, slug)
+  } catch (error) {
+    if (error instanceof NotFoundError) return null
+    throw error
+  }
+  const modelId = (await listModelIdsForProject(client, project.id))[0]
+  if (modelId === undefined) return null
+  const [model, materials, chrome] = await Promise.all([
+    loadPublicModel(client, modelId),
+    listMaterials(client),
+    getSiteChrome(),
+  ])
+  if (model === null) return null
+  return (
+    <Container>
+      <LazyModelViewerMount
+        model={model}
+        materials={materials}
+        dimensions={null}
+        title={project.title}
+        strings={chrome.strings}
+        cloudName={optionalEnv('NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME') ?? ''}
+        enabled
+        ratio="16:9"
+        sizes="(min-width: 1024px) 80vw, 100vw"
+      />
+    </Container>
+  )
 }

@@ -15,6 +15,7 @@ import { materialPaletteBlock } from '@/content/blocks/material-palette'
 import { materialStoryBlock } from '@/content/blocks/material-story'
 import { portfolioStripBlock } from '@/content/blocks/portfolio-strip'
 import { secondaryObjectsBlock } from '@/content/blocks/secondary-objects'
+import { featuredCollectionsBlock } from '@/content/blocks/featured-collections'
 import { selectedWorksBlock } from '@/content/blocks/selected-works'
 import { signatureMediaBlock } from '@/content/blocks/signature-media'
 import { threeDResinBlock } from '@/content/blocks/three-d-resin'
@@ -53,6 +54,7 @@ const BUILT_BLOCKS = {
   'process-steps': processStepsBlock,
   'secondary-objects': secondaryObjectsBlock,
   'journal-strip': journalStripBlock,
+  'featured-collections': featuredCollectionsBlock,
   'final-cta': finalCtaBlock,
   'scale-statement': scaleStatementBlock,
   'category-intro': categoryIntroBlock,

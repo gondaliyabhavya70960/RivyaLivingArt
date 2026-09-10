@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server'
 import { checkCronAuth } from '@/lib/cms/cron-auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { runContentSchedule } from '@/lib/supabase/repositories/cms'
+import { runMerchandisingSchedule } from '@/lib/supabase/repositories/merchandising'
 
 /**
  * The scheduled publish/unpublish sweep, invoked by Vercel Cron.
@@ -33,7 +34,18 @@ export async function GET(request: Request): Promise<NextResponse> {
     return NextResponse.json({ error: 'unauthorised' }, { status: 401 })
   }
 
-  const result = await runContentSchedule(createAdminClient())
+  const admin = createAdminClient()
+  const result = await runContentSchedule(admin)
+
+  /**
+   * PHASE 22: THE MERCHANDISING PASS, SECOND. Windows on `merchandising_entries` are honoured by
+   * the resolver on every read, so this pass changes nothing a visitor sees by itself; what it does
+   * is record each window that opened or closed since the last tick in `activity_events`, archive
+   * an entry whose window closed, and name the D3 paths whose cached pages must be rebuilt — which
+   * is the only way a static homepage learns that a curated piece went live at 09:00. The two
+   * sweeps run in sequence rather than in parallel so one summary describes one moment.
+   */
+  const merchandising = await runMerchandisingSchedule(admin)
 
   /**
    * REVALIDATION HAPPENS AFTER THE WRITE, NEVER BEFORE, and only for paths the sweep actually
@@ -42,7 +54,8 @@ export async function GET(request: Request): Promise<NextResponse> {
    * for every due row whether or not it succeeded — caches the pre-publish page and the content
    * stays invisible until the next tick.
    */
-  for (const path of result.paths) {
+  const paths = [...new Set([...result.paths, ...merchandising.paths])].sort()
+  for (const path of paths) {
     revalidatePath(path)
   }
 
@@ -55,7 +68,11 @@ export async function GET(request: Request): Promise<NextResponse> {
     ran_at: result.ran_at,
     published: result.published.length,
     failed: result.failed.length,
-    revalidated: result.paths,
+    revalidated: paths,
+    merchandising: {
+      opened: merchandising.opened.length,
+      closed: merchandising.closed.length,
+    },
     refusals: result.failed.map((failure) => ({
       section_id: failure.section_id,
       target: failure.target,

@@ -46,8 +46,29 @@ export type EntityCard = {
   readonly eyebrow?: string | null
 }
 
+/**
+ * Phase 22: what merchandising decided, when a selector was answered by a slot.
+ *
+ * ADDITIVE AND OPTIONAL, so every consumer written against the Phase 11 shape still compiles and
+ * still behaves: a result without it is a selector that ran its own query. A result with it says
+ * whether a person chose the cards (CURATED), a named rule topped them up (RULE_FILLED), or the
+ * slot fell through to its fallback mode — which is the one thing a renderer needs beyond the
+ * cards, because HIDE_SECTION means "draw nothing, not even the heading".
+ */
+export type MerchandisingOutcome = {
+  readonly slotKey: string
+  readonly provenance: 'CURATED' | 'RULE_FILLED' | 'FALLBACK'
+  readonly rule: string | null
+  readonly fallback: {
+    readonly mode: 'EDITORIAL_BLOCK' | 'HIDE_SECTION' | 'SHOW_EMPTY_STATE'
+    readonly sectionId: string | null
+  } | null
+}
+
 export type SelectorResult = {
   readonly cards: readonly EntityCard[]
+  /** Present only when a merchandising slot answered. See `MerchandisingOutcome`. */
+  readonly merchandising?: MerchandisingOutcome
   /**
    * Why there are none, when there are none.
    *
@@ -80,6 +101,16 @@ export type SelectorOptions = {
   readonly limit: number
   readonly categorySlug?: string | null
   readonly collectionId?: string | null
+  /**
+   * Phase 22: the merchandising slot that answers this block, or null for the block's own query.
+   *
+   * RESOLVED BEFORE THE SELECTOR RUNS, like `collectionId`, from the block's `slot_key` payload
+   * field or the page's default (`lib/cms/references.ts`). A selector handed a key asks the slot
+   * and returns what the ladder decided; handed null, it runs the Phase 11 read it always did.
+   */
+  readonly slotKey?: string | null
+  /** The clock, for the window check. Defaults to now; a test passes a boundary. */
+  readonly now?: Date
 }
 
 export type EntitySelector = (
