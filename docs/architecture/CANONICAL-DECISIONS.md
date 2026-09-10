@@ -164,7 +164,7 @@ Public: `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABAS
 
 Server-only: `SUPABASE_SERVICE_ROLE_KEY`, `DATABASE_URL`, `CLOUDINARY_API_KEY`,
 `CLOUDINARY_API_SECRET`, `GOOGLE_SERVICE_ACCOUNT_JSON`, `GOOGLE_SHEETS_SPREADSHEET_ID`,
-`SCRAPER_USER_AGENT`, `REVALIDATE_SECRET`.
+`SCRAPER_USER_AGENT`, `REVALIDATE_SECRET`, `CRON_SECRET` (added by amendment A25 — see below).
 
 The Environment page reports *reachability only* — never a value, prefix or length.
 
@@ -233,6 +233,17 @@ than any of its names.
   its own. A 404 also misleads the person most likely to hit this by hand: an operator debugging a
   missed tick reads "not found" as "wrong path" and goes looking for a routing problem that is not
   there. The endpoint's existence is not the secret; the secret is.
+- **`CRON_SECRET` joins D8's server-only list, which is paperwork this phase should not have left
+  open.** It has been read by `app/api/cron/content-schedule` since Phase 08 and is documented in
+  `.env.example`, but it was never added here — so the code and the canonical decision disagreed
+  about whether it exists, which is exactly the drift D8 is meant to prevent. Phase 25's cron route
+  makes it the second reader, and `ENVIRONMENT.md` §6 open question 2 (six routes reusing
+  `REVALIDATE_SECRET`, one route on `x-vercel-cron` alone) is settled by what shipped: both built
+  cron routes authenticate with `CRON_SECRET` through `checkCronAuth`, and `REVALIDATE_SECRET`
+  guards `/api/revalidate` and nothing else. **THE NAME IS NOT OURS TO CHOOSE** — Vercel attaches
+  `Authorization: Bearer <value>` to a cron invocation only for a variable spelled exactly
+  `CRON_SECRET`, so renaming it makes the header silently absent and every tick 401 with nothing
+  logged anywhere.
 - **The kill switch is `research_enabled`, not the phase document's `research.enabled`.** A flag key
   is an identifier — call sites spell it out — and the database CHECK requires a legal one. The
   same correction `three_d_viewer` made for `3d_viewer` in Phase 21.
