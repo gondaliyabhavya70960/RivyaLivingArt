@@ -190,6 +190,15 @@ const EXPECTED = {
    * that structural rather than a rule somebody has to remember.
    */
   inquiries: [...TIER_A],
+
+  /*
+   * Phase 21. A VARIANT LABEL IS EDITORIAL COPY WITH ONE FOOT IN THE CATALOGUE: Tier A, plus the two
+   * Tier B columns that carry D10 — `owner_verification` and `fact_classification` — and neither
+   * `status` nor the publication pair, because a label is never published on its own. It is public
+   * exactly when the model it names is (shape B), and a `status` here would be a second switch that
+   * could disagree with the first. No Tier C: nothing seeds a label, because nothing seeds a model.
+   */
+  model_variant_labels: [...TIER_A, 'owner_verification', 'fact_classification'],
   // An attachment is an edge, like every other join table here — and it has no `created_by`,
   // because the visitor who created it is not a user and never will be (D1).
   inquiry_attachments: ['created_at'],

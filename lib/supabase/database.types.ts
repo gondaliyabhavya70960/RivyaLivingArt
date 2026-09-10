@@ -1622,6 +1622,7 @@ export type Database = {
           higgsfield_prompt: string | null
           manifest_version: string | null
           migrated_at: string | null
+          viewer_settings: Json
         }
         Insert: {
           id?: string
@@ -1670,6 +1671,7 @@ export type Database = {
           higgsfield_prompt?: string | null
           manifest_version?: string | null
           migrated_at?: string | null
+          viewer_settings?: Json
         }
         Update: {
           id?: string
@@ -1718,6 +1720,7 @@ export type Database = {
           higgsfield_prompt?: string | null
           manifest_version?: string | null
           migrated_at?: string | null
+          viewer_settings?: Json
         }
         Relationships: [
           {
@@ -1725,6 +1728,13 @@ export type Database = {
             columns: ['associated_product_id']
             isOneToOne: false
             referencedRelation: 'products'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'media_assets_associated_project_fk'
+            columns: ['associated_project_id']
+            isOneToOne: false
+            referencedRelation: 'portfolio_projects'
             referencedColumns: ['id']
           },
           {
@@ -1808,6 +1818,70 @@ export type Database = {
             columns: ['media_id']
             isOneToOne: false
             referencedRelation: 'media_assets'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      model_variant_labels: {
+        Row: {
+          id: string
+          media_asset_id: string
+          variant_key: string
+          label: string
+          material_id: string | null
+          position: number
+          fact_classification: Database['public']['Enums']['fact_classification']
+          owner_verification: Database['public']['Enums']['owner_verification']
+          created_at: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          media_asset_id: string
+          variant_key: string
+          label: string
+          material_id?: string | null
+          position?: number
+          fact_classification?: Database['public']['Enums']['fact_classification']
+          owner_verification?: Database['public']['Enums']['owner_verification']
+          created_at?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          media_asset_id?: string
+          variant_key?: string
+          label?: string
+          material_id?: string | null
+          position?: number
+          fact_classification?: Database['public']['Enums']['fact_classification']
+          owner_verification?: Database['public']['Enums']['owner_verification']
+          created_at?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'model_variant_labels_material_id_fkey'
+            columns: ['material_id']
+            isOneToOne: false
+            referencedRelation: 'materials'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'model_variant_labels_media_asset_id_fkey'
+            columns: ['media_asset_id']
+            isOneToOne: false
+            referencedRelation: 'media_assets'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'model_variant_labels_updated_by_fkey'
+            columns: ['updated_by']
+            isOneToOne: false
+            referencedRelation: 'users'
             referencedColumns: ['id']
           },
         ]
@@ -3242,11 +3316,31 @@ export type Database = {
         Args: Record<string, unknown>
         Returns: Json
       }
+      is_valid_model_camera: {
+        Args: Record<string, unknown>
+        Returns: Json
+      }
+      is_valid_viewer_settings: {
+        Args: Record<string, unknown>
+        Returns: Json
+      }
+      model_setting_number: {
+        Args: Record<string, unknown>
+        Returns: Json
+      }
+      model_setting_vec3: {
+        Args: Record<string, unknown>
+        Returns: Json
+      }
       record_inquiry_handoff: {
         Args: Record<string, unknown>
         Returns: Json
       }
       rivya_slugify: {
+        Args: Record<string, unknown>
+        Returns: Json
+      }
+      set_model_association: {
         Args: Record<string, unknown>
         Returns: Json
       }

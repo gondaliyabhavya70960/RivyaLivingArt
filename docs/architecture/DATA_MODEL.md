@@ -317,6 +317,8 @@ migration transaction; a check constraint can be replaced in place, which is why
 | `media_usages.role` | `DESKTOP · MOBILE · POSTER · THUMBNAIL · GALLERY · OG` |
 | `media_assets.resource_type` | `image · video · raw` (Cloudinary's own vocabulary, kept verbatim) |
 | `media_assets.model_format` | `GLB · GLTF` |
+| `media_assets.viewer_settings.lightingPreset` | `studio-soft · gallery-directional · daylight-window · low-key` (Phase 21; enforced by `is_valid_viewer_settings()`) |
+| `media_assets.viewer_settings.environmentPreset` | `neutral-room · dark-gallery · warm-interior` (Phase 21) |
 | `media_crops.aspect_ratio` | `21:9 · 16:9 · 4:3 · 3:2 · 1:1 · 4:5 · 3:4 · 9:16` — exactly D6's eight |
 | `product_media.role`, `portfolio_project_media.role` | `hero · gallery · detail · lifestyle · process · video · model` |
 | `materials.family` | `resin · timber · metal · stone · finish` |
@@ -1153,7 +1155,7 @@ origin; this row is the meaning. D6 makes three columns mandatory on every row.
 | Descriptive | `alt_text text not null`, `title text`, `caption text`, `tags text[] not null default '{}'`, `subject_tags text[] not null default '{}'` |
 | Technical | `mime_type text`, `bytes bigint`, `width int`, `height int`, `aspect_ratio text`, `duration_s numeric`, `poster_public_id text`, `checksum text` |
 | Governance | `is_ai_generated boolean not null`, `is_concept boolean not null`, `is_decorative boolean not null default false` (Phase 41), `uploaded_by uuid`, Tier A + B |
-| 3D (FEAT §13) | `model_format text check (model_format in ('GLB','GLTF'))`, `file_size_bytes bigint`, `poly_count int`, `texture_count int`, `model_thumbnail_id uuid references media_assets(id)`, `model_poster_id uuid references media_assets(id)`, `associated_product_id uuid`, `associated_project_id uuid`, `viewer_settings jsonb not null default '{}'` (Phase 21) |
+| 3D (FEAT §13) | `model_format text check (model_format in ('GLB','GLTF'))`, `file_size_bytes bigint`, `poly_count int`, `texture_count int`, `model_thumbnail_id uuid references media_assets(id)`, `model_poster_id uuid references media_assets(id)`, `associated_product_id uuid references products(id) on delete set null`, `associated_project_id uuid references portfolio_projects(id) on delete set null` (column from Phase 06, key from Phase 21), `viewer_settings jsonb not null default '{}'` (Phase 21) |
 | Higgsfield provenance (columns added by Phase 06 `0030`; **populated** by Phase 07 `0040`) | `higgsfield_generation_id text`, `higgsfield_model text`, `higgsfield_prompt text`, `manifest_version text`, `migrated_at timestamptz` |
 
 **Keys and indexes**
@@ -1180,7 +1182,28 @@ origin; this row is the meaning. D6 makes three columns mandatory on every row.
 check (is_decorative or (alt_text is not null and length(btrim(alt_text)) > 0))
 check (kind <> 'MODEL_3D' or model_format is not null)
 check (kind <> 'VIDEO'    or duration_s   is not null)
+-- Phase 21 (0194): the viewer_settings shape, the FEAT §14 ceilings, and the poster rule
+check (public.is_valid_viewer_settings(viewer_settings))
+check (kind <> 'MODEL_3D' or file_size_bytes is null or file_size_bytes <= 15 * 1024 * 1024)
+check (kind <> 'MODEL_3D' or poly_count is null or poly_count <= 250000)
+check (kind <> 'MODEL_3D'
+       or (associated_product_id is null and associated_project_id is null)
+       or model_poster_id is not null)                       -- a poster gates ASSOCIATION, not existence
+check (kind = 'MODEL_3D' or (associated_product_id is null and associated_project_id is null))
 ```
+
+Two Phase 21 triggers sit beside the checks because a CHECK cannot look at another row:
+`guard_model_still_references()` requires `model_poster_id` and `model_thumbnail_id` to name an
+`IMAGE` asset other than the row itself, and `guard_product_model_reference()` on `products`
+requires `model_media_id` to name a `MODEL_3D` asset. `set_model_association(asset, product,
+project)` — SECURITY INVOKER, the `0184` pattern — writes `associated_*` and
+`products.model_media_id` in one transaction, so the poster constraint fires before a page can
+read the product side.
+
+`viewer_settings` is an object whose keys are a subset of `camera` (`position`, `target`: three
+numbers each; `fov`: 10–120), `exposure` (0.1–4), `lightingPreset`, `environmentPreset`,
+`autoRotate` (boolean), `minDistance` and `maxDistance` (positive, min < max). The preset names are
+the seven of `components/three/presets.ts`, listed in §3.
 
 **RLS** — anon `select` where `status = 'PUBLISHED'`; staff read requires `media.read`; write
 `media.write`; `delete` requires `media.delete` **and** is blocked by trigger while any
@@ -1296,23 +1319,50 @@ Per-ratio crop boxes so one asset serves several CMS slots without a second uplo
 `check (gravity is not null or num_nonnulls(x, y, width, height) = 4)` — either a full box or a
 gravity, never a half-specified crop.
 
-### `model_variant_labels` — Phase 21 · migration `0190` · RLS-PUBLIC (`media.write`)
+### `model_variant_labels` — Phase 21 · migration `0194` · RLS-PUBLIC (`media.write`)
 
-Human labels for the variants a GLB exposes, so the 3D viewer's variant switcher shows words rather
-than mesh names.
+Human labels for the `KHR_materials_variants` keys a `MODEL_3D` asset exposes, so the 3D viewer's
+variant switcher shows words rather than mesh names.
 
 | Column | Type |
 |---|---|
 | `id` | `uuid pk` |
-| `media_asset_id` | `uuid not null references media_assets(id) on delete cascade` |
-| `variant_key` | `text not null` |
-| `label` | `text not null` |
+| `media_asset_id` | `uuid not null references media_assets(id) on delete cascade` — a `MODEL_3D` row, by trigger |
+| `variant_key` | `text not null` — the key declared inside the GLB; matched, never displayed |
+| `label` | `text not null` — what the visitor reads |
 | `material_id` | `uuid references materials(id) on delete set null` |
 | `position` | `int not null default 0` |
+| `fact_classification` | `fact_classification not null default 'EDITORIAL_COPY'` |
+| `owner_verification` | `owner_verification not null default 'NOT_REQUIRED'` |
+| — | Tier A |
 
-**Keys** — `unique (media_asset_id, variant_key)`.
-Labels are `EDITORIAL_COPY`. Attaching a `material_id` links to an existing `materials` row; it
-never invents a specification.
+**Keys** — `unique (media_asset_id, variant_key)`; index `(media_asset_id, position)`; partial index
+on `material_id`.
+
+**Constraints**
+
+```sql
+check (length(btrim(variant_key)) between 1 and 120)
+check (length(btrim(label)) between 1 and 120)
+check (position >= 0)
+-- D10: naming a material asserts it is present in a real object
+check (material_id is null or owner_verification <> 'NOT_REQUIRED')
+```
+
+A bare label is editorial copy and needs no verification. A label that also carries a `material_id`
+asserts that a named material is present in a real object, which is a product fact, so attaching a
+material lifts the row to at least `OWNER_VERIFICATION_REQUIRED`; the Phase 08
+`enforce_verification_authority()` trigger keeps `VERIFIED` for `owner` and `admin`; and the public
+read path in `lib/media/model.ts` returns `material_id` **only** at `VERIFIED`. An unverified
+association still renders its label; it carries no material name. `guard_variant_label_parent()`
+refuses a parent that is not `MODEL_3D`.
+
+**Tiers** — A, plus `owner_verification` and `fact_classification` from B and nothing else. A label
+is never published on its own, so it has no `status` and no publication pair (§1.4): it is public
+exactly when its model is.
+
+**RLS** — shape B: anon `select` where the owning `media_assets` row is `PUBLISHED`; staff read
+`media.read`; write `media.write`; delete `media.delete`. Migration `0195`, generated.
 
 ### `higgsfield_migration_runs` — Phase 07 · migration `0040` · RLS-SERVICE (`media.read`)
 
@@ -1949,7 +1999,7 @@ local and hosted is isolated to one file that can never be picked up by `supabas
 | 19 | `0170`–`0172` | T `customization_forms`, `customization_form_steps`, `customization_form_fields`, `product_customization_forms`, `feature_flags`; enums `form_kind`, `form_field_type` |
 | 20 | `0193` | F `reject_inquiry_event_mutation()` narrowed. The append-only trigger fired on the CASCADE from `inquiries` and refused it, so deleting an enquiry was impossible for anybody including a superuser — found by the Phase 20 RLS suite, which could not clean up its own fixture. An event may now be deleted only when its enquiry is already gone; UPDATE is still refused unconditionally |
 | 20 | `0190`–`0191` | T `inquiries`, `inquiry_attachments`, `inquiry_events`; enums `inquiry_kind`, `inquiry_status`, `whatsapp_state`, `inquiry_event_kind`; S `inquiry_reference_seq`; F `allocate_inquiry_reference()`, `log_inquiry_created()`, `log_inquiry_status_change()`, `reject_inquiry_event_mutation()`, `inquiry_is_fresh()`, `attach_inquiry_references()`, `record_inquiry_handoff()`; `0191` is the generated RLS, the first to carry an anon INSERT policy. **Renumbered from the phase document's `0180`–`0182`, which Phase 19's session had already spent, and there is no third migration: SEED §21's contact facts already have one home in the `contact-details` section and a `global_content` CONTACT group would be a second — amendment A20** |
-| 21 | `0190` | T `model_variant_labels`; A `media_assets.viewer_settings` and the model size/triangle/poster checks |
+| 21 | `0194`–`0195` | T `model_variant_labels`; A `media_assets.viewer_settings`, the size/triangle/poster checks, the association-is-model check, and the `associated_project_id` foreign key Phase 06 declared ahead of its table; F `is_valid_viewer_settings()` (with `model_setting_number()`, `model_setting_vec3()`, `is_valid_model_camera()`), `guard_model_still_references()`, `guard_product_model_reference()`, `guard_variant_label_parent()`, `set_model_association()`; `0195` is the generated RLS. **Renumbered from the phase document's `0190`, which Phase 20 spent — amendment A21** |
 | 22 | `0200`–`0201` | T `merchandising_slots`, `merchandising_entries`; enum `merch_fallback` |
 | 23 | `0210`–`0213` | T `search_documents`, `research_search_documents` (empty), `search_queries`, `content_relations`, `relation_suppressions`, `product_attribute_terms`; A `product_relations`; enums `search_visibility`, `relation_origin`, `attribute_taxonomy` |
 | 24 | `0220` | T `bulk_operations`, `bulk_operation_items`, `bulk_imports`, `bulk_import_rows` |

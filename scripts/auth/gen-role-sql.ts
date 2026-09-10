@@ -32,6 +32,7 @@ import {
   PHASE_18_POLICIES,
   PHASE_19_LIMIT_POLICIES,
   PHASE_20_POLICIES,
+  PHASE_21_POLICIES,
   PHASE_19_POLICIES,
   TABLE_POLICY_MAP,
   type ManagedTable,
@@ -250,6 +251,21 @@ const GENERATED: Record<string, { title: string; preamble: string }> = {
 -- NO ANON POLICY EITHER. A visitor who could read their own bucket would learn exactly how close
 -- they are to the ceiling and exactly when it resets, which is the information needed to pace an
 -- attack rather than to stop one.`,
+  },
+  [PHASE_21_POLICIES]: {
+    title: `-- ${PHASE_21_POLICIES} — Phase 21`,
+    preamble: `-- Policies for \`model_variant_labels\`, which migration 0194 creates. GENERATED from
+-- lib/auth/table-permissions.ts and rewritten whole, so it may hold nothing a human wrote.
+--
+-- SHAPE B ON A MEDIA PARENT. A label has no status of its own: it is public exactly when the model
+-- it names is PUBLISHED, and never on its own — a switch here would be a second switch that could
+-- disagree with the first. Writes mirror \`media_assets\`: \`media.write\` to add or edit a label,
+-- \`media.delete\` to remove one.
+--
+-- WHAT THE POLICY DOES NOT DECIDE. Whether a label may carry a \`material_id\` is a CHECK on the
+-- row (a material forces at least OWNER_VERIFICATION_REQUIRED), and who may mark it VERIFIED is
+-- the Phase 08 authority trigger (owner and admin). Neither is an access question, so neither is
+-- here; \`lib/media/model.ts\` then returns the material name to the public viewer only at VERIFIED.`,
   },
 }
 

@@ -12,6 +12,7 @@ import {
   demoColumn,
   editionStateSchema,
   factClassificationSchema,
+  ownerVerificationSchema,
   formFieldTypeSchema,
   formKindSchema,
   jsonSchema,
@@ -176,6 +177,10 @@ export const mediaAssetSchema = z.object({
   // Validated as a uuid here even though the database has no foreign key on it until Phase 17.
   // The two are independent: the column's shape is knowable now, the referent is not.
   associated_project_id: uuidSchema.nullable(),
+  // Phase 21 (0194). Shape-checked by `is_valid_viewer_settings()` at the row and parsed into a
+  // typed object by `lib/media/model.ts`; here it is only "some JSON", because the row schema's job
+  // is to mirror the column, not to be the second copy of the viewer's contract.
+  viewer_settings: jsonSchema,
 
   // Higgsfield provenance, filled by the Phase 07 import.
   higgsfield_generation_id: z.string().nullable(),
@@ -620,3 +625,25 @@ export const featureFlagSchema = z.object({
 }) satisfies z.ZodType<Tables<'feature_flags'>>
 
 export type FeatureFlag = z.infer<typeof featureFlagSchema>
+
+/**
+ * `model_variant_labels` — Phase 21 (0194).
+ *
+ * Tier A plus the two D10 columns, and no `status`: a label is public exactly when its model is.
+ * `material_id` is nullable here and constrained at the row — a material forces at least
+ * OWNER_VERIFICATION_REQUIRED — and whether it reaches a visitor is `lib/media/model.ts`'s
+ * decision (VERIFIED only), not this schema's.
+ */
+export const modelVariantLabelSchema = z.object({
+  id: uuidSchema,
+  media_asset_id: uuidSchema,
+  variant_key: z.string().min(1).max(120),
+  label: z.string().min(1).max(120),
+  material_id: uuidSchema.nullable(),
+  position: z.number().int().nonnegative(),
+  fact_classification: factClassificationSchema,
+  owner_verification: ownerVerificationSchema,
+  ...auditColumns,
+}) satisfies z.ZodType<Tables<'model_variant_labels'>>
+
+export type ModelVariantLabel = z.infer<typeof modelVariantLabelSchema>

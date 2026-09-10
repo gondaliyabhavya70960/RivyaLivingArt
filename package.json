@@ -62,13 +62,19 @@
     "check": "npm run typecheck && npm run lint && npm run format:check && npm run media:check-ids && npm run media:assert-no-regen && npm run cms:check-transitions && npm run cms:check-copy && npm run demo:check-register && npm run site:check-client-boundary && npm run site:check-islands && npm run site:check-whatsapp"
   },
   "dependencies": {
+    "@gltf-transform/core": "4.5.0",
+    "@gltf-transform/extensions": "4.5.0",
+    "@react-three/drei": "10.7.8",
+    "@react-three/fiber": "9.7.0",
     "@supabase/ssr": "^0.12.6",
     "@supabase/supabase-js": "^2.116.0",
     "cloudinary": "^2.11.0",
+    "meshoptimizer": "1.2.0",
     "next": "^16.3.4",
-    "react": "^19.2.8",
-    "react-dom": "^19.2.8",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
     "server-only": "^0.0.1",
+    "three": "0.186.0",
     "zod": "^4.5.4"
   },
   "devDependencies": {
@@ -82,6 +88,7 @@
     "@types/pg": "^8.23.1",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.7",
+    "@types/three": "0.185.4",
     "@vitejs/plugin-react": "^6.1.1",
     "eslint": "^9.39.5",
     "eslint-config-next": "^16.3.4",

@@ -125,6 +125,7 @@ export const PHASE_18_POLICIES = '0161_phase18_journal_rls.sql'
 export const PHASE_19_POLICIES = '0172_phase19_rls.sql'
 export const PHASE_19_LIMIT_POLICIES = '0183_phase19_rate_limit_rls.sql'
 export const PHASE_20_POLICIES = '0191_phase20_inquiries_rls.sql'
+export const PHASE_21_POLICIES = '0195_phase21_model_rls.sql'
 
 export const TABLE_POLICIES = {
   // --- Shape A: content tables ------------------------------------------------------------------
@@ -776,6 +777,30 @@ export const TABLE_POLICIES = {
       'No anon policy, and no UPDATE or DELETE policy for any session role. Staff holding ' +
       'inquiries.write may APPEND an event; nobody may change one, because a log that can be ' +
       'edited cannot answer what happened.',
+  },
+  /**
+   * `model_variant_labels` — Phase 21. Shape B on a MEDIA parent.
+   *
+   * A LABEL HAS NO STATUS OF ITS OWN, and that is the design rather than an omission. It is public
+   * exactly when the model it names is PUBLISHED; a `status` here would be a second switch that
+   * could disagree with the first, and a variant label with no model to attach to is not a thing a
+   * visitor can see. Writes mirror `media_assets`: `media.write` adds or edits a label and
+   * `media.delete` removes one — the label set is dictated by the file's variant keys, so removal is
+   * the rare case and belongs with the role that may remove the model.
+   *
+   * WHAT THE POLICY DOES NOT DECIDE. Whether a label may carry a `material_id` is a CHECK on the row
+   * (a material forces at least OWNER_VERIFICATION_REQUIRED), and who may mark it VERIFIED is the
+   * Phase 08 authority trigger. Neither is an access question. `lib/media/model.ts` then hands the
+   * material name to the public viewer only at VERIFIED.
+   */
+  model_variant_labels: {
+    policiesIn: PHASE_21_POLICIES,
+    shape: 'B',
+    readPermission: 'media.read',
+    writePermission: 'media.write',
+    deletePermission: 'media.delete',
+    parentClause: `exists (select 1 from media_assets m
+             where m.id = model_variant_labels.media_asset_id and m.status = 'PUBLISHED')`,
   },
 } as const satisfies Record<string, TablePolicy>
 
