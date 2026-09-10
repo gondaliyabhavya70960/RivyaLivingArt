@@ -3531,6 +3531,69 @@ export type Database = {
           },
         ]
       }
+      research_adapter_runs: {
+        Row: {
+          id: string
+          run_id: string
+          source_id: string
+          adapter_key: string
+          adapter_version: string
+          status: string
+          items_seen: number
+          items_extracted: number
+          items_failed: number
+          first_errors: Json
+          duration_ms: number
+          started_at: string
+          finished_at: string | null
+        }
+        Insert: {
+          id?: string
+          run_id: string
+          source_id: string
+          adapter_key: string
+          adapter_version: string
+          status?: string
+          items_seen?: number
+          items_extracted?: number
+          items_failed?: number
+          first_errors?: Json
+          duration_ms?: number
+          started_at?: string
+          finished_at?: string | null
+        }
+        Update: {
+          id?: string
+          run_id?: string
+          source_id?: string
+          adapter_key?: string
+          adapter_version?: string
+          status?: string
+          items_seen?: number
+          items_extracted?: number
+          items_failed?: number
+          first_errors?: Json
+          duration_ms?: number
+          started_at?: string
+          finished_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'research_adapter_runs_run_id_fkey'
+            columns: ['run_id']
+            isOneToOne: false
+            referencedRelation: 'research_runs'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'research_adapter_runs_source_id_fkey'
+            columns: ['source_id']
+            isOneToOne: false
+            referencedRelation: 'research_sources'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       research_fetches: {
         Row: {
           id: string
@@ -3711,6 +3774,73 @@ export type Database = {
           },
         ]
       }
+      research_product_versions: {
+        Row: {
+          id: string
+          research_product_id: string
+          run_id: string | null
+          fetch_id: string | null
+          raw: Json
+          normalized: Json | null
+          normalizer_version: string | null
+          content_hash: string
+          storage_key: string | null
+          adapter_key: string
+          adapter_version: string
+          observed_at: string
+        }
+        Insert: {
+          id?: string
+          research_product_id: string
+          run_id?: string | null
+          fetch_id?: string | null
+          raw: Json
+          normalized?: Json | null
+          normalizer_version?: string | null
+          content_hash: string
+          storage_key?: string | null
+          adapter_key: string
+          adapter_version: string
+          observed_at?: string
+        }
+        Update: {
+          id?: string
+          research_product_id?: string
+          run_id?: string | null
+          fetch_id?: string | null
+          raw?: Json
+          normalized?: Json | null
+          normalizer_version?: string | null
+          content_hash?: string
+          storage_key?: string | null
+          adapter_key?: string
+          adapter_version?: string
+          observed_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'research_product_versions_fetch_id_fkey'
+            columns: ['fetch_id']
+            isOneToOne: false
+            referencedRelation: 'research_fetches'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'research_product_versions_research_product_id_fkey'
+            columns: ['research_product_id']
+            isOneToOne: false
+            referencedRelation: 'research_products'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'research_product_versions_run_id_fkey'
+            columns: ['run_id']
+            isOneToOne: false
+            referencedRelation: 'research_runs'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       research_products: {
         Row: {
           id: string
@@ -3764,6 +3894,13 @@ export type Database = {
           updated_by?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: 'research_products_current_version_fk'
+            columns: ['current_version_id']
+            isOneToOne: false
+            referencedRelation: 'research_product_versions'
+            referencedColumns: ['id']
+          },
           {
             foreignKeyName: 'research_products_first_seen_run_id_fkey'
             columns: ['first_seen_run_id']

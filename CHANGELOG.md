@@ -6,6 +6,99 @@ Every phase adds an entry; see `docs/architecture/CANONICAL-DECISIONS.md` D9 for
 
 ## [Unreleased]
 
+### Phase 27 — Scraper Extraction
+
+The pipeline starts producing structured rows. FEAT §27's adapter architecture is built as an
+EXECUTION BOUNDARY with its own record rather than as a hope that nothing throws — because "a broken
+source adapter must not break other sources" is a claim about failure, and a claim about failure
+needs a record or it cannot be checked.
+
+**Migrations `0250`–`0251`, applied locally AND to the hosted project.** `research_product_versions`
+is append-only and deduplicated by content hash, so a page that has not changed produces NO new row
+and a page that has produces exactly one — the substrate Phase 29 diffs, and the one thing that
+cannot be retrofitted. `research_adapter_runs` is one row per (run, source, adapter): items seen,
+extracted and failed, the first five errors with their URLs, and whether the source was ABORTED.
+`current_version_id` becomes the foreign key `0231` declared its column for and deferred
+(**amendment A27**).
+
+**The adapter contract, and what it deliberately withholds.** `AdapterContext` carries the source
+configuration, a URL matcher, a logger and a budget predicate — and no database handle, no `fetch`,
+no file system, no Cloudinary client and no clock. An adapter is a pure function from bytes to a
+draft; every side effect belongs to the core. That is what makes a vendor adapter reviewable in ten
+minutes, safe to accept from somebody else, and impossible to misuse: a `fetch` in an adapter would
+be a request that skipped robots.txt and the delay.
+
+**`RawProductDraft` is strings, and a parsed number fails validation.** Every field is the source's
+own text — `priceText`, `dimensionTexts`, `availabilityText` — with a per-field `confidence` map
+recording what was FOUND rather than defaulted and a `provenance` map recording which strategy read
+it. Phase 28 parses, converts and resolves, once, over stored evidence; a draft carrying a number
+would put the same parsing in two places, and the second is always the one nobody re-runs when a rule
+is corrected.
+
+**The `generic` adapter, first hit wins per field**: JSON-LD `Product` (including `@graph`, arrays
+and an `@type` array), then microdata, then RDFa, then OpenGraph, then the source's configured
+selectors, then `<title>` and `<h1>` as a last resort. A broken JSON-LD script tag beside a valid one
+does not abandon the valid one. `extract()` never throws on malformed input — broken HTML, binary,
+an empty string each return a low-confidence draft — because one bad page in a run of four hundred
+must cost one item.
+
+**A REAL DENIAL-OF-SERVICE VECTOR, FOUND BY A TEST WRITTEN FOR SOMETHING ELSE.** The contract suite
+feeds every adapter a hundred kilobytes of unclosed `<div>` to prove malformed input produces a draft
+rather than a throw, and the first time the generic adapter was actually registered the test run hung
+indefinitely. `node-html-parser` is super-quadratic in NESTING DEPTH — 500 levels 29 ms, 2,000 levels
+791 ms, 4,000 levels nearly six seconds, twenty thousand levels hours — so a page well inside the
+fetcher's 2 MB cap, trivially served by anybody who would like Rivya to stop reading them, wedges the
+cron invocation. **The CPU budget cannot catch it**: the runaway is one synchronous call into a
+dependency with no loop of ours to ask, and JavaScript cannot pre-empt one.
+`lib/scraper/adapters/parse.ts` is the answer and the only sanctioned parse in the tree — it
+estimates nesting depth in one linear pass, without building a tree, and refuses past 200 levels.
+The contract suite now also asserts that no other file imports `parse` from the library, because a
+second call site is a second place with no guard, added by somebody writing a vendor adapter who had
+never met this failure.
+
+**Four isolation layers, each with its own record.** Per item: a try/catch, a measured budget and a
+Zod check, so a throw, an overrun or an invalid draft fails that item and the drain loop continues.
+Per source per run: ten consecutive item failures stop THAT SOURCE for the rest of the run and set
+`status = 'ABORTED'` — and because a run is drained across many cron ticks, the ROW is what makes
+"for the rest of the run" survive the tick boundary. Per source across runs: three consecutive
+ABORTED runs open the same circuit five consecutive FETCH failures open, with a `WARNING` naming the
+adapter and version. Cross-source: every source's items are leased and executed independently, and
+`tests/unit/adapter-isolation.test.ts` interleaves two sources with adapter A throwing on every item
+to prove B is untouched.
+
+**Versions, not overwrites.** The content hash is over the DRAFT rather than the page body — two
+fetches differing only in a session id are one observation — and it EXCLUDES `confidence` and
+`provenance`, so an adapter fix that finds the same value by a different route does not read as every
+product on every source changing at once in Phase 29's review queue. Array order is hashed: a
+re-ordered gallery is a change.
+
+**A work item is `DONE` when extraction fails, and the host is not asked again.** A work item is a
+URL to fetch and it was fetched; retrying would ask a third party's server for a document Rivya
+already holds because OUR reading of it was wrong. The failure is accounted on the adapter row and
+repaired by `scripts/research/reextract.ts`, which re-runs an adapter over stored snapshots with
+**zero network traffic** — enforced by never importing the fetcher, and asserted statically because
+the failure it guards against is a future edit.
+
+**Placeholders, not vendors.** `source-a` and `source-b` are FEAT §27's own names, `supports()`
+returns false unconditionally, and both are registered so the shared contract suite still runs them.
+A new CI assertion in `check-research-isolation.mjs` fails the build on any external host named
+anywhere under `lib/scraper/adapters/**`, READMEs included — because an adapter is exactly where a
+real competitor's name would first appear, and a real source is a row somebody approved rather than a
+literal in a build artefact.
+
+**The run detail screen answers the two questions in the order they are asked**: which source
+stopped and did it take the others with it (the adapter panels), then what was read (the versions,
+each openable beside the strategy that produced each field). An `ABORTED` source is toned as a
+warning rather than a failure, because it is the isolation working. The snapshot is NAMED and never
+linked: it lives in a private bucket, and a signed URL rendered on a Studio screen would publish a
+competitor's page body from a Rivya origin for as long as the link lived.
+
+**Verified**: 75 migrations apply from clean; local and hosted both report 75 / 68 tables / 232
+policies. `npm run test` — **2,499 passing, none skipped**, including 386 across ten new suites and
+`tests/unit/rls/phase27.test.ts` (23 cases, every role including OWNER refused a write to either
+table). `npm run check` — all **33** gates green, with the isolation guard now naming five
+assertions. A production build against the seeded database renders the completed run detail route.
+
 ### Phase 26 — Comparator Source Management
 
 Adding a competitor becomes a Studio task rather than an engineering one. All twenty-three FEAT §26

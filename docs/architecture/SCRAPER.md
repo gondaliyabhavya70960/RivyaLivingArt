@@ -33,16 +33,19 @@ owner_verification: OWNER_VERIFICATION_REQUIRED
 with disposition as a separate column; the whole of §8's politeness posture; §9.2's snapshot store;
 the drain loop and the five-minute cron; six Studio surfaces; and the isolation guard.
 
-**Not yet**: adapters and structured extraction (§5, Phase 27), normalisation and validation (§10,
-Phase 28), change detection (§11, Phase 29), and the review workflow (§12, Phase 29–30).
-`research_raw_items.raw` accepts **only** `{ title, canonicalUrl, links }` under a `.strict()` Zod
-schema, so a "temporary" parser fails at the write rather than at review — which is how §5's adapter
-architecture is protected from being pre-empted by a shortcut.
+**Not yet**: normalisation and validation (§10, Phase 28), change detection (§11, Phase 29), and the
+review workflow (§12, Phase 29–30). `research_raw_items.raw` still accepts **only**
+`{ title, canonicalUrl, links }` under a `.strict()` Zod schema, and Phase 27 did not widen it — a
+draft is an observation of a product and lives in `research_product_versions.raw` instead (§18), so
+the rule that kept a "temporary" parser out of that column still holds and still fails at the write
+rather than at review.
 
 **Since shipped**: the remaining FEAT §26 source fields, which §6 designs and **§17 records as
 built** — three child tables, four enums, the derived health view and the policy-review workflow,
-in migrations `0240`–`0241` (Phase 26). Where §6 and §17 disagree about a fact, §17 is the built
-system.
+in migrations `0240`–`0241` (Phase 26); and the adapter architecture, which §5 designs and **§18
+records as built** — the contract, the `generic` adapter's six strategies, the four isolation layers,
+the draft content hash and the two extraction tables, in migrations `0250`–`0251` (Phase 27). Where
+§6 and §17, or §5 and §18, disagree about a fact, the as-built chapter is the built system.
 
 ### 0.1 Four notes where the code and this document meet
 
@@ -259,6 +262,13 @@ Consequences that make this shape worth its complexity:
 
 ## 5. The adapter contract
 
+> **Built in Phase 27. §18 is the as-built account** — what `AdapterContext` grants and what each of
+> its six absences prevents, the fifteen draft fields as they shipped, the `generic` adapter's six
+> strategies with the eight readings inside them, what each isolation layer writes down, why the
+> content hash excludes `confidence` and `provenance`, and the procedure for writing an adapter.
+> This section is the design it was built from and is kept at this number because §6–§17 are cited
+> by number from four other documents.
+
 ### 5.1 Why adapters rather than one parser
 
 FEAT §26 requires that a new source be addable without rewriting the engine, and FEAT §27 requires
@@ -384,7 +394,10 @@ script (§14) — **never automatic** — so a version change cannot silently re
    actually found; record the strategy in `provenance`.
 4. Add at least three golden fixtures under `tests/fixtures/scraper/<key>/`, one of which is a
    malformed page. `extract()` must not throw on it — it returns a low-confidence draft.
-5. Register the adapter in `lib/scraper/adapters/registry.ts`.
+5. Register the adapter **twice, in two files**: the descriptor in `lib/scraper/adapters/registry.ts`
+   and the implementation in `lib/scraper/adapters/execution.ts`. This step read "register the
+   adapter in `registry.ts`" before the descriptor split of amendment **A26**, and that is now half
+   of it — §18.8 step 7 is the current procedure and says why the two registers exist.
 6. Run `npm run test:unit -- adapter-contract` and
    `node scripts/research/reextract.ts --source=<slug> --dry-run` to validate against stored
    snapshots with zero network traffic.
@@ -563,7 +576,7 @@ Every table carries the `research_` prefix. Every table has RLS with `select` re
 | `research_fetches` | One row per fetch attempt: robots decision, status, hash, bytes, duration, `storage_key` | 25 |
 | `research_robots_cache` | Per-host robots.txt with a 24-hour TTL and the parsed `crawl_delay_s` | 25 |
 | `research_raw_items` | Exactly what came back, uninterpreted, plus `adapter_key` / `adapter_version` | 25 · 27 |
-| `research_products` | One row per discovered product per source; `unique (source_id, source_url)`; carries stage, disposition, normalised values and classification | 25 · 28 · 30 |
+| `research_products` | One row per discovered product per source; `unique (source_id, source_url)`; carries stage, disposition, normalised values and classification | 25 · 27 · 28 · 30 |
 | `research_product_versions` | Append-only content-hashed versions; `raw` + `normalized` payloads; the substrate change detection diffs | 27 · 28 |
 | `research_adapter_runs` | One row per (run, source, adapter): items seen/extracted/failed, first errors, status. The unit of blast-radius accounting | 27 |
 | `research_pipeline_events` | Append-only stage transitions with actor, `actor_kind` and reason | 25 |
@@ -609,6 +622,13 @@ An unchanged page produces no new version, only an updated `last_seen_at`.
 
 Diffing a mutable current row against itself is not change detection; this table is what makes §11
 reproducible.
+
+> **As built (Phase 27), one correction and one consequence.** The key is
+> `unique (research_product_id, content_hash)` — per **distinct content hash**, not per (product,
+> run) — and the hash is over the adapter's draft rather than over the page body (§18.7). The
+> consequence is worth knowing before Phase 29 reads this table: uniqueness is over the product's
+> whole history, not against its previous version alone, so a page that reverts to a state it held
+> before writes no new row, because the earlier version already *is* that observation.
 
 ---
 
@@ -1455,3 +1475,558 @@ judgement. Record it here once it has been made; this software cannot make it fo
 a `global_content` row (`studio_help.research_policy_owner_only_body`) rather than a sentence compiled
 into the software, because a rule that lives only in this document is a rule the person doing the
 thing will not have read.
+
+---
+
+## 18. The adapter architecture as built — Phase 27
+
+> §5 is the design, read out of FEAT §27 before an adapter existed. This chapter is what migrations
+> `0250`–`0251` and the modules under `lib/scraper/adapters/**` did with it, and it is a chapter of
+> its own for the reason §17 is: §6–§17 are cited by number from `ARCHITECTURE.md`, `DATA_MODEL.md`,
+> `STUDIO_GUIDE.md` and both phase documents, and renumbering twelve sections to insert one would
+> break every one of those citations to save a reader one page turn. Where this chapter and §5
+> disagree about a fact, this one is the built system.
+
+**Shipped**: migrations `0250`–`0251`; `research_product_versions`, `research_adapter_runs` and the
+`research_products_current_version_fk` that closes the loop `0231` left open;
+`lib/scraper/adapters/{types,draft-schema,execution}.ts`; the six-strategy `generic` adapter in
+`lib/scraper/adapters/generic/{index,jsonld,microdata,rdfa,opengraph,selectors}.ts` at version
+`2.0.0`; the `source-a` and `source-b` placeholder folders and their READMEs; all three registered
+into the execution register by `registerBuiltInAdapterImplementations()`, guarded per key;
+`lib/scraper/core/{run-adapter,content-hash}.ts`; eight golden fixtures under
+`tests/fixtures/scraper/generic/`; and the suites `adapter-contract`, `adapter-isolation`,
+`adapter-registry`, `draft-schema`, `generic-jsonld`, `generic-fallbacks` and `version-hashing`.
+
+**Written against this boundary rather than inside it**, and belonging to the same phase:
+`lib/scraper/workflows/extract.ts` (item → adapter → draft → version → `research_products` at
+`RAW`), `scripts/research/reextract.ts` (§14) and the per-source panels on
+`/studio/research/runs/[runId]`. Those own the accounting — the `research_adapter_runs` row, the
+counters, the first five errors, `current_version_id`; this chapter owns the verdict they record and
+the shapes they store.
+
+**Still zero sources.** §1's *Zero seeded sources* is unchanged by this phase and is not a gap for
+engineering to close. An adapter is a way of reading a site somebody has approved; nobody has
+approved one. `source-a` and `source-b` name nobody, support nothing, and extract nothing.
+
+**The draft did not land in `research_raw_items`.** `core/raw.ts`'s `.strict()` schema still accepts
+only `{ title, canonicalUrl, links }`, exactly as §0 describes it, and `0231`'s comment predicting
+that "Phase 27 fills `raw` properly" is the one sentence this chapter corrects. A raw item is the
+DISCOVERY reading of a page — what it was called and what it linked to — and a draft is an
+observation of a product, which has to be content-hashed, deduplicated and kept for ever. Those are
+two records with two lifetimes, and `research_product_versions.raw` is where the second one goes.
+The raw item keeps `adapter_key` and `adapter_version` for the discovery pass that wrote it.
+
+### 18.1 The contract, quoted, and then as it shipped
+
+FEAT §27 and the phase document write the contract like this, and it is quoted rather than
+paraphrased because the value of the shape is in what it leaves out:
+
+```ts
+export interface SourceAdapter {
+  readonly key: string;                        // 'generic' | vendor key
+  readonly version: string;                    // semver; recorded on every row it produces
+  readonly capabilities: AdapterCapability[];  // 'DISCOVER' | 'EXTRACT' | 'PAGINATE'
+  supports(source: ResearchSource): boolean;
+  discover(ctx: AdapterContext, page: FetchedPage): Promise<DiscoveredUrl[]>;
+  extract(ctx: AdapterContext, page: FetchedPage): Promise<RawProductDraft>;
+}
+```
+
+What shipped is the same contract written across two files, and that split is the only structural
+change to it:
+
+```ts
+// lib/scraper/adapters/registry.ts — the DESCRIPTOR half (Phase 26, A26)
+export type AdapterCapability = 'DISCOVER' | 'EXTRACT' | 'PAGINATE'
+export interface AdapterSourceView { readonly baseUrl: string; readonly adapterKey?: string }
+export interface AdapterDescriptor {
+  readonly key: string
+  readonly version: string
+  readonly capabilities: readonly AdapterCapability[]
+  readonly supports: (source: AdapterSourceView) => boolean
+}
+
+// lib/scraper/adapters/types.ts — the whole adapter
+export interface SourceAdapter {
+  readonly key: string
+  readonly version: string
+  readonly capabilities: readonly AdapterCapability[]
+  supports(source: AdapterSourceView): boolean
+  discover(ctx: AdapterContext, page: FetchedPage): Promise<readonly DiscoveredUrl[]>
+  extract(ctx: AdapterContext, page: FetchedPage): Promise<RawProductDraft>
+}
+
+export interface AdapterContext {
+  readonly source: AdapterSourceConfig                                  // narrowed; see §18.2
+  readonly matchUrl: (url: string) => { kind: string | null; reason: string }
+  readonly logger: AdapterLogger                                        // debug and warn, scalars only
+  readonly budgetSpent: () => boolean                                   // the cooperative half of §18.9
+}
+
+export interface FetchedPage {
+  readonly url: string                 // the FINAL url, after redirects
+  readonly body: string                // bytes already read and capped by core/fetch.ts
+  readonly contentHash: string | null  // of the RESPONSE body — not the hash §18.7 deduplicates on
+  readonly storageKey: string | null
+  readonly httpStatus: number | null
+}
+
+export interface DiscoveredUrl {
+  readonly url: string
+  readonly kind: string | null         // the MATCHER's answer, never the adapter's opinion
+}
+```
+
+**Two registers, and the direction of the import is the whole reason.** `registry.ts` is read by
+`components/studio/research/SourceForm.tsx`, a Client Component: importing an implementation from
+there would drag `node-html-parser` and every strategy in `generic/` into the Studio bundle in order
+to render four strings. So the descriptor lives in `registry.ts` (Phase 26, one phase early, per
+A26), the implementation registers into `execution.ts` through
+`registerBuiltInAdapterImplementations()`, and each register guards per key before registering —
+`registerAdapter` throws on a duplicate, and a module that cannot know whether it was already
+evaluated would otherwise be punished for the one thing an exported registration exists to allow.
+The version literal therefore exists twice; `tests/unit/adapter-contract.test.ts` walks both
+registers and fails when they disagree, which is a test that costs nothing against a build-time
+coupling that would cost a bundle.
+
+Five differences from the quoted shape, each of them a reading the repository forced:
+
+| # | Quoted | As shipped | Why |
+|---|---|---|---|
+| 1 | `supports(source: ResearchSource)` | `supports(source: AdapterSourceView)` | The create drawer asks the question about a source that **does not exist yet**. A predicate demanding the full row could only be called after the save it is meant to warn before |
+| 2 | `AdapterCapability[]`, `DiscoveredUrl[]` | `readonly` on both | House style, and here it is load-bearing: a capability list a caller could push onto is a capability an adapter never declared |
+| 3 | `FetchedPage` with `finalUrl`, `status`, `contentType`, `fetchedAt` | `url` (already the final one), `body`, and a nullable `contentHash` / `storageKey` / `httpStatus` | **A replay has no response.** `scripts/research/reextract.ts` hands over a stored snapshot: bytes and no status, and after the 180-day prune neither key nor hash. Inventing values would put a plausible lie in a column somebody later reasons from. `fetchedAt` is absent because a clock is (§18.2) |
+| 4 | `DiscoveredUrl.depth` | No `depth`; `kind: string \| null` | Depth is the crawl's bookkeeping and belongs to `research_work_items`, not to an adapter's reading of one page. `kind` is `string` rather than the matcher's enum so a vendor adapter need not import `core/url-patterns.ts` to name a value it only passes through |
+| 5 | `AdapterContext` with three members | Four: the fourth is `budgetSpent()` | §18.9. The budget FEAT §27 asks for cannot be a pre-emptive timeout in this runtime, so the honest form of it is a predicate the adapter checks |
+
+`supports()` is pure and must stay pure: `adapter-contract.test.ts` calls it twice and asserts the
+same answer, because it is called from a Server Action on every keystroke in a form and its answer is
+a warning a person acts on. A predicate that consulted anything could disagree with itself between
+the drawer and the run.
+
+### 18.2 What `AdapterContext` grants — and, at greater length, what it does not
+
+FEAT §27 writes the context as "the source configuration, the URL-pattern matcher and a logger — and
+**nothing else**", and the whole value of that sentence is in its second half. An adapter is a pure
+function from bytes to a draft. Every side effect in this subsystem belongs to the core, which is
+what makes a vendor adapter reviewable in ten minutes, safe to accept from somebody who is not on
+this project, and impossible to misuse by accident.
+
+**What it grants**, and no more:
+
+| Member | What it is | Narrowed how |
+|---|---|---|
+| `source` | `AdapterSourceConfig`: `slug`, `baseUrl`, `currency`, `imageExtractionMode`, and the three extraction blobs | Not the row. `research_sources` also carries a policy decision, a reviewer, a circuit state, an enablement flag and an editor's identity — none of it an input to reading a page, and all of it something an adapter could be tempted to branch on |
+| `matchUrl` | `(url) => { kind, reason }` | A FUNCTION rather than the pattern list, so an adapter cannot re-implement matching. Two answers to "does this URL count" is the drift FEAT §26 exists to prevent, and the second one would be written by whoever was closest to a deadline |
+| `logger` | `debug` and `warn`, message plus scalar context | No `error` level: an adapter does not get to decide something is a failure, and one that logged an error every time it could not find a lead time would cry wolf about the most ordinary outcome there is. No page body, no markup fragment and no extracted value may reach a log line |
+| `budgetSpent` | `() => boolean`, true once the CPU budget is spent | §18.9 |
+
+The three extraction blobs are typed `unknown` deliberately. They are jsonb columns, so what comes
+back is whatever was stored — possibly by an earlier version of `core/source-schema.ts` than the one
+running. Typing them here would hand an adapter a promise the database does not make, and would put
+a Zod-carrying validation module into the import graph of every adapter for three fields most of
+them never read. A blob read back out of a row is a trust boundary (D1): the strategy that uses
+`priceExtraction` parses it with `priceExtractionSchema` at the point of use.
+
+**What it does not grant.** Absences are hard to review, so each is written down in `types.ts` beside
+what it prevents, and repeated here because this is the document a person reads before writing an
+adapter:
+
+| Absent | What its presence would mean |
+|---|---|
+| `fetch`, and any HTTP client | A request that skipped every gate the core applies before one is allowed: the `research_enabled` kill switch, the source's policy review, `core/robots.ts`, the crawl delay, the rate limit, the redirect and 2 MB body caps, and the `research_fetches` row that makes the request auditable afterwards. It would also be a request nobody could find later, because nothing recorded it. There is no polite way to do this from an adapter, so an adapter is given nothing to do it with |
+| Any database handle, repository or Supabase client | The shortest path in the system from a third party's markup to a write, since the markup is already in scope on the line above. Every research write goes through the service role in `lib/scraper/workflows/**` after the drain loop's checks, and `0251` grants **no session role a write** on either Phase 27 table for the matching reason: a record its author can edit is not a record |
+| The file system | Snapshots are written and read by the core, which is what lets `reextract.ts` promise zero network traffic. And `node:fs` inside a module that runs a vendor's rules over a vendor's page is read access to the deployment — `.env` is a file, and so is every key beside it |
+| Any Cloudinary client, and anything that turns a reference into bytes | §13.3 and §18.10. `imageUrls` are strings; nothing in this context could make one an image, so the rule is enforced by there being no instrument rather than by an adapter's restraint |
+| A clock | An adapter that reached for `Date.now()` would eventually put the reading into a draft — at which point two extractions of an untouched page hash differently, `research_product_versions_unique_content` stops deduplicating, and a nightly run writes a version a night for every unchanged product. `observed_at` is the core's to stamp. The house rule is injected clocks; the honest injection here is none |
+| Environment access | A vendor adapter is the code most likely to be written by somebody outside this repository's review, and `process.env` is where every secret in the deployment is. Nothing an adapter does needs one |
+
+`tests/unit/adapter-contract.test.ts` enforces the first three of those as an import scan over every
+registered adapter's module graph — `lib/supabase/**` and `@supabase/*`, `node:fs`, `undici`,
+`axios`, `node-fetch` and every browser-automation, proxy-rotation and CAPTCHA package — and
+`scripts/research/check-research-isolation.mjs` makes the same scan a build gate (§0.2).
+
+### 18.3 `RawProductDraft` — fifteen fields, every one of them the source's own string
+
+```ts
+// lib/scraper/adapters/draft-schema.ts — Zod, .strict(), every value a string or a list of them
+export const rawProductDraftSchema = z
+  .object({
+    title: cappedText(MAX_TITLE_LENGTH).nullable(),          // 500
+    priceText: cappedText(MAX_TEXT_LENGTH).nullable(),       // 2,000 — a number here FAILS
+    // … the other thirteen fields, in the order FEAT §27 names them …
+    confidence: z.record(z.enum(DRAFT_FIELDS), z.literal([0, 1])),          // exhaustive
+    provenance: z.partialRecord(z.enum(DRAFT_FIELDS), z.enum(PROVENANCE_STRATEGIES)), // partial
+  })
+  .strict()
+```
+
+| # | Field | Type | Cap | Note |
+|---|---|---|---|---|
+| 1 | `title` | `string \| null` | 500 | `core/raw.ts`'s number for the same field |
+| 2 | `priceText` | `string \| null` | 2,000 | The page's own price text. `1299` fails validation — see below |
+| 3 | `currencyText` | `string \| null` | 2,000 | What the page printed, never what the source declared: `priceExtraction.currencyOverride` is the operator's assertion and is deliberately not read into this field |
+| 4 | `skuText` | `string \| null` | 2,000 | |
+| 5 | `availabilityText` | `string \| null` | 2,000 | |
+| 6 | `leadTimeText` | `string \| null` | 2,000 | |
+| 7 | `descriptionHtml` | `string \| null` | 200,000 | Generous, because a description is where a dimension or a lead time usually hides and Phase 28 reads the original. **Stored markup, never rendered as markup** |
+| 8 | `dimensionTexts` | `readonly string[]` | 60 entries | Page order preserved — a dimension block means what its order says |
+| 9 | `materialTexts` | `readonly string[]` | 60 | |
+| 10 | `variantTexts` | `readonly string[]` | 60 | |
+| 11 | `customizationTexts` | `readonly string[]` | 60 | |
+| 12 | `imageUrls` | `readonly string[]` | **40** | http(s) references only, and strings for ever (§18.10). The tighter cap is deliberate: a page offering four hundred images is a listing page, a sprite sheet or a pixel farm |
+| 13 | `categoryLabels` | `readonly string[]` | 60 | The source's own labels. Mapping them to a Rivya category is Phase 28's, through the Phase 26 map |
+| 14 | `externalId` | `string \| null` | 2,000 | The source's identifier as printed — not a slug, not derived |
+| 15 | `canonicalUrl` | `string \| null` | 2,000 | The canonical URL **the page claims, unresolved**. `FetchedPage.url` is where the bytes came from; reconciling the two is an identity decision and belongs to Phase 28's deduplication, not to whichever adapter read the tag |
+| — | `confidence` | `Record<field, 0 \| 1>` | exhaustive | Was this found, or is the null a default? |
+| — | `provenance` | `Partial<Record<field, strategy>>` | partial | Which rule produced the value |
+
+**Why a parsed number fails validation, and where it is caught.** Every field above is
+`z.string()`-shaped, so a draft carrying `1299` is refused outright. The failure the shape exists to
+prevent is the ordinary one: the price is right there in the markup, converting it is two lines, and
+the moment those two lines ship there are two parsers in the system. The second is always the one
+nobody re-runs when a rule is corrected — a decimal-separator fix lands in
+`lib/scraper/normalization/**`, is re-run over every stored version, and silently misses every value
+an adapter had already turned into a number years earlier. Keeping the draft raw is what makes
+`research_product_versions.raw` re-normalisable for as long as it is kept, and it is why an adapter
+never parses a number, converts a unit, resolves a currency or maps a category. The refusal is
+enforced twice: once by the adapter parsing its own assembled draft on the way out, and once by
+`core/run-adapter.ts`, which parses what came back and reports a failure as `INVALID` — one item
+`FAILED` with a message naming the field, rather than a `research_product_versions` insert dying on
+a jsonb column with nothing to say about which of fifteen fields was wrong.
+
+**`confidence` is exhaustive and `provenance` is not, and that is not an inconsistency.** Confidence
+has to answer for every field, because a missing key there would be ambiguous between "not found"
+and "the adapter forgot to say" and the run detail drawer would have no way to tell a merchandiser
+which. Provenance answers "which rule produced this value", and for a field never found there is no
+rule — inventing a `'none'` strategy would put a value in the closed list that names no strategy at
+all. So a provenance key exists exactly when the field was found: **`confidence[f] === 1` if and only
+if `provenance[f]` is set.** `withField` maintains it and the unit suites assert it. The schema
+deliberately does not refine that invariant, because the same schema is what `reextract.ts` and Phase
+29 read stored rows back through, and a boundary that refused to parse its own history would lose
+the evidence rather than repair it.
+
+**Both maps are keyed to the field list**, so a page cannot contribute a key of its own to either;
+without that they would be the one unbounded corner of an otherwise bounded object, and a
+`Record<string, …>` filled from markup is a jsonb column somebody else is writing. The strategy
+vocabulary is closed for the same reason — `jsonld · microdata · rdfa · opengraph · selector · title
+· h1` — because a typo (`'og'`, `'jsonId'`) would be recorded as happily as the truth and would send
+whoever traced a wrong value looking for a rule that does not exist.
+
+**`descriptionHtml` is never rendered as markup.** Nothing in Studio may put it through
+`dangerouslySetInnerHTML`: that would be a competitor's page executing in a staff session holding
+`research.write`, which is a stored cross-site-scripting hole with an unusually motivated author.
+
+### 18.4 The `generic` adapter — six strategies, first hit wins per field
+
+Version `2.0.0`, capabilities `DISCOVER` and `EXTRACT`. The strategy order is FEAT §27's and is an
+argument rather than a preference: each step down it is a step further from something the publisher
+wrote for a machine towards something somebody typed while looking at one page on one day.
+
+| Order | Strategy | What it reads | `provenance` |
+|---|---|---|---|
+| 1 | JSON-LD | `<script type="application/ld+json">`, including `@graph` and arrays; `Product` and its four schema.org subtypes | `jsonld` |
+| 2 | Microdata | `itemscope` / `itemtype` / `itemprop`, matched on the type's local name | `microdata` |
+| 3 | RDFa | `typeof` / `property`, converted into the same item model | `rdfa` |
+| 4 | OpenGraph | A closed, short key list: `og:title`, `og:description`, `og:url`, the three spellings of `og:image`, and `product:price:amount` / `:currency` / `:availability`. No `product:retailer_item_id` read as a SKU and no `og:type` read as a category — each of those is a guess about somebody else's tagging | `opengraph` |
+| 5 | Configured selectors | The source's `price_extraction`, `sku_extraction`, `attribute_extraction` (§17.3), each parsed with its own schema at the point of use | `selector` |
+| 6 | `<title>`, then `<h1>` | The title alone, and nothing else | `title` · `h1` |
+
+**Three spellings, one vocabulary.** JSON-LD, microdata and RDFa are the same schema.org vocabulary
+written three ways, so the field map exists once: `microdata.ts` owns the item model and the mapping,
+and `jsonld.ts` and `rdfa.ts` convert into it. `isProductType` is a **closed list** — `Product` plus
+its four subtypes, matched by local name so that a full IRI, a `schema:` prefix and a bare name all
+resolve — rather than "anything ending in Product", because a bespoke `RelatedProduct` read as a
+product is a wrong value carrying confidence 1, which provenance can trace but cannot rescue.
+
+Eight readings inside those six strategies are decisions rather than implementation details:
+
+1. **First hit wins is held by `withField`, not remembered at each call site.** A field already at
+   confidence 1 is left exactly as it was, so an adapter written as a sequence of calls in strategy
+   order is correct by construction and one that reordered them would be visibly reordering them.
+   The alternative — every strategy checking whether the field is already set — is the same rule
+   written six times, and the sixth copy is where a fallback quietly overwrites structured data.
+2. **An empty value is not a hit.** `null`, whitespace, an empty list and an `imageUrls` array whose
+   every entry was a `data:` placeholder all leave the draft untouched, with no provenance recorded
+   and the next strategy still to come. Recording a strategy that produced nothing would attribute
+   an absent value to a rule that "found" it.
+3. **Offers: the first offer carrying a price wins, and currency and availability come from that
+   same offer.** Only when no offer has a price does the first offer answer for the other two —
+   otherwise two true statements get assembled into a false one. `AggregateOffer.lowPrice` counts,
+   and a `price` published directly on the product is read when there is no offers child.
+4. **A JSON number becomes its own text and is never parsed, rounded or reformatted.** `890` stays
+   `890` because that is what the document said; a non-finite value is refused outright, so `"NaN"`
+   can never reach a price column.
+5. **A nested `QuantitativeValue` is not composed.** `{ value: 1200, unitCode: 'MMT' }` does not
+   become `1200 mm`: only a string the page actually printed is recorded, and assembling one here
+   would be normalisation arriving early under an adapter's name.
+6. **Nothing is split off a `<title>`.** It usually reads "Product name — Site name", and trimming
+   the site off means guessing which separator the template used and which side the product is on.
+   Guess wrong and the draft carries a company as a product name with confidence 1 behind it.
+7. **`image_extraction_mode = 'NONE'` is honoured in exactly one place**, at the boundary in
+   `index.ts`, and it repairs both maps together so a stripped draft is indistinguishable from one
+   that never found an image — which is what the setting means. Five strategies each remembering to
+   ask would be five chances to forget, and the one that forgot would be the one nobody wrote a
+   fixture for. `URL_ONLY` and `URL_AND_DIMENSIONS` behave identically, because `RawProductDraft` has
+   nowhere to put an image's dimensions and no mode fetches anything in any case.
+8. **A configured JSON-LD path records `provenance: 'selector'`.** Provenance names the RULE that
+   produced the value, and a path an operator typed into `price_extraction` is the source's
+   configuration whichever document it reads — not the publisher's structured data.
+
+Image references **are** resolved against the page's final URL, because the schema will not store a
+relative one at all, so the choice there is between an absolute reference and no gallery; the
+canonical URL is stored unresolved, for the reason §18.3 gives. `<link rel="canonical">` is not read
+at all: it is not one of the six strategies and the closed vocabulary has no name for it, and
+`og:url` covers the common case honestly.
+
+**Every strategy is wrapped individually**, so a bug in the RDFa reader cannot throw away what
+JSON-LD already found, and `extract()` parses the assembled draft once on the way out (D1). A page it
+cannot read — an empty body, binary, unclosed tags, an uncompilable selector, a jsonb blob that
+fails its own schema — produces a draft with every confidence at 0 and a `warn`, never a throw. That
+distinction is not politeness towards the isolation boundary: an item marked `FAILED` says *this
+adapter is broken*, and a low-confidence draft says *this adapter's rules did not fit this page*.
+A merchandiser acts on those differently, and collapsing them would make a redesigned catalogue
+indistinguishable from a bug in a fortnight of run history.
+
+Parsing is `node-html-parser`, the only HTML parser this repository has, and never a regular
+expression over markup — a regex over somebody else's document produces silent nonsense rather than
+a visible failure. The eight fixtures under `tests/fixtures/scraper/generic/` cover each strategy,
+the bare-title fallback and a malformed page; they use `example.`-reserved hosts and invented product
+names, because a fixture is as public as a predicate (D10).
+
+### 18.5 The four isolation layers, and what each one writes down
+
+FEAT §27's defining constraint — **a broken source adapter must not break other sources** — is a
+claim about what happens when something throws, and a claim about failure needs a record or it
+cannot be checked. So each layer bounds a blast radius *and* leaves a row saying that it did.
+
+| Layer | What it bounds | Where it is decided | What it writes |
+|---|---|---|---|
+| **Per item** | One work item. A throw, a budget overrun or a draft that fails its schema | `runAdapterExtract` / `runAdapterDiscover` in `core/run-adapter.ts` — one try/catch, one measurement, one Zod parse | `research_work_items.state = 'FAILED'` with `last_error`; the error joins the first five on the source's adapter-run row; the drain loop continues to the next item |
+| **Per source, per run** | That source's remaining items in that run. Ten consecutive item failures | `SourceFailureTracker` and `CONSECUTIVE_FAILURE_ABORT = 10`; the caller stops leasing | `research_adapter_runs.status = 'ABORTED'`, one row per (run, source, adapter), with `items_seen`, `items_extracted`, `items_failed`, `first_errors` and `duration_ms` |
+| **Per source, across runs** | That source's scheduled work. Three consecutive `ABORTED` adapter runs | `CONSECUTIVE_ABORTED_RUNS_TO_OPEN_CIRCUIT = 3`, compared against the three most recent rows via `research_adapter_runs_by_source_idx` | `research_sources.circuit_open_until`, and a `WARNING` in `system_logs` on channel `SCRAPER` naming the adapter and its version |
+| **Cross-source** | Nothing else. Every other source is untouched | `workflows/drain.ts` leases and drains each source independently; `core/run-adapter.ts` contributes only that no adapter can throw its way out of that loop | The run reaches `PARTIAL`, not `FAILED`; `tests/unit/adapter-isolation.test.ts` runs two sources with adapter A throwing on every item and asserts source B completes with its full count |
+
+**Ten rather than one, because a single bad page is normal.** Catalogues carry a discontinued item
+served as a stub, a redirect to a category, a page half-rendered by somebody's deployment. One
+failure means nothing; ten in a row means the adapter and the site no longer agree about what a
+product page looks like, and every further request is politeness spent on a result that will not
+arrive. Consecutive, not cumulative — and `SourceFailureTracker.aborted` **latches while the count
+resets**: the count is the caller's rule and consecutive means consecutive, but reaching ten has
+already written `status = 'ABORTED'` on a row, and a later success cannot make that row untrue.
+
+**One call, three kinds of failure, because they ask three different people for three different
+things.** `THREW` is a bug in the adapter, and whoever owns the adapter fixes it. `TIMED_OUT` is a
+page, or a rule, whose cost has grown — often no bug at all. `INVALID` is the adapter having
+produced something this subsystem will not store, which in practice means it parsed a number or
+invented a field: a review question about the contract rather than about correctness. Two ordering
+rules inside that verdict are decisions:
+
+- **`INVALID` is decided before `TIMED_OUT`.** The only call that can reach both is an adapter
+  already producing something unstorable, and reporting the overrun there would split one shape bug
+  into `INVALID` on small pages and `TIMED_OUT` on large ones.
+- **The overrun test is the same comparison `budgetSpent()` makes**, against a clock read exactly
+  twice per call rather than re-read for the verdict. What an adapter is told about its budget and
+  what the core records therefore cannot disagree by a millisecond, and no row says 4,900 ms while
+  marking the item `TIMED_OUT`.
+
+**`core/run-adapter.ts` holds no database handle, and the absence is the design.** A boundary that
+also wrote the `research_adapter_runs` row would be a boundary whose own failure mode is a write: a
+stale lease or a constraint violation *while recording that an adapter failed* would take down the
+mechanism that exists to contain a failure, at the one moment it is needed. The accounting is
+`workflows/extract.ts`'s; the verdict is this module's. That is also what keeps the module usable
+from `reextract.ts`, which has no run to account against at all.
+
+**Discovered URLs are validated too, and the boundary refuses rather than repairs.** They are about
+to become work — a row in the queue and eventually a request to somebody's server — so a `mailto:`
+href, a `javascript:` handler or a two-kilobyte tracking URL is refused at the boundary rather than
+cleaned up inside it. The asymmetry with `withField`, which trims and truncates, is deliberate and
+worth stating: **cleaning belongs to the adapter, which understands its own noise; a boundary that
+silently fixed its input is one nobody can reason about.**
+
+A thrown value is described as `name: message`, never the stack, whitespace-collapsed and truncated
+at 300 characters, with the description itself wrapped in a try/catch. `first_errors` is jsonb
+rendered in Studio, and the shortest path from a competitor's page into that column is an adapter
+that interpolates the markup it could not read into the error it throws about it.
+
+### 18.6 Versioning and provenance
+
+`adapter_key` and `adapter_version` are written on **every** row an adapter produces:
+`research_raw_items` (where `adapter_version` is nullable, because Phase 25's discovery pass wrote
+none) and `research_product_versions`, where both are `not null`. The reason is one sentence long: an
+adapter fix must be traceable to the rows it produced, and a value that later looks wrong has to be
+attributable to the rules that read it rather than guessed at.
+
+- **A change to an adapter's output shape is a version bump.** The `generic` adapter is `2.0.0` and
+  the major is the honest digit: Phase 25's `generic` produced a raw item — a title, a canonical URL
+  and links — and this one produces a fifteen-field draft with two bookkeeping maps. A reader of a
+  `1.x` row and a reader of a `2.x` row are not reading the same shape, and a minor bump would say
+  they were.
+- **Re-extraction writes NEW versions and never rewrites old ones.** Running an adapter again over
+  stored snapshots is an explicit `REFRESH` job or `scripts/research/reextract.ts` (§14) — never
+  automatic — and both go through the same append-only table, so a version change cannot silently
+  rewrite history. `research_product_versions` has no session write policy at all — `0251` grants
+  `select` to `research.read` and nothing else to anybody (`DATA_MODEL.md` §11) — which makes that a
+  property of the database rather than a discipline of the caller.
+- **A version produced offline belongs to no run**, and `run_id` is nullable for exactly that:
+  inventing a run id for a replay would put a row in the run detail screen for work that never
+  fetched anything.
+- **Provenance is stored on the version and is not part of its identity** — see §18.7, which is
+  where that distinction earns its keep.
+
+### 18.7 The content hash is over the draft, not over the page body
+
+`research_product_versions_unique_content` is `unique (research_product_id, content_hash)`, and
+`draftContentHash` in `lib/scraper/core/content-hash.ts` is what fills it: SHA-256 over the fifteen
+`DRAFT_FIELDS`, serialised with every object's keys in a fixed order at every depth.
+
+**Not the body hash, and the difference is the whole decision.** Two fetches of one product page a
+fortnight apart differ in a session id, a CSRF token, a rotating banner, a "17 people are viewing
+this" counter and a build fingerprint in an asset URL — and in nothing a merchandiser would call a
+change. `core/fetch.ts` hashes the body, which is the right hash for its job (a snapshot key: two
+identical responses should cost one stored object) and exactly the wrong one for this one. Keyed on
+the body, a nightly pass over four hundred unchanged pages would write four hundred versions and
+make Phase 29's "what changed" a question about noise. Keyed on the draft, an unchanged product
+produces no row at all — and the constraint enforces that at the row, so the rule holds against a
+bug in the caller as well as against the caller doing it right.
+
+**`confidence` and `provenance` are excluded, and this is the subtle one.** They describe how a value
+was found, not what the source published. An adapter fix that starts reading a price from JSON-LD
+where it used to fall back to a configured selector changes `provenance.priceText` from `'selector'`
+to `'jsonld'` for every product on that source — while every price stays exactly what it was. Were
+the bookkeeping hashed, the first run after that fix would write a new version for every product in
+the source, and Phase 29 would report an entire catalogue as having changed on the day nothing did.
+That is a false alarm of the worst kind: large, simultaneous, and enough like a real repricing to be
+believed. The provenance is still **stored** on the version, inside `raw`; it simply is not part of
+the identity of an observation.
+
+Which is why the hash is defined as "over `DRAFT_FIELDS`" rather than "over the draft minus two
+keys". `draftContentHash` builds the hashed object by picking the field list, so a third bookkeeping
+map added later is excluded by construction rather than by whoever adds it remembering to extend a
+list of exclusions in another file.
+
+Three further properties are decisions:
+
+- **Arrays are not sorted.** Image order is information — the first image is the one a listing shows
+  — and a gallery that has been re-ordered *is* a change worth a version; so is a specification list
+  whose lines have moved, because line order is how a dimension is read back.
+- **Object keys sort by code unit, not `localeCompare`.** This value is stored and compared against
+  for years, and `localeCompare` depends on the runtime's ICU data: a Node upgrade shipping a new
+  collation table would change the key order, change every hash, and make every product in the system
+  look like it had changed at once. `listAdapterDescriptors` *does* use `localeCompare`, because it
+  builds a list for a person to read, and the comment in each file points at the other so the
+  difference reads as deliberate.
+- **The module lives in `core/`, not in `adapters/`.** Hashing is the core's judgement about when two
+  readings are one observation. An adapter that computed its own could decide two different pages
+  were one product — or one page two — and the deduplication constraint would then be faithfully
+  enforcing an adapter's opinion about identity. `AdapterContext` offers no way to do it.
+
+### 18.8 How to write an adapter
+
+A numbered procedure, and the first step is not code. `lib/scraper/adapters/source-a/README.md`
+points here rather than repeating it, because a second copy of a checklist is a checklist that goes
+stale.
+
+1. **Get the source through policy review first.** An adapter for a site nobody has approved is an
+   adapter that must not run, and writing one presumes an answer that is the owner's to give — a
+   presumption the git history records whichever way the review later goes. The Phase 26 workflow
+   (§17.7): a researcher marks the source `READY_FOR_REVIEW`; an owner or admin, holding
+   `research.write` **and** `system.settings.write`, records `APPROVED`, `RESTRICTED` or `BLOCKED`
+   with a mandatory note. Only `APPROVED` satisfies the enable gate.
+2. **Ask whether an adapter is needed at all.** Most differences between two sources are
+   configuration: a crawl delay, a currency, a URL pattern, a category mapping, a price selector.
+   All of those are Phase 26 fields that somebody who does not deploy can edit, and a source needing
+   only those needs no adapter — `generic` reads it. An adapter earns its place when a source
+   publishes product data in a shape no configuration can describe. **If reading a source appears to
+   require editing `lib/scraper/core/**`, the requirement belongs in a column, not in a branch.**
+3. **Copy `lib/scraper/adapters/source-a/`.** It is the FEAT §27 folder shape, kept deliberately
+   empty: `supports()` returns `false`, `capabilities` is `[]`, `extract()` returns `emptyDraft()`.
+   Give the folder and the `key` a name that is Rivya's own word for the source — never a brand, a
+   domain or anything that identifies whose site it reads (D10). The host lives in
+   `research_sources.base_url`, a row somebody approved and can edit, restrict or delete; it must
+   never live in a build artefact, where it is a permanent public claim about who Rivya reads.
+4. **Write `supports()` as a pure predicate over `AdapterSourceView`** — usually a host check
+   against `baseUrl`, wrapped so that a URL somebody is halfway through typing is `false` rather
+   than a throw. It is called on every keystroke in the create drawer, and it must give the same
+   answer twice.
+5. **Write `extract()` as a sequence of `withField` calls in your strategy order.** Strings only.
+   Set `confidence[field] = 1` only for a field genuinely found and name the strategy from the closed
+   provenance list; `withField` does both and enforces first-hit-wins, so the order you write is the
+   order that runs. Parse markup with `node-html-parser`, never with a regular expression. Never
+   throw for a page you cannot read — return the low-confidence draft, which is a finding.
+6. **Add at least three golden fixtures under `tests/fixtures/scraper/<key>/`, one of them
+   malformed**, each with its expected draft as JSON beside it. `adapter-contract.test.ts` requires
+   them of every adapter declaring `EXTRACT`, and the malformed one is what proves the previous
+   sentence. Fixtures use `example.`-reserved hosts or loopback and invented product names — prose
+   and fixtures are as public as code.
+7. **Register the descriptor and the implementation — two registers, two files.**
+   `registerAdapterDescriptor(...)` inside `registerBuiltInAdapters()` in
+   `lib/scraper/adapters/registry.ts`, so the Studio picker can offer the key and a Server Action can
+   validate it; and `registerAdapter(...)` inside `registerBuiltInAdapterImplementations()` in
+   `lib/scraper/adapters/execution.ts`, so `getAdapter(key)` resolves at run time. Guard each with
+   the register's own per-key check first. The two version literals must match; the contract suite
+   fails when they do not. *(§5.7 step 5 says "register the adapter in `registry.ts`", which was the
+   whole story before the descriptor split of A26 and is now half of it. This step supersedes it.)*
+8. **Run the suites you have earned:** `npx vitest run --project unit adapter-contract` for the
+   shared contract, plus your own strategy suite. The contract suite checks that the two registers
+   agree wherever both know a key, that `supports()` answers the same way twice for every shape a
+   drawer posts, that `extract()` returns a draft that parses on a malformed page as well as an
+   ordinary one, that every adapter declaring `EXTRACT` has its three fixtures, that no forbidden
+   module appears anywhere in the adapter's import graph, and that no external host appears anywhere
+   in the tree — READMEs included, because prose is as public as code.
+9. **Validate against real history before enabling anything:**
+   `node scripts/research/reextract.ts --source=<slug> --since=<date> --dry-run` replays stored
+   snapshots with zero network traffic and reports the versions it would write. An unchanged result
+   writes nothing, which is the point of §18.7.
+10. **Update this document**, per the documentation update contract. A new strategy is also a change
+    to `PROVENANCE_STRATEGIES`, which is a change reviewers see.
+
+No step involves editing `lib/scraper/core/**`.
+
+### 18.9 The CPU budget, described honestly
+
+FEAT §27 asks for a five-second CPU budget per `extract()` call, and `ADAPTER_CPU_BUDGET_MS = 5000`
+is that number. **It is not a timeout, and calling it one would be a lie.** JavaScript cannot
+pre-empt a synchronous function: there is no signal that interrupts a loop over forty thousand
+nodes, and racing a promise against a timer resolves the race while the loop carries on holding the
+only thread there is. By the time anything can compare an elapsed duration against the number, the
+call has already returned.
+
+What the measurement is worth is three real things: a slow adapter is **visible** rather than merely
+making the nightly run late; the overrun counts towards the ten consecutive failures that abort its
+source, so a pathological page cannot be hit four hundred times in a row; and `duration_ms` lands on
+the run detail screen where somebody can see which page it was.
+
+**What actually bounds the work is the input and the adapter's own cooperation.** `core/fetch.ts`
+abandons a response at two megabytes *while streaming*, so no adapter is ever handed a gigabyte; the
+`generic` adapter caps what it parses at the same figure, because a snapshot stored before that cap
+existed is still a file this code will be pointed at one day, and truncating is better than refusing
+— the head of a document carries the `<head>`, where JSON-LD, OpenGraph and the canonical link all
+live. And `AdapterContext.budgetSpent()` is the cooperative half: an adapter that checks it inside
+any loop over page nodes turns a pathological page into a low-confidence draft instead of a wedged
+cron invocation. An adapter that ignores it is not contained by the predicate — it is contained by
+the item failure, then by the ten-failure abort on its own source, then by the circuit that opens
+after three aborted runs. **Three imperfect bounds that exist beat one perfect bound this runtime
+cannot provide**, and the modules say so rather than implying a guarantee they do not have. It is
+the same honesty `MATCH_BUDGET_MS` carries in `core/url-patterns.ts` (§17.2).
+
+### 18.10 The standing statement — no competitor image is fetched, stored, hashed or transformed
+
+**`RawProductDraft.imageUrls` holds strings, and nothing in `lib/scraper/**` turns one into bytes.**
+No image is downloaded, cached, re-hosted, proxied, thumbnailed, transformed, measured or
+perceptually hashed by anything Phase 27 built. `AdapterContext` offers no instrument that could —
+no `fetch`, no file system, no Cloudinary client — so the rule is enforced by the absence of a means
+rather than by an adapter's restraint, which is the only form of it that survives a vendor adapter
+nobody on this project wrote.
+
+The three places the rule is visible in what shipped: `imageUrls` is a `readonly string[]` of http(s)
+references capped at forty, validated as strings; `image_extraction_mode = 'NONE'` strips the field
+and its bookkeeping together at one boundary, and the two permissive modes differ from each other in
+nothing an adapter can express; and `research_product_versions.raw` stores those strings inside a
+jsonb column, which is the only place they go. §13.3 governs how Studio renders one — a plain
+external `<img>` with `referrerpolicy="no-referrer"`, sized in CSS, with no proxy route in front of
+it — and adding an image proxy remains a defect rather than a feature.
+
+An image *change* is a change to the URL **set**, never a comparison of pixels. Perceptual hashing
+is Phase 33's, needs pixels this posture does not supply, and is unresolved as *Open questions* item
+3 — not something an adapter may quietly begin supplying.

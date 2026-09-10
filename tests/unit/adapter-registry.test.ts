@@ -12,6 +12,7 @@ import {
   resetAdapterDescriptors,
   type AdapterDescriptor,
 } from '@/lib/scraper/adapters/registry'
+import { getAdapter, registerBuiltInAdapterImplementations } from '@/lib/scraper/adapters/execution'
 
 /**
  * The adapter descriptor registry, and the three ways a picker built on it could mislead somebody.
@@ -84,14 +85,41 @@ describe('the built-in registration', () => {
     expect(GENERIC_ADAPTER_KEY).toBe('generic')
   })
 
-  it('declares DISCOVER and does not claim EXTRACT before Phase 27 writes the extractor', () => {
-    expect(generic().capabilities).toEqual(['DISCOVER'])
-    expect(generic().capabilities).not.toContain('EXTRACT')
+  it('declares DISCOVER and EXTRACT, and still does not claim PAGINATE', () => {
+    /*
+     * WRITTEN IN PHASE 26 AS "does not claim EXTRACT before Phase 27 writes the extractor", AND
+     * PHASE 27 WROTE IT. The assertion is kept rather than deleted because what it is really for
+     * is that a capability is a CLAIM the picker renders and the engine must honour — so the list
+     * is pinned, and widening it is a line somebody has to change on purpose. PAGINATE is still
+     * absent: no adapter follows a next-page link, and advertising that it did would put a
+     * capability on a Studio form that nothing implements.
+     */
+    expect(generic().capabilities).toEqual(['DISCOVER', 'EXTRACT'])
     expect(generic().capabilities).not.toContain('PAGINATE')
   })
 
   it('carries a version, because the version is written onto every row the adapter produces', () => {
-    expect(generic().version).toBe('1.0.0')
+    // A MAJOR BUMP, NOT A MINOR ONE. Phase 25's raw items held a title, a canonical URL and links;
+    // these hold a `RawProductDraft`. The output shape changed, and `adapter_version` on every row
+    // is what lets a value that later looks wrong be traced to the code that read it.
+    expect(generic().version).toBe('2.0.0')
+  })
+
+  it('agrees with the adapter it describes, which is the point of having both', () => {
+    /*
+     * THE ASSERTION PHASE 27 MADE NECESSARY. There are now two registers — a DESCRIPTOR here,
+     * which a Client Component may read, and an IMPLEMENTATION in `execution.ts`, which only the
+     * drain loop touches — and the split is what keeps adapter parsers out of the Studio bundle.
+     * The cost of the split is that they can disagree, and a disagreement would mean a Studio form
+     * showing one version while `research_product_versions` recorded another. Nothing but this test
+     * holds them together.
+     */
+    registerBuiltInAdapterImplementations()
+    const adapter = getAdapter(GENERIC_ADAPTER_KEY)
+    expect(adapter).not.toBeNull()
+    expect(adapter?.version).toBe(generic().version)
+    expect(adapter?.capabilities).toEqual(generic().capabilities)
+    expect(adapter?.key).toBe(generic().key)
   })
 
   it('can be called again without throwing, which is what makes the export usable', () => {
@@ -146,7 +174,7 @@ describe('registerAdapterDescriptor', () => {
     expect(() =>
       registerAdapterDescriptor(fakeDescriptor(GENERIC_ADAPTER_KEY, { version: '0.0.1' })),
     ).toThrow(/generic/)
-    expect(generic().version).toBe('1.0.0')
+    expect(generic().version).toBe('2.0.0')
   })
 
   it('leaves the register untouched when it refuses', () => {
@@ -320,7 +348,7 @@ describe('resetAdapterDescriptors', () => {
     resetAdapterDescriptors()
     registerBuiltInAdapters()
 
-    expect(generic().capabilities).toEqual(['DISCOVER'])
+    expect(generic().capabilities).toEqual(['DISCOVER', 'EXTRACT'])
     expect(generic().supports({ baseUrl: 'https://example.com' })).toBe(true)
     expect(generic().supports({ baseUrl: 'ftp://example.com' })).toBe(false)
   })

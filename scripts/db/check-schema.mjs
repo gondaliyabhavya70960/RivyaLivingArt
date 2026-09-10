@@ -421,6 +421,40 @@ const EXPECTED = {
     'updated_at',
     'updated_by',
   ],
+  /*
+   * Phase 27 — the two extraction tables, both §1.4 exemptions of the
+   * "record of something that happened" kind.
+   *
+   * `research_product_versions` HAS `observed_at` AND NOTHING ELSE FROM TIER A, and the absence of
+   * `updated_at` is the design rather than an omission: a version is APPEND-ONLY and deduplicated
+   * by content hash, so a row that could be updated would be a row whose content hash no longer
+   * describes it. `updated_by` would name a person for a row no person wrote — the adapter did.
+   * The same reasoning `audit_logs`, `research_fetches` and `research_pipeline_events` already
+   * carry.
+   *
+   * `research_adapter_runs` has `started_at` and `finished_at`, which say more than an `updated_at`
+   * could: the counters move as a run is drained across many cron ticks, and what a reader wants
+   * is when it began and whether it has ended, not when the row was last touched.
+   */
+  research_product_versions: [
+    'research_product_id',
+    'raw',
+    'content_hash',
+    'adapter_key',
+    'adapter_version',
+    'observed_at',
+  ],
+  research_adapter_runs: [
+    'run_id',
+    'source_id',
+    'adapter_key',
+    'adapter_version',
+    'status',
+    'items_seen',
+    'items_extracted',
+    'items_failed',
+    'started_at',
+  ],
   research_source_schedules: [
     'source_id',
     'job_type',

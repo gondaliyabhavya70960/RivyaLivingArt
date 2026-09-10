@@ -166,3 +166,63 @@ export async function listResearchProducts(
   if (error) throw toRepositoryError(ENTITY, 'list', 'recent', error)
   return (data ?? []) as unknown as ResearchProductRow[]
 }
+
+/* --- Phase 27: the version pointer, and the lookup the extraction workflow reads it by ---------- */
+
+/**
+ * Point a product at the version just written for it.
+ *
+ * CALLED ONLY WHEN A VERSION WAS CREATED, and `recordProductVersion` returns the flag that decides
+ * it. An unchanged page produces no new row — that is what
+ * `research_product_versions_unique_content` is for — so re-pointing at the version already stored
+ * would be a write that says something moved on a night when nothing did.
+ *
+ * IT WRITES ONE COLUMN AND DELIBERATELY NOT `updated_at` OR `updated_by`. On this table those two
+ * are the record of a PERSON's edit: `writeProductStage` and `writeProductDisposition` both write
+ * them together with an actor id, and the review screens read them as "who last touched this row".
+ * A cron tick advancing a pointer is not an edit, and writing `updated_by: null` alongside it would
+ * erase the merchandiser who shortlisted the product. `recordProductSighting` above takes the same
+ * line for the same reason, and neither is an oversight — no research table carries a
+ * touch-`updated_at` trigger, so what is written here is exactly what is written.
+ */
+export async function setCurrentVersionId(
+  admin: Client,
+  productId: string,
+  versionId: string,
+): Promise<void> {
+  const { error } = await admin
+    .from('research_products')
+    .update({ current_version_id: versionId })
+    .eq('id', productId)
+  if (error !== null) throw toRepositoryError(ENTITY, 'version', productId, error)
+}
+
+/**
+ * One product by the pair that identifies it within a source.
+ *
+ * `(source_id, source_url)` IS THE IDENTITY THIS PHASE HAS, and it is the same pair
+ * `recordProductSighting` upserts on. It is not the identity the subsystem will end up with —
+ * Phase 28 owns deduplication, and a page reachable at two URLs is one product it will have to
+ * reconcile — but a lookup written against a rule that does not exist yet is a lookup that answers
+ * differently the day it does. What this supports today is a caller that has a URL and wants to
+ * know whether anything has been recorded against it: the re-extraction script, and the run detail
+ * drawer resolving a fetch back to the row it produced.
+ *
+ * `maybeSingle` RATHER THAN `single`, because "nothing has been seen at this URL" is an ordinary
+ * answer here and not a `NotFoundError` — the caller is asking whether a row exists, not asserting
+ * that it does.
+ */
+export async function getResearchProductBySourceUrl(
+  client: Client,
+  sourceId: string,
+  sourceUrl: string,
+): Promise<ResearchProductRow | null> {
+  const { data, error } = await client
+    .from('research_products')
+    .select(PRODUCT_COLUMNS)
+    .eq('source_id', sourceId)
+    .eq('source_url', sourceUrl)
+    .maybeSingle()
+  if (error !== null) throw toRepositoryError(ENTITY, 'get', sourceUrl, error)
+  return (data ?? null) as unknown as ResearchProductRow | null
+}

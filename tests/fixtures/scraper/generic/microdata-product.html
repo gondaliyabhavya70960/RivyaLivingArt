@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Panel Screen, Walnut — Example Catalogue</title>
+  </head>
+  <body>
+    <main itemscope itemtype="https://schema.org/Product">
+      <h1 itemprop="name">Panel Screen, Walnut</h1>
+      <link itemprop="url" href="/products/panel-screen-walnut" />
+      <img itemprop="image" src="/img/panel-screen-1.jpg" alt="" />
+      <img itemprop="image" src="data:image/gif;base64,R0lGODlhAQABAAAAACw=" alt="" />
+      <p itemprop="description">A folding panel screen in walnut.</p>
+      <meta itemprop="sku" content="EF-9012" />
+      <meta itemprop="productID" content="P-0003" />
+      <span itemprop="material">Walnut</span>
+      <span itemprop="category">Screens</span>
+      <span itemprop="width">1800 mm</span>
+      <span itemprop="height">1700 mm</span>
+      <div itemprop="offers" itemscope itemtype="https://schema.org/Offer">
+        <meta itemprop="price" content="2450.00" />
+        <meta itemprop="priceCurrency" content="GBP" />
+        <link itemprop="availability" href="https://schema.org/PreOrder" />
+      </div>
+    </main>
+
+    <!--
+      A second product on the same page. The adapter reads the first item whole and never merges
+      the two, so nothing below may appear in the expected draft.
+    -->
+    <aside itemscope itemtype="https://schema.org/Product">
+      <span itemprop="name">Offcut Stool, Walnut</span>
+      <meta itemprop="sku" content="ZZ-0000" />
+    </aside>
+  </body>
+</html>

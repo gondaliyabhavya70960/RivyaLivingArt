@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Slat Bench, Oak — Example Catalogue</title>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "WebSite",
+            "name": "Example Catalogue",
+            "url": "https://catalogue.example.com/"
+          },
+          {
+            "@type": "BreadcrumbList",
+            "itemListElement": [{ "@type": "ListItem", "position": 1, "name": "Seating" }]
+          },
+          {
+            "@type": ["Product", "IndividualProduct"],
+            "name": "Slat Bench, Oak",
+            "description": "A slatted bench in oak, seating three.",
+            "sku": "CD-5678",
+            "image": {
+              "@type": "ImageObject",
+              "url": "https://images.example.com/slat-bench-1.jpg"
+            },
+            "material": { "@type": "Product", "name": "Oak" },
+            "category": [{ "@type": "Thing", "name": "Seating" }, "Benches"],
+            "offers": [
+              {
+                "@type": "Offer",
+                "priceCurrency": "EUR",
+                "availability": "https://schema.org/PreOrder"
+              },
+              {
+                "@type": "Offer",
+                "price": 890,
+                "priceCurrency": "EUR",
+                "availability": "https://schema.org/InStock"
+              }
+            ]
+          }
+        ]
+      }
+    </script>
+  </head>
+  <body>
+    <h1>Slat Bench, Oak</h1>
+  </body>
+</html>

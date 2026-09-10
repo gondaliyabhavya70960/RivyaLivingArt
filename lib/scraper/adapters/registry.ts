@@ -221,16 +221,31 @@ function hasFetchableScheme(baseUrl: string): boolean {
 }
 
 /**
- * The one adapter this phase registers.
+ * The one adapter this repository ships.
  *
- * `DISCOVER` ONLY, AND THE ABSENT `EXTRACT` IS THE HONEST PART OF THIS OBJECT. What Phase 25's
- * pass actually does with a fetched page is read its title, its canonical URL and its links — which
- * is discovery, and is genuinely all of it. Claiming `EXTRACT` before Phase 27 writes the extractor
- * would put a capability in the picker that the engine cannot honour: a researcher would configure
- * price, SKU and attribute selectors against an adapter advertising that it reads them, enable the
- * source, and get runs that fetch politely and produce no product data, with nothing anywhere
- * saying why. Phase 27 adds `EXTRACT` in the same commit that adds the extractor, and bumps the
- * version, so the claim and the code arrive together.
+ * `EXTRACT` ARRIVED WITH THE EXTRACTOR, WHICH IS WHAT THE PREVIOUS VERSION OF THIS COMMENT PROMISED.
+ * Phase 26 declared `DISCOVER` alone and said so at length: claiming a capability before the code
+ * existed would have put a promise in the picker that the engine could not honour — a researcher
+ * configuring price, SKU and attribute selectors against an adapter advertising that it reads them,
+ * enabling the source, and getting runs that fetch politely and produce no product data. Phase 27
+ * added `lib/scraper/adapters/generic/**`, so the claim and the code now arrive together.
+ *
+ * THE VERSION IS A MAJOR BUMP BECAUSE THE OUTPUT SHAPE CHANGED, AND THE KEY IS PROVENANCE. Phase
+ * 25's pass produced a raw item — a title, a canonical URL and a list of links. The adapter behind
+ * this key now produces a `RawProductDraft`: fifteen fields, a confidence map and a provenance map
+ * saying which of the six strategies read each one. `adapter_key` and `adapter_version` are written
+ * onto every `research_raw_items` and `research_product_versions` row precisely so that a value
+ * which later looks wrong can be traced to the rules that read it, and a reader of a `1.x` row and
+ * a reader of a `2.x` row are not reading the same shape. A minor bump would have said they were.
+ *
+ * `lib/scraper/adapters/generic/index.ts` IS THE SOURCE OF TRUTH FOR THIS VERSION AND THIS FILE
+ * MIRRORS IT BY HAND. The two cannot share a constant, and the direction of the missing import is
+ * the whole point of the descriptor/implementation split this file's header describes: this module
+ * is read by `components/studio/research/SourceForm.tsx`, a Client Component, and importing the
+ * adapter would drag `node-html-parser` and six strategy modules into the Studio bundle in order to
+ * render four strings. `tests/unit/adapter-contract.test.ts` walks both registers and fails when a
+ * descriptor and its implementation disagree about a version — a test that costs nothing, in place
+ * of a build-time coupling that would cost a bundle.
  *
  * `supports()` ACCEPTS ANY http(s) SOURCE, WHICH IS FEAT §26's "generic is always available"
  * WRITTEN AS A PREDICATE. There is no site the generic adapter refuses, because there is no site it
@@ -242,10 +257,11 @@ function hasFetchableScheme(baseUrl: string): boolean {
  */
 const genericAdapterDescriptor: AdapterDescriptor = {
   key: GENERIC_ADAPTER_KEY,
-  // Phase 27 owns the next bump: a change to what an adapter emits is a version change, because
-  // the version is what a stored row is read back against.
-  version: '1.0.0',
-  capabilities: ['DISCOVER'],
+  // Mirrors `GENERIC_ADAPTER_VERSION` in `lib/scraper/adapters/generic/index.ts`, which is the
+  // source of truth. A change to what an adapter emits is a version change, because the version is
+  // what a stored row is read back against.
+  version: '2.0.0',
+  capabilities: ['DISCOVER', 'EXTRACT'],
   supports: (source) => hasFetchableScheme(source.baseUrl),
 }
 

@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs'
 
 import { describe, expect, it } from 'vitest'
 
+import { emptyDraft, rawProductDraftSchema } from '@/lib/scraper/adapters/draft-schema'
 import { MAX_LINKS_PER_PAGE, rawItemSchema, readRawItem } from '@/lib/scraper/core/raw'
 import {
   FETCH_TIMEOUT_MS,
@@ -115,7 +116,21 @@ describe('the fetcher makes no request it was not told to', () => {
   })
 })
 
-describe('the RAW schema refuses a Phase 27 shortcut', () => {
+/**
+ * PHASE 25 CALLED THIS "the RAW schema refuses a Phase 27 shortcut" AND PHASE 27 ARRIVED.
+ *
+ * The schema is unchanged and the assertions below still hold, because what they describe is still
+ * true of it: `rawItemSchema` is the shape the generic adapter's DISCOVERY half produces — a title,
+ * a canonical URL and a bounded list of links — and it still refuses anything richer. What moved is
+ * which schema the WRITE parses with: `recordRawItem` now parses `rawProductDraftSchema`, because
+ * an adapter exists and a draft is what it produces.
+ *
+ * THE COMMITMENT WAS KEPT RATHER THAN ABANDONED, and the last two tests here are what say so. The
+ * point of the strict three-key shape was never the three keys; it was that a "quick price regex"
+ * could not land before the architecture that owns parsing. It did not, and the schema that
+ * replaced it at the write refuses a parsed number just as firmly.
+ */
+describe('the RAW schema, and what replaced it at the write', () => {
   it('accepts exactly title, canonicalUrl and links', () => {
     const parsed = rawItemSchema.safeParse({ title: 'A', canonicalUrl: null, links: [] })
     expect(parsed.success).toBe(true)
@@ -137,6 +152,26 @@ describe('the RAW schema refuses a Phase 27 shortcut', () => {
     expect(rawItemSchema.safeParse({ title: null, canonicalUrl: null, links: many }).success).toBe(
       false,
     )
+  })
+
+  it('hands the write to a draft schema that refuses a parsed number just as firmly', () => {
+    // THE COMMITMENT, KEPT. Phase 25's schema existed to stop parsing landing before the
+    // architecture that owns it; Phase 27 built that architecture, and its schema is what
+    // `recordRawItem` parses now. A price as a NUMBER — the exact shortcut the original was written
+    // against — still fails, at the write, in the same place.
+    const parsed = rawProductDraftSchema.safeParse({
+      ...emptyDraft(),
+      priceText: 1299 as unknown as string,
+    })
+    expect(parsed.success).toBe(false)
+  })
+
+  it('is the schema the repository actually parses with, not merely one that exists', () => {
+    // A schema nothing calls is a comment. This reads the repository and asserts the swap happened
+    // there rather than only in a file somebody could later stop importing.
+    const source = readFileSync('lib/supabase/repositories/research/raw-items.ts', 'utf8')
+    expect(source).toContain('rawProductDraftSchema.parse(')
+    expect(source).not.toMatch(/\brawItemSchema\.parse\(/)
   })
 })
 

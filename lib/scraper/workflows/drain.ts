@@ -3,8 +3,6 @@ import 'server-only'
 import { isEnabled } from '@/lib/flags'
 import type { Database } from '@/lib/supabase/database.types'
 import { recordFetch } from '@/lib/supabase/repositories/research/fetches'
-import { recordProductSighting } from '@/lib/supabase/repositories/research/products'
-import { recordRawItem } from '@/lib/supabase/repositories/research/raw-items'
 import {
   finishResearchRun,
   listActiveRuns,
@@ -26,11 +24,23 @@ import {
 } from '@/lib/supabase/repositories/research/work-items'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
+import {
+  countConsecutiveAbortedRuns,
+  finishAdapterRun,
+  getAdapterRun,
+  listAdapterRunsForRun,
+  startAdapterRun,
+  type AdapterRunStatus,
+} from '@/lib/supabase/repositories/research/adapter-runs'
+
+import { getAdapter } from '../adapters/execution'
 import { compressSnapshot, fetchPage, snapshotKey } from '../core/fetch'
 import { warnScraper } from '../core/log'
+import { CONSECUTIVE_ABORTED_RUNS_TO_OPEN_CIRCUIT, SourceFailureTracker } from '../core/run-adapter'
+import { extractPage } from './extract'
 import { effectiveDelayMs, checkRobots, permitsRequest, type RobotsDecision } from '../core/robots'
-import { readRawItem } from '../core/raw'
 import {
+  CIRCUIT_OPEN_MINUTES,
   failureStateAfter,
   isBackoffStatus,
   leaseBudget,
@@ -56,6 +66,20 @@ import {
  *
  * NOTHING IN THIS FILE WRITES TO A PUBLIC TABLE, and nothing ever may (isolation invariant I4).
  * The guard script proves it by walking the imports.
+ *
+ * PHASE 27 MOVED EVERYTHING AFTER THE FETCH INTO `./extract.ts`, and the seam is exactly where the
+ * responsibilities divide: this file decides WHETHER a request may be made and records what came
+ * back; that one decides what the bytes MEAN. The reason to draw it there rather than anywhere else
+ * is that the second half must be runnable with no network at all — `scripts/research/reextract.ts`
+ * re-runs an adapter over stored snapshots, and it could not if reading a page and interpreting one
+ * were the same function.
+ *
+ * THE ADAPTER RUN AND THE FAILURE TRACKER ARE PER SOURCE, NOT PER ITEM, AND ONE OF THEM SURVIVES
+ * THE TICK. `SourceFailureTracker` counts ten consecutive item failures and lives in memory, so it
+ * is per invocation; `research_adapter_runs.status = 'ABORTED'` is the row that makes "for the rest
+ * of the run" true across the many cron ticks a run is drained over. A tick that finds a source
+ * already ABORTED for this run leases nothing for it — which is the difference between a source
+ * that stopped and a source that stops again every five minutes.
  */
 
 type Client = SupabaseClient<Database>
@@ -72,6 +96,8 @@ export interface DrainSummary {
   readonly disallowed: number
   readonly failed: number
   readonly discovered: number
+  /** Sources whose adapter failed ten items in a row and stopped for the rest of the run. */
+  readonly aborted: number
   readonly runsFinished: number
   readonly stoppedBy: 'BUDGET' | 'QUEUE_EMPTY' | 'KILL_SWITCH'
 }
@@ -91,6 +117,7 @@ export async function drainQueue(admin: Client): Promise<DrainSummary> {
     disallowed: 0,
     failed: 0,
     discovered: 0,
+    aborted: 0,
     runsFinished: 0,
     stoppedBy: 'QUEUE_EMPTY' as DrainSummary['stoppedBy'],
   }
@@ -124,6 +151,35 @@ export async function drainQueue(admin: Client): Promise<DrainSummary> {
 
     const budget = leaseBudget(source.concurrency, source.in_flight_count)
     if (budget === 0) continue
+
+    /*
+     * THE ADAPTER ROW IS OPENED BEFORE THE FIRST ITEM, NOT AFTER THE FIRST SUCCESS. A source whose
+     * adapter fails on every page must still have a panel on the run detail screen, or the one
+     * failure mode this accounting exists for is the one it cannot show. `startAdapterRun` upserts,
+     * so the second tick of a long run reuses the row and its counters stay cumulative.
+     *
+     * A DRY RUN OPENS NONE. It fetches, checks robots and stores the snapshot; it derives nothing,
+     * so a row claiming an adapter had read something would be a row about work that did not
+     * happen.
+     */
+    const adapter = getAdapter(source.adapter_key)
+    const adapterRunId = run.is_dry_run
+      ? null
+      : await startAdapterRun(admin, {
+          runId: run.id,
+          sourceId: source.id,
+          adapterKey: source.adapter_key,
+          // A KEY THAT RESOLVES TO NOTHING IS RECORDED AS SUCH RATHER THAN LEFT BLANK. The column
+          // is `not null`, and `extract.ts` marks the row FAILED on the first item — but the row
+          // has to exist first, and it has to say which version it did not find.
+          adapterVersion: adapter?.version ?? 'unresolved',
+        })
+
+    // ALREADY STOPPED FOR THIS RUN. The tracker is in memory and this row is not, so this is what
+    // makes "for the rest of the run" survive the tick boundary.
+    if (adapterRunId !== null && (await isAbortedForRun(admin, run.id, source.id))) continue
+
+    const tracker = new SourceFailureTracker()
 
     const items = await leaseWorkItems(admin, {
       sourceId: source.id,
@@ -173,12 +229,31 @@ export async function drainQueue(admin: Client): Promise<DrainSummary> {
         source,
         item,
         isDryRun: run.is_dry_run,
+        adapterRunId,
+        tracker,
       })
 
       summary.fetched += outcome.fetched
       summary.disallowed += outcome.disallowed
       summary.failed += outcome.failed
       summary.discovered += outcome.discovered
+
+      // TEN CONSECUTIVE FAILURES STOP THIS SOURCE AND NOTHING ELSE. The outer loop moves to the
+      // next run, whose source is untouched — which is FEAT §27's whole claim, expressed as a
+      // `break` rather than as an exception nobody would catch at the right level.
+      if (tracker.aborted) {
+        summary.aborted += 1
+        break
+      }
+    }
+
+    if (adapterRunId !== null) {
+      await closeAdapterRun(admin, {
+        adapterRunId,
+        sourceId: source.id,
+        sourceSlug: String(source.slug),
+        tracker,
+      })
     }
 
     const counts = await countWorkItemsByState(admin, run.id)
@@ -221,6 +296,9 @@ async function handleItem(
     readonly source: Database['public']['Tables']['research_sources']['Row']
     readonly item: Database['public']['Tables']['research_work_items']['Row']
     readonly isDryRun: boolean
+    /** Null on a dry run, which derives nothing and so has no adapter row to account against. */
+    readonly adapterRunId: string | null
+    readonly tracker: SourceFailureTracker
   },
 ): Promise<ItemOutcome> {
   const { source, item } = input
@@ -345,25 +423,33 @@ async function handleItem(
     return { fetched: 1, disallowed: 0, failed: 0, discovered: 0 }
   }
 
-  const raw = readRawItem(body, outcome.finalUrl)
+  /*
+   * EVERYTHING FROM HERE IS `extract.ts`'s, AND THE SEAM IS WHERE IT IS FOR A REASON. This function
+   * has decided whether a request may be made and recorded what came back; what the bytes MEAN is a
+   * separate question, answered by an adapter, and it must be answerable with no network at all —
+   * `scripts/research/reextract.ts` re-runs one over stored snapshots, and it could not if the two
+   * halves were one function.
+   *
+   * `adapterRunId` is null only on a dry run, which by then has already returned above.
+   */
+  if (input.adapterRunId === null) {
+    await releaseWorkItem(admin, { id: item.id, state: 'DONE', notBefore: null, error: null })
+    return { fetched: 1, disallowed: 0, failed: 0, discovered: 0 }
+  }
 
-  await recordRawItem(admin, {
+  const extraction = await extractPage(admin, {
     runId: input.runId,
-    sourceId: source.id,
+    source,
     fetchId,
-    sourceUrl: outcome.finalUrl,
-    sourceExternalId: null,
-    raw,
-    contentHash: hash,
-    adapterKey: source.adapter_key,
-    adapterVersion: null,
-  })
-
-  await recordProductSighting(admin, {
-    sourceId: source.id,
-    sourceUrl: raw.canonicalUrl ?? outcome.finalUrl,
-    sourceExternalId: null,
-    runId: input.runId,
+    page: {
+      url: outcome.finalUrl,
+      body,
+      contentHash: hash,
+      storageKey,
+      httpStatus: outcome.httpStatus,
+    },
+    adapterRunId: input.adapterRunId,
+    tracker: input.tracker,
   })
 
   /*
@@ -371,20 +457,97 @@ async function handleItem(
    * fetches exactly the seed URLs it was given and follows nothing, which is the right default for
    * a subsystem whose worst failure is fetching more than somebody agreed to. Following links is
    * something an operator turns on per job, knowing the source.
+   *
+   * AN EXTRACTION FAILURE STILL QUEUES WHAT DISCOVERY FOUND. The two adapter calls are independent:
+   * a page whose product fields could not be read is still a page with links on it, and dropping
+   * them would make one broken template stop a crawl the rest of the site would have completed.
    */
   let discovered = 0
-  if (item.depth < 1) {
+  if (item.depth < 1 && extraction.discovered.length > 0) {
     discovered = await enqueueWorkItems(admin, {
       runId: input.runId,
       sourceId: source.id,
-      urls: raw.links,
+      urls: extraction.discovered.map((found) => found.url),
       depth: item.depth + 1,
       notBefore: nextSourceFetchAt(delayMs),
     })
   }
 
+  /*
+   * THE ITEM IS `DONE` EVEN WHEN EXTRACTION FAILED, AND THAT IS NOT AN OVERSIGHT. A work item is a
+   * URL TO FETCH, and it was fetched — the page is on disk, the fetch row is written, and retrying
+   * it would ask a third party's server for a document Rivya already has because OUR reading of it
+   * was wrong. An adapter failure is accounted on `research_adapter_runs` and repaired by
+   * `scripts/research/reextract.ts`, which needs no network at all.
+   */
   await releaseWorkItem(admin, { id: item.id, state: 'DONE', notBefore: null, error: null })
   return { fetched: 1, disallowed: 0, failed: 0, discovered }
+}
+
+/** Is this source already stopped for this run? The row, because the tracker is per tick. */
+async function isAbortedForRun(admin: Client, runId: string, sourceId: string): Promise<boolean> {
+  const rows = await listAdapterRunsForRun(admin, runId)
+  return rows.some((row) => row.source_id === sourceId && row.status === 'ABORTED')
+}
+
+/**
+ * Close one source's adapter row for this tick, and open the circuit if it has aborted three runs
+ * in a row.
+ *
+ * THREE ABORTED RUNS IS A SOURCE THAT CANNOT BE READ, NOT A BAD NIGHT. One is a template change,
+ * two is a template change nobody has fixed yet; three is Rivya repeatedly asking a third party for
+ * pages it cannot use, which is traffic spent for nothing and exactly the thing the politeness
+ * posture exists to avoid. The circuit that opens is the same one five consecutive FETCH failures
+ * open — the source is left alone until it closes — because from the host's point of view the two
+ * are the same behaviour.
+ *
+ * IT IS NOT FINAL. `finishAdapterRun` writes the status of the row this tick; a later tick of the
+ * same run finds it ABORTED and leases nothing, and a NEW run starts a new row. A source recovers
+ * by being fixed, not by waiting.
+ */
+async function closeAdapterRun(
+  admin: Client,
+  input: {
+    readonly adapterRunId: string
+    readonly sourceId: string
+    readonly sourceSlug: string
+    readonly tracker: SourceFailureTracker
+  },
+): Promise<void> {
+  /*
+   * THE STATUS COMES FROM THE ROW, NOT FROM THE TRACKER, AND THE DIFFERENCE MATTERS ACROSS TICKS.
+   * `SourceFailureTracker` counts CONSECUTIVE failures inside one invocation — which is what
+   * decides an abort — but "did anything fail in this run" is a question about the whole run, and a
+   * run is drained across many ticks. `items_failed` is cumulative on the row, so a tick that saw
+   * nothing fail does not overwrite an earlier tick's PARTIAL with OK.
+   */
+  const row = await getAdapterRun(admin, input.adapterRunId)
+  const status: AdapterRunStatus = input.tracker.aborted
+    ? 'ABORTED'
+    : (row?.items_failed ?? 0) > 0
+      ? 'PARTIAL'
+      : 'OK'
+
+  await finishAdapterRun(admin, { id: input.adapterRunId, status, durationMs: null })
+
+  if (status !== 'ABORTED') return
+
+  const consecutive = await countConsecutiveAbortedRuns(admin, input.sourceId)
+  if (consecutive < CONSECUTIVE_ABORTED_RUNS_TO_OPEN_CIRCUIT) return
+
+  await recordSourceFetchOutcome(admin, input.sourceId, {
+    nextFetchNotBefore: new Date(),
+    consecutiveFailures: 0,
+    circuitOpenUntil: new Date(Date.now() + CIRCUIT_OPEN_MINUTES * 60_000),
+  })
+
+  warnScraper({
+    level: 'WARNING',
+    event: 'research.adapter_circuit_open',
+    message:
+      'A source aborted three adapter runs in a row; it is paused until its adapter is fixed.',
+    context: { source: input.sourceSlug, aborted: consecutive },
+  })
 }
 
 function reasonFor(decision: RobotsDecision): string {

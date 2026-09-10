@@ -39,6 +39,7 @@ import {
   PHASE_24_POLICIES,
   PHASE_25_POLICIES,
   PHASE_26_POLICIES,
+  PHASE_27_POLICIES,
   PHASE_19_POLICIES,
   TABLE_POLICY_MAP,
   type ManagedTable,
@@ -394,6 +395,29 @@ const GENERATED: Record<string, { title: string; preamble: string }> = {
 -- DELETE IS \`destructive.execute\` ON ALL THREE, which is stricter than it first looks for the URL
 -- patterns: deleting an EXCLUDE row does not remove information, it WIDENS what Rivya will fetch.
 -- That is the same class of act as unpublishing live content, and it takes the same permission.`,
+  },
+  [PHASE_27_POLICIES]: {
+    title: `-- ${PHASE_27_POLICIES} — Phase 27`,
+    preamble: `-- Policies for the two extraction tables, which migration 0250 creates. GENERATED from
+-- lib/auth/table-permissions.ts and rewritten whole, so it may hold nothing a human wrote. Its own
+-- file for the reason every generated policy file has one: 0250 carries the DDL, and a shipped
+-- generated file is never re-opened.
+--
+-- READ ONLY, FOR EVERYONE, AND THAT IS THE WHOLE FILE. Four select policies' worth of decision:
+-- \`research.read\` may look, and no session role may write either table by any means.
+--
+-- WHY NOT \`research.write\` ON THE VERSIONS TABLE, which a reader might expect by analogy with
+-- \`research_sources\`? Because these two tables are not configuration — they are the RECORD of what
+-- happened. \`research_product_versions\` is what Phase 29 diffs to say a competitor's price moved,
+-- and \`research_adapter_runs\` is what proves a broken adapter stopped at its own source. A
+-- researcher able to edit the first could make a change appear that never happened; one able to
+-- edit the second could make a failure they caused look like somebody else's. Both are written by
+-- \`lib/scraper/workflows/extract.ts\` through the service role, after the drain loop has already
+-- checked the kill switch, the policy review and robots.txt.
+--
+-- ISOLATION INVARIANT I2 IS UNCHANGED AND UNCHANGEABLE: not one \`anon\` leg appears below, on
+-- either table, and \`scripts/research/check-research-isolation.mjs\` fails the build the moment one
+-- does.`,
   },
   [PHASE_24_POLICIES]: {
     title: `-- ${PHASE_24_POLICIES} — Phase 24`,

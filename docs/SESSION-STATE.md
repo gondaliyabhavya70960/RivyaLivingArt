@@ -8,6 +8,115 @@
 
 ## Current Phase
 
+**Phase 27 — Scraper Extraction. COMPLETE.** The pipeline produces structured rows. FEAT §27's
+adapter architecture is built as an EXECUTION BOUNDARY with its own record rather than as a hope
+that nothing throws, because "a broken source adapter must not break other sources" is a claim about
+failure and a claim about failure needs a record or it cannot be checked.
+
+**Nothing has changed about what is fetched: still nothing, still behind the same three gates.**
+There are no sources, so there is nothing to extract from. What exists is the machinery, proved
+against fixtures.
+
+### Phase 27: what is built
+
+**Migrations `0250`–`0251`, applied locally AND to hosted, with the ledger rows.**
+`research_product_versions` — append-only, deduplicated by `unique (research_product_id,
+content_hash)`, so an unchanged page produces NO new row. `research_adapter_runs` — one row per
+(run, source, adapter), cumulative across the many cron ticks a run is drained over, holding the
+first five errors and the ABORTED flag. `research_products.current_version_id` becomes the foreign
+key `0231` declared its column for and deferred, `on delete set null` so removing a version does not
+remove the product that was observed.
+
+**The adapter contract, and what it withholds.** `AdapterContext` carries the source configuration,
+a URL matcher, a logger and a budget predicate — and no database handle, no `fetch`, no file system,
+no Cloudinary client, no clock. Every omission prevents something specific: a `fetch` in an adapter
+is a request that skipped robots.txt and the delay; a database handle is a path from a third party's
+markup to a write.
+
+**`RawProductDraft` is strings-only.** `priceText`, `dimensionTexts`, `availabilityText` — every
+field the source's own text, with a `confidence` map recording what was FOUND and a `provenance` map
+recording which strategy read it. A parsed number fails Zod validation, at the boundary and again at
+the write.
+
+**A REAL DENIAL-OF-SERVICE VECTOR, AND THE HONEST ACCOUNT OF HOW IT WAS FOUND.** The contract suite
+feeds every adapter a hundred kilobytes of unclosed `<div>`, and the first time the generic adapter
+was actually registered the test run hung indefinitely. `node-html-parser` is super-quadratic in
+nesting depth: 500 levels 29 ms, 2,000 levels 791 ms, 4,000 levels nearly six seconds, twenty
+thousand levels hours. That page is well inside the fetcher's 2 MB cap and trivially served by
+anybody who would like Rivya to stop reading them. The CPU budget cannot catch it — the runaway is
+one synchronous call into a dependency, and JavaScript cannot pre-empt one. `lib/scraper/adapters/
+parse.ts` estimates depth in one linear pass WITHOUT building a tree, refuses past 200 levels, and is
+the only sanctioned parse in the tree; the contract suite asserts no other file imports `parse` from
+the library. **The test was not made smaller.**
+
+**Four isolation layers, each with a record.** Per item: try/catch, measured budget, Zod check. Per
+source per run: ten consecutive failures set `ABORTED`, and the ROW — not the in-memory tracker — is
+what makes that survive the tick boundary. Per source across runs: three consecutive ABORTED runs
+open the circuit five consecutive FETCH failures open. Cross-source: proved by interleaving two
+sources with adapter A throwing on every item.
+
+**Versions, not overwrites.** The content hash is over the DRAFT rather than the page body, and
+excludes `confidence` and `provenance` — so an adapter fix that finds the same value by a different
+route does not read as every product changing at once in Phase 29's queue. Array order IS hashed.
+
+**A work item is `DONE` when extraction fails.** It was fetched; retrying would ask a third party for
+a document Rivya already holds because our reading of it was wrong. Repaired offline by
+`scripts/research/reextract.ts`, which never imports the fetcher and is asserted not to.
+
+**Surfaces**: `/studio/research/runs/[runId]` gains per-source adapter panels (seen, extracted,
+failed, the first five errors, the ABORTED note) and a version list where each row opens beside the
+strategy that read each field. The snapshot is NAMED and never linked.
+
+### Phase 27: what is NOT built, and why
+
+- **Any normalization.** No number is parsed, no unit converted, no currency resolved, no category
+  matched. Phase 28, once, over stored evidence.
+- **`PAGINATE`.** No adapter follows a next-page link, so no adapter declares the capability —
+  advertising one the engine cannot honour is the failure `registry.ts` argues against at length.
+- **A real vendor adapter.** `source-a` and `source-b` are FEAT §27's placeholder names with
+  `supports()` false. A real one is the owner's, after policy review, and a CI guard fails the build
+  on any external host named under `lib/scraper/adapters/**`.
+- **A hard CPU kill.** Recorded as amendment A27 rather than claimed: the budget measures and
+  `budgetSpent()` lets a loop stop itself; the bound that actually holds is the input guard.
+- **A signed-in e2e path.** Guarded by `STUDIO_STORAGE_STATE` and skipped, for the reason Phases
+  23–26 record.
+
+### Phase 27: verification, as actually run
+
+1. `npm run db:reset` — **75 migrations** apply from clean; `db:types` regenerated, `db:check-types`
+   clean; `db:check-migrations` confirms every number is allocated in DATA_MODEL §12.
+2. Local and hosted both report **75 migrations, 68 tables, 232 policies**.
+3. Ten new unit suites, **386 assertions**, including the pathological-input case asserted to be
+   REFUSED IN UNDER 250 ms — the regression that matters is somebody moving the guard after the
+   parse.
+4. `tests/unit/rls/phase27.test.ts` — 23 cases. Every role including OWNER is refused a write to
+   either table, in both directions, and the `on delete set null` / cascade behaviours are proved by
+   deleting inside a rolled-back transaction.
+5. `npm run test` — **2,499 passing, none skipped**.
+6. `npm run check` — all **33** gates green; the isolation guard now prints five assertions.
+7. A production build against the seeded database through the local PostgREST shim; `security:check-bundle` clean.
+
+### Phase 27: the D9 ten, recorded
+
+1. Code exists and is committed — two migrations, the adapter tree (contract, draft schema, two
+   registers, the bounded parser, the generic adapter's five strategies, two placeholders), the
+   isolation boundary, the extraction workflow, two repositories, the offline re-extraction script,
+   two Studio panels, ten unit suites, one RLS suite, one e2e spec.
+2. Migrations applied locally and to hosted with ledger rows and matching counts (75 / 68 / 232).
+3. Tests written and passing: 2,499, none skipped.
+4. Gates pass, including the widened `research:check-isolation`.
+5. Documentation updated: SCRAPER §18 (the adapter chapter and "how to write an adapter"),
+   DATA_MODEL §12, CANONICAL-DECISIONS **A27** and the new D1 row, CHANGELOG, PROJECT_STATE, this
+   file.
+6. No business fact fabricated: no competitor, brand, domain or price anywhere, fixtures included.
+7. Nothing in the manifest regenerated; no competitor image fetched — `imageUrls` are strings.
+8. Remaining issues documented — see "what is NOT built" above.
+9. The next phase is named: **28 — Normalization + Validation**.
+10. Hosted is level with the repository through `0251`.
+
+
+### Superseded — Phase 26's state
+
 **Phase 26 — Comparator Source Management. COMPLETE.** Adding a competitor is now a Studio task
 rather than an engineering one. All twenty-three FEAT §26 fields are stored, validated, editable and
 consumed by the Phase 25 engine, and the claim that matters is proved rather than asserted: the
@@ -19,7 +128,7 @@ URL patterns, four category mappings, a schedule — and then asserts `git statu
 This repository ships zero source rows and seeds none. What Phase 26 added is the workflow around
 the gate, never a way past it.
 
-### Phase 26: what is built
+#### Phase 26: what is built
 
 **Migrations `0240`–`0241`, applied locally AND to hosted through the Supabase MCP, with the ledger
 rows.** Four enums. Three child tables — `research_source_url_patterns`,
@@ -74,7 +183,7 @@ the server action because RLS gates a row rather than a column.
 policy panel and the enable control rendered *disabled with its reason*), plus health pills and an
 unmapped-category count on the dashboard.
 
-### Phase 26: what is NOT built, and why
+#### Phase 26: what is NOT built, and why
 
 - **Any adapter.** `lib/scraper/adapters/registry.ts` holds a DESCRIPTOR — key, version,
   capabilities, `supports()` — with exactly one entry, `generic`, declaring `DISCOVER` only.
@@ -90,7 +199,7 @@ unmapped-category count on the dashboard.
 - **A signed-in e2e path.** Guarded by `STUDIO_STORAGE_STATE` and skipped, for the reason Phases 23,
   24 and 25 record: a real session needs an auth server the local shim does not run.
 
-### Phase 26: verification, as actually run
+#### Phase 26: verification, as actually run
 
 1. `npm run db:reset` — **73 migrations** apply from clean; `seed:content` — 486 inserted;
    `db:types` regenerated and `db:check-types` clean.
@@ -112,7 +221,7 @@ unmapped-category count on the dashboard.
 8. `npm run check` — all **33** gates green. A production build against the seeded database through
    the local PostgREST shim renders all three new routes; `security:check-bundle` clean.
 
-### Phase 26: the D9 ten, recorded
+#### Phase 26: the D9 ten, recorded
 
 1. Code exists and is committed — two migrations, five `lib/scraper` modules, three repositories,
    three Studio routes with eleven server actions, seven components, six unit suites, one RLS
@@ -129,7 +238,7 @@ unmapped-category count on the dashboard.
 9. The next phase is named: **27 — Scraper Extraction**.
 10. Hosted is level with the repository through `0241`.
 
-### Phase 26: what the owner must do before anything is fetched
+#### Phase 26: what the owner must do before anything is fetched
 
 Unchanged from Phase 25, and now with a screen for each step:
 

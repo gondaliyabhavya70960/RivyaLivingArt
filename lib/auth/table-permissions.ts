@@ -141,6 +141,7 @@ export const PHASE_23_RELATION_POLICIES = '0214_phase23_relations_rls.sql'
 export const PHASE_24_POLICIES = '0221_phase24_bulk_rls.sql'
 export const PHASE_25_POLICIES = '0233_phase25_research_rls.sql'
 export const PHASE_26_POLICIES = '0241_phase26_source_config_rls.sql'
+export const PHASE_27_POLICIES = '0251_phase27_extraction_rls.sql'
 
 export const TABLE_POLICIES = {
   // --- Shape A: content tables ------------------------------------------------------------------
@@ -1234,6 +1235,48 @@ export const TABLE_POLICIES = {
     deviation:
       'When a job type runs against a source. Staff-only, written by research.write, and bounded ' +
       'at the row by a six-hour minimum interval the form cannot be bypassed to beat.',
+  },
+  /*
+   * Phase 27 — the two tables that make extraction accountable.
+   *
+   * BOTH ARE SHAPE C AND BOTH ARE WRITTEN BY NOBODY WITH A SESSION, which puts them in the same
+   * group as `research_fetches` and `research_raw_items` rather than with `research_sources`.
+   * The reason is the same one, and it is worth restating because these two tables are the ones a
+   * later phase is most likely to want to "correct" by hand:
+   *
+   *   `research_product_versions` IS EVIDENCE. It holds what an adapter read off a page at a
+   *   moment, and Phase 29 diffs consecutive rows to say what changed. A member of staff able to
+   *   edit one could make a change appear that never happened, or make one disappear that did —
+   *   and this table is precisely what somebody would read to check. It is written by
+   *   `lib/scraper/workflows/extract.ts` through the service role, and by the offline
+   *   re-extraction script over the same path.
+   *
+   *   `research_adapter_runs` IS THE ACCOUNT OF A FAILURE. Its whole purpose is to make "a broken
+   *   adapter did not break other sources" a checkable claim, and a claim about failure that the
+   *   failing party can edit is not one.
+   *
+   * NEITHER IS DELETABLE EITHER. Pruning removes the SNAPSHOT at 180 days and clears
+   * `storage_key`; the version outlives the evidence deliberately, because the draft is what a
+   * diff compares and the page body is only how it was obtained.
+   */
+  research_product_versions: {
+    policiesIn: PHASE_27_POLICIES,
+    shape: 'C',
+    readPermission: 'research.read',
+    deviation:
+      'One observation of one product, append-only and deduplicated by content hash. No anon ' +
+      'policy may ever exist on any research_* table (isolation invariant I2), and no session ' +
+      'write policy of any kind: this table is the evidence a change record is reproduced from, ' +
+      'and evidence its author can edit is not evidence.',
+  },
+  research_adapter_runs: {
+    policiesIn: PHASE_27_POLICIES,
+    shape: 'C',
+    readPermission: 'research.read',
+    deviation:
+      "The per-(run, source, adapter) accounting that makes FEAT §27's isolation claim " +
+      'checkable. Staff read it on the run detail screen; nobody writes it with a session, ' +
+      'because a record of what failed that the failing party can edit proves nothing.',
   },
 } as const satisfies Record<string, TablePolicy>
 

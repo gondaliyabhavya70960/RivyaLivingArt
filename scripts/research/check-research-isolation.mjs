@@ -415,12 +415,60 @@ function checkStageWriter() {
   }
 }
 
+/**
+ * `lib/scraper/adapters/**` MAY NOT NAME AN EXTERNAL HOST. Added in Phase 27 with the two vendor
+ * placeholder folders FEAT §27 asks for.
+ *
+ * THE FAILURE THIS CATCHES IS SOCIAL, NOT TECHNICAL, and it is the one most likely to happen. An
+ * adapter is written by reading one particular website; the fastest way to make it work is to put
+ * that website's host in a `supports()` predicate or in a fixture, and the moment somebody does,
+ * a real competitor's name is in this repository — in a public git history — attached to code that
+ * reads their catalogue. D10 forbids naming one anywhere, and `source-a` and `source-b` are the
+ * requirement's own placeholder names precisely so that the folders exist without an answer.
+ *
+ * A REAL VENDOR ADAPTER IS STILL POSSIBLE. It is added by the owner, after that source has passed
+ * policy review, in a deployment of their own — and at that point the host lives in
+ * `research_sources.base_url`, which is a row somebody approved, not a string in a build artefact.
+ * That is the shape the rule pushes towards rather than a prohibition on the capability.
+ *
+ * `example.` (RFC 2606, reserved and owned by nobody) and loopback are admitted, because the
+ * fixtures have to say something and those two say nothing about anybody.
+ */
+const ADAPTERS_DIR = join(ROOT, 'lib', 'scraper', 'adapters')
+const EXTERNAL_HOST = /\bhttps?:\/\/([A-Za-z0-9.-]+)/g
+const HOST_ALLOWED =
+  /^(localhost|127\.0\.0\.1|\[?::1\]?|example\.(com|org|net)|[A-Za-z0-9-]+\.example)$/
+
+function checkAdapterHosts() {
+  for (const file of filesUnder(ADAPTERS_DIR)) {
+    const raw = readFileSync(file, 'utf8')
+    EXTERNAL_HOST.lastIndex = 0
+    let match
+    while ((match = EXTERNAL_HOST.exec(raw)) !== null) {
+      const host = (match[1] ?? '').toLowerCase().replace(/[.:]+$/, '')
+      if (HOST_ALLOWED.test(host)) continue
+      // Schema.org and the other vocabulary namespaces are IDENTIFIERS, not hosts to fetch —
+      // `itemtype="https://schema.org/Product"` is a string compared against, and no adapter has
+      // a fetcher to resolve it with even if it wanted to.
+      if (host === 'schema.org' || host === 'www.schema.org' || host === 'ogp.me') continue
+      const line = raw.slice(0, match.index).split('\n').length
+      problems.push(
+        `I3: ${relative(ROOT, file)}:${line} names the host "${host}".\n` +
+          '      No competitor is named anywhere in this repository (D10), and an adapter is where\n' +
+          '      one would first appear. A real source is a row in research_sources that somebody\n' +
+          '      approved, never a literal in a build artefact.',
+      )
+    }
+  }
+}
+
 checkForeignKeys()
 checkAnonPolicies()
 checkPublicTrees()
 checkScraperImports()
 checkCatalogImports()
 checkStageWriter()
+checkAdapterHosts()
 
 for (const note of notes) console.log(`  ▸ ${note}`)
 
@@ -439,6 +487,7 @@ const parts = [
     : 'I2 no anon policy in the migrations (the database was not checked — see above)',
   'I3 no research identifier on a public surface',
   'I4 no path from the scraper to a public write and no browser automation',
+  'I3 no external host named under lib/scraper/adapters',
 ]
 
 console.log(`✓ research isolation: ${parts.join(', ')}`)

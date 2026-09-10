@@ -1,0 +1,51 @@
+{
+  "title": "Low Table, Ash",
+  "priceText": "1299.00",
+  "currencyText": "GBP",
+  "skuText": "AB-1234",
+  "availabilityText": "https://schema.org/InStock",
+  "leadTimeText": null,
+  "descriptionHtml": "A low table in solid ash, made to order.",
+  "dimensionTexts": ["1200 mm", "600 mm", "380 mm"],
+  "materialTexts": ["Ash", "Brass"],
+  "variantTexts": [],
+  "customizationTexts": [],
+  "imageUrls": [
+    "https://images.example.com/low-table-1.jpg",
+    "https://catalogue.example.com/img/low-table-2.jpg"
+  ],
+  "categoryLabels": ["Tables"],
+  "externalId": "P-0001",
+  "canonicalUrl": "https://catalogue.example.com/products/low-table-ash",
+  "confidence": {
+    "title": 1,
+    "priceText": 1,
+    "currencyText": 1,
+    "skuText": 1,
+    "availabilityText": 1,
+    "leadTimeText": 0,
+    "descriptionHtml": 1,
+    "dimensionTexts": 1,
+    "materialTexts": 1,
+    "variantTexts": 0,
+    "customizationTexts": 0,
+    "imageUrls": 1,
+    "categoryLabels": 1,
+    "externalId": 1,
+    "canonicalUrl": 1
+  },
+  "provenance": {
+    "title": "jsonld",
+    "priceText": "jsonld",
+    "currencyText": "jsonld",
+    "skuText": "jsonld",
+    "availabilityText": "jsonld",
+    "descriptionHtml": "jsonld",
+    "dimensionTexts": "jsonld",
+    "materialTexts": "jsonld",
+    "imageUrls": "jsonld",
+    "categoryLabels": "jsonld",
+    "externalId": "jsonld",
+    "canonicalUrl": "jsonld"
+  }
+}
