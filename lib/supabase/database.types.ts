@@ -3531,6 +3531,427 @@ export type Database = {
           },
         ]
       }
+      research_fetches: {
+        Row: {
+          id: string
+          run_id: string | null
+          source_id: string
+          work_item_id: string | null
+          url: string
+          final_url: string | null
+          http_status: number | null
+          robots_decision: string
+          content_hash: string | null
+          bytes: number | null
+          duration_ms: number | null
+          storage_key: string | null
+          fetched_at: string
+          error: string | null
+        }
+        Insert: {
+          id?: string
+          run_id?: string | null
+          source_id: string
+          work_item_id?: string | null
+          url: string
+          final_url?: string | null
+          http_status?: number | null
+          robots_decision: string
+          content_hash?: string | null
+          bytes?: number | null
+          duration_ms?: number | null
+          storage_key?: string | null
+          fetched_at?: string
+          error?: string | null
+        }
+        Update: {
+          id?: string
+          run_id?: string | null
+          source_id?: string
+          work_item_id?: string | null
+          url?: string
+          final_url?: string | null
+          http_status?: number | null
+          robots_decision?: string
+          content_hash?: string | null
+          bytes?: number | null
+          duration_ms?: number | null
+          storage_key?: string | null
+          fetched_at?: string
+          error?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'research_fetches_run_id_fkey'
+            columns: ['run_id']
+            isOneToOne: false
+            referencedRelation: 'research_runs'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'research_fetches_source_id_fkey'
+            columns: ['source_id']
+            isOneToOne: false
+            referencedRelation: 'research_sources'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'research_fetches_work_item_fk'
+            columns: ['work_item_id']
+            isOneToOne: false
+            referencedRelation: 'research_work_items'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      research_jobs: {
+        Row: {
+          id: string
+          source_id: string
+          job_type: Database['public']['Enums']['research_job_type']
+          name: string
+          scope: Json
+          cron_expression: string | null
+          next_run_at: string | null
+          is_enabled: boolean
+          max_urls: number | null
+          status: Database['public']['Enums']['content_status']
+          created_at: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          source_id: string
+          job_type: Database['public']['Enums']['research_job_type']
+          name: string
+          scope?: Json
+          cron_expression?: string | null
+          next_run_at?: string | null
+          is_enabled?: boolean
+          max_urls?: number | null
+          status?: Database['public']['Enums']['content_status']
+          created_at?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          source_id?: string
+          job_type?: Database['public']['Enums']['research_job_type']
+          name?: string
+          scope?: Json
+          cron_expression?: string | null
+          next_run_at?: string | null
+          is_enabled?: boolean
+          max_urls?: number | null
+          status?: Database['public']['Enums']['content_status']
+          created_at?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'research_jobs_source_id_fkey'
+            columns: ['source_id']
+            isOneToOne: false
+            referencedRelation: 'research_sources'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'research_jobs_updated_by_fkey'
+            columns: ['updated_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      research_pipeline_events: {
+        Row: {
+          id: string
+          entity_type: string
+          entity_id: string
+          from_stage: Database['public']['Enums']['research_stage'] | null
+          to_stage: Database['public']['Enums']['research_stage'] | null
+          actor_user_id: string | null
+          actor_kind: string
+          reason: string | null
+          occurred_at: string
+        }
+        Insert: {
+          id?: string
+          entity_type: string
+          entity_id: string
+          from_stage?: Database['public']['Enums']['research_stage'] | null
+          to_stage?: Database['public']['Enums']['research_stage'] | null
+          actor_user_id?: string | null
+          actor_kind: string
+          reason?: string | null
+          occurred_at?: string
+        }
+        Update: {
+          id?: string
+          entity_type?: string
+          entity_id?: string
+          from_stage?: Database['public']['Enums']['research_stage'] | null
+          to_stage?: Database['public']['Enums']['research_stage'] | null
+          actor_user_id?: string | null
+          actor_kind?: string
+          reason?: string | null
+          occurred_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'research_pipeline_events_actor_user_id_fkey'
+            columns: ['actor_user_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      research_products: {
+        Row: {
+          id: string
+          source_id: string
+          source_url: string
+          source_external_id: string | null
+          stage: Database['public']['Enums']['research_stage']
+          disposition: Database['public']['Enums']['research_disposition']
+          first_seen_at: string
+          last_seen_at: string
+          first_seen_run_id: string | null
+          last_seen_run_id: string | null
+          current_version_id: string | null
+          status: Database['public']['Enums']['content_status']
+          created_at: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          source_id: string
+          source_url: string
+          source_external_id?: string | null
+          stage?: Database['public']['Enums']['research_stage']
+          disposition?: Database['public']['Enums']['research_disposition']
+          first_seen_at?: string
+          last_seen_at?: string
+          first_seen_run_id?: string | null
+          last_seen_run_id?: string | null
+          current_version_id?: string | null
+          status?: Database['public']['Enums']['content_status']
+          created_at?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          source_id?: string
+          source_url?: string
+          source_external_id?: string | null
+          stage?: Database['public']['Enums']['research_stage']
+          disposition?: Database['public']['Enums']['research_disposition']
+          first_seen_at?: string
+          last_seen_at?: string
+          first_seen_run_id?: string | null
+          last_seen_run_id?: string | null
+          current_version_id?: string | null
+          status?: Database['public']['Enums']['content_status']
+          created_at?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'research_products_first_seen_run_id_fkey'
+            columns: ['first_seen_run_id']
+            isOneToOne: false
+            referencedRelation: 'research_runs'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'research_products_last_seen_run_id_fkey'
+            columns: ['last_seen_run_id']
+            isOneToOne: false
+            referencedRelation: 'research_runs'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'research_products_source_id_fkey'
+            columns: ['source_id']
+            isOneToOne: false
+            referencedRelation: 'research_sources'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'research_products_updated_by_fkey'
+            columns: ['updated_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      research_raw_items: {
+        Row: {
+          id: string
+          run_id: string | null
+          source_id: string
+          fetch_id: string | null
+          source_url: string
+          source_external_id: string | null
+          raw: Json
+          content_hash: string | null
+          adapter_key: string
+          adapter_version: string | null
+          extracted_at: string
+        }
+        Insert: {
+          id?: string
+          run_id?: string | null
+          source_id: string
+          fetch_id?: string | null
+          source_url: string
+          source_external_id?: string | null
+          raw: Json
+          content_hash?: string | null
+          adapter_key?: string
+          adapter_version?: string | null
+          extracted_at?: string
+        }
+        Update: {
+          id?: string
+          run_id?: string | null
+          source_id?: string
+          fetch_id?: string | null
+          source_url?: string
+          source_external_id?: string | null
+          raw?: Json
+          content_hash?: string | null
+          adapter_key?: string
+          adapter_version?: string | null
+          extracted_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'research_raw_items_fetch_id_fkey'
+            columns: ['fetch_id']
+            isOneToOne: false
+            referencedRelation: 'research_fetches'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'research_raw_items_run_id_fkey'
+            columns: ['run_id']
+            isOneToOne: false
+            referencedRelation: 'research_runs'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'research_raw_items_source_id_fkey'
+            columns: ['source_id']
+            isOneToOne: false
+            referencedRelation: 'research_sources'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      research_robots_cache: {
+        Row: {
+          id: string
+          host: string
+          body: string | null
+          fetched_at: string
+          expires_at: string
+          crawl_delay_s: number | null
+        }
+        Insert: {
+          id?: string
+          host: string
+          body?: string | null
+          fetched_at?: string
+          expires_at: string
+          crawl_delay_s?: number | null
+        }
+        Update: {
+          id?: string
+          host?: string
+          body?: string | null
+          fetched_at?: string
+          expires_at?: string
+          crawl_delay_s?: number | null
+        }
+        Relationships: []
+      }
+      research_runs: {
+        Row: {
+          id: string
+          job_id: string | null
+          source_id: string
+          status: Database['public']['Enums']['research_run_status']
+          trigger: Database['public']['Enums']['research_trigger']
+          requested_by: string | null
+          queued_at: string
+          started_at: string | null
+          finished_at: string | null
+          stats: Json
+          error_summary: string | null
+          is_dry_run: boolean
+        }
+        Insert: {
+          id?: string
+          job_id?: string | null
+          source_id: string
+          status?: Database['public']['Enums']['research_run_status']
+          trigger?: Database['public']['Enums']['research_trigger']
+          requested_by?: string | null
+          queued_at?: string
+          started_at?: string | null
+          finished_at?: string | null
+          stats?: Json
+          error_summary?: string | null
+          is_dry_run?: boolean
+        }
+        Update: {
+          id?: string
+          job_id?: string | null
+          source_id?: string
+          status?: Database['public']['Enums']['research_run_status']
+          trigger?: Database['public']['Enums']['research_trigger']
+          requested_by?: string | null
+          queued_at?: string
+          started_at?: string | null
+          finished_at?: string | null
+          stats?: Json
+          error_summary?: string | null
+          is_dry_run?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'research_runs_job_id_fkey'
+            columns: ['job_id']
+            isOneToOne: false
+            referencedRelation: 'research_jobs'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'research_runs_requested_by_fkey'
+            columns: ['requested_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'research_runs_source_id_fkey'
+            columns: ['source_id']
+            isOneToOne: false
+            referencedRelation: 'research_sources'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       research_search_documents: {
         Row: {
           id: string
@@ -3578,6 +3999,159 @@ export type Database = {
           indexed_at?: string
         }
         Relationships: []
+      }
+      research_sources: {
+        Row: {
+          id: string
+          slug: string
+          name: string
+          base_url: string
+          region: string | null
+          currency: string | null
+          source_type: string | null
+          is_enabled: boolean
+          adapter_key: string
+          rate_limit_rpm: number
+          request_delay_ms: number
+          concurrency: number
+          next_fetch_not_before: string | null
+          in_flight_count: number
+          consecutive_failures: number
+          circuit_open_until: string | null
+          policy_status: Database['public']['Enums']['research_policy_status']
+          policy_reviewed_by: string | null
+          policy_reviewed_at: string | null
+          policy_notes: string | null
+          status: Database['public']['Enums']['content_status']
+          created_at: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          slug: string
+          name: string
+          base_url: string
+          region?: string | null
+          currency?: string | null
+          source_type?: string | null
+          is_enabled?: boolean
+          adapter_key?: string
+          rate_limit_rpm?: number
+          request_delay_ms?: number
+          concurrency?: number
+          next_fetch_not_before?: string | null
+          in_flight_count?: number
+          consecutive_failures?: number
+          circuit_open_until?: string | null
+          policy_status?: Database['public']['Enums']['research_policy_status']
+          policy_reviewed_by?: string | null
+          policy_reviewed_at?: string | null
+          policy_notes?: string | null
+          status?: Database['public']['Enums']['content_status']
+          created_at?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          slug?: string
+          name?: string
+          base_url?: string
+          region?: string | null
+          currency?: string | null
+          source_type?: string | null
+          is_enabled?: boolean
+          adapter_key?: string
+          rate_limit_rpm?: number
+          request_delay_ms?: number
+          concurrency?: number
+          next_fetch_not_before?: string | null
+          in_flight_count?: number
+          consecutive_failures?: number
+          circuit_open_until?: string | null
+          policy_status?: Database['public']['Enums']['research_policy_status']
+          policy_reviewed_by?: string | null
+          policy_reviewed_at?: string | null
+          policy_notes?: string | null
+          status?: Database['public']['Enums']['content_status']
+          created_at?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'research_sources_policy_reviewed_by_fkey'
+            columns: ['policy_reviewed_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'research_sources_updated_by_fkey'
+            columns: ['updated_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      research_work_items: {
+        Row: {
+          id: string
+          run_id: string
+          source_id: string
+          url: string
+          depth: number
+          state: string
+          lease_until: string | null
+          attempts: number
+          not_before_at: string
+          last_error: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          run_id: string
+          source_id: string
+          url: string
+          depth?: number
+          state?: string
+          lease_until?: string | null
+          attempts?: number
+          not_before_at?: string
+          last_error?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          run_id?: string
+          source_id?: string
+          url?: string
+          depth?: number
+          state?: string
+          lease_until?: string | null
+          attempts?: number
+          not_before_at?: string
+          last_error?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'research_work_items_run_id_fkey'
+            columns: ['run_id']
+            isOneToOne: false
+            referencedRelation: 'research_runs'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'research_work_items_source_id_fkey'
+            columns: ['source_id']
+            isOneToOne: false
+            referencedRelation: 'research_sources'
+            referencedColumns: ['id']
+          },
+        ]
       }
       search_documents: {
         Row: {
@@ -4086,7 +4660,19 @@ export type Database = {
         Args: Record<string, unknown>
         Returns: Json
       }
+      refresh_research_search_document: {
+        Args: Record<string, unknown>
+        Returns: Json
+      }
       refresh_search_document: {
+        Args: Record<string, unknown>
+        Returns: Json
+      }
+      research_lease_work_items: {
+        Args: Record<string, unknown>
+        Returns: Json
+      }
+      research_reclaim_expired_leases: {
         Args: Record<string, unknown>
         Returns: Json
       }
@@ -4165,6 +4751,13 @@ export type Database = {
         'PRODUCT' | 'COLLECTION' | 'CATEGORY' | 'PORTFOLIO_PROJECT' | 'JOURNAL_ARTICLE' | 'MATERIAL'
       relation_kind: 'RELATED' | 'FEATURES' | 'REFERENCES' | 'USES_MATERIAL' | 'PART_OF'
       relation_origin: 'EDITOR' | 'RULE_ACCEPTED'
+      research_disposition: 'NONE' | 'IGNORED' | 'REJECTED' | 'DUPLICATE'
+      research_job_type: 'DISCOVERY' | 'DETAIL' | 'REFRESH'
+      research_policy_status: 'UNREVIEWED' | 'APPROVED' | 'RESTRICTED' | 'BLOCKED'
+      research_run_status: 'QUEUED' | 'RUNNING' | 'SUCCEEDED' | 'PARTIAL' | 'FAILED' | 'CANCELLED'
+      research_stage:
+        'RAW' | 'NORMALIZED' | 'VALIDATED' | 'MATCHED' | 'REVIEW' | 'SHORTLISTED' | 'CONFIRMED'
+      research_trigger: 'MANUAL' | 'SCHEDULED'
       search_visibility: 'PUBLIC' | 'STAFF'
       user_role: 'owner' | 'admin' | 'editor' | 'merchandiser' | 'researcher' | 'viewer'
       whatsapp_state: 'NOT_SENT' | 'REDIRECTED' | 'SHORTENED' | 'UNAVAILABLE'

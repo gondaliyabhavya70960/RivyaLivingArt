@@ -6,6 +6,69 @@ Every phase adds an entry; see `docs/architecture/CANONICAL-DECISIONS.md` D9 for
 
 ## [Unreleased]
 
+### Phase 25 — Product Scraper Foundation
+
+Rivya gains the machinery to read a competitor's website — politely, on a schedule, under a kill
+switch — and to store what came back somewhere a visitor can never reach. It extracts nothing
+structured (Phase 27) and normalises nothing (Phase 28). What it had to get exactly right is the
+politeness posture and the isolation invariant, because both are far harder to retrofit than to
+build.
+
+**Nothing is fetched from anybody's website until three separate gates are open**: an owner has
+recorded a policy review approving a source, that source is enabled, and the `research_enabled`
+flag is on. This repository ships **zero** source rows and seeds none — a source is an assertion
+that Rivya may read a real third party's site, and that judgement is the owner's, not this
+software's. `research_sources_enabled_requires_approval` makes an enabled-but-unapproved source
+unstorable, so the question cannot be skipped by a bug, a fixture or a migration.
+
+**Migrations `0230`–`0234`, applied locally AND to the hosted project.** Six enums; nine tables;
+the lease function; the research search index filled by trigger. `research_products` carries the
+seven FEAT §23 stages with rejection as a SEPARATE column, so a rejected row keeps the stage it
+reached and "how far did this get before we said no" stays answerable. `research_work_items` is the
+unit of progress rather than the run, because a Vercel function is short-lived and a run must
+survive a cold start halfway through. `0233` is the generated RLS and `0234` corrects a constraint
+Phase 23 wrote before it could know better (**amendment A25**).
+
+**The politeness posture, and every control fails towards fetching less.** One user agent, named
+and with no fallback — a missing `SCRAPER_USER_AGENT` throws rather than crawling anonymously.
+robots.txt fetched once per host per day, parsed for the Rivya token then `*`, with a `Disallow`
+meaning **no request is made at all** — and `research_fetches_disallowed_has_no_response` makes a
+row claiming otherwise unstorable. `Crawl-delay` honoured as a FLOOR and never a ceiling. Rate
+limit, delay and concurrency enforced in the lease query rather than by `sleep()` calls a killed
+function loses. Exponential backoff with jitter, `Retry-After`, and a circuit breaker at five
+consecutive failures. The kill switch checked before EVERY fetch, not once per tick.
+
+**Four permanent prohibitions, enforced by a build gate rather than by a document**: no headless
+browser, no proxy rotation, no CAPTCHA solving, no browser impersonation. If a source requires any
+of them to read, the answer is that Rivya does not read it.
+`scripts/research/check-research-isolation.mjs` fails on an import of any of that tooling anywhere
+under `lib/scraper/**`.
+
+**Isolation invariants I1–I4, and the gate is the phase's most important artefact.** No foreign key
+crosses the research/public boundary — the allowlist is EMPTY at this phase and gains its first
+entry in Phase 26. No `research_*` table has an `anon` policy. No research identifier appears
+anywhere under the public trees. Nothing connects `lib/scraper/**` to a catalogue write. Each was
+proved to fail on a real violation — a planted foreign key, a planted anon policy, a planted
+identifier, a planted `puppeteer` import, a planted cross-import — and to pass once restored.
+
+**Verified against a real fixture HTTP server**, which is the only way the important claims can be
+checked: robots.txt was requested exactly once and served from cache thereafter; `/private` was
+recorded `DISALLOWED` and **never appears in the server's own request log**; the gap between two
+fetches honoured the host's 1-second `Crawl-delay` over the source's configured 250 ms; the kill
+switch produced zero requests; and a `429` with `Retry-After: 30` returned the item to the queue
+with a two-minute backoff, because the ladder beats a number supplied by the server we are already
+struggling with.
+
+**Snapshots go to a private Supabase Storage bucket, never Cloudinary.** Gzipped,
+content-addressed, date-partitioned, 180-day retention, pruned by the same cron. Cloudinary serves
+from a public CDN, and a competitor's page body must not be served from a Rivya origin.
+
+**Also fixed here**: `tests/unit/rls/function-grants.test.ts` never loaded the fixture and had been
+passing on the luck of file ordering — adding one suite to the project was enough to break it. And
+that same suite caught four SECURITY DEFINER trigger functions this phase had left callable by
+`anon`, which is a gate written two phases ago failing on code written today.
+
+
 ### Phase 24 — Bulk Management
 
 One engine, one audit trail, one undo window. Eleven registered operations across three modules —

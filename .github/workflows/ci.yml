@@ -161,6 +161,20 @@ jobs:
       - name: Generated types match the database
         run: npm run db:check-types
 
+      # Phase 25. The four research isolation invariants — the most important artefact in that
+      # phase, because every design it protects is one somebody can undo later in one line for a
+      # good reason: a related-products query that "could also look at research_products", an
+      # import button that "could create the Rivya product directly", a foreign key added "so we
+      # can filter". Each of those compiles, type-checks and passes every other gate.
+      #
+      # AFTER `db:reset`, NOT BEFORE IT, and the ordering is the whole value of the step here.
+      # I1 reads `information_schema.referential_constraints` and I2 reads `pg_policies`; run
+      # against a database with no research tables in it, both find nothing and report a pass
+      # that proves nothing. `DATABASE_URL` is set for the whole job, so the guard would have
+      # believed it was checking.
+      - name: Research stays isolated from everything a visitor can reach
+        run: npm run research:check-isolation
+
       # Proves the seeding contract end to end on a fresh database: every record inserts, then
       # every record updates and none inserts. A regression in the hashing makes the second run
       # insert or skip instead, which no unit test with a fake client could catch.

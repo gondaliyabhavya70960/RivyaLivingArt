@@ -38,6 +38,20 @@ export const FLAGS = {
    */
   three_d_viewer:
     'Mounts the 3D model viewer on product pages that have a model. Off until Phase 21 ships the viewer and its explicit intent gate.',
+  /**
+   * Phase 25. THE MASTER KILL SWITCH for the whole research subsystem (FEAT §32), checked by the
+   * drain loop before EVERY fetch rather than once per tick — a switch that takes effect at the
+   * end of the current batch is a switch that keeps fetching for another minute after the owner
+   * threw it.
+   *
+   * OFF IN EVERY ENVIRONMENT UNTIL A SOURCE IS POLICY-APPROVED, which is not a deployment step
+   * anybody has to remember: a flag with no row reads false, and this repository seeds no row and
+   * no source. Named `research_enabled` rather than the phase document's `research.enabled` for
+   * the reason `three_d_viewer` is not `3d_viewer` — a key must be a legal identifier, and the
+   * database CHECK enforces it.
+   */
+  research_enabled:
+    'Allows the research cron to fetch anything at all. Off until the owner has approved a source, and the fastest way to stop every source at once.',
 } as const satisfies Record<string, string>
 
 export type FeatureFlagKey = keyof typeof FLAGS

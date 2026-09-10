@@ -1,6 +1,6 @@
-import { afterAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
-import { asSession, disconnect } from './harness'
+import { asSession, disconnect, loadFixture } from './harness'
 
 /**
  * Who may EXECUTE the functions in `public`, asserted in both directions.
@@ -111,6 +111,15 @@ const asOwner = <T>(fn: Parameters<typeof asSession<T>>[2]) =>
   asSession('authenticated', '00000000-0000-4000-8000-0000000000a1', fn)
 
 describeDb('EXECUTE grants on public functions', () => {
+  /*
+   * THE FIXTURE, LOADED HERE RATHER THAN INHERITED. This file used to have no `beforeAll` at all,
+   * and its last test — a real INSERT as the owner — only worked because some other suite happened
+   * to have loaded the staff profiles first. The advisory lock in `connect` serialises these files
+   * but says nothing about their ORDER, so that was luck, and adding one suite to the project was
+   * enough to change it. A test that passes because of what ran before it is a test that will fail
+   * for a reason that has nothing to do with what it checks.
+   */
+  beforeAll(loadFixture)
   afterAll(disconnect)
 
   it('publishes to anon exactly the functions the public paths need, and nothing else', async () => {

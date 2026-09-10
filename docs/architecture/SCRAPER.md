@@ -2,7 +2,7 @@
 doc: SCRAPER
 status: CURRENT
 owning_phase: 25
-last_reviewed: 2026-09-07
+last_reviewed: 2026-09-10
 owner_verification: OWNER_VERIFICATION_REQUIRED
 ---
 
@@ -18,6 +18,64 @@ owner_verification: OWNER_VERIFICATION_REQUIRED
 > configured rate is a legal and commercial judgement this repository cannot make. Every source
 > ships `policy_status = 'UNREVIEWED'` and every approval control is marked
 > `OWNER_VERIFICATION_REQUIRED`. Approval is the owner's assertion, not the engineering team's.
+
+---
+
+## 0. As built — what Phase 25 actually shipped
+
+> Added when the foundation landed. Everything below §1 is the design for the whole subsystem
+> (Phases 25–36) and is unchanged; this section says which of it exists today, and names the four
+> places where the implementation and this document should be read together.
+
+**Shipped**: migrations `0230`–`0234`; nine tables (`research_sources`, `research_jobs`,
+`research_runs`, `research_work_items`, `research_fetches`, `research_raw_items`,
+`research_products`, `research_pipeline_events`, `research_robots_cache`); the seven-stage machine
+with disposition as a separate column; the whole of §8's politeness posture; §9.2's snapshot store;
+the drain loop and the five-minute cron; six Studio surfaces; and the isolation guard.
+
+**Not yet**: adapters and structured extraction (§5, Phase 27), normalisation and validation (§10,
+Phase 28), change detection (§11, Phase 29), the review workflow (§12, Phase 29–30), and the
+remaining FEAT §26 source fields (§6, Phase 26). `research_raw_items.raw` accepts **only**
+`{ title, canonicalUrl, links }` under a `.strict()` Zod schema, so a "temporary" parser fails at
+the write rather than at review — which is how §5's adapter architecture is protected from being
+pre-empted by a shortcut.
+
+### 0.1 Four notes where the code and this document meet
+
+1. **The politeness controls are enforced in the LEASE QUERY, and §7 is right that they are.**
+   Worth restating because a reader expecting `await sleep(delay)` will not find one: on a runtime
+   that kills a function at sixty seconds, sleeping spends the invocation doing nothing and loses
+   the delay entirely when the function is terminated mid-wait. `not_before_at` on the item and
+   `next_fetch_not_before` on the source are filtered in the statement that hands out work, so the
+   delay survives the process. `for update skip locked` is not expressible through PostgREST, so
+   leasing is `research_lease_work_items()` — SECURITY DEFINER, granted to the service role alone —
+   which also re-applies every source-level gate in the same statement.
+
+2. **`Crawl-delay` is a floor and can only slow Rivya down.** §8.1 records the directive; the
+   implementation is `Math.max`, never `Math.min`, and `tests/unit/robots-parse.test.ts` asserts it
+   in those words. It is not in RFC 9309, and honouring an unstandardised directive in a way that
+   could make Rivya *faster* would put a third party's file in charge of our request rate upward.
+
+3. **A `DISALLOWED` fetch row is evidence, and the row enforces it.**
+   `research_fetches_disallowed_has_no_response` refuses a `DISALLOWED` row carrying an HTTP
+   status, a content hash or a storage key. A row saying "we did not fetch this" cannot also say
+   what came back — which is what makes the robots log something to be believed rather than
+   something the application asserts about itself.
+
+4. **`research_sources` has no `owner_verification` column.** §6 and the front matter both mark
+   source approval `OWNER_VERIFICATION_REQUIRED`, and that is exactly what `policy_status` is:
+   starts `UNREVIEWED`, owner or admin only to approve, an approval that names nobody is refused,
+   and `check (is_enabled = false or policy_status = 'APPROVED')` makes an enabled-but-unapproved
+   source unstorable. Adding the generic D5 flag beside it would have been two columns answering
+   one question with only one of them enforced. See amendment **A25**.
+
+### 0.2 The prohibitions in §8.2 are enforced by a build gate
+
+`scripts/research/check-research-isolation.mjs` fails on an import of any browser-automation,
+proxy-rotation or CAPTCHA-solving package anywhere under `lib/scraper/**`, alongside the four
+isolation invariants of §2 and §13. Each was proved to fail on a real planted violation and to pass
+once restored. It runs in `npm run check` and in CI — after `db:reset`, because two of its four
+checks read the live schema and would otherwise report a pass having looked at an empty one.
 
 ---
 

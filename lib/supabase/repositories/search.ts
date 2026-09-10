@@ -198,3 +198,27 @@ export async function countByEntityType(client: Client): Promise<Record<string, 
   for (const row of data ?? []) counts[row.entity_type] = (counts[row.entity_type] ?? 0) + 1
   return counts
 }
+
+/**
+ * Delete `search_queries` rows past the retention window.
+ *
+ * NINETY DAYS, SWEPT BY THE CRON, and the reason is a privacy one rather than a storage one: this
+ * table holds what visitors typed into a search box, and a table of search terms that grows
+ * forever is a liability accumulating quietly. `scripts/search/prune-queries.ts` is the same sweep
+ * as a manual command with a dry run; this is the path the Phase 25 tick calls, which is what
+ * makes the retention automatic rather than something somebody has to remember.
+ *
+ * SERVICE ROLE, NECESSARILY. `search_queries` has no delete policy for any session role — the
+ * record of what was searched is not editable by the people it describes or by the staff reading
+ * it. The admin client bypasses RLS, which is why this function takes one and says so.
+ */
+export async function pruneSearchQueries(admin: Client, retentionDays: number): Promise<number> {
+  const cutoff = new Date(Date.now() - retentionDays * 24 * 60 * 60 * 1000).toISOString()
+  const { data, error } = await admin
+    .from('search_queries')
+    .delete()
+    .lt('occurred_at', cutoff)
+    .select('id')
+  if (error) throw toRepositoryError(ENTITY, 'prune', 'expired', error)
+  return (data ?? []).length
+}
