@@ -13,6 +13,7 @@ import { suggestRelations, type Suggestion } from '@/lib/relations/rules'
 import { listProductsForStudio } from '@/lib/supabase/repositories/catalog-admin'
 import { listGlobalContent } from '@/lib/supabase/repositories/cms'
 import { listProductRelations } from '@/lib/supabase/repositories/product-edges'
+import { listProductIdsWithRelations } from '@/lib/supabase/repositories/relations'
 import { createClient } from '@/lib/supabase/server'
 import { isReciprocal } from '@/lib/supabase/schemas'
 
@@ -80,17 +81,10 @@ export default async function Page({
    * an edge accepted from a rule still counts as made by hand — somebody pressed Accept — which is
    * why `origin` is not filtered here even though it is recorded.
    */
-  const withEdges = new Set<string>()
-  if (published.length > 0) {
-    const { data } = await client
-      .from('product_relations')
-      .select('source_product_id')
-      .in(
-        'source_product_id',
-        published.map((row) => row.id),
-      )
-    for (const row of data ?? []) withEdges.add(row.source_product_id)
-  }
+  const withEdges = await listProductIdsWithRelations(
+    client,
+    published.map((row) => row.id),
+  )
   const uncovered = published.length - withEdges.size
   const coverageTemplate = siteString(strings, 'UI_LABEL.relations.coverage')
 

@@ -74,8 +74,19 @@ describe('no rule writes', () => {
     }
   })
 
-  it('reads relation_suppressions, because a dismissed suggestion must never return', () => {
-    expect(SOURCE).toContain("from('relation_suppressions')")
+  /**
+   * THE ASSERTION MOVED WITH THE QUERY, AND THE GUARANTEE DID NOT CHANGE. This used to look for
+   * `from('relation_suppressions')` in the rules module. `check-data-layer.mjs` requires every
+   * query to live in `lib/supabase/repositories/**`, so the read is now `listSuppressedSuggestions`
+   * — and a test that kept looking for the old string would have gone red for the right refactor.
+   * What matters is unchanged: the rules consult dismissals before proposing, and the repository
+   * is the thing that reads the table.
+   */
+  it('consults dismissals before proposing, because a dismissed suggestion must never return', () => {
+    expect(SOURCE).toContain('listSuppressedSuggestions')
+    expect(readFileSync('lib/supabase/repositories/relations.ts', 'utf8')).toContain(
+      "from('relation_suppressions')",
+    )
   })
 })
 

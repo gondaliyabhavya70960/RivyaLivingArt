@@ -88,7 +88,10 @@ one file; `/studio/catalog/relationships` with its coverage, picker, edges and s
    `/api/search/suggest?q=re` returns one prefix match with `s-maxage=60`; `?q=a` returns 400.
 8. `reindex.ts --dry-run` twice → identical per-type counts, zero writes; `--apply` → rebuilt, then
    the dry run reports no drift.
-9. `npm run check` — all 30 gates green, including the raised island budget and the new scope gate.
+9. `npm run check` — all 31 gates green, including the raised island budget, the new scope gate, and
+    `db:check-data-layer`, which was added to `check` after CI caught what `check` could not: the
+    first push held `.from()` calls in `lib/relations/**` and the workspace. All of it moved into
+    `lib/supabase/repositories/relations.ts`.
 10. `npm run seed:content` twice → inserted 486 then unchanged 486; `content:check-inventory`
     regenerated with the 20 new strings.
 

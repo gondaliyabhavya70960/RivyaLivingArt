@@ -64,7 +64,7 @@
     "search:reindex": "tsx scripts/search/reindex.ts",
     "search:prune-queries": "tsx scripts/search/prune-queries.ts",
     "search:check-scope": "node scripts/search/check-search-scope.mjs",
-    "check": "npm run typecheck && npm run lint && npm run format:check && npm run media:check-ids && npm run media:assert-no-regen && npm run cms:check-transitions && npm run cms:check-copy && npm run demo:check-register && npm run site:check-client-boundary && npm run site:check-islands && npm run site:check-whatsapp && npm run perf:check-bundle && npm run design:check-tokens && npm run design:check-registry && npm run design:check-utilities && npm run search:check-scope"
+    "check": "npm run typecheck && npm run lint && npm run format:check && npm run media:check-ids && npm run media:assert-no-regen && npm run cms:check-transitions && npm run cms:check-copy && npm run demo:check-register && npm run site:check-client-boundary && npm run site:check-islands && npm run site:check-whatsapp && npm run perf:check-bundle && npm run design:check-tokens && npm run design:check-registry && npm run design:check-utilities && npm run search:check-scope && npm run db:check-data-layer"
   },
   "dependencies": {
     "@gltf-transform/core": "4.5.0",

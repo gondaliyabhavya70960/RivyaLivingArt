@@ -69,6 +69,15 @@ type from the ORIGINAL TARGET, which produced a project claiming to be a portfol
 — a plausible-looking row nobody would have questioned. A relation type names what is at the far end,
 and the far end of the inverse is the original SOURCE.
 
+**And a fourth, which CI found and the local `npm run check` could not.** `db:check-data-layer`
+runs in CI but was not in `npm run check`, so the first push of this phase went out with
+`lib/relations/**` and the relationship workspace holding their own `.from()` calls — the Phase 03
+rule that every query lives in `lib/supabase/repositories/**`. Fixed by moving all of it into
+`relations.ts`, which turned out to be the better shape anyway: the filters a suggestion rule could
+most easily get subtly wrong (an unpublished sibling, a collection still in concept) now sit
+together beside the queries rather than being spread across four rule functions. `db:check-data-layer`
+is now in `npm run check`, so the next phase cannot repeat it.
+
 **Gates.** `npm run search:check-scope` walks the import graph from the four public search entry
 points and fails on `research_`, `researchProduct`, `researchSearch` or `scraper`; it is in
 `npm run check` and in CI, and it is proved to fail by adding a research identifier to

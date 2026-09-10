@@ -1,6 +1,15 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 import type { Database } from '@/lib/supabase/database.types'
+import {
+  getProductSlug,
+  listArticlesLinkingTo,
+  listCollectionSiblings,
+  listConnectedTargets,
+  listMaterialOverlaps,
+  listProjectsPointingAtProduct,
+  listSuppressedSuggestions,
+} from '@/lib/supabase/repositories/relations'
 import type { RelationTarget, RelationVocabulary } from '@/lib/supabase/schemas'
 
 type Client = SupabaseClient<Database>
@@ -14,11 +23,17 @@ type Client = SupabaseClient<Database>
  * from an article, or because the opposite edge already exists and was made by hand. Each is a
  * decision a person already made; the rule only notices it.
  *
- * NOTHING HERE WRITES. Not one function in this module takes a writable client, and
- * `tests/unit/relation-rules.test.ts` asserts that the module exports no function whose name
- * matches a mutation and that its source contains no `.insert(`/`.update(`/`.delete(`. A rule that
- * persisted would make the `origin` column a lie: a row would exist that no editor accepted, and
- * "where did this relation come from" would have no answer.
+ * NOTHING HERE WRITES, AND NOTHING HERE QUERIES EITHER. Every read goes through
+ * `lib/supabase/repositories/relations.ts`, which is the Phase 03 rule and which
+ * `scripts/db/check-data-layer.mjs` enforces — it caught the first draft of this file holding its
+ * own `.from()` calls. What is left here is the four rules as arithmetic over what the repository
+ * returns, which is the right shape anyway: the filters a rule could most easily get subtly wrong
+ * (an unpublished sibling, a concept collection) now sit together beside the queries.
+ *
+ * `tests/unit/relation-rules.test.ts` asserts that this module exports no function whose name
+ * matches a mutation and that its source contains no `.insert(`/`.update(`/`.delete(`/`.rpc(`. A
+ * rule that persisted would make the `origin` column a lie: a row would exist that no editor
+ * accepted, and "where did this relation come from" would have no answer.
  *
  * EXPLICITLY NOT RULES, and each for a stated reason:
  *   view-count affinity     — there is no view counter, and FEAT §28 forbids manufacturing one
@@ -92,39 +107,24 @@ interface Excluded {
   readonly suppressed: ReadonlySet<string>
 }
 
+/**
+ * TWO SHARED MATERIALS, NOT ONE.
+ *
+ * Named rather than inlined because the number IS the rule: at one, almost everything this
+ * workshop makes contains resin and the catalogue connects to itself.
+ */
+export const SHARED_MATERIAL_MINIMUM = 2
+
 const edgeKey = (targetType: string, targetId: string, ruleKey: string): string =>
   `${targetType}:${targetId}:${ruleKey}`
 
 const targetKey = (targetType: string, targetId: string): string => `${targetType}:${targetId}`
 
 async function loadExclusions(client: Client, source: SuggestionSource): Promise<Excluded> {
-  const existing = new Set<string>()
-  const suppressed = new Set<string>()
-
-  if (source.type === 'product') {
-    const { data } = await client
-      .from('product_relations')
-      .select('target_type, target_id')
-      .eq('source_product_id', source.id)
-    for (const row of data ?? []) existing.add(targetKey(row.target_type, row.target_id))
-  } else {
-    const { data } = await client
-      .from('content_relations')
-      .select('target_type, target_id')
-      .eq('source_type', source.type)
-      .eq('source_id', source.id)
-    for (const row of data ?? []) existing.add(targetKey(row.target_type, row.target_id))
-  }
-
-  const { data: dismissals } = await client
-    .from('relation_suppressions')
-    .select('target_type, target_id, rule_key')
-    .eq('source_type', source.type)
-    .eq('source_id', source.id)
-  for (const row of dismissals ?? []) {
-    suppressed.add(edgeKey(row.target_type, row.target_id, row.rule_key))
-  }
-
+  const [existing, suppressed] = await Promise.all([
+    listConnectedTargets(client, source),
+    listSuppressedSuggestions(client, source),
+  ])
   return { existing, suppressed }
 }
 
@@ -137,62 +137,33 @@ function admits(excluded: Excluded, targetType: string, targetId: string, rule: 
 /**
  * `same-collection` — products sharing a published collection.
  *
- * RELIABLE BECAUSE AN EDITOR DELIBERATELY PUT BOTH IN THAT COLLECTION. The collection must be
- * PUBLISHED and out of concept: FEAT §9's `DRAFT_COLLECTION_CONCEPT` rows are ideas, and two
- * products sitting in an idea are not related by anything yet.
+ * RELIABLE BECAUSE AN EDITOR DELIBERATELY PUT BOTH IN THAT COLLECTION. The repository applies the
+ * two filters that make the claim true — the collection must be PUBLISHED and out of concept, and
+ * the sibling must be PUBLISHED — so what is left here is de-duplication and the exclusion test.
  */
 async function sameCollection(
   client: Client,
   productId: string,
   excluded: Excluded,
 ): Promise<Suggestion[]> {
-  const { data: memberships } = await client
-    .from('product_collections')
-    .select('collection_id, collections!inner(id, name, status, concept_state)')
-    .eq('product_id', productId)
+  const siblings = await listCollectionSiblings(client, productId)
 
-  const out: Suggestion[] = []
   const seen = new Set<string>()
-
-  for (const membership of memberships ?? []) {
-    const collection = membership.collections as unknown as {
-      id: string
-      name: string
-      status: string
-      concept_state: string
-    } | null
-    if (collection === null) continue
-    if (collection.status !== 'PUBLISHED') continue
-    if (collection.concept_state === 'DRAFT_COLLECTION_CONCEPT') continue
-
-    const { data: siblings } = await client
-      .from('product_collections')
-      .select('product_id, products!inner(id, title, status)')
-      .eq('collection_id', collection.id)
-
-    for (const sibling of siblings ?? []) {
-      const product = sibling.products as unknown as {
-        id: string
-        title: string
-        status: string
-      } | null
-      if (product === null || product.id === productId) continue
-      if (product.status !== 'PUBLISHED') continue
-      if (seen.has(product.id)) continue
-      if (!admits(excluded, 'product', product.id, 'same-collection')) continue
-      seen.add(product.id)
-      out.push({
-        ruleKey: 'same-collection',
-        reasonKey: RULE_REASON_KEY['same-collection'],
-        relationType: RULE_RELATION_TYPE['same-collection'],
-        targetType: 'product',
-        targetId: product.id,
-        targetTitle: product.title,
-        evidence: [collection.name],
-      })
-    }
+  const out: Suggestion[] = []
+  for (const sibling of siblings) {
+    if (seen.has(sibling.productId)) continue
+    if (!admits(excluded, 'product', sibling.productId, 'same-collection')) continue
+    seen.add(sibling.productId)
+    out.push({
+      ruleKey: 'same-collection',
+      reasonKey: RULE_REASON_KEY['same-collection'],
+      relationType: RULE_RELATION_TYPE['same-collection'],
+      targetType: 'product',
+      targetId: sibling.productId,
+      targetTitle: sibling.productTitle,
+      evidence: [sibling.collectionName],
+    })
   }
-
   return out
 }
 
@@ -201,112 +172,52 @@ async function sameCollection(
  *
  * TWO, NOT ONE, AND THE THRESHOLD IS THE RULE. Nearly everything this workshop makes contains
  * resin; one shared material would connect the entire catalogue to itself and propose a hundred
- * edges nobody wants. Two shared materials is a specification an editor chose twice.
+ * edges nobody wants. Two shared materials is a specification an editor chose twice. The number is
+ * passed to the repository rather than applied afterwards, so the query and the rule agree.
  */
 async function sharedMaterials(
   client: Client,
   productId: string,
   excluded: Excluded,
 ): Promise<Suggestion[]> {
-  const { data: mine } = await client
-    .from('product_materials')
-    .select('material_id, materials!inner(id, name)')
-    .eq('product_id', productId)
-
-  const materialIds = (mine ?? []).map((row) => row.material_id)
-  if (materialIds.length < 2) return []
-
-  const names = new Map<string, string>()
-  for (const row of mine ?? []) {
-    const material = row.materials as unknown as { id: string; name: string } | null
-    if (material !== null) names.set(material.id, material.name)
-  }
-
-  const { data: others } = await client
-    .from('product_materials')
-    .select('product_id, material_id, products!inner(id, title, status)')
-    .in('material_id', materialIds)
-
-  const shared = new Map<string, { title: string; materials: string[] }>()
-  for (const row of others ?? []) {
-    if (row.product_id === productId) continue
-    const product = row.products as unknown as { id: string; title: string; status: string } | null
-    if (product === null || product.status !== 'PUBLISHED') continue
-    const entry = shared.get(product.id) ?? { title: product.title, materials: [] }
-    const name = names.get(row.material_id)
-    if (name !== undefined) entry.materials.push(name)
-    shared.set(product.id, entry)
-  }
+  const overlaps = await listMaterialOverlaps(client, productId, SHARED_MATERIAL_MINIMUM)
 
   const out: Suggestion[] = []
-  for (const [targetId, entry] of shared) {
-    if (entry.materials.length < 2) continue
-    if (!admits(excluded, 'product', targetId, 'shared-materials')) continue
+  for (const overlap of overlaps) {
+    if (!admits(excluded, 'product', overlap.productId, 'shared-materials')) continue
     out.push({
       ruleKey: 'shared-materials',
       reasonKey: RULE_REASON_KEY['shared-materials'],
       relationType: RULE_RELATION_TYPE['shared-materials'],
       targetType: 'product',
-      targetId,
-      targetTitle: entry.title,
-      evidence: [...entry.materials].sort(),
+      targetId: overlap.productId,
+      targetTitle: overlap.productTitle,
+      evidence: overlap.materialNames,
     })
   }
   return out
 }
 
 /**
- * `journal-linked-product` — a published article whose body links to `/product/<slug>`.
+ * `journal-linked-product` — a published article whose page links to `/product/<slug>`.
  *
- * RELIABLE BECAUSE THE AUTHOR TYPED THE LINK. The article body lives in `page_sections`, so the
- * rule reads the section content rather than the article row; that is also why it matches on the
- * product's SLUG rather than its title — a link is a fact, a title mention is a coincidence.
+ * RELIABLE BECAUSE THE AUTHOR TYPED THE LINK. It matches on the product's SLUG rather than its
+ * title: a link is a fact, a title mention is a coincidence.
  */
 async function journalLinkedProduct(
   client: Client,
   productId: string,
   excluded: Excluded,
 ): Promise<Suggestion[]> {
-  const { data: product } = await client
-    .from('products')
-    .select('slug')
-    .eq('id', productId)
-    .maybeSingle()
-  if (product === null || product === undefined) return []
+  const slug = await getProductSlug(client, productId)
+  if (slug === null) return []
 
-  const needle = `/product/${product.slug}`
-
-  const { data: articles } = await client
-    .from('journal_articles')
-    .select('id, title, slug, page_id, status')
-    .eq('status', 'PUBLISHED')
+  const path = `/product/${slug}`
+  const articles = await listArticlesLinkingTo(client, path)
 
   const out: Suggestion[] = []
-  for (const article of articles ?? []) {
-    if (article.page_id === null) continue
-    // THE LINK CAN BE IN ANY OF FOUR PLACES, so all four are read rather than only `body`: prose
-    // (`body`, `supporting`), either call to action (`cta_url`, `cta_secondary_url`), or a block's
-    // own `payload`. An author who linked the piece from a button linked it just as deliberately as
-    // one who linked it mid-sentence, and a rule that noticed only the sentence would be a rule
-    // that quietly depends on how somebody chose to lay a page out.
-    const { data: sections } = await client
-      .from('page_sections')
-      .select('body, supporting, cta_url, cta_secondary_url, payload')
-      .eq('page_id', article.page_id)
-      .eq('status', 'PUBLISHED')
-
-    const linked = (sections ?? []).some((section) =>
-      [
-        section.body,
-        section.supporting,
-        section.cta_url,
-        section.cta_secondary_url,
-        section.payload === null ? '' : JSON.stringify(section.payload),
-      ].some((field) => typeof field === 'string' && field.includes(needle)),
-    )
-    if (!linked) continue
+  for (const article of articles) {
     if (!admits(excluded, 'journal', article.id, 'journal-linked-product')) continue
-
     out.push({
       ruleKey: 'journal-linked-product',
       reasonKey: RULE_REASON_KEY['journal-linked-product'],
@@ -314,7 +225,7 @@ async function journalLinkedProduct(
       targetType: 'journal',
       targetId: article.id,
       targetTitle: article.title,
-      evidence: [needle],
+      evidence: [path],
     })
   }
   return out
@@ -325,31 +236,18 @@ async function journalLinkedProduct(
  * inverse.
  *
  * RELIABLE BECAUSE THE FORWARD EDGE ALREADY EXISTS AND SOMEBODY MADE IT BY HAND. This rule adds no
- * new judgement at all; it notices an asymmetry and offers to close it.
+ * judgement at all; it notices an asymmetry and offers to close it.
  */
 async function projectFeaturedProduct(
   client: Client,
   productId: string,
   excluded: Excluded,
 ): Promise<Suggestion[]> {
-  const { data: edges } = await client
-    .from('content_relations')
-    .select('source_id, portfolio_projects:source_id(id, title, status)')
-    .eq('source_type', 'portfolio_project')
-    .eq('target_type', 'product')
-    .eq('target_id', productId)
+  const projects = await listProjectsPointingAtProduct(client, productId)
 
   const out: Suggestion[] = []
-  for (const edge of edges ?? []) {
-    const { data: project } = await client
-      .from('portfolio_projects')
-      .select('id, title, status')
-      .eq('id', edge.source_id)
-      .maybeSingle()
-    if (project === null || project === undefined) continue
-    if (project.status !== 'PUBLISHED') continue
+  for (const project of projects) {
     if (!admits(excluded, 'portfolio', project.id, 'project-featured-product')) continue
-
     out.push({
       ruleKey: 'project-featured-product',
       reasonKey: RULE_REASON_KEY['project-featured-product'],
