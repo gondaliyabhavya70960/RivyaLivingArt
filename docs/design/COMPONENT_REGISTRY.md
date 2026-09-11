@@ -293,7 +293,7 @@ and Phase 10's site shell then reuses it.
 | RC-229 | `charts/*` (`BarSeries`, `BandStrip`, `Scatter`, `Sparkline`) | usability | 31 | PLANNED | §7.23 |
 | RC-230 | `Breadcrumbs` | navigation | 02 | BUILT | §7.35 |
 | RC-231 | `DropdownMenu` | navigation | 02 | BUILT | §7.36 |
-| RC-232 | `MediaImage` | material understanding | 06 | BUILT | §7.37 |
+| RC-232 | `MediaImage` | material understanding | 06 | BUILT | §7.37; Phase 40 added `priority`, which sets `fetchpriority="high"` as well as eager — at most one per route, asserted by `scripts/perf/check-priority-images.mjs` |
 | RC-233 | `MediaVideo` | material understanding | 06 | BUILT | §7.38 |
 | RC-234 | `Pagination` | navigation | 14 | BUILT | §7.39 |
 | RC-235 | `BlockVideo` | material understanding | 11 | BUILT | index only — server; split out of RC-213 so a route with no video does not carry the `MediaVideo` island |
@@ -375,6 +375,8 @@ implementation detail of RC-213.
 | RC-351 | `RedirectsTable` | usability | 39 | PLANNED | index only — list with hit counts and chain warnings, a GET test box, add / pause / resume / delete |
 | RC-352 | `StructuredDataPanel` | product understanding | 39 | PLANNED | index only — the allowlist with each type's gate and live state, the never-emitted list, and a read-only rendering of exactly what a builder emits for a chosen entity, with `forbiddenKeysIn()` run over it |
 | RC-353 | `EntitySeoPanel` | usability | 39 | PLANNED | index only — `SeoEntryForm` for the ENTITY scope beside the product, collection, project and article editors; two audited acts under two permissions |
+| RC-354 | `VitalsReporter` | performance | 40 | BUILT | index only — the one client island in the site shell that exists for measurement rather than interaction. Renders no DOM node; `web-vitals` is behind a dynamic `import()` inside the effect, so it is not in any first load; reports for one page view in ten, from production only. Sends the route PATTERN and four coarse buckets and carries no identifier of any kind |
+| RC-355 | `VitalsCard` | product understanding | 40 | BUILT | index only — field Core Web Vitals on the Studio Analytics tab: p75 per metric per route pattern over 28 days, n beside every figure, captioned with the sample rate and the window. A route with no samples is absent, never shown as zero |
 
 ### 6.4 Three — `components/three/`
 

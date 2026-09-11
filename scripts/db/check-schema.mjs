@@ -710,6 +710,14 @@ const EXPECTED = {
   seo_keyword_themes: [...TIER_A, ...TIER_B, ...TIER_C],
   seo_redirects: [...TIER_A, ...TIER_B],
 
+  /*
+   * Phase 40 — a measurement, not content. No tier at all: an `updated_at` on a sample would
+   * imply a sample can be revised, a `status` would imply one can be published, and a `created_by`
+   * would be the identifier this table exists to not have. `occurred_at` is the only time it
+   * needs and the CHECK set in 0380 is where its invariants live.
+   */
+  web_vitals_samples: ['route_pattern', 'metric', 'value', 'rating', 'occurred_at'],
+
   research_scoring_models: [
     'version',
     'signals',

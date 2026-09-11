@@ -7567,6 +7567,46 @@ export const STUDIO_STRINGS = {
   },
 
   // --- Phase 37: the Analytics tab ---------------------------------------------------------------
+  /* --- Phase 40: field Core Web Vitals ------------------------------------------------------ */
+  'studio.analytics.vitals.heading': {
+    value: 'What visitors measured',
+    contentKey: 'studio_help.analytics_vitals_heading',
+  },
+  'studio.analytics.vitals.intro': {
+    value:
+      'Core Web Vitals as real browsers reported them, at the 75th percentile, per route pattern. Lab targets are a separate measurement and live in the performance guide.',
+    contentKey: 'studio_help.analytics_vitals_intro',
+  },
+  'studio.analytics.vitals.caption': {
+    value: 'Sampled at',
+    contentKey: 'studio_help.analytics_vitals_caption',
+  },
+  'studio.analytics.vitals.days': {
+    value: 'days of production page views. Not every visit.',
+    contentKey: 'studio_help.analytics_vitals_days',
+  },
+  'studio.analytics.vitals.route': {
+    value: 'Route',
+    contentKey: 'studio_help.analytics_vitals_route',
+  },
+  'studio.analytics.vitals.emptyHeading': {
+    value: 'No samples yet',
+    contentKey: 'studio_help.analytics_vitals_empty_heading',
+  },
+  'studio.analytics.vitals.emptyBody': {
+    value:
+      'The reporter runs on production only, for one page view in ten. Figures appear here once production has served traffic.',
+    contentKey: 'studio_help.analytics_vitals_empty_body',
+  },
+  'studio.analytics.vitals.unreadableHeading': {
+    value: 'Field data could not be read',
+    contentKey: 'studio_help.analytics_vitals_unreadable_heading',
+  },
+  'studio.analytics.vitals.unreadableBody': {
+    value:
+      'Reading web_vitals_samples failed or your role does not hold analytics.read. Everything else on this page is unaffected.',
+    contentKey: 'studio_help.analytics_vitals_unreadable_body',
+  },
   'studio.analytics.studioSection': {
     value: 'This studio',
     contentKey: 'studio_help.analytics_studio_section',

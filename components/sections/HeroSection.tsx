@@ -75,6 +75,8 @@ export function HeroSection({
           strings={strings}
           cloudName={cloudName}
           eager={isFirst}
+          // Phase 40: the first section of a page owns the route's one LCP hint.
+          priority={isFirst}
           veil={overlaid}
         />
         {payload.is_video && payload.autoplay && motion != null ? (

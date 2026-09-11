@@ -280,6 +280,14 @@ const config = [
        */
       'lib/seo/redirects.ts',
       /*
+       * `app/api/vitals/route.ts` — Phase 40. The beacon comes from an ANONYMOUS browser, so the
+       * only session that could insert is `anon`, and an anon insert policy would be an
+       * unauthenticated write path into the database. `web_vitals_samples` therefore has no write
+       * policy at all and the route inserts as the service role — after a same-origin check, a
+       * rate limit and a `.strict()` Zod parse, in that order. It never reads.
+       */
+      'app/api/vitals/route.ts',
+      /*
        * `lib/scraper/**` — the research pipeline. It runs from a cron tick with no user and no
        * cookie, and four of its nine tables (the work queue, the fetch log, the raw items and the
        * robots cache) have NO session write policy at all: a member of staff able to write them

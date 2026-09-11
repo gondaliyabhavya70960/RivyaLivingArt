@@ -14,6 +14,7 @@ import type { AnalyticsSnapshotRow } from '@/lib/supabase/schemas/analytics'
 import { createClient } from '@/lib/supabase/server'
 
 import { MetricTile } from './MetricTile'
+import { VitalsCard } from './VitalsCard'
 import { MetricUnavailable } from './MetricUnavailable'
 
 /**
@@ -175,6 +176,13 @@ export async function AnalyticsTab({ role }: { readonly role: Role }) {
           showTrend
         />
       ) : null}
+      {/*
+       * Phase 40. Field data sits below the snapshot metrics rather than among them because it is a
+       * different kind of number: a sampled measurement from visitors' browsers, not a figure
+       * computed from our own rows, and mixing the two in one grid would invite reading them as
+       * equally complete.
+       */}
+      <VitalsCard />
       <Text size="xs" tone="tertiary">
         {t('studio.analytics.exportHint')}
       </Text>

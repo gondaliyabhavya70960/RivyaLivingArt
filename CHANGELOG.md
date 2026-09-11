@@ -6,6 +6,62 @@ Every phase adds an entry; see `docs/architecture/CANONICAL-DECISIONS.md` D9 for
 
 ## [Unreleased]
 
+### Phase 40 — Performance (COMPLETE)
+
+The performance budget stops being a property of the homepage and becomes a property of the site,
+and — more to the point — becomes something anybody can re-measure in one command.
+
+**`perf/budgets.json` is now the only place the numbers live.** Every public route has an LCP
+target, a first-load JavaScript target, an island ceiling and a declaration of whether it has an
+LCP image; `/studio/**` is one group rule rather than eighty-two rows; `app/(devtools)` is excluded
+with a reason. The four guard scripts and this repository's documentation all read it, so they
+cannot disagree.
+
+**First-load JavaScript is measured from what the browser is actually sent.** Next 16's build table
+no longer prints per-route sizes, so `scripts/perf/measure-bundles.mjs` asks a running production
+build for each page and totals the gzipped bytes of every script its HTML asks for — which is
+exactly the phase document's definition, and is resilient to the bundler moving its internals
+again. `perf/bundle-baseline.json` records the result; `check-bundle.mjs --base <url>` fails CI on
+growth beyond 5 %, and `--explain <route>` breaks a route down chunk by chunk.
+
+**Three findings, two fixed in this change** (`docs/ops/PERFORMANCE.md` §4.5):
+
+- **Every hero on the site was fetched at default priority.** `MediaImage` had `loading` and no
+  priority hint, so the largest image on every page was un-deferred and then queued behind every
+  stylesheet and script the parser had already found. `MediaImage` gains `priority`
+  (`fetchpriority="high"` plus eager); `HeroSection`, `SignatureMediaSection` and the product
+  gallery's first frame derive it from `isFirst`; `ResponsiveMedia` gives it to the MOBILE half of a
+  pair only, because two high-priority images demote each other and the constrained device is the
+  one the hint is for. `scripts/perf/check-priority-images.mjs` found ten routes with none and now
+  refuses a route with none or with two.
+- **Studio answered with no `Cache-Control` header at all** — which does not mean "do not cache".
+  `next.config.ts` now sets `private, no-store` on every Studio response beside the Phase 39
+  `X-Robots-Tag`.
+- **The section registry puts ~98 kB gzipped on every CMS route, 83.5 kB of it Zod.** NOT fixed
+  here and tracked with evidence: routes that render CMS sections weigh 280.8–282.0 kB and routes
+  that do not weigh 182.8–190.5 kB. Both candidate fixes are architecture rather than tuning, and
+  each deserves its own change measured with the harness this phase just built.
+
+**Field data, with nowhere to put an identifier.** Migration `0380` creates `web_vitals_samples`
+with ten columns and no IP, user agent, session id, user id, referrer or resolved URL — and
+`tests/unit/rls/phase40.test.ts` pins the column set by name so one cannot be added unnoticed.
+`route_pattern` is CHECKed three ways to refuse anything that still looks resolved.
+`components/patterns/VitalsReporter` (RC-354) beacons LCP, CLS, INP, TTFB and FCP for one page view
+in ten, from production only, through `POST /api/vitals` — same-origin, rate-limited, `.strict()`
+Zod, inserted as the service role because the alternative is an unauthenticated write policy.
+`VitalsCard` (RC-355) shows p75 per metric per route pattern on the Studio Analytics tab, captioned
+with the sample rate. The Phase 38 retention cron gained the 90-day purge.
+
+**Guards.** `count-islands.mjs` (every route against its budget, sharing one graph walk with the
+Phase 11 homepage gate so the two cannot drift), `check-third-party.mjs` (no origin outside self,
+`res.cloudinary.com` and `*.supabase.co` — a privacy position before a performance one),
+`check-cache-headers.mjs` (the contract row by row against a running build, with the three
+`searchParams`-driven listing deviations recorded on the rows themselves rather than hidden), and
+`check-priority-images.mjs`.
+
+`@next/bundle-analyzer` is deliberately **not** wired: it is a webpack plugin and this project
+builds with Turbopack, so it would be a dependency that cannot run. `--explain` replaces it.
+
 ### Phase 39 — SEO (COMPLETE)
 
 Search engines stop seeing thirteen pages with fallback metadata. **The ladder** (`lib/seo/resolve.ts`):

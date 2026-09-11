@@ -1407,7 +1407,157 @@ Landed on `main` by PR (merge commit after CI green); hosted database level `037
 
 ## Phase 40 — Performance
 
-**Status:** NOT STARTED
+**Status:** COMPLETED
+
+### Objective
+Turn the performance budget from a property of the homepage into a property of the site, and — the
+part that decides whether any of it survives — into something anybody can re-measure in one command
+against a real build. Publish a per-route budget as data, enforce it in CI, record a bundle baseline
+that fails on unexplained growth, write down the caching contract that had so far been decided route
+by route, and start collecting first-party field data so the lab numbers can be checked against real
+devices, without that data becoming visitor tracking.
+
+### Requirements Found
+`docs/project/phases/PHASE-39-46.md` §Phase 40 (the Core Web Vitals targets, the per-route budget
+table, the caching contract, seven guards one per FEAT §46 rule, exactly one priority image per
+route, no third parties, fonts, the field-data payload and its prohibitions, server-side latency,
+verification 1–10, exit criteria); `DATA_MODEL.md` §12 row 40; FEAT §46 and §28; D1 (no customer
+accounts); the existing `docs/ops/PERFORMANCE.md`, which had been written speculatively in an
+earlier phase and needed its claims replaced with measurements.
+
+### Implementation Completed
+- **`0380`** — `web_vitals_samples`: ten columns and **no column an identifier could go in** (no IP,
+  user agent, session id, user id, referrer or resolved URL). `metric`, `rating`, `nav_type`,
+  `effective_type`, `device_memory_bucket` and `viewport_bucket` each CHECKed to a closed set;
+  `value` bounded; `route_pattern` CHECKed three ways — leading slash, no `?` or `#`, and lower-case
+  segments or `[bracket]` parameters only. Two indexes (the panel's read and the cron's).
+  **`0381`** generated: shape C, `analytics.read` select, **no write policy of any kind**.
+- **`perf/budgets.json`** — the single source: every public route with an LCP target, a first-load
+  JavaScript target, an island ceiling and an `lcpImage` declaration; a `/studio` group rule rather
+  than eighty-two rows; `app/(devtools)` excluded with a reason; the Core Web Vitals targets, the
+  transferred-byte ceilings and the 3D chunk rule.
+- **`perf/bundle-baseline.json`** — thirteen routes measured on 2026-09-11 against a local
+  production build, with the sample URL and file count for each.
+- **`scripts/perf/measure-bundles.mjs`** — first-load JavaScript taken from the served HTML: every
+  `<script src>` and script preload, fetched and gzipped. Plus `explainRoute()`, the per-chunk
+  breakdown that replaces the unusable webpack analyzer.
+- **`scripts/perf/island-graph.mjs`** — the island walk extracted so the Phase 11 homepage gate and
+  the new per-route census share one definition and cannot drift.
+- **Guards**: `count-islands.mjs` (every route against its budget; an unbudgeted route fails),
+  `check-third-party.mjs` (no origin outside self, `res.cloudinary.com`, `*.supabase.co`, markup and
+  one level into our own stylesheets), `check-cache-headers.mjs` (the contract row by row, with
+  deviations carried on the rows), `check-priority-images.mjs` (none or two both fail), and two new
+  halves of `check-bundle.mjs` (`--base` baseline diff, `--explain` chunk breakdown).
+- **`lib/supabase/schemas/vitals.ts`** — `.strict()`, the forbidden-key list exported as data so a
+  test can iterate it, and the route-pattern regex shared with the CHECK.
+- **`lib/supabase/repositories/web-vitals.ts`** — insert, 90-day purge, and the p75 summary
+  (nearest-rank, so every figure is a measurement somebody's browser reported).
+- **`app/api/vitals/route.ts`** — same-origin, then rate limit (before the body is read), then
+  `.strict()` Zod, then a service-role insert; answers 204 with `no-store` and never throws into a
+  visitor's page. `lib/security/origin.ts` extracted so this and the Phase 20 upload endpoint share
+  one same-origin predicate.
+- **`components/patterns/VitalsReporter`** (RC-354) — one page view in ten, production only, route
+  PATTERN derived from a rule list rather than `location.pathname`, four coarse buckets computed in
+  the browser, `web-vitals` behind a dynamic import so it is not in any first load.
+- **`components/studio/analytics/VitalsCard`** (RC-355) — p75 per metric per route pattern over 28
+  days with n beside every figure, captioned with the sample rate; a route with no samples is absent
+  rather than zero. Mounted below the Phase 37 snapshot metrics.
+- **Two defects fixed** (below), the Phase 38 retention cron extended, and `docs/ops/PERFORMANCE.md`
+  rewritten around measurements.
+
+### Files Added
+`supabase/migrations/0380_phase40_web_vitals.sql`, `0381_phase40_web_vitals_rls.sql`;
+`perf/budgets.json`, `perf/bundle-baseline.json`;
+`scripts/perf/{island-graph,count-islands,measure-bundles,check-third-party,check-cache-headers,check-priority-images}.mjs`;
+`lib/supabase/schemas/vitals.ts`; `lib/supabase/repositories/web-vitals.ts`; `lib/security/origin.ts`;
+`app/api/vitals/route.ts`; `components/patterns/VitalsReporter/{index.tsx,context.ts}`;
+`components/studio/analytics/VitalsCard.tsx`;
+`tests/unit/{vitals-payload,budget-config}.test.ts`; `tests/unit/rls/phase40.test.ts`;
+`tests/e2e/{perf-headers,perf-no-third-party}.spec.ts`.
+
+### Files Modified
+`lib/auth/table-permissions.ts` (+`PHASE_40_POLICIES`, the `web_vitals_samples` entry);
+`scripts/auth/gen-role-sql.ts` (preamble); `scripts/db/check-schema.mjs` (EXPECTED);
+`scripts/perf/check-bundle.mjs` (baseline and explain halves);
+`scripts/site/check-island-budget.mjs` (budget 6 → 7, `VitalsReporter` named);
+`components/patterns/MediaImage/index.tsx` (`priority`); `components/patterns/MediaSlot/index.tsx`
+(`priority` through `BlockImage` and one half of `ResponsiveMedia`);
+`components/sections/{HeroSection,SignatureMediaSection}.tsx`,
+`components/patterns/ProductGallery/index.tsx` (`priority={isFirst}` / `position === 0`);
+`app/(site)/layout.tsx` (mounts the reporter); `next.config.ts` (`private, no-store` on Studio);
+`app/api/cron/log-retention/route.ts` (the vitals purge); `app/api/inquiries/upload-sign/route.ts`
+(shared origin check); `eslint.config.mjs` (admin-client allowlist); `components/studio/strings.ts`
+(nine strings); `components/studio/analytics/AnalyticsTab.tsx`; `package.json` (five scripts, four
+added to `check`); `.env.example`; `docs/architecture/DATA_MODEL.md` (§11.ag, §12 row);
+`docs/design/COMPONENT_REGISTRY.md` (RC-354, RC-355, RC-232); `docs/ops/PERFORMANCE.md`;
+`docs/ops/ENVIRONMENT.md`; `CHANGELOG.md`; `PROJECT_STATE.md`; `docs/SESSION-STATE.md`.
+
+### Database Changes
+`0380` creates `web_vitals_samples` (ten columns, eleven CHECK constraints, two indexes, RLS on).
+`0381` is generated and adds exactly one policy: staff `select` under `analytics.read`. **§12's row
+for Phase 40 read `0380` alone and now reads `0380`–`0381`**, because the generator rewrites a
+policy migration whole and DDL may never share a file with it (the A23…A30 pattern). Local: 106
+migrations applied from empty, `db:check-schema` and `db:check-migrations` green.
+
+### Supabase Changes
+**NOT YET APPLIED TO HOSTED.** `0380`–`0381` are the outstanding hosted work for this phase.
+
+### Environment Variables
+`NEXT_PUBLIC_VERCEL_ENV` — injected by Vercel server-side as `VERCEL_ENV`; the `NEXT_PUBLIC_` copy
+must be added by the owner in the dashboard per environment because only a `NEXT_PUBLIC_` variable is
+readable in a Client Component. The reporter sends only when it reads exactly `production`, so that a
+preview deployment's numbers cannot mix into the p75. Absent, nothing breaks and nothing is reported.
+Documented in `.env.example` and `docs/ops/ENVIRONMENT.md`.
+
+### GitHub Actions Changes
+Outstanding — the four runtime guards (`check-cache-headers`, `check-third-party`,
+`check-priority-images`, `check-bundle --base`) need a CI step after `next start`, alongside the
+Phase 39 structured-data validator. `npm run check` already runs the four offline guards.
+
+### Tests Performed
+`tests/unit/vitals-payload.test.ts` (31 cases: every forbidden key by name, any unknown key, the
+route-pattern shapes, the value bounds, the bucket helpers, and a walk of `app/(site)` proving the
+reporter has a rule for every dynamic route). `tests/unit/budget-config.test.ts` (9 cases: every
+route covered, no stale entry, well-formed numbers, the baseline agrees with the budget).
+`tests/unit/rls/phase40.test.ts` (11 cases, the first being the exact column set by name).
+`tests/e2e/{perf-headers,perf-no-third-party}.spec.ts` written. `npm run check` green across all
+twenty-two offline gates; unit 184 files / 2,792 tests; RLS 33 files / 632 tests.
+
+### Issues Found / Fixed
+1. **Every hero on the site was fetched at default priority. FIXED.** `MediaImage` had `loading` and
+   no priority hint; `loading="eager"` stops a browser DEFERRING a request and does nothing about its
+   position in the queue. Ten routes failed the new gate before the fix.
+2. **Studio answered with no `Cache-Control` header at all. FIXED.** An absent header is not "do not
+   cache" — it is every intermediary applying its own heuristic to a page carrying enquirer names and
+   draft copy.
+3. **The section registry costs every CMS route ~98 kB gzipped, 83.5 kB of it Zod. NOT FIXED,
+   tracked.** Routes rendering CMS sections weigh 280.8–282.0 kB; routes that do not weigh
+   182.8–190.5 kB. Both candidate fixes are architecture rather than tuning. Evidence and the
+   proposed fixes are in `PERFORMANCE.md` §4.5.
+4. **Next 16 prints no per-route JavaScript sizes and `@next/bundle-analyzer` cannot run against
+   Turbopack.** Both worked around rather than claimed: the figure comes from the served HTML and
+   `--explain` replaces the analyzer.
+5. Three listing routes are dynamic where the caching contract asks for ISR — awaiting `searchParams`
+   opts the whole route in. Recorded on the contract rows.
+
+### Build Status
+`npm run build` exits 0 through the local PostgREST shim; the site serves and every measured route
+renders. `/faq`, `/privacy` and `/terms` 404 in the local fixture because all of their seeded
+sections are `OWNER_VERIFICATION_REQUIRED` and stay unpublished — a fixture limitation Phase 42's
+seed fixture resolves, reported by name on every guard run rather than hidden.
+
+### Deployment Status
+Not deployed. Hosted migrations outstanding; CI wiring outstanding.
+
+### Commit
+Pending.
+
+### Remaining Notes
+- The owner sets `NEXT_PUBLIC_VERCEL_ENV` per environment, or no field data is ever collected.
+- Lighthouse stays `workflow_dispatch` only, per the standing free-tier instruction, so LCP, CLS and
+  INP remain NOT YET MEASURED in the log and are honestly labelled as such.
+- Finding 3 is the largest single performance win available on the site and is deliberately left for
+  a focused change that can be measured before and after with this phase's harness.
 
 ## Phase 41 — Accessibility + Security
 

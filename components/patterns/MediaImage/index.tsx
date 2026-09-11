@@ -73,6 +73,27 @@ export interface MediaImageProps extends Omit<
    * hero for the same connection.
    */
   loading?: 'lazy' | 'eager'
+  /**
+   * THE LCP ELEMENT OF THIS ROUTE. At most one per page — Phase 40.
+   *
+   * It sets `loading="eager"` AND `fetchpriority="high"`, and the second half is the one that
+   * matters. `loading="eager"` only stops the browser DEFERRING the request; the image still joins
+   * the queue behind every stylesheet and script the parser has already found. `fetchpriority`
+   * moves it to the front of that queue, which is the difference between a hero that paints with
+   * the page and one that paints after it.
+   *
+   * PHASE 11'S RULE, GENERALISED: the largest contentful paint is always an image, never a video
+   * and never a WebGL canvas, and it is chosen rather than whatever the browser happens to settle
+   * on. `scripts/perf/check-priority-images.mjs` crawls the built site and fails on a route with
+   * none or with two — because two high-priority images are the same as none, and the browser
+   * resolves the tie by document order rather than by what matters.
+   *
+   * IT IS NOT SET AT CALL SITES BY HAND. The section renderers derive it from `isFirst`, which
+   * `SectionList` computes, so "the first section's image" is true by construction rather than by
+   * somebody remembering. A product page passes it to the gallery's first frame for the same
+   * reason.
+   */
+  priority?: boolean
 }
 
 export function MediaImage({
@@ -85,6 +106,7 @@ export function MediaImage({
   ratio,
   spec,
   loading = 'lazy',
+  priority = false,
   className,
   ...rest
 }: MediaImageProps): React.ReactElement {
@@ -138,7 +160,10 @@ export function MediaImage({
       srcSet={candidates.length > 0 ? candidates.join(', ') : undefined}
       sizes={sizes === '' ? undefined : sizes}
       alt={decorative ? '' : alt}
-      loading={loading}
+      // `priority` implies eager: an LCP candidate the browser is told to fetch first must not
+      // also be told it may wait.
+      loading={priority ? 'eager' : loading}
+      fetchPriority={priority ? 'high' : undefined}
       // Always async. Decoding a large image on the main thread blocks interaction, and there is
       // no case in this product where a synchronous decode is worth that.
       decoding="async"

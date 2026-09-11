@@ -1,0 +1,190 @@
+{
+  "$schema": "./budgets.schema.json",
+  "$about": [
+    "THE PER-ROUTE PERFORMANCE BUDGET — Phase 40. This file is the single source for every number",
+    "in it: the guards in scripts/perf/ read it, Lighthouse CI asserts against it, and",
+    "docs/ops/PERFORMANCE.md renders it. A number that lives in two places is a number that will",
+    "disagree with itself, so nothing here is repeated anywhere else.",
+    "",
+    "`firstLoadJsKb` IS A TARGET, NOT A DESCRIPTION. It is the figure PHASE-39-46.md fixed for the",
+    "route. Where the site does not meet it today the gap is real, named in PERFORMANCE.md and",
+    "tracked — it is not quietly raised to whatever was measured. What stops the site drifting",
+    "further in the meantime is perf/bundle-baseline.json, which records what each route actually",
+    "weighs and fails CI on growth beyond 5%.",
+    "",
+    "`islands` IS A CEILING AND IT IS SET AT THE MEASURED COUNT. Unlike bytes, an island count of",
+    "'2' on a route that has 7 would be red on every run from the day it was written, which trains",
+    "people to ignore the gate. The phase document's island numbers were written before Phase 10",
+    "gave the site a shell and Phase 23 put search in it; every public route now inherits five",
+    "islands it did not choose. Each route below records the measured figure, and `note` says what",
+    "the phase document asked for where the two differ.",
+    "",
+    "RAISING ANY NUMBER HERE IS THE POINT OF THE FILE. It is a one-line edit a reviewer sees, with",
+    "a reason beside it. That is the whole mechanism: the budget is not advisory because exceeding",
+    "it fails CI, and it is not a straitjacket because changing it is one line."
+  ],
+  "growthTolerance": 0.05,
+  "coreWebVitals": {
+    "$about": "Site-wide, at the 75th percentile, on a Moto G4 / Slow 4G lab profile.",
+    "lcpMs": 2500,
+    "clsScore": 0.05,
+    "inpMs": 200,
+    "ttfbWarmMs": 800
+  },
+  "transferredBytes": {
+    "$about": "Initial viewport, every public route.",
+    "desktop": 1677721,
+    "mobile": 921600
+  },
+  "chunks": {
+    "viewer3d": {
+      "$about": "The WebGL viewer, measured separately and never part of a first load. Asserted by scripts/perf/check-bundle.mjs against the module graph and by tests/e2e/model-viewer.spec.ts against the running site.",
+      "maxKb": 350,
+      "neverInFirstLoad": true,
+      "specifiers": ["three", "@react-three/", "meshoptimizer"]
+    }
+  },
+  "routes": {
+    "/": {
+      "lcpMs": 2500,
+      "firstLoadJsKb": 180,
+      "islands": 7,
+      "lcpImage": true
+    },
+    "/about": {
+      "lcpMs": 2500,
+      "firstLoadJsKb": 150,
+      "islands": 7,
+      "note": "The phase document budgets 2 islands. The shell contributes five to every public route (error copy, mega menu, mobile nav, search box, vitals reporter) and the section registry adds two more; none of the seven is chosen by this route.",
+      "lcpImage": true
+    },
+    "/process": {
+      "lcpMs": 2500,
+      "firstLoadJsKb": 150,
+      "islands": 7,
+      "note": "As /about.",
+      "lcpImage": true
+    },
+    "/large-format": {
+      "lcpMs": 2500,
+      "firstLoadJsKb": 150,
+      "islands": 7,
+      "note": "As /about.",
+      "lcpImage": true
+    },
+    "/collection": {
+      "lcpMs": 2500,
+      "firstLoadJsKb": 175,
+      "islands": 7,
+      "lcpImage": true
+    },
+    "/collection/[category]": {
+      "lcpMs": 2500,
+      "firstLoadJsKb": 175,
+      "islands": 7,
+      "lcpImage": true
+    },
+    "/product/[slug]": {
+      "lcpMs": 2500,
+      "firstLoadJsKb": 190,
+      "islands": 6,
+      "note": "The only public route that meets its byte budget today, and the reason is instructive: it does not render CMS sections, so it never reaches the section registry.",
+      "lcpImage": true
+    },
+    "/collections/[slug]": {
+      "lcpMs": 2500,
+      "firstLoadJsKb": 165,
+      "islands": 7,
+      "lcpImage": true
+    },
+    "/portfolio": {
+      "lcpMs": 2500,
+      "firstLoadJsKb": 150,
+      "islands": 7,
+      "note": "The phase document budgets 2. See /about.",
+      "lcpImage": true
+    },
+    "/portfolio/[slug]": {
+      "lcpMs": 2500,
+      "firstLoadJsKb": 150,
+      "islands": 7,
+      "note": "The phase document budgets 2. See /about.",
+      "lcpImage": true
+    },
+    "/journal": {
+      "lcpMs": 2000,
+      "firstLoadJsKb": 140,
+      "islands": 7,
+      "note": "Text-led, and the tightest byte budget on the site after /faq. The phase document budgets 2 islands.",
+      "lcpImage": true
+    },
+    "/journal/[slug]": {
+      "lcpMs": 2000,
+      "firstLoadJsKb": 140,
+      "islands": 7,
+      "note": "The phase document budgets 2. See /journal.",
+      "lcpImage": true
+    },
+    "/journal/category/[slug]": {
+      "lcpMs": 2000,
+      "firstLoadJsKb": 140,
+      "islands": 5,
+      "note": "Five, not seven: this route renders its own listing rather than CMS sections, so it carries the shell and nothing else. It and /search are the two lightest routes on the site, which is the measurement that identified the section registry as the cost.",
+      "lcpImage": false
+    },
+    "/custom-commissions": {
+      "lcpMs": 2500,
+      "firstLoadJsKb": 200,
+      "islands": 7,
+      "lcpImage": true
+    },
+    "/contact": {
+      "lcpMs": 2000,
+      "firstLoadJsKb": 160,
+      "islands": 7,
+      "note": "The phase document budgets 2. See /about.",
+      "lcpImage": true
+    },
+    "/faq": {
+      "lcpMs": 2000,
+      "firstLoadJsKb": 120,
+      "islands": 7,
+      "note": "The phase document budgets 1. See /about.",
+      "lcpImage": true
+    },
+    "/privacy": {
+      "lcpMs": 2000,
+      "firstLoadJsKb": 120,
+      "islands": 7,
+      "note": "The phase document budgets 1. See /about.",
+      "lcpImage": true
+    },
+    "/terms": {
+      "lcpMs": 2000,
+      "firstLoadJsKb": 120,
+      "islands": 7,
+      "note": "The phase document budgets 1. See /about.",
+      "lcpImage": true
+    },
+    "/search": {
+      "lcpMs": 2000,
+      "firstLoadJsKb": 170,
+      "islands": 5,
+      "note": "Shell only — no CMS sections. See /journal/category/[slug].",
+      "lcpImage": false
+    }
+  },
+  "groups": {
+    "/studio": {
+      "$about": "A staff tool, authenticated and never indexed, so it is budgeted as one surface rather than as eighty-two routes — which is also what the phase document does. No LCP target: nothing here is a landing page.",
+      "firstLoadJsKb": 320,
+      "islands": 8,
+      "inpMs": 300,
+      "clsScore": 0.1
+    }
+  },
+  "excluded": {
+    "/design-system": "A development-only gallery under app/(devtools), not reachable in production and not a visitor surface.",
+    "/design-system/[group]": "A development-only gallery under app/(devtools), the per-group view of /design-system. Not reachable in production and not a visitor surface."
+  }
+}

@@ -1,0 +1,80 @@
+{
+  "$about": [
+    "MEASURED first-load JavaScript per route: gzipped bytes of every script the served HTML",
+    "tells the browser to fetch. Written by `node scripts/perf/check-bundle.mjs --base <url>",
+    "--write` against a running production build, and compared against on every CI run.",
+    "",
+    "THIS FILE RECORDS WHAT IS, perf/budgets.json RECORDS WHAT SHOULD BE. Where they differ the",
+    "gap is named in docs/ops/PERFORMANCE.md. Growth beyond the tolerance in budgets.json fails",
+    "CI until this file is updated deliberately, in the same change, with a stated reason."
+  ],
+  "measuredOn": "2026-09-11",
+  "measuredAgainst": "http://127.0.0.1:3000",
+  "routes": {
+    "/": {
+      "kb": 282,
+      "files": 15,
+      "sample": "/"
+    },
+    "/about": {
+      "kb": 282,
+      "files": 15,
+      "sample": "/about"
+    },
+    "/process": {
+      "kb": 282,
+      "files": 15,
+      "sample": "/process"
+    },
+    "/large-format": {
+      "kb": 282,
+      "files": 15,
+      "sample": "/large-format"
+    },
+    "/collection": {
+      "kb": 280.8,
+      "files": 14,
+      "sample": "/collection"
+    },
+    "/collection/[category]": {
+      "kb": 280.8,
+      "files": 14,
+      "sample": "/collection/decor"
+    },
+    "/product/[slug]": {
+      "kb": 190.5,
+      "files": 13,
+      "sample": "/product/bench-entryway"
+    },
+    "/portfolio": {
+      "kb": 282,
+      "files": 15,
+      "sample": "/portfolio"
+    },
+    "/journal": {
+      "kb": 280.8,
+      "files": 14,
+      "sample": "/journal"
+    },
+    "/journal/[slug]": {
+      "kb": 282,
+      "files": 15,
+      "sample": "/journal/a-guide-to-resin-colour-transparency-and-visual-depth"
+    },
+    "/custom-commissions": {
+      "kb": 280.8,
+      "files": 14,
+      "sample": "/custom-commissions"
+    },
+    "/contact": {
+      "kb": 282,
+      "files": 15,
+      "sample": "/contact"
+    },
+    "/search": {
+      "kb": 182.8,
+      "files": 11,
+      "sample": "/search"
+    }
+  }
+}

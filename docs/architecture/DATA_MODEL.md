@@ -2331,6 +2331,25 @@ Permission `seo.write` (owner, admin, editor) is new in this phase and is the fi
 Server Action under `/studio/content/seo`; the `seo_entries` policy file `0051` is generated whole
 and never re-opened, so it keeps the name `content.write` while naming the same three roles.
 
+### 11.ag Performance field data — Phase 40 · migrations `0380`–`0381`
+
+| Object | Posture | Written by | Key rule |
+|---|---|---|---|
+| `web_vitals_samples` | RLS-C (`analytics.read` select for every staff role; **no write policy of any kind and no anon leg**) | `POST /api/vitals` as the service role, after Zod validation and a rate-limit check | `metric in ('LCP','CLS','INP','TTFB','FCP')`; `rating in ('good','needs-improvement','poor')`; `value between 0 and 3600000`; `route_pattern` is the **bracket form** and is CHECKed three ways — leading slash, no `?` or `#`, and lower-case segments or `[bracket]` parameters only; `nav_type`, `effective_type`, `device_memory_bucket` and `viewport_bucket` are each CHECKed to a closed set or null. Indexes `(route_pattern, metric, occurred_at desc)` and `(occurred_at)`; retention 90 days through the Phase 38 cron |
+
+**The table carries no identifier and has no column to put one in.** No IP, no IP hash, no user
+agent, no session id, no user id, no referrer, no resolved URL, no fingerprint. That is the whole
+design: D1 fixes that there are no customer accounts, and a performance table is one reasonable-
+sounding request away from becoming the thing that creates one — "a session id to deduplicate", "an
+IP for geography", "a user agent to segment by browser". Adding any of them means an `alter table`
+in a migration in a reviewable diff, and `tests/unit/rls/phase40.test.ts` asserts the exact column
+set so the addition cannot pass unnoticed.
+
+The write path is the reason there is no session policy. The beacon leaves an anonymous browser, so
+the only session that could insert is `anon` — and an anon insert policy is an unauthenticated
+write into the database. `/api/vitals` validates, rate-limits and inserts as the service role
+instead, which leaves the table's policy set with exactly one entry: staff `select`.
+
 ## 12. Table register — Phase 03 versus later
 
 The spine an engineer builds in Phase 03 is small on purpose. Everything else is additive.
@@ -2428,7 +2447,7 @@ local and hosted is isolated to one file that can never be picked up by `supabas
 | 37 | `0350`–`0351` | T `analytics_snapshots` |
 | 38 | `0360`–`0361` | T `system_logs`; view `workflow_runs_v`; enums `log_level`, `log_channel` |
 | 39 | `0370`–`0371` | T `seo_keyword_themes`, `seo_redirects`; A `seo_entries` (`structured_data_type`, `noindex`, `nofollow`, `derived`). `0371` is the generated RLS file |
-| 40 | `0380` | T `web_vitals_samples` |
+| 40 | `0380`–`0381` | T `web_vitals_samples`. `0381` is the generated RLS file — the generator rewrites a policy migration whole, so DDL and generated policies never share a file (the A23…A30 pattern). This row previously read `0380` alone |
 | 41 | `0390`–`0391` | T `rate_limit_buckets`; A `media_assets.is_decorative` and the alt-text constraint |
 | 42 | — | **None.** `tests/integration/migrations-replay.test.ts` asserts every migration replays from empty, in order, with no error |
 | 43 | `0410` | T `media_crops` |

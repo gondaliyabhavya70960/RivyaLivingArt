@@ -68,7 +68,7 @@
     "search:prune-queries": "tsx scripts/search/prune-queries.ts",
     "search:check-scope": "node scripts/search/check-search-scope.mjs",
     "bulk:check-registry": "node scripts/bulk/check-bulk-registry.mjs",
-    "check": "npm run typecheck && npm run lint && npm run format:check && npm run media:check-ids && npm run media:assert-no-regen && npm run cms:check-transitions && npm run cms:check-copy && npm run demo:check-register && npm run site:check-client-boundary && npm run site:check-islands && npm run site:check-whatsapp && npm run perf:check-bundle && npm run design:check-tokens && npm run design:check-registry && npm run design:check-utilities && npm run search:check-scope && npm run bulk:check-registry && npm run research:check-isolation && npm run research:check-no-autoimport && npm run research:check-no-ml && npm run sheets:check-no-read && npm run logs:check-separation && npm run seo:check-jsonld-scope && npm run media:check-decoder && npm run db:check-data-layer && npm run db:check-unit-offline",
+    "check": "npm run typecheck && npm run lint && npm run format:check && npm run media:check-ids && npm run media:assert-no-regen && npm run cms:check-transitions && npm run cms:check-copy && npm run demo:check-register && npm run site:check-client-boundary && npm run site:check-islands && npm run site:check-whatsapp && npm run perf:check-image-props && npm run perf:check-video-props && npm run perf:check-bundle && npm run perf:count-islands && npm run design:check-tokens && npm run design:check-registry && npm run design:check-utilities && npm run search:check-scope && npm run bulk:check-registry && npm run research:check-isolation && npm run research:check-no-autoimport && npm run research:check-no-ml && npm run sheets:check-no-read && npm run logs:check-separation && npm run seo:check-jsonld-scope && npm run media:check-decoder && npm run db:check-data-layer && npm run db:check-unit-offline",
     "research:check-isolation": "node scripts/research/check-research-isolation.mjs",
     "research:check-no-autoimport": "node scripts/research/check-no-autoimport.mjs",
     "research:prune-snapshots": "tsx scripts/research/prune-snapshots.ts",
@@ -91,7 +91,12 @@
     "research:similarity-sample": "tsx scripts/research/similarity-sample.ts",
     "research:direction-export": "tsx scripts/research/direction-export.ts",
     "media:hash": "tsx scripts/media/hash-media.ts",
-    "media:check-decoder": "node scripts/media/check-decoder-scope.mjs"
+    "media:check-decoder": "node scripts/media/check-decoder-scope.mjs",
+    "perf:count-islands": "node scripts/perf/count-islands.mjs",
+    "perf:check-third-party": "node scripts/perf/check-third-party.mjs",
+    "perf:check-cache-headers": "node scripts/perf/check-cache-headers.mjs",
+    "perf:check-priority-images": "node scripts/perf/check-priority-images.mjs",
+    "perf:baseline": "node scripts/perf/check-bundle.mjs --write"
   },
   "dependencies": {
     "@gltf-transform/core": "4.5.0",
@@ -109,6 +114,7 @@
     "react-dom": "19.2.8",
     "server-only": "^0.0.1",
     "three": "0.186.0",
+    "web-vitals": "^5.3.0",
     "zod": "^4.5.4"
   },
   "devDependencies": {

@@ -7,51 +7,61 @@
 ---
 
 ## Current Phase
-**Phase 39 — SEO. COMPLETE.** Search engines stop seeing thirteen pages with fallback metadata:
-a four-level ladder resolves every field and prints its rung in the Studio, one emitter writes
-eight gated structured-data types with every capability-bearing property through
-`verifiedOnly()`, the sitemap is an index over six PUBLISHED-only children, redirects are
-consulted only on the 404 path, and the SEED §42 themes are research targets with nowhere to store
-a number.
+**Phase 40 — Performance. COMPLETE.** The performance budget stops being a property of the homepage
+and becomes a property of the site — and, more usefully, something anybody can re-measure in one
+command. `perf/budgets.json` is the single source for every budget; `scripts/perf/measure-bundles.mjs`
+produces the first-load figure from what the browser is actually sent; three real defects were found
+by the first reading and two of them are fixed here.
 
-### Phase 39: what is built
+### Phase 40: what is built
 
-Migrations `0370`–`0371` (`seo_keyword_themes`, `seo_redirects`, four columns on `seo_entries`,
-generated policy); permission `seo.write` (owner, admin, editor); `lib/seo/` (`resolve.ts`,
-`canonical.ts`, `metadata.ts` rewritten on the ladder, `jsonld/` with `guard.ts`, `site-graph.ts`,
-`breadcrumbs.ts`, `redirects.ts`, `redirect-rules.ts`, `sitemap.ts`, `coverage.ts`,
-`studio-resolution.ts`, `slug-redirect.ts`); `components/patterns/JsonLd` (RC-347, the only
-emitter); `app/sitemap.xml/route.ts` + `app/sitemaps/[file]/route.ts` replacing `app/sitemap.ts`;
-`robots.ts` extended; `X-Robots-Tag` by route class in `next.config.ts`; the public routes moved
-onto the ladder, the canonical table and the redirect resolver; `/studio/content/seo` with seven
-tabs and its actions; `EntitySeoPanel` on the four entity editors; the product form's pre-ticked
-redirect on slug change; repositories `seo`, `keywords`, `redirects`, `sitemap`; schemas `seo.ts`;
-gates `seo:check-jsonld-scope` (check and CI) and `scripts/seo/validate-jsonld.mjs` (CI, against
-the real build); the inventory's generated "SEO coverage" section; 170 Studio strings; four seeded
-help sentences; amendment A40. Hosted: level through `0371`, seventeen themes and four help rows
-seeded, parity digests identical.
+Migrations `0380`–`0381`: `web_vitals_samples` — ten columns and **no column an identifier could go
+in**, `route_pattern` CHECKed three ways to refuse anything still resolved, `analytics.read` select
+and no write policy for any session. `perf/budgets.json` (every route, a `/studio` group rule, two
+exclusions with reasons) and `perf/bundle-baseline.json` (measured, dated, CI-enforced at 5%).
+`lib/supabase/schemas/vitals.ts` (`.strict()`, the forbidden-key list as data),
+`lib/supabase/repositories/web-vitals.ts` (insert, purge, p75 summary), `app/api/vitals/route.ts`
+(same-origin → rate limit → Zod → service-role insert, 204 and silent),
+`components/patterns/VitalsReporter` (RC-354) and `VitalsCard` (RC-355). `lib/security/origin.ts`
+extracted so the two unauthenticated POST endpoints share one predicate. Guards:
+`scripts/perf/{island-graph,count-islands,measure-bundles,check-third-party,check-cache-headers,check-priority-images}.mjs`
+plus the baseline and `--explain` halves of `check-bundle.mjs`. `MediaImage` gained `priority`;
+`next.config.ts` gained `private, no-store` on Studio; the Phase 38 retention cron gained the 90-day
+vitals purge. `docs/ops/PERFORMANCE.md` rewritten with dated measurements and the three findings.
 
-### Phase 39: readings the repository forced
+### Phase 40: readings the repository forced
 
-1. **`seo.write` is checked in every action; `0051` keeps the name `content.write`** for the same
-   three roles, because a generated policy file is never re-opened.
-2. **The sitemap index is a route handler** — the metadata-file convention writes a `<urlset>`,
-   never a `<sitemapindex>`.
-3. **`X-Robots-Tag` lives in `next.config.ts`**, not `proxy.ts`: A2·b keeps the proxy to two jobs.
-4. **A category page is one address**: the `pages` row and the `categories` row resolve as one row
-   under Pages, and categories do not appear again under Entities.
-5. **`research_status` is the one `research_` name the two isolation gates exempt**, and the
-   status constant is `KEYWORD_STATUSES` because the schema sits on the public search path.
-6. **A redirect is offered on slug change for products only**; the other three editors do not
-   change a slug after creation.
+1. **Next 16's build table no longer prints per-route JavaScript sizes.** The figure is taken from
+   the served HTML instead — every script the page asks for, fetched and gzipped — which matches the
+   phase document's definition exactly and cannot drift when the bundler moves its internals.
+2. **`@next/bundle-analyzer` cannot be wired.** It is a webpack plugin and this project builds with
+   Turbopack. `check-bundle.mjs --explain <route>` replaces it and is what found the Zod chunk.
+3. **The island budgets are set at the measured count, not the phase document's.** Its numbers
+   predate the Phase 10 shell and the Phase 23 search box; every public route inherits five islands
+   it did not choose, and a budget red on day one is a budget nobody reads.
+4. **`eager` is not `fetchpriority`.** Every hero was eager and none was prioritised, so the largest
+   image on every page queued behind the parser's discoveries. Ten routes were failing the new gate
+   before the fix.
+5. **Two priority images are worth about as much as none**, so `ResponsiveMedia` gives the hint to
+   the mobile half of a pair only — the constrained device is the one it is for.
+6. **Three listing routes are dynamic where the caching contract asks for ISR**, all for one reason:
+   awaiting `searchParams` in Next 16 opts the whole route in, including the request with no
+   parameters. Recorded on the contract rows themselves.
+7. **The section registry costs every CMS route ~98 kB gzipped, 83.5 kB of it Zod**, reaching the
+   browser through a lazy island whose shared dependency Turbopack hoists into an eager chunk.
+   Measured, evidenced, and deliberately not fixed here — both candidate fixes are architecture.
 
 ### The next exact action
 
-**Phase 40 — Performance** (`0380`): `web_vitals_samples` (no identifier columns), the sampled
-vitals reporter and its endpoint, `perf/budgets.json` and the bundle baseline, the seven perf
-guards, the caching contract, `VitalsCard` on the Phase 37 surface, PERFORMANCE.md as the single
-source with dated measurements. **The owner asked for a stop after Phase 39 lands on `main`; Phase
-40 starts on their word.**
+**Phase 41 — Accessibility + Security** (`0390`–`0391`): the full header set with a per-request nonce
+CSP shipped report-only first, rate limiting extended to eight surfaces, upload validation by magic
+bytes, `media_assets.is_decorative` and the alt-text constraint, the PII anonymiser, the axe sweep
+across every public route and seven Studio routes, and the `IP_HASH_SALT` variable.
+
+**Outstanding from Phase 40, for whoever picks it up:** the owner must add `NEXT_PUBLIC_VERCEL_ENV`
+in the Vercel dashboard per environment or the reporter never reports; migrations `0380`–`0381` are
+**not yet applied to hosted**; and CI wiring for the four runtime guards is the last task of this
+phase.
 
 ---
 

@@ -42,6 +42,16 @@ export type BlockImageProps = {
   readonly strings: SiteStrings
   readonly cloudName: string
   readonly eager?: boolean
+  /**
+   * THE ROUTE'S LCP ELEMENT — Phase 40. At most one per page.
+   *
+   * Distinct from `eager`, and the difference is the whole point. `eager` stops the browser
+   * DEFERRING the request; `priority` additionally moves it to the front of the queue with
+   * `fetchpriority="high"`. Before this phase every hero on the site was eager and none was
+   * prioritised, so the largest image on the page was fetched behind every stylesheet and script
+   * the parser had already found.
+   */
+  readonly priority?: boolean
   readonly veil?: boolean
   readonly overlay?: React.ReactNode
   readonly className?: string
@@ -64,6 +74,7 @@ export function BlockImage({
   strings,
   cloudName,
   eager = false,
+  priority = false,
   veil = false,
   overlay,
   className,
@@ -95,6 +106,7 @@ export function BlockImage({
           alt={altTextOf(deliverable, altOverride)}
           ratio={ratio}
           loading={eager ? 'eager' : 'lazy'}
+          priority={priority}
         />
       )}
     </MediaFrame>
@@ -120,6 +132,8 @@ export type ResponsiveMediaProps = {
   readonly strings: SiteStrings
   readonly cloudName: string
   readonly eager?: boolean
+  /** See `BlockImageProps.priority`. Applied to exactly one of the pair — see the note below. */
+  readonly priority?: boolean
   readonly veil?: boolean
   readonly overlay?: React.ReactNode
 }
@@ -132,6 +146,21 @@ export type ResponsiveMediaProps = {
  * both are emitted and CSS hides one; the hidden one is still in the DOM, so `loading="lazy"`
  * keeps the browser from fetching it. `eager` is honoured only on the visible half at each width,
  * which is why it is passed to both: exactly one of them is displayed, so exactly one loads early.
+ *
+ * `priority` IS NOT PASSED TO BOTH, AND THAT IS A DELIBERATE ASYMMETRY — Phase 40.
+ *
+ * Two elements carrying `fetchpriority="high"` are worth about as much as none: the browser has a
+ * finite number of connections and breaks the tie by document order, so the second demotes the
+ * first. Since the server cannot know the viewport, one of the pair has to be chosen, and the
+ * choice is the MOBILE half.
+ *
+ * WHY MOBILE. The budget this hint exists to serve is a Moto G4 on Slow 4G — the visitor for whom
+ * the queue position of a 200 kB hero actually decides whether the page feels instant or broken. A
+ * desktop visitor on a warm connection gets the same image `eager`, a few tens of milliseconds
+ * later, and will not notice. Spending the one hint on the constrained device is the whole reason
+ * to have a hint.
+ *
+ * When only one asset is set — the common case — there is no pair and the single element takes it.
  */
 export function ResponsiveMedia({
   desktop,
@@ -144,6 +173,7 @@ export function ResponsiveMedia({
   strings,
   cloudName,
   eager = false,
+  priority = false,
   veil = false,
   overlay,
 }: ResponsiveMediaProps): React.ReactElement {
@@ -159,6 +189,7 @@ export function ResponsiveMedia({
           asset={mobile}
           ratio={mobileRatio}
           sizes={sizes}
+          priority={priority}
           className="md:hidden"
         />
         <BlockImage
@@ -179,6 +210,7 @@ export function ResponsiveMedia({
       ratio={desktopRatio}
       mobileRatio={mobileRatio}
       sizes={sizes}
+      priority={priority}
     />
   )
 }
