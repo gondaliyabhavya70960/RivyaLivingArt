@@ -18,8 +18,14 @@ import { MANAGED_TABLES, type ManagedTable } from '../auth/table-permissions'
  * researcher has no use for Draft Products, and a merchandiser none for Data Quality Errors.
  */
 
-/** The last phase whose tables exist. Raised by the phase that adds them, with its migration. */
-export const BUILT_THROUGH_PHASE = 5
+/**
+ * The last phase whose tables exist. Raised by the phase that adds them, with its migration.
+ *
+ * PHASE 37 RAISED IT FROM 5 TO 36 and gave every card a query (`readCounts` on the overview page,
+ * `lib/supabase/repositories/metrics.ts`). Two cards stay unavailable and say which phase: System
+ * Health (38, `system_logs`) and Missing Media (43, the slot coverage report).
+ */
+export const BUILT_THROUGH_PHASE = 36
 
 export type DashboardCard = {
   readonly id: string

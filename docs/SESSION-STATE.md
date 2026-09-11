@@ -7,42 +7,59 @@
 ---
 
 ## Current Phase
+**Phase 37 — Studio Analytics. COMPLETE.** The Analytics tab reads one snapshot row per metric
+and computes nothing; eighteen metrics are declared once, held to FEAT §28 by test, and every one
+is either a figure with `n`, a denominator and a date, or `UNAVAILABLE` with the reason named. The
+market section waits for the owner to turn `advanced_analytics` on; the policy, not the flag,
+decides who may read a competitive row.
+
+### Phase 37: what is built
+
+Migrations `0350`–`0351` (`analytics_snapshots`, the reason-iff-unavailable CHECK, the
+`selectScope` select policy); `lib/analytics/reads.ts` (the one interface every metric computes
+from, with an in-memory empty implementation), `availability.ts` (the fixed reason vocabulary),
+`metrics/` (eighteen modules, the registry), `snapshot.ts` (the only caller of `compute()`,
+idempotent per date, prunes at 400 days); `lib/supabase/repositories/analytics.ts` (the reads over
+the service role, the writer, the tab's readers) and thirteen card counts in `metrics.ts`; the tab
+(`components/studio/analytics/*`, RC-338–341); `npm run analytics:snapshot`;
+`/api/cron/analytics-snapshot`; flag `advanced_analytics`; five seeded Studio-help sentences;
+amendment A38. Hosted: level through `0351`.
+
+### Phase 37: readings the repository forced
+
+1. **A `selectScope` field on the policy generator** — a row-level narrowing of the read alone, the
+   shape the phase document's "policy predicate" needed and neither existing field had.
+2. **`product_scale` needs five products with dimensions** (the phase table), not three
+   (verification 7); the smaller catalogue reads a legible reason.
+3. **`customization` reports that no column carries it** — configured, extracted, never normalised.
+4. **The no-fabrication suite runs against empty reads, not an empty PostgreSQL**, because the
+   writer speaks PostgREST and the RLS harness speaks `pg`; the CHECK is tested by the RLS suite.
+
+### The next exact action
+
+**Phase 38 — Environment + Documentation + Logs** (`0360`–`0361`): `system_logs` with the dedupe
+key and the two retention windows; `lib/logging/system-log.ts` replacing `warnScraper`'s body;
+`lib/logging/redact.ts` extended; the eight environment checks under `lib/ops/env-checks/` (state
+only, never a value); `scripts/build/write-build-info.ts`; the documentation allowlist and
+`scripts/docs/build-index.ts`; `/studio/system/environment`, `/studio/system/documentation`,
+`/studio/operations/logs`; the daily log-retention cron under `CRON_SECRET`; permissions
+`system.environment.read`, `system.docs.read`, `operations.logs.export`; `lib/ops/` recorded beside
+`lib/sheets/` in D2 (A37's deferred half).
+
+---
+
+### Superseded — Phase 36's state
+
 **Phase 36 — Google Sheets. COMPLETE; inert until the owner's setup.** A one-way export from the
 research and enquiry tables to a spreadsheet tab, built without a new dependency, a stored credential
 or a read path, and proved on the last of those by a build gate. The `google_sheets` flag is off, no
 service account exists, every definition is `MANUAL`, and the hourly cron answers `skipped: flag_off`.
-
-### Phase 36: what is built
-
-Migrations `0340`–`0342` (`sheets_export_definitions`, `sheets_sync_runs`, generated policies, seven
-default definitions as structure); `lib/sheets/` (client, atomic writer, retry, schedule, allowlist,
-builders split by import, run engine); repository and schemas; `/studio/research/sheets` with
-`ExportDefinitionForm` (RC-336) and `SheetsRunHistory` (RC-337); `npm run sheets:sync`;
-`/api/cron/sheets-sync`; `sheets:check-no-read`; permissions `integrations.sheets.manage` / `.run`;
-amendment A37. Hosted: level through `0342`, ledger 98 rows, Phase 36 objects digest-identical.
-
-### Phase 36: readings the repository forced
-
-1. **`CRON_SECRET`, not `REVALIDATE_SECRET`** — A25 settled it for every scheduled route.
-2. **No module may import both the direction repository and the catalogue read (I4)**, so the row
-   builders are five files by import rather than one by size.
-3. **The Sheets repository is exempt from the no-auto-import guard** — its writes are definitions,
-   not the catalogue — and two fixture cases prove a catalogue write beside them is still refused.
-4. **`0341` is the generated policy file**, one past the document's `0340`, for A23's reason.
-
-### Phase 36: verification, as actually run
-
-`npm run check` green (typecheck, lint, format, sixteen gates); unit 169 files / 2,631 tests; RLS
-29 files / 596 tests against a fresh seeded database (`phase36.test.ts`, 7 cases); production build
-through the local PostgREST shim; `security:check-bundle` clean; security advisor nothing new.
-
-### The next exact action
-
-**Phase 37 — Studio Analytics** (`0350`–`0351`): `analytics_snapshots` with the availability CHECK
-and the COMPETITIVE-rows policy predicate; the registry of exactly the eighteen FEAT §28 metric ids
-under `lib/analytics/metrics/`; `lib/analytics/{availability,snapshot}.ts`; the Analytics tab on
-`/studio` (eight studio metrics, ten market metrics behind `research.read` + `advanced_analytics`);
-`npm run analytics:snapshot`; the daily cron under `CRON_SECRET`; flag `advanced_analytics = false`.
+Migrations `0340`–`0342`; `lib/sheets/` (client, atomic writer, retry, schedule, allowlist, builders
+split by import, run engine); `/studio/research/sheets`; `npm run sheets:sync`;
+`sheets:check-no-read`; permissions `integrations.sheets.manage` / `.run`; amendment A37. Readings:
+`CRON_SECRET` (A25); the row builders are five files by import (I4); the Sheets repository is exempt
+from the no-auto-import guard with two fixture cases proving a catalogue write beside it is still
+refused; `0341` is the generated policy file.
 
 ---
 

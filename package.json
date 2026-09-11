@@ -76,6 +76,7 @@
     "research:reclassify-scale": "tsx scripts/research/reclassify-scale.ts",
     "research:analytics": "tsx scripts/research/analytics.ts",
     "research:score": "tsx scripts/research/score.ts",
+    "analytics:snapshot": "tsx scripts/analytics/snapshot.ts",
     "research:check-no-ml": "node scripts/research/check-no-ml.mjs",
     "sheets:sync": "tsx scripts/sheets/sync.ts",
     "sheets:check-no-read": "node scripts/sheets/check-no-read.mjs",

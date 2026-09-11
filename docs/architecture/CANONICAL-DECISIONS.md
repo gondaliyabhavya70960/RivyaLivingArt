@@ -187,6 +187,46 @@ Brand and editorial copy may be written; anything asserting business capability 
 
 ## Amendments
 
+**2026-09-11 · A38 — Phase 37: the policy generator gains a `selectScope` predicate (a row-level
+narrowing of the staff SELECT alone); `advanced_analytics` gates presentation, never access; the
+analytics cron authenticates with `CRON_SECRET`; the dashboard card registry is raised to Phase 36
+with a query per card; and four repository-forced readings of the phase document are recorded (D2,
+D8, DATA_MODEL §11.ad, STUDIO_GUIDE §5.3–5.4, PERFORMANCE §7.5, DEPLOYMENT §3.1, PHASE-31-38
+§Phase 37).**
+
+- **`selectScope`.** The phase document asks that a COMPETITIVE snapshot row require `research.read`
+  on top of `analytics.read`, "enforced by a policy predicate rather than filtered in application
+  code". The generator had `ownerScope` (ANDed into every policy, for rows that belong to a person)
+  and `extraSelectPolicy` (an additional, widening SELECT). Neither is a narrowing of the read by a
+  column, so `TablePolicy.selectScope` is added: a clause ANDed into the staff SELECT only, its role
+  list derived from `rolesWithPermission('research.read')` so it cannot drift. Every earlier
+  generated file re-renders byte-identically; `check-rls.ts` reads the union of roles in the
+  expression and still holds the read list to the matrix.
+- **The flag is not the access control.** `advanced_analytics` shows or hides the market section
+  and the trend lines. Off, an editor and a researcher both see eight tiles; on, the researcher sees
+  eighteen and the editor still eight, because the policy — not the page — decides what a request
+  returns. Verified by `tests/unit/rls/phase37.test.ts` with a direct query as `editor`.
+- **`CRON_SECRET`** for `/api/cron/analytics-snapshot` (A25); DEPLOYMENT §3.1's row is corrected.
+  It runs at 03:45 UTC, after the 02:30 research analytics and 03:15 opportunity jobs, so the
+  competitive metrics read tonight's snapshots.
+- **The cards.** `BUILT_THROUGH_PHASE` in `lib/analytics/dashboard-cards.ts` rises from 5 to 36 and
+  every card whose table exists gets one explicit head-count under the signed-in session. The Data
+  Quality card counts the research half (`severity = 'ERROR'`, not dismissed); the catalogue half is
+  computed per product on its editor and is not summed on every dashboard load. System Health (38)
+  and Missing Media (43) stay unavailable and say so.
+- **Four readings.** (1) `product_scale`: the phase table says "needs ≥ 5 products with
+  dimensions"; verification 7 publishes three and expects availability. The table is normative and
+  wins; three products render `UNAVAILABLE: fewer than 5 products with dimensions (3 recorded)`,
+  which is legible and honest. (2) `customization`: a source can be configured to extract the key
+  (Phase 26) and the adapter can read it (Phase 27), but Phase 28's normaliser maps dimensions,
+  materials, availability, lead time and variants — no column carries customisation, so the metric
+  reports exactly that rather than a share over nothing. (3) The no-fabrication suite runs the
+  registry against an in-memory empty implementation of `AnalyticsReads` — the one interface every
+  metric computes from — rather than an empty PostgreSQL, which the snapshot writer cannot reach
+  from the RLS harness; the database's own invariant is tested separately by the RLS suite. (4) The
+  tab reads the eighteen definition sentences from the modules and the guide prints the same
+  sentences; a unit test holds them equal.
+
 **2026-09-11 · A37 — Phase 36 adds `lib/sheets/` to D2's domain list (open question 4, the
 `lib/ops/` half deferred to Phase 38); the Sheets cron authenticates with `CRON_SECRET`; `0342`
 seeds the seven default export definitions as structure; the integration is one-way by

@@ -485,7 +485,7 @@ about the product, not an error.
 | 16 | `media_assets` | Media Assets | `count(*)` by `kind` | `media_assets` | `media.read` | 06 |
 | 17 | `media_missing` | Missing Media | declared slots with no `media_usages` row | `content/media-slots.ts` × `media_usages` | `media.read` | 07 |
 | 18 | `higgsfield_pending` | Higgsfield Assets Pending | manifest rows unmigrated, or with unreviewed draft alt text | `media_assets` | `media.read` | 07 |
-| 19 | `data_quality_errors` | Data Quality Errors | failing `lib/catalog/validation.ts` rules, plus `severity = 'ERROR'` research issues | computed · `research_validation_issues` | `catalog.read` | 14 · 28 |
+| 19 | `data_quality_errors` | Data Quality Errors | `severity = 'ERROR'` research issues nobody dismissed; the catalogue half (`lib/catalog/validation.ts`) is computed per product on its editor and is not summed here (Phase 37 reading) | `research_validation_issues` | `catalog.read` | 28 |
 | 20 | `system_health` | System Health | worst status across the eight environment checks | none — computed | `system.environment.read` | 38 |
 | 21 | `web_vitals` | Web Vitals | p75 per metric, last 28 days, sampled | `web_vitals_samples` | `analytics.read` | 40 |
 | 22 | `owner_verifications` | Outstanding owner verifications | rows still `OWNER_VERIFICATION_REQUIRED`, grouped by surface | computed across Tier-B tables | `content.read` | 46 |
@@ -497,34 +497,78 @@ through the Content group's own status filter, not through this card.
 estimates, interpolates or fills a missing figure. Card 20 reports reachability only and never a
 value (§13.10).
 
-### 5.4 The Analytics tab
+**Phase 37 gave every card whose table exists a query** (`lib/supabase/repositories/metrics.ts`,
+one explicit head-count each, run as the signed-in user so RLS applies): the registry's
+`BUILT_THROUGH_PHASE` rose from 5 to 36. Two cards still say which phase will make them answerable:
+System Health (38) and Missing Media (43).
 
-Eighteen metrics from FEAT §28, declared one module per metric under `lib/analytics/metrics/`. Each
-declares `definition`, `requires`, `compute`, `coverage` and `availableFrom`. Every tile renders
-`n`, a denominator and an as-of date through `CoverageBadge`. **A metric that cannot be computed
-renders `UNAVAILABLE` with the named reason** — not zero, not a dash, not a placeholder.
+### 5.4 The Analytics tab — Phase 37, as built
 
-| Section | Metrics | Extra permission |
-|---|---|---|
-| **This studio** (first-party) | `catalog` · `product_categories` · `product_scale` · `large_format_share` · `collection_mix` · `inquiry_trends` · `content_performance` · `media_coverage` | `analytics.read` |
-| **The market** (competitive) | `assortment` · `price_architecture` · `dimensions` · `materials` · `resin_styles` · `colours` · `customization` · `production_model` · `opportunity_scores` · `source_freshness` | `analytics.read` **and** `research.read`, gated by the `advanced_analytics` flag |
+Eighteen metrics from FEAT §28, declared one module each under `lib/analytics/metrics/` and held to
+the specification's list by `tests/unit/analytics-registry.test.ts`. Every tile renders `n`, a
+denominator and an as-of date through `CoverageBadge`. **A metric that cannot be computed renders
+`UNAVAILABLE` with the named reason** — not zero, not a dash, not a placeholder — and the reason
+names what would make it available: a table, an attribute key and the sources that would need it,
+a run, a model. The definition strings below are the code's own (`definition` on each module) and
+a unit test holds this table to them byte for byte.
+
+| # | Metric | Dimension | Definition | Availability rule |
+|---|---|---|---|---|
+| 1 | `catalog` | first-party | Products by status, by readiness band and by age: how many exist, how many are published, and how many were created in the last 30 and 90 days. Reads zero when the catalogue is empty. | always; reads zero when empty |
+| 2 | `product_categories` | first-party | Published products per category and each category's share of the published catalogue. | always |
+| 3 | `product_scale` | first-party | The longest declared axis of every product with recorded dimensions, in bands. Needs at least five products with dimensions; percentiles are shown only from twelve. | ≥ 5 products with dimensions, else `UNAVAILABLE`; percentiles from 12 |
+| 4 | `large_format_share` | first-party | The share of published products flagged large-format. Needs at least one published product. | ≥ 1 published product |
+| 5 | `collection_mix` | first-party | Published collections, published products per collection, and published products assigned to no collection. | always |
+| 6 | `inquiry_trends` | first-party | Enquiries per week over the last twelve weeks, by kind and by pipeline status, and the share that reached the WhatsApp handoff. Needs at least one enquiry. | ≥ 1 enquiry |
+| 7 | `content_performance` | first-party | Database-derived content health, not traffic: published versus draft pages, sections per page, days since each page was updated, and enquiries attributed to a page path. No web-analytics provider is connected. | always — see the note below |
+| 8 | `media_coverage` | first-party | How much of the published catalogue is illustrated: the share of published products with a hero, with a gallery of three or more, and with hero alt text; the share of sections with a mobile image; the share of media assets used anywhere; and the share that are AI concept renders. | always |
+| 9 | `assortment` | competitive | The Phase 31 assortment snapshot for the whole corpus: live products per source and per category, and the large-format share. Needs a successful research run in the last 30 days. | ≥ 1 SUCCEEDED run in 30 days; a snapshot older than 30 days reads stale |
+| 10 | `price_architecture` | competitive | The Phase 31 price snapshot per currency: minimum, percentiles and bands over priced rows. Needs at least twelve priced rows in a currency; currencies are never mixed. | ≥ 12 priced rows in a currency |
+| 11 | `dimensions` | competitive | The Phase 31 dimensions snapshot: axis percentiles and the longest-axis distribution over rows whose dimensions parsed. Needs at least twelve parsed rows. | ≥ 12 rows with parsed dimensions |
+| 12 | `materials` | competitive | How often each normalised material token appears across research rows. Needs an enabled source configured to extract materials. | `materials` configured on ≥ 1 enabled source under an EXTRACT adapter |
+| 13 | `resin_styles` | competitive | How often each normalised resin-style term appears across research rows. Unavailable until an adapter declares the capability to extract it. | `UNAVAILABLE` until an adapter declares the capability |
+| 14 | `colours` | competitive | How often each normalised colour term appears across research rows. Unavailable until an adapter declares the capability to extract it. | `UNAVAILABLE` on the same rule |
+| 15 | `customization` | competitive | The share of research rows whose source states a customisation option. Needs an enabled source configured to extract customisation. | `customization` configured on ≥ 1 enabled source; reports that no column carries it yet |
+| 16 | `production_model` | competitive | Made-to-order versus stocked, where a source states it. Unavailable until an adapter declares the capability to extract it. | `UNAVAILABLE` on the same rule |
+| 17 | `opportunity_scores` | competitive | The Phase 32 score distribution under the active model, in bands and per category, with the model version. Needs an active model and at least one scored row. | an `ACTIVE` model and ≥ 1 scored row |
+| 18 | `source_freshness` | competitive | Per research source: last run, last status, seven-day success rate, queue depth, health state and rows captured. | always |
+
+**Who sees what.** `analytics.read` (every role) sees **This studio** (1–8). **The market** (9–18)
+renders only for a role holding `research.read` **and** while `advanced_analytics` is on — and the
+rows themselves are gated by the policy on `analytics_snapshots`, not by the page: a direct request
+as `editor` returns no COMPETITIVE row. So an editor sees eight tiles and a researcher eighteen;
+nothing renders a locked placeholder for a metric a role cannot see. With the flag off the market
+section is absent and trend lines are not drawn.
+
+**Where the numbers come from.** Nothing computes in the request path. `npm run analytics:snapshot`
+and the 03:45 UTC cron (`/api/cron/analytics-snapshot`, `CRON_SECRET`) write one row per metric
+per day into `analytics_snapshots` — a second run for the same date updates rather than
+duplicates — and the tab reads the newest row per metric. The competitive metrics read the Phase 31
+and 32 snapshots; a Phase 31 snapshot older than thirty days reads *stale* rather than being
+recomputed. Retention is 400 days. Before the first run the tab says **No snapshot yet** and
+estimates nothing.
+
+**Trends** need two snapshots. A metric with fewer renders its figure and the sentence *One snapshot
+so far — a trend needs two. Nothing is extrapolated.* An UNAVAILABLE day is a gap in the line, not
+a zero.
 
 Two definitions an operator will otherwise misread, and both are stated on the tab itself:
 
-- **`content_performance` is not traffic.** No web-analytics provider exists in the approved stack, so
-  the metric is database-derived content health: published versus draft pages, sections per page, days
-  since update, and enquiries attributed by `source_path`. The tab says in one line that traffic
-  analytics are not connected. Connecting one is an owner decision — **OWNER_VERIFICATION_REQUIRED**.
-- **Several competitive metrics are unavailable by design on day one.** `resin_styles`, `colours` and
-  `production_model` stay `UNAVAILABLE` until an adapter declares the capability to extract them. The
-  unavailable state names the missing capability and the sources that would need it, which turns an
-  empty chart into a work item.
+- **`content_performance` is not traffic.** No web-analytics provider exists in the approved stack,
+  so the metric is database-derived content health: published versus draft pages, sections per page,
+  days since update, and enquiries attributed by `source_path`. The first section carries the
+  sentence *Traffic analytics are not connected*. Connecting a provider is an owner decision —
+  **OWNER_VERIFICATION_REQUIRED**, recorded in PERFORMANCE §7.5.
+- **Several competitive metrics are unavailable by design on day one.** `resin_styles`, `colours`
+  and `production_model` stay `UNAVAILABLE` until an adapter declares the capability to extract
+  them; `customization` can be configured but no normalised column carries it yet. Each unavailable
+  tile names the missing key and the enabled sources that would supply it, which turns an empty
+  chart into a work item.
 
-Trends come from `analytics_snapshots` — one row per metric per day, written by
-`npm run analytics:snapshot` and a daily cron. A metric with fewer than two snapshots renders a figure
-and no line; it is never extrapolated. The database constraint
-`check ((availability = 'UNAVAILABLE') = (unavailable_reason is not null))` makes an unexplained
-unavailable metric unstorable.
+Every chart has an adjacent, keyboard-reachable data table (the same array the bars are drawn from).
+Exporting any tile goes through a Phase 36 Sheets definition rather than a second exporter. The
+database constraint `check ((availability = 'UNAVAILABLE') = (unavailable_reason is not null))`
+makes an unexplained unavailable metric unstorable.
 
 ### 5.5 The Activity tab
 

@@ -112,6 +112,7 @@ const config = [
       'app/api/cron/research-score/route.ts',
       // Phase 36: the hourly Sheets tick — Vercel Cron, no user; runs write as the service role.
       'app/api/cron/sheets-sync/route.ts',
+      'app/api/cron/analytics-snapshot/route.ts',
       'app/(studio)/studio/(shell)/content/actions.ts',
       'app/(studio)/studio/(shell)/research/scrape/actions.ts',
       'app/(studio)/studio/(shell)/research/sources/actions.ts',

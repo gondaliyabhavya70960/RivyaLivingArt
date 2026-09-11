@@ -82,6 +82,14 @@ export const FLAGS = {
    */
   google_sheets:
     'Writes export definitions to Google Sheets tabs (one-way; Rivya writes, the sheet reads). Off until the owner has created the service account, shared the spreadsheet with it and set the two variables.',
+  /**
+   * Phase 37. Gates the competitive block ("The market", metrics 9–18) and the trend lines on the
+   * Analytics tab. Off, the tab renders the eight first-party tiles and no market section; the
+   * RLS predicate on `analytics_snapshots` still decides who may READ a competitive row, so the
+   * flag is presentation, never the access control.
+   */
+  advanced_analytics:
+    'Shows the competitive section and trend lines on the Studio Analytics tab. Off until the owner has a research corpus worth reading; research.read still gates every competitive row regardless.',
 } as const satisfies Record<string, string>
 
 export type FeatureFlagKey = keyof typeof FLAGS

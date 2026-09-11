@@ -691,6 +691,9 @@ const EXPECTED = {
   sheets_export_definitions: ['slug', 'name', 'entity', 'columns', 'tab_name', 'schedule'],
   sheets_sync_runs: ['definition_id', 'status', 'trigger', 'started_at'],
 
+  /* Phase 37 — one row per metric per day; the reason column travels with UNAVAILABLE (CHECK). */
+  analytics_snapshots: ['metric_id', 'dimension', 'as_of', 'availability', 'computed_at'],
+
   research_scoring_models: [
     'version',
     'signals',

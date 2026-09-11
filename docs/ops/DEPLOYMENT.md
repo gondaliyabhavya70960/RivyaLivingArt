@@ -95,7 +95,7 @@ exists to prevent. Vercel evaluates cron expressions in **UTC**.
 | `app/api/cron/research-analytics` | `30 18 * * *` | Nightly | `REVALIDATE_SECRET` | 31 | Writes the dated `research_analytics_snapshots` and `research_metric_coverage` rows |
 | `app/api/cron/research-score` | `30 19 * * *` | Nightly, **after** research-analytics | `REVALIDATE_SECRET` | 32 | Recomputes opportunity scores and components against the active scoring model |
 | `app/api/cron/sheets-sync` | `0 * * * *` | Hourly | `CRON_SECRET` (A25, A37) — **built, Phase 36** | 36 | Runs the `sheets_export_definitions` whose own `schedule` has fired since their last run (minimum interval hourly; `MANUAL` is the default and is skipped), skips paused and disabled definitions, and answers `skipped: flag_off` without writing anything while `google_sheets` is off |
-| `app/api/cron/analytics-snapshot` | `30 20 * * *` | Daily | `REVALIDATE_SECRET` | 37 | One first-party metric row per metric per day, idempotent per date |
+| `app/api/cron/analytics-snapshot` | `45 3 * * *` | Daily, **after** research-score | `CRON_SECRET` (A25, A38) — **built, Phase 37** | 37 | One `analytics_snapshots` row per metric per day (eighteen), idempotent per date; prunes rows past 400 days; a metric that cannot be computed is stored UNAVAILABLE with its reason |
 | `app/api/cron/log-retention` | `30 21 * * *` | Daily | `REVALIDATE_SECRET` | 38 | Purges `system_logs`, `web_vitals_samples`, `search_queries`, `rate_limit_buckets` and orphaned `inquiry_attachments` per the `BUSINESS_RULES.md` §I retention table |
 
 **The only ordering constraint is `research-score` after `research-analytics`** — a score computed
