@@ -206,6 +206,50 @@ mention light.
 
 ---
 
+### 5.4 Re-crop before regenerate *(Phase 43)*
+
+**The cheapest new asset is the one you already have in a different shape.** D6 keeps desktop and
+mobile as separate slots with different ratios, so a single 4800 px master is legitimately asked for
+at 21:9 and at 9:16. `media_crops` stores one editor-chosen crop per (asset, ratio), applied as
+`c_crop` **before** the delivery preset, so the box is taken out of the master and then the preset
+fills the box.
+
+**The order is the whole point.** Cloudinary applies transformation components left to right;
+reversed, the preset would resize first and the stored box would name pixels that no longer exist —
+a crop landing somewhere different at every rung of the width ladder. `lib/media/crop.ts` returns a
+PREFIX rather than merging into `TransformSpec` for exactly that reason.
+
+| | When to use it | Stored as |
+|---|---|---|
+| An explicit box | The subject is visible and the edges matter — a table that must not be cut, a hand that must stay in frame | `x`, `y`, `width`, `height` in **source** pixels |
+| A gravity | One master serves several ratios and the subject should stay centred in each — a material macro, a texture | `gravity`, one of Cloudinary's ten |
+
+A row with neither is refused by `media_crops_box_or_gravity`, so the resolver never invents a
+default: no stored crop means the whole picture is delivered, which is a visible fact rather than a
+silent centre crop nobody chose.
+
+**What it bought.** The Phase 43 coverage report resolved 26 declared slots: 15 reuse an existing
+asset, 6 re-crop one, 3 are honestly empty, and **2** need generation. Before the family mappings
+were corrected the same report proposed ten briefs.
+
+### 5.5 The four dispositions
+
+Every declared slot carries exactly one, and `scripts/media/build-coverage-report.ts` prints the
+proposal the data supports into `HIGGSFIELD_ASSET_STATUS.md` §5.0.
+
+| Disposition | Means | Needs |
+|---|---|---|
+| `REUSE_FROM_FAMILY` | An existing asset in a matching family fits | An editor binds it |
+| `RECROP_EXISTING` | An existing asset survives a crop to the needed ratio | A `media_crops` row |
+| `GENERATE_NEW` | Nothing existing fits | A brief, and four recorded "no" answers |
+| `LEAVE_EMPTY` | The honest answer is an empty state | A seeded message (D10) |
+
+**Two of the four decision-gate questions are not answerable by a script**, and the report prints
+them as `—` rather than guessing: whether real Rivya media exists, and whether a crop would destroy
+the subject. Both need somebody looking at a picture.
+
+---
+
 ## 6. Slots, roles and bindings
 
 A slot is declared in `content/media-slots.ts` — key, page, label, kind, desktop and mobile

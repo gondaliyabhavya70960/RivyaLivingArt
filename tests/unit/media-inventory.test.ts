@@ -116,10 +116,20 @@ describe('candidate slots', () => {
     expect(materialMacro.candidateSlotKeys).toContain('about.hero')
   })
 
-  it('is empty for a family no slot claims', () => {
-    // gallery-scene: atmosphere, not project media. /portfolio deliberately declares no family.
+  it('does not offer gallery-scene to /portfolio, which declares no family', () => {
+    /*
+     * PHASE 43 GAVE `gallery-scene` A SLOT, and it is not the portfolio one. Collectible design is
+     * what a gallery scene IS — the category's own subject — so those five assets now fill
+     * `collection.collectible-design.hero`.
+     *
+     * `/portfolio` still claims nothing, and that is the assertion worth keeping. A portfolio entry
+     * says Rivya DELIVERED a piece to a client; an atmosphere still offered as project media is the
+     * exact substitution D10's verification workflow exists to prevent, and the way it would happen
+     * is somebody adding a family to that slot to close a gap.
+     */
     const gallery = ALL.find((e) => e.asset.family === 'gallery-scene')!
-    expect(gallery.candidateSlotKeys).toEqual([])
+    expect(gallery.candidateSlotKeys).toContain('collection.collectible-design.hero')
+    expect(gallery.candidateSlotKeys).not.toContain('portfolio.project')
   })
 })
 

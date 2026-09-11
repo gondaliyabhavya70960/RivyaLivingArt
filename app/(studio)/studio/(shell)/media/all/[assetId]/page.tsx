@@ -10,15 +10,17 @@ import { Text } from '@/components/primitives/Text'
 import { PageHeader } from '@/components/studio/PageHeader'
 import { StatusPill } from '@/components/studio/StatusPill'
 import { AccessibilityPanel } from '@/components/studio/media/AccessibilityPanel'
+import { CropEditor } from '@/components/studio/media/CropEditor'
 import { t } from '@/components/studio/strings'
 import { roleHasPermission } from '@/lib/auth/permissions'
 import { requirePermission } from '@/lib/auth/require'
 import { requiredEnv } from '@/lib/env'
 import { NotFoundError } from '@/lib/supabase/errors'
 import { getMediaAssetById } from '@/lib/supabase/repositories/media'
+import { cropsForAsset } from '@/lib/supabase/repositories/media-crops'
 import { createClient } from '@/lib/supabase/server'
 
-import { saveAccessibilityAction } from '../../actions'
+import { removeCropAction, saveAccessibilityAction, saveCropAction } from '../../actions'
 
 /**
  * /studio/media/all/[assetId] — one asset, and the accessibility decision attached to it.
@@ -60,6 +62,7 @@ export default async function Page({ params }: { params: Promise<{ assetId: stri
   if (asset === null) notFound()
 
   const canWrite = roleHasPermission(session.role, 'media.write')
+  const crops = await cropsForAsset(client, asset.id)
 
   return (
     <Stack gap={6}>
@@ -119,6 +122,21 @@ export default async function Page({ params }: { params: Promise<{ assetId: stri
               </Text>
             </Stack>
           )}
+
+          {/*
+            THE CROP EDITOR SITS BESIDE THE ACCESSIBILITY PANEL — Phase 43 — because both answer
+            "how does this picture reach a person": one in words, one in shape. Shown only to a role
+            that can write, for the same reason the panel above is.
+          */}
+          {canWrite && RENDERABLE.has(asset.kind) ? (
+            <CropEditor
+              assetId={asset.id}
+              source={{ width: asset.width ?? 0, height: asset.height ?? 0 }}
+              crops={crops}
+              onSave={saveCropAction}
+              onRemove={removeCropAction}
+            />
+          ) : null}
 
           <Stack gap={2}>
             <Heading level={2} size="display-xs">

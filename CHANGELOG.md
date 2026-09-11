@@ -6,6 +6,61 @@ Every phase adds an entry; see `docs/architecture/CANONICAL-DECISIONS.md` D9 for
 
 ## [Unreleased]
 
+### Phase 43 — Media Coverage + Higgsfield Finalization (DEVELOPMENT COMPLETE; tests deferred to Phase 42)
+
+Phase 07 produced a projected gap list before most slots existed. Phases 09–22 then built the real
+slots. This phase re-runs the analysis against reality and resolves every slot with one of four
+dispositions — and the headline is how few needed anything generated.
+
+**Ten briefs became two.** `scripts/media/build-coverage-report.ts` joins the 26 declared slots in
+`content/media-slots.ts` against the 250 manifest assets and writes the result into
+`HIGGSFIELD_ASSET_STATUS.md` §5.0. Its first run proposed ten `GENERATE_NEW` dispositions — not
+because ten surfaces were uncoverable, but because six slots carried an empty `fillableBy` list that
+Phase 07's own analysis had already answered. Mapping `material-macro` to the collection landing and
+contact surfaces, `gallery-scene` to collectible design, `interior-lifestyle` and `process-studio` to
+commissions, and the five `largeformat-*` families to furniture took it to four; marking `/faq` and
+`/search` as honest empty states — which is what Phase 07 said and the registry had not recorded —
+took it to two. Fifteen slots reuse an existing asset, six re-crop one, three are deliberately empty.
+
+**The two that remain are the ones Phase 07 named.** Zero videos in the library carry `page = home`
+and the seven at 1920 × 1080 are process, macro or gallery subjects. `HOME-HERO-VIDEO-001` and
+`HOME-HERO-POSTER-001` have briefs in `docs/ASSET_GENERATION_PROMPTS.md`, in the families
+`home-hero-video` and `home-hero-poster` so the Python builder mints exactly the planned ids.
+
+**Re-crop became a first-class mechanism.** `media_crops` (`0410`–`0411`) stores one editor-chosen
+crop per (asset, D6 ratio), applied as `c_crop` **before** the delivery preset — the order matters:
+reversed, the preset resizes first and the stored box names pixels that no longer exist. Either a
+four-number box in source pixels or a Cloudinary gravity, never neither, so the resolver never
+invents a centre crop nobody chose. The crop editor sits on the asset page and warns about a box
+outside the source and a box that drifts from its nominal shape.
+
+**All 250 alt texts were rewritten.** The imported drafts were the first ~160 characters of each
+generation prompt, cut at a character count: 124 ended mid-clause and the rest carried the prompt's
+instructions — lighting rigs, lens settings, palette hex codes, "no people". `build-alt-text.ts`
+keeps the scene and drops the instructions, finishing at a clause boundary rather than a count, and
+every one of the 250 now passes the SEED §43 rules. The file is committed TypeScript and the
+generator PRESERVES a hand edit unless `--overwrite` is passed, so an editor who improves a sentence
+after looking at the picture has made a reviewable diff rather than an invisible database change.
+
+**A prompt describes what was asked for, not what arrived**, so every value stays
+`OWNER_VERIFICATION_REQUIRED` and the Studio's new alt-text queue orders bound assets first, then the
+ones whose draft was truncated, then by warning count.
+
+**The Studio gained four surfaces**: a Coverage tab and a Concept Placement tab on the Higgsfield
+tracker, the crop editor on the asset page, the alt-text queue under the media library, and the
+brand-format panel that states what the owner must supply *before* they pick a file — read from the
+same `BRAND_SLOTS` table the Phase 41 validator enforces, so it cannot promise something the upload
+would refuse.
+
+**Nothing was generated, and three categories never will be.** Brand marks are the studio's identity
+and are owner-supplied; 3D models of products Rivya has not made would be fabricated products, not
+concept media; portfolio imagery would assert delivered work. `media:register-external` is the
+intake path for an image the owner generates themselves: it refuses a URL outside the project's own
+Cloudinary cloud, registers `is_ai_generated = true, is_concept = true` without a flag to turn that
+off, and touches the manifest not at all.
+
+Migrations `0410`–`0411`. `MEDIA_GUIDE.md` §5.4–§5.5, DATA_MODEL §11.ai.
+
 ### Phase 41 — Accessibility + Security (DEVELOPMENT COMPLETE; tests deferred to Phase 42)
 
 The security posture stops being a document and becomes code, and the accessibility half gets its

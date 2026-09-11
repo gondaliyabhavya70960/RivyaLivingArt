@@ -226,20 +226,45 @@ describe('briefableGaps', () => {
 describe('against the real manifest, unbound', () => {
   const report = computeGaps({ assets: MANIFEST.assets, bindings: [] })
 
-  it('finds every page the phase document names as a gap', () => {
-    // Verification step 8, verbatim: open the Gaps tab and assert these all appear.
+  it('finds the two home hero slots as gaps, which is what Phase 43 left', () => {
+    /*
+     * THIS LIST SHRANK IN PHASE 43, AND THE SHRINKING IS THE POINT. It used to name seven pages,
+     * which was Phase 07's projection: `/`, `/collection`, `/collection/furniture`,
+     * `/collection/collectible-design`, `/custom-commissions`, `/contact` and `/faq`. Six of those
+     * were gaps only because their slot carried an EMPTY `fillableBy` list while Phase 07's own
+     * written analysis named the family that fits, and `/faq` was declared GENERATE where the same
+     * analysis said "typographic by design". Phase 43 resolved all eight.
+     *
+     * What is genuinely uncoverable is the home hero: zero videos in the manifest carry
+     * `page = home`, and the seven at 1920×1080 are process, macro or gallery subjects.
+     */
     const gapPages = new Set(report.gaps.map((s) => s.slot.page))
+    expect(gapPages).toContain('/')
+
+    /*
+     * The resolved pages must not come back, and the assertion is about what earns a BRIEF rather
+     * than about `report.gaps`. A slot with no candidates is state GAP whatever its resolution —
+     * `/faq` has no family and never will — and `briefableGaps` is what filters an EMPTY_STATE
+     * slot out. That distinction is the load-bearing one: a regression here means somebody emptied
+     * a `fillableBy` list or flipped an EMPTY_STATE back to GENERATE, and the next coverage report
+     * would ask for a brief for a picture that already exists or for one nobody should draw.
+     */
+    const briefablePages = new Set(briefableGaps(report).map((s) => s.slot.page))
     for (const page of [
-      '/',
       '/collection',
-      '/collection/furniture',
       '/collection/collectible-design',
       '/custom-commissions',
       '/contact',
       '/faq',
+      '/search',
     ]) {
-      expect(gapPages).toContain(page)
+      expect(briefablePages).not.toContain(page)
     }
+    // The home hero is the one page that still earns briefs, and it earns exactly two.
+    expect(briefableGaps(report).map((s) => s.slot.key)).toEqual([
+      'home.hero.video',
+      'home.hero.poster',
+    ])
   })
 
   it('does not call a well-covered surface a gap', () => {
@@ -286,11 +311,19 @@ describe('bindings from a later phase', () => {
     // A binding on a slot no family can fill means the CMS points at an asset the registry says
     // is not suitable. FILLED is the honest answer — a person overrode the registry — but the
     // library is still short, so `fillableBy` is what must change, not the count.
+    //
+    // `home.hero.poster` rather than `contact.hero`: Phase 43 gave contact the `material-macro`
+    // family, so it is no longer a slot with zero candidates. The home hero poster is, and is one
+    // of the only two left.
+    // Two bindings, because the slot's `minAssets` is 2: D6 makes desktop and mobile separate, so
+    // one bound asset is half an answer and the engine says so.
     const report = computeGaps({
       assets: MANIFEST.assets,
-      bindings: [{ slot_key: 'contact.hero' }],
+      bindings: [{ slot_key: 'home.hero.poster' }, { slot_key: 'home.hero.poster' }],
     })
-    const status = report.pages.flatMap((p) => p.slots).find((s) => s.slot.key === 'contact.hero')!
+    const status = report.pages
+      .flatMap((p) => p.slots)
+      .find((s) => s.slot.key === 'home.hero.poster')!
     expect(status.state).toBe('FILLED')
     expect(status.candidateCount).toBe(0)
   })

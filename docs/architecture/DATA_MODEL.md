@@ -2372,6 +2372,34 @@ was needed by Phase 19, two phases before its number came up. `0390`'s header re
 Nothing else in the phase changed a policy set, so there was no generated RLS file to write and the
 number stays empty rather than being filled with a migration that had nothing to do.
 
+### 11.ai Media crops — Phase 43 · migrations `0410`–`0411`
+
+| Object | Posture | Written by | Key rule |
+|---|---|---|---|
+| `media_crops` | RLS-B under `media_assets` (anon + staff `select` where the parent asset is `PUBLISHED`; insert, update and **delete** all `media.write`) | `saveCropAction` / `removeCropAction` under `media.write` | `unique (media_asset_id, aspect_ratio)`; `aspect_ratio` CHECKed to D6's eight; a full four-number box in SOURCE pixels **or** a Cloudinary gravity, never neither (`media_crops_box_or_gravity`), never a partial box (`media_crops_box_complete`), never a zero-area or negative-origin box (`media_crops_box_positive`). Tier A only |
+
+**One row per (asset, ratio), and that is the design rather than a constraint on it.** D6 keeps
+desktop and mobile as separate slots with different ratios, so one 4800 px master legitimately
+serves several shapes. A second row for the same pair would be two answers to one question.
+
+**The box is in SOURCE pixels.** It is what the editor was looking at and what Cloudinary measures
+`c_crop` against; a box in delivered pixels would mean a different crop at every rung of the width
+ladder.
+
+**The anon SELECT leg is load-bearing.** The public renderer resolves a crop before it builds the
+delivery URL. Without it every visitor would silently get the uncropped master while the Studio,
+reading under a staff session, showed the crop working — a difference nobody would find.
+
+**DELETE is `media.write`, not `destructive.execute`.** Removing a crop destroys no history and
+loses nothing but a preference: the asset, its bindings and its usages are untouched and the slot
+falls back to the master. Making an editor ask an owner to undo their own crop would be friction
+with nothing behind it.
+
+**Tier A only, and `updated_by` is the difference from `media_usages`.** A crop is a JUDGEMENT
+somebody made about a picture — where the subject is, what may be cut — and the next person to
+disagree should be able to see whose it was. A usage is rewritten wholesale by a trigger and has no
+author to name.
+
 ## 12. Table register — Phase 03 versus later
 
 The spine an engineer builds in Phase 03 is small on purpose. Everything else is additive.
@@ -2472,7 +2500,7 @@ local and hosted is isolated to one file that can never be picked up by `supabas
 | 40 | `0380`–`0381` | T `web_vitals_samples`. `0381` is the generated RLS file — the generator rewrites a policy migration whole, so DDL and generated policies never share a file (the A23…A30 pattern). This row previously read `0380` alone |
 | 41 | `0390` (`0391` unused) | A `media_assets.is_decorative`, and `media_assets_alt_text_present` dropped and re-added as `check (is_decorative or non-empty alt_text)`. `rate_limit_buckets` was **not** created here: it shipped in `0182` under amendment A18, two phases before its number came up, so `0391` is allocated and empty. No policy set changed, so there is no generated RLS file |
 | 42 | — | **None.** `tests/integration/migrations-replay.test.ts` asserts every migration replays from empty, in order, with no error |
-| 43 | `0410` | T `media_crops` |
+| 43 | `0410`–`0411` | T `media_crops`. `0411` is the generated RLS file — the generator rewrites a policy migration whole, so DDL and generated policies never share a file (the A23…A30 pattern). This row previously read `0410` alone |
 | 44–46 | — | **None.** A `deployments` table would duplicate Vercel and immediately drift |
 
 **Migration discipline.** Forward-only, numbered, one subject per file, `snake_case` description. A

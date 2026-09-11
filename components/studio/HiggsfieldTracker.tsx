@@ -15,7 +15,14 @@ import { FilterBar } from '@/components/studio/FilterBar'
 import { HiggsfieldAssetDrawer, type DrawerAsset } from '@/components/studio/HiggsfieldAssetDrawer'
 import { StatCard } from '@/components/studio/StatCard'
 import { t } from '@/components/studio/strings'
-import { briefSkeleton, type GapReport, type SlotState, type SlotStatus } from '@/lib/media/gaps'
+import {
+  briefSkeleton,
+  presetWidthFor,
+  type DispositionProposal,
+  type GapReport,
+  type SlotState,
+  type SlotStatus,
+} from '@/lib/media/gaps'
 import {
   activeFilterCount,
   filterInventory,
@@ -50,7 +57,7 @@ import type { ManifestAsset } from '@/lib/media/manifest'
  * each row means it cannot be scrolled past on the way to the first asset.
  */
 
-export const TRACKER_TABS = ['inventory', 'families', 'gaps'] as const
+export const TRACKER_TABS = ['inventory', 'families', 'gaps', 'coverage', 'concept'] as const
 export type TrackerTab = (typeof TRACKER_TABS)[number]
 
 export function isTrackerTab(value: unknown): value is TrackerTab {
@@ -61,6 +68,8 @@ const TAB_LABEL: Record<TrackerTab, () => string> = {
   inventory: () => t('studio.higgsfield.tabInventory'),
   families: () => t('studio.higgsfield.tabFamilies'),
   gaps: () => t('studio.higgsfield.tabGaps'),
+  coverage: () => t('studio.media.coverage.heading'),
+  concept: () => t('studio.media.concept.heading'),
 }
 
 /**
@@ -553,6 +562,163 @@ function GapsPanel({ report, families }: { report: GapReport; families: readonly
   )
 }
 
+/**
+ * A concept asset bound to a slot, as the Studio reads it live.
+ *
+ * IT IS NOT IN THE GENERATED DOCUMENT, and that is deliberate. `HIGGSFIELD_ASSET_STATUS.md` is
+ * rebuilt in CI and compared with `git diff --exit-code`, so anything in it that depended on how
+ * many `media_usages` rows a database happened to hold would differ between a laptop, CI and
+ * production. What is bound right now is a live question, and this tab is where a person who can
+ * act on the answer is looking.
+ */
+export interface ConceptPlacement {
+  readonly assetId: string
+  readonly rivyaAssetId: string | null
+  readonly title: string
+  readonly slotKey: string
+  readonly contextType: string
+  readonly role: string
+}
+
+const DISPOSITION_TONE: Record<string, BadgeTone> = {
+  REUSE_FROM_FAMILY: 'success',
+  RECROP_EXISTING: 'info',
+  GENERATE_NEW: 'warning',
+  LEAVE_EMPTY: 'neutral',
+}
+
+/**
+ * Every declared slot with the disposition the library supports — Phase 43.
+ *
+ * GENERATE_NEW IS `warning`, NOT `danger`. It is not a failure: it is the honest outcome for a
+ * surface nothing existing can serve, and two of the twenty-six slots reach it. A red badge would
+ * teach people to make it go away, which is exactly the pressure that produces a regenerated asset.
+ */
+function CoveragePanel({ proposals }: { proposals: readonly DispositionProposal[] }) {
+  const columns: readonly Column<DispositionProposal>[] = [
+    {
+      id: 'slot',
+      header: t('studio.media.coverage.colSlot'),
+      cell: (proposal) => (
+        <Stack gap={1}>
+          <Text>{proposal.slot.label}</Text>
+          <Text size="sm" tone="tertiary">
+            {`${proposal.slot.page} · ${proposal.slot.desktopRatio} / ${proposal.slot.mobileRatio}`}
+          </Text>
+        </Stack>
+      ),
+    },
+    {
+      id: 'candidates',
+      header: t('studio.media.coverage.colCandidates'),
+      cell: (proposal) => (
+        <Text size="sm">
+          {`${String(proposal.candidateCount)} · native ${String(proposal.nativeDesktop)} / ${String(proposal.nativeMobile)}`}
+        </Text>
+      ),
+    },
+    {
+      id: 'fit',
+      header: t('studio.media.coverage.colFit'),
+      cell: (proposal) => (
+        <Text size="sm" tone={proposal.resolution === 'UPSCALES' ? 'primary' : 'secondary'}>
+          {proposal.widestPx === null
+            ? '—'
+            : `${String(proposal.widestPx)}px / needs ${String(presetWidthFor(proposal.slot))}px`}
+        </Text>
+      ),
+    },
+    {
+      id: 'disposition',
+      header: t('studio.media.coverage.colDisposition'),
+      cell: (proposal) => (
+        <Badge tone={DISPOSITION_TONE[proposal.proposed] ?? 'neutral'}>{proposal.proposed}</Badge>
+      ),
+    },
+    {
+      id: 'why',
+      header: t('studio.media.coverage.colWhy'),
+      cell: (proposal) => (
+        <Text size="sm" tone="secondary">
+          {proposal.because}
+        </Text>
+      ),
+    },
+  ]
+
+  return (
+    <Stack gap={4}>
+      <Stack gap={1}>
+        <Text size="sm">{t('studio.media.coverage.body')}</Text>
+        <Text size="sm" tone="secondary">
+          {t('studio.media.coverage.proposalNote')}
+        </Text>
+      </Stack>
+      <DataTable
+        caption={t('studio.media.coverage.heading')}
+        columns={columns}
+        rows={proposals}
+        rowKey={(proposal) => proposal.slot.key}
+        empty={{
+          reason: 'empty',
+          heading: t('studio.higgsfield.emptyHeading'),
+          body: t('studio.higgsfield.emptyBody'),
+        }}
+      />
+    </Stack>
+  )
+}
+
+/** Where AI-generated media actually appears on the public site — Phase 43. */
+function ConceptPanel({ placements }: { placements: readonly ConceptPlacement[] }) {
+  const columns: readonly Column<ConceptPlacement>[] = [
+    {
+      id: 'asset',
+      header: t('studio.media.altQueue.colAsset'),
+      cell: (placement) => (
+        <Stack gap={1}>
+          <Text>{placement.title}</Text>
+          <Text size="sm" tone="tertiary">
+            {placement.rivyaAssetId ?? placement.assetId}
+          </Text>
+        </Stack>
+      ),
+    },
+    {
+      id: 'slot',
+      header: t('studio.media.coverage.colSlot'),
+      cell: (placement) => <Text size="sm">{placement.slotKey}</Text>,
+    },
+    {
+      id: 'context',
+      header: t('studio.media.altQueue.colBound'),
+      cell: (placement) => (
+        <Text size="sm" tone="secondary">
+          {`${placement.contextType} · ${placement.role}`}
+        </Text>
+      ),
+    },
+  ]
+
+  return (
+    <Stack gap={4}>
+      <ConceptBanner />
+      <Text size="sm">{t('studio.media.concept.body')}</Text>
+      <DataTable
+        caption={t('studio.media.concept.heading')}
+        columns={columns}
+        rows={placements}
+        rowKey={(placement) => `${placement.assetId}:${placement.slotKey}`}
+        empty={{
+          reason: 'empty',
+          heading: t('studio.media.concept.heading'),
+          body: t('studio.media.concept.empty'),
+        }}
+      />
+    </Stack>
+  )
+}
+
 export function HiggsfieldTracker({
   path,
   tab,
@@ -561,6 +727,8 @@ export function HiggsfieldTracker({
   report,
   filters,
   selected,
+  proposals,
+  conceptPlacements,
 }: {
   path: string
   tab: TrackerTab
@@ -570,6 +738,10 @@ export function HiggsfieldTracker({
   report: GapReport
   filters: InventoryFilters
   selected: DrawerAsset | null
+  /** Phase 43: one proposal per declared slot, computed from the manifest and the registry. */
+  proposals: readonly DispositionProposal[]
+  /** Phase 43: every concept asset currently bound to a slot, read live from `media_usages`. */
+  conceptPlacements: readonly ConceptPlacement[]
 }) {
   const migratedByAssetId = new Map(entries.map((e) => [e.asset.rivya_asset_id, e.migrated]))
   const isMigrated = (asset: ManifestAsset): boolean =>
@@ -652,6 +824,8 @@ export function HiggsfieldTracker({
       {tab === 'gaps' ? (
         <GapsPanel report={report} families={families.map((f) => f.family)} />
       ) : null}
+      {tab === 'coverage' ? <CoveragePanel proposals={proposals} /> : null}
+      {tab === 'concept' ? <ConceptPanel placements={conceptPlacements} /> : null}
 
       <HiggsfieldAssetDrawer asset={selected} returnTo={`${path}?tab=${tab}`} />
     </Stack>

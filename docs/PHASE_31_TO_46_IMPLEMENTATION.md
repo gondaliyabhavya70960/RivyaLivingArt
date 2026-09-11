@@ -1797,7 +1797,169 @@ soak the report-only policy, then set `CSP_ENFORCE=1`.
 
 ## Phase 43 — Media Coverage + Higgsfield Finalization
 
-**Status:** NOT STARTED
+**Status:** DEVELOPMENT COMPLETE — the three unit suites and two e2e specs the phase document asks
+for are deferred to Phase 42 with the rest of the test track, by the owner's instruction.
+
+### Objective
+Re-run Phase 07's gap analysis against the slots that now actually exist, resolve every one with a
+disposition a person can defend, make re-cropping a first-class alternative to generating, and
+replace 250 truncated prompt fragments with sentences somebody who cannot see the pictures can use.
+
+### Requirements Found
+`docs/project/phases/PHASE-39-46.md` §Phase 43, DATA_MODEL §12 row 43, `MEDIA_GUIDE.md`,
+`HIGGSFIELD_ASSET_STATUS.md` §5–§6, `HIGGSFIELD_MASTER_ASSET_PLAN.md` §6.
+
+### Implementation Completed
+
+**1. The coverage report, and what it found.** `lib/media/gaps.ts` gained `proposeDisposition`,
+`proposeDispositions`, `presetWidthFor` and `resolutionFit`;
+`scripts/media/build-coverage-report.ts` writes the result into a generated region of
+`HIGGSFIELD_ASSET_STATUS.md`. It reads two committed files and no database, for the same reason the
+Phase 07 generator does: `media:check-coverage` is `generate && git diff --exit-code` in CI, and a
+generator whose output depended on how many `media_usages` rows a database held would differ
+between a laptop, CI and production.
+
+**Its first run proposed ten `GENERATE_NEW` dispositions, and that was the finding.** Not ten
+uncoverable surfaces — six slots carried an empty `fillableBy` list that Phase 07's own written
+analysis had already answered, and two carried `GENERATE` where Phase 07 had concluded
+`LEAVE_EMPTY`. Resolving those eight is the substance of this phase:
+
+| Slot | Was | Now | Why |
+|---|---|---|---|
+| `collection.landing.hero` | no families | `material-macro` | The landing page is about the MATERIAL rather than any one category, and the family holds the only three 21:9 masters at 6336px |
+| `collection.furniture.hero` | no families | the five `largeformat-*` | The only furniture in the library. Eight of the eighteen are workshop blanks (DQ-8), which is why the disposition is RECROP rather than REUSE: a person picks the asset |
+| `collection.collectible-design.hero` | no families | `gallery-scene` | Collectible design is what a gallery scene IS — the category's own subject, not a borrowed illustration |
+| `custom-commissions.hero` | no families | `interior-lifestyle` | A commission page shows a piece in a room; `INTERIOR-LIFESTYLE-002` crops 3:2 → 21:9 with the room intact |
+| `custom-commissions.supporting` | no families | `process-studio`, `process-timber` | The process is real and repeatable; a finished commission is a claim about a client |
+| `contact.hero` | no families | `material-macro` | A close reading of resin claims no project, no client and no product — right for a surface whose job is a form |
+| `faq.hero` | `GENERATE` | `EMPTY_STATE` | A page of questions is read, not looked at. Phase 07 said "typographic by design" |
+| `search.empty` | `GENERATE` | `EMPTY_STATE` | A dead end with an illustration is a decorated dead end; the seeded copy is the useful part |
+
+**Final reading: 26 slots — REUSE_FROM_FAMILY 15, RECROP_EXISTING 6, GENERATE_NEW 2, LEAVE_EMPTY 3.**
+
+**2. `media_crops` (`0410`–`0411`).** One editor-chosen crop per (asset, D6 ratio). `lib/media/crop.ts`
+turns a row into a `c_crop` component that goes BEFORE the delivery preset — reversed, the preset
+resizes first and the box names pixels that no longer exist, landing the crop somewhere different at
+every rung of the width ladder. `imageUrl` takes it as a separate parameter rather than as part of
+`TransformSpec`, because a merged spec emits one flat component and the ordering is silently lost.
+
+**3. Alt text, all 250.** `scripts/media/build-alt-text.ts` derives a sentence from each prompt by
+keeping the scene and dropping the instructions. The em-dash seam is found by looking for a segment
+that OPENS with an instruction rather than by taking the first one — `WALL-ART-003`'s first em-dash
+introduces a parenthetical, and cutting there produced the sentence "A spare study." The output is
+trimmed at a clause boundary, never at a character count, which is the defect that produced the 124
+broken drafts in the first place. `content/media/alt-text.ts` is committed TypeScript; the generator
+keeps a hand edit unless `--overwrite` is passed. `scripts/media/check-alt-text.mjs` holds every
+value to the SEED §43 rules and shares `altTextWarnings` with the Studio panel.
+
+**4. Studio.** Coverage and Concept Placement tabs on `/studio/media/higgsfield`; the crop editor on
+the asset page; the alt-text queue under `/studio/media/all`; the brand-format panel above the
+uploader on `/studio/media/brand`.
+
+**5. Intake.** `scripts/media/register-external-asset.ts` takes an image the owner generated
+themselves, by Cloudinary URL. It parses the URL rather than pattern-matching it and refuses any
+host or cloud but this project's, because a row pointing elsewhere would render an image the site's
+own content security policy blocks — a broken picture that looks like a bug rather than a bad row.
+
+### Files Added
+`lib/media/crop.ts` · `lib/supabase/repositories/media-crops.ts` ·
+`scripts/media/build-coverage-report.ts` · `scripts/media/build-alt-text.ts` ·
+`scripts/media/check-alt-text.mjs` · `scripts/media/rewrite-alt-text.ts` ·
+`scripts/media/register-external-asset.ts` · `content/media/alt-text.ts` ·
+`components/studio/media/CropEditor.tsx` · `components/studio/media/AltTextQueue.tsx` ·
+`components/studio/media/BrandFormats.tsx` · `supabase/migrations/0410_phase43_media_crops.sql` ·
+`supabase/migrations/0411_phase43_media_crops_rls.sql`
+
+### Files Modified
+`lib/media/gaps.ts` · `lib/media/url.ts` · `lib/media/folders.ts` ·
+`lib/supabase/repositories/media.ts` · `lib/auth/table-permissions.ts` ·
+`scripts/auth/gen-role-sql.ts` · `scripts/db/check-schema.mjs` · `content/media-slots.ts` ·
+`components/studio/HiggsfieldTracker.tsx` · `components/studio/strings.ts` ·
+`app/(studio)/studio/(shell)/media/{actions.ts,all/page.tsx,all/[assetId]/page.tsx,brand/page.tsx,higgsfield/page.tsx}` ·
+`package.json` · `docs/design/COMPONENT_REGISTRY.md`
+
+### Database Changes
+`0410` creates `media_crops`: `unique (media_asset_id, aspect_ratio)`, `aspect_ratio` CHECKed to
+D6's eight, a full four-number box in SOURCE pixels or a Cloudinary gravity and never neither, no
+partial box, no zero-area box. Tier A only — `updated_by` is the difference from `media_usages`,
+because a crop is a judgement somebody made and the next person to disagree should see whose.
+`0411` is the generated RLS file: Shape B under `media_assets`, with DELETE at `media.write` rather
+than `destructive.execute` because removing a crop destroys no history.
+
+`rivya/home/hero` was added to `lib/media/folders.ts` — protocol step 5 puts it before the
+migration, and `media:register-external` would otherwise refuse the only two assets it exists to
+take.
+
+### Supabase Changes
+`0410`–`0411` are ready to apply; the hosted project is at `0390` and these land with the merge.
+
+### Environment Variables
+None. `media:register-external` reads `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME`, which already exists.
+
+### GitHub Actions Changes
+None. `media:check-alt-text` joins `npm run check`, which CI already runs;
+`media:check-coverage` is available and is wired in Phase 42 with the rest of the CI work.
+
+### Tests Performed
+No new test files, by the owner's instruction. What was verified:
+
+- `db:reset` → 109 migrations; `db:check-migrations` → "109 migrations up to 0411";
+  `db:check-schema` → 105 tables; `auth:check-rls` → 105 tables, 327 policies, matrix matches.
+- `npx tsc --noEmit` clean, ESLint clean, Prettier clean.
+- `media:check-alt-text` → 250 of 250 clean; `media:assert-no-regen` → 12 briefs, 13 ids, none in
+  the manifest; `check-asset-ids.py` → 0 collisions across 34 documents.
+- The crop resolver exercised by hand: a box produces `c_crop,h_1600,w_900,x_100,y_50`, a gravity
+  produces `ar_4:5,c_crop,g_auto`, `boxFitsSource` refuses a box wider than its source, and
+  `ratioDrift` reports 0 for a 9:16 box filed as 9:16 and 0.68 for the same box filed as 16:9.
+- `media:register-external` refuses a foreign Cloudinary cloud and prints the correct row for a
+  URL in this project's.
+
+### Issues Found / Fixed
+
+1. **Six slots proposed `GENERATE_NEW` because their `fillableBy` list was empty**, while Phase 07's
+   written analysis named the family that fits. Corrected with the reasoning on each slot; see the
+   table above. This is the single largest finding of the phase: the difference between ten briefs
+   and two was registry metadata, not library coverage.
+2. **`faq.hero` and `search.empty` were declared `GENERATE`** where Phase 07 concluded
+   `LEAVE_EMPTY`, which made the coverage report ask for a brief for an image nobody should write.
+3. **`WALL-ART-003` derived to "A spare study."** — its first em-dash introduces a parenthetical,
+   not the instruction seam. Fixed by finding the segment that opens with an instruction.
+4. **`50mm lens` survived the camera-clause filter** because `\bmm lens\b` needs a word boundary
+   between a digit and a letter, and there is none.
+5. **Hex codes appear inline in a minority of prompts** (`deep midnight-blue studio ambiance
+   (#0A1A2F)`). Stripped, keeping the colour NAME, which is what describes the picture.
+6. **The generated alt-text file was never Prettier-clean**, so `npm run check` failed after every
+   regeneration. The generator now formats its output before writing.
+7. **`module` is a reserved identifier** under `@next/next/no-assign-module-variable`, even in a
+   script the bundler never sees. Renamed to `loaded` in two places.
+8. **`db:check-schema` refused `media_crops` for having no tier declaration**, which is the gate
+   working: it forced a decision about which tiers a crop carries rather than letting it default.
+9. **`scripts/media/rewrite-alt-text.ts` queried `media_assets` directly**, which
+   `db:check-data-layer` refuses in scripts as well as in application code. Two functions moved into
+   the repository, and `updateMediaAsset` now accepts a null actor so a script does not falsely
+   attribute 250 edits to whoever ran it.
+
+### Build Status
+`npm run check` green; 109 migrations replay from empty.
+
+### Deployment Status
+Hosted Supabase applies `0410`–`0411` with this phase. Nothing else changes at deploy time.
+
+### Commit
+`feat(phase-43): Media Coverage + Higgsfield Finalization`
+
+### Remaining Notes
+- **Two images are waiting on the owner**: `HOME-HERO-VIDEO-001` and `HOME-HERO-POSTER-001`, with
+  full briefs in `docs/ASSET_GENERATION_PROMPTS.md`. The poster must be a frame of the video or the
+  mount produces a visible jump.
+- **Four brand assets are waiting on the owner**, in the formats the Phase 41 validator accepts. The
+  site uses a typographic wordmark until then and emits no social image rather than borrowing one.
+- **The 250 rewritten alt texts are drafts by a defensible rule, not descriptions by a person who
+  saw the pictures.** They are all true to the prompt and all pass the linter. Every one stays
+  `OWNER_VERIFICATION_REQUIRED`, and the queue exists so an editor improves them in the order that
+  matters.
+- The crop editor takes typed pixels rather than a drag handle. That is a stated first version: the
+  fields are the four the database stores, so an overlay can be added later without a migration.
 
 ## Phase 44 — Vercel Deployment
 

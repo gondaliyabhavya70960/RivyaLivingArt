@@ -178,6 +178,14 @@ export type NewMediaAsset = {
   readonly uploaded_by?: string | null
   // Phase 33. The SHA-256 of the original bytes, written by the upload path that hashed them.
   readonly checksum?: string | null
+  /**
+   * Phase 43. The planned Rivya asset id an owner-supplied generation satisfies.
+   *
+   * SET ONLY BY `media:register-external`. An uploaded file has no manifest id — that column is
+   * how a row is matched back to the 250-asset manifest and to the briefs in the master plan — so
+   * it stays null on every other insert path rather than being invented from a filename.
+   */
+  readonly rivya_asset_id?: string | null
   // Phase 21. The FEAT §13 block, written from the inspector's parse of the uploaded file and from
   // nowhere else; `saveModelAction` is the one caller that sets them.
   readonly model_format?: 'GLB' | 'GLTF' | null
@@ -226,7 +234,14 @@ export async function updateMediaAsset(
   client: Client,
   id: string,
   edit: MediaAssetEdit,
-  updatedBy: string,
+  /**
+   * Who made the change, or `null` for a script.
+   *
+   * NULL IS A REAL ANSWER, added in Phase 43 for `media:rewrite-alt-text`. Attributing 250 alt-text
+   * rewrites to whoever happened to run the command would be a false record of who reviewed them;
+   * a null `updated_by` reads in the Studio as "changed by a script", which is what happened.
+   */
+  updatedBy: string | null,
 ): Promise<void> {
   const { error } = await client
     .from('media_assets')
@@ -284,4 +299,87 @@ export async function listSlotBindings(client: Client): Promise<SlotBindingRow[]
 
   if (error) throw toRepositoryError('media usage', 'list', 'all', error)
   return parseRows('media usage', slotBindingSchema, data ?? [])
+}
+
+/**
+ * Every CONCEPT asset currently bound to a slot — Phase 43.
+ *
+ * THE QUESTION THIS ANSWERS IS "WHERE DOES AI MEDIA APPEAR". D6 puts a Higgsfield render third on
+ * the asset-priority ladder, which makes it legitimate; D10 makes it a defect the moment it is read
+ * as a photograph of delivered work. The Studio's Concept Placement tab lists every binding so the
+ * owner can see the answer rather than infer it.
+ *
+ * ONE JOIN, FILTERED ON THE ASSET SIDE. `is_concept` lives on `media_assets`, so the filter is an
+ * inner-join predicate rather than a second query and a set intersection in TypeScript.
+ */
+export async function listConceptPlacements(client: Client): Promise<
+  {
+    assetId: string
+    rivyaAssetId: string | null
+    title: string
+    slotKey: string
+    contextType: string
+    role: string
+  }[]
+> {
+  const { data, error } = await client
+    .from('media_usages')
+    .select(
+      'slot_key, context_type, role, media_assets!inner(id, rivya_asset_id, title, public_id, is_concept)',
+    )
+    .eq('media_assets.is_concept', true)
+
+  if (error) throw toRepositoryError('concept placement', 'list', 'all', error)
+
+  type Row = {
+    slot_key: string
+    context_type: string
+    role: string
+    media_assets: {
+      id: string
+      rivya_asset_id: string | null
+      title: string | null
+      public_id: string
+    } | null
+  }
+
+  return (data ?? []).flatMap((row: Row) =>
+    row.media_assets === null
+      ? []
+      : [
+          {
+            assetId: row.media_assets.id,
+            rivyaAssetId: row.media_assets.rivya_asset_id,
+            title: row.media_assets.title ?? row.media_assets.public_id,
+            slotKey: row.slot_key,
+            contextType: row.context_type,
+            role: row.role,
+          },
+        ],
+  )
+}
+
+/**
+ * Every asset that carries a manifest id, with its current text alternative — Phase 43.
+ *
+ * THREE COLUMNS RATHER THAN THE ROW. `scripts/media/rewrite-alt-text.ts` compares 250 stored
+ * sentences against 250 committed ones; pulling whole `media_assets` rows to do it would move a
+ * full generation prompt per asset to answer a string equality.
+ */
+export async function listAltTextByAssetId(
+  client: Client,
+): Promise<{ id: string; rivya_asset_id: string; alt_text: string }[]> {
+  const { data, error } = await client
+    .from('media_assets')
+    .select('id, rivya_asset_id, alt_text')
+    .not('rivya_asset_id', 'is', null)
+
+  if (error) throw toRepositoryError('media asset', 'list', 'all', error)
+
+  return (data ?? []).flatMap(
+    (row: { id: string; rivya_asset_id: string | null; alt_text: string }) =>
+      row.rivya_asset_id === null
+        ? []
+        : [{ id: row.id, rivya_asset_id: row.rivya_asset_id, alt_text: row.alt_text }],
+  )
 }
