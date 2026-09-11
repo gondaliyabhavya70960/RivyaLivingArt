@@ -339,7 +339,7 @@ export async function acceptCandidateAsDuplicate(
     userId: input.userId,
   })
 
-  await writeProductDisposition(client, {
+  await writeProductDisposition(admin, {
     id: row.research_product_id,
     disposition: 'DUPLICATE',
     actorId: input.userId,
@@ -372,7 +372,7 @@ export async function clearDuplicate(
   input: { readonly productId: string; readonly userId: string; readonly reason: string },
 ): Promise<void> {
   await setDuplicateOf(client, { id: input.productId, duplicateOfId: null, actorId: input.userId })
-  await writeProductDisposition(client, {
+  await writeProductDisposition(admin, {
     id: input.productId,
     disposition: 'NONE',
     actorId: input.userId,

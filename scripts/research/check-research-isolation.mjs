@@ -29,6 +29,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join, relative } from 'node:path'
 
 import { stripCommentsAndStrings } from '../db/strip-code.mjs'
+import { BRIDGE_FILE, findBridgeViolations } from './bridge-isolation.mjs'
 import { findDirectionProductCouplings } from './direction-isolation.mjs'
 
 const ROOT = process.cwd()
@@ -411,6 +412,65 @@ function checkDirectionCoupling() {
   }
 }
 
+/**
+ * PHASE 35 — THE BRIDGE CARVE-OUT, ENCODED AS THE PHASE DOCUMENT WROTE IT (amendment A35).
+ *
+ * I4 as literally written ("no code path writes products from a research_* read") would fail the
+ * hand-operated bridge. The narrowing is: no AUTOMATIC and no FIELD-COPYING path, with ONE named
+ * carve-out. Three things are checked so the carve-out is exactly one symbol wide:
+ *
+ *   (a) at most ONE module in the repository both writes `products` (imports a catalogue write
+ *       symbol, or calls `.from('products')` with a write verb) AND imports a research repository —
+ *       and it is `BRIDGE_FILE`;
+ *   (b) `startProductFromConfirmation` is DEFINED in `BRIDGE_FILE` and nowhere else;
+ *   (c) `BRIDGE_FILE` imports from research repositories nothing but `getConfirmationForBridge`
+ *       (the reader — `{ id, stage, archived_at }`, no competitor text) and the two claim writers
+ *       `markProductStarted` / `releaseProductStart`.
+ *
+ * `tests/unit/research-isolation.test.ts` runs this over fixtures for a second writer, a moved
+ * symbol and a wider projection, and each must fail.
+ */
+function checkBridgeCarveOut() {
+  for (const violation of findBridgeViolations(ROOT)) {
+    problems.push(
+      `I4: ${violation}.\n` +
+        `      Amendment A35 admits ONE hand-operated bridge: startProductFromConfirmation, in\n` +
+        `      ${BRIDGE_FILE}, reading { id, stage, archived_at } and writing an\n` +
+        '      empty DRAFT. A second writer, a moved symbol or a wider projection is the general\n' +
+        '      research→product path the invariant exists to prevent.',
+    )
+  }
+}
+
+/**
+ * `research_confirmations.created_product_id` carries no foreign key, and no file outside the
+ * research repositories may RESOLVE it — query `products` by it. A screen renders what the
+ * repository resolved; nothing else joins the two.
+ */
+function checkCreatedProductResolution() {
+  const roots = [
+    join(ROOT, 'app'),
+    join(ROOT, 'components'),
+    join(ROOT, 'lib'),
+    join(ROOT, 'scripts'),
+  ]
+  const allowed = join('lib', 'supabase', 'repositories', 'research')
+  for (const dir of roots) {
+    for (const file of filesUnder(dir)) {
+      const rel = relative(ROOT, file)
+      if (rel.startsWith(allowed) || /\.test\.(ts|tsx)$/.test(rel)) continue
+      const code = stripCommentsAndStrings(readFileSync(file, 'utf8'), { strings: false })
+      if (/\bcreated_product_id\b/.test(code) && /\.from\(\s*['"]products['"]\s*\)/.test(code)) {
+        problems.push(
+          `I4: ${rel} resolves created_product_id against products.\n` +
+            '      The column has no foreign key by design and only the research repositories may\n' +
+            '      resolve it (resolveStartedProducts): an opaque id, a second query, never a join.',
+        )
+      }
+    }
+  }
+}
+
 function checkCatalogImports() {
   for (const file of CATALOG_FILES) {
     if (!existsSync(file)) continue
@@ -505,6 +565,8 @@ checkPublicTrees()
 checkScraperImports()
 checkCatalogImports()
 checkDirectionCoupling()
+checkBridgeCarveOut()
+checkCreatedProductResolution()
 checkStageWriter()
 checkAdapterHosts()
 
@@ -524,7 +586,7 @@ const parts = [
     ? 'I2 no anon policy on any research table, in the migrations and in the database'
     : 'I2 no anon policy in the migrations (the database was not checked — see above)',
   'I3 no research identifier on a public surface',
-  'I4 no path from the scraper to a public write, no direction↔products coupling, and no browser automation',
+  'I4 no path from the scraper to a public write, no direction↔products coupling, one bridge symbol in one file (A35), and no browser automation',
   'I3 no external host named under lib/scraper/adapters',
 ]
 

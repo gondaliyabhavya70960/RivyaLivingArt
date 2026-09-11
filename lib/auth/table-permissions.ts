@@ -160,6 +160,7 @@ export const PHASE_31_POLICIES = '0291_phase31_research_analytics_rls.sql'
 export const PHASE_32_POLICIES = '0301_phase32_opportunity_rls.sql'
 export const PHASE_33_POLICIES = '0313_phase33_similarity_rls.sql'
 export const PHASE_34_POLICIES = '0321_phase34_direction_rls.sql'
+export const PHASE_35_POLICIES = '0331_phase35_rls.sql'
 
 export const TABLE_POLICIES = {
   // --- Shape A: content tables ------------------------------------------------------------------
@@ -1738,6 +1739,35 @@ export const TABLE_POLICIES = {
       'An immutable snapshot per save, written by write_direction_brief_revision() (SECURITY ' +
       'DEFINER) and restored through research_restore_brief_revision(). No session write, update ' +
       'or delete leg: history the people it records could edit is not an audit trail. No anon policy (I2).',
+  },
+
+  /*
+   * Phase 35 — the two decision records behind SHORTLISTED and CONFIRMED.
+   *
+   * Written under research.confirm, NOT research.write: the phase document's permission mapping
+   * puts all nine FEAT §25 dispositions behind research.confirm (owner, admin, merchandiser),
+   * because a researcher operates the pipeline while a merchandiser judges its output. Closing an
+   * entry and archiving a confirmation are updates on the same rows and inherit the requirement.
+   * Neither is ever deleted: the shortlist and the decisions keep their history. No anon policy (I2).
+   */
+  research_shortlist_entries: {
+    policiesIn: PHASE_35_POLICIES,
+    shape: 'C',
+    readPermission: 'research.read',
+    writePermission: 'research.confirm',
+    deviation:
+      'Why a row was shortlisted, by whom, and the score as it stood. research.confirm opens and ' +
+      'closes an entry; nothing deletes one. No anon policy (I2).',
+  },
+  research_confirmations: {
+    policiesIn: PHASE_35_POLICIES,
+    shape: 'C',
+    readPermission: 'research.read',
+    writePermission: 'research.confirm',
+    deviation:
+      'The decision record behind CONFIRMED. research.confirm records and archives one; the ' +
+      'bridge column created_product_id is written through the service role and carries no ' +
+      'foreign key. Nothing deletes a decision. No anon policy (I2).',
   },
 } as const satisfies Record<string, TablePolicy>
 

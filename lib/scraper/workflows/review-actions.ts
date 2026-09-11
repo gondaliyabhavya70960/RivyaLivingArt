@@ -4,7 +4,15 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 
 import { writeAudit } from '@/lib/auth/audit'
 import type { Role } from '@/lib/auth/permissions'
-import { moveStage, recordEventAtCurrentStage, setDisposition } from '@/lib/scraper/core/stage'
+import { logActivity } from '@/lib/logging/activity'
+import {
+  MovementReasonError,
+  moveStage,
+  movementFor,
+  recordEventAtCurrentStage,
+  requireMovementReason,
+  setDisposition,
+} from '@/lib/scraper/core/stage'
 import { getChange, markDecided } from '@/lib/supabase/repositories/research/changes'
 import {
   getResearchProduct,
@@ -21,6 +29,15 @@ import {
   supersedeNote,
   type ReviewActionRow,
 } from '@/lib/supabase/repositories/research/review'
+import {
+  archiveConfirmation,
+  closeShortlistEntry,
+  getLiveConfirmation,
+  getOpenEntry,
+  openShortlistEntry,
+  readScoreCapture,
+  recordConfirmation,
+} from '@/lib/supabase/repositories/research/shortlist'
 import type { Database } from '@/lib/supabase/database.types'
 
 type Client = SupabaseClient<Database>
@@ -99,6 +116,8 @@ export interface ActionInput {
   readonly changeId: string | null
   readonly reason: string | null
   readonly actor: Actor
+  /** Phase 35: the direction brief that argued for a shortlist entry or a confirmation, if any. */
+  readonly briefId?: string | null
 }
 
 export class ReviewActionError extends Error {
@@ -116,13 +135,38 @@ export class ReviewActionError extends Error {
  * readable on the screen where it happened.
  */
 function requireReason(action: ReviewAction, reason: string | null): string | null {
-  const needed = action === 'REJECT' || action === 'IGNORE'
+  const needed = action === 'REJECT' || action === 'IGNORE' || action === 'CONFIRM'
   const given = reason !== null && reason.trim() !== ''
   if (needed && !given) {
-    throw new ReviewActionError(`${action} needs a reason: it closes the row without a re-read.`)
+    // PHASE 35 ADDS CONFIRM TO THE TWO. Its reason is the decision note behind the confirmation —
+    // `research_confirmations.decision_note` is `not null` and non-blank at the row — and a
+    // confirmation nobody can explain is the thing the decision record exists to prevent.
+    throw new ReviewActionError(
+      action === 'CONFIRM'
+        ? 'CONFIRM needs a decision note: it is the record of why this row is a reference.'
+        : `${action} needs a reason: it closes the row without a re-read.`,
+    )
   }
   return given ? (reason as string).trim() : null
 }
+
+/** Phase 35's movement table, read for the reason it requires; its error made readable. */
+function requireMovement(
+  column: 'stage' | 'disposition',
+  from: string,
+  to: string,
+  reason: string | null,
+): void {
+  try {
+    requireMovementReason(movementFor(column, from, to), reason)
+  } catch (error) {
+    if (error instanceof MovementReasonError) throw new ReviewActionError(error.message)
+    throw error
+  }
+}
+
+/** The entry's reason when the person gave none — the table does not require one for a shortlist. */
+const SHORTLISTED_WITHOUT_REASON = 'Shortlisted without a stated reason.'
 
 /**
  * Step 1 and step 3 of every action, with the domain effect in between.
@@ -248,10 +292,80 @@ export async function ignoreChange(client: Client, admin: Client, input: ActionI
   })
 }
 
-/** 3. Shortlist — the row joins the Phase 35 shortlist. */
+/**
+ * 3. Shortlist — the row joins the shortlist, and Phase 35 writes down why.
+ *
+ * THE ENTRY IS THE WORKSPACE. `research_shortlist_entries` records who shortlisted the row, why,
+ * and the score as it stood; the stage move is still `stage.ts`'s and the review-action row is
+ * still the first write. One open entry per row is a partial unique index, so a second shortlist
+ * of a row already on the list records the action and touches no entry.
+ *
+ * FROM CONFIRMED, IT IS THE MOVEMENT TABLE'S REOPENING: `CONFIRMED → SHORTLISTED` needs a reason,
+ * archives the live confirmation with that reason and opens a fresh entry. The stage moves back —
+ * a backward move is legal — and the row is a shortlisted row again with its history intact.
+ */
 export async function shortlistProduct(client: Client, admin: Client, input: ActionInput) {
+  const product = await getResearchProduct(admin, input.productId)
+  const from = (product?.stage ?? null) as ResearchStage | null
+  if (from === 'CONFIRMED') requireMovement('stage', 'CONFIRMED', 'SHORTLISTED', input.reason)
+
   return withAction(client, admin, 'SHORTLIST', input, async () => {
-    await raiseTo(admin, input.productId, 'SHORTLISTED', input.actor.userId, 'shortlisted')
+    const reason = input.reason?.trim() ?? ''
+
+    if (from === 'CONFIRMED') {
+      await moveStage(admin, {
+        productId: input.productId,
+        to: 'SHORTLISTED',
+        actor: { userId: input.actor.userId },
+        reason,
+      })
+      await archiveConfirmation(client, { researchProductId: input.productId, reason })
+    } else {
+      await raiseTo(admin, input.productId, 'SHORTLISTED', input.actor.userId, 'shortlisted')
+    }
+
+    const after = await getResearchProduct(admin, input.productId)
+    if (after?.stage !== 'SHORTLISTED') return
+    if ((await getOpenEntry(client, input.productId)) !== null) return
+
+    const captured = await readScoreCapture(client, input.productId)
+    await openShortlistEntry(client, {
+      researchProductId: input.productId,
+      reason: reason === '' ? SHORTLISTED_WITHOUT_REASON : reason,
+      captured,
+      briefId: input.briefId ?? null,
+      actorUserId: input.actor.userId,
+    })
+  })
+}
+
+/**
+ * 3b. Send back to review — `SHORTLISTED → REVIEW`, the movement that closes the entry.
+ *
+ * RECORDED AS A `REVIEW` ACTION, because that is the nine-value allowlist's name for "somebody
+ * looked again"; the reason is required by the movement table and becomes `closed_reason`. The
+ * stage moves back through `stage.ts`, so the pipeline log has the move.
+ */
+export async function returnToReview(client: Client, admin: Client, input: ActionInput) {
+  const product = await getResearchProduct(admin, input.productId)
+  if (product === null || product.stage !== 'SHORTLISTED') {
+    throw new ReviewActionError('Only a shortlisted row can be sent back to review.')
+  }
+  requireMovement('stage', 'SHORTLISTED', 'REVIEW', input.reason)
+  const reason = (input.reason as string).trim()
+
+  return withAction(client, admin, 'REVIEW', input, async () => {
+    await moveStage(admin, {
+      productId: input.productId,
+      to: 'REVIEW',
+      actor: { userId: input.actor.userId },
+      reason,
+    })
+    await closeShortlistEntry(client, {
+      researchProductId: input.productId,
+      reason,
+      actorUserId: input.actor.userId,
+    })
   })
 }
 
@@ -316,14 +430,84 @@ export async function markDuplicate(
  * things all along.
  */
 export async function confirmProduct(client: Client, admin: Client, input: ActionInput) {
+  /*
+   * PHASE 35 MAKES THE MOVEMENT EXACT. The table admits `SHORTLISTED → CONFIRMED` and nothing
+   * else into CONFIRMED, with a reason that becomes the decision note. A row at REVIEW is refused
+   * with a sentence, not silently left where it was; a row already CONFIRMED with a live decision
+   * is refused too; a row CONFIRMED whose decision was archived takes a fresh decision without
+   * moving — archiving freed it for exactly that.
+   */
+  const product = await getResearchProduct(admin, input.productId)
+  if (product === null) throw new ReviewActionError('That research row no longer exists.')
+  const from = product.stage as ResearchStage
+  if (from !== 'SHORTLISTED' && from !== 'CONFIRMED') {
+    throw new ReviewActionError('Only a shortlisted row can be confirmed. Shortlist it first.')
+  }
+  if (from === 'CONFIRMED' && (await getLiveConfirmation(client, input.productId)) !== null) {
+    throw new ReviewActionError('This row is already confirmed, and its decision stands.')
+  }
+  requireMovement('stage', 'SHORTLISTED', 'CONFIRMED', input.reason)
+
   return withAction(client, admin, 'CONFIRM', input, async () => {
-    await raiseTo(
-      admin,
-      input.productId,
-      'CONFIRMED',
-      input.actor.userId,
-      'confirmed as a research reference',
-    )
+    const decisionNote = (input.reason as string).trim()
+
+    if (from === 'SHORTLISTED') {
+      await moveStage(admin, {
+        productId: input.productId,
+        to: 'CONFIRMED',
+        actor: { userId: input.actor.userId },
+        reason: decisionNote,
+      })
+    }
+
+    const confirmation = await recordConfirmation(client, {
+      researchProductId: input.productId,
+      decisionNote,
+      briefId: input.briefId ?? null,
+      actorUserId: input.actor.userId,
+    })
+    await closeShortlistEntry(client, {
+      researchProductId: input.productId,
+      reason: 'confirmed',
+      actorUserId: input.actor.userId,
+    })
+    await logActivity({
+      action: 'research.product.confirmed',
+      actorId: input.actor.userId,
+      actorRole: input.actor.role,
+      entityType: 'research_product',
+      entityId: input.productId,
+      summary: 'Confirmed as a research reference. No Rivya product was created.',
+      metadata: { confirmationId: confirmation.id },
+    })
+    return confirmation
+  })
+}
+
+/**
+ * 6b. Archive a decision — a column, not a stage.
+ *
+ * THE STAGE IS UNTOUCHED AND NO PIPELINE EVENT IS WRITTEN: nothing moved. The confirmation gets
+ * `archived_at` and the reason; the row remains a confirmed research reference, and the partial
+ * unique index now admits a fresh decision. Not one of the nine review actions — it decides
+ * nothing about the row — so no review-action row is written; the audit row is the record.
+ */
+export async function archiveDecision(
+  client: Client,
+  input: { readonly productId: string; readonly reason: string | null; readonly actor: Actor },
+): Promise<void> {
+  const reason = input.reason?.trim() ?? ''
+  if (reason === '') throw new ReviewActionError('Archiving a decision needs a reason.')
+  const archived = await archiveConfirmation(client, { researchProductId: input.productId, reason })
+  if (!archived) throw new ReviewActionError('This row has no live decision to archive.')
+  await writeAudit({
+    action: 'research.confirmation.archived',
+    result: 'SUCCESS',
+    actorUserId: input.actor.userId,
+    actorRole: input.actor.role,
+    entityType: 'research_product',
+    entityId: input.productId,
+    summary: reason,
   })
 }
 

@@ -2958,3 +2958,112 @@ reads, headed "Internal research document — never published"). `npm run resear
 -- --brief=<id> --format=md` renders the same document as Markdown. The route is a nested segment of
 the `opportunities` leaf, not a new D4 leaf (A34).
 
+## 26. Shortlist and confirmation as built — Phase 35
+
+### 26.1 What the phase adds, and what it deliberately does not
+
+The FEAT §23 pipeline gets its workspace and its gate. `SHORTLISTED` and `CONFIRMED` already
+existed; what did not was a record of *why* a row was shortlisted and by whom, a decision note
+behind a confirmation, a list a merchandiser can sit in front of, and the one hand-operated bridge
+to the catalogue. **No new stage, no new enum value, no second transition log beside
+`research_pipeline_events`, no second state machine beside `lib/scraper/core/stage.ts`.** Migrations
+`0330`–`0331` contain no `alter type` (`tests/unit/pipeline-transitions.test.ts` reads them and says
+so). Archival of a decision is a column on the decision record, not an eighth stage.
+
+### 26.2 The movement table
+
+`stage` is the ladder; `disposition` is the verdict; a row carries one of each and **neither moves
+the other**. The table below is `MOVEMENTS` in `lib/scraper/core/stage.ts`, cell for cell, and the
+same test compares this section, the module and the phase document.
+
+| Column | From | Allowed to | Permission | Reason required |
+|---|---|---|---|---|
+| `stage` | `MATCHED` · `REVIEW` | `SHORTLISTED` | `research.confirm` (Phase 29's Shortlist action) | no |
+| `stage` | `SHORTLISTED` | `CONFIRMED` | `research.confirm` | **yes** — it becomes `research_confirmations.decision_note` |
+| `stage` | `SHORTLISTED` | `REVIEW` | `research.confirm` | yes — closes the shortlist entry |
+| `stage` | `CONFIRMED` | `SHORTLISTED` | `research.confirm` | yes — archives the confirmation and reopens the entry |
+| `disposition` | `NONE` | `IGNORED` | `research.confirm` | no |
+| `disposition` | `NONE` | `REJECTED` | `research.confirm` | **yes** |
+| `disposition` | `NONE` | `DUPLICATE` | `research.confirm` | **yes**, plus a surviving row for `duplicate_of_id` |
+| `disposition` | `IGNORED` · `REJECTED` · `DUPLICATE` | `NONE` | `research.confirm` | yes |
+| either | any | anything not in this table | — | `stage.ts` raises `InvalidStageTransitionError` |
+
+`MATCHED → SHORTLISTED` is the one forward jump the ladder admits (a merchandiser's shortlist *is*
+the review); every other forward move is still one rung, and any backward move is legal.
+`InvalidStageTransitionError` is Phase 25's `StageTransitionError` under the phase document's name.
+`requireMovementReason()` enforces the last column in the actions and the bulk operations, so a
+missing reason meets a sentence rather than a constraint name.
+
+### 26.3 The gate at the database
+
+`guard_research_stage_writer()` (0330, verbatim from the phase document) is a BEFORE UPDATE trigger
+on `research_products` that raises on any change to `stage` or `disposition` unless the
+transaction-local setting `rivya.stage_transition` is `on`. It defines no transitions and holds no
+table. **Under PostgREST every request is its own transaction**, so the flag and the write must
+share a function: `research_write_stage(p_id, p_stage, p_disposition, p_actor)` (SECURITY DEFINER,
+EXECUTE granted to `service_role` only) sets the flag, updates whichever of the two columns is not
+null, and clears it. `writeProductStage` / `writeProductDisposition` in the products repository call
+it; `stage.ts` calls those, as before, and remains the only module allowed to (`checkStageWriter`).
+A session can neither update the columns directly (the trigger) nor call the function (the grant).
+`tests/unit/rls/phase35.test.ts` attempts both and asserts the refusals.
+
+The bulk operations (`lib/bulk/operations/research/`) now go through `moveStage` / `setDisposition`
+rather than the repository writers, so every bulk stage move writes its pipeline event, and each
+supplies its own `undoItem` through the same door — the engine's generic snapshot restore would be
+refused by the trigger.
+
+### 26.4 The two decision records
+
+| Table | Holds | Rule |
+|---|---|---|
+| `research_shortlist_entries` | who shortlisted the row, why (non-blank), the score / confidence / model version as it stood (`captured jsonb`, copied from the newest `research_opportunity_scores` row, never re-read), an optional `brief_id`, and closure (`closed_at`, `closed_reason`, `closed_by` — all three or none) | one **open** entry per row (partial unique index); closed, never deleted |
+| `research_confirmations` | the decision note (non-blank), the confirming person, an optional `brief_id`, archival as a column (`archived_at`, `archived_reason` together), and — from the bridge only — `created_product_id`, `product_started_at`, `product_started_by` (all three or none) | one **unarchived** decision per row; `created_product_id` has **no foreign key** |
+
+Both are written under `research.confirm` (owner, admin, merchandiser), not `research.write`: a
+researcher operates the pipeline; a merchandiser judges its output. No `anon` policy (I2).
+
+`review-actions.ts` extends Phase 29's nine: **Shortlist** opens an entry (reason optional, default
+recorded) and, from `CONFIRMED`, archives the live decision and reopens; **Confirm** requires the
+decision note, admits only a `SHORTLISTED` row (or a `CONFIRMED` row whose decision was archived),
+writes the confirmation as the person, closes the entry and logs `research.product.confirmed`;
+`returnToReview` is `SHORTLISTED → REVIEW` recorded as a `REVIEW` action; `archiveDecision` retires
+a decision with an audit row and **no pipeline event** — nothing moved. Two bulk operations join
+Phase 29's five: `research.close_entry` (the `SHORTLISTED → REVIEW` movement over a selection) and
+`research.archive_confirmation`; `research.confirm` now takes the decision note as its reason. Every
+research bulk action is capped at `RESEARCH_BULK_CAP = 200` rows, refused above it by name.
+
+### 26.5 The bridge, and the I4 carve-out (amendment A35)
+
+`startProductFromConfirmation` — `app/(studio)/studio/(shell)/research/confirmed/actions.ts` — is
+the only symbol in the repository that writes `products` while importing a research repository.
+It reads `getConfirmationForBridge(id) → { id, stage, archived_at }` (a `.strict()` schema; no
+competitor text is in scope), requires the `research_product_bridge` flag, `catalog.write`, a
+`CONFIRMED` row with a live decision, a typed slug, a chosen category and the seeded
+acknowledgement, claims the decision (`markProductStarted`, conditional on nothing started before),
+and inserts **exactly** `slug`, `title` (the slug's title case), `category_id`, `status = 'DRAFT'`,
+`price_state = 'PRICE_ON_REQUEST'` (`lib/scraper/workflows/bridge-draft.ts`). It writes an audit
+row and an activity row and nothing else.
+
+I4 as literally written would fail it, so the rule is narrowed in `check-research-isolation.mjs`
+(`scripts/research/bridge-isolation.mjs`, called under I4) to "no automatic and no field-copying
+path", with this one carve-out: at most one module both writes `products` and imports a research
+repository, and it is that file; the symbol is defined there and nowhere else; the file imports from
+research repositories only the reader above and the two claim writers. `check-no-autoimport.mjs`
+admits `insertProduct` in that file and no other first-party write anywhere in research.
+`tests/unit/research-isolation.test.ts` proves the guard fails on a second writer, a moved symbol
+and a wider projection; `tests/unit/confirmation-no-import.test.ts` and the RLS suite prove no
+sentinel from a research row reaches any column of the product or its join tables.
+
+**The flag ships `false`.** `/studio/research/confirmed` renders the button disabled with the
+reason, and a direct POST is refused with the flag reason. Phase 35 is therefore reported
+COMPLETE-WITH-FLAG-OFF: the carve-out is inert until the owner accepts A35 by enabling the flag.
+
+### 26.6 Surfaces
+
+`/studio/research/shortlist` (open entries oldest first; score at entry with confidence; age; tags;
+reason; per-row Confirm with its decision note, Send back to review, Reject; the pipeline bulk bar)
+and `/studio/research/confirmed` (every row labelled a research decision; note, confirming person,
+brief, product-started state as a **link resolved by the research repository with a second query**,
+archive and reopen with reasons; the bridge dialog). The research dashboard counts entries open
+longer than 60 days.
+

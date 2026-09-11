@@ -680,6 +680,13 @@ const EXPECTED = {
   ],
   research_direction_brief_revisions: ['brief_id', 'revision', 'action', 'body', 'created_at'],
 
+  /*
+   * Phase 35 — two decision records, timestamped by `opened_at` / `confirmed_at` and closed or
+   * archived in place; a person's act each time, so the actor is required.
+   */
+  research_shortlist_entries: ['research_product_id', 'reason', 'opened_at', 'opened_by'],
+  research_confirmations: ['research_product_id', 'decision_note', 'confirmed_at', 'confirmed_by'],
+
   research_scoring_models: [
     'version',
     'signals',

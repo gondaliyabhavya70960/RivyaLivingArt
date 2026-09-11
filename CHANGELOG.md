@@ -6,6 +6,43 @@ Every phase adds an entry; see `docs/architecture/CANONICAL-DECISIONS.md` D9 for
 
 ## [Unreleased]
 
+### Phase 35 — Shortlist + Confirmation (COMPLETE-WITH-FLAG-OFF)
+
+The FEAT §23 pipeline gets its workspace and its gate. **No new stage, no enum change, no second
+transition log, no second state machine**: migrations `0330`–`0331` alter no type, and the movement
+table lives once, in `lib/scraper/core/stage.ts`, compared cell for cell with the phase document and
+SCRAPER §26 by `tests/unit/pipeline-transitions.test.ts`.
+
+**Migrations `0330`–`0331`.** `research_shortlist_entries` (non-blank reason; the score, confidence
+and model version captured at entry; one open entry per row; closed with a reason, never deleted),
+`research_confirmations` (non-blank decision note; one unarchived decision per row; archival as a
+column; `created_product_id` with **no foreign key**), `guard_research_stage_writer()` verbatim from
+the phase document (a bare `update research_products set stage …` is refused, naming the row) and
+`research_write_stage()` (SECURITY DEFINER, service role only) which carries the transaction-local
+flag because PostgREST gives the repository no transaction of its own. `0331` is generated:
+`research.read` select, `research.confirm` writes, no anon leg.
+
+**Code.** `MOVEMENTS` and `InvalidStageTransitionError` in `stage.ts` (`MATCHED → SHORTLISTED` is
+the one forward jump); `review-actions.ts` writes the entry and the confirmation beside the
+review-action row — Confirm now needs a decision note and admits only a shortlisted row;
+`returnToReview` and `archiveDecision`; bulk operations `research.close_entry` and
+`research.archive_confirmation` beside Phase 29's five, every one now through `moveStage` /
+`setDisposition` with its own `undoItem`, and a 200-row cap refused by name;
+`/studio/research/shortlist` and `/studio/research/confirmed` filled (score at entry, age, tags,
+reason, decision notes, product-started link resolved by a second query, `PipelineBulkBar`); the
+research dashboard counts entries open longer than 60 days.
+
+**The one bridge.** `startProductFromConfirmation` starts an **empty `DRAFT`** product — `slug`
+(typed), `title` (the slug's title case), `category_id` (chosen), `DRAFT`, `PRICE_ON_REQUEST`, and
+nothing else — behind `catalog.write`, the seeded acknowledgement (`StartProductDialog`, unticked on
+open) and the flag `research_product_bridge`, **which ships `false`**. Invariant I4 is narrowed to
+"no automatic and no field-copying path" with this one carve-out, encoded in
+`scripts/research/bridge-isolation.mjs` under `check-research-isolation.mjs` (a second writer, a
+moved symbol or a wider projection fails the build) and admitted by `check-no-autoimport.mjs` for
+`insertProduct` in that file only; `tests/unit/confirmation-no-import.test.ts` and the RLS suite
+put a research row of sentinels through the projection and the insert and find none in the product
+or its join tables. Recorded as amendment A35 (proposed); the owner accepts it by enabling the flag.
+
 ### Phase 34 — Product Direction Tool
 
 Research becomes a written internal brief instead of a folder of tabs. A direction brief is a Rivya

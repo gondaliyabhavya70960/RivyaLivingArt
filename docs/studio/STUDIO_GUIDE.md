@@ -2067,23 +2067,52 @@ permanent banner says the brief is an internal research document.
 nine sections, the observed figures with their coverage and label, the evidence with its rationale.
 `npm run research:direction-export -- --brief=<id> --format=md` writes the same document.
 
-### 12.12 `/studio/research/shortlist`
+### 12.12 `/studio/research/shortlist` — Phase 35, as built
 
-Open shortlist entries with score, confidence, age, tags and reason, plus the bulk bar. A non-empty
-reason is enforced by a check constraint, and one open entry per research row is enforced by a partial
-unique index.
+The open shortlist entries, oldest first. Each line is a `research_shortlist_entries` row that is
+still open: the research row and its source, the **score at entry** with its confidence (captured
+when the row was shortlisted, never re-read), how long it has waited, its tags, the reason, and the
+person who shortlisted it. Filters: source, and "open longer than N days". A panel above the table
+counts entries open longer than 60 days; the research dashboard shows the same number.
 
-### 12.13 `/studio/research/confirmed` — and the one bridge
+**Per row** (`research.confirm`): *Open* shows the row action bar — Shortlist, **Confirm with a
+decision note** (required; the note becomes `research_confirmations.decision_note`), Reject with a
+reason (a disposition: the stage stays `SHORTLISTED`) — and *Send back to review* with a reason,
+which moves the row `SHORTLISTED → REVIEW` through the stage machine and closes the entry. Nothing
+is deleted; a closed entry keeps its reason and its closer.
 
-Confirmed references with their decision note, confirming actor, linked brief, product-started state
-and link, plus an archive action.
+**The pipeline bulk bar** (`bulk.execute` + `research.confirm`): `research.confirm` (decision note
+applied to every row), `research.close_entry` (the send-back movement over a selection),
+`research.reject`, `research.set_tags`; at most 200 rows per invocation, refused above it by name;
+Select → Preview → Confirm → Apply through the one Phase 24 engine, one audit row per row, one
+pipeline event per row whose stage moved, undo within 24 hours. A researcher sees the table and a
+sentence saying which permission the bar needs.
+
+### 12.13 `/studio/research/confirmed` — and the one bridge (Phase 35, as built)
+
+Every row is labelled **Research decision** and carries a *Stands* or *Archived* pill: the research
+row and its source, the decision note, when and by whom it was confirmed, the direction brief it
+cites (a link), and the Rivya product state — *none started*, a **link** to the draft (resolved by
+the research repository with a second query on the opaque `created_product_id`; never a join), or
+*product no longer exists* when the draft was deleted. "Include archived decisions" widens the list.
+
+**Per row** (`research.confirm`): *Archive decision* with a reason — a column, not a stage: the row
+stays `CONFIRMED`, no pipeline event is written, and a fresh decision may follow; *Reopen on the
+shortlist* with a reason — `CONFIRMED → SHORTLISTED`, archives the decision and opens a fresh entry.
+The bulk bar offers `research.archive_confirmation`, `research.reject` and `research.set_tags`.
 
 **The bridge dialog is the only place in the entire Studio where a research screen can create a
-catalogue row.** It renders the seeded acknowledgement text above an **unticked** checkbox that the
-submit button depends on, and it creates an empty `DRAFT` product for a human to fill — it copies no
-competitor title, price, dimension, material, description or image. `research_confirmations.created_product_id`
-deliberately carries **no foreign key**, so no query can join research to the catalogue, and only
-`lib/supabase/repositories/research-*.ts` may resolve it.
+catalogue row.** *Start a Rivya product* opens a dialog with a slug the person types, a category
+they pick, and the seeded acknowledgement (`studio_help.research_bridge_acknowledgement`) above an
+**unticked** checkbox the submit button depends on. It creates an **empty `DRAFT`** product —
+`slug`, `title` as the slug's title case (a placeholder), `category_id`, `status = 'DRAFT'`,
+`price_state = 'PRICE_ON_REQUEST'` — and copies no competitor title, price, dimension, material,
+description or image. It needs `catalog.write` and the `research_product_bridge` flag, **which
+ships off**: the button renders disabled with the reason until the owner accepts amendment A35.
+One product per decision (the claim is conditional on nothing started before); a taken slug is
+refused with a sentence. `research_confirmations.created_product_id` carries **no foreign key**,
+so no query can join research to the catalogue, and only `lib/supabase/repositories/research/`
+may resolve it (`checkCreatedProductResolution` in the isolation guard).
 
 ### 12.14 `/studio/research/sheets`
 

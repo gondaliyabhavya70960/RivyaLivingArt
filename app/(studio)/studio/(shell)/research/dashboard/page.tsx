@@ -18,6 +18,7 @@ import { listResearchRuns } from '@/lib/supabase/repositories/research/runs'
 import { countUndecided, oldestUndecided } from '@/lib/supabase/repositories/research/changes'
 import { countSourceCoverage } from '@/lib/supabase/repositories/research/analytics'
 import { listScaleRows } from '@/lib/supabase/repositories/research/scale'
+import { countStaleEntries } from '@/lib/supabase/repositories/research/shortlist'
 import { latestDigest } from '@/lib/supabase/repositories/research/digests'
 import { countUnresolvedCategoryMappings } from '@/lib/supabase/repositories/research/source-config'
 import { listSourceHealth } from '@/lib/supabase/repositories/research/source-health'
@@ -67,6 +68,7 @@ export default async function Page() {
     oldest,
     scaleRows,
     sourceCoverage,
+    staleEntries,
   ] = await Promise.all([
     listResearchSources(client),
     listResearchRuns(client, 10),
@@ -80,6 +82,8 @@ export default async function Page() {
     oldestUndecided(client),
     listScaleRows(client, { limit: 5_000 }),
     countSourceCoverage(client),
+    // Phase 35: entries open longer than 60 days — the shortlist's graveyard count.
+    countStaleEntries(client, 60),
   ])
 
   /*
@@ -163,6 +167,16 @@ export default async function Page() {
           <Text tone="secondary" className="mt-2" data-unmapped-categories={String(unmapped)}>
             {`${unmapped} ${t('studio.research.unmappedCount')}`}
           </Text>
+        </Surface>
+
+        <Surface level={1} className="p-6" data-stale-shortlist-panel={String(staleEntries)}>
+          <Stack gap={1}>
+            <PageHeader level={2} title={t('studio.research.slStaleHeading')} />
+            <Text size="sm">{String(staleEntries)}</Text>
+            <Text size="xs" tone="secondary">
+              {t('studio.research.slStaleBody')}
+            </Text>
+          </Stack>
         </Surface>
 
         <Surface level={1} className="p-6" data-large-format-panel="">

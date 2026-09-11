@@ -93,6 +93,31 @@ const WRITE_SYMBOL =
 const FIRST_PARTY_WRITE_SOURCES =
   /^@\/lib\/(supabase\/repositories(?!\/research)|catalog|bulk\/operations\/(?!research))/
 
+/**
+ * PHASE 35'S ONE CARVE-OUT, AND ITS WHOLE EXTENT.
+ *
+ * `startProductFromConfirmation` — the hand-operated bridge from a confirmed research row to an
+ * EMPTY draft product — imports `insertProduct` into the confirmed screen's action module and
+ * nowhere else. One symbol, one file. This guard admits exactly that pair; a second write symbol
+ * in the same file, or `insertProduct` in any other research module, fails here as before. The
+ * shape of what the bridge may read from research, and where the symbol may be defined, is
+ * `check-research-isolation.mjs`'s I4 leg (the amendment A35 carve-out); this is the half about
+ * the catalogue write.
+ */
+const BRIDGE_FILE = join(
+  'app',
+  '(studio)',
+  'studio',
+  '(shell)',
+  'research',
+  'confirmed',
+  'actions.ts',
+)
+const BRIDGE_WRITE = {
+  specifier: '@/lib/supabase/repositories/catalog-admin',
+  name: 'insertProduct',
+}
+
 /** Two modules that exist only to mutate the catalogue in bulk. No symbol of theirs is a read. */
 const FORBIDDEN_IMPORTS = [
   '@/lib/supabase/repositories/bulk-products',
@@ -192,9 +217,15 @@ for (const root of ROOTS) {
     for (const { specifier, names } of importedSymbols(source)) {
       if (!FIRST_PARTY_WRITE_SOURCES.test(specifier)) continue
       for (const name of names) {
-        if (WRITE_SYMBOL.test(name)) {
-          offences.push(`${rel} — imports the first-party write ${name}() from ${specifier}`)
+        if (!WRITE_SYMBOL.test(name)) continue
+        if (
+          rel === BRIDGE_FILE &&
+          specifier === BRIDGE_WRITE.specifier &&
+          name === BRIDGE_WRITE.name
+        ) {
+          continue
         }
+        offences.push(`${rel} — imports the first-party write ${name}() from ${specifier}`)
       }
     }
   }
@@ -214,5 +245,6 @@ if (offences.length > 0) {
 
 console.log(
   `✓ no auto-import: ${scanned} research modules, none writes products, product_media, ` +
-    `product_specs, product_materials or media_assets, and none imports a first-party write`,
+    `product_specs, product_materials or media_assets, and none imports a first-party write ` +
+    `(the one admitted pair: ${BRIDGE_WRITE.name} in ${BRIDGE_FILE}, amendment A35)`,
 )

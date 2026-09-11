@@ -57,14 +57,33 @@ export function RowActionBar({
                   {t('studio.research.actionShortlist')}
                 </Button>
               </ActionForm>
-
-              <ActionForm action={actions.confirm}>
-                <input type="hidden" name="product_id" value={productId} />
-                <Button type="submit" variant="secondary" size="sm">
-                  {t('studio.research.actionConfirm')}
-                </Button>
-              </ActionForm>
             </Cluster>
+
+            {/* PHASE 35: CONFIRM CARRIES ITS DECISION NOTE IN THE SAME FORM AS THE BUTTON. The
+                movement table requires one for SHORTLISTED → CONFIRMED and the row-level CHECK on
+                research_confirmations refuses a blank; asking beside the control is what stops the
+                person meeting either refusal. */}
+            <ActionForm action={actions.confirm}>
+              <input type="hidden" name="product_id" value={productId} />
+              <Stack gap={2}>
+                <label className="flex max-w-md flex-col gap-1">
+                  <Text size="xs" tone="secondary" as="span">
+                    {t('studio.research.decisionNoteHelp')}
+                  </Text>
+                  <textarea
+                    name="reason"
+                    rows={2}
+                    className="border-line bg-surface border px-3 py-2 text-sm"
+                    data-decision-note=""
+                  />
+                </label>
+                <div>
+                  <Button type="submit" variant="secondary" size="sm" data-confirm-row="">
+                    {t('studio.research.actionConfirm')}
+                  </Button>
+                </div>
+              </Stack>
+            </ActionForm>
 
             <Text size="xs" tone="secondary">
               {t('studio.research.confirmMeaning')}

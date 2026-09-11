@@ -60,6 +60,10 @@ export const ACTIVITY_ACTIONS = [
   'research.scoring_model.activated',
   /** Phase 34. A named person agreed a direction is worth exploring — the one brief act colleagues read. */
   'research.direction.approved',
+  /** Phase 35. A person started an empty draft product from a confirmed research row — the one bridge, by hand. */
+  'research.product.started',
+  /** Phase 35. A row was confirmed as a research reference, with a decision note. */
+  'research.product.confirmed',
 ] as const
 
 export type ActivityAction = (typeof ACTIVITY_ACTIONS)[number]

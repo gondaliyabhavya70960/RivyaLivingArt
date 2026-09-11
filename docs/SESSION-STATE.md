@@ -7,6 +7,69 @@
 ---
 
 ## Current Phase
+**Phase 35 — Shortlist + Confirmation. COMPLETE-WITH-FLAG-OFF.** The pipeline has its workspace
+(why a row was shortlisted, the decision note behind a confirmation, two screens a merchandiser sits
+in front of) and its gate (the stage-writer trigger). The one hand-operated bridge to an empty draft
+product is built, proved to copy nothing, and switched off until the owner accepts amendment A35 by
+enabling `research_product_bridge`.
+
+### Phase 35: what is built
+
+**Migrations `0330`–`0331`, no enum change.** `research_shortlist_entries`, `research_confirmations`
+(`created_product_id` with no foreign key), `guard_research_stage_writer()` verbatim,
+`research_write_stage()` (SECURITY DEFINER, service role only — the flag and the write share a
+transaction because PostgREST gives the repository none). `0331` generated.
+
+**Code.** `MOVEMENTS` + `InvalidStageTransitionError` in `lib/scraper/core/stage.ts`;
+`review-actions.ts` (Shortlist opens an entry, Confirm needs a decision note and admits only a
+shortlisted row, `returnToReview`, `archiveDecision`); `lib/bulk/operations/research/
+{close-entry,archive-confirmation}.ts` and the five Phase 29 operations rerouted through
+`moveStage` / `setDisposition` with their own `undoItem`; `RESEARCH_BULK_CAP = 200`;
+`lib/supabase/{schemas,repositories/research}/…shortlist.ts`; `/studio/research/shortlist`,
+`/studio/research/confirmed` (+ `confirmed/actions.ts`, the bridge), `PipelineBulkBar`,
+`StartProductDialog`, the decision note on `RowActionBar`; `scripts/research/bridge-isolation.mjs`
+under I4 and the `insertProduct` carve-out in `check-no-autoimport.mjs`; flag
+`research_product_bridge = false`; seeded acknowledgement copy.
+
+### Phase 35: readings the repository forced
+
+1. **The flag needs a function** — `research_write_stage()` carries `rivya.stage_transition` under
+   PostgREST; the trigger is verbatim and defines nothing.
+2. **Bulk operations go through the machine** — the engine's generic snapshot restore would be
+   refused by the trigger, so every research operation supplies its own `undoItem`.
+3. **Confirm from REVIEW is refused with a sentence**, not silently left where it was: the
+   movement table admits only `SHORTLISTED → CONFIRMED`.
+4. **The RLS tests that updated `stage`/`disposition` directly** now set the flag in their own
+   transaction (`phase25`) or call `research_write_stage()` (`phase29`); `phase35` proves the bare
+   update is refused.
+5. **`stage-guard-trigger.test.ts` lives in the RLS project** (`tests/unit/rls/phase35.test.ts`,
+   describe block of that name): it needs a database and the unit project is offline by gate.
+6. **The claim comes first** — `markProductStarted` is conditional on nothing started before, so a
+   double click starts one product; a failed insert releases the claim.
+
+### Phase 35: verification, as actually run
+
+`npm run check`; the unit project including `pipeline-transitions`, `confirmation-no-import`,
+`research-isolation` (bridge fixtures), `review-actions`, `bulk-engine`, `research-selection`,
+`research-no-autoimport`; the RLS project with `RLS_TESTS_REQUIRED=1` including `phase35.test.ts`;
+production build through the local PostgREST shim; `security:check-bundle`. Counts in
+`docs/PHASE_31_TO_46_IMPLEMENTATION.md` §Phase 35.
+
+### Phase 35: hosted parity
+
+`0330`–`0331` applied to `ccvarsmzickdkryoakdg` with ledger rows; digest recorded in the
+implementation document.
+
+### The next exact action
+
+**Phase 35b — the owner-authorised demo catalogue and the image prompt book** (owner decision 5):
+review and enrich the 30 demo products in `scripts/demo/content.ts`, seed the missing rows on
+hosted, and write `docs/ASSET_GENERATION_PROMPTS.md`. Then Phase 36 — Google Sheets (`0340`–`0342`).
+
+---
+
+### Superseded — Phase 34's state
+
 **Phase 34 — Product Direction Tool. COMPLETE.** Research becomes a written internal brief with the
 evidence stapled to it; the tool writes no prose, the brief cannot be published or become a product,
 and observed figures never render without their coverage and the words "observed in competitor
@@ -40,14 +103,6 @@ the local PostgREST shim; `security:check-bundle`.
 ### Phase 34: hosted parity
 
 `0320`–`0321` applied to `ccvarsmzickdkryoakdg` with ledger rows; digest recorded in the PR.
-
-### The next exact action
-
-**Phase 35 — Shortlist + Confirmation.** `0330`–`0331`: `research_shortlist_entries`,
-`research_confirmations`, the stage-writer guard trigger, the two bulk operations, the manual bridge
-behind `research_product_bridge = false`.
-
----
 
 ### Superseded — Phase 33's state
 

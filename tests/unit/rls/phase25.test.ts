@@ -227,11 +227,17 @@ describeDb('Phase 25 — who may write, and who may not', () => {
   it('lets a MERCHANDISER move a research product — that half IS theirs', async () => {
     // The dividing line is the COLUMN, not the screen: `stage` and `disposition` are
     // disposition-bearing, so research_products is research.confirm rather than research.write.
-    const affected = await asMerchandiser((sql) =>
-      sql.affectedRows(`update research_products set disposition = 'IGNORED' where id = $1`, [
-        PRODUCT_ID,
-      ]),
-    )
+    // PHASE 35: the stage-writer guard refuses a disposition change without the transaction-local
+    // flag `stage.ts` sets, whoever is asking. The policy question this test asks is unchanged —
+    // may a merchandiser's session write this row — so the flag is set in the same transaction,
+    // exactly as `research_write_stage()` does. The refusal without it is `phase35.test.ts`'s.
+    const affected = await asMerchandiser(async (sql) => {
+      await sql.rows(`select set_config('rivya.stage_transition', 'on', true)`)
+      return sql.affectedRows(
+        `update research_products set disposition = 'IGNORED' where id = $1`,
+        [PRODUCT_ID],
+      )
+    })
     expect(affected).toBe(1)
   })
 
@@ -239,11 +245,13 @@ describeDb('Phase 25 — who may write, and who may not', () => {
     // AN RLS UPDATE WITH NO MATCHING POLICY AFFECTS ZERO ROWS RATHER THAN RAISING. The row is
     // readable — `research.read` includes the researcher — so the refusal is silent, which is
     // exactly why the assertion has to be on the row count and not on an exception.
-    const affected = await asResearcher((sql) =>
-      sql.affectedRows(`update research_products set disposition = 'REJECTED' where id = $1`, [
-        PRODUCT_ID,
-      ]),
-    )
+    const affected = await asResearcher(async (sql) => {
+      await sql.rows(`select set_config('rivya.stage_transition', 'on', true)`)
+      return sql.affectedRows(
+        `update research_products set disposition = 'REJECTED' where id = $1`,
+        [PRODUCT_ID],
+      )
+    })
     expect(affected).toBe(0)
   })
 

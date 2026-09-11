@@ -6,6 +6,7 @@ import { redirect } from 'next/navigation'
 import type { StudioFormState } from '@/components/studio/form-state'
 import { requirePermission } from '@/lib/auth/require'
 import {
+  RESEARCH_BULK_CAP,
   researchBulkParams,
   researchBulkQuery,
   researchBulkSurface,
@@ -93,9 +94,19 @@ export async function previewResearchBulkAction(
     const kind = String(form.get('kind') ?? '')
     if (kind === '') return issue('Choose an action.', 'kind_missing')
 
+    const selection = ids(form)
+    // Phase 35: refused above the cap, with the number in the sentence.
+    if (selection.length > RESEARCH_BULK_CAP) {
+      return issue(
+        `A research bulk action takes at most ${String(RESEARCH_BULK_CAP)} rows at a time; ` +
+          `${String(selection.length)} were selected.`,
+        'over_cap',
+      )
+    }
+
     const preview = await previewBulkOperation({
       kind,
-      selection: ids(form),
+      selection,
       params: researchBulkParams(kind, (field) => String(form.get(field) ?? '').trim()),
       actor: { userId: session.userId, role: session.role },
     })
@@ -145,6 +156,8 @@ export async function applyResearchBulkAction(
     revalidatePath(surface)
     revalidatePath('/studio/research/explorer')
     revalidatePath('/studio/research/dashboard')
+    revalidatePath('/studio/research/shortlist')
+    revalidatePath('/studio/research/confirmed')
     revalidatePath('/studio/operations/audit')
     return { status: 'saved' }
   } catch (error) {

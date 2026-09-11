@@ -7,11 +7,13 @@ import type { StudioFormState } from '@/components/studio/form-state'
 import { requirePermission } from '@/lib/auth/require'
 import {
   addProductNote,
+  archiveDecision,
   confirmProduct,
   ignoreChange,
   markDuplicate,
   recordComparison,
   rejectProduct,
+  returnToReview,
   reviewChange,
   shortlistProduct,
   tagProduct,
@@ -78,6 +80,9 @@ function refresh(): void {
   // Phase 30's workspace renders the same action bar over the same rows, so a decision taken there
   // has to invalidate the screen it was taken on as well as the queue it came from.
   revalidatePath('/studio/research/large-format')
+  // Phase 35: the shortlist and the confirmed list render the same rows' entries and decisions.
+  revalidatePath('/studio/research/shortlist')
+  revalidatePath('/studio/research/confirmed')
 }
 
 /**
@@ -97,6 +102,7 @@ async function runAction(
     readonly changeId: string | null
     readonly productId: string
     readonly reason: string | null
+    readonly briefId: string | null
   }) => Promise<void>,
   options: {
     readonly requiresChange?: boolean
@@ -136,6 +142,10 @@ async function runAction(
     const rawReason = form.get('reason')
     const reason =
       typeof rawReason === 'string' && rawReason.trim() !== '' ? rawReason.trim() : null
+    // Phase 35: the direction brief a shortlist entry or a confirmation cites, if the form named one.
+    const rawBrief = form.get('brief_id')
+    const briefId =
+      typeof rawBrief === 'string' && uuid.safeParse(rawBrief).success ? rawBrief : null
 
     const client = await createClient()
     const admin = createAdminClient()
@@ -147,6 +157,7 @@ async function runAction(
       changeId,
       productId,
       reason,
+      briefId,
     })
 
     refresh()
@@ -201,6 +212,7 @@ export async function shortlistAction(
         changeId: context.changeId,
         reason: context.reason,
         actor: context.actor,
+        briefId: context.briefId,
       })),
     { requiresChange: false },
   )
@@ -262,6 +274,48 @@ export async function confirmAction(
       void (await confirmProduct(context.client, context.admin, {
         productId: context.productId,
         changeId: context.changeId,
+        reason: context.reason,
+        actor: context.actor,
+        briefId: context.briefId,
+      })),
+    { requiresChange: false },
+  )
+}
+
+/**
+ * Phase 35 — send a shortlisted row back to review. `SHORTLISTED → REVIEW` with a reason; the
+ * entry closes, the stage moves back through the machine, and nothing is deleted.
+ */
+export async function returnToReviewAction(
+  _previous: StudioFormState,
+  form: FormData,
+): Promise<StudioFormState> {
+  return runAction(
+    form,
+    async (context) =>
+      void (await returnToReview(context.client, context.admin, {
+        productId: context.productId,
+        changeId: context.changeId,
+        reason: context.reason,
+        actor: context.actor,
+      })),
+    { requiresChange: false },
+  )
+}
+
+/**
+ * Phase 35 — archive the live decision on a confirmed row. A column, not a stage: the row stays
+ * CONFIRMED, no pipeline event is written, and a fresh decision may follow.
+ */
+export async function archiveDecisionAction(
+  _previous: StudioFormState,
+  form: FormData,
+): Promise<StudioFormState> {
+  return runAction(
+    form,
+    async (context) =>
+      void (await archiveDecision(context.client, {
+        productId: context.productId,
         reason: context.reason,
         actor: context.actor,
       })),

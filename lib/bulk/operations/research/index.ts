@@ -1,16 +1,29 @@
 import { z } from 'zod'
 
+import { logActivity } from '@/lib/logging/activity'
+import { moveStage, setDisposition, StageTransitionError } from '@/lib/scraper/core/stage'
 import {
   getResearchProduct,
   setDuplicateOf,
-  writeProductDisposition,
-  writeProductStage,
+  type ResearchDisposition,
+  type ResearchStage,
 } from '@/lib/supabase/repositories/research/products'
 import { recordAction } from '@/lib/supabase/repositories/research/review'
 import { assignTag, removeTag } from '@/lib/supabase/repositories/research/review'
+import {
+  archiveConfirmation,
+  closeShortlistEntry,
+  getLiveConfirmation,
+  getOpenEntry,
+  openShortlistEntry,
+  readScoreCapture,
+  recordConfirmation,
+} from '@/lib/supabase/repositories/research/shortlist'
 
 import { registerBulkOperation } from '../../registry'
 import type { ApplyResult, BulkOperationContext, PreviewItem } from '../../types'
+import { registerArchiveConfirmationOperation } from './archive-confirmation'
+import { registerCloseEntryOperation } from './close-entry'
 
 /**
  * FEAT §20's five scraper operations, implemented against the one bulk engine.
@@ -42,6 +55,50 @@ import type { ApplyResult, BulkOperationContext, PreviewItem } from '../../types
  */
 
 const OWNING_PHASE = 29
+
+/**
+ * PHASE 35 ROUTES EVERY STAGE AND DISPOSITION WRITE THROUGH `stage.ts`.
+ *
+ * Phase 29 wrote `stage` directly for the sake of the undo snapshot; that left the bulk path with
+ * no `research_pipeline_events` row, which the phase document names as a requirement ("one
+ * pipeline event per row whose stage moved"), and the stage-writer guard trigger now refuses any
+ * write that does not carry the machine's flag — the engine's generic undo included. So every
+ * operation here calls `moveStage` / `setDisposition`, still returns the `before` the engine
+ * stores, and supplies its own `undoItem` that goes back through the same door.
+ */
+async function moveBack(
+  context: BulkOperationContext,
+  entityId: string,
+  stage: ResearchStage,
+  reason: string,
+): Promise<void> {
+  try {
+    await moveStage(context.admin, {
+      productId: entityId,
+      to: stage,
+      actor: { userId: context.actor.userId },
+      reason,
+    })
+  } catch (error) {
+    // The row is already there, or somebody moved it since: an undo that cannot apply is a no-op
+    // the engine records, not a failure that stops the rest of the undo.
+    if (!(error instanceof StageTransitionError)) throw error
+  }
+}
+
+async function dispositionBack(
+  context: BulkOperationContext,
+  entityId: string,
+  disposition: ResearchDisposition,
+  reason: string,
+): Promise<void> {
+  await setDisposition(context.admin, {
+    productId: entityId,
+    disposition,
+    actor: { userId: context.actor.userId },
+    reason,
+  })
+}
 
 const noParams = z.object({}).strict()
 
@@ -160,11 +217,22 @@ export function registerResearchOperations(): void {
     },
     applyItem: async (context, entityId): Promise<ApplyResult> => {
       const before = await getResearchProduct(context.admin, entityId)
-      await writeProductStage(context.admin, {
-        id: entityId,
-        stage: 'SHORTLISTED',
-        actorId: context.actor.userId,
+      await moveStage(context.admin, {
+        productId: entityId,
+        to: 'SHORTLISTED',
+        actor: { userId: context.actor.userId },
+        reason: 'bulk shortlist',
       })
+      // Phase 35: the entry is the workspace. One open entry per row is the partial unique index.
+      if ((await getOpenEntry(context.admin, entityId)) === null) {
+        await openShortlistEntry(context.admin, {
+          researchProductId: entityId,
+          reason: 'Shortlisted in bulk without a stated reason.',
+          captured: await readScoreCapture(context.admin, entityId),
+          briefId: null,
+          actorUserId: context.actor.userId,
+        })
+      }
       await logAction(context, entityId, 'SHORTLIST', null)
       const after = await getResearchProduct(context.admin, entityId)
       return {
@@ -172,6 +240,16 @@ export function registerResearchOperations(): void {
         after: { stage: after?.stage ?? null },
         rowVersionForUndo: after?.last_seen_at ?? null,
       }
+    },
+    undoItem: async (context, entityId, before) => {
+      const snapshot = before as { stage?: string | null } | null
+      if (typeof snapshot?.stage !== 'string') return
+      await moveBack(context, entityId, snapshot.stage as ResearchStage, 'bulk undo: shortlist')
+      await closeShortlistEntry(context.admin, {
+        researchProductId: entityId,
+        reason: 'bulk undo: shortlist',
+        actorUserId: context.actor.userId,
+      })
     },
   })
 
@@ -214,10 +292,11 @@ export function registerResearchOperations(): void {
     },
     applyItem: async (context, entityId, params): Promise<ApplyResult> => {
       const before = await getResearchProduct(context.admin, entityId)
-      await writeProductDisposition(context.admin, {
-        id: entityId,
+      await setDisposition(context.admin, {
+        productId: entityId,
         disposition: 'REJECTED',
-        actorId: context.actor.userId,
+        actor: { userId: context.actor.userId },
+        reason: params.reason,
       })
       await logAction(context, entityId, 'REJECT', params.reason)
       const after = await getResearchProduct(context.admin, entityId)
@@ -226,6 +305,16 @@ export function registerResearchOperations(): void {
         after: { disposition: after?.disposition ?? null },
         rowVersionForUndo: after?.last_seen_at ?? null,
       }
+    },
+    undoItem: async (context, entityId, before) => {
+      const snapshot = before as { disposition?: string | null } | null
+      if (typeof snapshot?.disposition !== 'string') return
+      await dispositionBack(
+        context,
+        entityId,
+        snapshot.disposition as ResearchDisposition,
+        'bulk undo: reject',
+      )
     },
   })
 
@@ -269,10 +358,11 @@ export function registerResearchOperations(): void {
         duplicateOfId: params.survivingProductId,
         actorId: context.actor.userId,
       })
-      await writeProductDisposition(context.admin, {
-        id: entityId,
+      await setDisposition(context.admin, {
+        productId: entityId,
         disposition: 'DUPLICATE',
-        actorId: context.actor.userId,
+        actor: { userId: context.actor.userId },
+        reason: `duplicate of ${params.survivingProductId}`,
       })
       await logAction(
         context,
@@ -291,6 +381,26 @@ export function registerResearchOperations(): void {
           disposition: after?.disposition ?? null,
         },
         rowVersionForUndo: after?.last_seen_at ?? null,
+      }
+    },
+    undoItem: async (context, entityId, before) => {
+      const snapshot = before as {
+        duplicate_of_id?: string | null
+        disposition?: string | null
+      } | null
+      if (snapshot === null || snapshot === undefined) return
+      await setDuplicateOf(context.admin, {
+        id: entityId,
+        duplicateOfId: snapshot.duplicate_of_id ?? null,
+        actorId: context.actor.userId,
+      })
+      if (typeof snapshot.disposition === 'string') {
+        await dispositionBack(
+          context,
+          entityId,
+          snapshot.disposition as ResearchDisposition,
+          'bulk undo: duplicate',
+        )
       }
     },
   })
@@ -367,7 +477,10 @@ export function registerResearchOperations(): void {
   registerBulkOperation({
     kind: 'research.confirm',
     targetEntity: 'research_product',
-    paramsSchema: noParams,
+    // PHASE 35: THE REASON IS THE DECISION NOTE, applied to every row. The movement table says
+    // `SHORTLISTED → CONFIRMED` requires one, and `research_confirmations.decision_note` is
+    // non-blank at the row.
+    paramsSchema: reasonParams,
     isDestructive: false,
     extraPermission: 'research.confirm',
     owningPhase: OWNING_PHASE,
@@ -384,6 +497,14 @@ export function registerResearchOperations(): void {
             label: row.title_normalized ?? row.source_url,
           }
         }
+        if (row.stage !== 'SHORTLISTED') {
+          return {
+            entityId,
+            outcome: 'SKIP',
+            reason: 'Only a shortlisted row can be confirmed. Shortlist it first.',
+            label: row.title_normalized ?? row.source_url,
+          }
+        }
         return {
           entityId,
           outcome: 'APPLY',
@@ -392,22 +513,59 @@ export function registerResearchOperations(): void {
         }
       })
     },
-    applyItem: async (context, entityId): Promise<ApplyResult> => {
+    applyItem: async (context, entityId, params): Promise<ApplyResult> => {
       const before = await getResearchProduct(context.admin, entityId)
-      await writeProductStage(context.admin, {
-        id: entityId,
-        stage: 'CONFIRMED',
-        actorId: context.actor.userId,
+      await moveStage(context.admin, {
+        productId: entityId,
+        to: 'CONFIRMED',
+        actor: { userId: context.actor.userId },
+        reason: params.reason,
       })
-      await logAction(context, entityId, 'CONFIRM', null)
+      const confirmation = await recordConfirmation(context.admin, {
+        researchProductId: entityId,
+        decisionNote: params.reason,
+        briefId: null,
+        actorUserId: context.actor.userId,
+      })
+      await closeShortlistEntry(context.admin, {
+        researchProductId: entityId,
+        reason: 'confirmed',
+        actorUserId: context.actor.userId,
+      })
+      await logAction(context, entityId, 'CONFIRM', params.reason)
+      await logActivity({
+        action: 'research.product.confirmed',
+        actorId: context.actor.userId,
+        actorRole: context.actor.role,
+        entityType: 'research_product',
+        entityId,
+        summary: 'Confirmed as a research reference in bulk. No Rivya product was created.',
+        metadata: { confirmationId: confirmation.id },
+      })
       const after = await getResearchProduct(context.admin, entityId)
       return {
         before: { stage: before?.stage ?? null },
-        after: { stage: after?.stage ?? null },
+        after: { stage: after?.stage ?? null, confirmationId: confirmation.id },
         rowVersionForUndo: after?.last_seen_at ?? null,
       }
     },
+    /** Undo archives the decision it made and moves the row back; the entry it closed stays closed. */
+    undoItem: async (context, entityId, before) => {
+      const snapshot = before as { stage?: string | null } | null
+      if (typeof snapshot?.stage !== 'string') return
+      if ((await getLiveConfirmation(context.admin, entityId)) !== null) {
+        await archiveConfirmation(context.admin, {
+          researchProductId: entityId,
+          reason: 'bulk undo: confirmation withdrawn',
+        })
+      }
+      await moveBack(context, entityId, snapshot.stage as ResearchStage, 'bulk undo: confirm')
+    },
   })
+
+  // Phase 35's two, registered beside Phase 29's five. See each module.
+  registerCloseEntryOperation()
+  registerArchiveConfirmationOperation()
 }
 
 registerResearchOperations()

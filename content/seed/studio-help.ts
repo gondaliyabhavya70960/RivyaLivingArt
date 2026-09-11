@@ -107,6 +107,30 @@ const EDITOR_HELP: readonly [string, string, string][] = [
  * every case, which is the claim itself; a generic sentence added underneath would be boilerplate
  * beside a specific claim, and boilerplate is what an editor learns to skip.
  */
+/**
+ * Phase 35. The acknowledgement the bridge's submit button depends on, and the two screens' helper
+ * copy. THE ACKNOWLEDGEMENT IS THE ONE THAT MATTERS: the phase document requires its label to be
+ * seeded copy stating that no competitor data is being imported, so the sentence a person ticks
+ * is owned by the CMS and not by a component.
+ */
+const PHASE_35_HELP: readonly [string, string, string][] = [
+  [
+    'research_bridge_acknowledgement',
+    'Research bridge — acknowledgement',
+    'I understand that no competitor data is being imported. The draft holds only the slug and category I chose; every other field stays empty for a person to write.',
+  ],
+  [
+    'research_sl_intro',
+    'Research shortlist — introduction',
+    'Rows a merchandiser set aside, with the reason and the score as it stood. A row leaving the shortlist closes its entry; nothing here is deleted.',
+  ],
+  [
+    'research_cf_intro',
+    'Research confirmed list — introduction',
+    'Research decisions, not products. Each row is a competitor reference somebody confirmed with a note. A Rivya product exists only where a person started one by hand, and it holds nothing copied from here.',
+  ],
+]
+
 const VERIFICATION_NOTES: readonly [string, string, string][] = [
   [
     'about.03.scale',
@@ -194,6 +218,16 @@ export const studioHelpSeed: SeedModule = {
 
     // --- §40 editor helpers ---------------------------------------------------------------------
     ...EDITOR_HELP.map(([key, label, value]) => helpRow(key, value, label, 'SEED §40.')),
+
+    // --- Phase 35: the shortlist, the confirmed list and the bridge's acknowledgement ------------
+    ...PHASE_35_HELP.map(([key, label, value]) =>
+      helpRow(
+        key,
+        value,
+        label,
+        'Phase 35, PHASE-31-38 §Phase 35. Seeded, not hard-coded: the bridge dialog renders this row, and the copy states what is NOT imported.',
+      ),
+    ),
 
     // --- Phase 12: per-section verification notes -----------------------------------------------
     ...VERIFICATION_NOTES.map(([sectionKey, value, source]) =>

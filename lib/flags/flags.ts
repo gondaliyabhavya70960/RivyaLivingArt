@@ -66,6 +66,14 @@ export const FLAGS = {
    */
   advanced_similarity:
     'Would enable embedding-based FORM_SIMILAR pairs (low precision, flag-gated by design). Not built under amendment A33; the Studio says so.',
+  /**
+   * Phase 35. The hand-operated bridge from a CONFIRMED research row to an empty DRAFT product.
+   * OFF until the owner accepts the narrowing of invariant I4 the phase document proposes as open
+   * question 11 (recorded as amendment A35, proposed). While off, /studio/research/confirmed renders
+   * the button disabled with the reason, and a direct POST is refused with the flag reason.
+   */
+  research_product_bridge:
+    'Allows a person holding catalog.write to start an EMPTY draft product (typed slug, chosen category, nothing else) from a confirmed research row. Off until the owner accepts the proposed narrowing of invariant I4 (amendment A35).',
 } as const satisfies Record<string, string>
 
 export type FeatureFlagKey = keyof typeof FLAGS
