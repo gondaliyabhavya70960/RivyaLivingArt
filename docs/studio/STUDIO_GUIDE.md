@@ -1984,14 +1984,30 @@ be measured on this corpus, on a dated sample, before it is written down — OWN
 
 ### 12.10 `/studio/research/opportunities`
 
-Three regions: the ranked table (default filter `state = 'SCORED'`, with an `INSUFFICIENT_DATA` tab
-that is **visible, not hidden**), the explain drawer showing every component that produced a score, and
-the model panel (owner/admin only) with versions, the diff and the activate action.
+**A ranking heuristic over research data, not a measurement of demand**, and the page says so in
+its first sentence. The header states the **active model version** and the **date of the last run**
+on every load; no score is ever read without its provenance. Below fourteen days a stale badge
+appears.
 
-**Guardrails.** The active model version and the last computation date are rendered in the page header
-on every load, so no score is ever read without its provenance. A scoring model is immutable once it
-leaves `DRAFT` — changing a formula means publishing a new version, so a historical score stays
-reproducible. A missing signal is excluded with a reason, **never imputed**.
+**Two tabs, both visible.** *Scored* is the ranked table (rank, title, source, category, band,
+score, confidence). *Insufficient data* holds the rows whose included signals carry less than half
+the weight — a score is stored for each and never ranked, because a low score and an absent score
+mean opposite things. Filters: model version, source, category, in the URL.
+
+**Explain** opens the component table for one row: signal, weight, normalised value, contribution,
+and the input read — or, for an excluded signal, the reason. Read from storage, never recomputed;
+the footer reproduces the total from the components so the arithmetic can be checked on screen.
+`npm run research:score -- --explain=<id>` prints the same table.
+
+**Recompute scores** (`research.write`) scores the corpus under the active model. **Scoring models**
+(owner and admin only): every version with its weights and lifecycle; a draft shows its weights
+beside the active model's and how many ranked rows would move by more than ten places; **Activate**
+sits behind the confirm dialog, retires the current model and freezes the new definition. **New
+draft** takes a version, a confidence floor and seven weights that must sum to 100.
+
+**Exclusions per signal** counts the reasons signals were excluded on the latest run — a signal
+excluded on most rows is a coverage collapse (usually an adapter that stopped reading a field),
+not a finding.
 
 ### 12.11 `/studio/research/opportunities/direction` · `/[briefId]`
 

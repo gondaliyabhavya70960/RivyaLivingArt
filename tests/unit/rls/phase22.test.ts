@@ -1,6 +1,14 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
-import { FIXTURE_IDS, FIXTURE_USERS, asAnon, asSession, connect } from './harness'
+import {
+  FIXTURE_IDS,
+  FIXTURE_USERS,
+  asAnon,
+  asSession,
+  connect,
+  disconnect,
+  loadFixture,
+} from './harness'
 
 /**
  * Phase 22 at the table: what a visitor may read of a slot and its entries, who may curate, and
@@ -89,6 +97,19 @@ async function setSlotStatus(status: 'DRAFT' | 'PUBLISHED'): Promise<void> {
 }
 
 const READ_ENTRY = `select id from merchandising_entries where id = $1`
+
+/**
+ * The fixture products this suite pins entries to are created by `loadFixture`, not by the content
+ * seed. Every other database suite loads the fixture itself; relying on a neighbour having done so
+ * made this file pass or fail on the runner's file order — the first suite on a fresh database
+ * found no `publishedProduct` and its seed threw inside `beforeAll`.
+ */
+beforeAll(async () => {
+  if (HAVE_DB) await loadFixture()
+})
+afterAll(async () => {
+  await disconnect()
+})
 
 describeDb('merchandising slots and entries — what a visitor may read', () => {
   beforeAll(seed)

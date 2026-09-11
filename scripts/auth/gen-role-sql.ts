@@ -44,6 +44,7 @@ import {
   PHASE_29_POLICIES,
   PHASE_30_POLICIES,
   PHASE_31_POLICIES,
+  PHASE_32_POLICIES,
   PHASE_19_POLICIES,
   TABLE_POLICY_MAP,
   type ManagedTable,
@@ -484,6 +485,22 @@ const GENERATED: Record<string, { title: string; preamble: string }> = {
 -- ISOLATION INVARIANT I2 IS UNCHANGED AND UNCHANGEABLE: not one \`anon\` leg appears below, on any
 -- of the seven, and \`scripts/research/check-research-isolation.mjs\` fails the build the moment
 -- one does.`,
+  },
+  [PHASE_32_POLICIES]: {
+    title: `-- ${PHASE_32_POLICIES} — Phase 32`,
+    preamble: `-- Policies for the three tables migration 0300 creates. GENERATED from
+-- lib/auth/table-permissions.ts and rewritten whole, so it may hold nothing a human wrote.
+--
+--   \`research_scoring_models\`         research.score.manage — owner and admin only. The weights
+--                                      decide which competitor rows sort first, and the phase
+--                                      document's named risk is weights quietly tuned until a
+--                                      favoured row ranks first. Readable by research.read.
+--
+--   \`research_opportunity_scores\`     NO SESSION WRITE POLICY AT ALL. A score a session could
+--   \`research_opportunity_components\` insert is a rank somebody typed. The CLI, the cron and the
+--                                      Studio recompute action write through the service role.
+--
+-- ISOLATION INVARIANT I2 IS UNCHANGED: not one \`anon\` leg appears below.`,
   },
   [PHASE_31_POLICIES]: {
     title: `-- ${PHASE_31_POLICIES} — Phase 31`,

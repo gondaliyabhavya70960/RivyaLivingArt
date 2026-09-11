@@ -114,6 +114,13 @@ export const PERMISSION_ROLES = {
   'research.read': ['owner', 'admin', 'merchandiser', 'researcher', 'viewer'],
   'research.write': ['owner', 'admin', 'researcher'],
   'research.confirm': ['owner', 'admin', 'merchandiser'],
+  /**
+   * Phase 32. Who may create, edit and ACTIVATE a scoring model. Owner and admin only, because a
+   * model's weights decide which competitor rows sort first and the phase document's named risk is
+   * weights quietly tuned until a favoured row ranks first. Recomputing scores under the active
+   * model is `research.write` — operating the pipeline, not changing what it measures.
+   */
+  'research.score.manage': ['owner', 'admin'],
 
   'analytics.read': ALL,
 

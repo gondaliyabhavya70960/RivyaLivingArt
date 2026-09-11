@@ -157,6 +157,7 @@ export const PHASE_28_POLICIES = '0261_phase28_normalization_rls.sql'
 export const PHASE_29_POLICIES = '0271_phase29_changes_rls.sql'
 export const PHASE_30_POLICIES = '0281_phase30_large_format_rls.sql'
 export const PHASE_31_POLICIES = '0291_phase31_research_analytics_rls.sql'
+export const PHASE_32_POLICIES = '0301_phase32_opportunity_rls.sql'
 
 export const TABLE_POLICIES = {
   // --- Shape A: content tables ------------------------------------------------------------------
@@ -1597,6 +1598,45 @@ export const TABLE_POLICIES = {
     deviation:
       'n, denominator and per-reason exclusions for one metric of one snapshot. Service-role ' +
       'writes only, with its snapshot. No anon policy (isolation invariant I2).',
+  },
+
+  /*
+   * Phase 32 — the model register and the scores it produces.
+   *
+   * `research_scoring_models` is CONFIGURATION with a narrower audience than the lexicon or the
+   * thresholds: `research.score.manage`, owner and admin, because the weights decide which
+   * competitor rows sort first and the named risk is weights tuned until a favoured row wins.
+   * Delete is the same permission — and only a DRAFT is ever deleted by the action, because a
+   * retired model is what historical scores point at.
+   *
+   * `research_opportunity_scores` and `_components` are written by the service role only (CLI,
+   * cron, the Studio recompute action). A score a session could insert is a rank somebody typed.
+   */
+  research_scoring_models: {
+    policiesIn: PHASE_32_POLICIES,
+    shape: 'C',
+    readPermission: 'research.read',
+    writePermission: 'research.score.manage',
+    deletePermission: 'research.score.manage',
+    deviation:
+      'Versioned scoring models. research.score.manage (owner, admin) because the weights decide ' +
+      'which competitor rows sort first. No anon policy may ever exist on any research_* table (I2).',
+  },
+  research_opportunity_scores: {
+    policiesIn: PHASE_32_POLICIES,
+    shape: 'C',
+    readPermission: 'research.read',
+    deviation:
+      'One score per (product, model, moment). Service-role writes only: a score a session could ' +
+      'insert is a rank somebody typed. No anon policy (I2).',
+  },
+  research_opportunity_components: {
+    policiesIn: PHASE_32_POLICIES,
+    shape: 'C',
+    readPermission: 'research.read',
+    deviation:
+      'The arithmetic behind a score, one row per signal. Service-role writes only, with its ' +
+      'score. No anon policy (I2).',
   },
 } as const satisfies Record<string, TablePolicy>
 

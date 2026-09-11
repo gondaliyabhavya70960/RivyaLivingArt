@@ -6,6 +6,36 @@ Every phase adds an entry; see `docs/architecture/CANONICAL-DECISIONS.md` D9 for
 
 ## [Unreleased]
 
+### Phase 32 — Opportunity Engine
+
+Rivya gets a ranked view of where the market looks under-served — and anyone can see exactly why a
+row is where it is. A score is the weighted mean of **seven declared signals**, each normalised to
+0–100 by a rule written in code and weighted by a **versioned model**; every stored score keeps one
+component row per signal (raw input, normalised value, weight, contribution) so a researcher with a
+pocket calculator can reproduce the total. No machine-learning model, no language model, no
+embedding, no hidden term — `npm run research:check-no-ml` fails the build on one, and is proved
+to fail on a fixture.
+
+**Migrations `0300`–`0302`.** `research_scoring_models` (`DRAFT → ACTIVE → RETIRED`, exactly one
+ACTIVE by partial unique index, `freeze_active_scoring_model()` refusing any definition change on a
+non-draft row and naming the version), `research_opportunity_scores` and
+`research_opportunity_components` (no session write policy; `included = (normalised is not null)`
+because **excluded is not zero**). `0302` seeds v1 as a DRAFT: activation is a human, audited act
+under the new `research.score.manage` permission (owner, admin).
+
+**The formula is implemented once** in `lib/scraper/analytics/opportunity/score.ts` and printed
+verbatim in SCRAPER §23. Signals below their coverage requirement are excluded with a stored reason
+and lower confidence; below the floor a row is `INSUFFICIENT_DATA`, stored and never ranked. The
+`large_format_fit` table resolves all 24 category × flag combinations with no default, asserted by
+an exhaustive test; furniture that is not large-format scores 50, written down as a judgement.
+
+**`/studio/research/opportunities`** is filled: a header stating the active model and last run,
+Scored and Insufficient-data tabs both visible, an Explain drawer whose footer reproduces the total
+from the stored components, an exclusions panel, and — for owner and admin — the model panel with
+the rank-movement diff rendered before the Activate button. `npm run research:score` (`--model`,
+`--source`, `--dry-run`, `--explain`) and a 03:15 UTC cron produce scores; the cron answers
+`skipped: no_active_model` until a human activates one.
+
 ### Phase 31 — Analytics + Comparison
 
 The research corpus becomes measurable, and every measurement carries its own error bars. Three

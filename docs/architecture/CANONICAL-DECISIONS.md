@@ -186,6 +186,28 @@ Brand and editorial copy may be written; anything asserting business capability 
 
 ## Amendments
 
+**2026-09-11 · A32 — Phase 32 takes migration `0301` for its generated policies, seeds model v1 with
+a nullable author, adds `research.score.manage`, and the rank-movement diff re-weights stored
+components rather than rescanning the corpus (D5, PHASE-31-38 §Phase 32, DATA_MODEL §12, SCRAPER §23).**
+
+- **`0301` is the generated policy file, one past the document's `0300`** — the tenth time, for
+  A23's reason. `0302` seeds v1 as a DRAFT under `allow-insert`: configuration a human activates,
+  not content, so `research_scoring_models.created_by` is nullable where the phase document writes
+  it as attributed. A seeded row has no author, and inventing one would be the fabricated fact.
+- **`research.score.manage` (owner, admin)** joins the Phase 04 matrix and the `PHASE-00-04.md`
+  table, exactly as the block's permission table proposes. Recomputing scores under the active
+  model stays `research.write`: operating the pipeline is not changing what it measures.
+- **Scores and components take no session write policy of any kind** — the same posture as Phase
+  31's snapshots, recorded so `auth:check-rls` fails if a later phase grants one.
+- **The model diff re-weights stored components.** The normalisation rules live in code and are the
+  same for every version; a version differs only in weights and its confidence floor, so "how many
+  rows would move by more than ten places" is answerable from the active model's stored components
+  without a scan, and that is exactly what activating the draft would do to the ranking.
+- **A DRAFT can be dry-run and never stored.** A stored score must point at a model that cannot
+  change under it; `scoreScope` refuses to store under a DRAFT and the CLI says why.
+- **The cron uses `CRON_SECRET`** (A25, A31) and answers `200 skipped: no_active_model` rather than
+  failing every night until a human has made the activation decision.
+
 **2026-09-11 · A31 — Phase 31 takes migration `0291` for its generated policies and `0292` for its
 indexes, two documentation paths the owner asked for join D7, the chart patterns follow the
 registry's directory-per-pattern rule rather than the phase document's `charts/` folder, and every
