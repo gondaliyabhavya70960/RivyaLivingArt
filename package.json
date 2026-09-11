@@ -78,6 +78,7 @@
     "research:check-no-ml": "node scripts/research/check-no-ml.mjs",
     "research:similarity": "tsx scripts/research/similarity.ts",
     "research:similarity-sample": "tsx scripts/research/similarity-sample.ts",
+    "research:direction-export": "tsx scripts/research/direction-export.ts",
     "media:hash": "tsx scripts/media/hash-media.ts",
     "media:check-decoder": "node scripts/media/check-decoder-scope.mjs"
   },

@@ -3992,6 +3992,199 @@ export type Database = {
           },
         ]
       }
+      research_direction_brief_evidence: {
+        Row: {
+          id: string
+          brief_id: string
+          evidence_type: string
+          evidence_id: string
+          captured: Json
+          rationale: string
+          position: number
+          created_at: string
+          created_by: string
+        }
+        Insert: {
+          id?: string
+          brief_id: string
+          evidence_type: string
+          evidence_id: string
+          captured?: Json
+          rationale: string
+          position?: number
+          created_at?: string
+          created_by: string
+        }
+        Update: {
+          id?: string
+          brief_id?: string
+          evidence_type?: string
+          evidence_id?: string
+          captured?: Json
+          rationale?: string
+          position?: number
+          created_at?: string
+          created_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'research_direction_brief_evidence_brief_id_fkey'
+            columns: ['brief_id']
+            isOneToOne: false
+            referencedRelation: 'research_direction_briefs'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'research_direction_brief_evidence_created_by_fkey'
+            columns: ['created_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      research_direction_brief_revisions: {
+        Row: {
+          id: string
+          brief_id: string
+          revision: number
+          action: string
+          body: Json
+          note: string | null
+          created_at: string
+          created_by: string | null
+        }
+        Insert: {
+          id?: string
+          brief_id: string
+          revision: number
+          action: string
+          body: Json
+          note?: string | null
+          created_at?: string
+          created_by?: string | null
+        }
+        Update: {
+          id?: string
+          brief_id?: string
+          revision?: number
+          action?: string
+          body?: Json
+          note?: string | null
+          created_at?: string
+          created_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'research_direction_brief_revisions_brief_id_fkey'
+            columns: ['brief_id']
+            isOneToOne: false
+            referencedRelation: 'research_direction_briefs'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'research_direction_brief_revisions_created_by_fkey'
+            columns: ['created_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      research_direction_briefs: {
+        Row: {
+          id: string
+          slug: string
+          title: string
+          intent: string | null
+          scale_intent: string | null
+          form_language: string | null
+          material_direction: string | null
+          finish_direction: string | null
+          constraints: string | null
+          open_questions: string | null
+          not_doing: string | null
+          target_category_slug: string | null
+          status: Database['public']['Enums']['content_status']
+          owner_verification: Database['public']['Enums']['owner_verification']
+          fact_classification: Database['public']['Enums']['fact_classification']
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string
+          created_by: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          slug: string
+          title: string
+          intent?: string | null
+          scale_intent?: string | null
+          form_language?: string | null
+          material_direction?: string | null
+          finish_direction?: string | null
+          constraints?: string | null
+          open_questions?: string | null
+          not_doing?: string | null
+          target_category_slug?: string | null
+          status?: Database['public']['Enums']['content_status']
+          owner_verification?: Database['public']['Enums']['owner_verification']
+          fact_classification?: Database['public']['Enums']['fact_classification']
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          slug?: string
+          title?: string
+          intent?: string | null
+          scale_intent?: string | null
+          form_language?: string | null
+          material_direction?: string | null
+          finish_direction?: string | null
+          constraints?: string | null
+          open_questions?: string | null
+          not_doing?: string | null
+          target_category_slug?: string | null
+          status?: Database['public']['Enums']['content_status']
+          owner_verification?: Database['public']['Enums']['owner_verification']
+          fact_classification?: Database['public']['Enums']['fact_classification']
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'research_direction_briefs_approved_by_fkey'
+            columns: ['approved_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'research_direction_briefs_created_by_fkey'
+            columns: ['created_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'research_direction_briefs_updated_by_fkey'
+            columns: ['updated_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       research_fetches: {
         Row: {
           id: string
@@ -6496,6 +6689,10 @@ export type Database = {
         Returns: Json
       }
       research_reclaim_expired_leases: {
+        Args: Record<string, unknown>
+        Returns: Json
+      }
+      research_restore_brief_revision: {
         Args: Record<string, unknown>
         Returns: Json
       }

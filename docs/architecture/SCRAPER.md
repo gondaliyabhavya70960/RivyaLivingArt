@@ -2902,3 +2902,59 @@ delivery origin (`originalUrl()`, no transformation segment, so both agree on ev
 neither writes a file, a width, a height, a thumbnail or a colour. Under A33 no competitor byte is
 fetched at all.
 
+## 25. The product direction tool as built — Phase 34
+
+**Research becomes a written internal brief, and the brief has no path to the catalogue.** A
+direction brief is a Rivya document a person writes — nine prose sections: intent, scale intent,
+form language, material direction, finish direction, constraints, open questions, not doing — with
+the evidence stapled to it. The tool assembles the evidence and writes not one sentence of prose.
+
+### 25.1 The limits, held at the schema
+
+| Rule | Where it is held |
+|---|---|
+| A brief cannot be published | `status content_status` CHECKed to `DRAFT · REVIEW · APPROVED · ARCHIVED`; the Zod schema names four values; no route renders a brief publicly |
+| A brief carries no Rivya price, dimension, material, lead time or tolerance | there is no column for one, the body input schema is `.strict()`, and `tests/unit/direction-no-publish.test.ts` refuses any such field and scans the migration for one |
+| A brief cannot become a product | no module may import both the direction repository and the products repository — `scripts/research/direction-isolation.mjs`, called under I4 by `check-research-isolation.mjs`, fails the build; the test proves it fails on a fixture |
+| The category is a checked slug, not a key | `target_category_slug text` CHECKed to D3's seven — the I1 allowlist stays at two entries (open question 13 → amendment A34) |
+| Every evidence row has a reason | `rationale` non-empty by CHECK; the action refuses first |
+| Volatile evidence is captured by value | `captured <> '{}'` by CHECK for `OPPORTUNITY_SCORE` and `ANALYTICS_SNAPSHOT`; the rail marks drift against the newest value |
+| Approval is a judgement, not an edit | `guard_direction_brief_approval()` refuses APPROVED unless the session holds `research.direction.approve` (owner, admin, merchandiser); the action checks first and audits a refusal |
+| History cannot be edited by the people it records | `write_direction_brief_revision()` (SECURITY DEFINER, per-brief numbering under an advisory lock); no session write leg on the revisions table; restore goes through `research_restore_brief_revision()`, which restores prose and category and never the status |
+
+### 25.2 Observed versus intended
+
+The editor renders two column types. **Intended** sections are Rivya's own prose, with helper copy
+on each that says so and says not to paste competitor text or write a dimension as settled.
+**Observed** figures — the lowest, median and highest observed price; the median of each parsed
+axis; the count at table scale — are copied from an attached `ANALYTICS_SNAPSHOT`'s payload at
+attachment time (`figuresFromSnapshotPayload()`), each carrying the coverage record it rests on,
+and render in a separate panel with `CoverageBadge` and the words **observed in competitor
+research** on every row, on screen, in the print view and in the Markdown export. A brief may say
+"dining-table scale, longest axis around two metres"; it may not populate a dimensions field.
+
+### 25.3 Evidence capture
+
+| Type | Captured (by value) | Drift |
+|---|---|---|
+| `COMPARISON_SET` | name, slug, member count, last computed | — |
+| `ANALYTICS_SNAPSHOT` | family, scope, currency, computed_at, row count, the observed figures with coverage | newest snapshot of the same scope, family and currency has a later `computed_at` |
+| `OPPORTUNITY_SCORE` | research product id, score, confidence, completeness, state, model version, computed_at | the newest score for the same research product differs in score, state or model version, or is absent |
+| `SIMILARITY_PAIR` | band, distance, method | — |
+| `RESEARCH_PRODUCT` | title, source slug, stage, price state, scale band | — |
+| `RESEARCH_NOTE` | a 200-character excerpt, created_at | — |
+| `MEDIA_ASSET` | Rivya asset id, public id, `isConcept: true`, `isAiGenerated: true` — the capture schema refuses a photograph | — |
+
+Mood media is drawn only from concept families (`material-macro`, the seven `process-*`,
+`three-d-resin`, `wall-art`, `interior-lifestyle`, the six `largeformat-*`), read from
+`media_assets` by `select` inside the direction repository (`listMoodAssets`, `readMoodAsset`);
+nothing is generated and no competitor image is ever attached.
+
+### 25.4 Surfaces
+
+`/studio/research/opportunities/direction` (the list and the create form — a new brief is a title
+and nothing else) and `.../direction/[briefId]` (the editor; `?view=print` is the A4 page a maker
+reads, headed "Internal research document — never published"). `npm run research:direction-export
+-- --brief=<id> --format=md` renders the same document as Markdown. The route is a nested segment of
+the `opportunities` leaf, not a new D4 leaf (A34).
+

@@ -352,6 +352,9 @@ implementation detail of RC-213.
 | RC-328 | `ActivateModelButton` | usability | 32 | PLANNED | index only — Client Component: dialog state only; activation is a plain server-action form |
 | RC-329 | `SimilarityLegend` | product understanding | 33 | PLANNED | index only — the band table verbatim, including the "does not mean" column; `PRECISION NOT YET MEASURED` beside every band until a labelled sample exists; never collapsible |
 | RC-330 | `LibraryCheckPanel` | usability | 33 | PLANNED | index only — Client Component: `useActionState` carrying the self-check's pairs, which are returned to the form and stored nowhere |
+| RC-331 | `EvidenceRail` | product understanding | 34 | PLANNED | index only — what is attached, why, when, and drift against the current value; attaching requires a rationale; never renders a competitor image |
+| RC-332 | `ObservedFigures` | product understanding | 34 | PLANNED | index only — numbers only, each with `CoverageBadge` and the observed-in-research label; a distinct panel from the intended prose |
+| RC-333 | `BriefStatusButton` | usability | 34 | PLANNED | index only — Client Component: dialog state only; Approve/Archive is a plain server-action form |
 
 ### 6.4 Three — `components/three/`
 

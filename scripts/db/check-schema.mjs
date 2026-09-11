@@ -655,6 +655,31 @@ const EXPECTED = {
   ],
   media_asset_hashes: ['media_asset_id', 'kind', 'checksum', 'computed_at'],
 
+  /*
+   * Phase 34 — the brief carries the full common set (a person authors and edits it); evidence and
+   * revisions are append-style records under it, timestamped at creation and never edited.
+   */
+  research_direction_briefs: [
+    'slug',
+    'title',
+    'status',
+    'owner_verification',
+    'fact_classification',
+    'created_at',
+    'created_by',
+    'updated_at',
+    'updated_by',
+  ],
+  research_direction_brief_evidence: [
+    'brief_id',
+    'evidence_type',
+    'evidence_id',
+    'rationale',
+    'created_at',
+    'created_by',
+  ],
+  research_direction_brief_revisions: ['brief_id', 'revision', 'action', 'body', 'created_at'],
+
   research_scoring_models: [
     'version',
     'signals',

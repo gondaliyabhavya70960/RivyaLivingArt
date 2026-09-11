@@ -90,8 +90,8 @@ Seeded categories, in priority order:
 /studio/media/{all,images,videos,models,documents,higgsfield,brand}
 /studio/inquiries/{all,product,commission,consultation,quote}
 /studio/research/{dashboard,sources,scrape,jobs,runs,changes,explorer,
-                  large-format,compare,similarity,opportunities,shortlist,
-                  confirmed,sheets}
+                  large-format,compare,similarity,opportunities,
+                  opportunities/direction,shortlist,confirmed,sheets}
 /studio/operations/{workflows,data-quality,imports,exports,audit,logs}
 /studio/system/{users,settings,integrations,environment,documentation,flags}
 ```
@@ -185,6 +185,36 @@ Brand and editorial copy may be written; anything asserting business capability 
 `OWNER_VERIFICATION_REQUIRED`. Empty states are used instead of invented projects.
 
 ## Amendments
+
+**2026-09-11 · A34 — Phase 34 files a brief under a checked category slug and adds no third
+research→public reference (open question 13); `0321` is its generated policy file; approval is a
+trigger-held permission; direction briefs are a nested segment of the `opportunities` leaf (D4,
+D5, DATA_MODEL §11.aa, SCRAPER §25, PHASE-31-38 §Phase 34).**
+
+- **Two references is final.** `research_direction_briefs.target_category_slug` is `text`,
+  CHECKed to D3's seven slugs, and resolved by the direction repository when a screen needs a
+  category row. `check-research-isolation.mjs` keeps its two-name I1 allowlist; a real
+  `references categories(id)` would fail the build, and the phase document says the slug is the
+  pattern for everything after. DATA_MODEL §11's earlier row (`target_category_id uuid references
+  categories(id)`) is superseded by §11.aa.
+- **`0321` is the generated policy file**, one past the document's `0320`, for A23's reason.
+- **Approval is held by a trigger, not a hand-written policy.** The generator writes one
+  predicate per leg, so the narrower rule — entering APPROVED requires
+  `research.direction.approve` (owner, admin, merchandiser) — lives in
+  `guard_direction_brief_approval()`, fired on insert and update; the action checks and audits
+  first. `research.direction.write` (owner, admin, merchandiser, researcher) and
+  `research.direction.approve` join the Phase 04 matrix as the document proposes.
+- **The list is a leaf of its own, and D4's research leaf set gains it.** The phase document
+  mounts briefs as a nested segment of `opportunities`; the Studio manifest test governs every
+  static route and refuses a static child of a static leaf that the manifest does not name, so
+  `/studio/research/opportunities/direction` is a research leaf (`research.read`;
+  `research.direction.write` to act) labelled *Direction briefs*, and the `[briefId]` editor is
+  governed through it. The phase document's own open question anticipated this reading.
+- **The revisions table is the brief's own**, written by `write_direction_brief_revision()` after
+  Phase 08's `write_revision()` pattern rather than through `content_revisions`, whose
+  `entity_type` allowlist names public content and should not learn a research entity.
+- **The direction ↔ products import barrier is a build gate** (`direction-isolation.mjs`, under
+  I4), proved to fail on a fixture; BR-F6 states the rule.
 
 **2026-09-11 · A33 — Competitor images are referenced by URL only and never fetched: the owner's
 decision on Phase 33's fetch-to-hash amendment (open question 12), and what it leaves built (D5,
