@@ -25,20 +25,21 @@ test.describe('heading outline', () => {
     test(`${route} has one h1 and skips no level`, async ({ page }) => {
       test.skip(!(await reachable(page, route)), `${route} is not published in this database`)
 
-      const levels = await page
-        .locator('h1, h2, h3, h4, h5, h6')
-        .evaluateAll((nodes) =>
-          nodes
-            .filter((node) => {
-              // A heading inside a closed disclosure is still in the outline; one that is
-              // `display: none` is not, and asserting over it would fail on a correct page.
-              const style = window.getComputedStyle(node)
-              return style.display !== 'none' && style.visibility !== 'hidden'
-            })
-            .map((node) => Number(node.tagName.slice(1))),
-        )
+      const levels = await page.locator('h1, h2, h3, h4, h5, h6').evaluateAll((nodes) =>
+        nodes
+          .filter((node) => {
+            // A heading inside a closed disclosure is still in the outline; one that is
+            // `display: none` is not, and asserting over it would fail on a correct page.
+            const style = window.getComputedStyle(node)
+            return style.display !== 'none' && style.visibility !== 'hidden'
+          })
+          .map((node) => Number(node.tagName.slice(1))),
+      )
 
-      expect(levels.filter((level) => level === 1), `${route}: h1 count`).toHaveLength(1)
+      expect(
+        levels.filter((level) => level === 1),
+        `${route}: h1 count`,
+      ).toHaveLength(1)
       expect(levels[0], `${route}: the outline does not start at h1`).toBe(1)
 
       for (let index = 1; index < levels.length; index += 1) {

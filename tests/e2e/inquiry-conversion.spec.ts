@@ -281,10 +281,9 @@ test.describe('an enquiry from a product page', () => {
         'select count(*)::text as n from inquiries where message like $1',
         [`%${MARKER}%`],
       )
-      expect(
-        Number(rows.rows[0]?.n),
-        'the handoff was offered and no enquiry had been saved',
-      ).toBe(1)
+      expect(Number(rows.rows[0]?.n), 'the handoff was offered and no enquiry had been saved').toBe(
+        1,
+      )
     } finally {
       await client.end()
     }

@@ -42,9 +42,7 @@ test.describe('landmarks', () => {
         (await nav.getAttribute('aria-label')) ??
         (await nav
           .getAttribute('aria-labelledby')
-          .then(async (id) =>
-            id === null ? null : page.locator(`#${id}`).first().textContent(),
-          ))
+          .then(async (id) => (id === null ? null : page.locator(`#${id}`).first().textContent())))
       expect(label, `navigation ${String(index)} has no accessible name`).toBeTruthy()
       names.push((label ?? '').trim())
     }

@@ -23,7 +23,9 @@ import { connect, disconnect } from '../unit/rls/harness'
 const REQUIRE_DB = process.env.CI === 'true' || process.env.RLS_TESTS_REQUIRED === '1'
 const HAVE_DB = Boolean(process.env.DATABASE_URL)
 if (REQUIRE_DB && !HAVE_DB) {
-  throw new Error('DATABASE_URL is not set and this environment requires the database suite to run.')
+  throw new Error(
+    'DATABASE_URL is not set and this environment requires the database suite to run.',
+  )
 }
 const describeDb = HAVE_DB ? describe : describe.skip
 

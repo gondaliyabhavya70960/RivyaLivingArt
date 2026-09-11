@@ -119,7 +119,9 @@ test.describe('forms', () => {
 
     await form.locator('button[type="submit"]').first().click()
 
-    const announcement = page.locator('[role="alert"], [aria-live="assertive"], [aria-live="polite"]')
+    const announcement = page.locator(
+      '[role="alert"], [aria-live="assertive"], [aria-live="polite"]',
+    )
     await expect(announcement.first(), 'the refusal is visible and not announced').toBeVisible({
       timeout: 10_000,
     })

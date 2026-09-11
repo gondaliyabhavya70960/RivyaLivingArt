@@ -28,7 +28,9 @@ import { connect, disconnect } from '../unit/rls/harness'
 const REQUIRE_DB = process.env.CI === 'true' || process.env.RLS_TESTS_REQUIRED === '1'
 const HAVE_DB = Boolean(process.env.DATABASE_URL)
 if (REQUIRE_DB && !HAVE_DB) {
-  throw new Error('DATABASE_URL is not set and this environment requires the database suite to run.')
+  throw new Error(
+    'DATABASE_URL is not set and this environment requires the database suite to run.',
+  )
 }
 const describeDb = HAVE_DB ? describe : describe.skip
 
@@ -36,7 +38,9 @@ const DIR = 'supabase/migrations'
 
 /** The same digest `scripts/db/migrate.mjs` records: SHA-256 of the file's bytes, hex. */
 function checksumOf(file: string): string {
-  return createHash('sha256').update(readFileSync(join(DIR, file))).digest('hex')
+  return createHash('sha256')
+    .update(readFileSync(join(DIR, file)))
+    .digest('hex')
 }
 
 const onDisk = readdirSync(DIR)
@@ -181,9 +185,9 @@ describeDb('the ledger and the files agree', () => {
         const keys = [...body.matchAll(/(?:^|[,{])\s*([a-z0-9_]+)\s*:/gi)].map(
           (entry) => entry[1] as string,
         )
-        const undefinedKeys = [
-          ...body.matchAll(/([a-z0-9_]+)\s*:[^,]*\bundefined\b/gi),
-        ].map((entry) => entry[1] as string)
+        const undefinedKeys = [...body.matchAll(/([a-z0-9_]+)\s*:[^,]*\bundefined\b/gi)].map(
+          (entry) => entry[1] as string,
+        )
         callSites.push({ file, fn: match[1] as string, keys, undefinedKeys })
       }
     }

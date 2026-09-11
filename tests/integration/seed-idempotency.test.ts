@@ -25,7 +25,9 @@ import { seedFixture } from '../../scripts/test/seed-fixture'
 const REQUIRE_DB = process.env.CI === 'true' || process.env.RLS_TESTS_REQUIRED === '1'
 const HAVE_DB = Boolean(process.env.DATABASE_URL)
 if (REQUIRE_DB && !HAVE_DB) {
-  throw new Error('DATABASE_URL is not set and this environment requires the database suite to run.')
+  throw new Error(
+    'DATABASE_URL is not set and this environment requires the database suite to run.',
+  )
 }
 const describeDb = HAVE_DB ? describe : describe.skip
 
@@ -170,7 +172,10 @@ describeDb('the fixture seeds the same thing every time', () => {
       [`${FIXTURE_ID_PREFIX}%`, FIXTURE_NOW],
     )
     for (const row of rows.rows) {
-      expect(Number(row.n), `${row.table_name} has a row dated from now() rather than the fixture clock`).toBe(0)
+      expect(
+        Number(row.n),
+        `${row.table_name} has a row dated from now() rather than the fixture clock`,
+      ).toBe(0)
     }
   })
 
