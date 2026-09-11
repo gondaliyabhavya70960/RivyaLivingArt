@@ -111,6 +111,25 @@ Format page reads.
 - Production build against the seeded database through a local PostgREST, then
   `security:check-bundle` clean.
 
+### Phase 30: hosted parity, measured rather than assumed
+
+`0280` and `0281` are applied to `ccvarsmzickdkryoakdg` as well as locally, and the two databases
+were compared rather than trusted. A structure digest over the two new tables and the six new
+`research_products` columns — their types, nullability and defaults, sixteen constraint definitions,
+eight indexes, nine policies and the five seeded rules, **67 objects** — returns
+`29db158ed7d559a2769b50f2e35b804f` on both.
+
+The hosted apply used a comment-stripped copy, and the stripper was PROVED for these two files
+before it was trusted: two throwaway databases were built from the full 82-migration chain, one with
+the files as written and one with the stripped copies substituted, and the same digest came back
+from both — and from the working local database. That is the check that caught the stripper's first
+version during Phase 29, when it collapsed blank lines inside three function bodies.
+
+Behaviour on hosted: five seeded rules, all PUBLISHED and enabled; row security on both new tables;
+**not one `anon` policy** on either (I2); `research_products` still empty, so nothing is classified;
+and both ledger rows carry the local files' SHA-256, so `db:migrate` sees the two databases at the
+same version — 82 rows each.
+
 ### The next exact action
 
 **Phase 31 — Analytics + Comparison**, the first phase that reads across sources rather than within
