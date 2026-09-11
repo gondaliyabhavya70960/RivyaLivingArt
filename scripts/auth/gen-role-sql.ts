@@ -48,6 +48,7 @@ import {
   PHASE_33_POLICIES,
   PHASE_34_POLICIES,
   PHASE_35_POLICIES,
+  PHASE_36_POLICIES,
   PHASE_19_POLICIES,
   TABLE_POLICY_MAP,
   type ManagedTable,
@@ -570,6 +571,21 @@ const GENERATED: Record<string, { title: string; preamble: string }> = {
 -- NOT research.write, and the phase document's permission table is explicit about why: a
 -- researcher OPERATES the pipeline; a merchandiser JUDGES its output. ISOLATION INVARIANT I2 IS
 -- UNCHANGED: not one \`anon\` leg appears below.`,
+  },
+  [PHASE_36_POLICIES]: {
+    title: `-- ${PHASE_36_POLICIES} — Phase 36`,
+    preamble: `-- Policies for the two tables migration 0340 creates. GENERATED from
+-- lib/auth/table-permissions.ts and rewritten whole, so it may hold nothing a human wrote.
+--
+--   \`sheets_export_definitions\`   analytics.read select; integrations.sheets.manage insert/update
+--                                  (owner, admin). What leaves for a spreadsheet is decided here.
+--
+--   \`sheets_sync_runs\`            analytics.read select; no session write — the service role
+--                                  records what a run did.
+--
+-- Running a definition is integrations.sheets.run (plus inquiries.export for INQUIRIES), checked
+-- in the Server Action, the CLI and the cron; the run itself writes as the service role. No anon
+-- leg on either table: a spreadsheet export is a staff act.`,
   },
   [PHASE_31_POLICIES]: {
     title: `-- ${PHASE_31_POLICIES} — Phase 31`,

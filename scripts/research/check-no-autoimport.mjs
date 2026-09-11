@@ -89,9 +89,16 @@ const WRITE_CALLS = ['insert', 'upsert', 'update', 'delete']
 const WRITE_SYMBOL =
   /^(insert|update|create|upsert|delete|remove|set|write|save|publish|archive|restore)[A-Z]/
 
-/** First-party modules whose writes are catalogue writes. Research's own are not matched. */
+/**
+ * First-party modules whose writes are catalogue writes. Research's own are not matched, and
+ * neither is `repositories/sheets` (Phase 36, amendment A37): an export definition is integration
+ * configuration — an entity name, a column list, a tab — and its repository touches no product,
+ * media or CMS table (`check-data-layer.mjs` holds that). The Sheets screen sits under
+ * `/studio/research/sheets` because the route map puts it there, and its actions write
+ * definitions; a catalogue write imported beside them is caught exactly as before.
+ */
 const FIRST_PARTY_WRITE_SOURCES =
-  /^@\/lib\/(supabase\/repositories(?!\/research)|catalog|bulk\/operations\/(?!research))/
+  /^@\/lib\/(supabase\/repositories(?!\/research|\/sheets)|catalog|bulk\/operations\/(?!research))/
 
 /**
  * PHASE 35'S ONE CARVE-OUT, AND ITS WHOLE EXTENT.

@@ -7055,6 +7055,309 @@ export const STUDIO_STRINGS = {
     value: 'Tick the acknowledgement before creating the draft.',
     contentKey: 'studio_help.research_bridge_acknowledge_missing',
   },
+
+  /*
+   * PHASE 36 — Google Sheets exports.
+   */
+  'studio.sheets.heading': {
+    value: 'Google Sheets exports',
+    contentKey: 'studio_help.sheets_heading',
+  },
+  'studio.sheets.intro': {
+    value:
+      'One-way: Rivya writes a tab, the spreadsheet reads it. Nothing typed into a cell can change anything here. A run replaces the whole tab at once, so a reader never sees a half-written one.',
+    contentKey: 'studio_help.sheets_intro',
+  },
+  'studio.sheets.flagOn': {
+    value: 'google_sheets is on. Runs write to the spreadsheet.',
+    contentKey: 'studio_help.sheets_flag_on',
+  },
+  'studio.sheets.flagOff': {
+    value:
+      'google_sheets is off. Definitions are read-only and every run is refused until the owner turns it on in System → Flags.',
+    contentKey: 'studio_help.sheets_flag_off',
+  },
+  'studio.sheets.spreadsheetLabel': {
+    value: 'Default spreadsheet',
+    contentKey: 'studio_help.sheets_spreadsheet_label',
+  },
+  'studio.sheets.serviceAccountLabel': {
+    value: 'Share the spreadsheet with',
+    contentKey: 'studio_help.sheets_service_account_label',
+  },
+  'studio.sheets.notConfigured': {
+    value:
+      'Not configured in this environment. Set GOOGLE_SERVICE_ACCOUNT_JSON and GOOGLE_SHEETS_SPREADSHEET_ID (see docs/ops/ENVIRONMENT.md).',
+    contentKey: 'studio_help.sheets_not_configured',
+  },
+  'studio.sheets.definitionsHeading': {
+    value: 'Export definitions',
+    contentKey: 'studio_help.sheets_definitions_heading',
+  },
+  'studio.sheets.colName': {
+    value: 'Name',
+    contentKey: 'studio_help.sheets_col_name',
+  },
+  'studio.sheets.colEntity': {
+    value: 'Entity',
+    contentKey: 'studio_help.sheets_col_entity',
+  },
+  'studio.sheets.colTab': {
+    value: 'Tab',
+    contentKey: 'studio_help.sheets_col_tab',
+  },
+  'studio.sheets.colSchedule': {
+    value: 'Schedule',
+    contentKey: 'studio_help.sheets_col_schedule',
+  },
+  'studio.sheets.colPii': {
+    value: 'Personal data',
+    contentKey: 'studio_help.sheets_col_pii',
+  },
+  'studio.sheets.colLastRun': {
+    value: 'Last run',
+    contentKey: 'studio_help.sheets_col_last_run',
+  },
+  'studio.sheets.colStatus': {
+    value: 'Status',
+    contentKey: 'studio_help.sheets_col_status',
+  },
+  'studio.sheets.colActions': {
+    value: 'Actions',
+    contentKey: 'studio_help.sheets_col_actions',
+  },
+  'studio.sheets.piiYes': {
+    value: 'included',
+    contentKey: 'studio_help.sheets_pii_yes',
+  },
+  'studio.sheets.piiNo': {
+    value: 'no',
+    contentKey: 'studio_help.sheets_pii_no',
+  },
+  'studio.sheets.never': {
+    value: 'never',
+    contentKey: 'studio_help.sheets_never',
+  },
+  'studio.sheets.runNow': {
+    value: 'Run now',
+    contentKey: 'studio_help.sheets_run_now',
+  },
+  'studio.sheets.pause': {
+    value: 'Pause',
+    contentKey: 'studio_help.sheets_pause',
+  },
+  'studio.sheets.resume': {
+    value: 'Resume',
+    contentKey: 'studio_help.sheets_resume',
+  },
+  'studio.sheets.enable': {
+    value: 'Enable',
+    contentKey: 'studio_help.sheets_enable',
+  },
+  'studio.sheets.disable': {
+    value: 'Disable',
+    contentKey: 'studio_help.sheets_disable',
+  },
+  'studio.sheets.edit': {
+    value: 'Edit',
+    contentKey: 'studio_help.sheets_edit',
+  },
+  'studio.sheets.disabledPill': {
+    value: 'Disabled',
+    contentKey: 'studio_help.sheets_disabled_pill',
+  },
+  'studio.sheets.pausedPill': {
+    value: 'Paused',
+    contentKey: 'studio_help.sheets_paused_pill',
+  },
+  'studio.sheets.pausedBanner': {
+    value:
+      'Paused after repeated failures. The last code is shown; resume once the cause is fixed.',
+    contentKey: 'studio_help.sheets_paused_banner',
+  },
+  'studio.sheets.needsRun': {
+    value:
+      'Running an export needs the Sheets run permission (owner, admin, merchandiser, researcher). Enquiries additionally need the enquiry export permission.',
+    contentKey: 'studio_help.sheets_needs_run',
+  },
+  'studio.sheets.needsManage': {
+    value:
+      'Creating, editing, pausing and resuming definitions needs the Sheets manage permission (owner, admin).',
+    contentKey: 'studio_help.sheets_needs_manage',
+  },
+  'studio.sheets.formHeadingNew': {
+    value: 'New definition',
+    contentKey: 'studio_help.sheets_form_heading_new',
+  },
+  'studio.sheets.formHeadingEdit': {
+    value: 'Edit definition',
+    contentKey: 'studio_help.sheets_form_heading_edit',
+  },
+  'studio.sheets.formSlug': {
+    value: 'Slug',
+    contentKey: 'studio_help.sheets_form_slug',
+  },
+  'studio.sheets.formName': {
+    value: 'Name',
+    contentKey: 'studio_help.sheets_form_name',
+  },
+  'studio.sheets.formEntity': {
+    value: 'Entity',
+    contentKey: 'studio_help.sheets_form_entity',
+  },
+  'studio.sheets.formScope': {
+    value: 'Scope (comparison set id, for the comparison-set entity)',
+    contentKey: 'studio_help.sheets_form_scope',
+  },
+  'studio.sheets.formColumns': {
+    value: 'Columns',
+    contentKey: 'studio_help.sheets_form_columns',
+  },
+  'studio.sheets.formColumnsHelp': {
+    value:
+      'Only the columns listed here can be exported. No media, no secrets, nothing from the audit or system logs.',
+    contentKey: 'studio_help.sheets_form_columns_help',
+  },
+  'studio.sheets.formFilter': {
+    value: 'Filter (JSON)',
+    contentKey: 'studio_help.sheets_form_filter',
+  },
+  'studio.sheets.formFilterHelp': {
+    value: 'The same keys the Studio tables filter by, as JSON. Leave {} for everything.',
+    contentKey: 'studio_help.sheets_form_filter_help',
+  },
+  'studio.sheets.formSpreadsheet': {
+    value: 'Spreadsheet id (blank uses the default)',
+    contentKey: 'studio_help.sheets_form_spreadsheet',
+  },
+  'studio.sheets.formTab': {
+    value: 'Tab name',
+    contentKey: 'studio_help.sheets_form_tab',
+  },
+  'studio.sheets.formSchedule': {
+    value: 'Schedule',
+    contentKey: 'studio_help.sheets_form_schedule',
+  },
+  'studio.sheets.formScheduleHelp': {
+    value:
+      'MANUAL, or a five-field cron expression in UTC with one number in the minute field — hourly at most, for example 0 * * * * or 30 6 * * 1.',
+    contentKey: 'studio_help.sheets_form_schedule_help',
+  },
+  'studio.sheets.formPii': {
+    value: 'Include personal data (name, phone, email)',
+    contentKey: 'studio_help.sheets_form_pii',
+  },
+  'studio.sheets.formPiiHelp': {
+    value:
+      'Enquiries only. Every run of a definition that includes personal data writes an audit row naming who ran it, how many rows and which spreadsheet.',
+    contentKey: 'studio_help.sheets_form_pii_help',
+  },
+  'studio.sheets.save': {
+    value: 'Save definition',
+    contentKey: 'studio_help.sheets_save',
+  },
+  'studio.sheets.cancel': {
+    value: 'Cancel',
+    contentKey: 'studio_help.sheets_cancel',
+  },
+  'studio.sheets.historyHeading': {
+    value: 'Run history',
+    contentKey: 'studio_help.sheets_history_heading',
+  },
+  'studio.sheets.historyEmpty': {
+    value: 'No runs yet.',
+    contentKey: 'studio_help.sheets_history_empty',
+  },
+  'studio.sheets.histStarted': {
+    value: 'Started',
+    contentKey: 'studio_help.sheets_hist_started',
+  },
+  'studio.sheets.histTrigger': {
+    value: 'Trigger',
+    contentKey: 'studio_help.sheets_hist_trigger',
+  },
+  'studio.sheets.histStatus': {
+    value: 'Status',
+    contentKey: 'studio_help.sheets_hist_status',
+  },
+  'studio.sheets.histRows': {
+    value: 'Rows',
+    contentKey: 'studio_help.sheets_hist_rows',
+  },
+  'studio.sheets.histCells': {
+    value: 'Cells',
+    contentKey: 'studio_help.sheets_hist_cells',
+  },
+  'studio.sheets.histAttempts': {
+    value: 'Attempts',
+    contentKey: 'studio_help.sheets_hist_attempts',
+  },
+  'studio.sheets.histError': {
+    value: 'Code',
+    contentKey: 'studio_help.sheets_hist_error',
+  },
+  'studio.sheets.histDuration': {
+    value: 'Duration',
+    contentKey: 'studio_help.sheets_hist_duration',
+  },
+  'studio.sheets.rowCountWarning': {
+    value: 'Row count moved more than half since the previous successful run. Check the filter.',
+    contentKey: 'studio_help.sheets_row_count_warning',
+  },
+  'studio.sheets.refusedFlag': {
+    value: 'The google_sheets flag is off. Nothing was written.',
+    contentKey: 'studio_help.sheets_refused_flag',
+  },
+  'studio.sheets.refusedForbidden': {
+    value: 'You do not hold the permission this export needs.',
+    contentKey: 'studio_help.sheets_refused_forbidden',
+  },
+  'studio.sheets.refusedPaused': {
+    value: 'This definition is paused. Resume it first.',
+    contentKey: 'studio_help.sheets_refused_paused',
+  },
+  'studio.sheets.refusedDisabled': {
+    value: 'This definition is disabled. Enable it first.',
+    contentKey: 'studio_help.sheets_refused_disabled',
+  },
+  'studio.sheets.refusedColumns': {
+    value:
+      'A column outside the entity’s allowlist was named, or a personal-data column without the flag.',
+    contentKey: 'studio_help.sheets_refused_columns',
+  },
+  'studio.sheets.refusedSchedule': {
+    value: 'The schedule is not MANUAL or an hourly-or-slower cron expression.',
+    contentKey: 'studio_help.sheets_refused_schedule',
+  },
+  'studio.sheets.refusedFilter': {
+    value: 'The filter is not valid JSON for this entity.',
+    contentKey: 'studio_help.sheets_refused_filter',
+  },
+  'studio.sheets.refusedScope': {
+    value: 'The comparison-set entity needs a set id as its scope.',
+    contentKey: 'studio_help.sheets_refused_scope',
+  },
+  'studio.sheets.refusedSlug': {
+    value: 'That slug is already used by another definition.',
+    contentKey: 'studio_help.sheets_refused_slug',
+  },
+  'studio.sheets.runStarted': {
+    value: 'The run finished. See the history below for its outcome.',
+    contentKey: 'studio_help.sheets_run_started',
+  },
+  'studio.sheets.exportsLink': {
+    value: 'Google Sheets exports are on the research Sheets page.',
+    contentKey: 'studio_help.sheets_exports_link',
+  },
+  'studio.sheets.definitionsEmpty': {
+    value: 'No export definitions.',
+    contentKey: 'studio_help.sheets_definitions_empty',
+  },
+  'studio.sheets.definitionsEmptyBody': {
+    value:
+      'The seven default definitions are seeded by migration 0342; create one above if they are absent.',
+    contentKey: 'studio_help.sheets_definitions_empty_body',
+  },
   'studio.research.oppHeading': {
     value: 'Opportunities',
     contentKey: 'studio_help.research_opp_heading',

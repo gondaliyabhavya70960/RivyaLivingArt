@@ -74,6 +74,14 @@ export const FLAGS = {
    */
   research_product_bridge:
     'Allows a person holding catalog.write to start an EMPTY draft product (typed slug, chosen category, nothing else) from a confirmed research row. Off until the owner accepts the proposed narrowing of invariant I4 (amendment A35).',
+  /**
+   * Phase 36. The one-way Google Sheets export. Off, the Sheets page renders every definition
+   * read-only and every run — Studio, CLI, cron — is refused with FLAG_OFF before any network call.
+   * On requires GOOGLE_SERVICE_ACCOUNT_JSON and GOOGLE_SHEETS_SPREADSHEET_ID to be set and the
+   * spreadsheet shared with the service-account email the page shows.
+   */
+  google_sheets:
+    'Writes export definitions to Google Sheets tabs (one-way; Rivya writes, the sheet reads). Off until the owner has created the service account, shared the spreadsheet with it and set the two variables.',
 } as const satisfies Record<string, string>
 
 export type FeatureFlagKey = keyof typeof FLAGS

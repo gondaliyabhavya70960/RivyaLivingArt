@@ -773,7 +773,158 @@ See the PR for this track (`feat(phase-35b)`); hash recorded in the final summar
 
 ## Phase 36 — Google Sheets
 
-**Status:** NOT STARTED
+**Status:** COMPLETED — the integration is built, gated and inert: the `google_sheets` flag is
+`false`, no service account exists yet, and every definition is `MANUAL`. Turning it on is the
+owner's five-step setup in ENVIRONMENT §4.
+
+### Objective
+A one-way bridge from the research and enquiry tables to a Google Sheets tab, so a person can sort,
+filter and share in a spreadsheet without anything typed into a cell ever reaching Rivya. No new
+dependency, no credential stored, no read path — and a build gate that proves the last of those.
+
+### Requirements Found
+`docs/project/phases/PHASE-31-38.md` §Phase 36 (the seven entities and their allowlisted columns,
+the service-account JWT, the atomic staging-tab swap, the retry policy with `Retry-After`, the
+circuit breaker, the PII flag on enquiries only with an audit row per run, the hourly minimum,
+verification 1–12, exit criteria, open question 4); `DATA_MODEL.md` §12 row 36 (`0340`–`0342`);
+FEAT §32; amendment A25 (`CRON_SECRET`); the Phase 04 permission matrix; D8 for the two variables.
+
+### Implementation Completed
+- `lib/sheets/client.ts` — `import 'server-only'` first line; the service-account assertion minted
+  with `node:crypto` (`createSign('RSA-SHA256')`, `base64url`), the `spreadsheets` scope only, a
+  cached access token refreshed a minute early; `getSpreadsheetSheets` (ids and titles — the one
+  GET), `putValues`, `batchUpdate`; 429/5xx become a retryable marker, 401/403 `SheetsAuthError`,
+  and **no response body is ever read into an error**.
+- `lib/sheets/write.ts` — `<tab>__staging`, chunks of ≤ 5,000 cells, one `batchUpdate` that deletes
+  the old tab and renames the staging tab, so a reader sees the old complete tab or the new one.
+- `lib/sheets/retry.ts` — five attempts, base 500 ms, cap 30 s, full jitter, `Retry-After` in
+  seconds or as a date, never on 401/403. `lib/sheets/schedule.ts` — `MANUAL` or a five-field cron
+  expression whose minute field is one number (hourly or slower), `previousFire`, `isDue`.
+- `lib/sheets/definitions.ts` — the per-entity column allowlist (no media, no secret, nothing from
+  the audit or system logs), the PII columns (enquiries only), the generated-tab marker cell,
+  `validateColumns`, the filter schemas. `lib/sheets/errors.ts` — the fixed code vocabulary.
+- `lib/sheets/builders/` — one row builder per entity reading through the repositories only,
+  split by import so no module carries both the direction repository and the catalogue read (I4).
+- `lib/sheets/run.ts` — `runDefinition()`: permission (`integrations.sheets.run`, plus
+  `inquiries.export` for enquiries), flag, paused/disabled, one RUNNING run per definition (partial
+  unique index, a second start is a refused claim), dry run, the PII audit row `sheets.export.pii`,
+  the circuit breaker (three consecutive failures pause the definition with the reason), activity
+  `sheets.run.succeeded` / `sheets.run.failed` with a sanitised code.
+- Repository `lib/supabase/repositories/sheets.ts`, schemas `lib/supabase/schemas/sheets.ts`
+  (`.strict()` input with camelCase fields).
+- Studio `/studio/research/sheets`: the banner (flag, spreadsheet id, service-account email or
+  NOT_CONFIGURED), the definitions table (Run now / Pause / Resume / Enable / Disable / Edit), the
+  form at `?edit=new|<id>` (`ExportDefinitionForm`, RC-336), run history with the > 50 % row-count
+  warning (`SheetsRunHistory`, RC-337); a cross-link from `/studio/operations/exports`.
+- CLI `npm run sheets:sync -- --definition=<slug> [--dry-run]` / `--due`; cron
+  `app/api/cron/sheets-sync` hourly under `CRON_SECRET`, `skipped: flag_off` while the flag is off.
+- Gate `npm run sheets:check-no-read` (`scripts/sheets/no-read.mjs`): fails on `values.get`,
+  `batchGet`, grid data or a `/values/` GET under `lib/sheets/`; in `check` and CI.
+- Permissions `integrations.sheets.manage` (owner, admin) and `integrations.sheets.run` (owner,
+  admin, merchandiser, researcher); flag `google_sheets = false`; 72 Studio strings.
+
+### Files Added
+`supabase/migrations/0340_phase36_sheets.sql`, `0341_phase36_sheets_rls.sql` (generated),
+`0342_phase36_default_definitions.sql`; `lib/sheets/{client,write,retry,schedule,definitions,errors,run}.ts`,
+`lib/sheets/builders/{index,shared,research,direction,inquiries}.ts`;
+`lib/supabase/repositories/sheets.ts`, `lib/supabase/schemas/sheets.ts`;
+`app/(studio)/studio/(shell)/research/sheets/actions.ts`, `app/api/cron/sheets-sync/route.ts`;
+`components/studio/sheets/{ExportDefinitionForm,SheetsRunHistory}.tsx`;
+`scripts/sheets/{sync.ts,no-read.mjs,no-read.d.mts,check-no-read.mjs}`; tests
+`tests/unit/sheets-{definitions,retry,schedule,no-read,redaction}.test.ts`,
+`tests/unit/rls/phase36.test.ts`, `tests/e2e/sheets-studio.spec.ts`.
+
+### Files Modified
+`app/(studio)/studio/(shell)/research/sheets/page.tsx` (stub → surface),
+`app/(studio)/studio/(shell)/operations/exports/page.tsx` (cross-link), `components/studio/strings.ts`,
+`lib/auth/permissions.ts` (+ test count 37), `lib/auth/table-permissions.ts`,
+`scripts/auth/gen-role-sql.ts`, `scripts/db/check-schema.mjs`, `lib/flags/flags.ts`,
+`lib/logging/activity.ts`, `lib/supabase/database.types.ts`,
+`scripts/research/check-no-autoimport.mjs` (the `repositories/sheets` exemption) and its test,
+`eslint.config.mjs`, `package.json`, `vercel.json`, `.github/workflows/ci.yml`, `.env.example`,
+`docs/project/phases/PHASE-00-04.md`, `docs/architecture/{DATA_MODEL,CANONICAL-DECISIONS}.md`,
+`docs/studio/STUDIO_GUIDE.md`, `docs/ops/{ENVIRONMENT,DEPLOYMENT}.md`,
+`docs/design/COMPONENT_REGISTRY.md`, `CHANGELOG.md`, `PROJECT_STATE.md`, `docs/SESSION-STATE.md`.
+
+### Database Changes
+Two tables (`sheets_export_definitions`, `sheets_sync_runs`), 21 constraints (the entity, status,
+trigger and error-code vocabularies as CHECKs; `paused_at`/`paused_reason` together; `includes_pii`
+only on INQUIRIES; `(status = 'RUNNING') = (finished_at is null)`), 6 indexes (one partial unique:
+one RUNNING run per definition), 4 policies (select for all staff under `analytics.read`;
+insert/update on definitions for owner and admin; runs read-only), no function, no trigger, no
+enum. **No credential column.** `0342` seeds the seven default definitions under `allow-insert`.
+
+### Supabase Changes
+`0340`–`0342` applied to `ccvarsmzickdkryoakdg` through the MCP with ledger rows carrying the local
+files' SHA-256 (98 rows on both). Parity: identical counts on both databases for tables 99,
+constraints 799, indexes 398, policies 310, triggers 116, enum values 156, functions 105; the
+Phase 36 objects' definitions digest identically on both sides (constraints `0f4447d2…`, indexes
+`5e8f2afa…`, policies `3a36780f…`; 7 seeded definitions). A per-table comparison of rendered
+definition text shows pre-existing differences on nine older tables that are the local `citext`
+and `pg_trgm` operators rendering as `extensions.`-qualified (the extension lives in a different
+schema locally) — the same objects, rendered differently, not a structural difference. Security
+advisor: nothing new for the phase.
+
+### Environment Variables
+`GOOGLE_SERVICE_ACCOUNT_JSON` (secret; the service-account key file as one line) and
+`GOOGLE_SHEETS_SPREADSHEET_ID` (sensitive identifier). Both optional: absent, the Sheets page says
+NOT_CONFIGURED and nothing else degrades. Setup and the sharing step: ENVIRONMENT §4. **The owner
+sets them in Vercel** (Production; Preview only if a preview should be able to sync). `CRON_SECRET`
+already exists and now also authenticates `/api/cron/sheets-sync`.
+
+### GitHub Actions Changes
+`ci.yml` gains the step "Nothing reads a spreadsheet back into Rivya" (`sheets:check-no-read`).
+
+### Tests Performed
+`npm run check` (typecheck, lint, format, and the sixteen gates, now including
+`sheets:check-no-read`); unit project 169 files / 2,631 tests, including `sheets-definitions` (8),
+`sheets-retry` (7, stubbed clock and jitter), `sheets-schedule` (4), `sheets-no-read` (4 — the gate
+proved to refuse each read shape on a fixture tree), `sheets-redaction` (5 — a generated RSA key
+injected and searched for on every surface: errors, run rows, activity payloads, the token
+request's own failure), and the two new `research-no-autoimport` cases; RLS project 29 files / 596
+tests with `RLS_TESTS_REQUIRED=1` against a fresh, seeded local database, including
+`phase36.test.ts` (7 cases: RLS on, no anon leg, who may read, who may insert/update definitions,
+no session write on runs, the PII-only-on-enquiries CHECK, the one-RUNNING index); production
+build through the local PostgREST shim; `security:check-bundle`. E2E `sheets-studio.spec.ts`
+(3 tests) guarded by `STUDIO_STORAGE_STATE`.
+
+### Issues Found
+- A `*/15` inside a doc comment in `schedule.ts` closed the block comment early (three TypeScript
+  parse errors and a failing test transform).
+- The seeded opportunity-score columns named signals that do not exist; corrected to the seven
+  real `SIGNAL_KEYS`.
+- The `Text` primitive has no heading element; the form heading is a `Heading level={3}`.
+- Comparison members carry `source_id` / `research_product_id`, not a `member_id`.
+- TypeScript does not carry a null-check into a hoisted function declaration; the client binds the
+  loaded credentials to a second const.
+- I4 refused the single row-builder module because it imported both the direction repository and
+  the category read; split into `lib/sheets/builders/` by import.
+- The no-auto-import guard matched the Sheets repository's `update…`/`set…` symbols under the
+  research route; `repositories/sheets` is exempted with the reason recorded in A37, and two
+  fixture cases prove a catalogue write beside them is still refused.
+- Two admin-importing files needed the eslint `no-restricted-imports` allowlist.
+
+### Issues Fixed
+All eight above.
+
+### Build Status
+Green — `next build` against the seeded local database through PostgREST; bundle secret check clean.
+
+### Deployment Status
+Merged to `main`; Vercel builds from `main`; the hourly cron is registered in `vercel.json` and
+answers `skipped: flag_off` until the owner turns the flag on.
+
+### Commit
+See the PR for this phase (`feat(phase-36)`); hash recorded in the final summary.
+
+### Remaining Notes
+- **Owner action (five steps, ENVIRONMENT §4):** Google Cloud project → enable the Sheets API →
+  service account + JSON key → set the two variables in Vercel → share the spreadsheet with the
+  service-account email → turn `google_sheets` on. That a Google Workspace account and a
+  spreadsheet exist for Rivya is `OWNER_VERIFICATION_REQUIRED`.
+- The `comparison-set` definition has no scope until an admin picks a comparison set in the form.
+- Nothing reads a spreadsheet back, by construction and by gate; a request to do so is a design
+  change that goes through an amendment, not a pull request.
 
 ## Phase 37 — Studio Analytics
 

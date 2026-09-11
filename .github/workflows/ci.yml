@@ -191,6 +191,12 @@ jobs:
       - name: The opportunity engine has no learned or opaque term
         run: npm run research:check-no-ml
 
+      # Phase 36. The Google Sheets integration is one-way by construction: Rivya writes a tab,
+      # the sheet reads. A call that reads cell values back — values.get, batchGet, grid data —
+      # is the inbound path a spreadsheet must never have, and this fails the build on one.
+      - name: Nothing reads a spreadsheet back into Rivya
+        run: npm run sheets:check-no-read
+
       # Phase 33. Image bytes are decoded in exactly one first-party module, lib/media/hashes.ts,
       # which never fetches and never writes. A decoder anywhere else — the scraper above all —
       # is the beginning of an image cache, and this fails the build on one.

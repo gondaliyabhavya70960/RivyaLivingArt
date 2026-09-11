@@ -161,6 +161,7 @@ export const PHASE_32_POLICIES = '0301_phase32_opportunity_rls.sql'
 export const PHASE_33_POLICIES = '0313_phase33_similarity_rls.sql'
 export const PHASE_34_POLICIES = '0321_phase34_direction_rls.sql'
 export const PHASE_35_POLICIES = '0331_phase35_rls.sql'
+export const PHASE_36_POLICIES = '0341_phase36_sheets_rls.sql'
 
 export const TABLE_POLICIES = {
   // --- Shape A: content tables ------------------------------------------------------------------
@@ -1768,6 +1769,33 @@ export const TABLE_POLICIES = {
       'The decision record behind CONFIRMED. research.confirm records and archives one; the ' +
       'bridge column created_product_id is written through the service role and carries no ' +
       'foreign key. Nothing deletes a decision. No anon policy (I2).',
+  },
+
+  /*
+   * Phase 36 — Google Sheets export definitions and their runs.
+   *
+   * Read by anyone with analytics.read (every role — the phase document says research.read OR
+   * analytics.read, and analytics.read is the wider of the two). Definitions are written under
+   * integrations.sheets.manage (owner, admin); runs are the system's record and take no session
+   * write at all. No anon leg.
+   */
+  sheets_export_definitions: {
+    policiesIn: PHASE_36_POLICIES,
+    shape: 'C',
+    readPermission: 'analytics.read',
+    writePermission: 'integrations.sheets.manage',
+    deviation:
+      'An export definition decides what leaves for a spreadsheet, so owner and admin write it; ' +
+      'the run engine updates the circuit-breaker columns as the service role. Never deleted ' +
+      'through a session — a definition with history is disabled, not removed. No anon policy.',
+  },
+  sheets_sync_runs: {
+    policiesIn: PHASE_36_POLICIES,
+    shape: 'C',
+    readPermission: 'analytics.read',
+    deviation:
+      'The record of what a run did: counts, attempts, a sanitised error code. Written by the ' +
+      'service role only — a run row a session could insert is a run nobody ran. No anon policy.',
   },
 } as const satisfies Record<string, TablePolicy>
 

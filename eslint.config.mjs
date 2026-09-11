@@ -110,6 +110,8 @@ const config = [
       'app/api/cron/research/route.ts',
       'app/api/cron/research-analytics/route.ts',
       'app/api/cron/research-score/route.ts',
+      // Phase 36: the hourly Sheets tick — Vercel Cron, no user; runs write as the service role.
+      'app/api/cron/sheets-sync/route.ts',
       'app/(studio)/studio/(shell)/content/actions.ts',
       'app/(studio)/studio/(shell)/research/scrape/actions.ts',
       'app/(studio)/studio/(shell)/research/sources/actions.ts',
@@ -143,6 +145,12 @@ const config = [
       'app/(studio)/studio/(shell)/research/large-format/actions.ts',
       'app/(studio)/studio/(shell)/research/compare/actions.ts',
       'app/(studio)/studio/(shell)/research/opportunities/actions.ts',
+      /*
+       * Phase 36. Run now: after requirePermission('integrations.sheets.run') the run engine writes
+       * sheets_sync_runs and the circuit-breaker columns, which have no session write policy —
+       * a run is the system's record of what happened.
+       */
+      'app/(studio)/studio/(shell)/research/sheets/actions.ts',
       /*
        * Phase 33. The upload guard reads BOTH hash tables through the service role — the research
        * one is not readable by an editor's session, and a guard that could only see the tables the

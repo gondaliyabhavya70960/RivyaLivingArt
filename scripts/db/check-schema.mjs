@@ -687,6 +687,10 @@ const EXPECTED = {
   research_shortlist_entries: ['research_product_id', 'reason', 'opened_at', 'opened_by'],
   research_confirmations: ['research_product_id', 'decision_note', 'confirmed_at', 'confirmed_by'],
 
+  /* Phase 36 — an export definition names its entity, columns and tab; a run names its definition. */
+  sheets_export_definitions: ['slug', 'name', 'entity', 'columns', 'tab_name', 'schedule'],
+  sheets_sync_runs: ['definition_id', 'status', 'trigger', 'started_at'],
+
   research_scoring_models: [
     'version',
     'signals',
