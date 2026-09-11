@@ -5,6 +5,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { writeAudit } from '@/lib/auth/audit'
 import type { Role } from '@/lib/auth/permissions'
 import { logActivity } from '@/lib/logging/activity'
+import { logSystem } from '@/lib/logging/system-log'
 import type { Database } from '@/lib/supabase/database.types'
 import {
   finishRun,
@@ -130,6 +131,18 @@ export async function runDefinition(admin: Client, request: RunRequest): Promise
       lastStatus: 'FAILED',
       consecutiveFailures: failures,
       pausedReason: paused ? code : null,
+    })
+    await logSystem({
+      level: 'ERROR',
+      channel: 'SHEETS',
+      event: 'sheets.run.failed',
+      message: `Sheets export ${definition.slug} failed with ${code}`,
+      context: { code, attempts, duration_ms: durationMs, definition: definition.slug },
+      actorId: request.actor.userId,
+      actorRole: request.actor.role,
+      workflowRunId: run.id,
+      entityType: 'sheets_export_definition',
+      entityId: definition.id,
     })
     await logActivity({
       action: 'sheets.run.failed',

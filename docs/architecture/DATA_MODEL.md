@@ -2305,6 +2305,20 @@ Not a second `research_analytics_snapshots`: that table is the competitive compu
 record (scope × metric family); this one is the tab's record (metric × date) and holds first-party
 figures too. No seed, fixture or demo inserts a row — a unit test greps for it.
 
+### 11.ae The system log — Phase 38 · migrations `0360`–`0361`
+
+| Object | Posture | Written by | Key rule |
+|---|---|---|---|
+| `system_logs` | RLS-APPEND (`operations.logs.read` select — owner, admin; no session insert, update or delete; `update`/`delete` revoked outright; no anon) | the service role through `system_log_write()`; the retention cron deletes | `level log_level` × `channel log_channel`; `event` shape-CHECKed; `message` non-blank ≤ 2000; `context` an object, redacted before insert; `dedupe_key` with **`unique (dedupe_key, first_minute)`** where `first_minute` is the epoch minute of the first occurrence (a defaulted integer column — every date function over `timestamptz` is STABLE, which a generated column refuses); `occurrence_count ≥ 1`; `occurred_at ≥ first_occurred_at` |
+| `system_log_write(…)` | SECURITY DEFINER, `service_role` only (revoked from `public`, `anon`, `authenticated`) | — | a repeat of the dedupe key within five minutes updates the newest row's `occurrence_count` and `occurred_at`; otherwise inserts, and a concurrent first write on the same minute lands on the winner's row (`on conflict`) |
+| `workflow_runs_v` | view, `security_invoker` | — | `research_runs ∪ sheets_sync_runs ∪ content_seed_runs ∪ higgsfield_migration_runs ∪ bulk_operations` as `kind · id · scope · status · started_at · finished_at`; each table's own policies still apply; the page requires `operations.logs.read` |
+
+Enums: `log_level` = `INFO · WARNING · ERROR · SECURITY`; `log_channel` = `WORKFLOW · SCRAPER ·
+MEDIA · CONTENT · AUTH · SHEETS · ANALYTICS · SYSTEM`. Retention: 90 days for `INFO`/`WARNING`, 400
+for `ERROR`/`SECURITY`, by first occurrence, purged by `/api/cron/log-retention`. Like `audit_logs`
+and `activity_events`, an append-only operational table and a documented exemption from the D5
+content-column rule (`scripts/db/check-schema.mjs`).
+
 ## 12. Table register — Phase 03 versus later
 
 The spine an engineer builds in Phase 03 is small on purpose. Everything else is additive.

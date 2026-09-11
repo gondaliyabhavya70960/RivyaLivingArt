@@ -6,6 +6,30 @@ Every phase adds an entry; see `docs/architecture/CANONICAL-DECISIONS.md` D9 for
 
 ## [Unreleased]
 
+### Phase 38 — Environment + Documentation + Logs (COMPLETE)
+
+The System group stops being the place where an operator has to guess. Three read-only surfaces
+share one redactor: `lib/logging/redact.ts` now strips by key, by the current value of every D8
+server-only variable wherever it appears, and by shape (JWT, PEM block, Cloudinary URL,
+`postgres://user:pass@`, bearer token), always to the fixed `[redacted]`. **`/studio/system/
+environment`** runs eight checks in parallel under a three-second timeout — `supabase_db`,
+`supabase_auth`, `cloudinary`, `google_sheets`, `vercel`, `higgsfield`, `migrations`, `build` — and
+renders status, a fixed code, latency and identifiers only; `configured` is presence collapsed to a
+boolean, an unconfigured check is never probed, and `tests/unit/env-checks-no-secrets.test.ts`
+sets every variable to a sentinel, runs the checks against an echoing network and fails on any
+four-character fragment (and is shown to fail on a deliberate leak). **`/studio/system/
+documentation`** serves the ten FEAT §30 documents by allowlist key from a redacted index
+`npm run docs:index` builds before the build, parsed by a Markdown renderer with no HTML branch.
+**`/studio/operations/logs`** reads the new `system_logs` (`0360`–`0361`): `level × channel`,
+append-only, written only by the service role through `system_log_write()` which collapses a
+repeat within five minutes onto one row, filters in the URL, a redacted detail per row, a CSV
+export under the new `operations.logs.export`; **`/studio/operations/workflows`** lists every run
+from `workflow_runs_v`. The scraper's warnings, failed Sheets exports and failed environment checks
+now write the third log; the 04:15 UTC cron purges by retention (90 / 400 days) and logs its own
+summary. `npm run logs:check-separation` (in `check` and CI) refuses a module that sends one event
+to both the audit log and the system log. `lib/ops/` joins D2 beside `lib/sheets/` (A39). Hosted
+level through `0361`.
+
 ### Phase 37 — Studio Analytics (COMPLETE; the market section waits for `advanced_analytics`)
 
 The Analytics tab Phase 05 stubbed on `/studio` becomes real and honest. Eighteen metrics — FEAT

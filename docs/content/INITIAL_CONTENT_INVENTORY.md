@@ -7,7 +7,7 @@ SEED §54’s audit of what the content seed actually put in the database, read 
 database rather than from the seed modules. Its target is §54’s: **100% of intended launch
 copy mapped to a Studio editing control.**
 
-- **558** rows audited
+- **560** rows audited
 - **68** await owner verification and cannot be published until it is given
 - **0** are authored and deferred to a later phase’s tables
 - **0** carry a bound media asset
@@ -294,11 +294,13 @@ the phase that creates its table.
 | Global content | global:STUDIO_HELP.dashboard.action.view_enquiries | STUDIO_HELP.dashboard.action.view_enquiries | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | global:STUDIO_HELP.dashboard.heading | STUDIO_HELP.dashboard.heading | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | global:STUDIO_HELP.dashboard.intro | STUDIO_HELP.dashboard.intro | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:STUDIO_HELP.docs_allowlist_note | STUDIO_HELP.docs_allowlist_note | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | global:STUDIO_HELP.editor.about | STUDIO_HELP.editor.about | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | global:STUDIO_HELP.editor.higgsfield_asset | STUDIO_HELP.editor.higgsfield_asset | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | global:STUDIO_HELP.editor.homepage_hero | STUDIO_HELP.editor.homepage_hero | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | global:STUDIO_HELP.editor.homepage_selected_works | STUDIO_HELP.editor.homepage_selected_works | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | global:STUDIO_HELP.editor.scraped_product | STUDIO_HELP.editor.scraped_product | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:STUDIO_HELP.env_reachability_note | STUDIO_HELP.env_reachability_note | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | global:STUDIO_HELP.login.body | STUDIO_HELP.login.body | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | global:STUDIO_HELP.login.button | STUDIO_HELP.login.button | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | global:STUDIO_HELP.login.heading | STUDIO_HELP.login.heading | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |

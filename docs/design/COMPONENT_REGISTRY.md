@@ -363,6 +363,11 @@ implementation detail of RC-213.
 | RC-339 | `MetricTile` | usability | 37 | PLANNED | index only — figure with unit, `CoverageBadge`, breakdown, `BarSeries` with its data table, trend, definition disclosure; every number read from the row |
 | RC-340 | `MetricUnavailable` | usability | 37 | PLANNED | index only — the named reason and the fixed "work item" sentence; never a zero, a dash or a placeholder |
 | RC-341 | `MetricTrend` | usability | 37 | PLANNED | index only — `Sparkline` from ≥ 2 AVAILABLE snapshots (`trendPoints()`), else the single-snapshot sentence; an UNAVAILABLE day is a gap |
+| RC-342 | `EnvironmentChecks` | usability | 38 | PLANNED | index only — the eight checks as a table: status badge, fixed code, latency, checked-at, identifiers; renders what the runner redacted and adds nothing |
+| RC-343 | `LogTable` | usability | 38 | PLANNED | index only — `system_logs` newest first with level badge, channel, event and message, occurrence count, actor chip or "machine", a detail disclosure per row |
+| RC-344 | `LogDetail` | usability | 38 | PLANNED | index only — correlation ids as filter links, first occurrence, dedupe key, the context as JSON redacted again on render |
+| RC-345 | `DocBody` | usability | 38 | PLANNED | index only — the Markdown block tree as React: headings with ids, lists, code, quotes, tables; doc links in-app, anchors kept, external links as text with no `href`; no `dangerouslySetInnerHTML` |
+| RC-346 | `LogFilters` | usability | 38 | PLANNED | index only — a GET `FilterBar`: level, channel, range, event substring, actor, run, source, entity type and id; the URL is the filter |
 
 ### 6.4 Three — `components/three/`
 

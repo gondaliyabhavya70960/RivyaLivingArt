@@ -7,44 +7,56 @@
 ---
 
 ## Current Phase
-**Phase 37 — Studio Analytics. COMPLETE.** The Analytics tab reads one snapshot row per metric
-and computes nothing; eighteen metrics are declared once, held to FEAT §28 by test, and every one
-is either a figure with `n`, a denominator and a date, or `UNAVAILABLE` with the reason named. The
-market section waits for the owner to turn `advanced_analytics` on; the policy, not the flag,
-decides who may read a competitive row.
+**Phase 38 — Environment + Documentation + Logs. COMPLETE.** An operator can answer "is it up,
+what is deployed, what broke and where is that documented" without a terminal, and none of the
+three pages can show a secret: one redactor with three layers and one fixed token, proved by a
+sentinel test that is also shown to fail when a check leaks four characters.
 
-### Phase 37: what is built
+### Phase 38: what is built
 
-Migrations `0350`–`0351` (`analytics_snapshots`, the reason-iff-unavailable CHECK, the
-`selectScope` select policy); `lib/analytics/reads.ts` (the one interface every metric computes
-from, with an in-memory empty implementation), `availability.ts` (the fixed reason vocabulary),
-`metrics/` (eighteen modules, the registry), `snapshot.ts` (the only caller of `compute()`,
-idempotent per date, prunes at 400 days); `lib/supabase/repositories/analytics.ts` (the reads over
-the service role, the writer, the tab's readers) and thirteen card counts in `metrics.ts`; the tab
-(`components/studio/analytics/*`, RC-338–341); `npm run analytics:snapshot`;
-`/api/cron/analytics-snapshot`; flag `advanced_analytics`; five seeded Studio-help sentences;
-amendment A38. Hosted: level through `0351`.
+Migrations `0360`–`0361` (`system_logs`, `log_level`, `log_channel`, `system_log_write()`,
+`workflow_runs_v`, generated policy); `lib/logging/redact.ts` (key, value, shape),
+`lib/logging/system-log.ts` (`logSystem()`, never throws), `lib/logging/log-filters.ts`;
+`lib/ops/` (eight checks, the runner, `build-info.ts`); `lib/cms/docs/` (allowlist, Markdown block
+parser with no HTML branch, index reader); `lib/supabase/repositories/{system-logs,ops}.ts`;
+`scripts/build/build-info.mjs` (inlined by `next.config.ts`), `scripts/docs/build-index.ts`
+(`prebuild`), `scripts/logging/check-log-separation.mjs` (gate); pages environment, documentation
+(+ `[docKey]`), logs (+ CSV export route), workflows; components RC-342–346; the scraper's
+`warnScraper`, Sheets failures and failed checks write the log; `/api/cron/log-retention`;
+permission `operations.logs.export`; 78 Studio strings; two seeded permanent lines; amendment A39.
+Hosted: level through `0361`.
 
-### Phase 37: readings the repository forced
+### Phase 38: readings the repository forced
 
-1. **A `selectScope` field on the policy generator** — a row-level narrowing of the read alone, the
-   shape the phase document's "policy predicate" needed and neither existing field had.
-2. **`product_scale` needs five products with dimensions** (the phase table), not three
-   (verification 7); the smaller catalogue reads a legible reason.
-3. **`customization` reports that no column carries it** — configured, extracted, never normalised.
-4. **The no-fabrication suite runs against empty reads, not an empty PostgreSQL**, because the
-   writer speaks PostgREST and the RLS harness speaks `pg`; the CHECK is tested by the RLS suite.
+1. **Build information is inlined by `next.config.ts`**, not a gitignored generated module the
+   type-checker would have to find before the build.
+2. **`first_minute` is a defaulted epoch-minute column** — every date function over `timestamptz`
+   is STABLE, and a unique expression needs IMMUTABLE.
+3. **The two environment reads live in a repository** (`.from()` only there) and the admin client
+   takes an injectable `fetch` so the sentinel test needs no network.
+4. **The workflows page is built here**, because `workflow_runs_v` is allocated to `0360`.
+5. **`request_id` threading waits for Phase 41's proxy work**; the column and the filter exist.
 
 ### The next exact action
 
-**Phase 38 — Environment + Documentation + Logs** (`0360`–`0361`): `system_logs` with the dedupe
-key and the two retention windows; `lib/logging/system-log.ts` replacing `warnScraper`'s body;
-`lib/logging/redact.ts` extended; the eight environment checks under `lib/ops/env-checks/` (state
-only, never a value); `scripts/build/write-build-info.ts`; the documentation allowlist and
-`scripts/docs/build-index.ts`; `/studio/system/environment`, `/studio/system/documentation`,
-`/studio/operations/logs`; the daily log-retention cron under `CRON_SECRET`; permissions
-`system.environment.read`, `system.docs.read`, `operations.logs.export`; `lib/ops/` recorded beside
-`lib/sheets/` in D2 (A37's deferred half).
+**Phase 39 — SEO** (`0370`–`0371`): permission `seo.write`; `seo_keyword_themes` (no numeric metric
+column), `seo_redirects` (anon select of PUBLISHED only), `seo_entries` extended; `lib/seo/`
+resolve ladder, canonical, redirects, JSON-LD builders with `verifiedOnly()`, the single
+`JsonLd` emitter; sitemap index and six children; `robots.ts`; `X-Robots-Tag` by route class;
+`/studio/content/seo/**` seven tabs; the three SEO gates in `check` and CI.
+
+---
+
+### Superseded — Phase 37's state
+
+**Phase 37 — Studio Analytics. COMPLETE.** The Analytics tab reads one snapshot row per metric and
+computes nothing; eighteen metrics are declared once, held to FEAT §28 by test, and every one is
+either a figure with `n`, a denominator and a date, or `UNAVAILABLE` with the reason named.
+Migrations `0350`–`0351`; `lib/analytics/{reads,availability,snapshot}.ts` and `metrics/`;
+`lib/supabase/repositories/analytics.ts`; the tab (RC-338–341); `npm run analytics:snapshot`;
+`/api/cron/analytics-snapshot`; flag `advanced_analytics`; amendment A38. Readings: `selectScope`
+on the policy generator; `product_scale` needs five products; `customization` reports that no
+column carries it; the no-fabrication suite runs against empty reads.
 
 ---
 

@@ -172,6 +172,7 @@ export const PHASE_34_POLICIES = '0321_phase34_direction_rls.sql'
 export const PHASE_35_POLICIES = '0331_phase35_rls.sql'
 export const PHASE_36_POLICIES = '0341_phase36_sheets_rls.sql'
 export const PHASE_37_POLICIES = '0351_phase37_analytics_rls.sql'
+export const PHASE_38_POLICIES = '0361_phase38_system_logs_rls.sql'
 
 export const TABLE_POLICIES = {
   // --- Shape A: content tables ------------------------------------------------------------------
@@ -1835,6 +1836,23 @@ export const TABLE_POLICIES = {
       'Written by the service role only — the snapshot writer runs from the cron and the CLI with ' +
       'no user session, and a row a session could insert would be an analytics figure nobody ' +
       'computed. No anon policy: nothing here is public.',
+  },
+
+  /**
+   * `system_logs` — Phase 38. The third log, beside `audit_logs` and `activity_events`, and
+   * append-only for the same reason as both: a row a session could insert, rewrite or erase is a
+   * record nobody can trust during an incident. The service role writes through
+   * `system_log_write()` (dedupe inside the function), the retention cron deletes as the service
+   * role, and `operations.logs.read` (owner, admin) reads. No anon policy.
+   */
+  system_logs: {
+    policiesIn: PHASE_38_POLICIES,
+    shape: 'C',
+    readPermission: 'operations.logs.read',
+    deviation:
+      'Append-only operational log. No anon policy, no authenticated write policy of any kind — ' +
+      'lib/logging/system-log.ts writes through the service role and system_log_write(); update ' +
+      'and delete are revoked outright (0360) so a session cannot rewrite what the machine did.',
   },
 } as const satisfies Record<string, TablePolicy>
 

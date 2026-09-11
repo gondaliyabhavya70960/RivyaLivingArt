@@ -585,13 +585,22 @@ Three logs, three jobs. They are never merged.
 | System | `system_logs` | Background jobs, integrations, cron, workflow runs | `owner`, `admin` | What the machine did and where it failed |
 
 `audit_logs` is append-only (`revoke update, delete`), carries an `actor_role` snapshot so a later
-role change cannot rewrite history, and stores `before`/`after` blobs **after** `redactDeep`.
+role change cannot rewrite history, and stores `before`/`after` blobs **after** `redact`.
+`system_logs` (Phase 38, `0360`) is append-only the same way, written only by the service role
+through `system_log_write()`, read by `operations.logs.read`, and every write passes
+`lib/logging/redact.ts` — **three layers, one fixed `[redacted]` token**: by key (secret- and
+person-shaped names and every D8 server-only variable name), by value (the current value of every D8
+server-only variable, wherever it appears in a string) and by shape (a JWT, a PEM private-key block,
+a Cloudinary URL with credentials, a `postgres://user:pass@` connection string, a bearer token).
+Never a prefix, a suffix, a length or a hash (`tests/unit/redact.test.ts`).
 `system_logs` separates `level` (`INFO · WARNING · ERROR · SECURITY`) from `channel`
 (`WORKFLOW · SCRAPER · MEDIA · CONTENT · AUTH · SHEETS · ANALYTICS · SYSTEM`), so "SECURITY events in
 the last hour" is one query.
 
-**Correlation.** `proxy.ts` assigns a `request_id` threaded into `audit_logs`, `system_logs` and
-every server-action error, so one incident is one query.
+**Correlation.** `audit_logs` and `system_logs` both carry a `request_id` column and the logs page
+filters on it; `proxy.ts` assigning one per request and threading it into every server-action error
+lands with the Phase 41 security headers. Until then a workflow run's lines are joined by
+`workflow_run_id` (`/studio/operations/workflows` links each run to its lines).
 
 **Volume control.** Every log call carries a `dedupe_key`; identical events within five minutes
 increment `occurrence_count`. Retention: `INFO`/`WARNING` 90 days, `ERROR`/`SECURITY` 400 days.

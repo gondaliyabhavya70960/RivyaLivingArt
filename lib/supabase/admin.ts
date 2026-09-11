@@ -22,8 +22,17 @@ import { serverEnv } from './env'
  * Legitimate uses are narrow: migrations and the seed runner, which have no user; and privileged
  * server actions that have already checked their own permission.
  */
-export function createAdminClient() {
+/**
+ * Phase 38: an injectable `fetch`, so the environment checks can be run against a stubbed
+ * network in a unit test. Nothing else passes it; the default is the platform's own.
+ */
+export interface AdminClientOptions {
+  readonly fetch?: typeof fetch
+}
+
+export function createAdminClient(options: AdminClientOptions = {}) {
   return createSupabaseClient<Database>(publicEnv.supabaseUrl, serverEnv.supabaseServiceRoleKey, {
+    ...(options.fetch === undefined ? {} : { global: { fetch: options.fetch } }),
     auth: {
       // There is no user session on a service-role client, and persisting or refreshing one would
       // write the service-role key into storage.

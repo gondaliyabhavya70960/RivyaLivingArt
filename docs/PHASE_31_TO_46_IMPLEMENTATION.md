@@ -1068,7 +1068,170 @@ See the PR for this phase (`feat(phase-37)`); hash recorded in the final summary
 
 ## Phase 38 — Environment + Documentation + Logs
 
-**Status:** NOT STARTED
+**Status:** COMPLETED
+
+### Objective
+Three read-only System surfaces — reachability, documentation, the operational log — sharing one
+redactor and one rule: none may ever show a secret. After this phase an operator answers "is it up,
+what is deployed, what broke and where is that documented" without a terminal.
+
+### Requirements Found
+`docs/project/phases/PHASE-31-38.md` §Phase 38 (the redactor's three layers and fixed token; the
+eight checks with their shape, statuses and fixed codes; `configured` from presence only; the
+ten-path allowlist, no path parameter, no raw HTML; `system_logs` with orthogonal `level` and
+`channel`, the dedupe window, the retention windows; the three-log table; verification 1–12; exit
+criteria; open question 4 on `lib/ops/`); `DATA_MODEL.md` §12 row 38 (`0360`–`0361`, the view, the
+two enums) and §10 (the view's SQL); ENVIRONMENT §7 (the page contract); SECURITY §5.2 and §10;
+FEAT §29–31; amendment A25.
+
+### Implementation Completed
+- `lib/logging/redact.ts` — by key (secret- and person-shaped names, every D8 server-only variable
+  name; `error_code`, `metric_key`, `dedupe_key` kept), by value (the current value of every D8
+  server-only variable, wherever it appears), by shape (JWT, PEM block — raw and JSON-escaped —,
+  Cloudinary URL, `postgres://user:pass@`, bearer token); always `[redacted]`.
+- `lib/logging/system-log.ts` — `logSystem()`: redacts, derives a dedupe key, writes through the
+  service role, never throws, console-only with one note when the service role is absent.
+  `lib/logging/log-filters.ts` — the URL as the filter.
+- `0360`: enums `log_level`, `log_channel`; `system_logs` (event shape, message bounds, context an
+  object, `unique (dedupe_key, first_minute)`, `occurrence_count ≥ 1`); `update`/`delete` revoked
+  from every session role; `system_log_write()` SECURITY DEFINER, service role only, five-minute
+  dedupe with an `on conflict` fallback for a concurrent first write; `workflow_runs_v`
+  (`security_invoker`). `0361` generated: `operations.logs.read` select, nothing else.
+- `lib/supabase/repositories/system-logs.ts` (write via RPC, filtered list, purge by level and age,
+  the view reader) and `repositories/ops.ts` (the ping and the ledger read).
+- `lib/ops/env-checks/` — eight modules, each `{ id, requires, channel, probe }`; `types.ts` (the
+  five statuses, the fixed codes, `outcomeForHttp`, `outcomeForError`); `lib/ops/environment.ts`
+  (parallel, 3 s timeout, presence → boolean, detail redacted and reduced to primitives, failures
+  logged on the check's channel, `worstStatus`); `lib/ops/build-info.ts` + `scripts/build/
+  build-info.mjs` inlined by `next.config.ts` as `RIVYA_BUILD_INFO`.
+- `lib/cms/docs/` — `allowlist.ts` (ten keys), `render.ts` (block parser with no HTML branch; link
+  rewriting to keys, anchors, external-as-text), `index.ts` (the generated index, cached);
+  `scripts/docs/build-index.ts` (`npm run docs:index`, the `prebuild` step); `outputFileTracingIncludes`
+  for the index and the Higgsfield manifest.
+- Pages: `/studio/system/environment` (banner with overall status and the two permanent lines,
+  `EnvironmentChecks`, the build panel), `/studio/system/documentation` and `/[docKey]` (`DocBody`,
+  contents, `notFound()` on any non-key), `/studio/operations/logs` (`LogFilters`, `LogTable`,
+  `LogDetail`, export link for `operations.logs.export`), `/studio/operations/workflows`;
+  `app/api/studio/logs/export` (CSV, audited); `app/api/cron/log-retention` (04:15 UTC,
+  `CRON_SECRET`).
+- Writers of the third log: `warnScraper` (SCRAPER channel, run and source ids), `lib/sheets/run.ts`
+  on failure (`sheets.run.failed`, code only), the check runner on `UNREACHABLE`/`DEGRADED`, the
+  retention purge's summary.
+- Gate `npm run logs:check-separation` (`scripts/logging/check-log-separation.mjs`) in `check` and
+  CI; permission `operations.logs.export` (owner, admin); 78 Studio strings; two seeded permanent
+  lines; `createAdminClient({ fetch })`.
+
+### Files Added
+`supabase/migrations/0360_phase38_system_logs.sql`, `0361_phase38_system_logs_rls.sql` (generated);
+`lib/logging/{system-log,log-filters}.ts`; `lib/ops/{environment,build-info}.ts`,
+`lib/ops/env-checks/{types,index,supabase-db,supabase-auth,cloudinary,google-sheets,vercel,higgsfield,migrations,build}.ts`;
+`lib/cms/docs/{allowlist,render,index}.ts`; `lib/supabase/repositories/{system-logs,ops}.ts`,
+`lib/supabase/schemas/system-logs.ts`; `components/studio/ops/{EnvironmentChecks,LogTable,LogDetail,LogFilters}.tsx`,
+`components/studio/docs/DocBody.tsx`; `app/(studio)/studio/(shell)/system/documentation/[docKey]/page.tsx`,
+`app/api/studio/logs/export/route.ts`, `app/api/cron/log-retention/route.ts`;
+`scripts/build/{build-info.mjs,build-info.d.mts}`, `scripts/docs/build-index.ts`,
+`scripts/logging/{log-separation.mjs,log-separation.d.mts,check-log-separation.mjs}`; tests
+`tests/unit/{redact,env-checks-no-secrets,docs-allowlist,log-separation}.test.ts`,
+`tests/unit/rls/phase38.test.ts`, `tests/e2e/studio-system.spec.ts`.
+
+### Files Modified
+`lib/logging/redact.ts` (three layers), `lib/scraper/core/log.ts` (the seam filled),
+`lib/sheets/run.ts`, `lib/supabase/admin.ts` (injectable `fetch`), `lib/auth/permissions.ts`
+(+ test count 38), `lib/auth/table-permissions.ts`, `scripts/auth/gen-role-sql.ts`,
+`scripts/db/check-schema.mjs`, `lib/supabase/database.types.ts`, `components/studio/strings.ts`,
+`content/seed/studio-help.ts`, `docs/content/INITIAL_CONTENT_INVENTORY.md`, the three page stubs
+(environment, documentation, logs) and the workflows stub, `next.config.ts`, `eslint.config.mjs`,
+`package.json` (`prebuild`, `build:info`, `docs:index`, `logs:check-separation`, the `check` chain),
+`.gitignore`, `vercel.json`, `.github/workflows/ci.yml`, `docs/project/phases/PHASE-00-04.md`,
+`docs/architecture/{DATA_MODEL,CANONICAL-DECISIONS}.md`, `docs/studio/STUDIO_GUIDE.md`,
+`docs/ops/{ENVIRONMENT,SECURITY,DEPLOYMENT}.md`, `docs/design/COMPONENT_REGISTRY.md`,
+`CHANGELOG.md`, `PROJECT_STATE.md`, `docs/SESSION-STATE.md`.
+
+### Database Changes
+Two enums, one table (`system_logs`: 8 constraints incl. the per-minute unique, 6 indexes,
+`update`/`delete` revoked from `anon` and `authenticated`), one SECURITY DEFINER function
+(`service_role` only), one `security_invoker` view with `select` granted to `authenticated` and
+`service_role`, one policy. No seed.
+
+### Supabase Changes
+`0360`–`0361` applied to `ccvarsmzickdkryoakdg` through the MCP with ledger rows carrying the local
+files' SHA-256 (102 rows on both). Parity on the new objects, identical on both databases: `system_logs` constraints 9
+(`557a41dc…`), indexes 8 (`024ae39c…`), policy 1 (`ffdc6ddf…`), the two enums' 12 values
+(`7ddab7ea…`), `workflow_runs_v` (`a6d23e69…`); `system_log_write()` differs only in the SQL
+comments the hosted copy was stripped of (both bodies read and compared); `anon` cannot execute it
+on either. 101 tables, RLS on all. Security advisor: nothing new for the phase.
+
+### Environment Variables
+None new. `CRON_SECRET` (existing) now also authenticates `/api/cron/log-retention`.
+`RIVYA_BUILD_INFO` is not a variable anyone sets: `next.config.ts` computes and inlines it.
+
+### GitHub Actions Changes
+`ci.yml` gains the step "Three logs stay three" (`logs:check-separation`). The build step's
+`npm run build` now runs `prebuild` (`docs:index`) first.
+
+### Tests Performed
+`npm run check` (typecheck, lint, format, and the seventeen gates — now including
+`logs:check-separation`) green; `db:check-migrations` green; unit project 176 files / 2,675 tests,
+including `redact` (7: by key, by value for every D8 variable, by shape for five shapes, the fixed
+token), `env-checks-no-secrets` (5: every check against an echoing 500 with every variable a
+sentinel — no sentinel or four-character fragment on any result; NOT_CONFIGURED without a probe;
+a 401 quoting the key maps to `AUTH` with nothing quoted; a hanging probe times out; a check that
+returns four characters of a secret is caught), `docs-allowlist` (7: exactly the ten FEAT §30
+paths; traversal, `SECURITY.md`, an absolute path and an empty key refused; the indexer reads the
+allowlist alone and redacts; the index is gitignored; `<script>` and `onerror=` stay text; link
+rewriting; heading ids) and `log-separation` (3: the repository passes, a fixture with one event in
+both logs is refused, different events pass); RLS project 31 files / 610 tests with
+`RLS_TESTS_REQUIRED=1` against a fresh, seeded local database, including `phase38.test.ts` (7: RLS
+on and no anon leg, owner and admin read and an editor does not, no session insert/update/delete
+for the owner (`update … set message='x'` refused), the writer executable by `service_role` only,
+1,000 identical writes → one row with `occurrence_count = 1000`, a second dedupe key → a second
+row, a malformed event and a blank message refused, `workflow_runs_v` security-invoker over the
+five kinds) and `function-grants` unchanged; `npm run docs:index` → ten documents indexed and
+redacted (851 KB); `npm run build:info` prints the six identifiers; production build (with
+`prebuild`) through the local PostgREST shim; `security:check-bundle` clean. E2E
+`studio-system.spec.ts` (anonymous half on four routes runs everywhere; the signed-in half at
+1920/1440/1024/430/390 is guarded by `STUDIO_STORAGE_STATE`).
+
+### Issues Found
+- The phase document's `unique (dedupe_key, date_trunc('minute', first_occurred_at))` cannot be
+  built: every date function over `timestamptz` is STABLE and both a generated column and a unique
+  expression need IMMUTABLE (PostgreSQL 16 refused a generated `to_timestamp(...)` and an
+  `extract(epoch …)` alike). `first_minute` is a defaulted epoch-minute integer set by the writer.
+- A gitignored `lib/ops/build-info.generated.ts` would not exist when CI type-checks; build
+  information is inlined by `next.config.ts` instead (A39).
+- `.from()` in a check module would fail the data-layer gate; the two reads moved to
+  `lib/supabase/repositories/ops.ts`, and `createAdminClient()` gained an injectable `fetch` so the
+  sentinel test needs no network.
+- The `check-migrations` gate saw the function body's `insert` as content; the marker sits above it,
+  as `0009` and `0050` did.
+- The original redactor's `message` key must stay redacted (an audit blob's `message` is an
+  enquiry's text, and `lib/auth/audit.test.ts` holds it); the system log's message is scrubbed as a
+  string instead.
+- `revoke update, delete` makes a session's update a permission error, not a zero-row update; the
+  RLS test asserts the refusal, as verification 1 asks.
+
+### Issues Fixed
+All six above.
+
+### Build Status
+Green — `prebuild` built the ten-document index, `next build` against the seeded local database
+through PostgREST; bundle secret check clean.
+
+### Deployment Status
+Merged to `main`; Vercel builds from `main` (the `prebuild` index and the inlined build information
+are produced in the build container; the environment page shows the deployed commit and branch). The
+retention cron is registered in `vercel.json`.
+
+### Commit
+See the PR for this phase (`feat(phase-38)`); hash recorded in the final summary.
+
+### Remaining Notes
+- `request_id` exists on both logs and is filterable; `proxy.ts` assigning one per request lands
+  with Phase 41's security headers.
+- The Higgsfield check counts the manifest (250 / 224 / 26 / 24) and never calls the API.
+- The role matrix in the browser (editor refused the environment page, allowed the documentation;
+  viewer refused both) is proved server-side by `requirePermission` and the permission matrix;
+  the per-role browser pass needs a storage state per role and is a manual step.
 
 ## Phase 39 — SEO
 

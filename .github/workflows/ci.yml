@@ -197,6 +197,12 @@ jobs:
       - name: Nothing reads a spreadsheet back into Rivya
         run: npm run sheets:check-no-read
 
+      # Phase 38. Three logs, three jobs: audit_logs answers "who was allowed or refused to do
+      # what", system_logs "what the machine did". A module sending one event name to both has
+      # merged them, and this fails the build on one.
+      - name: Three logs stay three
+        run: npm run logs:check-separation
+
       # Phase 33. Image bytes are decoded in exactly one first-party module, lib/media/hashes.ts,
       # which never fetches and never writes. A decoder anywhere else — the scraper above all —
       # is the beginning of an image cache, and this fails the build on one.

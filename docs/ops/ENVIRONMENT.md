@@ -431,7 +431,11 @@ writes anything.
 | `configured` | Computed from the **presence of the variable name** in the process environment — never from its content |
 
 Checks run in parallel server-side with a 3-second per-check timeout. The page is server-rendered;
-results are never fetched from the client.
+results are never fetched from the client. **As built (Phase 38):** `lib/ops/env-checks/*.ts` is one
+module per check, `lib/ops/environment.ts` the runner; `configured` is presence collapsed to a boolean
+in the runner and an unconfigured check is never probed; a result's `detail` is passed through
+`lib/logging/redact.ts` and reduced to strings, numbers and booleans; the two database reads live in
+`lib/supabase/repositories/ops.ts`.
 
 ### 7.2 The checks
 
@@ -441,10 +445,10 @@ results are never fetched from the client.
 | `supabase_auth` | A `getSession()` round-trip against the project URL | Print any key |
 | `cloudinary` | Signed ping of the account usage endpoint | Print the API secret or a signed URL |
 | `google_sheets` | Token mint only — **no spreadsheet read** | Print the service-account private key or the spreadsheet id |
-| `vercel` | Reads the generated build-info module | Require a Vercel API token |
+| `vercel` | Reads the inlined build information (environment, region, commit) | Require a Vercel API token |
 | `higgsfield` | Manifest presence and asset count from `data/higgsfield/asset-manifest.json` | Call the Higgsfield API — the manifest is the record of truth (D6) |
 | `migrations` | Applied count and latest version from `supabase_migrations.schema_migrations` versus the files in `supabase/migrations/` | Run, repair or roll back a migration |
-| `build` | Commit SHA, branch, build time, environment from `lib/build-info.generated.ts` | Expose any variable value |
+| `build` | Commit SHA, branch, build time, environment and Node version from the build information `next.config.ts` inlines (`RIVYA_BUILD_INFO`, computed by `scripts/build/build-info.mjs`) | Expose any variable value |
 | `security` (Phase 41) | Header presence, CSP mode, rate-limit configuration, last dependency-audit result | Show a secret, a limit key, or an `ip_hash` |
 
 ### 7.3 What the page may display
