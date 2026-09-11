@@ -356,6 +356,21 @@ divergence. `NODE_ENV` is set by the tooling. `ANALYZE=1` is a local-only bundle
 
 ---
 
+### 5.x Repository secrets for the dispatch-only workflows
+
+GitHub Actions never runs against the hosted project on push. Two workflows do, on manual dispatch,
+and each reads repository secrets the owner sets under *Settings → Secrets and variables → Actions*:
+
+| Workflow | Secret | Same value as |
+|---|---|---|
+| `Database migrate (hosted)` | `SUPABASE_DB_URL` | the session-pooler connection string (see the workflow's own note) |
+| `Media hash backfill (hosted)` (Phase 33) | `NEXT_PUBLIC_SUPABASE_URL` | the Vercel variable of the same name |
+| | `SUPABASE_SERVICE_ROLE_KEY` | the Vercel variable of the same name (Sensitive) |
+| | `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME` | the Vercel variable of the same name |
+
+The media workflow exists because the development containers cannot reach `res.cloudinary.com`; a
+GitHub-hosted runner can. A `plan` run lists the work and fetches nothing.
+
 ## 6. Validation
 
 `lib/env.ts` parses the environment once, with Zod, at module load. Two rules keep it honest:

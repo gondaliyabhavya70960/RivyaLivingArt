@@ -1876,6 +1876,44 @@ export type Database = {
           },
         ]
       }
+      media_asset_hashes: {
+        Row: {
+          id: string
+          media_asset_id: string
+          kind: string
+          checksum: string
+          phash: unknown | null
+          dhash: unknown | null
+          computed_at: string
+        }
+        Insert: {
+          id?: string
+          media_asset_id: string
+          kind: string
+          checksum: string
+          phash?: unknown | null
+          dhash?: unknown | null
+          computed_at?: string
+        }
+        Update: {
+          id?: string
+          media_asset_id?: string
+          kind?: string
+          checksum?: string
+          phash?: unknown | null
+          dhash?: unknown | null
+          computed_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'media_asset_hashes_media_asset_id_fkey'
+            columns: ['media_asset_id']
+            isOneToOne: true
+            referencedRelation: 'media_assets'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       media_assets: {
         Row: {
           id: string
@@ -4027,6 +4065,70 @@ export type Database = {
           },
         ]
       }
+      research_image_hashes: {
+        Row: {
+          id: string
+          research_product_id: string
+          source_id: string
+          source_image_url: string
+          source_image_key: string
+          position: number
+          checksum: string
+          phash: unknown
+          dhash: unknown
+          fetch_id: string | null
+          computed_at: string
+        }
+        Insert: {
+          id?: string
+          research_product_id: string
+          source_id: string
+          source_image_url: string
+          source_image_key: string
+          position?: number
+          checksum: string
+          phash: unknown
+          dhash: unknown
+          fetch_id?: string | null
+          computed_at?: string
+        }
+        Update: {
+          id?: string
+          research_product_id?: string
+          source_id?: string
+          source_image_url?: string
+          source_image_key?: string
+          position?: number
+          checksum?: string
+          phash?: unknown
+          dhash?: unknown
+          fetch_id?: string | null
+          computed_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'research_image_hashes_fetch_id_fkey'
+            columns: ['fetch_id']
+            isOneToOne: false
+            referencedRelation: 'research_fetches'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'research_image_hashes_research_product_id_fkey'
+            columns: ['research_product_id']
+            isOneToOne: false
+            referencedRelation: 'research_products'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'research_image_hashes_source_id_fkey'
+            columns: ['source_id']
+            isOneToOne: false
+            referencedRelation: 'research_sources'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       research_jobs: {
         Row: {
           id: string
@@ -5209,6 +5311,178 @@ export type Database = {
         }
         Relationships: []
       }
+      research_similarity_pairs: {
+        Row: {
+          id: string
+          run_id: string
+          left_hash_id: string
+          right_hash_id: string
+          method: string
+          distance: number | null
+          cosine: number | null
+          band: Database['public']['Enums']['similarity_band']
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          run_id: string
+          left_hash_id: string
+          right_hash_id: string
+          method: string
+          distance?: number | null
+          cosine?: number | null
+          band: Database['public']['Enums']['similarity_band']
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          run_id?: string
+          left_hash_id?: string
+          right_hash_id?: string
+          method?: string
+          distance?: number | null
+          cosine?: number | null
+          band?: Database['public']['Enums']['similarity_band']
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'research_similarity_pairs_left_hash_id_fkey'
+            columns: ['left_hash_id']
+            isOneToOne: false
+            referencedRelation: 'research_image_hashes'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'research_similarity_pairs_right_hash_id_fkey'
+            columns: ['right_hash_id']
+            isOneToOne: false
+            referencedRelation: 'research_image_hashes'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'research_similarity_pairs_run_id_fkey'
+            columns: ['run_id']
+            isOneToOne: false
+            referencedRelation: 'research_similarity_runs'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      research_similarity_runs: {
+        Row: {
+          id: string
+          scope_type: string
+          scope_id: string | null
+          method: string
+          model_name: string | null
+          status: string
+          images_fetched: number
+          images_hashed: number
+          sources_skipped: Json
+          pairs_considered: number
+          pairs_stored: number
+          pairs_exact: number
+          started_at: string
+          finished_at: string | null
+          error_code: string | null
+          created_by: string | null
+        }
+        Insert: {
+          id?: string
+          scope_type: string
+          scope_id?: string | null
+          method: string
+          model_name?: string | null
+          status?: string
+          images_fetched?: number
+          images_hashed?: number
+          sources_skipped?: Json
+          pairs_considered?: number
+          pairs_stored?: number
+          pairs_exact?: number
+          started_at?: string
+          finished_at?: string | null
+          error_code?: string | null
+          created_by?: string | null
+        }
+        Update: {
+          id?: string
+          scope_type?: string
+          scope_id?: string | null
+          method?: string
+          model_name?: string | null
+          status?: string
+          images_fetched?: number
+          images_hashed?: number
+          sources_skipped?: Json
+          pairs_considered?: number
+          pairs_stored?: number
+          pairs_exact?: number
+          started_at?: string
+          finished_at?: string | null
+          error_code?: string | null
+          created_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'research_similarity_runs_created_by_fkey'
+            columns: ['created_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      research_similarity_suppressions: {
+        Row: {
+          id: string
+          left_hash_id: string
+          right_hash_id: string
+          reason: string
+          created_at: string
+          created_by: string
+        }
+        Insert: {
+          id?: string
+          left_hash_id: string
+          right_hash_id: string
+          reason: string
+          created_at?: string
+          created_by: string
+        }
+        Update: {
+          id?: string
+          left_hash_id?: string
+          right_hash_id?: string
+          reason?: string
+          created_at?: string
+          created_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'research_similarity_suppressions_created_by_fkey'
+            columns: ['created_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'research_similarity_suppressions_left_hash_id_fkey'
+            columns: ['left_hash_id']
+            isOneToOne: false
+            referencedRelation: 'research_image_hashes'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'research_similarity_suppressions_right_hash_id_fkey'
+            columns: ['right_hash_id']
+            isOneToOne: false
+            referencedRelation: 'research_image_hashes'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       research_source_category_map: {
         Row: {
           id: string
@@ -5421,6 +5695,7 @@ export type Database = {
           attribute_extraction: Json
           notes: string | null
           readiness: string
+          image_hashing_enabled: boolean
         }
         Insert: {
           id?: string
@@ -5455,6 +5730,7 @@ export type Database = {
           attribute_extraction?: Json
           notes?: string | null
           readiness?: string
+          image_hashing_enabled?: boolean
         }
         Update: {
           id?: string
@@ -5489,6 +5765,7 @@ export type Database = {
           attribute_extraction?: Json
           notes?: string | null
           readiness?: string
+          image_hashing_enabled?: boolean
         }
         Relationships: [
           {
@@ -6310,6 +6587,7 @@ export type Database = {
         'RAW' | 'NORMALIZED' | 'VALIDATED' | 'MATCHED' | 'REVIEW' | 'SHORTLISTED' | 'CONFIRMED'
       research_trigger: 'MANUAL' | 'SCHEDULED'
       search_visibility: 'PUBLIC' | 'STAFF'
+      similarity_band: 'NEAR_DUPLICATE' | 'PROBABLE_VARIANT' | 'WEAK' | 'FORM_SIMILAR'
       user_role: 'owner' | 'admin' | 'editor' | 'merchandiser' | 'researcher' | 'viewer'
       whatsapp_state: 'NOT_SENT' | 'REDIRECTED' | 'SHORTENED' | 'UNAVAILABLE'
     }

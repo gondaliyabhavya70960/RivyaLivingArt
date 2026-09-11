@@ -143,6 +143,13 @@ const config = [
       'app/(studio)/studio/(shell)/research/large-format/actions.ts',
       'app/(studio)/studio/(shell)/research/compare/actions.ts',
       'app/(studio)/studio/(shell)/research/opportunities/actions.ts',
+      /*
+       * Phase 33. The upload guard reads BOTH hash tables through the service role — the research
+       * one is not readable by an editor's session, and a guard that could only see the tables the
+       * uploader may read would let a competitor's photograph past exactly the person most likely
+       * to upload one — and writes the new asset's hash, which has no session write policy.
+       */
+      'app/(studio)/studio/(shell)/media/actions.ts',
     ],
     rules: {
       'no-restricted-imports': [

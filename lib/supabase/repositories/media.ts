@@ -176,6 +176,8 @@ export type NewMediaAsset = {
   readonly height?: number | null
   readonly duration_s?: number | null
   readonly uploaded_by?: string | null
+  // Phase 33. The SHA-256 of the original bytes, written by the upload path that hashed them.
+  readonly checksum?: string | null
   // Phase 21. The FEAT §13 block, written from the inspector's parse of the uploaded file and from
   // nowhere else; `saveModelAction` is the one caller that sets them.
   readonly model_format?: 'GLB' | 'GLTF' | null

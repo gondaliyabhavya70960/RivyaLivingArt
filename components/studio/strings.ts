@@ -2285,6 +2285,18 @@ export const STUDIO_STRINGS = {
     value: 'The upload did not finish. Nothing was saved.',
     contentKey: 'studio_help.media_upload_failed',
   },
+  'studio.media.upload.duplicateRivya': {
+    value: 'Refused: this picture is already in the Rivya library as',
+    contentKey: 'studio_help.media_upload_duplicate_rivya',
+  },
+  'studio.media.upload.duplicateResearch': {
+    value: 'Refused: this picture matches a competitor image held in research, from the source',
+    contentKey: 'studio_help.media_upload_duplicate_research',
+  },
+  'studio.media.upload.guardUnavailable': {
+    value: 'The file could not be checked against the library, so it was not recorded. Try again.',
+    contentKey: 'studio_help.media_upload_guard_unavailable',
+  },
   // --- 3D models (Phase 21) ------------------------------------------------------------------------
   // The inspector's sentences, the drawer's labels and the preview viewer's chrome. The public
   // viewer reads its words from `global_content`; the Studio preview is a Studio surface and reads
@@ -6304,6 +6316,186 @@ export const STUDIO_STRINGS = {
   },
 
   // --- Phase 32: opportunity engine ---------------------------------------------------------------
+  'studio.research.simHeading': {
+    value: 'Visual similarity',
+    contentKey: 'studio_help.research_sim_heading',
+  },
+  'studio.research.simBody': {
+    value:
+      'Have we seen this picture before? A 64-bit perceptual hash and a Hamming distance answer that for the Rivya library. Two identical photographs prove a shared image, never a shared object, and no band on this page says otherwise.',
+    contentKey: 'studio_help.research_sim_body',
+  },
+  'studio.research.simOwnerDecision': {
+    value: 'Owner decision (amendment A33)',
+    contentKey: 'studio_help.research_sim_owner_decision',
+  },
+  'studio.research.simDecision': {
+    value:
+      'Competitor images are referenced by URL only and never fetched. Nothing in this repository downloads one; the research hash table exists so the schema is level with the phase document and holds no rows. The machinery is turned inward instead: every Rivya asset is hashed, and a re-upload of one is refused at the upload step by name.',
+    contentKey: 'studio_help.research_sim_decision',
+  },
+  'studio.research.simFlags': {
+    value: 'Flags',
+    contentKey: 'studio_help.research_sim_flags',
+  },
+  'studio.research.simFlagOn': {
+    value: 'on',
+    contentKey: 'studio_help.research_sim_flag_on',
+  },
+  'studio.research.simFlagOff': {
+    value: 'off',
+    contentKey: 'studio_help.research_sim_flag_off',
+  },
+  'studio.research.simNotBuilt': {
+    value:
+      'Not built: embedding-based FORM_SIMILAR pairs would need competitor bytes the owner has decided are never fetched.',
+    contentKey: 'studio_help.research_sim_not_built',
+  },
+  'studio.research.simLegendHeading': {
+    value: 'What a band may claim',
+    contentKey: 'studio_help.research_sim_legend_heading',
+  },
+  'studio.research.simLegendBand': {
+    value: 'Band',
+    contentKey: 'studio_help.research_sim_legend_band',
+  },
+  'studio.research.simLegendMethod': {
+    value: 'Method',
+    contentKey: 'studio_help.research_sim_legend_method',
+  },
+  'studio.research.simLegendThreshold': {
+    value: 'Threshold',
+    contentKey: 'studio_help.research_sim_legend_threshold',
+  },
+  'studio.research.simLegendMeans': {
+    value: 'What it reliably means',
+    contentKey: 'studio_help.research_sim_legend_means',
+  },
+  'studio.research.simLegendDoesNotMean': {
+    value: 'What it does not mean',
+    contentKey: 'studio_help.research_sim_legend_does_not_mean',
+  },
+  'studio.research.simPrecisionNote': {
+    value:
+      'Thresholds are thresholds, not accuracy claims. A precision figure appears here only after a researcher has labelled the stratified sample drawn from this corpus, with its size and date.',
+    contentKey: 'studio_help.research_sim_precision_note',
+  },
+  'studio.research.simLibraryHeading': {
+    value: 'The Rivya library',
+    contentKey: 'studio_help.research_sim_library_heading',
+  },
+  'studio.research.simLibraryBody': {
+    value:
+      'Every image carries a pHash, a dHash and a SHA-256; every video carries a SHA-256 only, because a perceptual hash is defined for a still frame and a re-encoded video is not caught. The upload step refuses a byte-identical file or an image within six bits of one already here, and names the asset.',
+    contentKey: 'studio_help.research_sim_library_body',
+  },
+  'studio.research.simCoverageImages': {
+    value: 'Images hashed',
+    contentKey: 'studio_help.research_sim_coverage_images',
+  },
+  'studio.research.simCoverageVideos': {
+    value: 'Videos checksummed',
+    contentKey: 'studio_help.research_sim_coverage_videos',
+  },
+  'studio.research.simCoverageOf': {
+    value: 'of',
+    contentKey: 'studio_help.research_sim_coverage_of',
+  },
+  'studio.research.simBackfillHint': {
+    value:
+      'Assets not yet covered are hashed by npm run media:hash, or by the "Media hash backfill" workflow from a runner that can reach Cloudinary.',
+    contentKey: 'studio_help.research_sim_backfill_hint',
+  },
+  'studio.research.simRunLibrary': {
+    value: 'Check the library against itself',
+    contentKey: 'studio_help.research_sim_run_library',
+  },
+  'studio.research.simRunLibraryHelp': {
+    value:
+      'Compares every hashed Rivya image with every other under the blocking rule and lists near duplicates and probable variants — re-crops of one shoot, a render registered twice. The run and its counts are stored; pairs are not, because the pairs table holds research hashes only.',
+    contentKey: 'studio_help.research_sim_run_library_help',
+  },
+  'studio.research.simRunning': {
+    value: 'Comparing…',
+    contentKey: 'studio_help.research_sim_running',
+  },
+  'studio.research.simRunDone': {
+    value: 'Run complete',
+    contentKey: 'studio_help.research_sim_run_done',
+  },
+  'studio.research.simRunRefused': {
+    value: 'The run could not be started.',
+    contentKey: 'studio_help.research_sim_run_refused',
+  },
+  'studio.research.simRunFailed': {
+    value: 'The comparison failed and the run is recorded as FAILED.',
+    contentKey: 'studio_help.research_sim_run_failed',
+  },
+  'studio.research.simNoPairs': {
+    value:
+      'No pair within the WEAK ceiling: every hashed image is at least nineteen bits from every other.',
+    contentKey: 'studio_help.research_sim_no_pairs',
+  },
+  'studio.research.simPairsHeading': {
+    value: 'Pairs found',
+    contentKey: 'studio_help.research_sim_pairs_heading',
+  },
+  'studio.research.simDistance': {
+    value: 'distance',
+    contentKey: 'studio_help.research_sim_distance',
+  },
+  'studio.research.simExact': {
+    value: 'byte-identical',
+    contentKey: 'studio_help.research_sim_exact',
+  },
+  'studio.research.simCompared': {
+    value: 'compared',
+    contentKey: 'studio_help.research_sim_compared',
+  },
+  'studio.research.simHistoryHeading': {
+    value: 'Run history',
+    contentKey: 'studio_help.research_sim_history_heading',
+  },
+  'studio.research.simHistoryEmpty': {
+    value: 'No similarity run yet.',
+    contentKey: 'studio_help.research_sim_history_empty',
+  },
+  'studio.research.simColScope': {
+    value: 'Scope',
+    contentKey: 'studio_help.research_sim_col_scope',
+  },
+  'studio.research.simColMethod': {
+    value: 'Method',
+    contentKey: 'studio_help.research_sim_col_method',
+  },
+  'studio.research.simColStatus': {
+    value: 'Status',
+    contentKey: 'studio_help.research_sim_col_status',
+  },
+  'studio.research.simColHashed': {
+    value: 'Hashed',
+    contentKey: 'studio_help.research_sim_col_hashed',
+  },
+  'studio.research.simColConsidered': {
+    value: 'Compared',
+    contentKey: 'studio_help.research_sim_col_considered',
+  },
+  'studio.research.simColStored': {
+    value: 'Stored',
+    contentKey: 'studio_help.research_sim_col_stored',
+  },
+  'studio.research.simColExact': {
+    value: 'Exact',
+    contentKey: 'studio_help.research_sim_col_exact',
+  },
+  'studio.research.simColStarted': {
+    value: 'Started',
+    contentKey: 'studio_help.research_sim_col_started',
+  },
+  'studio.research.simColSkipped': {
+    value: 'Skipped sources',
+    contentKey: 'studio_help.research_sim_col_skipped',
+  },
   'studio.research.oppHeading': {
     value: 'Opportunities',
     contentKey: 'studio_help.research_opp_heading',

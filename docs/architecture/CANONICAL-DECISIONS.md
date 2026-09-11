@@ -186,6 +186,40 @@ Brand and editorial copy may be written; anything asserting business capability 
 
 ## Amendments
 
+**2026-09-11 · A33 — Competitor images are referenced by URL only and never fetched: the owner's
+decision on Phase 33's fetch-to-hash amendment (open question 12), and what it leaves built (D5,
+D6, PHASE-31-38 §Phase 33, SCRAPER §24, DATA_MODEL §11.z).**
+
+- **The decision.** PHASE-31-38 §Phase 33 proposed narrowing PHASE-23-30's rule — "no image is
+  fetched, measured by download, cached" — so each `research_products.image_urls` entry could be
+  fetched once through the politeness path, hashed and discarded. Asked directly, the owner chose
+  the rule as written. No code path in the repository fetches a competitor's image bytes;
+  `research_image_hashing` and `research_sources.image_hashing_enabled` exist, are false, and are
+  read by nothing that could start a fetch. `advanced_similarity` (embeddings) is not built for the
+  same reason: there are no bytes to embed.
+- **The schema stays level with the phase document.** `0310` creates `research_image_hashes`, the
+  runs, the pairs and the suppressions exactly as DATA_MODEL §12 allocates them; they hold no rows.
+  `0312` (`research_image_embeddings`, `pgvector`) is NOT applied; the number stays allocated and
+  unused. `0313` is the generated policy file, one past the document's `0310`–`0312` block, for
+  A23's reason.
+- **The first-party half ships live**, and it is the half the phase document calls "the same
+  machinery turned inward": `media_asset_hashes` (`0311`, in its own file so a reviewer can see it
+  is not research schema), `lib/media/hashes.ts` as the only module that may import an image
+  decoder (a new build gate, `media:check-decoder`), the upload guard before the `media_assets`
+  insert, `npm run media:hash` with a dispatch-only workflow because the development container
+  cannot reach Cloudinary, and the library self-check on `/studio/research/similarity`.
+- **`research.similarity.run` (owner, admin, researcher)** joins the Phase 04 matrix as the
+  document proposes; a run is an operator's act and a suppression is a `research.write` judgement.
+- **Blocking uses seven segments, not the document's 16-bit prefix**, because the prefix cannot meet
+  the recall the same document requires (SCRAPER §24.4); the DDL keeps the named index.
+- **The upload guard's reads run under the service role.** An editor's session cannot see the
+  research table, and a guard that could only see what the uploader may read would let a
+  competitor's photograph past exactly the person most likely to upload one. It is the one admin
+  use in `media/actions.ts`, on the ESLint allowlist with that reason.
+- **Should the owner ever accept the fetch-to-hash amendment**, the tables, the flag, the per-source
+  gate, the run-count columns and the pair constraints are already in place; what would be added
+  is `hash-run.ts` behind the four gates, and this amendment would be superseded.
+
 **2026-09-11 · A32 — Phase 32 takes migration `0301` for its generated policies, seeds model v1 with
 a nullable author, adds `research.score.manage`, and the rank-movement diff re-weights stored
 components rather than rescanning the corpus (D5, PHASE-31-38 §Phase 32, DATA_MODEL §12, SCRAPER §23).**

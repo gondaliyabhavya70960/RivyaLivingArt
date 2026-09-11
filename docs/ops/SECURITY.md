@@ -446,6 +446,7 @@ and how far the allowlist and the ceiling are narrowed.
 | 3D models | Parsed with `@gltf-transform/core` before acceptance; rejected on parse failure. The same parser backs `app/api/studio/models/inspect` |
 | Visitor attachments | Stored in a **private** bucket; served only through an authenticated, short-lived signed URL, always with `Content-Disposition: attachment`; orphans purged at 30 days |
 | Storage of record | `media_assets` rows carry `alt_text`, `is_ai_generated`, `is_concept`; a visitor upload is `source = 'USER_UPLOAD'`, `status = 'DRAFT'`, `is_ai_generated = false`, `is_concept = false`, never returned by a public read path |
+| Duplicate guard (Phase 33) | Before a `media_assets` row is written for an image or video, the save action fetches the original back, hashes it in memory, and refuses a byte-identical file already in the Rivya library or the research hash table, or an image within six pHash bits of one — destroying the Cloudinary object and writing a DENIED audit row that names the match. The reads run under the service role so an editor's session cannot bypass the research comparison. `lib/media/hashes.ts` is the only module that may decode image bytes (`media:check-decoder`) |
 
 ### 7.1 Allowlist and ceiling, per path and per kind
 
@@ -629,7 +630,7 @@ The scraper is the only part of this system that deliberately consumes hostile i
 | Rate and concurrency | Per-source rate limit, request delay and concurrency cap. A circuit breaker opens after five consecutive failures |
 | Parsing | B6 is the most hostile boundary in the system. Third-party HTML is parsed into a Zod-validated `RawProductDraft`; a failure marks the work item `FAILED` and the run continues. An adapter never evaluates remote code, never builds a selector from remote input, and never follows a link outside its source's URL patterns |
 | SSRF | §4 T10 — scheme restriction, post-resolution private-range checks, redirect caps, timeouts, response-size ceiling |
-| Images | **URLs only, never downloaded.** No `research_product_images` table exists; `research_image_extraction_mode` has no value that fetches bytes |
+| Images | **URLs only, never downloaded — the owner's decision, amendment A33 (Phase 33).** No `research_product_images` table exists; `research_image_extraction_mode` has no value that fetches bytes; `research_image_hashes` exists and holds no rows because nothing fetches them; `research_image_hashing` and `research_sources.image_hashing_enabled` are false everywhere and no code path reads either to start a fetch |
 | Snapshots | Evidence, not media: a **private** Supabase Storage bucket outside the `MediaProvider` seam, never publicly deliverable, retained 180 days |
 | Isolation | No `anon` policy, ever; no FK to `products`; no public search document; two build guards |
 | Blast radius of an adapter bug | One source. Adapters are isolated so a broken one cannot fail its siblings |

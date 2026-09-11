@@ -7,6 +7,60 @@
 ---
 
 ## Current Phase
+**Phase 33 — Visual Similarity, the first-party half. COMPLETE; competitor images are never fetched
+(owner decision, amendment A33).** Rivya's own library is hashed, a re-upload of one of its pictures
+is refused at the upload step by name, and the Studio page renders the band legend with its "does
+not mean" column above everything and `PRECISION NOT YET MEASURED` beside every band.
+
+### Phase 33: what is built
+
+**Migrations `0310`, `0311`, `0313`** (`0312`, embeddings, allocated and unused). The research tables
+exist and hold no rows; `media_asset_hashes` is first-party, in its own file, never joined.
+
+**Pure hashers.** `lib/scraper/analytics/similarity/`: dHash, DCT pHash, Hamming, the band table,
+seven-segment blocking (NEAR_DUPLICATE recall 1.0 by pigeonhole, measured against brute force on
+every test run). Fixture distances are measured: a 10 % centre crop is 8 on the synthetic scene.
+
+**The upload guard.** `lib/media/hashes.ts` (the ONE decoder module — `media:check-decoder` gate),
+`lib/media/duplicate-guard.ts` (two injected reads, compared in TypeScript), wired into
+`saveUploadedAssetAction` before the insert; refusal destroys the object and audits DENIED.
+
+**Studio.** `/studio/research/similarity`: decision, flags, legend, coverage, library self-check
+(`research.similarity.run`), run history. `npm run media:hash`, `research:similarity`,
+`research:similarity-sample`; `.github/workflows/media-hash.yml`.
+
+### Phase 33: readings the repository forced
+
+1. **The owner declined the fetch-to-hash amendment** — the schema stays level; the fetcher is not
+   built (A33).
+2. **A 16-bit prefix cannot meet the document's own recall bar**; seven segments can, by
+   construction.
+3. **The guard's reads must be the service role's**, or an editor's upload would skip the research
+   comparison.
+4. **This container cannot reach Cloudinary**, so the 250-asset backfill is a dispatch-only
+   workflow the owner runs; the Studio panel shows coverage until then.
+
+### Phase 33: verification, as actually run
+
+- `npm run check` green (now including `media:check-decoder`).
+- Unit project including `similarity-{phash,bands,blocking,legend,decoder-scope}` and
+  `media-duplicate-guard`; RLS project with `RLS_TESTS_REQUIRED=1` including
+  `tests/unit/rls/phase33.test.ts` (13 cases).
+- Production build through the local PostgREST shim; `security:check-bundle` clean.
+
+### Phase 33: hosted parity
+
+`0310`, `0311`, `0313` applied to `ccvarsmzickdkryoakdg` with ledger rows; digest recorded in the PR.
+
+### The next exact action
+
+**Phase 34 — Product Direction Tool.** `0320`–`0321`, the nine-section brief with captured
+evidence, no PUBLISHED status, `research.direction.write` / `.approve`.
+
+---
+
+### Superseded — Phase 32's state
+
 **Phase 32 — Opportunity Engine. COMPLETE, WITH NO MODEL ACTIVE.** Rivya has a ranked view of where
 the market looks under-served, and anyone can see exactly why a row is where it is: a score is the
 weighted mean of seven declared signals under a versioned model, every stored score keeps one

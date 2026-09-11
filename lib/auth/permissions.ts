@@ -121,6 +121,11 @@ export const PERMISSION_ROLES = {
    * model is `research.write` — operating the pipeline, not changing what it measures.
    */
   'research.score.manage': ['owner', 'admin'],
+  /**
+   * Phase 33. Starting a similarity run — a comparison over stored hashes, never a fetch under
+   * amendment A33. Operators: the same three roles that may queue a research run.
+   */
+  'research.similarity.run': ['owner', 'admin', 'researcher'],
 
   'analytics.read': ALL,
 

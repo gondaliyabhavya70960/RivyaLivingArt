@@ -1976,11 +1976,36 @@ four read from the Phase 26 health view rather than recomputed.
 
 ### 12.9 `/studio/research/similarity`
 
-Perceptual image similarity over hashes, behind the `advanced_similarity` flag. Three regions: Run
-(scope, method, flag state, and an explicit note when the flag is off), History, Results (clusters,
-band legend, per-pair actions). The band legend — `NEAR_DUPLICATE · PROBABLE_VARIANT · WEAK ·
-FORM_SIMILAR` — is rendered above the first result and is not collapsible. **Any precision figure must
-be measured on this corpus, on a dated sample, before it is written down — OWNER_VERIFICATION_REQUIRED.**
+**"Have we seen this picture before?" — for the Rivya library.** The page opens with the owner's
+decision (amendment A33): competitor images are referenced by URL only and never fetched, so the
+research hash tables exist and hold no rows, and the two flags — `research_image_hashing`,
+`advanced_similarity` — are shown as off with the reason. There is no corpus-run button, because a
+button that fetched nothing would be a lie; `npm run research:similarity` records such a run with
+every source skipped, for the audit trail.
+
+**The band legend is rendered above everything and is not collapsible**: `NEAR_DUPLICATE ·
+PROBABLE_VARIANT · WEAK · FORM_SIMILAR`, each with its threshold, what it reliably means and — the
+column that matters — what it does **not** mean. No band says two things are the same product.
+Beside every band: `PRECISION NOT YET MEASURED`, until a researcher has labelled the stratified
+sample `npm run research:similarity-sample` draws from this corpus (**OWNER_VERIFICATION_REQUIRED
+for any figure**).
+
+**The Rivya library** panel states coverage — images hashed of images, videos checksummed of
+videos — and, when assets are uncovered, how to hash them (`npm run media:hash`, or the "Media hash
+backfill" workflow from a runner that can reach Cloudinary). **Check the library against itself**
+(`research.similarity.run`: owner, admin, researcher) compares every hashed image with every other
+under the blocking rule and lists the pairs — re-crops of one shoot, a render registered twice —
+with the band and the distance, or *byte-identical*. The run and its counts are stored; the pairs
+are returned to the form that asked and stored nowhere, because the pairs table holds research
+hashes only.
+
+**Run history** lists every run with scope, method, status, images hashed, pairs compared, stored,
+exact, and the sources a corpus run skipped with the gate that stopped each.
+
+**The upload step is where the guard bites.** On `/studio/media/*`, a file that is byte-identical to
+a Rivya asset or a competitor image held in research, or an image within six bits of one, is
+refused before any row is written; the message names the existing asset or the research source,
+the Cloudinary object is destroyed, and a DENIED audit row records it.
 
 ### 12.10 `/studio/research/opportunities`
 
