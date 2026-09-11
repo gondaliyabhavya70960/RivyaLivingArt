@@ -2250,6 +2250,171 @@ export const STUDIO_STRINGS = {
     value: 'No preview — this kind of asset has no picture to show.',
     contentKey: 'studio_help.media_asset_no_preview',
   },
+  /* --- Phase 43: crops and the alt-text queue ----------------------------------------------- */
+  'studio.media.crop.heading': { value: 'Crops', contentKey: 'studio_help.media_crop_heading' },
+  'studio.media.crop.body': {
+    value:
+      'One crop per shape, so a single picture can serve a wide hero and a tall phone banner without being generated twice. Choose the box yourself where the subject matters; choose a gravity where you would rather Cloudinary keep the interesting part as sizes change.',
+    contentKey: 'studio_help.media_crop_body',
+  },
+  'studio.media.crop.ratioLabel': {
+    value: 'Shape',
+    contentKey: 'studio_help.media_crop_ratio_label',
+  },
+  'studio.media.crop.gravityLabel': {
+    value: 'Keep this part',
+    contentKey: 'studio_help.media_crop_gravity_label',
+  },
+  'studio.media.crop.noteLabel': {
+    value: 'Why this crop',
+    contentKey: 'studio_help.media_crop_note_label',
+  },
+  'studio.media.crop.noteHelp': {
+    value:
+      'For whoever changes it next — "keeps the joint visible", "the hand must stay in frame". Never shown to a visitor.',
+    contentKey: 'studio_help.media_crop_note_help',
+  },
+  'studio.media.crop.save': { value: 'Save crop', contentKey: 'studio_help.media_crop_save' },
+  'studio.media.crop.remove': {
+    value: 'Remove crop',
+    contentKey: 'studio_help.media_crop_remove',
+  },
+  'studio.media.crop.saved': { value: 'Saved', contentKey: 'studio_help.media_crop_saved' },
+  'studio.media.crop.none': {
+    value: 'No crop for this shape — the whole picture is used and Cloudinary fills the box.',
+    contentKey: 'studio_help.media_crop_none',
+  },
+  'studio.media.crop.outOfBounds': {
+    value: 'That box falls outside the picture. Reduce the size or move it back inside.',
+    contentKey: 'studio_help.media_crop_out_of_bounds',
+  },
+  'studio.media.crop.drift': {
+    value:
+      'That box is not the shape you picked, so the delivered image will be squared up and part of your box lost.',
+    contentKey: 'studio_help.media_crop_drift',
+  },
+  'studio.media.crop.refused': {
+    value: 'That crop could not be saved. A crop needs either all four box numbers or a gravity.',
+    contentKey: 'studio_help.media_crop_refused',
+  },
+  'studio.media.altQueue.heading': {
+    value: 'Alt text queue',
+    contentKey: 'studio_help.media_alt_queue_heading',
+  },
+  'studio.media.altQueue.body': {
+    value:
+      'Every asset whose text alternative still needs a person. Assets bound to a published page come first, then the ones whose imported draft was cut off mid-sentence.',
+    contentKey: 'studio_help.media_alt_queue_body',
+  },
+  'studio.media.altQueue.colAsset': {
+    value: 'Asset',
+    contentKey: 'studio_help.media_alt_queue_col_asset',
+  },
+  'studio.media.altQueue.colBound': {
+    value: 'Bound',
+    contentKey: 'studio_help.media_alt_queue_col_bound',
+  },
+  'studio.media.altQueue.colWarnings': {
+    value: 'Needs attention',
+    contentKey: 'studio_help.media_alt_queue_col_warnings',
+  },
+  'studio.media.altQueue.colText': {
+    value: 'Text alternative',
+    contentKey: 'studio_help.media_alt_queue_col_text',
+  },
+  'studio.media.altQueue.clear': {
+    value: 'Reads well',
+    contentKey: 'studio_help.media_alt_queue_clear',
+  },
+  'studio.media.altQueue.empty': {
+    value: 'Nothing in the queue — every asset has a text alternative that reads well.',
+    contentKey: 'studio_help.media_alt_queue_empty',
+  },
+  'studio.media.coverage.heading': {
+    value: 'Coverage',
+    contentKey: 'studio_help.media_coverage_heading',
+  },
+  'studio.media.coverage.body': {
+    value:
+      'Every declared media slot on the site, and what the library can do about it. Reuse an existing asset, crop one to a new shape, generate something new, or leave the slot honestly empty.',
+    contentKey: 'studio_help.media_coverage_body',
+  },
+  'studio.media.coverage.colSlot': {
+    value: 'Slot',
+    contentKey: 'studio_help.media_coverage_col_slot',
+  },
+  'studio.media.coverage.colCandidates': {
+    value: 'Candidates',
+    contentKey: 'studio_help.media_coverage_col_candidates',
+  },
+  'studio.media.coverage.colFit': {
+    value: 'Resolution',
+    contentKey: 'studio_help.media_coverage_col_fit',
+  },
+  'studio.media.coverage.colDisposition': {
+    value: 'Proposed',
+    contentKey: 'studio_help.media_coverage_col_disposition',
+  },
+  'studio.media.coverage.colWhy': {
+    value: 'Why',
+    contentKey: 'studio_help.media_coverage_col_why',
+  },
+  'studio.media.coverage.proposalNote': {
+    value:
+      'A proposal, not a decision. Two of the four questions behind it — is there a real photograph, would a crop spoil the subject — can only be answered by somebody looking at the picture.',
+    contentKey: 'studio_help.media_coverage_proposal_note',
+  },
+  'studio.media.concept.heading': {
+    value: 'Concept placement',
+    contentKey: 'studio_help.media_concept_heading',
+  },
+  'studio.media.concept.body': {
+    value:
+      'Every AI-generated asset currently bound to a page, so you can see exactly where concept imagery appears. None of these may sit against a product or a portfolio project, and no caption beside one may name a price, a dimension, a client or a delivered project.',
+    contentKey: 'studio_help.media_concept_body',
+  },
+  'studio.media.concept.empty': {
+    value: 'No concept asset is bound to any page yet.',
+    contentKey: 'studio_help.media_concept_empty',
+  },
+  'studio.media.brand.formatsHeading': {
+    value: 'What to supply, and in which format',
+    contentKey: 'studio_help.media_brand_formats_heading',
+  },
+  'studio.media.brand.formatsBody': {
+    value:
+      'These four are yours to supply — a logo, a wordmark and a favicon are the studio’s identity and are never generated. SVG is refused on every upload here, so if your designer has only an SVG, ask them for a PNG export at twice the largest size it will be shown.',
+    contentKey: 'studio_help.media_brand_formats_body',
+  },
+  'studio.media.brand.colAsset': {
+    value: 'Asset',
+    contentKey: 'studio_help.media_brand_col_asset',
+  },
+  'studio.media.brand.colFormat': {
+    value: 'Format',
+    contentKey: 'studio_help.media_brand_col_format',
+  },
+  'studio.media.brand.colMinimum': {
+    value: 'Minimum size',
+    contentKey: 'studio_help.media_brand_col_minimum',
+  },
+  'studio.media.brand.colState': {
+    value: 'State',
+    contentKey: 'studio_help.media_brand_col_state',
+  },
+  'studio.media.brand.outstanding': {
+    value: 'Outstanding',
+    contentKey: 'studio_help.media_brand_outstanding',
+  },
+  'studio.media.brand.supplied': {
+    value: 'Supplied',
+    contentKey: 'studio_help.media_brand_supplied',
+  },
+  'studio.media.brand.interim': {
+    value:
+      'Until a logo and a wordmark arrive the site sets the studio name in type from the design tokens, and pages without a bound picture emit no social image rather than borrowing another page’s.',
+    contentKey: 'studio_help.media_brand_interim',
+  },
   /* --- Phase 41: the Security section of /studio/system/environment ------------------------ */
   'studio.security.heading': {
     value: 'Security',

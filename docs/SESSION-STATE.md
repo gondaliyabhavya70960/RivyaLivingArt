@@ -7,74 +7,70 @@
 ---
 
 ## Current Phase
-**Phase 41 — Accessibility + Security. DEVELOPMENT COMPLETE.** Every test, e2e spec and CI workflow
-the phase document asks for is deferred to Phase 42, by the owner's instruction that all development
-across the remaining phases comes before any testing work. `SECURITY.md` and `ACCESSIBILITY.md` were
-both written ahead of the code and described controls in the present tense; this phase built them,
-and corrected the document in the three places where it could not.
+**Phase 43 — Media Coverage + Higgsfield Finalization. DEVELOPMENT COMPLETE.** Phase 07 produced a
+projected gap list before most slots existed; this phase re-runs the analysis against the slots that
+now exist and resolves every one. The headline is how few needed anything generated.
 
-### Phase 41: what is built
+### Phase 43: what is built
 
-Migration `0390` (`0391` allocated and unused — `rate_limit_buckets` shipped in `0182` under A18):
-`media_assets.is_decorative`, and the alt-text CHECK re-expressed as **a usable alternative, or
-explicitly decorative**, which is WCAG 1.1.1 in one line with no third state.
+**Ten briefs became two.** `scripts/media/build-coverage-report.ts` joins the 26 declared slots
+against the 250 manifest assets and writes the result into `HIGGSFIELD_ASSET_STATUS.md` §5.0. Its
+first run proposed ten `GENERATE_NEW` — six slots carried an empty `fillableBy` that Phase 07's own
+prose had already answered, and two carried `GENERATE` where Phase 07 had concluded `LEAVE_EMPTY`.
+Final reading: **REUSE 15 · RECROP 6 · GENERATE 2 · EMPTY 3**.
 
-`lib/security/headers.ts` (policy builder, six static headers, the two exceptions as DATA so the
-Studio can render them), `lib/security/csp.ts` (per-request nonce on the REQUEST, never a response
-header). `proxy.ts` attaches the set to the pass-through, the authenticated response AND the
-redirect, with the matcher widened to the public site and the Supabase call scoped by
-`STUDIO_GUARDED`. The policy ships **report-only**; `app/api/csp-report/route.ts` collects violations
-at `SECURITY` level.
+**`media_crops` (`0410`–`0411`)** — one editor-chosen crop per (asset, D6 ratio), a box in SOURCE
+pixels or a Cloudinary gravity and never neither, applied as `c_crop` BEFORE the delivery preset.
+`lib/media/crop.ts` is the pure resolver the Studio previews with and the site delivers with.
 
-`lib/security/rate-limit.ts`: `createHmac` replaces `createHash`, two salts, `retryAfterSeconds`
-returning the shortest window. Five surfaces wired — search suggest (degrades to an empty list),
-media sign, revalidate, csp-report, sign-in.
+**All 250 alt texts rewritten** from prompt fragments into sentences that pass the SEED §43 rules,
+in `content/media/alt-text.ts` — committed TypeScript the generator will not overwrite, so a hand
+edit is a reviewable diff.
 
-`lib/media/validate-upload.ts` called from `saveUploadedAssetAction` against the first 4 kB of the
-stored original; a refusal destroys the Cloudinary object and writes a DENIED row.
+**Studio:** Coverage and Concept Placement tabs, the crop editor (RC-359), the alt-text queue
+(RC-360) ordered bound-first, the brand-format panel (RC-361) read from the validator's own table.
 
-`lib/inquiries/pii.ts` + `scripts/ops/anonymise-inquiries.ts` + the data request panel on
-`/studio/inquiries/all` + `POST /api/studio/inquiries/data-request`.
+**`media:register-external`** takes an owner-generated image by Cloudinary URL, refuses any other
+origin, and registers it `is_ai_generated = true, is_concept = true` with no flag to turn that off.
 
-`/studio/media/all/[assetId]` (RC-356 `AccessibilityPanel`), the Security section on
-`/studio/system/environment` (RC-357 `SecurityPosture`, state only), RC-358 `DataRequestPanel`.
-Three route-specific skip links. Five new gates in `npm run check`.
+### Phase 43: readings the repository forced
 
-### Phase 41: readings the repository forced
+1. **The gap was metadata, not coverage.** The difference between ten briefs and two was six
+   `fillableBy` lists and two dispositions the registry had left stale against Phase 07's analysis.
+2. **The crop must be a separate URL component.** Merged into `TransformSpec` it emits one flat
+   component and the before/after ordering is silently lost.
+3. **An em-dash is not always the instruction seam.** `WALL-ART-003` opens with a parenthetical, and
+   cutting at the first one produced "A spare study."
+4. **A generated file that is never Prettier-clean makes `npm run check` fail after every
+   regeneration**, which teaches people to stop regenerating it.
+5. **`db:check-data-layer` covers scripts too.** `rewrite-alt-text.ts` queried directly; two
+   functions moved to the repository and `updateMediaAsset` now takes a null actor.
 
-1. **The server never holds an uploaded byte.** Uploads go browser → Cloudinary against a signature,
-   so `validateUpload` cannot refuse an upload. It refuses the ROW and destroys the object, which is
-   the property that matters: nothing reads Cloudinary except through `media_assets`.
-2. **A drawer would have made six Server routes client routes.** The Media Manager is one shared
-   table; the accessibility panel got an address instead, which Phase 43's alt-text queue can link at.
-3. **Owner-only did not justify a permission.** A permission for a rule with exactly one holder means
-   a migration, a generated policy file and a second place the rule can disagree with itself. The
-   erasure checks the owner's role inside the action and writes a DENIED row when it refuses.
-4. **`0391` had nothing to do.** Its table shipped two phases early. Recorded as allocated-and-unused
-   rather than filled.
-5. **Three documented controls did not exist.** EXIF stripping, `request_id` in the proxy, and the
-   dependency-audit figure on the environment page. All three corrected in the documents rather than
-   left claiming more than the code does.
+### Phase 43: what is waiting on the owner
 
-### Phase 41: what is NOT built, and where it is recorded
-
-| Gap | Recorded in |
+| Item | Where |
 |---|---|
-| EXIF not stripped from stored originals; the mechanism is named | SECURITY §7.5, §15 row 8 |
-| `proxy.ts` assigns no `request_id` | SECURITY §10 |
-| No dependency-audit figure on the environment page | STUDIO_GUIDE §13.10 |
-| No contrast preview beside the section editor | ACCESSIBILITY §3.3 |
-| The retention pass is a CLI, not a cron route | SECURITY §10.1; Phase 44 owns the wiring |
-| The whole test track | ACCESSIBILITY §3.2, CHANGELOG, Phase 42 |
+| `HOME-HERO-VIDEO-001` and `HOME-HERO-POSTER-001` — the only two generation briefs | `docs/ASSET_GENERATION_PROMPTS.md`, "Site heroes" |
+| Four brand assets, in the formats the validator accepts | `/studio/media/brand` |
+| Approving the 250 rewritten alt texts | `/studio/media/all`, the queue |
 
-**Owner actions before this phase's security is in force:** set `IP_HASH_SALT` and `RATE_LIMIT_SALT`
-in every Vercel environment (without them `salt()` falls back to a public literal), soak the
-report-only policy while reading `/studio/operations/logs` filtered to `SECURITY`, then set
-`CSP_ENFORCE=1` and redeploy.
+**The 250 rewrites are drafts by a defensible rule, not descriptions by somebody who saw the
+pictures.** All true to the prompt, all passing the linter, all still
+`OWNER_VERIFICATION_REQUIRED`.
 
-**Hosted Supabase is level `0390`.** Phase 40's `0380`–`0381` were applied in the same session and
-verified structurally identical to local; `0390` followed. `get_advisors(security)` reports nothing
-new.
+---
+
+### Superseded — Phase 41's state
+
+**Phase 41 — Accessibility + Security. DEVELOPMENT COMPLETE.** Every response carries the header set
+with a per-request nonce CSP shipping report-only; the rate-limit key became an HMAC under two
+salts and five more surfaces were wired; uploads are checked against the first 4 kB of the stored
+original and a refusal destroys the Cloudinary object; a data request panel and CLI give subject
+access and erasure; `0390` makes WCAG 1.1.1 one CHECK. Five gates joined `npm run check`. Three
+documented controls were corrected rather than left claiming more than the code does: EXIF is not
+stripped, `proxy.ts` assigns no `request_id`, and the environment page carries no dependency-audit
+figure. Landed as PR #47 with a follow-up regenerating the content inventory for the three new
+skip-link strings.
 
 ---
 
@@ -3657,8 +3653,8 @@ on `/studio` rather than a route segment.
 
 ## Next Exact Action
 
-**Phase 41 is development-complete. The next phase is 43 — Media Coverage + Higgsfield
-Finalization** (`docs/project/phases/PHASE-39-46.md`), migration `0410`. Phase 42 is DEFERRED and
+**Phase 43 is development-complete. The next phase is 44 — Vercel Deployment**
+(`docs/project/phases/PHASE-39-46.md`), no migration. Phase 42 is DEFERRED and
 runs after Phase 44 with every test deferred from Phases 41–44: the owner's instruction is "complete
 all phase development work and do all test-related work after Phase 44".
 

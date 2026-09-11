@@ -2167,6 +2167,66 @@ export type Database = {
           },
         ]
       }
+      media_crops: {
+        Row: {
+          id: string
+          media_asset_id: string
+          aspect_ratio: string
+          x: number | null
+          y: number | null
+          width: number | null
+          height: number | null
+          gravity: string | null
+          note: string | null
+          created_at: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          media_asset_id: string
+          aspect_ratio: string
+          x?: number | null
+          y?: number | null
+          width?: number | null
+          height?: number | null
+          gravity?: string | null
+          note?: string | null
+          created_at?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          media_asset_id?: string
+          aspect_ratio?: string
+          x?: number | null
+          y?: number | null
+          width?: number | null
+          height?: number | null
+          gravity?: string | null
+          note?: string | null
+          created_at?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'media_crops_media_asset_id_fkey'
+            columns: ['media_asset_id']
+            isOneToOne: false
+            referencedRelation: 'media_assets'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'media_crops_updated_by_fkey'
+            columns: ['updated_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       media_usages: {
         Row: {
           id: string

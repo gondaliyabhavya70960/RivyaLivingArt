@@ -15,6 +15,7 @@ import { UPLOAD_KINDS, UPLOAD_LIMITS } from '@/lib/media/upload-limits'
 import { validateUpload, type UploadVerdict } from '@/lib/media/validate-upload'
 import { originalUrl } from '@/lib/media/url'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { deleteCrop, saveCrop } from '@/lib/supabase/repositories/media-crops'
 import { insertMediaAsset, updateMediaAsset } from '@/lib/supabase/repositories/media'
 import {
   listMediaAssetHashes,
@@ -390,6 +391,130 @@ async function readPrefix(body: ReadableStream<Uint8Array>, limit: number): Prom
     offset += slice.byteLength
   }
   return out
+}
+
+/* --- Phase 43: crops ---------------------------------------------------------------------------- */
+
+const RATIOS = ['21:9', '16:9', '4:3', '3:2', '1:1', '4:5', '3:4', '9:16'] as const
+const GRAVITIES = [
+  'auto',
+  'center',
+  'north',
+  'south',
+  'east',
+  'west',
+  'north_east',
+  'north_west',
+  'south_east',
+  'south_west',
+] as const
+
+const cropSchema = z
+  .object({
+    assetId: z.string().uuid(),
+    aspectRatio: z.enum(RATIOS),
+    // All four together or all four absent — the same rule `media_crops_box_complete` enforces,
+    // stated here so a half-filled form is refused with copy rather than with a constraint name.
+    x: z.number().int().min(0).nullable(),
+    y: z.number().int().min(0).nullable(),
+    width: z.number().int().positive().nullable(),
+    height: z.number().int().positive().nullable(),
+    gravity: z.enum(GRAVITIES).nullable(),
+    note: z.string().trim().max(300).nullable(),
+  })
+  .refine(
+    (value) =>
+      (value.x === null && value.y === null && value.width === null && value.height === null) ||
+      (value.x !== null && value.y !== null && value.width !== null && value.height !== null),
+    { message: 'a box needs all four numbers or none' },
+  )
+  .refine((value) => value.width !== null || value.gravity !== null, {
+    message: 'a crop needs a box or a gravity',
+  })
+
+export type CropResult = { ok: true } | { ok: false; error: string }
+
+/**
+ * Save one crop — Phase 43.
+ *
+ * THE BOX IS IN SOURCE PIXELS and the editor sends what it measured against the real asset
+ * dimensions, which is what Cloudinary's `c_crop` reads. Nothing here rescales: a box in delivered
+ * pixels would mean a different crop at every rung of the width ladder.
+ *
+ * `media.write`, and an audit row. A crop changes what a visitor sees on a published page without
+ * changing a single word of content, which makes it exactly the kind of edit worth a record of.
+ */
+export async function saveCropAction(input: unknown): Promise<CropResult> {
+  try {
+    const session = await requirePermission('media.write')
+
+    const parsed = cropSchema.safeParse(input)
+    if (!parsed.success) return { ok: false, error: t('studio.media.crop.refused') }
+
+    const { assetId, aspectRatio, x, y, width, height, gravity, note } = parsed.data
+
+    await saveCrop(
+      await createClient(),
+      { mediaAssetId: assetId, aspectRatio, x, y, width, height, gravity, note },
+      session.userId,
+    )
+
+    await writeAudit({
+      action: 'media.crop.save',
+      result: 'SUCCESS',
+      actorUserId: session.userId,
+      actorRole: session.role,
+      entityType: 'media_assets',
+      entityId: assetId,
+      summary:
+        width === null
+          ? `Crop for ${aspectRatio} set to gravity ${gravity ?? 'auto'}.`
+          : `Crop for ${aspectRatio} set to ${String(width)}×${String(height)} at ${String(x)},${String(y)}.`,
+    })
+
+    revalidatePath('/studio/media', 'layout')
+    return { ok: true }
+  } catch (error) {
+    if (error instanceof AuthenticationError || error instanceof AuthorizationError) {
+      return { ok: false, error: t('studio.media.crop.refused') }
+    }
+    throw error
+  }
+}
+
+const removeCropSchema = z.object({
+  assetId: z.string().uuid(),
+  aspectRatio: z.enum(RATIOS),
+})
+
+/** Removing a crop restores the uncropped master for that ratio and loses nothing else. */
+export async function removeCropAction(input: unknown): Promise<CropResult> {
+  try {
+    const session = await requirePermission('media.write')
+
+    const parsed = removeCropSchema.safeParse(input)
+    if (!parsed.success) return { ok: false, error: t('studio.media.crop.refused') }
+
+    await deleteCrop(await createClient(), parsed.data.assetId, parsed.data.aspectRatio)
+
+    await writeAudit({
+      action: 'media.crop.remove',
+      result: 'SUCCESS',
+      actorUserId: session.userId,
+      actorRole: session.role,
+      entityType: 'media_assets',
+      entityId: parsed.data.assetId,
+      summary: `Crop for ${parsed.data.aspectRatio} removed; the ratio falls back to the uncropped master.`,
+    })
+
+    revalidatePath('/studio/media', 'layout')
+    return { ok: true }
+  } catch (error) {
+    if (error instanceof AuthenticationError || error instanceof AuthorizationError) {
+      return { ok: false, error: t('studio.media.crop.refused') }
+    }
+    throw error
+  }
 }
 
 /* --- Phase 41: the accessibility panel -------------------------------------------------------- */

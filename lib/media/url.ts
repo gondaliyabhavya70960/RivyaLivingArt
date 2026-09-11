@@ -115,9 +115,30 @@ function buildUrl(cloudName: string, ref: MediaRef, segment: string, extension?:
   return `${DELIVERY_HOST}/${path.join('/')}`
 }
 
-/** An image delivery URL. */
-export function imageUrl(cloudName: string, ref: MediaRef, spec: TransformSpec = {}): string {
-  return buildUrl(cloudName, ref, transformationSegment(spec))
+/**
+ * An image delivery URL.
+ *
+ * `cropSegment` — Phase 43 — is a `c_crop` component that goes BEFORE the preset, because
+ * Cloudinary applies components left to right: "take this box out of the master, then fill the
+ * card with it". Reversed, the preset resizes first and the stored box names pixels that no longer
+ * exist, which would land the crop somewhere different at every rung of the width ladder. It is a
+ * separate parameter rather than part of `TransformSpec` for exactly that reason — a merged spec
+ * emits one flat component and the ordering is silently lost. Omitted, nothing changes.
+ */
+export function imageUrl(
+  cloudName: string,
+  ref: MediaRef,
+  spec: TransformSpec = {},
+  cropSegment?: string | null,
+): string {
+  const preset = transformationSegment(spec)
+  const segment =
+    cropSegment === undefined || cropSegment === null || cropSegment === ''
+      ? preset
+      : preset === ''
+        ? cropSegment
+        : `${cropSegment}/${preset}`
+  return buildUrl(cloudName, ref, segment)
 }
 
 /**

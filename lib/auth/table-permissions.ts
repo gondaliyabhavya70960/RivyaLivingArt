@@ -176,6 +176,8 @@ export const PHASE_38_POLICIES = '0361_phase38_system_logs_rls.sql'
 export const PHASE_39_POLICIES = '0371_phase39_seo_rls.sql'
 export const PHASE_40_POLICIES = '0381_phase40_web_vitals_rls.sql'
 
+export const PHASE_43_POLICIES = '0411_phase43_media_crops_rls.sql'
+
 export const TABLE_POLICIES = {
   // --- Shape A: content tables ------------------------------------------------------------------
   categories: {
@@ -344,6 +346,34 @@ export const TABLE_POLICIES = {
     and exists (select 1 from materials m
              where m.id = product_materials.material_id and m.status = 'PUBLISHED')`,
   },
+  /*
+   * `media_crops` — Phase 43. Shape B, and the parent is the asset itself.
+   *
+   * A crop has no status of its own: it is a note about how to deliver a picture, and it becomes
+   * public exactly when the picture does. So the parent clause is `media_assets.status =
+   * 'PUBLISHED'` and there is no second leg — the same single-parent reasoning as `product_media`
+   * below, for the same reason.
+   *
+   * WHY `anon` NEEDS SELECT AT ALL. The public renderer resolves a crop before building the
+   * delivery URL. Without an anon select the crop is invisible to the site and every visitor gets
+   * the uncropped master, which is the failure mode a person choosing a box is trying to prevent —
+   * and it would be invisible in the Studio, where the editor's own session CAN read the row.
+   *
+   * DELETE IS `media.write`, NOT `destructive.execute`. Removing a crop destroys no history and
+   * loses nothing but a preference: the asset, its bindings and its usages are untouched, and the
+   * slot falls back to the uncropped master. Making an editor ask an owner to undo their own crop
+   * would be friction with nothing behind it.
+   */
+  media_crops: {
+    policiesIn: PHASE_43_POLICIES,
+    shape: 'B',
+    readPermission: 'media.read',
+    writePermission: 'media.write',
+    deletePermission: 'media.write',
+    parentClause: `exists (select 1 from media_assets a
+             where a.id = media_crops.media_asset_id and a.status = 'PUBLISHED')`,
+  },
+
   // Single parent BY DESIGN. The asset itself is filtered by media_assets' own Shape A policy when
   // the join is resolved, so an unpublished asset drops out of the gallery rather than leaking.
   // Adding a media_assets leg here would be redundant, and would hide that layering from a reader.

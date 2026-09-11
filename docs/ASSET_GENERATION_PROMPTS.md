@@ -1541,6 +1541,127 @@ Exclude entirely: text, watermark, signature, logo, plastic toy sheen, teal-oran
 No price tag, ruler, tape measure or dimension cue; no material named in any visible label; nothing
 that reads as a showroom, a shop or a delivered commission.
 
+
+---
+
+## Site heroes — Phase 43's only two GENERATE_NEW dispositions
+
+The Phase 43 coverage report resolves **26 declared media slots**: fifteen reuse an existing asset,
+six re-crop one, three are honestly empty, and **two** cannot be served by anything in the
+250-asset library. Those two are here, and nothing else in this phase earns a brief.
+
+**Why only two.** The phase's central economy is re-crop before regenerate, and it worked: adding
+the right manifest families to six slots in `content/media-slots.ts` — `material-macro` to the
+collection landing and contact surfaces, `gallery-scene` to collectible design, `interior-lifestyle`
+and `process-studio` to commissions, the five `largeformat-*` families to furniture — took the brief
+count from ten to two. Marking `/faq` and `/search` as honest empty states removed two more.
+
+**Why these two are genuinely missing.** Zero videos in the manifest carry `page = home`, and the
+seven 1920 × 1080 videos that exist are process, macro or gallery subjects. Upscaling a 1280 px
+process clip into a full-bleed hero is visibly worse than generating at the right size, and the
+poster is the largest-contentful-paint element on the site's most important page.
+
+| Asset ID | Slot | Ratio | Placement |
+|---|---|---|---|
+| `HOME-HERO-VIDEO-001` | `home.hero.video` | 16:9 | `rivya/home/hero`, family `home-hero-video` |
+| `HOME-HERO-POSTER-001` | `home.hero.poster` | 21:9 | `rivya/home/hero`, family `home-hero-poster` |
+
+**The poster must be a frame of the video.** If the two are generated independently the mount
+produces a visible jump: the poster shows while the video loads, and a different composition
+snapping into place is worse than no poster at all. Generate the video first, export a frame, and
+use that frame as the poster — or generate the poster from a still taken out of the video.
+
+### HOME-HERO-VIDEO-001 · Home hero, moving
+
+| Field | Value |
+|---|---|
+| Asset ID | `HOME-HERO-VIDEO-001` |
+| Asset name | Home hero, moving |
+| Required for | The `/` hero. It is the first thing anybody sees of Rivya |
+| File type | MP4, H.264, no audio track |
+| Dimensions (minimum) | 1920 × 1080 px; 2560 × 1440 preferred |
+| Ratio | 16:9 |
+| Duration | 6–10 seconds, seamless loop |
+| Filename | `home-hero-video-001-16x9.mp4` |
+| Exact placement | Slot `home.hero.video` on `/`; Cloudinary folder `rivya/home/hero`; public ID `rivya/home/hero/home-hero-video-001-16x9` |
+| Manifest family | `home-hero-video` — the planned ID prefix, lower-cased, so the Python builder mints exactly `HOME-HERO-VIDEO-001` (D6 amendment A1) |
+| Purpose | Concept visualisation: a large resin-and-timber table in a quiet room, with one slow movement — light travelling across the resin — and nothing else |
+| Provenance flags at intake | `is_ai_generated = true`, `is_concept = true`, `owner_verification = OWNER_VERIFICATION_REQUIRED` |
+| Cloudinary Status | WAITING_FOR_UPLOAD |
+| Cloudinary URL | TO_BE_PROVIDED |
+
+**Prompt**
+
+```
+A slow six-second locked-off shot of a long resin-and-timber table in a quiet, dim room, one continuous channel of deep sapphire-to-ocean translucent resin running between two dark timber edges; the only movement is daylight travelling slowly across the resin surface from left to right, so the channel brightens and settles. The room stays still: no people, no hands, no objects moved, no camera motion. Quiet luxury, deep ocean, obsidian, sapphire and muted champagne gold, photorealistic timber and resin, resin like deep glass never plastic. Seamless loop: the last frame must match the first. — palette limited to deep ocean #08283A, obsidian #080A0E, sapphire #164E6B and muted champagne gold #B89B63; single soft directional key with warm rim fill; matte surfaces, no plastic sheen; cool shadows; editorial realism; no text, no logos, no watermarks, no faces. Exclude entirely: text, watermark, signature, logo, plastic toy sheen, teal-orange grade, HDR halo, extra fingers, glitter overload, stock-photo smile, cluttered background, visible brand marks, price tags or labels, showroom or retail signage, recognisable human faces, award or certification badges.
+```
+
+**Negative requirements** (`RIVYA-NEG-V2`, verbatim, in the prompt)
+
+```
+Exclude entirely: text, watermark, signature, logo, plastic toy sheen, teal-orange grade, HDR halo, extra fingers, glitter overload, stock-photo smile, cluttered background, visible brand marks, price tags or labels, showroom or retail signage, recognisable human faces, award or certification badges.
+```
+
+No price tag, ruler, tape measure or dimension cue; nothing that reads as a showroom, a shop or a
+delivered commission; no visible brand mark of any kind.
+
+### HOME-HERO-POSTER-001 · Home hero, still
+
+| Field | Value |
+|---|---|
+| Asset ID | `HOME-HERO-POSTER-001` |
+| Asset name | Home hero, still |
+| Required for | The `/` hero poster — the largest-contentful-paint element on the site's most important page |
+| File type | PNG (or JPEG at quality 92+), sRGB |
+| Dimensions (minimum) | 2560 × 1097 px (21:9, long edge ≥ 2560) |
+| Ratio | 21:9 |
+| Filename | `home-hero-poster-001-21x9.png` |
+| Exact placement | Slot `home.hero.poster` on `/`; Cloudinary folder `rivya/home/hero`; public ID `rivya/home/hero/home-hero-poster-001-21x9` |
+| Manifest family | `home-hero-poster` — the planned ID prefix, lower-cased, so the builder mints exactly `HOME-HERO-POSTER-001` |
+| Purpose | The still behind the hero video while it loads, and the whole hero for anybody whose browser or preference refuses the video |
+| Provenance flags at intake | `is_ai_generated = true`, `is_concept = true`, `owner_verification = OWNER_VERIFICATION_REQUIRED` |
+| Cloudinary Status | WAITING_FOR_UPLOAD |
+| Cloudinary URL | TO_BE_PROVIDED |
+
+**Prompt**
+
+```
+An ultra-wide 21:9 still of a long resin-and-timber table in a quiet, dim room, one continuous channel of deep sapphire-to-ocean translucent resin running the full length between two dark timber edges, seen from a low three-quarter angle; the left two-thirds of the frame carries the table and the right third is calm, near-empty room, so a headline can sit over it. This must be the same room, table and light as HOME-HERO-VIDEO-001 — ideally a frame taken out of it. Quiet luxury, deep ocean, obsidian, sapphire and muted champagne gold, photorealistic timber and resin, resin like deep glass never plastic, realistic proportions. — palette limited to deep ocean #08283A, obsidian #080A0E, sapphire #164E6B and muted champagne gold #B89B63; single soft directional key with warm rim fill; matte surfaces, no plastic sheen; cool shadows; editorial product-photography realism; no text, no logos, no watermarks, no faces. Exclude entirely: text, watermark, signature, logo, plastic toy sheen, teal-orange grade, HDR halo, extra fingers, glitter overload, stock-photo smile, cluttered background, visible brand marks, price tags or labels, showroom or retail signage, recognisable human faces, award or certification badges.
+```
+
+**Negative requirements** (`RIVYA-NEG-V2`, verbatim, in the prompt)
+
+```
+Exclude entirely: text, watermark, signature, logo, plastic toy sheen, teal-orange grade, HDR halo, extra fingers, glitter overload, stock-photo smile, cluttered background, visible brand marks, price tags or labels, showroom or retail signage, recognisable human faces, award or certification badges.
+```
+
+The right third must stay quiet: a headline and a call to action are rendered over it in the page,
+and a busy right edge makes the type unreadable at every width. No price tag, ruler or dimension
+cue; nothing that reads as a showroom or a delivered commission.
+
+### Mobile
+
+Neither brief has a mobile variant, and that is a decision rather than an omission.
+`home.hero.poster`'s mobile ratio is 9:16 and `LARGEFORMAT-DINING-001` (1536 × 2752, prompted "for
+a mobile hero") already serves it — the coverage report reads the slot as re-croppable for exactly
+that reason. `HeroMotion` does not mount below 768 px at all, so there is no mobile video slot to
+fill.
+
+### After the images exist
+
+```
+npm run media:register-external -- \
+  --asset-id=HOME-HERO-POSTER-001 \
+  --url='<the Cloudinary URL>' \
+  --folder=rivya/home/hero \
+  --alt='<one sentence describing what the picture shows>' \
+  --apply
+```
+
+It refuses a URL outside this project's own Cloudinary cloud, registers the row as
+`is_ai_generated = true, is_concept = true`, and leaves it DRAFT for an editor to bind and to write
+real alt text against while the picture is in front of them.
+
 ---
 
 *Generated once from `scripts/demo/content.ts` on 2026-09-11 (Phase 35b) and maintained by hand from

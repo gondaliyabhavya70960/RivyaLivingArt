@@ -53,6 +53,7 @@ import {
   PHASE_38_POLICIES,
   PHASE_39_POLICIES,
   PHASE_40_POLICIES,
+  PHASE_43_POLICIES,
   PHASE_19_POLICIES,
   TABLE_POLICY_MAP,
   type ManagedTable,
@@ -636,6 +637,20 @@ const GENERATED: Record<string, { title: string; preamble: string }> = {
 --                          the database; /api/vitals validates with Zod, rate-limits, and inserts
 --                          as the service role instead. A visitor contributes a sample and can
 --                          never read one back.`,
+  },
+  [PHASE_43_POLICIES]: {
+    title: `-- ${PHASE_43_POLICIES} — Phase 43`,
+    preamble: `-- Policies for the one table migration 0410 creates. GENERATED from
+-- lib/auth/table-permissions.ts and rewritten whole, so it may hold nothing a human wrote.
+--
+--   \`media_crops\`  Shape B under \`media_assets\`. A crop has no status of its own — it is a note
+--                  about how to deliver a picture — so it is public exactly when the picture is,
+--                  and the anon leg is load-bearing rather than incidental: the public renderer
+--                  resolves the crop before it builds the delivery URL, so without it every
+--                  visitor would silently get the uncropped master while the Studio, reading under
+--                  a staff session, showed the crop working. Write and DELETE are both
+--                  \`media.write\`: removing a crop destroys no history and loses nothing but a
+--                  preference, so it is not a destructive act.`,
   },
   [PHASE_31_POLICIES]: {
     title: `-- ${PHASE_31_POLICIES} — Phase 31`,

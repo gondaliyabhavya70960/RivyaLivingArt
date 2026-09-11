@@ -50,7 +50,20 @@ export const MANIFEST_FOLDERS = [
  * Phase 14. It is handled by `isAllowedFolder` rather than enumerated, because the set is
  * unbounded and only known at runtime.
  */
-export const RESERVED_FOLDERS = ['rivya/brand', 'rivya/documents', 'rivya/models'] as const
+export const RESERVED_FOLDERS = [
+  'rivya/brand',
+  'rivya/documents',
+  'rivya/models',
+  /*
+   * `rivya/home/hero` — Phase 43. The two GENERATE_NEW dispositions in the whole coverage report
+   * (`HOME-HERO-VIDEO-001` and `HOME-HERO-POSTER-001`) deliver here, and the phase document's
+   * generation protocol puts adding the folder at step 5: after the manifest is appended and BEFORE
+   * the migration runs, so the migration cannot be the thing that discovers the folder is refused.
+   * It is added now because `media:register-external` — the owner's intake path for an image they
+   * generated themselves — would otherwise refuse the only two assets it exists to take.
+   */
+  'rivya/home/hero',
+] as const
 
 /** The prefix under which Phase 14 mints one folder per product slug. */
 export const PRODUCT_FOLDER_PREFIX = 'rivya/product/'

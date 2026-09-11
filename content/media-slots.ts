@@ -106,38 +106,69 @@ export const MEDIA_SLOTS: readonly MediaSlot[] = [
 
   // --- /collection and its seven D3 categories -----------------------------------------------
   {
-    // The manifest has per-CATEGORY pages and nothing for the landing surface above them.
+    /*
+     * The manifest has per-CATEGORY pages and nothing for the landing surface above them.
+     *
+     * PHASE 43 GAVE IT `material-macro`. The landing page is ABOUT the material rather than about
+     * any one category, and the family holds three 21:9 masters at 6336px — the only assets in the
+     * library that fill a full-bleed 21:9 hero without upscaling. Phase 07's own projection said
+     * so; `fillableBy` was left empty because the family mapping had not been made yet, and an
+     * empty list makes the coverage report propose GENERATE_NEW for a slot the library can already
+     * serve.
+     */
     key: 'collection.landing.hero',
     page: '/collection',
     label: 'Collection landing hero',
     kind: 'IMAGE',
     desktopRatio: '21:9',
     mobileRatio: '4:5',
-    fillableBy: [],
+    fillableBy: ['material-macro'],
     minAssets: 2,
     resolution: 'GENERATE',
   },
   {
-    // D3's first category, and the library has no family for it. Furniture is the most commercially
-    // important surface on the site and the least covered — worth seeing at the top of a gap list.
+    /*
+     * D3's first category, and the library has no family of its own for it. Furniture is the most
+     * commercially important surface on the site and the least covered.
+     *
+     * PHASE 43 GAVE IT THE FIVE `largeformat-*` FAMILIES, WITH A CAVEAT AN EDITOR MUST READ. Those
+     * eighteen assets are the only furniture in the library, and enough of them are finished pieces
+     * at sufficient resolution to fill this hero by re-crop. But eight of the eighteen are WORKSHOP
+     * BLANKS (HIGGSFIELD_ASSET_STATUS.md DQ-8) — unfinished forms on a bench — and binding one here
+     * would make an unfinished object the face of the category. `fillableBy` is family-level and
+     * cannot exclude an individual asset, which is exactly why this slot's disposition is
+     * RECROP_EXISTING rather than REUSE_FROM_FAMILY: a person picks the asset.
+     */
     key: 'collection.furniture.hero',
     page: '/collection/furniture',
     label: 'Furniture category hero and cards',
     kind: 'IMAGE',
     desktopRatio: '16:9',
     mobileRatio: '4:5',
-    fillableBy: [],
+    fillableBy: [
+      'largeformat-dining',
+      'largeformat-console',
+      'largeformat-seating',
+      'largeformat-side',
+      'largeformat-coffee',
+    ],
     minAssets: 4,
     resolution: 'GENERATE',
   },
   {
+    /*
+     * PHASE 43 GAVE IT `gallery-scene`. Collectible design is what a gallery scene IS — an object
+     * shown as a piece rather than as furniture — so the five assets in that family are this
+     * category's own subject rather than a borrowed illustration, which is the distinction that
+     * decides whether reuse is honest. Phase 07 projected the same mapping.
+     */
     key: 'collection.collectible-design.hero',
     page: '/collection/collectible-design',
     label: 'Collectible design category hero and cards',
     kind: 'IMAGE',
     desktopRatio: '16:9',
     mobileRatio: '4:5',
-    fillableBy: [],
+    fillableBy: ['gallery-scene'],
     minAssets: 4,
     resolution: 'GENERATE',
   },
@@ -329,41 +360,67 @@ export const MEDIA_SLOTS: readonly MediaSlot[] = [
     resolution: 'EMPTY_STATE',
   },
 
-  // --- the utility surfaces, all uncovered ------------------------------------------------------
+  // --- the utility surfaces, resolved in Phase 43 -----------------------------------------------
   {
+    /*
+     * PHASE 43 GAVE IT `interior-lifestyle`. A commission page shows a piece IN a room, which is
+     * what that family is, and `INTERIOR-LIFESTYLE-002` at 2528px crops 3:2 → 21:9 with the room
+     * intact. It is a re-crop rather than a reuse: nothing in the family is natively 21:9.
+     */
     key: 'custom-commissions.hero',
     page: '/custom-commissions',
     label: 'Custom commissions hero',
     kind: 'IMAGE',
     desktopRatio: '21:9',
     mobileRatio: '4:5',
-    fillableBy: [],
+    fillableBy: ['interior-lifestyle'],
     minAssets: 2,
     resolution: 'GENERATE',
   },
   {
+    /*
+     * PHASE 43 GAVE IT `process-studio` AND `process-timber`. What a commission page has to show
+     * below the hero is the MAKING — a piece being worked rather than a finished room — and those
+     * are the two families that hold it. It is also the honest answer to "what can we say about a
+     * commission that has not happened yet": the process is real and repeatable, a finished
+     * commission is a claim about a client.
+     */
     key: 'custom-commissions.supporting',
     page: '/custom-commissions',
     label: 'Custom commissions supporting imagery',
     kind: 'IMAGE',
     desktopRatio: '4:3',
     mobileRatio: '4:5',
-    fillableBy: [],
+    fillableBy: ['process-studio', 'process-timber'],
     minAssets: 2,
     resolution: 'GENERATE',
   },
   {
+    /*
+     * PHASE 43 GAVE IT `material-macro`. A contact page needs an image that says "this studio"
+     * without asserting anything — a close reading of resin, timber or brass claims no project, no
+     * client and no product, which is precisely what makes it the right family for a surface whose
+     * whole job is a form. 39 assets, both declared ratios native.
+     */
     key: 'contact.hero',
     page: '/contact',
     label: 'Contact surface',
     kind: 'IMAGE',
     desktopRatio: '16:9',
     mobileRatio: '4:5',
-    fillableBy: [],
+    fillableBy: ['material-macro'],
     minAssets: 1,
     resolution: 'GENERATE',
   },
   {
+    /*
+     * PHASE 43 MADE THIS `EMPTY_STATE`, AND IT IS A CORRECTION RATHER THAN A CONCESSION. A page of
+     * questions and answers is read, not looked at; a decorative image above it competes with the
+     * first question for the top of the screen and answers nothing. Phase 07's own projection said
+     * "LEAVE_EMPTY — typographic by design", and the registry kept `GENERATE`, which made the
+     * coverage report ask for a brief for an image nobody should write one for. Marking it
+     * EMPTY_STATE is what stops that brief from ever being generated.
+     */
     key: 'faq.hero',
     page: '/faq',
     label: 'FAQ surface',
@@ -372,9 +429,15 @@ export const MEDIA_SLOTS: readonly MediaSlot[] = [
     mobileRatio: '4:5',
     fillableBy: [],
     minAssets: 1,
-    resolution: 'GENERATE',
+    resolution: 'EMPTY_STATE',
   },
   {
+    /*
+     * PHASE 43 MADE THIS `EMPTY_STATE`. A "nothing matched" state is a MESSAGE — SEED §26 writes it
+     * — and an illustration beside it makes a dead end look decorated rather than helpful. The
+     * seeded copy tells somebody what to try next, which is the only useful thing this surface can
+     * do. Phase 07 projected the same and the registry had not been updated.
+     */
     key: 'search.empty',
     page: '/search',
     label: 'Search empty state',
@@ -383,7 +446,7 @@ export const MEDIA_SLOTS: readonly MediaSlot[] = [
     mobileRatio: '4:5',
     fillableBy: [],
     minAssets: 1,
-    resolution: 'GENERATE',
+    resolution: 'EMPTY_STATE',
   },
 ]
 

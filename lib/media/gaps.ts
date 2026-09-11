@@ -317,3 +317,165 @@ export function briefSkeleton(status: SlotStatus, families: Iterable<string>): s
     '> TODO',
   ].join('\n')
 }
+
+/* ------------------------------------------------------------------------------------------------
+ * PHASE 43 — DISPOSITIONS
+ *
+ * Phase 07 asked "is this slot covered?" and answered FILLED / COVERED / THIN / GAP, which is a
+ * measurement. Phase 43 asks the question that follows it: what should be DONE about this slot —
+ * and that is a decision, made by a person, with four possible answers. The code's whole job is to
+ * narrow the choice honestly and to refuse to make it.
+ *
+ * THE DECISION GATE IS FOUR QUESTIONS IN ORDER (D6's asset priority, FEAT §33): is there real Rivya
+ * media, is there an approved owner-supplied asset, is there an existing manifest asset in a
+ * matching family, can an existing asset be re-cropped without destroying the subject. Only four
+ * "no" answers permit GENERATE_NEW. Two of those questions are answerable from data — the library
+ * knows what families it has and what ratios they are native to. Two are not: whether a real
+ * photograph exists and whether a crop destroys the subject are things only a person looking at a
+ * picture can say. So `proposeDisposition` returns a PROPOSAL with the answers it could derive,
+ * and the coverage report prints all four so the two blanks are visible rather than assumed.
+ * ---------------------------------------------------------------------------------------------- */
+
+export type Disposition = 'REUSE_FROM_FAMILY' | 'RECROP_EXISTING' | 'GENERATE_NEW' | 'LEAVE_EMPTY'
+
+/** What the delivery preset a slot uses needs, so a candidate can be measured against it. */
+export type ResolutionFit = 'FITS' | 'UPSCALES' | 'UNKNOWN'
+
+export type DispositionProposal = {
+  readonly slot: MediaSlot
+  readonly proposed: Disposition
+  /**
+   * Why, in the engine's own words. Printed in the coverage report beside the disposition so the
+   * next reader does not have to re-derive it — and so a proposal an editor OVERRODE is visibly a
+   * decision rather than a bug.
+   */
+  readonly because: string
+  /** Candidates in the slot's families, and how many of them hold each declared ratio natively. */
+  readonly candidateCount: number
+  readonly nativeDesktop: number
+  readonly nativeMobile: number
+  /** Whether the widest candidate can fill the slot's preset without being scaled up. */
+  readonly resolution: ResolutionFit
+  /** The widest candidate, in source pixels. Null when there are no candidates. */
+  readonly widestPx: number | null
+}
+
+/**
+ * The delivered width a slot's preset asks for.
+ *
+ * READ FROM THE SLOT'S ROLE RATHER THAN STORED PER SLOT, because the presets are the design
+ * system's and a second copy of their widths here would drift from `transform.ts` the first time
+ * one changed. A hero is `hero-xl` at 2560; a card is `card` at 480; everything else is `grid` at
+ * 768. That mapping is coarse on purpose — the question it answers is "would this upscale", and a
+ * rung either way does not change the answer.
+ */
+export function presetWidthFor(slot: MediaSlot): number {
+  if (slot.key.includes('hero')) return 2560
+  if (slot.key.includes('card') || slot.key.includes('thumb')) return 480
+  return 768
+}
+
+/**
+ * Does the best candidate fill the preset without being scaled up?
+ *
+ * UPSCALING IS THE FAILURE THIS CATCHES. 120 of the 250 assets are under 2560px and all 26 videos
+ * are; binding one of them to a hero produces a soft, obviously-enlarged image on a large screen,
+ * and it does so silently — Cloudinary will happily scale up. A slot whose only candidate upscales
+ * is reported as a gap rather than quietly bound, which is the phase document's rule.
+ */
+export function resolutionFit(widestPx: number | null, presetWidth: number): ResolutionFit {
+  if (widestPx === null) return 'UNKNOWN'
+  return widestPx >= presetWidth ? 'FITS' : 'UPSCALES'
+}
+
+/**
+ * The disposition the data supports, before a person looks at the pictures.
+ *
+ * IT NEVER PROPOSES `GENERATE_NEW` FOR AN `EMPTY_STATE` SLOT. `/portfolio` has no assets because
+ * Rivya's delivered work has not been confirmed, and a generated picture of a delivered project
+ * would fabricate exactly the business fact D10's verification workflow exists to prevent. That
+ * slot's disposition is LEAVE_EMPTY and no amount of coverage data changes it.
+ *
+ * IT PREFERS RE-CROP OVER GENERATE, which is the phase's central economy. A 4800px master composed
+ * for 16:9 usually survives a crop to 4:5; generating a second asset for the same subject costs a
+ * generation, a review, a migration and a row in a manifest that is meant to stop growing. So when
+ * candidates exist but no candidate holds the ratio natively, the proposal is RECROP_EXISTING —
+ * with the honest caveat, printed beside it, that whether the subject survives is a human's call.
+ */
+export function proposeDisposition(
+  slot: MediaSlot,
+  candidates: readonly ManifestAsset[],
+): DispositionProposal {
+  const widestPx = candidates.length === 0 ? null : Math.max(...candidates.map((a) => a.width))
+  const resolution = resolutionFit(widestPx, presetWidthFor(slot))
+  const nativeDesktop = candidates.filter((a) => a.aspect_ratio === slot.desktopRatio).length
+  const nativeMobile = candidates.filter((a) => a.aspect_ratio === slot.mobileRatio).length
+
+  const base = {
+    slot,
+    candidateCount: candidates.length,
+    nativeDesktop,
+    nativeMobile,
+    resolution,
+    widestPx,
+  }
+
+  if (slot.resolution === 'EMPTY_STATE') {
+    return {
+      ...base,
+      proposed: 'LEAVE_EMPTY',
+      because:
+        'the slot is declared EMPTY_STATE: filling it would assert a business fact nobody has confirmed',
+    }
+  }
+
+  if (candidates.length === 0) {
+    return {
+      ...base,
+      proposed: 'GENERATE_NEW',
+      because: 'no manifest family can fill this slot, so questions 3 and 4 are both no',
+    }
+  }
+
+  if (resolution === 'UPSCALES') {
+    return {
+      ...base,
+      proposed: 'GENERATE_NEW',
+      because: `the widest candidate is ${String(widestPx ?? 0)}px and the preset asks for ${String(presetWidthFor(slot))}px, so every candidate would be scaled up`,
+    }
+  }
+
+  if (nativeDesktop > 0 && nativeMobile > 0) {
+    return {
+      ...base,
+      proposed: 'REUSE_FROM_FAMILY',
+      because: 'candidates hold both declared ratios natively',
+    }
+  }
+
+  return {
+    ...base,
+    proposed: 'RECROP_EXISTING',
+    because:
+      nativeDesktop === 0 && nativeMobile === 0
+        ? 'candidates exist at sufficient resolution but hold neither declared ratio natively'
+        : `candidates hold the ${nativeDesktop > 0 ? 'desktop' : 'mobile'} ratio natively but not the other`,
+  }
+}
+
+/** Every slot with its proposal, in registry order. */
+export function proposeDispositions(input: GapInput): readonly DispositionProposal[] {
+  const slots = input.slots ?? MEDIA_SLOTS
+  const byFamily = new Map<string, ManifestAsset[]>()
+  for (const asset of input.assets) {
+    const list = byFamily.get(asset.family)
+    if (list) list.push(asset)
+    else byFamily.set(asset.family, [asset])
+  }
+  return slots.map((slot) =>
+    proposeDisposition(
+      slot,
+      slot.fillableBy.flatMap((family) => byFamily.get(family) ?? []),
+    ),
+  )
+}

@@ -2,6 +2,7 @@ import { StudioPage, studioMetadata } from '@/components/studio/StudioPage'
 import { MediaUploader } from '@/components/studio/MediaUploader'
 import { PermissionGate } from '@/components/studio/PermissionGate'
 import { MediaLibrary } from '@/components/studio/MediaLibrary'
+import { BrandFormats } from '@/components/studio/media/BrandFormats'
 import { requirePermission } from '@/lib/auth/require'
 import { requiredEnv } from '@/lib/env'
 
@@ -50,6 +51,12 @@ export default async function Page({
 
   return (
     <StudioPage path={PATH}>
+      {/*
+        PHASE 43: WHAT TO SUPPLY, ABOVE THE UPLOADER. The four brand assets and the format each must
+        arrive in, stated before the owner picks a file rather than after the validator rejects one.
+      */}
+      <BrandFormats supplied={assets.map((asset) => asset.public_id)} />
+
       {/* The uploader sits above the table rather than behind a button. Uploading is what this
           surface is FOR, and a section whose primary action is one click away reads as a list
           somebody else fills.

@@ -6,10 +6,14 @@ import {
 } from '@/components/studio/HiggsfieldTracker'
 import type { DrawerAsset } from '@/components/studio/HiggsfieldAssetDrawer'
 import { requirePermission } from '@/lib/auth/require'
-import { computeGaps } from '@/lib/media/gaps'
+import { computeGaps, proposeDispositions } from '@/lib/media/gaps'
 import { buildInventory, parseInventoryFilters } from '@/lib/media/inventory'
 import { parseManifest, type ManifestAsset } from '@/lib/media/manifest'
-import { listHiggsfieldAssetState, listSlotBindings } from '@/lib/supabase/repositories/media'
+import {
+  listConceptPlacements,
+  listHiggsfieldAssetState,
+  listSlotBindings,
+} from '@/lib/supabase/repositories/media'
 import { createClient } from '@/lib/supabase/server'
 import manifestJson from '@/data/higgsfield/asset-manifest.json'
 
@@ -84,6 +88,10 @@ export default async function Page({
   )
 
   const usages = await listSlotBindings(client)
+  // Phase 43: the two new tabs. The proposals are derived from the manifest and the slot registry
+  // and need no query; the placements are a live join and do.
+  const proposals = proposeDispositions({ assets: MANIFEST.assets, bindings: [] })
+  const conceptPlacements = await listConceptPlacements(client)
 
   // FEAT §34's "Used?" and "CMS placement", from `media_usages` rather than from the manifest's
   // own `used_in_cms`/`cms_placement` fields — those are false and null on all 250 and always
@@ -123,6 +131,8 @@ export default async function Page({
         report={report}
         filters={parseInventoryFilters(params)}
         selected={selected}
+        proposals={proposals}
+        conceptPlacements={conceptPlacements}
       />
     </StudioPage>
   )

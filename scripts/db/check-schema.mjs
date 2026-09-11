@@ -285,6 +285,14 @@ const EXPECTED = {
   // no publication lifecycle of its own. It carries created_at/created_by and nothing else,
   // deliberately: it is rewritten wholesale by the Phase 08 trigger on every save, so an
   // `updated_at` would only ever record when the page was last saved, which the page already knows.
+
+  // Phase 43. media_crops is Tier A ONLY, and the difference from media_usages beside it is
+  // `updated_by`: a crop is a JUDGEMENT a person made about a picture — where the subject is and
+  // what may be cut — and the next person to disagree with it should be able to see whose it was.
+  // A usage is rewritten wholesale by a trigger and has no author to name; a crop is typed by hand.
+  // Tiers B and C would both be fictions: a crop has nothing to publish, nothing to verify as a
+  // business fact, and no seeder can address a box somebody chose by eye.
+  media_crops: [...TIER_A],
   /*
    * Phase 23 — the search index and the relationship model. Five §1.4 exemptions and one ordinary
    * content table, and the split is the phase in miniature.
