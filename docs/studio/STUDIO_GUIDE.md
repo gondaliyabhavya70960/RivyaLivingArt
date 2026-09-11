@@ -2205,14 +2205,15 @@ has been shared onto it, are OWNER_VERIFICATION_REQUIRED.**
 
 ## 13. `/studio/operations/*` and `/studio/system/*`
 
-### 13.1 `/studio/operations/workflows`
+### 13.1 `/studio/operations/workflows` — Phase 38, as built
 
-**For.** One place to see every long-running job. **Creates no table** — a workflow run already exists
-in five places, and a sixth table would be a copy that drifts. `workflow_runs_v` unions
-`research_runs`, `sheets_sync_runs`, `content_seed_runs`, `higgsfield_migration_runs` and
-`bulk_operations` into `kind · id · scope · status · started_at · finished_at`. Each row joins to its
-log lines through `system_logs.workflow_run_id`. The view is `security invoker`, so each underlying
-table's RLS still applies. Read requires `operations.logs.read`.
+**For.** One place to see every long-running job. **Creates no table** — a workflow run already
+exists in five places, and a sixth table would be a copy that drifts. `workflow_runs_v` (`0360`)
+unions `research_runs`, `sheets_sync_runs`, `content_seed_runs`, `higgsfield_migration_runs` and
+`bulk_operations` into `kind · id · scope · status · started_at · finished_at`. Each row links to
+its log lines (`/studio/operations/logs?run=<id>`). The view is `security invoker`, so each
+underlying table's own policies decide what a reader sees — a seed run, whose table has no session
+policy, is visible only through the cron's own summary line. Read requires `operations.logs.read`.
 
 ### 13.2 `/studio/operations/data-quality`
 
@@ -2265,21 +2266,34 @@ viewer for a bulk operation.
 raw visitor IP for a public form, a WhatsApp message body or inquiry free text. **Denials are recorded**,
 which is how probing becomes visible. Read requires `operations.audit.read` (owner, admin).
 
-### 13.5 `/studio/operations/logs`
+### 13.5 `/studio/operations/logs` — Phase 38, as built
 
 `system_logs`: what the machine did and where it failed. Two orthogonal columns cover every FEAT §31
 type — `level` (`INFO · WARNING · ERROR · SECURITY`) and `channel` (`WORKFLOW · SCRAPER · MEDIA ·
 CONTENT · AUTH · SHEETS · ANALYTICS · SYSTEM`) — so "SCRAPER errors in the last hour" is one query.
 
-Filters: time range, level, channel, actor, workflow run, research source, entity type and id, and free
-text over `event`. The detail drawer renders `context` as redacted JSON. Export requires
-`operations.logs.export`.
+**Filters** are the URL (a GET form), so an incident can be sent to a colleague as a link: time
+range, level, channel, actor, workflow run, research source, entity type and id, and free text over
+`event` (a substring, never a pattern). The table is newest first; a repeated event shows its
+`occurrence_count`; each row's **Detail** disclosure carries the correlation ids as links and the
+`context` as JSON — redacted before it was written and redacted again on render. **Export CSV**
+(`/api/studio/logs/export`, the same filters, 500 rows) requires `operations.logs.export` and
+writes an audit row.
 
-**Guardrails.** Append-only, with no update or delete policy for any application role. Every write passes
-through the redactor. Repeated identical events inside a one-minute window increment `occurrence_count`
-instead of inserting. Retention: `INFO`/`WARNING` 90 days, `ERROR`/`SECURITY` 400 days, purged by a daily
-cron that logs its own summary. **Never contains** a secret, a raw visitor IP, a WhatsApp message body,
-inquiry free text, a competitor page body or an unmapped upstream error message.
+**Who writes it.** `logSystem()` in `lib/logging/system-log.ts`: the scraper's every warning
+(`warnScraper` now writes here on the SCRAPER channel with its run and source ids), a failed Sheets
+export (`sheets.run.failed`, with the sanitised code), an environment check that reports
+`UNREACHABLE` or `DEGRADED` (ERROR or WARNING on the check's channel), and the retention cron's own
+summary. Never a person's act — those are the audit log's — and never a secret.
+
+**Guardrails.** Append-only: `update` and `delete` are revoked from every session role and no
+insert policy exists; the service role writes through `system_log_write()`, which is the only path
+and does the deduplication. Repeated identical events inside a five-minute window increment
+`occurrence_count` instead of inserting (a unique key on the dedupe key and the first minute makes
+two concurrent first writes collide rather than both land). Retention: `INFO`/`WARNING` 90 days,
+`ERROR`/`SECURITY` 400 days, purged by the 04:15 UTC cron that logs its own summary at `INFO`.
+**Never contains** a secret, a raw visitor IP, a WhatsApp message body, enquiry free text, a
+competitor page body or an unmapped upstream error message.
 
 ### 13.6 The three logs, so nobody merges them
 
@@ -2289,8 +2303,9 @@ inquiry free text, a competitor page body or an unmapped upstream error message.
 | Activity | `activity_events` | Human Studio actions worth showing in a feed | Any staff member | What has been happening in the Studio |
 | System | `system_logs` | Background jobs, integrations, cron, workflow runs | owner, admin | What the machine did and where it failed |
 
-A CI check fails if `logSystem()` is called from a server action that also calls `writeAudit()` for the
-same event name.
+`npm run logs:check-separation` (in `check` and CI) fails the build if one module sends the same
+event name to both `writeAudit()` and `logSystem()`; `tests/unit/log-separation.test.ts` proves the
+gate refuses on a fixture that does.
 
 ### 13.7 `/studio/system/users`
 
@@ -2323,48 +2338,67 @@ default.
 **Creates no table.** It renders `sheets_export_definitions`, `feature_flags` and the reachability checks.
 It shows identifiers — a spreadsheet id, a service-account email — and never a credential.
 
-### 13.10 `/studio/system/environment`
+### 13.10 `/studio/system/environment` — Phase 38, as built
 
-**Read-only operational health, and it offers no "fix it" action.** Each check returns
-`{ id, configured, status, latency_ms, checked_at, code }` where `status` is one of `OK · DEGRADED ·
-UNREACHABLE · NOT_CONFIGURED · UNKNOWN` and `code` comes from a fixed enum, because an upstream error
-message can quote a credentialed URL.
+**Read-only operational health, and it offers no "fix it" action.** Eight checks run server-side
+in parallel under a three-second timeout each, and each returns
+`{ id, configured, status, latencyMs, checkedAt, code, detail }` where `status` is one of `OK ·
+DEGRADED · UNREACHABLE · NOT_CONFIGURED · UNKNOWN`, `code` comes from a fixed set (`OK ·
+NOT_CONFIGURED · INVALID_CONFIG · TIMEOUT · AUTH · HTTP_ERROR · NETWORK · INVALID_RESPONSE ·
+MISSING_FILE · INVALID_FILE · BEHIND · AHEAD · UNKNOWN`) and `detail` holds identifiers, counts,
+booleans and timestamps only — because an upstream error message can quote a credentialed URL, and
+none is ever read into a result.
 
 | Check | What it does |
 |---|---|
-| `supabase_db` | `select 1`, timed |
-| `supabase_auth` | Session round-trip against the project URL |
-| `cloudinary` | Signed ping of the account usage endpoint |
-| `google_sheets` | Token mint only; no spreadsheet read |
-| `vercel` | Reads the build-info module, not an API |
+| `supabase_db` | A head-only count through the server client, timed |
+| `supabase_auth` | The project's `/auth/v1/health` endpoint, timed |
+| `cloudinary` | A signed ping of the account usage endpoint (the credentials in one request header, nowhere else) |
+| `google_sheets` | Token mint only; no spreadsheet read; reports the service-account email (an identity) |
+| `vercel` | Reads the build information the build inlined, not an API; reports environment, region and commit |
 | `higgsfield` | Manifest presence, `manifest_version`, total 250, the 224/26 image-video split and the 24 families — from the file, **never by calling the Higgsfield API** |
-| `migrations` | Applied count and latest version versus the files in `supabase/migrations/` |
-| `build` | Commit SHA, branch, build time, environment |
+| `migrations` | Applied count and latest version from the ledger versus the migration files the build saw (`BEHIND` / `AHEAD` when they differ) |
+| `build` | Commit, branch, build time, environment, Node version |
 
-Phase 41 adds a Security section: header presence, CSP mode, rate-limit configuration and the last
+A check that reports `UNREACHABLE` or `DEGRADED` also writes a `system_logs` row on its channel, so
+a broken Cloudinary credential appears at `ERROR` on `MEDIA` with a redacted context. Phase 41 adds
+a Security section: header presence, CSP mode, rate-limit configuration and the last
 dependency-audit result — configuration state only.
 
 **Guardrails.** `configured` is computed from the **presence of the variable name**, collapsed to a
-boolean before it leaves the check — never from its content, and never as a length. **No value, prefix,
-suffix, length or hash of any D8 server-only variable appears anywhere on this page**, proven by a
-sentinel test that sets each variable to a unique value, renders every surface and fails on any
-four-character fragment. The page carries a permanent line stating that it reports reachability only and
-is not a functional test.
+boolean before it leaves the runner — never from its content, and never as a length; an
+unconfigured check is not probed. **No value, prefix, suffix, length or hash of any D8 server-only
+variable appears anywhere on this page**, proven by `tests/unit/env-checks-no-secrets.test.ts`, which
+sets each variable to a unique sentinel, runs every check against a network that echoes the request
+back as its error, serialises every result and fails on any four-character fragment — and is shown
+to fail when a check deliberately returns four characters of a secret. The page carries a permanent
+line stating that it reports reachability only and is not a functional test.
 
-### 13.11 `/studio/system/documentation`
+### 13.11 `/studio/system/documentation` — Phase 38, as built
 
-Ten documents, served from a **build-time allowlist**, redacted at build time, rendered without raw HTML:
-`ARCHITECTURE.md` · `STUDIO_GUIDE.md` · `MEDIA_GUIDE.md` · `SCRAPER.md` · `DEPLOYMENT.md` ·
-`ENVIRONMENT.md` · `BUSINESS_RULES.md` · `CONTENT_GUIDE.md` · `COMPONENT_REGISTRY.md` ·
-`HIGGSFIELD_GUIDE.md` (FEAT §30).
+Ten documents, served from a **build-time allowlist** (`lib/cms/docs/allowlist.ts`), redacted when
+the index is built, rendered without raw HTML: `ARCHITECTURE.md` · `STUDIO_GUIDE.md` ·
+`MEDIA_GUIDE.md` · `SCRAPER.md` · `DEPLOYMENT.md` · `ENVIRONMENT.md` · `BUSINESS_RULES.md` ·
+`CONTENT_GUIDE.md` · `COMPONENT_REGISTRY.md` · `HIGGSFIELD_GUIDE.md` (FEAT §30). Keys:
+`architecture` · `studio-guide` · `media-guide` · `scraper` · `deployment` · `environment` ·
+`business-rules` · `content-guide` · `component-registry` · `higgsfield-guide`.
 
-**Guardrails.** A request names an **allowlist key**, not a path — there is no directory walk, no path
-parameter reaching the filesystem and no `..` to defend against; an unknown key is `notFound()`. The
-index is a build artefact, so the production runtime has no docs directory to traverse. Raw HTML and
-scripts are escaped. Relative links are rewritten to in-app doc keys; links leaving the allowlist are
-marked external and unclickable. **Never served:** `README.md`, `CLAUDE.md`, `SECURITY.md`,
-`docs/SESSION-STATE.md`, `docs/requirements/**`, `.env*`, any migration, or any file containing an
-environment value. The browser is read-only; the repository is the source.
+**How it works.** `npm run docs:index` (the `prebuild` step) reads exactly the ten paths, runs each
+through the redactor and writes `content/docs/index.generated.json` (gitignored; traced into the
+deployment). The index page lists the ten keys; `/studio/system/documentation/<key>` parses the
+indexed Markdown into a block tree (`lib/cms/docs/render.ts` — headings with stable ids, paragraphs,
+two-level lists, fenced code, blockquotes, tables, rules) and renders it as React (`DocBody`). With
+no index built the page says so and reads nothing.
+
+**Guardrails.** A request names an **allowlist key**, not a path — there is no directory walk, no
+path parameter reaching the filesystem and no `..` to defend against; an unknown key is
+`notFound()`. The parser has no HTML branch, so `<script>` and `onerror=` are text on the page, and
+the renderer uses no `dangerouslySetInnerHTML`. Relative links to the ten documents become in-app
+routes; `#fragments` stay anchors; every other link is rendered as text with its URL beside it and no
+`href`. **Never served:** `README.md`, `CLAUDE.md`, `SECURITY.md`, `docs/SESSION-STATE.md`,
+`docs/requirements/**`, `.env*`, any migration, or any file containing an environment value —
+`tests/unit/docs-allowlist.test.ts` holds the list to FEAT §30 and proves the indexer ignores a
+sibling `SECURITY.md`. The browser is read-only; the repository is the source.
 
 ### 13.12 `/studio/system/flags`
 

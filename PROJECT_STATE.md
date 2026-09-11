@@ -1,7 +1,7 @@
 # PROJECT_STATE — what is actually built
 
 > Verified against the repository, not against intent. Update at the end of every phase.
-> Last verified: Phase 37 (Studio Analytics), 2026-09-11.
+> Last verified: Phase 38 (Environment + Documentation + Logs), 2026-09-11.
 
 ## Summary
 
@@ -371,7 +371,8 @@ local only, so every browser figure in this document is from a local run.
 | 35b | Demo catalogue + image prompt book | **COMPLETE; IMAGES WAIT FOR THE OWNER'S CLOUDINARY URLS** | No migration. Thirty-five `is_demo` products (five added where a category was thin), all on hosted with the article bodies, projects and testimonials; `npm run demo:sql` replays the seed as SQL; `docs/ASSET_GENERATION_PROMPTS.md` holds 45 ChatGPT prompts (35 product heroes at 4:5, 10 furniture room scenes at 16:9) with planned IDs `PRODUCT-HERO-NNN` / `PRODUCT-SCENE-NNN`; amendment A36 (concept visualisation rule, implemented by Phase 43's `0411` and intake script). |
 | 36 | Google Sheets | **COMPLETE; INERT UNTIL THE OWNER'S FIVE-STEP SETUP AND THE FLAG** | Migrations `0340`–`0342`. `sheets_export_definitions` (no credential column; the entity, column and PII rules as CHECKs) and `sheets_sync_runs` (one RUNNING per definition, a CHECKed error vocabulary); seven `MANUAL` definitions seeded as structure. `lib/sheets/` — JWT by `node:crypto`, `spreadsheets` scope only, staging tab + atomic swap, jittered retry honouring `Retry-After`, circuit breaker at three, per-entity allowlist, run engine with the PII audit row — is a new D2 domain (A37). `/studio/research/sheets`, `npm run sheets:sync`, hourly cron under `CRON_SECRET`, flag `google_sheets = false`, permissions `integrations.sheets.manage` / `.run`. `sheets:check-no-read` in `check` and CI; the redaction test injects a generated key. Unit 169 files / 2,631 tests; RLS 29 / 596; hosted level through `0342`. |
 | 37 | Studio Analytics | **COMPLETE; EVERY TILE IS A TRUE ZERO OR A NAMED REASON UNTIL THE CATALOGUE AND THE CORPUS FILL** | Migrations `0350`–`0351`. Eighteen FEAT §28 metrics under `lib/analytics/metrics/` (id parity by test; definitions verbatim in STUDIO_GUIDE §5.4 by test; `compute()` called only by `lib/analytics/snapshot.ts` by test); `lib/analytics/{reads,availability,snapshot}.ts`; `analytics_snapshots` with the reason-iff-unavailable CHECK and the `selectScope` policy predicate (A38); the Analytics tab (`AnalyticsTab`, `MetricTile`, `MetricUnavailable`, `MetricTrend`) reading snapshots only; `npm run analytics:snapshot`, the 03:45 UTC cron under `CRON_SECRET`; flag `advanced_analytics = false`; every FEAT §17 card whose table exists now counts (`BUILT_THROUGH_PHASE = 36`). Hosted level through `0351`. |
-| 38–46 | Ops, launch | **PLANNED** | Specified in `docs/project/phases/`. |
+| 38 | Environment + Documentation + Logs | **COMPLETE** | Migrations `0360`–`0361`: `system_logs` (`level` × `channel`, append-only, `system_log_write()` dedupe on a five-minute window, retention 90/400 days), enums `log_level` / `log_channel`, `workflow_runs_v`. One redactor for every surface (key, value, shape; fixed token). `/studio/system/environment` (eight checks, reachability only, sentinel-proved), `/studio/system/documentation` (ten allowlisted documents from a `prebuild` index, no HTML branch), `/studio/operations/logs` (URL filters, redacted detail, audited CSV export under `operations.logs.export`), `/studio/operations/workflows`; `warnScraper`, Sheets failures and failed checks write the log; `/api/cron/log-retention`; `logs:check-separation` gate; `lib/ops/` in D2 (A39). Hosted level through `0361`. |
+| 39–46 | SEO, performance, security, testing, media, launch | **PLANNED** | Specified in `docs/project/phases/`. |
 
 ## What exists on disk
 

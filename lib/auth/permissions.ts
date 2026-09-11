@@ -158,6 +158,7 @@ export const PERMISSION_ROLES = {
   // Operations ----------------------------------------------------------------------------------
   'operations.audit.read': ['owner', 'admin'],
   'operations.logs.read': ['owner', 'admin'],
+  'operations.logs.export': ['owner', 'admin'],
 
   // System --------------------------------------------------------------------------------------
   /**

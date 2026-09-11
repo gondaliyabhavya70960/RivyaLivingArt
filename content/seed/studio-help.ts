@@ -209,6 +209,20 @@ const PHASE_37_HELP: readonly [string, string, string][] = [
   ],
 ]
 
+/** Phase 38: the two permanent lines the system pages carry, seeded so the owner can reword them. */
+const PHASE_38_HELP: readonly [string, string, string][] = [
+  [
+    'env_reachability_note',
+    'Environment — reachability note',
+    'This page reports reachability only. It never displays the value, prefix, length or hash of any variable.',
+  ],
+  [
+    'docs_allowlist_note',
+    'Documentation — allowlist note',
+    'Ten documents are served from a fixed allowlist and redacted when the index is built. The browser is read-only; the repository is the source.',
+  ],
+]
+
 export const studioHelpSeed: SeedModule = {
   name: 'studio-help',
   description:
@@ -267,6 +281,11 @@ export const studioHelpSeed: SeedModule = {
         label,
         'Phase 37, PHASE-31-38 §Phase 37. The traffic note is the sentence that keeps content performance from being read as page views.',
       ),
+    ),
+
+    // --- Phase 38: the system pages' permanent lines --------------------------------------------
+    ...PHASE_38_HELP.map(([key, label, value]) =>
+      helpRow(key, value, label, 'Phase 38, PHASE-31-38 §Phase 38 (FEAT §29, §30).'),
     ),
 
     // --- Phase 12: per-section verification notes -----------------------------------------------

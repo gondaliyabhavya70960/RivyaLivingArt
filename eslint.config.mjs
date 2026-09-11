@@ -113,6 +113,15 @@ const config = [
       // Phase 36: the hourly Sheets tick — Vercel Cron, no user; runs write as the service role.
       'app/api/cron/sheets-sync/route.ts',
       'app/api/cron/analytics-snapshot/route.ts',
+      'app/api/cron/log-retention/route.ts',
+      /*
+       * Phase 38. `lib/logging/system-log.ts` is the third log's one writer, the same shape as
+       * audit.ts and activity.ts above: the table has no session insert policy. `lib/ops/**`
+       * probes the database as the service role from a page with no user of its own and
+       * reports reachability only.
+       */
+      'lib/logging/system-log.ts',
+      'lib/ops/**',
       'app/(studio)/studio/(shell)/content/actions.ts',
       'app/(studio)/studio/(shell)/research/scrape/actions.ts',
       'app/(studio)/studio/(shell)/research/sources/actions.ts',

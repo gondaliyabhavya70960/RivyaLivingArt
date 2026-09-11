@@ -50,6 +50,7 @@ import {
   PHASE_35_POLICIES,
   PHASE_36_POLICIES,
   PHASE_37_POLICIES,
+  PHASE_38_POLICIES,
   PHASE_19_POLICIES,
   TABLE_POLICY_MAP,
   type ManagedTable,
@@ -598,6 +599,15 @@ const GENERATED: Record<string, { title: string; preamble: string }> = {
 --                           request as an editor returns no competitive row. No session write:
 --                           the daily cron and npm run analytics:snapshot write as the service
 --                           role. No anon leg: nothing here is public.`,
+  },
+  [PHASE_38_POLICIES]: {
+    title: `-- ${PHASE_38_POLICIES} — Phase 38`,
+    preamble: `-- Policies for the one table migration 0360 creates. GENERATED from
+-- lib/auth/table-permissions.ts and rewritten whole, so it may hold nothing a human wrote.
+--
+--   \`system_logs\`   operations.logs.read select (owner, admin); no session write of any kind —
+--                   the service role writes through system_log_write() and the retention cron
+--                   deletes; update and delete are revoked in 0360. No anon leg.`,
   },
   [PHASE_31_POLICIES]: {
     title: `-- ${PHASE_31_POLICIES} — Phase 31`,

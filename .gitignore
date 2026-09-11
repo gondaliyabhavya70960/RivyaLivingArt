@@ -30,3 +30,6 @@ scratch-*.ts
 
 # Supabase CLI scratch
 supabase/.temp/
+
+# Phase 38 build artefacts: the redacted documentation index the Studio browser serves.
+content/docs/index.generated.json

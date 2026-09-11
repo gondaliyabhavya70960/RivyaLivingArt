@@ -7768,6 +7768,329 @@ export const STUDIO_STRINGS = {
     value: 'Source freshness',
     contentKey: 'studio_help.analytics_metric_source_freshness',
   },
+
+  // --- Phase 38: environment, documentation, logs, workflows ----------------------------------
+  'studio.env.overall': {
+    value: 'Overall',
+    contentKey: 'studio_help.env_overall',
+  },
+  'studio.env.reachabilityNote': {
+    value:
+      'This page reports reachability only. It never displays the value, prefix, length or hash of any variable.',
+    contentKey: 'studio_help.env_reachability_note',
+  },
+  'studio.env.notFunctionalTest': {
+    value:
+      'A green row means the integration answered; it is not a functional test. The test plan is docs/ops/TESTING.md in the repository.',
+    contentKey: 'studio_help.env_not_functional_test',
+  },
+  'studio.env.tableCaption': {
+    value: 'Environment checks',
+    contentKey: 'studio_help.env_table_caption',
+  },
+  'studio.env.emptyHeading': {
+    value: 'No checks ran',
+    contentKey: 'studio_help.env_empty_heading',
+  },
+  'studio.env.emptyBody': {
+    value: 'The check registry is empty, which is a code defect rather than an environment fact.',
+    contentKey: 'studio_help.env_empty_body',
+  },
+  'studio.env.colCheck': {
+    value: 'Check',
+    contentKey: 'studio_help.env_col_check',
+  },
+  'studio.env.colConfigured': {
+    value: 'Configured',
+    contentKey: 'studio_help.env_col_configured',
+  },
+  'studio.env.colStatus': {
+    value: 'Status',
+    contentKey: 'studio_help.env_col_status',
+  },
+  'studio.env.colCode': {
+    value: 'Code',
+    contentKey: 'studio_help.env_col_code',
+  },
+  'studio.env.colLatency': {
+    value: 'Latency',
+    contentKey: 'studio_help.env_col_latency',
+  },
+  'studio.env.colChecked': {
+    value: 'Checked at',
+    contentKey: 'studio_help.env_col_checked',
+  },
+  'studio.env.colDetail': {
+    value: 'Detail',
+    contentKey: 'studio_help.env_col_detail',
+  },
+  'studio.env.yes': {
+    value: 'yes',
+    contentKey: 'studio_help.env_yes',
+  },
+  'studio.env.no': {
+    value: 'no',
+    contentKey: 'studio_help.env_no',
+  },
+  'studio.env.buildHeading': {
+    value: 'This build',
+    contentKey: 'studio_help.env_build_heading',
+  },
+  'studio.env.buildCommit': {
+    value: 'Commit',
+    contentKey: 'studio_help.env_build_commit',
+  },
+  'studio.env.buildBranch': {
+    value: 'branch',
+    contentKey: 'studio_help.env_build_branch',
+  },
+  'studio.env.buildAt': {
+    value: 'Built',
+    contentKey: 'studio_help.env_build_at',
+  },
+  'studio.env.buildEnvironment': {
+    value: 'environment',
+    contentKey: 'studio_help.env_build_environment',
+  },
+  'studio.env.buildMigrations': {
+    value: 'migration files',
+    contentKey: 'studio_help.env_build_migrations',
+  },
+  'studio.docs.allowlistNote': {
+    value:
+      'Ten documents are served from a fixed allowlist and redacted when the index is built. The browser is read-only; the repository is the source.',
+    contentKey: 'studio_help.docs_allowlist_note',
+  },
+  'studio.docs.noIndexHeading': {
+    value: 'The documentation index has not been built',
+    contentKey: 'studio_help.docs_no_index_heading',
+  },
+  'studio.docs.noIndexBody': {
+    value:
+      'Run npm run docs:index (the build does this automatically). The Studio never reads the docs directory directly.',
+    contentKey: 'studio_help.docs_no_index_body',
+  },
+  'studio.docs.notIndexed': {
+    value: 'Not in the current index',
+    contentKey: 'studio_help.docs_not_indexed',
+  },
+  'studio.docs.generatedAt': {
+    value: 'Index generated',
+    contentKey: 'studio_help.docs_generated_at',
+  },
+  'studio.docs.backToIndex': {
+    value: 'All documents',
+    contentKey: 'studio_help.docs_back_to_index',
+  },
+  'studio.docs.redactedNote': {
+    value: 'served from the build-time index, redacted',
+    contentKey: 'studio_help.docs_redacted_note',
+  },
+  'studio.docs.contents': {
+    value: 'Contents',
+    contentKey: 'studio_help.docs_contents',
+  },
+  'studio.docs.external': {
+    value: 'external link, not followed here',
+    contentKey: 'studio_help.docs_external',
+  },
+  'studio.logs.intro': {
+    value:
+      'What the machine did and where it failed: background jobs, integrations, cron ticks and workflow runs. Human acts and denials are in the audit log; feed-worthy changes in the activity tab.',
+    contentKey: 'studio_help.logs_intro',
+  },
+  'studio.logs.retentionNote': {
+    value:
+      'INFO and WARNING rows are kept 90 days, ERROR and SECURITY 400 days; a repeat within five minutes counts up rather than adding a row. Every row was redacted before it was written.',
+    contentKey: 'studio_help.logs_retention_note',
+  },
+  'studio.logs.export': {
+    value: 'Export CSV',
+    contentKey: 'studio_help.logs_export',
+  },
+  'studio.logs.filtersLabel': {
+    value: 'Log filters',
+    contentKey: 'studio_help.logs_filters_label',
+  },
+  'studio.logs.apply': {
+    value: 'Apply',
+    contentKey: 'studio_help.logs_apply',
+  },
+  'studio.logs.activeFilters': {
+    value: 'Active filters:',
+    contentKey: 'studio_help.logs_active_filters',
+  },
+  'studio.logs.any': {
+    value: 'any',
+    contentKey: 'studio_help.logs_any',
+  },
+  'studio.logs.filterLevel': {
+    value: 'Level',
+    contentKey: 'studio_help.logs_filter_level',
+  },
+  'studio.logs.filterChannel': {
+    value: 'Channel',
+    contentKey: 'studio_help.logs_filter_channel',
+  },
+  'studio.logs.filterFrom': {
+    value: 'From',
+    contentKey: 'studio_help.logs_filter_from',
+  },
+  'studio.logs.filterTo': {
+    value: 'To',
+    contentKey: 'studio_help.logs_filter_to',
+  },
+  'studio.logs.filterEvent': {
+    value: 'Event contains',
+    contentKey: 'studio_help.logs_filter_event',
+  },
+  'studio.logs.filterActor': {
+    value: 'Actor id',
+    contentKey: 'studio_help.logs_filter_actor',
+  },
+  'studio.logs.filterRun': {
+    value: 'Workflow run id',
+    contentKey: 'studio_help.logs_filter_run',
+  },
+  'studio.logs.filterSource': {
+    value: 'Research source id',
+    contentKey: 'studio_help.logs_filter_source',
+  },
+  'studio.logs.filterEntityType': {
+    value: 'Entity type',
+    contentKey: 'studio_help.logs_filter_entity_type',
+  },
+  'studio.logs.filterEntity': {
+    value: 'Entity id',
+    contentKey: 'studio_help.logs_filter_entity',
+  },
+  'studio.logs.tableCaption': {
+    value: 'System log, newest first',
+    contentKey: 'studio_help.logs_table_caption',
+  },
+  'studio.logs.emptyHeading': {
+    value: 'No log lines match',
+    contentKey: 'studio_help.logs_empty_heading',
+  },
+  'studio.logs.emptyBody': {
+    value:
+      'Nothing the machine did in this range and filter has been recorded. An empty log under no filter means no job has run since the table was created.',
+    contentKey: 'studio_help.logs_empty_body',
+  },
+  'studio.logs.colWhen': {
+    value: 'When',
+    contentKey: 'studio_help.logs_col_when',
+  },
+  'studio.logs.colLevel': {
+    value: 'Level',
+    contentKey: 'studio_help.logs_col_level',
+  },
+  'studio.logs.colChannel': {
+    value: 'Channel',
+    contentKey: 'studio_help.logs_col_channel',
+  },
+  'studio.logs.colEvent': {
+    value: 'Event',
+    contentKey: 'studio_help.logs_col_event',
+  },
+  'studio.logs.colCount': {
+    value: 'Count',
+    contentKey: 'studio_help.logs_col_count',
+  },
+  'studio.logs.colActor': {
+    value: 'Actor',
+    contentKey: 'studio_help.logs_col_actor',
+  },
+  'studio.logs.colDetail': {
+    value: 'Detail',
+    contentKey: 'studio_help.logs_col_detail',
+  },
+  'studio.logs.machine': {
+    value: 'machine',
+    contentKey: 'studio_help.logs_machine',
+  },
+  'studio.logs.detail': {
+    value: 'Detail',
+    contentKey: 'studio_help.logs_detail',
+  },
+  'studio.logs.firstSeen': {
+    value: 'First seen',
+    contentKey: 'studio_help.logs_first_seen',
+  },
+  'studio.logs.requestId': {
+    value: 'Request',
+    contentKey: 'studio_help.logs_request_id',
+  },
+  'studio.logs.workflowRun': {
+    value: 'Workflow run',
+    contentKey: 'studio_help.logs_workflow_run',
+  },
+  'studio.logs.researchSource': {
+    value: 'Research source',
+    contentKey: 'studio_help.logs_research_source',
+  },
+  'studio.logs.entityType': {
+    value: 'Entity type',
+    contentKey: 'studio_help.logs_entity_type',
+  },
+  'studio.logs.entityId': {
+    value: 'Entity id',
+    contentKey: 'studio_help.logs_entity_id',
+  },
+  'studio.logs.dedupeKey': {
+    value: 'Dedupe key',
+    contentKey: 'studio_help.logs_dedupe_key',
+  },
+  'studio.logs.contextLabel': {
+    value: 'Context (redacted)',
+    contentKey: 'studio_help.logs_context_label',
+  },
+  'studio.workflows.intro': {
+    value:
+      'Every long-running job in one list, read from the five run tables through one view. A row links to its log lines.',
+    contentKey: 'studio_help.workflows_intro',
+  },
+  'studio.workflows.tableCaption': {
+    value: 'Workflow runs, newest first',
+    contentKey: 'studio_help.workflows_table_caption',
+  },
+  'studio.workflows.emptyHeading': {
+    value: 'No run recorded',
+    contentKey: 'studio_help.workflows_empty_heading',
+  },
+  'studio.workflows.emptyBody': {
+    value:
+      'No research run, Sheets export, seed, Higgsfield migration or bulk operation is visible to your role yet.',
+    contentKey: 'studio_help.workflows_empty_body',
+  },
+  'studio.workflows.colKind': {
+    value: 'Kind',
+    contentKey: 'studio_help.workflows_col_kind',
+  },
+  'studio.workflows.colScope': {
+    value: 'Scope',
+    contentKey: 'studio_help.workflows_col_scope',
+  },
+  'studio.workflows.colStatus': {
+    value: 'Status',
+    contentKey: 'studio_help.workflows_col_status',
+  },
+  'studio.workflows.colStarted': {
+    value: 'Started',
+    contentKey: 'studio_help.workflows_col_started',
+  },
+  'studio.workflows.colFinished': {
+    value: 'Finished',
+    contentKey: 'studio_help.workflows_col_finished',
+  },
+  'studio.workflows.colLogs': {
+    value: 'Logs',
+    contentKey: 'studio_help.workflows_col_logs',
+  },
+  'studio.workflows.viewLogs': {
+    value: 'View log lines',
+    contentKey: 'studio_help.workflows_view_logs',
+  },
 } as const satisfies Record<string, StudioStringEntry>
 
 /** Every key this module resolves. A typo is a compile error, not a blank space on the page. */

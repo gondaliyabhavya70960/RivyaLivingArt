@@ -48,6 +48,7 @@ lib/
   whatsapp/                  template rendering
   scraper/                   core · adapters · normalization · validation · workflows · analytics
   sheets/                    one-way Google Sheets export (amendment A37)
+  ops/                       environment checks, the check runner, build information (amendment A39)
   analytics/ · seo/ · logging/ · flags/
 supabase/migrations/         numbered SQL migrations
 scripts/                     seeding, media migration, maintenance
@@ -186,6 +187,50 @@ Brand and editorial copy may be written; anything asserting business capability 
 `OWNER_VERIFICATION_REQUIRED`. Empty states are used instead of invented projects.
 
 ## Amendments
+
+**2026-09-11 · A39 — Phase 38 adds `lib/ops/` to D2's domain list beside `lib/sheets/` (closing
+open question 4 in full); build information travels as a string `next.config.ts` inlines rather
+than a generated module; the documentation index is a `prebuild` artefact traced into the
+deployment; the dedupe window is a defaulted epoch-minute column; the retention cron uses
+`CRON_SECRET`; `/studio/operations/workflows` is filled from `workflow_runs_v`; the environment
+page's two database reads live in a repository and the admin client gains an injectable `fetch`
+(D2, D8, DATA_MODEL §11.ae, STUDIO_GUIDE §13.1–13.11, ENVIRONMENT §7, SECURITY §5.2 and §10,
+DEPLOYMENT §3.1, PHASE-31-38 §Phase 38).**
+
+- **`lib/ops/` is a D2 domain.** An environment check is not a log: it performs outbound
+  reachability probes, holds timeouts and returns a status shape the logger merely records. It holds
+  `env-checks/` (one module per check), `environment.ts` (the runner) and `build-info.ts` (the
+  reader). `lib/cms/docs/` sits inside `lib/cms/` because rendering authored Markdown into a Studio
+  page is what `lib/cms` does. The block therefore added exactly two `lib/` domains — `lib/sheets/`
+  (A37) and `lib/ops/` — as the phase document proposed.
+- **Build information is inlined, not generated.** The phase document's
+  `lib/ops/build-info.generated.ts` (gitignored) cannot exist before the build and the type-checker
+  runs first in CI; a placeholder committed beside it would be a second source of truth.
+  `scripts/build/build-info.mjs` computes commit, branch, build time, environment and the migration
+  files on disk (git first, Vercel's variables second, `unknown` last, never throwing);
+  `next.config.ts` inlines the JSON as `RIVYA_BUILD_INFO`; `lib/ops/build-info.ts` parses it at
+  request time. Nothing runs git on a request and no variable value travels.
+- **The documentation index is a `prebuild` artefact.** `npm run docs:index` writes
+  `content/docs/index.generated.json` (gitignored) from the ten allowlisted paths, redacted;
+  `outputFileTracingIncludes` carries it — and the Higgsfield manifest the environment page counts —
+  into the serverless bundle, so the production runtime reads no `docs/` directory. A dev server
+  started without the step sees an honest "index not built" state.
+- **`first_minute` is a defaulted integer column, not a generated one.** The document's
+  `unique (dedupe_key, date_trunc('minute', first_occurred_at))` cannot be built: every date function
+  over `timestamptz` is STABLE and a unique expression or generated column needs IMMUTABLE. The
+  writer function sets `first_minute` from the same `now()` as `first_occurred_at`, no session can
+  insert a row at all, and `on conflict (dedupe_key, first_minute)` gives the concurrent-first-write
+  guarantee the document wanted. The five-minute dedupe is the function's own lookup.
+- **`CRON_SECRET`** for `/api/cron/log-retention` (A25); DEPLOYMENT §3.1's row is corrected. The
+  purge covers `system_logs`; Phases 40 and 41 extend the same tick to their tables.
+- **The workflows page is Phase 38's.** DATA_MODEL §12 allocates `workflow_runs_v` to `0360` and
+  STUDIO_GUIDE §13.1 describes the page; both are built here so `workflow_run_id` filters have a
+  list to start from. `security_invoker` means a reader sees only the runs their role may read.
+- **Repository discipline held.** The `select 1` ping and the ledger read are
+  `lib/supabase/repositories/ops.ts`; `createAdminClient()` accepts an optional `fetch` so the checks
+  can be run against a stubbed, echoing network in the sentinel test without a network of their own.
+- **`request_id`** exists on both logs and is filterable; `proxy.ts` assigning one per request lands
+  with Phase 41's security headers (SECURITY §10 corrected).
 
 **2026-09-11 · A38 — Phase 37: the policy generator gains a `selectScope` predicate (a row-level
 narrowing of the staff SELECT alone); `advanced_analytics` gates presentation, never access; the

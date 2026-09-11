@@ -6793,6 +6793,77 @@ export type Database = {
           },
         ]
       }
+      system_logs: {
+        Row: {
+          id: string
+          level: Database['public']['Enums']['log_level']
+          channel: Database['public']['Enums']['log_channel']
+          event: string
+          message: string
+          context: Json
+          actor_id: string | null
+          actor_role: Database['public']['Enums']['user_role'] | null
+          request_id: string | null
+          workflow_run_id: string | null
+          research_source_id: string | null
+          entity_type: string | null
+          entity_id: string | null
+          dedupe_key: string
+          occurrence_count: number
+          first_occurred_at: string
+          occurred_at: string
+          first_minute: number
+        }
+        Insert: {
+          id?: string
+          level: Database['public']['Enums']['log_level']
+          channel: Database['public']['Enums']['log_channel']
+          event: string
+          message: string
+          context?: Json
+          actor_id?: string | null
+          actor_role?: Database['public']['Enums']['user_role'] | null
+          request_id?: string | null
+          workflow_run_id?: string | null
+          research_source_id?: string | null
+          entity_type?: string | null
+          entity_id?: string | null
+          dedupe_key: string
+          occurrence_count?: number
+          first_occurred_at?: string
+          occurred_at?: string
+          first_minute?: number
+        }
+        Update: {
+          id?: string
+          level?: Database['public']['Enums']['log_level']
+          channel?: Database['public']['Enums']['log_channel']
+          event?: string
+          message?: string
+          context?: Json
+          actor_id?: string | null
+          actor_role?: Database['public']['Enums']['user_role'] | null
+          request_id?: string | null
+          workflow_run_id?: string | null
+          research_source_id?: string | null
+          entity_type?: string | null
+          entity_id?: string | null
+          dedupe_key?: string
+          occurrence_count?: number
+          first_occurred_at?: string
+          occurred_at?: string
+          first_minute?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'system_logs_actor_id_fkey'
+            columns: ['actor_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       testimonials: {
         Row: {
           id: string
@@ -7060,6 +7131,10 @@ export type Database = {
         Args: Record<string, unknown>
         Returns: Json
       }
+      system_log_write: {
+        Args: Record<string, unknown>
+        Returns: Json
+      }
     }
     Enums: {
       attribute_taxonomy: 'DESIGN_FAMILY' | 'RESIN_STYLE' | 'WOOD_SPECIES'
@@ -7102,6 +7177,9 @@ export type Database = {
       inquiry_kind: 'PRODUCT' | 'COMMISSION' | 'CONSULTATION' | 'QUOTE' | 'GENERAL'
       inquiry_status:
         'NEW' | 'READ' | 'IN_CONVERSATION' | 'QUOTED' | 'WON' | 'LOST' | 'SPAM' | 'ARCHIVED'
+      log_channel:
+        'WORKFLOW' | 'SCRAPER' | 'MEDIA' | 'CONTENT' | 'AUTH' | 'SHEETS' | 'ANALYTICS' | 'SYSTEM'
+      log_level: 'INFO' | 'WARNING' | 'ERROR' | 'SECURITY'
       media_kind: 'IMAGE' | 'VIDEO' | 'MODEL_3D' | 'DOCUMENT' | 'BRAND'
       media_source: 'REAL' | 'USER_UPLOAD' | 'HIGGSFIELD' | 'RENDER' | 'FALLBACK'
       merch_fallback: 'EDITORIAL_BLOCK' | 'HIDE_SECTION' | 'SHOW_EMPTY_STATE'

@@ -96,7 +96,7 @@ exists to prevent. Vercel evaluates cron expressions in **UTC**.
 | `app/api/cron/research-score` | `30 19 * * *` | Nightly, **after** research-analytics | `REVALIDATE_SECRET` | 32 | Recomputes opportunity scores and components against the active scoring model |
 | `app/api/cron/sheets-sync` | `0 * * * *` | Hourly | `CRON_SECRET` (A25, A37) — **built, Phase 36** | 36 | Runs the `sheets_export_definitions` whose own `schedule` has fired since their last run (minimum interval hourly; `MANUAL` is the default and is skipped), skips paused and disabled definitions, and answers `skipped: flag_off` without writing anything while `google_sheets` is off |
 | `app/api/cron/analytics-snapshot` | `45 3 * * *` | Daily, **after** research-score | `CRON_SECRET` (A25, A38) — **built, Phase 37** | 37 | One `analytics_snapshots` row per metric per day (eighteen), idempotent per date; prunes rows past 400 days; a metric that cannot be computed is stored UNAVAILABLE with its reason |
-| `app/api/cron/log-retention` | `30 21 * * *` | Daily | `REVALIDATE_SECRET` | 38 | Purges `system_logs`, `web_vitals_samples`, `search_queries`, `rate_limit_buckets` and orphaned `inquiry_attachments` per the `BUSINESS_RULES.md` §I retention table |
+| `app/api/cron/log-retention` | `15 4 * * *` | Daily | `CRON_SECRET` (A25, A39) — **built, Phase 38** | 38 | Purges `system_logs` by level and age of first occurrence (`INFO`/`WARNING` 90 days, `ERROR`/`SECURITY` 400) and logs its own summary at `INFO`; Phases 40–41 extend the tick to `web_vitals_samples` and `rate_limit_buckets` |
 
 **The only ordering constraint is `research-score` after `research-analytics`** — a score computed
 before the night's snapshot exists is a score against yesterday's coverage. The rest of the wall-clock

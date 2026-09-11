@@ -694,6 +694,14 @@ const EXPECTED = {
   /* Phase 37 — one row per metric per day; the reason column travels with UNAVAILABLE (CHECK). */
   analytics_snapshots: ['metric_id', 'dimension', 'as_of', 'availability', 'computed_at'],
 
+  /*
+   * Phase 38 — the third log. Append-only like audit_logs and activity_events, so §1.2 exempts it
+   * from Tier A: an `updated_at` on a row that must never be updated is a promise the table
+   * cannot keep. `first_occurred_at` and `occurred_at` are the event times; `dedupe_key` is
+   * what keeps a storm to one row.
+   */
+  system_logs: ['occurred_at', 'first_occurred_at', 'level', 'channel', 'event', 'dedupe_key'],
+
   research_scoring_models: [
     'version',
     'signals',
