@@ -3,6 +3,12 @@ import { z } from 'zod'
 
 import { writeAudit } from '@/lib/auth/audit'
 import { AuthenticationError, AuthorizationError, requirePermission } from '@/lib/auth/require'
+import {
+  MEDIA_SIGN_WINDOWS,
+  bucketKey,
+  consume,
+  retryAfterSeconds,
+} from '@/lib/security/rate-limit'
 import { getMediaProvider } from '@/lib/media'
 import { DisallowedFolderError, assertFolder } from '@/lib/media/folders'
 import { UPLOAD_KINDS, UPLOAD_LIMITS, checkUploadRequest } from '@/lib/media/upload-limits'
@@ -25,13 +31,13 @@ import { UPLOAD_KINDS, UPLOAD_LIMITS, checkUploadRequest } from '@/lib/media/upl
  *   4. MIME allowlist and byte ceiling, per kind (SECURITY.md §7.1).
  *   5. Only then, the signature.
  *
- * WHAT IS NOT HERE, STATED RATHER THAN OMITTED. SECURITY.md §8 fixes a 20-per-hour limit on this
- * route keyed on the staff `user_id`. It is NOT enforced yet, because it is a fixed-window counter
- * over `rate_limit_buckets`, and that table belongs to Phase 41 (`0390_phase41_security.sql`).
- * Creating it here would take a table out of the phase that owns it, and pretending the limit
- * exists would be worse than either. The exposure in the meantime is bounded but real: a staff
- * session with `media.write` — or one that has been stolen — can mint signatures as fast as it can
- * ask. Phase 41 closes it; until then this comment is the record that it is open.
+ * THE RATE LIMIT PHASE 41 PROMISED IS NOW HERE, and the note that used to stand in its place is
+ * gone. Twenty an hour, KEYED ON THE STAFF `user_id` RATHER THAN THE ADDRESS: a studio works from
+ * one office and one connection, so an address key would make one editor's bulk upload refuse
+ * another's. It is consumed AFTER the permission check, which is the opposite of the order the
+ * public endpoints use — there, the limit protects an unauthenticated surface and must run before
+ * anything expensive; here, an unauthenticated caller is already refused with a 401, and charging
+ * their attempt against a staff member's window would let a stranger exhaust a colleague's quota.
  *
  * TYPE DETECTION BY MAGIC BYTES IS ALSO NOT HERE, and cannot be. §7.1 requires it, and it needs
  * the bytes — which at signing time do not exist yet. This route checks the DECLARED type, which
@@ -61,6 +67,20 @@ export async function POST(request: Request): Promise<NextResponse> {
       return NextResponse.json({ error: 'forbidden' }, { status: 403 })
     }
     throw error
+  }
+
+  const { allowed } = await consume(bucketKey('media_sign', session.userId), MEDIA_SIGN_WINDOWS)
+  if (!allowed) {
+    return NextResponse.json(
+      { error: 'rate-limited' },
+      {
+        status: 429,
+        headers: {
+          'cache-control': 'no-store',
+          'Retry-After': String(retryAfterSeconds(MEDIA_SIGN_WINDOWS)),
+        },
+      },
+    )
   }
 
   let parsed

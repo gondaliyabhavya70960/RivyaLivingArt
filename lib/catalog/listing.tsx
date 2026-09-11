@@ -184,9 +184,45 @@ export function CatalogListing({
   const clear = siteString(strings, CATALOG_ACTION_KEYS.clear)
   const gridName = siteString(strings, CATALOG_UI_KEYS.results)
 
+  const skipToFilters = siteString(strings, 'ACTION_LABEL.skip_to_filters')
+  const skipToResults = siteString(strings, 'ACTION_LABEL.skip_to_results')
+
   return (
     <div className="mx-auto grid max-w-(--rv-container-wide) gap-10 px-(--rv-gutter) py-12 lg:grid-cols-[16rem_1fr]">
-      <div>
+      {/*
+       * PHASE 41: TWO SKIP LINKS, BECAUSE THE SHELL'S "SKIP TO CONTENT" LANDS INSIDE THE PROBLEM.
+       *
+       * `<main>` begins above the filter rail, so a keyboard user who takes the shell's skip link
+       * arrives at the top of a listing and still has twenty filter controls between them and the
+       * first product — on every category page, every time. These two point past each block rather
+       * than at a landmark, which is the distinction WCAG 2.2 §2.4.1 is actually about.
+       *
+       * Visually hidden until focused, like the shell's: in the accessibility tree and the tab order
+       * at all times, on screen only while in use. A link that is `display: none` until focus can
+       * never receive focus.
+       */}
+      <div className="col-span-full">
+        {skipToFilters === null ? null : (
+          <a
+            href="#catalog-filters"
+            className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:rounded-sm focus:bg-surface-raised focus:px-4 focus:py-2 focus:text-ink"
+          >
+            {skipToFilters}
+          </a>
+        )}
+        {skipToResults === null ? null : (
+          <a
+            href="#catalog-results"
+            className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:rounded-sm focus:bg-surface-raised focus:px-4 focus:py-2 focus:text-ink"
+          >
+            {skipToResults}
+          </a>
+        )}
+      </div>
+
+      {/* `tabIndex={-1}` so the jump moves FOCUS and not only the viewport: without it the next Tab
+          press returns to the top of the document, which is where the visitor just escaped from. */}
+      <div id="catalog-filters" tabIndex={-1}>
         <FilterRail
           basePath={basePath}
           query={query}
@@ -196,7 +232,7 @@ export function CatalogListing({
         />
       </div>
 
-      <Stack gap={8}>
+      <Stack gap={8} id="catalog-results" tabIndex={-1}>
         <SortSelect basePath={basePath} query={query} strings={strings} />
 
         {listing.rows.length === 0 ? (

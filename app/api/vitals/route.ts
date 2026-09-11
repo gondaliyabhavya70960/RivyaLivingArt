@@ -1,7 +1,13 @@
 import { NextResponse } from 'next/server'
 
 import { isSameOrigin } from '@/lib/security/origin'
-import { bucketKey, callerAddress, consume, type RateWindow } from '@/lib/security/rate-limit'
+import {
+  VITALS_WINDOWS,
+  bucketKey,
+  callerAddress,
+  consume,
+  retryAfterSeconds,
+} from '@/lib/security/rate-limit'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { insertVitalsSample } from '@/lib/supabase/repositories/web-vitals'
 import { vitalsSampleSchema } from '@/lib/supabase/schemas/vitals'
@@ -40,19 +46,6 @@ import { vitalsSampleSchema } from '@/lib/supabase/schemas/vitals'
 
 export const dynamic = 'force-dynamic'
 
-/**
- * Generous for a person, tight for a script.
- *
- * A sampled page view sends at most five beacons (LCP, CLS, INP, TTFB, FCP). Thirty a minute is six
- * such page views inside a minute from one address, which no human browsing produces and which a
- * shared office NAT still comfortably fits under; two hundred an hour is forty. Both windows are
- * consumed on every request, so a caller over the per-minute ceiling still pays into the hourly one.
- */
-const VITALS_WINDOWS: readonly RateWindow[] = [
-  { seconds: 60, limit: 30 },
-  { seconds: 3600, limit: 200 },
-]
-
 const NO_STORE = { 'cache-control': 'no-store' } as const
 
 export async function POST(request: Request): Promise<NextResponse> {
@@ -61,7 +54,12 @@ export async function POST(request: Request): Promise<NextResponse> {
   }
 
   const { allowed } = await consume(bucketKey('vitals', callerAddress(request)), VITALS_WINDOWS)
-  if (!allowed) return new NextResponse(null, { status: 429, headers: NO_STORE })
+  if (!allowed) {
+    return new NextResponse(null, {
+      status: 429,
+      headers: { ...NO_STORE, 'Retry-After': String(retryAfterSeconds(VITALS_WINDOWS)) },
+    })
+  }
 
   let body: unknown
   try {

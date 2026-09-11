@@ -233,6 +233,70 @@ Three guards run inside `npm run check`, before any browser starts:
 | `scripts/a11y/check-focus-styles.mjs` | Any `outline: none` appears without a replacement ring |
 | `scripts/a11y/check-no-timed-navigation.mjs` | Any module under `app/(site)/**` or `components/patterns/**` calls `router.push`, `router.replace`, `location.assign` or `window.open` from inside a `setTimeout` or `setInterval` callback (§1.2). Re-adding the one-second handoff forward must fail the build, naming the file |
 
+### 3.1 What the two new guards actually read (Phase 41)
+
+Both shipped in Phase 41, both found real problems on their first run, and both were narrowed until
+they were precise rather than loud.
+
+**`check-contrast.mjs` resolves `var()` chains.** A token pairing in this design system is rarely two
+literals: `--colour-ink-secondary` resolves through two or three indirections before it reaches a
+hex value, and it resolves to a DIFFERENT one per colour scheme. The guard parses the stylesheet,
+follows the chain per scheme and computes the WCAG relative luminance ratio itself. Ten pairings are
+required and one is advisory; across three schemes that is **33 pairs, all passing**.
+
+*It could not resolve fifteen of them at first,* because it was not stripping CSS comments — a
+nine-line header comment was being read as part of a selector. A guard that silently fails to
+resolve is worse than no guard, so the failure to resolve is itself an error now.
+
+**`check-focus-styles.mjs` counts its exemptions.** It reads CSS rules AND Tailwind class lists,
+because `focus:outline-none` in a `className` is the same removal as `outline: none` in a stylesheet
+and the common one in this codebase. Two removals are legitimate and both are named: a
+`:focus:not(:focus-visible)` rule, which is scoped to the pointer-only case, and one `tabIndex={-1}`
+programmatic focus target in the configurator, which is focused by script to move a screen reader and
+never by keyboard. **The number of exemptions is printed on every run**, so it cannot grow quietly.
+
+### 3.2 The e2e sweep is not written yet, and that is a schedule rather than a decision
+
+The seven specs above, `exceptions.json` and `tests/unit/alt-text-coverage.test.ts` are **Phase 42**
+work: the owner asked for all development across Phases 41–44 before any testing work, so the axe
+sweep runs after Phase 44 with the rest of the deferred test track. Everything in §1 and §2 is built;
+what is missing is the proof, and this document does not claim otherwise.
+
+---
+
+### 3.3 Alt text: a constraint, and the 250 rows it cannot fix (Phase 41)
+
+`media_assets` gained `is_decorative` (`0390`), and the alt-text CHECK became the whole WCAG 1.1.1
+rule in one line: **an asset has a usable text alternative, or it is explicitly marked decorative.**
+There is no third state and in particular no way to store a blank alternative by accident.
+
+**The flag is the difference between a chosen empty alternative and a forgotten one**, which is the
+distinction an audit needs and a bare empty string cannot make. `MediaSlot` renders `alt=""` only when
+the asset is decorative AND no override was given; the sentence is KEPT in the row either way, so
+reversing the decision later loses nothing.
+
+**What a constraint cannot catch.** 250 manifest assets carry an `alt_text` that satisfies every
+constraint the database can express and fails 1.1.1 in spirit: 124 are truncated mid-sentence and 126
+are complete sentences carrying the vocabulary of the prompt that generated the picture — lighting
+rigs, lens language, backdrop notes. So the smell is written down as rules in
+`lib/media/alt-text-quality.ts` (`TRUNCATED`, `PROMPT_VOCABULARY`, `REDUNDANT_PREFIX`, `TOO_SHORT`)
+and shown beside the field while somebody edits it, on `/studio/media/all/[assetId]`.
+
+**It is advice and never a refusal.** Whether a sentence describes a picture is a person's judgement,
+and a validator confident enough to block would eventually block a correct description that happened
+to mention light. The warning appears in a `role="status"` region rather than an assertive one,
+because it recomputes on every keystroke and an assertive region would interrupt a screen-reader user
+mid-word.
+
+It is a pure function so that the Studio panel, `scripts/media/check-alt-text.mjs` (Phase 43) and the
+coverage test agree about what bad alt text looks like. Three places agreeing is the only way the
+rewrite of those 250 rows in Phase 43 can be checked at all.
+
+**No contrast preview yet.** The phase document also asks for a contrast preview of text overlaid on
+an asset. The overlay's colour tokens live on the SECTION rather than on the asset, so that preview
+belongs beside the section editor; it is recorded as outstanding rather than approximated here with a
+colour the overlay may not use.
+
 ---
 
 ## 4. Manual passes automation cannot replace

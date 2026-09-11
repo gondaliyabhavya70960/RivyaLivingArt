@@ -1,12 +1,16 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
+import { NONCE_HEADER, mintNonce } from '@/lib/security/csp'
+import { STATIC_SECURITY_HEADERS, cspHeaderName, cspWithReporting } from '@/lib/security/headers'
 import { publicEnv } from '@/lib/supabase/env'
 
 /**
- * THIS FILE IS NOT AUTHORISATION. It does exactly two things: it refreshes the Supabase session
- * cookies, and it redirects a request carrying no session to the login page. It reads no role,
- * checks no permission and consults no table.
+ * THIS FILE IS NOT AUTHORISATION. Phase 41 gives it a third job — the response header set — and
+ * that job is unconditional, mechanical and reads nothing, so it does not weaken the rule below.
+ * Its two ORIGINAL jobs are unchanged: it refreshes the Supabase session cookies, and it redirects
+ * a request carrying no session to the login page. It reads no role, checks no permission and
+ * consults no table.
  *
  * That restriction is amendment A2·b, and it is not stylistic. A proxy cannot see which record a
  * request is about, it runs before the page has resolved anything, and a Server Action invoked
@@ -45,16 +49,69 @@ const EXPIRED_PARAM = 'expired'
  */
 const AUTH_COOKIE = /^sb-.+-auth-token(?:\.\d+)?$/
 
+/**
+ * Paths that get the AUTH treatment: every Studio path except the login page — matching the login
+ * page would redirect it to itself. The lookahead excludes `/studio/login` and anything below it
+ * while still matching a route that merely starts with those letters, so a future `/studio/logins`
+ * is not silently unprotected.
+ */
+const STUDIO_GUARDED = /^\/studio(?:$|\/(?!login$|login\/))/
+
 export const config = {
   /**
-   * Every Studio path except the login page — matching the login page would redirect it to itself.
-   * The lookahead excludes `/studio/login` and anything below it while still matching a route that
-   * merely starts with those letters, so a future `/studio/logins` is not silently unprotected.
+   * EVERY ROUTE, BECAUSE THE HEADERS ARE FOR EVERY ROUTE — Phase 41.
+   *
+   * Until this phase the matcher was `/studio` alone, which was right when the proxy's only job was
+   * auth. The security header set is unconditional, so the matcher has to be too: a CSP that covers
+   * the Studio and not the public site protects the half that has no visitors.
+   *
+   * WHAT IS EXCLUDED AND WHY. `_next/static` and `_next/image` are immutable build output served
+   * straight from the CDN — running a proxy over them adds latency to every asset on every page and
+   * a CSP on a JavaScript file protects nothing. `favicon.ico` and the other root files are the
+   * same. Everything a person can navigate to is matched.
+   *
+   * THE AUTH WORK IS STILL SCOPED. Widening the matcher without scoping the Supabase call would run
+   * `getUser()` — a network round trip — on every public page view, which would be a self-inflicted
+   * latency regression in the phase after the one that measured latency. `STUDIO_GUARDED` above is
+   * the guard, and `proxy()` returns early for everything else with the headers attached.
    */
-  matcher: ['/studio', '/studio/((?!login$|login/).*)'],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|sitemaps/).*)'],
+}
+
+/**
+ * CSP mode. Report-only unless `CSP_ENFORCE=1`, so forgetting the variable costs enforcement rather
+ * than availability. See `lib/security/headers.ts` and SECURITY.md §5.3 for the soak procedure.
+ */
+function cspEnforced(): boolean {
+  return process.env['CSP_ENFORCE'] === '1'
+}
+
+/**
+ * Attach the header set to a response. Called on every path this proxy matches, including the
+ * redirect it may return — a redirect is a response a browser acts on and needs the same headers.
+ */
+function withSecurityHeaders(response: NextResponse, nonce: string): NextResponse {
+  for (const [key, value] of STATIC_SECURITY_HEADERS) response.headers.set(key, value)
+  response.headers.set(cspHeaderName(cspEnforced()), cspWithReporting(nonce))
+  return response
 }
 
 export async function proxy(request: NextRequest) {
+  /*
+   * THE NONCE IS MINTED FIRST AND WRITTEN ONTO THE REQUEST, so that `requestNonce()` can read it
+   * during render and put the same value on any inline script. It is a REQUEST header: it never
+   * reaches a browser, and it must not, because a nonce a client can read is a nonce an injected
+   * script can reuse.
+   */
+  const nonce = mintNonce()
+  request.headers.set(NONCE_HEADER, nonce)
+
+  // Everything that is not a guarded Studio path gets the headers and nothing else: no Supabase
+  // client, no round trip. See the note on `config.matcher`.
+  if (!STUDIO_GUARDED.test(request.nextUrl.pathname)) {
+    return withSecurityHeaders(NextResponse.next({ request }), nonce)
+  }
+
   // Read before the client can rewrite or clear it below.
   const hadAuthCookie = request.cookies.getAll().some((cookie) => AUTH_COOKIE.test(cookie.name))
 
@@ -90,7 +147,7 @@ export async function proxy(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  if (user) return response
+  if (user) return withSecurityHeaders(response, nonce)
 
   const loginUrl = request.nextUrl.clone()
   loginUrl.pathname = LOGIN_PATH
@@ -107,5 +164,5 @@ export async function proxy(request: NextRequest) {
   for (const cookie of response.cookies.getAll()) {
     redirectResponse.cookies.set(cookie)
   }
-  return redirectResponse
+  return withSecurityHeaders(redirectResponse, nonce)
 }

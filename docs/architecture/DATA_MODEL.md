@@ -2350,6 +2350,28 @@ the only session that could insert is `anon` — and an anon insert policy is an
 write into the database. `/api/vitals` validates, rate-limits and inserts as the service role
 instead, which leaves the table's policy set with exactly one entry: staff `select`.
 
+### 11.ah Accessibility and security — Phase 41 · migration `0390` (`0391` unused)
+
+| Object | Posture | Written by | Key rule |
+|---|---|---|---|
+| `media_assets.is_decorative` | Inherits the table's Phase 06 policies — no policy change, so no generated RLS file | `saveAccessibilityAction` under `media.write` | `boolean not null default false`. The alt-text constraint was dropped and re-added as `check (is_decorative or (alt_text is not null and length(btrim(alt_text)) > 0))` |
+
+**One CHECK is the whole of WCAG 1.1.1 as the database can express it**: an asset has a usable text
+alternative, or it is explicitly marked decorative. There is no third state, and in particular no way
+to store a blank alternative by accident. The default is `false` — an asset is informative until
+somebody decides otherwise, which is the safe direction: an image wrongly described costs a reader a
+sentence, and an image wrongly silenced costs them the knowledge that it was there.
+
+**The sentence is kept even when the flag is set.** Marking an asset decorative changes what is
+RENDERED (`MediaSlot` emits `alt=""`), not what is recorded, so reversing the decision later loses
+nothing and an audit can read what somebody thought the image showed.
+
+**`0391` is allocated and unused.** §12 assigned Phase 41 a pair for `rate_limit_buckets` and the
+`media_assets` change, but `rate_limit_buckets` already shipped in `0182` under amendment A18 — it
+was needed by Phase 19, two phases before its number came up. `0390`'s header records the fact.
+Nothing else in the phase changed a policy set, so there was no generated RLS file to write and the
+number stays empty rather than being filled with a migration that had nothing to do.
+
 ## 12. Table register — Phase 03 versus later
 
 The spine an engineer builds in Phase 03 is small on purpose. Everything else is additive.
@@ -2448,7 +2470,7 @@ local and hosted is isolated to one file that can never be picked up by `supabas
 | 38 | `0360`–`0361` | T `system_logs`; view `workflow_runs_v`; enums `log_level`, `log_channel` |
 | 39 | `0370`–`0371` | T `seo_keyword_themes`, `seo_redirects`; A `seo_entries` (`structured_data_type`, `noindex`, `nofollow`, `derived`). `0371` is the generated RLS file |
 | 40 | `0380`–`0381` | T `web_vitals_samples`. `0381` is the generated RLS file — the generator rewrites a policy migration whole, so DDL and generated policies never share a file (the A23…A30 pattern). This row previously read `0380` alone |
-| 41 | `0390`–`0391` | T `rate_limit_buckets`; A `media_assets.is_decorative` and the alt-text constraint |
+| 41 | `0390` (`0391` unused) | A `media_assets.is_decorative`, and `media_assets_alt_text_present` dropped and re-added as `check (is_decorative or non-empty alt_text)`. `rate_limit_buckets` was **not** created here: it shipped in `0182` under amendment A18, two phases before its number came up, so `0391` is allocated and empty. No policy set changed, so there is no generated RLS file |
 | 42 | — | **None.** `tests/integration/migrations-replay.test.ts` asserts every migration replays from empty, in order, with no error |
 | 43 | `0410` | T `media_crops` |
 | 44–46 | — | **None.** A `deployments` table would duplicate Vercel and immediately drift |

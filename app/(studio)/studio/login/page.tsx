@@ -1,4 +1,5 @@
 import type { Metadata, Route } from 'next'
+import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { z } from 'zod'
 
@@ -13,6 +14,15 @@ import { Surface } from '@/components/primitives/Surface'
 import { Text } from '@/components/primitives/Text'
 import { writeAudit } from '@/lib/auth/audit'
 import { getStaffSession } from '@/lib/auth/session'
+import { logSystem } from '@/lib/logging/system-log'
+import {
+  SIGN_IN_WINDOWS,
+  addressFromHeaders,
+  bucketKey,
+  consume,
+  hashIdentifier,
+  retryAfterSeconds,
+} from '@/lib/security/rate-limit'
 import { createClient } from '@/lib/supabase/server'
 import { resolveNextPath } from '@/lib/auth/next-path'
 
@@ -37,13 +47,21 @@ import { resolveNextPath } from '@/lib/auth/next-path'
 const LOGIN_PATH = '/studio/login'
 const SIGN_OUT_PATH = '/api/auth/sign-out'
 
-/** The two failures the form reports inline. Both map to a string; neither names an account. */
+/**
+ * The three failures the form reports inline. Each maps to a string; none names an account.
+ *
+ * `throttled` IS SEPARATE FROM `credentials` ON PURPOSE — Phase 41. Reporting a rate-limited attempt
+ * as a bad password sends somebody to reset a password that was correct, and the copy has to say
+ * "wait" rather than "check your details". It still names no account and reveals nothing about
+ * whether the email exists.
+ */
 const LOGIN_ERROR_STRINGS = {
   credentials: 'studio.login.errorSignIn',
   fields: 'studio.login.errorFields',
+  throttled: 'studio.login.errorThrottled',
 } as const
 
-const loginErrorSchema = z.enum(['credentials', 'fields'])
+const loginErrorSchema = z.enum(['credentials', 'fields', 'throttled'])
 const flagSchema = z.literal('1')
 
 /** Password bounds are a denial-of-service guard, not a policy: the auth server owns the policy,
@@ -85,6 +103,48 @@ async function signInAction(formData: FormData): Promise<void> {
     password: formData.get('password'),
   })
   if (!credentials.success) redirectTo(loginUrl({ error: 'fields', next }))
+
+  /*
+   * RATE LIMITED BEFORE THE CREDENTIAL IS TRIED — Phase 41. Ten attempts per fifteen minutes.
+   *
+   * TWO KEYS, CONSUMED SEPARATELY, because the two attacks look nothing alike. Many attempts from one
+   * address is somebody who forgot their password, or a script working a wordlist against one
+   * account; many attempts against one email from many addresses is credential stuffing. A single key
+   * would miss whichever one it was not.
+   *
+   * NEITHER KEY IS A VALUE ANYBODY CAN READ BACK. The address is HMAC'd and the email is lower-cased
+   * and HMAC'd, so `rate_limit_buckets` records that somebody is trying repeatedly without recording
+   * who — which matters on a table that, unlike the rest of the schema, is written by an
+   * unauthenticated caller.
+   *
+   * A REFUSAL IS ITS OWN ERROR CODE, not "credentials". Telling a person their password was wrong
+   * when in fact they were throttled sends them to reset a password that was correct.
+   */
+  const address = addressFromHeaders(await headers())
+  const [byAddress, byEmail] = await Promise.all([
+    consume(bucketKey('signin_ip', address), SIGN_IN_WINDOWS),
+    consume(bucketKey('signin_email', hashIdentifier(credentials.data.email)), SIGN_IN_WINDOWS),
+  ])
+  if (!byAddress.allowed || !byEmail.allowed) {
+    /*
+     * A SECURITY LOG AND NO AUDIT ROW. `audit_logs` is a record of what an ACTOR did, and a refused
+     * sign-in has no actor — there is no session and the email may belong to nobody. The system log
+     * is where an unattributed security event belongs (Phase 38), and it records the hashed keys so
+     * the owner can see that one address or one account is being worked on without learning which.
+     */
+    await logSystem({
+      level: 'SECURITY',
+      channel: 'AUTH',
+      event: 'auth.signin.rate_limited',
+      message: 'Sign-in refused by the rate limiter before the credential was tried',
+      context: {
+        by_address: !byAddress.allowed,
+        by_email: !byEmail.allowed,
+        retry_after_s: retryAfterSeconds(SIGN_IN_WINDOWS),
+      },
+    })
+    redirectTo(loginUrl({ error: 'throttled', next }))
+  }
 
   const supabase = await createClient()
   const { data, error } = await supabase.auth.signInWithPassword(credentials.data)

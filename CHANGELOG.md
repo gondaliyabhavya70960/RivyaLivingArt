@@ -6,6 +6,75 @@ Every phase adds an entry; see `docs/architecture/CANONICAL-DECISIONS.md` D9 for
 
 ## [Unreleased]
 
+### Phase 41 — Accessibility + Security (DEVELOPMENT COMPLETE; tests deferred to Phase 42)
+
+The security posture stops being a document and becomes code, and the accessibility half gets its
+mechanisms — with its proof deliberately deferred, because the owner asked for all development across
+the remaining phases before any testing work. Where something is not built, this entry says so.
+
+**Every response now carries the header set, and the policy is collected before it is enforced.**
+`proxy.ts` mints a per-request nonce, attaches the content security policy and six static headers to
+the pass-through, the authenticated response and the redirect alike, and its matcher was widened to
+reach the public site — a header set that runs only on `/studio` is not a header set. The policy ships
+`Content-Security-Policy-Report-Only`; violations go to `POST /api/csp-report`, which rate-limits
+before reading the body, caps six fields, strips query strings from every path and logs at `SECURITY`
+level. `CSP_ENFORCE=1` flips it, after a soak the owner reads in `/studio/operations/logs`.
+
+**The rate-limit key became an HMAC, and the table stopped being aspirational.** `sha256(salt + ip)`
+is reversible by enumeration — four billion IPv4 addresses is minutes of GPU time — so the key is now
+`hmac(salt, value)` under two separate salts: `IP_HASH_SALT` for `inquiries.ip_hash` and
+`RATE_LIMIT_SALT` for bucket keys, because rotating one costs a cleared window and rotating the other
+makes every returning enquirer unrecognisable. Five surfaces that SECURITY.md already listed are now
+actually wired: search suggestions (degrading to an empty list rather than 429, because a type-ahead
+that throws is worse than one that stops suggesting), the Studio signing route, the revalidate
+endpoint, the CSP report endpoint and Studio sign-in. A limited surface answers with `Retry-After`
+carrying the SHORTEST window in force.
+
+**Uploads are now checked against their bytes, and the control is the row rather than the upload.**
+The browser uploads straight to Cloudinary, so the server never holds the file; `saveUploadedAssetAction`
+fetches the first 4 kB of the stored original back, runs `validateUpload` against it with the reported
+length passed in separately, and on a refusal destroys the Cloudinary object and writes a `DENIED`
+audit row. Nothing reads Cloudinary except through `media_assets`, so an object with no row is
+unreferenced storage. SVG is refused on every path by content rather than by extension, before the
+allowlist, so a polyglot cannot pass by also satisfying a raster signature.
+
+**A person can now ask what is held about them, and ask for it to be erased.** `/studio/inquiries/all`
+gained a data request panel and `npm run ops:anonymise-inquiries` does the same three things from a
+terminal. Matching is by the email or phone somebody typed — there are no customer accounts — so a
+preview is mandatory: it returns the reference codes it would touch, and the erasure sends them back
+so the server can refuse a set that has moved since. Erasure clears the person and keeps the enquiry,
+with its status and dates, so the studio's record is not rewritten. Owner-only, audited, and the CLI
+refuses to write without `--apply`.
+
+**`media_assets.is_decorative` makes WCAG 1.1.1 one CHECK** (`0390`): an asset has a usable text
+alternative, or it is explicitly marked decorative, with no third state and no way to store a blank
+alternative by accident. `/studio/media/all/[assetId]` is a new route — a page rather than a drawer,
+because the six Media Manager sections are one Server-rendered table and a drawer would have made all
+six client routes — where the two fields are edited together with quality warnings that appear as you
+type and never block a save.
+
+**Five gates joined `npm run check`, and each found something real on its first run.** Secret exposure
+(over the built `.next/static`, distinguishing a variable's NAME in copy from its VALUE), action
+guards (179 Server Actions across 38 modules reach a permission helper), licences (102 packages, no
+copyleft in the runtime closure), contrast (33 token pairs across three schemes, resolved through
+`var()` chains) and focus styles (exempting only the pointer-only case and one programmatic focus
+target, and counting them).
+
+**Three corrections to documents that claimed more than the code did.** EXIF is **not** stripped from
+stored originals — the fix is an incoming transformation that spans the provider and both uploaders
+and cannot be verified anywhere but against the real Cloudinary account, so it is recorded as
+outstanding with the mechanism named rather than shipped blind. `proxy.ts` assigns no `request_id`
+yet. `/studio/system/environment`'s new Security section omits the dependency-audit result, because a
+number from somebody's last CI run would be a stale figure wearing a live badge.
+
+**Deferred to Phase 42, by the owner's instruction:** the seven axe specs and `exceptions.json`, the
+alt-text coverage test, `rate-limit-window`, `upload-validation` and `pii-scope` unit suites, the
+`security-headers` and `studio-authz` e2e specs, and the `gitleaks` + `npm audit` workflow with
+`.gitleaks.toml` and Dependabot.
+
+Amendment **A41**. Migration `0390` (`0391` allocated and unused — `rate_limit_buckets` shipped in
+`0182` under A18). New variables `IP_HASH_SALT`, `RATE_LIMIT_SALT`, `CSP_ENFORCE`, all owner-set.
+
 ### Phase 40 — Performance (COMPLETE)
 
 The performance budget stops being a property of the homepage and becomes a property of the site,

@@ -168,7 +168,8 @@ Public: `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABAS
 
 Server-only: `SUPABASE_SERVICE_ROLE_KEY`, `DATABASE_URL`, `CLOUDINARY_API_KEY`,
 `CLOUDINARY_API_SECRET`, `GOOGLE_SERVICE_ACCOUNT_JSON`, `GOOGLE_SHEETS_SPREADSHEET_ID`,
-`SCRAPER_USER_AGENT`, `REVALIDATE_SECRET`, `CRON_SECRET` (added by amendment A25 — see below).
+`SCRAPER_USER_AGENT`, `REVALIDATE_SECRET`, `CRON_SECRET` (added by amendment A25 — see below),
+`IP_HASH_SALT`, `RATE_LIMIT_SALT`, `CSP_ENFORCE` (added by amendment A41 — see below).
 
 The Environment page reports *reachability only* — never a value, prefix or length.
 
@@ -187,6 +188,59 @@ Brand and editorial copy may be written; anything asserting business capability 
 `OWNER_VERIFICATION_REQUIRED`. Empty states are used instead of invented projects.
 
 ## Amendments
+
+**2026-09-11 · A41 — Phase 41 adds three server-only variables to D8, two of them secrets, and
+records that the accessibility half of the phase ships its mechanisms without its proof (D8,
+SECURITY §5, §7.3–§7.5, §8.1, §9.1, §10.1, ACCESSIBILITY §3.1–§3.3, ENVIRONMENT §5.1–§5.2,
+DATA_MODEL §11.ah, PHASE-39-46 §Phase 41).**
+
+- **`IP_HASH_SALT` and `RATE_LIMIT_SALT` are secrets, and there are two of them on purpose.** The
+  bucket key became `hmac(salt, value)` rather than a salted hash: the IPv4 space is four billion
+  values, so an unsalted digest of an address is the address. The two salts protect different things
+  on different clocks — rotating the rate-limit salt costs one cleared window, while rotating the
+  inquiry salt makes every stored `ip_hash` stop matching and a returning enquirer unrecognisable —
+  so sharing a value between them would make the cheap rotation carry the expensive consequence.
+  `salt()` keeps a fallback chain (`IP_HASH_SALT` → `RATE_LIMIT_SALT` → `SUPABASE_SERVICE_ROLE_KEY`
+  → `'rivya'`) so a rename does not reset every live window on deploy; the last rung is public, and
+  ENVIRONMENT §5.2 and `/studio/system/environment` both say so rather than letting it pass as
+  configured.
+- **`CSP_ENFORCE` is server-only but is NOT a secret.** It is a switch whose value is `1` or absent,
+  and the Studio's Security section renders which header is in force. It is listed in D8 because
+  every variable the server reads belongs in that list, not because knowing it helps an attacker —
+  the policy itself is in every response.
+- **The policy ships report-only and the flip is an owner act.** A content security policy that
+  breaks the 3D viewer breaks it in production, on a device somebody is holding. Violations are
+  posted to `/api/csp-report` and logged at `SECURITY` level, so the soak is readable in the Studio
+  rather than in a vendor's dashboard. The default is report-only, which is the safe direction:
+  forgetting the variable costs enforcement, not availability.
+- **The byte validator refuses the ROW, not the upload, and the reason is architectural.** Uploads go
+  from the browser straight to Cloudinary against a signature, so the server never holds the bytes.
+  `saveUploadedAssetAction` fetches the first 4 kB of the stored original back, runs
+  `validateUpload` against it with the reported length passed in separately, and on a refusal
+  destroys the Cloudinary object and writes a `DENIED` audit row. Nothing in this product reads
+  Cloudinary except through `media_assets`, so an object with no row is unreferenced storage.
+- **EXIF stripping is NOT implemented and SECURITY §7 was corrected rather than left claiming it.**
+  The fix is an incoming transformation on the visitor signature, and every signed parameter must
+  also be sent by the browser byte for byte or Cloudinary rejects the upload — so it spans the
+  provider and both uploaders and can only be verified against the real Cloudinary account. Shipping
+  it blind risks breaking every upload in production to close a staff-only metadata leak. Recorded as
+  outstanding, with the mechanism named, in SECURITY §7.5 and §15 row 8.
+- **Erasure is owner-only by a role literal rather than a new permission.** A permission for a rule
+  with exactly one holder would mean a migration, a generated policy file and a second place the rule
+  could disagree with itself. `inquiries.export` gates the preview and the export; the erasure
+  additionally checks the owner's own role inside the action, and writes a `DENIED` audit row when it
+  refuses.
+- **`media_assets.is_decorative` makes WCAG 1.1.1 expressible as one CHECK.** An asset has a usable
+  text alternative, or it is explicitly marked decorative. There is no third state and no way to store
+  a blank alternative by accident. `0391` is unused: `rate_limit_buckets` already shipped in `0182`
+  under amendment A18, so the number is recorded as allocated-and-unused in DATA_MODEL §12 rather
+  than filled with a migration that had nothing to do.
+- **The accessibility half ships its mechanisms without its proof, by the owner's instruction.** Two
+  offline guards, three route-specific skip links, the decorative flag, the alt-text quality rules and
+  the Studio panel are built. The seven axe specs, `exceptions.json`, the alt-text coverage test and
+  the `gitleaks` and `npm audit` workflows are Phase 42 work: the owner asked for all development
+  across the remaining phases before any testing work. ACCESSIBILITY §3.2 states the gap on the page
+  where somebody would otherwise read the sweep as done.
 
 **2026-09-11 · A39 — Phase 38 adds `lib/ops/` to D2's domain list beside `lib/sheets/` (closing
 open question 4 in full); build information travels as a string `next.config.ts` inlines rather

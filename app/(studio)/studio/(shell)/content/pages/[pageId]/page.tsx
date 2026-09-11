@@ -90,6 +90,22 @@ export default async function Page({ params }: { params: Promise<{ pageId: strin
 
   return (
     <Stack gap={6}>
+      {/*
+       * PHASE 41: SKIP TO SECTIONS (WCAG 2.2 §2.4.1).
+       *
+       * The longest repeated block in the product sits above this: the Studio shell's sidebar, the
+       * page header, the back link and the editor's own toolbar. A member of staff editing twenty
+       * pages in an afternoon tabs past all of it twenty times. The Studio shell already has a "skip
+       * to content" link, and this one goes further — past the editor chrome to the list of sections
+       * they actually came to change.
+       */}
+      <a
+        href="#page-sections"
+        className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:rounded-sm focus:bg-surface-raised focus:px-4 focus:py-2 focus:text-ink"
+      >
+        {t('studio.shell.skipToSections')}
+      </a>
+
       <PageHeader
         level={1}
         title={resolved.page.title}
@@ -105,15 +121,18 @@ export default async function Page({ params }: { params: Promise<{ pageId: strin
         </Link>
       </Cluster>
 
-      <PageEditor
-        pageId={resolved.page.id}
-        pagePath={resolved.page.path}
-        sections={resolved.sections}
-        assets={pickerAssets}
-        slotKeys={MEDIA_SLOTS.map((slot) => slot.key)}
-        permissions={ROLE_PERMISSIONS[session.role]}
-        verificationNotes={verificationNotes}
-      />
+      {/* `tabIndex={-1}` so the jump moves focus, not only the viewport. */}
+      <div id="page-sections" tabIndex={-1}>
+        <PageEditor
+          pageId={resolved.page.id}
+          pagePath={resolved.page.path}
+          sections={resolved.sections}
+          assets={pickerAssets}
+          slotKeys={MEDIA_SLOTS.map((slot) => slot.key)}
+          permissions={ROLE_PERMISSIONS[session.role]}
+          verificationNotes={verificationNotes}
+        />
+      </div>
     </Stack>
   )
 }
