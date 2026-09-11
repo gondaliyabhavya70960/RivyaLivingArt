@@ -18,8 +18,11 @@ import { join } from 'node:path'
 
 function git(args, cwd) {
   try {
-    return execSync(`git ${args}`, { cwd, stdio: ['ignore', 'pipe', 'ignore'], encoding: 'utf8' })
-      .trim()
+    return execSync(`git ${args}`, {
+      cwd,
+      stdio: ['ignore', 'pipe', 'ignore'],
+      encoding: 'utf8',
+    }).trim()
   } catch {
     return null
   }
@@ -43,8 +46,7 @@ function migrationsOnDisk(cwd) {
 export function computeBuildInfo(cwd = process.cwd()) {
   const env = process.env
   const sha = env.VERCEL_GIT_COMMIT_SHA || git('rev-parse HEAD', cwd) || 'unknown'
-  const branch =
-    env.VERCEL_GIT_COMMIT_REF || git('rev-parse --abbrev-ref HEAD', cwd) || 'unknown'
+  const branch = env.VERCEL_GIT_COMMIT_REF || git('rev-parse --abbrev-ref HEAD', cwd) || 'unknown'
   const environment = env.VERCEL_ENV || (env.CI === 'true' ? 'ci' : 'local')
   const migrations = migrationsOnDisk(cwd)
   return {
