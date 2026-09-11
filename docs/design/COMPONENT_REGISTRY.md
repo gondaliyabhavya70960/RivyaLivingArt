@@ -43,6 +43,17 @@ fills `Reviewed on`, `Reviewer` and the final `Verdict`. What it then catches is
 `BUILT` row whose component has been deleted or renamed and whose record is now stale. Wiring the
 script into `npm run check` in Phase 02 therefore passes against this document as it stands.
 
+**Phase 41 corrected forty rows that were `PLANNED` and built.** Studio components are indexed here
+for cross-reference; they are not design-system components and carry no §7 record. Until Phase 41
+the path check resolved only `components/primitives/`, `components/patterns/` and
+`components/three/`, so a Studio row could never be flipped to `BUILT` without failing the gate —
+and forty rows therefore sat at `PLANNED` while their files existed, which is the false claim in the
+opposite direction. The checker now resolves `components/studio/` as well and those forty rows read
+`BUILT`. Four Studio components with full §7 records — RC-304 `DataTable`, RC-306 `StatCard`,
+RC-309 `ConfirmDialog`, RC-314 `CommandPalette` — are still `PLANNED` despite existing, because
+§3 field 10 says a `BUILT` row may not carry a `budget ≤` figure and each of them still does. They
+flip when somebody measures them, and the rows say so.
+
 **`components/sections/**` is deliberately outside the walk**, and this is the only place that
 exclusion is stated. Block renderers are 1:1 with CMS block types (D2), so the invariant that
 matters for them is not "has a registry row" but "exists exactly once for every registered block
@@ -326,55 +337,55 @@ implementation detail of RC-213.
 
 | ID | Component | Purpose | Phase | State | Record |
 |---|---|---|---|---|---|
-| RC-301 | `StudioPage` | usability | 05 | PLANNED | index only |
-| RC-302 | `PageHeader` | usability | 05 | PLANNED | index only |
+| RC-301 | `StudioPage` | usability | 05 | BUILT | index only |
+| RC-302 | `PageHeader` | usability | 05 | BUILT | index only |
 | RC-303 | `Toolbar` | usability | 05 | PLANNED | index only |
-| RC-304 | `DataTable` | usability | 05 | PLANNED | §7.24 |
+| RC-304 | `DataTable` | usability | 05 | PLANNED | §7.24 — built; `State` holds at `PLANNED` until field 10 carries a measured delta (§2) |
 | RC-305 | `FilterBar` (Studio) | usability | 05 | PLANNED | index only — URL-synced, composes RC-007/RC-008 |
-| RC-306 | `StatCard` | usability | 05 | PLANNED | §7.25 |
-| RC-307 | `StatusPill` | usability | 05 | PLANNED | index only |
-| RC-308 | `EmptyState` | usability | 05 | PLANNED | index only |
-| RC-309 | `ConfirmDialog` | usability | 05 | PLANNED | §7.26 |
+| RC-306 | `StatCard` | usability | 05 | PLANNED | §7.25 — built; `State` holds at `PLANNED` until field 10 carries a measured delta (§2) |
+| RC-307 | `StatusPill` | usability | 05 | BUILT | index only |
+| RC-308 | `EmptyState` | usability | 05 | BUILT | index only |
+| RC-309 | `ConfirmDialog` | usability | 05 | PLANNED | §7.26 — built; `State` holds at `PLANNED` until field 10 carries a measured delta (§2) |
 | RC-310 | `DrawerForm` + `FormField` | usability | 05 | PLANNED | index only — composes RC-202/RC-004 |
-| RC-311 | `PermissionGate` | usability | 05 | PLANNED | index only |
-| RC-312 | `RelativeTime` | usability | 05 | PLANNED | index only |
-| RC-313 | `ActorChip` | usability | 05 | PLANNED | index only |
-| RC-314 | `CommandPalette` | navigation | 05 | PLANNED | §7.27 |
-| RC-315 | `ModelInspectorDrawer` | product understanding | 21 | PLANNED | index only — composes RC-202/RC-304 |
-| RC-316 | `CoverageBadge` | usability | 31 | PLANNED | index only — `n / denominator · coverage % · as of` on every analytic figure; reused by 32, 33, 37 |
+| RC-311 | `PermissionGate` | usability | 05 | BUILT | index only |
+| RC-312 | `RelativeTime` | usability | 05 | BUILT | index only |
+| RC-313 | `ActorChip` | usability | 05 | BUILT | index only |
+| RC-314 | `CommandPalette` | navigation | 05 | PLANNED | §7.27 — built; `State` holds at `PLANNED` until field 10 carries a measured delta (§2) |
+| RC-315 | `ModelInspectorDrawer` | product understanding | 21 | BUILT | index only — composes RC-202/RC-304 |
+| RC-316 | `CoverageBadge` | usability | 31 | BUILT | index only — `n / denominator · coverage % · as of` on every analytic figure; reused by 32, 33, 37 |
 | RC-317 | `ToastRegion` + `Toast` | usability | 05 | PLANNED | §7.40 |
-| RC-322 | `ComparisonBuilder` | usability | 31 | PLANNED | index only — server-rendered member forms; no drag island |
-| RC-323 | `AnalysisPanels` | product understanding | 31 | PLANNED | index only — Assortment, Price architecture, Dimensions, rendered from snapshots; coverage badge required |
-| RC-324 | `SourceCoveragePanel` | usability | 31 | PLANNED | index only — captured / priced / parsed per source; health read from the Phase 26 view |
-| RC-325 | `DeleteSetButton` | usability | 31 | PLANNED | index only — Client Component: dialog state only; the delete is a plain server-action form it submits |
-| RC-326 | `ScoreExplain` | product understanding | 32 | PLANNED | index only — the component table that visibly sums to the stored score; renders stored rows, never recomputes |
-| RC-327 | `ScoringModelPanel` | usability | 32 | PLANNED | index only — versions, the rank-movement diff, activation; owner and admin only |
-| RC-328 | `ActivateModelButton` | usability | 32 | PLANNED | index only — Client Component: dialog state only; activation is a plain server-action form |
-| RC-329 | `SimilarityLegend` | product understanding | 33 | PLANNED | index only — the band table verbatim, including the "does not mean" column; `PRECISION NOT YET MEASURED` beside every band until a labelled sample exists; never collapsible |
-| RC-330 | `LibraryCheckPanel` | usability | 33 | PLANNED | index only — Client Component: `useActionState` carrying the self-check's pairs, which are returned to the form and stored nowhere |
-| RC-331 | `EvidenceRail` | product understanding | 34 | PLANNED | index only — what is attached, why, when, and drift against the current value; attaching requires a rationale; never renders a competitor image |
-| RC-332 | `ObservedFigures` | product understanding | 34 | PLANNED | index only — numbers only, each with `CoverageBadge` and the observed-in-research label; a distinct panel from the intended prose |
-| RC-333 | `BriefStatusButton` | usability | 34 | PLANNED | index only — Client Component: dialog state only; Approve/Archive is a plain server-action form |
-| RC-334 | `PipelineBulkBar` | usability | 35 | PLANNED | index only — Phase 29's `ResearchBulkToolbar` with Phase 35's rules fixed: the 200-row cap, the kinds the screen offers, the reason field; no second selection machinery |
-| RC-335 | `StartProductDialog` | usability | 35 | PLANNED | index only — Client Component: the bridge's slug, category and seeded acknowledgement (unticked on open; the submit depends on it); disabled with the reason when the bridge cannot run |
-| RC-336 | `ExportDefinitionForm` | usability | 36 | PLANNED | index only — Client Component for one reason (the column checkboxes follow the entity select); allowlist columns, filter, tab, schedule, the enquiries-only PII toggle; the action validates everything again |
-| RC-337 | `SheetsRunHistory` | usability | 36 | PLANNED | index only — status, rows, cells, attempts, duration and a sanitised error code; the >50 % row-count warning badge; never what the upstream said |
-| RC-338 | `AnalyticsTab` | usability | 37 | PLANNED | index only — Server Component: reads the newest snapshot per metric under the session's policies and renders two sections; the market section only for `research.read` with `advanced_analytics` on; No snapshot yet before the first run |
-| RC-339 | `MetricTile` | usability | 37 | PLANNED | index only — figure with unit, `CoverageBadge`, breakdown, `BarSeries` with its data table, trend, definition disclosure; every number read from the row |
-| RC-340 | `MetricUnavailable` | usability | 37 | PLANNED | index only — the named reason and the fixed "work item" sentence; never a zero, a dash or a placeholder |
-| RC-341 | `MetricTrend` | usability | 37 | PLANNED | index only — `Sparkline` from ≥ 2 AVAILABLE snapshots (`trendPoints()`), else the single-snapshot sentence; an UNAVAILABLE day is a gap |
-| RC-342 | `EnvironmentChecks` | usability | 38 | PLANNED | index only — the eight checks as a table: status badge, fixed code, latency, checked-at, identifiers; renders what the runner redacted and adds nothing |
-| RC-343 | `LogTable` | usability | 38 | PLANNED | index only — `system_logs` newest first with level badge, channel, event and message, occurrence count, actor chip or "machine", a detail disclosure per row |
-| RC-344 | `LogDetail` | usability | 38 | PLANNED | index only — correlation ids as filter links, first occurrence, dedupe key, the context as JSON redacted again on render |
-| RC-345 | `DocBody` | usability | 38 | PLANNED | index only — the Markdown block tree as React: headings with ids, lists, code, quotes, tables; doc links in-app, anchors kept, external links as text with no `href`; no `dangerouslySetInnerHTML` |
-| RC-346 | `LogFilters` | usability | 38 | PLANNED | index only — a GET `FilterBar`: level, channel, range, event substring, actor, run, source, entity type and id; the URL is the filter |
+| RC-322 | `ComparisonBuilder` | usability | 31 | BUILT | index only — server-rendered member forms; no drag island |
+| RC-323 | `AnalysisPanels` | product understanding | 31 | BUILT | index only — Assortment, Price architecture, Dimensions, rendered from snapshots; coverage badge required |
+| RC-324 | `SourceCoveragePanel` | usability | 31 | BUILT | index only — captured / priced / parsed per source; health read from the Phase 26 view |
+| RC-325 | `DeleteSetButton` | usability | 31 | BUILT | index only — Client Component: dialog state only; the delete is a plain server-action form it submits |
+| RC-326 | `ScoreExplain` | product understanding | 32 | BUILT | index only — the component table that visibly sums to the stored score; renders stored rows, never recomputes |
+| RC-327 | `ScoringModelPanel` | usability | 32 | BUILT | index only — versions, the rank-movement diff, activation; owner and admin only |
+| RC-328 | `ActivateModelButton` | usability | 32 | BUILT | index only — Client Component: dialog state only; activation is a plain server-action form |
+| RC-329 | `SimilarityLegend` | product understanding | 33 | BUILT | index only — the band table verbatim, including the "does not mean" column; `PRECISION NOT YET MEASURED` beside every band until a labelled sample exists; never collapsible |
+| RC-330 | `LibraryCheckPanel` | usability | 33 | BUILT | index only — Client Component: `useActionState` carrying the self-check's pairs, which are returned to the form and stored nowhere |
+| RC-331 | `EvidenceRail` | product understanding | 34 | BUILT | index only — what is attached, why, when, and drift against the current value; attaching requires a rationale; never renders a competitor image |
+| RC-332 | `ObservedFigures` | product understanding | 34 | BUILT | index only — numbers only, each with `CoverageBadge` and the observed-in-research label; a distinct panel from the intended prose |
+| RC-333 | `BriefStatusButton` | usability | 34 | BUILT | index only — Client Component: dialog state only; Approve/Archive is a plain server-action form |
+| RC-334 | `PipelineBulkBar` | usability | 35 | BUILT | index only — Phase 29's `ResearchBulkToolbar` with Phase 35's rules fixed: the 200-row cap, the kinds the screen offers, the reason field; no second selection machinery |
+| RC-335 | `StartProductDialog` | usability | 35 | BUILT | index only — Client Component: the bridge's slug, category and seeded acknowledgement (unticked on open; the submit depends on it); disabled with the reason when the bridge cannot run |
+| RC-336 | `ExportDefinitionForm` | usability | 36 | BUILT | index only — Client Component for one reason (the column checkboxes follow the entity select); allowlist columns, filter, tab, schedule, the enquiries-only PII toggle; the action validates everything again |
+| RC-337 | `SheetsRunHistory` | usability | 36 | BUILT | index only — status, rows, cells, attempts, duration and a sanitised error code; the >50 % row-count warning badge; never what the upstream said |
+| RC-338 | `AnalyticsTab` | usability | 37 | BUILT | index only — Server Component: reads the newest snapshot per metric under the session's policies and renders two sections; the market section only for `research.read` with `advanced_analytics` on; No snapshot yet before the first run |
+| RC-339 | `MetricTile` | usability | 37 | BUILT | index only — figure with unit, `CoverageBadge`, breakdown, `BarSeries` with its data table, trend, definition disclosure; every number read from the row |
+| RC-340 | `MetricUnavailable` | usability | 37 | BUILT | index only — the named reason and the fixed "work item" sentence; never a zero, a dash or a placeholder |
+| RC-341 | `MetricTrend` | usability | 37 | BUILT | index only — `Sparkline` from ≥ 2 AVAILABLE snapshots (`trendPoints()`), else the single-snapshot sentence; an UNAVAILABLE day is a gap |
+| RC-342 | `EnvironmentChecks` | usability | 38 | BUILT | index only — the eight checks as a table: status badge, fixed code, latency, checked-at, identifiers; renders what the runner redacted and adds nothing |
+| RC-343 | `LogTable` | usability | 38 | BUILT | index only — `system_logs` newest first with level badge, channel, event and message, occurrence count, actor chip or "machine", a detail disclosure per row |
+| RC-344 | `LogDetail` | usability | 38 | BUILT | index only — correlation ids as filter links, first occurrence, dedupe key, the context as JSON redacted again on render |
+| RC-345 | `DocBody` | usability | 38 | BUILT | index only — the Markdown block tree as React: headings with ids, lists, code, quotes, tables; doc links in-app, anchors kept, external links as text with no `href`; no `dangerouslySetInnerHTML` |
+| RC-346 | `LogFilters` | usability | 38 | BUILT | index only — a GET `FilterBar`: level, channel, range, event substring, actor, run, source, entity type and id; the URL is the filter |
 | RC-347 | `JsonLd` | product understanding | 39 | BUILT | index only — the ONLY emitter of `application/ld+json`; a Server Component taking one graph (or null, rendering nothing) and writing it through `serialiseJsonLd`, which escapes `<`; `scripts/seo/check-jsonld-scope.mjs` fails the build on a second emitter |
-| RC-348 | `SerpPreview` | usability | 39 | PLANNED | index only — Client Component owning the `title` and `description` inputs: live character counts against the 60 / 155 marks, a warning past them, a search-result preview with the template applied; guidance, never enforcement |
-| RC-349 | `SeoEntryForm` | usability | 39 | PLANNED | index only — one `seo_entries` row (PATH or ENTITY): the resolved value and its rung beside every field, the SERP preview, social card, social image, canonical, structured-data type, the two directives; publish and delete as separate forms |
-| RC-350 | `KeywordsTable` | usability | 39 | PLANNED | index only — the SEED §42 themes as research targets with §42's caveat printed above; theme, mapped path, status, notes, evidence link; no numeric field anywhere |
-| RC-351 | `RedirectsTable` | usability | 39 | PLANNED | index only — list with hit counts and chain warnings, a GET test box, add / pause / resume / delete |
-| RC-352 | `StructuredDataPanel` | product understanding | 39 | PLANNED | index only — the allowlist with each type's gate and live state, the never-emitted list, and a read-only rendering of exactly what a builder emits for a chosen entity, with `forbiddenKeysIn()` run over it |
-| RC-353 | `EntitySeoPanel` | usability | 39 | PLANNED | index only — `SeoEntryForm` for the ENTITY scope beside the product, collection, project and article editors; two audited acts under two permissions |
+| RC-348 | `SerpPreview` | usability | 39 | BUILT | index only — Client Component owning the `title` and `description` inputs: live character counts against the 60 / 155 marks, a warning past them, a search-result preview with the template applied; guidance, never enforcement |
+| RC-349 | `SeoEntryForm` | usability | 39 | BUILT | index only — one `seo_entries` row (PATH or ENTITY): the resolved value and its rung beside every field, the SERP preview, social card, social image, canonical, structured-data type, the two directives; publish and delete as separate forms |
+| RC-350 | `KeywordsTable` | usability | 39 | BUILT | index only — the SEED §42 themes as research targets with §42's caveat printed above; theme, mapped path, status, notes, evidence link; no numeric field anywhere |
+| RC-351 | `RedirectsTable` | usability | 39 | BUILT | index only — list with hit counts and chain warnings, a GET test box, add / pause / resume / delete |
+| RC-352 | `StructuredDataPanel` | product understanding | 39 | BUILT | index only — the allowlist with each type's gate and live state, the never-emitted list, and a read-only rendering of exactly what a builder emits for a chosen entity, with `forbiddenKeysIn()` run over it |
+| RC-353 | `EntitySeoPanel` | usability | 39 | BUILT | index only — `SeoEntryForm` for the ENTITY scope beside the product, collection, project and article editors; two audited acts under two permissions |
 | RC-354 | `VitalsReporter` | performance | 40 | BUILT | index only — the one client island in the site shell that exists for measurement rather than interaction. Renders no DOM node; `web-vitals` is behind a dynamic `import()` inside the effect, so it is not in any first load; reports for one page view in ten, from production only. Sends the route PATTERN and four coarse buckets and carries no identifier of any kind |
 | RC-355 | `VitalsCard` | product understanding | 40 | BUILT | index only — field Core Web Vitals on the Studio Analytics tab: p75 per metric per route pattern over 28 days, n beside every figure, captioned with the sample rate and the window. A route with no samples is absent, never shown as zero |
 

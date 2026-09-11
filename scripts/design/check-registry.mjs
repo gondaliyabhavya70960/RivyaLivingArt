@@ -18,11 +18,25 @@
  *
  * Exit 1 on any violation.
  */
-import { readFileSync, existsSync } from 'node:fs'
+import { readFileSync, existsSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const ROOT = join(fileURLToPath(import.meta.url), '..', '..', '..')
+
+/**
+ * The Studio areas under `components/studio/`, read from disk.
+ *
+ * Listing them here would make this gate something a new Studio area has to remember to
+ * update, and a gate people have to remember is a gate that eventually lies.
+ */
+function studioGroups() {
+  const base = join(ROOT, 'components', 'studio')
+  if (!existsSync(base)) return []
+  return readdirSync(base, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => entry.name)
+}
 const REGISTRY = join(ROOT, 'docs/design/COMPONENT_REGISTRY.md')
 
 const FULL_RECORD_FIELDS = [
@@ -221,6 +235,13 @@ for (let i = 0; i < lines.length; i++) {
           // `scripts/perf/check-bundle.mjs` refuses `components/three/**` in any first-load client
           // graph, which is only expressible when the engine has a directory of its own.
           `components/three/${part}.tsx`,
+          // Phase 41: a Studio component is indexed here for cross-reference — it is not a
+          // design-system component and has no §7 record — but BUILT must still mean a file
+          // exists. The Studio shell primitives sit at the top of `components/studio/` and
+          // everything else is grouped one level deep by Studio area, so the groups are read
+          // from disk rather than listed; a new area needs no edit here.
+          `components/studio/${part}.tsx`,
+          ...studioGroups().map((group) => `components/studio/${group}/${part}.tsx`),
         ]
         if (!candidates.some((pth) => existsSync(join(ROOT, pth)))) {
           problems.push(
