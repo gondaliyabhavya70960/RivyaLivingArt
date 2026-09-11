@@ -185,6 +185,54 @@ Brand and editorial copy may be written; anything asserting business capability 
 
 ## Amendments
 
+**2026-09-11 · A30 — the three-valued verdict is about the MEASUREMENT and not the band, Phase 30
+takes migration `0281`, `research_saved_views` is the first owner-scoped research table, the scale
+rule editor sits with the other parsing configuration rather than on the settings page, and I3 bans
+the scale IDENTIFIERS rather than the words (PHASE-23-30 §Phase 30, DATA_MODEL §12, SCRAPER.md §21).**
+
+Five readings the repository forced, and the first is a defect this phase found in its own first
+draft.
+
+- **`is_large_format is null` MEANS "WE HAVE NO MEASUREMENT", NOT "WE COULD NOT PLACE IT".** The
+  three-valued column is the phase's central decision, and the first implementation tied the null
+  verdict to `scale_band = 'UNKNOWN'` — both in the classifier and in a CHECK constraint. The phase
+  document's own four verification rows caught it: a well-measured 1 150 mm piece whose proportions
+  match no band signature is banded `UNKNOWN`, and its SIZE is perfectly well known. Refusing it a
+  verdict would have moved a confident answer into the bucket reserved for unanswerable ones —
+  precisely the dishonesty the three-valued column exists to prevent, and it would have inflated the
+  unknown count on every panel. What ships is
+  `research_products_unmeasured_has_no_verdict`: `longest_axis_mm is null` implies
+  `is_large_format is null`, and nothing else does.
+- **`0281` is the phase's generated policy file, one past the document's `0280`.** The eighth time,
+  for the eighth time the same mechanical reason: `auth:gen-policies` rewrites a policy file whole,
+  and `db:migrate` refuses a migration edited after it was applied. A23 `0214`, A24 `0221`, A25
+  `0233`, A26 `0241`, A27 `0251`, A28 `0261`, A29 `0271`, A30 `0281`.
+- **`research_saved_views` IS THE FIRST RESEARCH TABLE WITH AN `ownerScope`, AND ITS SHARED LEG IS A
+  SECOND SELECT POLICY.** Five of the six roles hold `research.read`, so the scope — not the
+  permission — is what stops a viewer rewriting a merchandiser's views; the same shape
+  `staff_preferences` uses. Sharing is expressed as an additional SELECT policy rather than by
+  widening that scope, because sharing widens who may READ one row and must not widen who may edit
+  it: a view somebody else can edit is a view whose results change under the person who linked to
+  it. No admin client touches this table anywhere in the codebase, because one would bypass exactly
+  the check that carries the security.
+- **THE SCALE RULE EDITOR IS ON `/studio/operations/data-quality`, NOT `/studio/system/settings`.**
+  The phase document places it on the settings page, which is gated on `system.settings.write` —
+  held only by an owner and an admin. A scale rule is `research.write`, and a researcher is exactly
+  who notices that a threshold is banding a corpus wrongly. Following the document would have put
+  the control behind a permission its user does not have, which makes the "tune it without a deploy"
+  design decorative. It now sits beside the Phase 28 material lexicon and the Phase 29 change
+  thresholds: three editors, one permission, one screen. A29 records the same reading for the change
+  thresholds.
+- **I3 BANS THE SCALE IDENTIFIERS, NOT THE WORDS.** The phase document asks that any band token fail
+  the isolation guard in `app/(site)/**` or `content/**`. Taken literally that bans "dining",
+  "console" and "monumental" from a furniture maker's own website, which is absurd and is the kind
+  of rule people work around rather than obey. What ships bans `scale_band`, `scaleBand`,
+  `large_format_source` and `largeFormatSource` — the research identifiers, which mean something
+  specific about a competitor's page. **`is_large_format` is deliberately NOT banned**:
+  `products.is_large_format` is a first-party column the public Large Format experience reads, and
+  banning the name would break the page whose vocabulary this phase borrowed. The two are different
+  columns in different worlds, and the I1 leg is what proves nothing joins them.
+
 **2026-09-11 · A29 — Phase 29 takes migration `0271`, a unique constraint over a nullable scope
 column needs `nulls not distinct`, the decision cache on a change row is declared as a cache, and
 the three "field" vocabularies are reconciled at eleven (PHASE-23-30 §Phase 29, DATA_MODEL §12,

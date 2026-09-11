@@ -997,7 +997,9 @@ export const STUDIO_STRINGS = {
   },
   'studio.bulk.undo': { value: 'Undo', contentKey: 'studio_help.bulk_undo' },
   'studio.bulk.unavailable': {
-    value: 'Bulk actions for scraped products arrive in Phase 29.',
+    value:
+      'Bulk actions for scraped products run from the change queue and the large-format ' +
+      'workspace, which are the screens where rows can be selected.',
     contentKey: 'studio_help.bulk_unavailable',
   },
   'studio.bulk.chooseOperation': {
@@ -1747,6 +1749,208 @@ export const STUDIO_STRINGS = {
   'studio.research.thresholdMinor': {
     value: 'Minor at or beyond',
     contentKey: 'studio_help.research_threshold_minor',
+  },
+  // --- Phase 30: the large-format workspace -------------------------------------------------------
+  'studio.research.coverageInScope': {
+    value: 'rows in scope',
+    contentKey: 'studio_help.research_coverage_in_scope',
+  },
+  'studio.research.coverageMeasured': {
+    value: 'with measurements',
+    contentKey: 'studio_help.research_coverage_measured',
+  },
+  'studio.research.coverageUnknown': {
+    value: 'not measured',
+    contentKey: 'studio_help.research_coverage_unknown',
+  },
+  'studio.research.coverageNote': {
+    value:
+      'Every figure below is drawn from the measured rows only. Nothing is inferred for a row ' +
+      'whose page did not state a size.',
+    contentKey: 'studio_help.research_coverage_note',
+  },
+  'studio.research.bandDistribution': {
+    value: 'By scale band',
+    contentKey: 'studio_help.research_band_distribution',
+  },
+  'studio.research.largeFormatHeading': {
+    value: 'Large format',
+    contentKey: 'studio_help.research_large_format_heading',
+  },
+  'studio.research.tallyLarge': { value: 'large', contentKey: 'studio_help.research_tally_large' },
+  'studio.research.tallyNotLarge': {
+    value: 'not large',
+    contentKey: 'studio_help.research_tally_not_large',
+  },
+  'studio.research.tallyUnknown': {
+    value: 'could not tell',
+    contentKey: 'studio_help.research_tally_unknown',
+  },
+  'studio.research.tallyNote': {
+    value: 'A row whose dimensions could not be read is counted as could-not-tell, never as small.',
+    contentKey: 'studio_help.research_tally_note',
+  },
+  'studio.research.scatterHeading': {
+    value: 'Longest axis against height',
+    contentKey: 'studio_help.research_scatter_heading',
+  },
+  'studio.research.scatterExcluded': {
+    value: 'rows excluded for having no measurement to plot',
+    contentKey: 'studio_help.research_scatter_excluded',
+  },
+  'studio.research.priceByBand': {
+    value: 'Price, by currency',
+    contentKey: 'studio_help.research_price_by_band',
+  },
+  'studio.research.priceNoConversion': {
+    value: 'One group per currency. Nothing is converted, so there is no combined total to show.',
+    contentKey: 'studio_help.research_price_no_conversion',
+  },
+  'studio.research.priceNone': {
+    value: 'No row in scope carries an amount.',
+    contentKey: 'studio_help.research_price_none',
+  },
+  'studio.research.priceQuoteOnly': {
+    value: 'priced on request',
+    contentKey: 'studio_help.research_price_quote_only',
+  },
+  'studio.research.priceUnpriced': {
+    value: 'no price read',
+    contentKey: 'studio_help.research_price_unpriced',
+  },
+  'studio.research.materialsByBand': {
+    value: 'Materials named',
+    contentKey: 'studio_help.research_materials_by_band',
+  },
+  'studio.research.materialsNone': {
+    value: 'No row in scope names a material Rivya recognises.',
+    contentKey: 'studio_help.research_materials_none',
+  },
+  'studio.research.gapHeading': {
+    value: 'Where research coverage is thin',
+    contentKey: 'studio_help.research_gap_heading',
+  },
+  'studio.research.gapNote': {
+    value:
+      'This is about what Rivya has looked at, not about a market. It makes no comparison with ' +
+      'the Rivya catalogue and scores no opportunity.',
+    contentKey: 'studio_help.research_gap_note',
+  },
+  'studio.research.gapNone': {
+    value: 'Every band in scope has rows and measurements.',
+    contentKey: 'studio_help.research_gap_none',
+  },
+  'studio.research.filterBand': { value: 'Band', contentKey: 'studio_help.research_filter_band' },
+  'studio.research.filterLargeOnly': {
+    value: 'Large only',
+    contentKey: 'studio_help.research_filter_large_only',
+  },
+  'studio.research.savedViews': {
+    value: 'Saved views',
+    contentKey: 'studio_help.research_saved_views',
+  },
+  'studio.research.savedViewName': {
+    value: 'Name this view',
+    contentKey: 'studio_help.research_saved_view_name',
+  },
+  'studio.research.savedViewShare': {
+    value: 'Share with the team',
+    contentKey: 'studio_help.research_saved_view_share',
+  },
+  'studio.research.savedViewDelete': {
+    value: 'Delete',
+    contentKey: 'studio_help.research_saved_view_delete',
+  },
+  'studio.research.savedViewNone': {
+    value: 'No view has been saved for this screen yet.',
+    contentKey: 'studio_help.research_saved_view_none',
+  },
+  'studio.research.scaleRulesHeading': {
+    value: 'Scale rules',
+    contentKey: 'studio_help.research_scale_rules_heading',
+  },
+  'studio.research.scaleRulePriority': {
+    value: 'Priority',
+    contentKey: 'studio_help.research_scale_rule_priority',
+  },
+  'studio.research.scaleRuleMinAxis': {
+    value: 'Longest axis at least (mm)',
+    contentKey: 'studio_help.research_scale_rule_min_axis',
+  },
+  'studio.research.scaleRuleMappedCategory': {
+    value: 'In a mapped category',
+    contentKey: 'studio_help.research_scale_rule_mapped_category',
+  },
+  'studio.research.scaleRuleNotParsed': {
+    value: 'Dimensions not parsed',
+    contentKey: 'studio_help.research_scale_rule_not_parsed',
+  },
+  'studio.research.scaleRuleFromSignature': {
+    value: 'from the signature',
+    contentKey: 'studio_help.research_scale_rule_from_signature',
+  },
+  'studio.research.scaleRuleEnabled': {
+    value: 'Rule is in force',
+    contentKey: 'studio_help.research_scale_rule_enabled',
+  },
+  'studio.research.scaleRuleOrder': {
+    value: 'Ordered. The first rule that matches decides, and a row matching none is unknown.',
+    contentKey: 'studio_help.research_scale_rule_order',
+  },
+  'studio.research.workspaceEmpty': {
+    value: 'Nothing has been classified yet',
+    contentKey: 'studio_help.research_workspace_empty',
+  },
+  'studio.research.workspaceEmptyBody': {
+    value:
+      'Rows are banded when the pipeline classifies them, or when somebody runs the ' +
+      'reclassification over stored evidence. Nothing has been fetched yet.',
+    contentKey: 'studio_help.research_workspace_empty_body',
+  },
+  // --- Phase 30: selection, the bulk toolbar and the single-row action bar ------------------------
+  'studio.research.selectRow': {
+    value: 'Select',
+    contentKey: 'studio_help.research_select_row',
+  },
+  'studio.research.openRow': {
+    value: 'Open',
+    contentKey: 'studio_help.research_open_row',
+  },
+  'studio.research.rowActions': {
+    value: 'This row',
+    contentKey: 'studio_help.research_row_actions',
+  },
+  'studio.research.bulkHeading': {
+    value: 'Act on the selected rows',
+    contentKey: 'studio_help.research_bulk_heading',
+  },
+  'studio.research.bulkNote': {
+    value:
+      'Choose the action first, then the rows. Nothing happens until you have read the preview ' +
+      'and confirmed it, and every run can be undone for 24 hours.',
+    contentKey: 'studio_help.research_bulk_note',
+  },
+  'studio.research.bulkSurvivor': {
+    value: 'The row that survives',
+    contentKey: 'studio_help.research_bulk_survivor',
+  },
+  'studio.research.bulkTagRemove': {
+    value: 'Remove the tag instead of applying it',
+    contentKey: 'studio_help.research_bulk_tag_remove',
+  },
+  'studio.research.bulkNoTags': {
+    value: 'No research tag exists yet. Create one before tagging in bulk.',
+    contentKey: 'studio_help.research_bulk_no_tags',
+  },
+  'studio.research.bulkBack': {
+    value: 'Back to the rows',
+    contentKey: 'studio_help.research_bulk_back',
+  },
+  'studio.research.bulkNeedsPermission': {
+    value:
+      'Acting on several rows at once needs the bulk permission as well as the merchandiser one. ' +
+      'You can read this screen and decide rows one at a time.',
+    contentKey: 'studio_help.research_bulk_needs_permission',
   },
   'studio.research.severityTruncated': {
     value:

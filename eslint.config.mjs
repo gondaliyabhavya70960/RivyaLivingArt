@@ -127,6 +127,18 @@ const config = [
        * row a session could write is a competitor price move somebody invented.
        */
       'app/(studio)/studio/(shell)/research/changes/actions.ts',
+      /*
+       * Phase 30. The same reason Phase 28's explorer action needs it, and only for the
+       * classification columns: RLS gates a TABLE and not a COLUMN, and `research_products`' single
+       * update policy is written for `research.confirm` while a scale band is `research.write` —
+       * a classification says what KIND of object a page describes and carries no disposition
+       * meaning. The column split is enforced by the action's own permission check.
+       *
+       * SAVED VIEWS DO NOT USE IT AND MUST NOT. `research_saved_views` is owner-scoped in the
+       * policy, which is the whole of its security; an admin client on that table would bypass
+       * exactly the check that matters.
+       */
+      'app/(studio)/studio/(shell)/research/large-format/actions.ts',
     ],
     rules: {
       'no-restricted-imports': [

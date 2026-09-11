@@ -42,6 +42,7 @@ import {
   PHASE_27_POLICIES,
   PHASE_28_POLICIES,
   PHASE_29_POLICIES,
+  PHASE_30_POLICIES,
   PHASE_19_POLICIES,
   TABLE_POLICY_MAP,
   type ManagedTable,
@@ -482,6 +483,30 @@ const GENERATED: Record<string, { title: string; preamble: string }> = {
 -- ISOLATION INVARIANT I2 IS UNCHANGED AND UNCHANGEABLE: not one \`anon\` leg appears below, on any
 -- of the seven, and \`scripts/research/check-research-isolation.mjs\` fails the build the moment
 -- one does.`,
+  },
+  [PHASE_30_POLICIES]: {
+    title: `-- ${PHASE_30_POLICIES} — Phase 30`,
+    preamble: `-- Policies for the two tables migration 0280 creates. GENERATED from
+-- lib/auth/table-permissions.ts and rewritten whole, so it may hold nothing a human wrote.
+--
+-- TWO TABLES, AND THEY ARE AS DIFFERENT AS TWO RESEARCH TABLES GET.
+--
+--   \`research_large_format_rules\`  research.write — CONFIGURATION, exactly as the material lexicon
+--                                   and the change thresholds are. A scale band says what KIND of
+--                                   object a page describes; it carries no disposition meaning, and
+--                                   this phase requires \`research.confirm\` for nothing at all.
+--
+--   \`research_saved_views\`         research.read, NARROWED TO THE OWNER. The one research table
+--                                   whose rows belong to individual people. Five of the six roles
+--                                   hold \`research.read\`, so the SCOPE carries the security here
+--                                   rather than the permission — without it any of them could
+--                                   rewrite everyone else's views.
+--
+-- THE SHARED LEG IS A SECOND SELECT POLICY, NOT A WIDENED SCOPE. Sharing widens who may READ one
+-- row and must not widen who may edit it: a view somebody else can edit is a view whose results
+-- change under the person who linked to it.
+--
+-- ISOLATION INVARIANT I2 IS UNCHANGED: not one \`anon\` leg appears below, on either table.`,
   },
   [PHASE_24_POLICIES]: {
     title: `-- ${PHASE_24_POLICIES} — Phase 24`,

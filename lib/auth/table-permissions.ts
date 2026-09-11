@@ -155,6 +155,7 @@ export const PHASE_26_POLICIES = '0241_phase26_source_config_rls.sql'
 export const PHASE_27_POLICIES = '0251_phase27_extraction_rls.sql'
 export const PHASE_28_POLICIES = '0261_phase28_normalization_rls.sql'
 export const PHASE_29_POLICIES = '0271_phase29_changes_rls.sql'
+export const PHASE_30_POLICIES = '0281_phase30_large_format_rls.sql'
 
 export const TABLE_POLICIES = {
   // --- Shape A: content tables ------------------------------------------------------------------
@@ -1479,6 +1480,65 @@ export const TABLE_POLICIES = {
       'retried cron slice updates rather than duplicates. No write policy: a hand-edited summary ' +
       'read as a trend is worse than no summary. No anon policy may ever exist on any research_* ' +
       'table (isolation invariant I2).',
+  },
+  /*
+   * Phase 30 — two tables, and they are as different from one another as two research tables get.
+   *
+   * `research_large_format_rules` IS CONFIGURATION, exactly as the material lexicon and the change
+   * thresholds are: `research.write`, because a scale rule says what KIND of object a page
+   * describes and carries no disposition meaning at all. This phase writes no `disposition`, no
+   * `duplicate_of_id` and no `stage`, and requires `research.confirm` for nothing it introduces.
+   *
+   * `research_saved_views` IS THE ONE RESEARCH TABLE WHOSE ROWS BELONG TO INDIVIDUAL PEOPLE, and
+   * that is what `ownerScope` is for. Every role holding `research.read` may create a view, and
+   * without the narrowing any of them could rewrite everyone else's — so the scope carries the
+   * security here rather than the permission, exactly as it does on `staff_preferences`. The
+   * shared leg is an `extraSelectPolicy` rather than a widened `readPermission`, because sharing
+   * widens who may READ one row and must not widen who may edit it: a view somebody else can edit
+   * is a view whose results change under the person who linked to it.
+   */
+  research_large_format_rules: {
+    policiesIn: PHASE_30_POLICIES,
+    shape: 'C',
+    readPermission: 'research.read',
+    writePermission: 'research.write',
+    deletePermission: 'destructive.execute',
+    deviation:
+      'An ordered rule set, first match wins, editable in Studio so a threshold is tuned without ' +
+      'a deploy. research.write rather than research.confirm because a scale band is a ' +
+      'classification and not a verdict. Delete is destructive.execute because removing a rule ' +
+      'silently re-bands every row the next reclassification touches. No anon policy may ever ' +
+      'exist on any research_* table (isolation invariant I2).',
+  },
+  research_saved_views: {
+    policiesIn: PHASE_30_POLICIES,
+    shape: 'C',
+    readPermission: 'research.read',
+    writePermission: 'research.read',
+    deletePermission: 'research.read',
+    ownerScope: {
+      clause: 'owner_user_id = (select auth.uid())',
+      why:
+        'A saved view belongs to the person who saved it. research.read is held by five of the ' +
+        "six roles, so without this narrowing any of them could rewrite or delete everyone else's " +
+        'views — the scope is what carries the security, not the permission. Wrapped in a ' +
+        'sub-select so the planner evaluates auth.uid() once per statement rather than once per ' +
+        'row, the same shape staff_preferences uses.',
+    },
+    extraSelectPolicy: {
+      name: 'research_saved_views_select_shared',
+      using:
+        "is_shared = true and public.has_role('owner','admin','merchandiser','researcher','viewer')",
+      why:
+        'Sharing widens who may READ one row and must not widen who may edit it. A second SELECT ' +
+        'leg says exactly that; folding it into the owner scope would make every shared view ' +
+        'editable by everybody, and a view somebody else can edit is a view whose results change ' +
+        'under the person who linked to it.',
+    },
+    deviation:
+      'The one research table whose rows belong to individual people. Readable by its owner and, ' +
+      'when shared, by anyone holding research.read; writable only by its owner. No anon policy ' +
+      'may ever exist on any research_* table (isolation invariant I2).',
   },
 } as const satisfies Record<string, TablePolicy>
 

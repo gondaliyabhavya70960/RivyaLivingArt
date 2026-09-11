@@ -1020,9 +1020,11 @@ surface, and it must not be possible to launder a concept asset into a real one 
 rows. The engine rejects any bulk write to `rivya_asset_id`, `higgsfield_generation_id`,
 `is_ai_generated` or `is_concept`.
 
-**The research bulk surface** is registered from Phase 24 with `available: false` and renders an
-unavailable state naming Phase 29 until `research_products` exists. Phase 29 enables the five
-operations against the same engine; it does not build a second one.
+**The research bulk surface** was registered from Phase 24 with `available: false` and rendered a
+named unavailable state until there were rows to act on. Phase 29 enabled the five operations
+against the same engine and Phase 30 gave `/studio/research/changes` and
+`/studio/research/large-format` the row selection they act with; neither built a second engine.
+`/studio/research/explorer` still shows the unavailable state, because it still has no selection.
 
 ---
 
@@ -1865,6 +1867,14 @@ bulk what they cannot reach one row at a time. `research.reject` is the only des
 empties a queue — and takes `destructive.execute`, a typed row count and a reason applied to every
 item, with the same 24-hour undo as every other bulk operation.
 
+**The selection this acts on arrived in Phase 30**, and the checkbox carries the PRODUCT id rather
+than the change id: the five operations target a research product, and a queue row is one field's
+movement on one of them. Two changes on the same product select that product once, which the
+engine's own de-duplication makes true rather than the screen pretending to. The flow is Select →
+Preview → Confirm → Apply, and the preview replaces the queue rather than sitting under it. The
+toolbar is drawn only for a role holding both permissions; the engine refuses either way, so the
+rendering is the courtesy and `run.ts` is the gate.
+
 **The dashboard's digest** (`/studio/research/dashboard`) carries material changes by field,
 products first seen, products no longer listed, and — the number that makes a stalled queue
 undeniable — the DATE of the oldest undecided change. Disappearance is judged per source against
@@ -1876,8 +1886,63 @@ unknown look identical and mean opposite things.
 
 The scale workspace. Ordered, editable classification rules (first match wins), `scale_band`
 (`DINING · CONSOLE · COFFEE · SEATING · SIDE · MONUMENTAL · WALL · UNKNOWN`), a three-valued
-`is_large_format` (true / false / not yet determined), and saved views. Rules are configuration, edited
-at `/studio/system/settings`, not content.
+`is_large_format`, and saved views.
+
+**`is_large_format` is three-valued and the null means "we have no measurement".** Not "we could not
+place it": a well-measured piece whose proportions match no band signature is banded `UNKNOWN` and
+is still confidently large or not. Refusing it a verdict would hide a confident answer among the
+unanswerable ones and inflate the unknown count on every panel. A row whose dimensions could not be
+read is never classified as small.
+
+**The coverage banner renders above every panel, and every panel carries a coverage figure.** Every
+number on this screen is conditional on how many rows had parsable dimensions; a chart that draws
+the answerable rows and says nothing about the rest reports a distribution over a sample it does not
+disclose. Zero rows in scope reads as 0 % coverage, never 100 %. No panel drops the unknown bucket
+or an empty band to look tidy.
+
+**Price panels group by currency and show no combined total** — nothing is converted, so there is no
+honest total to show. Quote-only rows are their own figure rather than being dropped.
+
+**The gap panel reports research coverage and says so in its heading.** It makes no comparison with
+Rivya's catalogue, computes no score, and uses no opportunity language. Rivya has no published
+products, so such a comparison would be an artefact of an empty catalogue. Opportunity scoring is
+Phase 32.
+
+**An editor override is permanent.** Setting a band or a verdict by hand sets
+`large_format_source = 'EDITOR'`, and `npm run research:reclassify-scale` then skips the row and
+reports the skip — so somebody editing the rules learns how many rows their edit did not reach.
+Overriding re-derives the longest axis from the stored dimensions rather than accepting a typed
+number: a person overrides the classification, not the measurement.
+
+**Everything the scale controls write is `research.write`, and none of it is `research.confirm`.** A
+scale band says what KIND of object a page describes and carries no disposition meaning. The Phase
+29 action bar on this screen is the part that needs `research.confirm`, and it checks it in its own
+module.
+
+**The Phase 29 action bar and the Phase 24 bulk toolbar are both here, so a merchandiser shortlists
+from the screen where they found the piece.** Opening a row (`?row=<id>`, a link that carries the
+filters) shows Shortlist, Confirm and Reject-with-a-reason for that row — the same Server Actions
+the change queue calls, which accept a bare product id for exactly this case, writing the same
+append-only log and the same stage move. Selecting rows and choosing an operation runs the same
+engine as everywhere else: no second preview, no second confirmation, no second undo. Confirming
+says what it does not do, in seeded copy, in both places.
+
+**A role that cannot act sees why rather than nothing.** Without `bulk.execute` and
+`research.confirm` the checkboxes are not drawn and a line names the permission the toolbar needs —
+an absent control teaches an operator that the feature does not exist, and a dead one teaches them
+that it is broken.
+
+**The scale-rule editor is on `/studio/operations/data-quality`, beside the material lexicon and the
+change thresholds — not on `/studio/system/settings`,** which is where PHASE-23-30 places it. That
+page needs `system.settings.write`, held only by an owner and an admin; a scale rule is
+`research.write`, and a researcher is exactly who notices a threshold banding a corpus wrongly. All
+three editors are parsing configuration about other people's pages, all three are one permission,
+and a person tuning one is usually there because of another.
+
+**Saved views** are per-surface named filter sets, reproducible from their URL. A view belongs to
+the person who saved it and is editable only by them; sharing makes it readable by anyone with
+`research.read` and editable by nobody else — a view somebody else can edit is a view whose results
+change under the person who linked to it.
 
 ### 12.8 `/studio/research/compare` · `/compare/[setId]`
 

@@ -7,6 +7,119 @@
 ---
 
 ## Current Phase
+**Phase 30 — Large-Format Research Workspace. COMPLETE.** The research subsystem now answers the
+question Rivya actually cares about: SEED §56 puts large-format furniture first in the content
+hierarchy, and `/studio/research/large-format` gives the same priority to research — a workspace
+over the rows that are large by a stated, editable rule, with honest coverage figures for the rows
+whose dimensions could not be read.
+
+**Nothing is classified, because nothing has been fetched.** There are still no approved sources, so
+`research_products` is empty and every panel renders its empty state. What exists is the machinery,
+proved against fixture tables, against the database, and end to end against a live fixture source
+that was deleted afterwards.
+
+What it is NOT is a market analysis. Rivya has no published products, so a comparison against its
+own catalogue would be an artefact of an empty catalogue wearing the clothes of a finding.
+
+### Phase 30: what is built
+
+**Migrations `0280`–`0281`.** Six columns on `research_products` (`scale_band`, `is_large_format`,
+`longest_axis_mm`, `large_format_source`, `classified_at`, `classified_rule_id`),
+`research_large_format_rules` with five ordered rules seeded as configuration, and
+`research_saved_views`.
+
+**`is_large_format` is three-valued, and the null means "we have no measurement".** A boolean would
+force a row whose dimensions could not be parsed to `false`, and every distribution built on the
+column would then under-report large work in proportion to how badly a source writes its pages — a
+failure that looks exactly like a finding. The constraint
+`research_products_unmeasured_has_no_verdict` refuses a verdict on an unmeasured row, and the
+override action refuses it in a sentence before the constraint has to.
+
+**Coverage is stated before anything is drawn from it.** The banner renders above every panel, each
+panel takes a REQUIRED coverage prop, zero rows in scope reads as 0 % rather than 100 %, and no panel
+drops the unknown bucket or an empty band. Price panels group by currency, have no field for a
+combined total — a shape that cannot express the wrong answer — and count quote-only rows rather
+than dropping them.
+
+**An editor override is permanent.** `large_format_source = 'EDITOR'` freezes the row and
+`research:reclassify-scale` skips it and REPORTS the skip, because somebody editing the rules needs
+to know how many rows their edit did not reach.
+
+**`research_saved_views` is the first owner-scoped research table.** Five of the six roles hold
+`research.read`, so the scope carries the security rather than the permission; sharing is a second
+SELECT policy rather than a widened scope. No admin client touches that table anywhere.
+
+**The gap panel reports research coverage and says so in its heading** — no comparison with Rivya's
+catalogue, no score, no opportunity language, asserted by a test that reads the component.
+
+**Row selection, and the one bulk engine.** `/studio/research/large-format` and
+`/studio/research/changes` now carry checkboxes, the Phase 24 toolbar and the Phase 29 action bar.
+Neither screen implements any of that machinery: a Server Action parses the form and calls
+`previewBulkOperation` / `applyBulkOperation`, and the single-row controls call the same Server
+Actions the queue calls — Phase 29 wrote them to accept a bare product id for exactly this case. On
+the queue the checkbox carries the PRODUCT id, because the five operations target a product and a
+queue row is one field's movement on one of them.
+
+**I3 bans the scale identifiers rather than the words.** `scale_band`, `scaleBand`,
+`large_format_source` and `largeFormatSource` may not appear on a public surface; "dining" and
+"console" obviously may, and `products.is_large_format` is a first-party column the public Large
+Format page reads.
+
+### Phase 30: what is NOT built, and why
+
+- **Any comparison with Rivya's catalogue, and any opportunity or gap score.** Phases 31–32, after
+  there is something to compare against.
+- **A dimension inferred from a category, a price, an image or a name.** `UNKNOWN` stays `UNKNOWN`.
+- **Selection on `/studio/research/explorer`.** It keeps the named unavailable state, which is still
+  true there; Phase 30's document extends the explorer with filters and the saved-view control, not
+  with a selection.
+- **Visual similarity, product direction, the shortlist workspace, a Sheets export.** Phases 33–36.
+- **Any public surface.** `is_large_format` on a research row and `products.is_large_format` on a
+  Rivya row are different columns in different worlds, and the isolation guard proves it.
+
+### Phase 30: three readings the repository forced
+
+1. **The null verdict belongs to the MEASUREMENT, not to the band.** The first draft tied it to
+   `scale_band = 'UNKNOWN'` in both the classifier and the CHECK constraint, and the phase document's
+   own four verification rows caught it: a well-measured 1 150 mm piece whose proportions match no
+   band signature is banded `UNKNOWN` and its size is perfectly well known. Recorded as amendment
+   **A30**.
+2. **A saved view needs an owner scope, not a permission.** Five of the six roles hold
+   `research.read`; without `owner_user_id = (select auth.uid())` any of them could rewrite everyone
+   else's views. That is also why sharing is a second SELECT policy: it widens who may READ a row and
+   must not widen who may edit it.
+3. **The change queue's checkbox is the product, not the change.** Selecting the change id would hand
+   the engine ids that do not exist in `research_products`, and every row would preview as
+   `row_not_found` — a failure that reads like missing data rather than like a wrong column.
+
+### Phase 30: verification, as actually run
+
+- `npm run check` — green, all twenty gates.
+- Unit project — **144 files / 2,415 tests**, with no database.
+- RLS project — **23 files / 532 tests** with `RLS_TESTS_REQUIRED=1`, against the migrated and
+  seeded database.
+- `db:check-migrations` (82 migrations up to `0281`), `db:check-schema` (80 tables),
+  `db:check-types`, `auth:check-policies` (all four generated files match the matrix),
+  `auth:check-rls` (80 tables, 266 policies), `research:check-isolation` (all four invariants
+  against the database) — green.
+- Both new guards proved to FAIL before being trusted: the surface allowlist relaxed to a prefix
+  check, and the queue's checkbox switched to the change id.
+- `research:reclassify-scale` proved end to end against a live fixture source: 2 100 mm → DINING and
+  large, 900 mm → COFFEE and not large, AMBIGUOUS → UNKNOWN with no verdict, and an overridden row
+  surviving a threshold raised past it and reported as skipped. The fixture source was deleted
+  afterwards; `research_products` is back to zero rows.
+- Production build against the seeded database through a local PostgREST, then
+  `security:check-bundle` clean.
+
+### The next exact action
+
+**Phase 31 — Analytics + Comparison**, the first phase that reads across sources rather than within
+one. It is also the phase that inherits the honesty rule this one established: every figure states
+its coverage, and a comparison Rivya cannot make honestly is not made.
+
+---
+
+### Superseded — Phase 29's state
 
 **Phase 29 — Change Detection + Review. COMPLETE.** The research subsystem is now useful OVER TIME
 rather than at a point in time: a page Rivya has already read says something different, the
@@ -118,13 +231,6 @@ Behaviour on hosted: eleven seeded global defaults, all PUBLISHED; the unique co
 `NULLS NOT DISTINCT`; `research_changes` has exactly one policy and it is a SELECT; not one `anon`
 policy exists on any of the seven (I2); and both ledger rows carry the local files' SHA-256, so
 `db:migrate` sees the two databases at the same version.
-
-### The next exact action
-
-**Phase 30 — Large-Format Research Workspace**, migration `0280`. It adds scale banding to
-`research_products`, the ordered classification rules, and saved views — and it is the phase that
-brings row selection to the research surfaces, which is what leaves the change queue's bulk toolbar
-in its unavailable state today.
 
 ---
 

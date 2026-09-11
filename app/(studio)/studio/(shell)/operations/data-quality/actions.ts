@@ -4,7 +4,9 @@ import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 
 import { CHANGE_FIELDS, type ChangeField } from '@/lib/scraper/analytics/materiality'
+import { SCALE_BANDS, type ScaleBand } from '@/lib/scraper/analytics/scale'
 import { upsertChangeRule } from '@/lib/supabase/repositories/research/change-rules'
+import { upsertScaleRule } from '@/lib/supabase/repositories/research/scale'
 
 import type { StudioFormState } from '@/components/studio/form-state'
 import { writeAudit } from '@/lib/auth/audit'
@@ -219,6 +221,100 @@ export async function saveChangeRuleAction(
 
     revalidatePath(DATA_QUALITY_PATH)
     revalidatePath('/studio/research/changes')
+    return { status: 'saved' }
+  } catch (error) {
+    return refusal(error)
+  }
+}
+
+/**
+ * Create or edit one ordered scale rule.
+ *
+ * `research.write`, THE OPERATING HALF, because a scale band says what KIND of object a page
+ * describes and carries no disposition meaning. Phase 30 writes no `disposition`, no
+ * `duplicate_of_id` and no `stage`, and requires `research.confirm` for nothing.
+ *
+ * THE PREDICATE IS ASSEMBLED HERE FROM NAMED FIELDS, never accepted as jsonb from the form. The
+ * stored shape is a closed vocabulary of three keys read by `lib/scraper/analytics/scale.ts`; a
+ * rule engine evaluating arbitrary jsonb a form could write would be the shape of an injection as
+ * well as impossible to typecheck.
+ */
+export async function saveScaleRuleAction(
+  _previous: StudioFormState,
+  form: FormData,
+): Promise<StudioFormState> {
+  try {
+    const session = await requirePermission('research.write')
+
+    const priority = Number(String(form.get('priority') ?? ''))
+    if (!Number.isInteger(priority) || priority <= 0 || priority > 100_000) {
+      return issue('A priority is a whole number. Rules are read in that order.', 'invalid')
+    }
+
+    const predicate: {
+      parseState?: 'NOT_PARSED'
+      minLongestAxisMm?: number
+      categoryInLargeFormatSet?: boolean
+    } = {}
+
+    if (String(form.get('not_parsed') ?? '') === 'true') predicate.parseState = 'NOT_PARSED'
+
+    const rawAxis = String(form.get('min_longest_axis_mm') ?? '').trim()
+    if (rawAxis !== '') {
+      const axis = Number(rawAxis)
+      if (!Number.isInteger(axis) || axis <= 0 || axis > 100_000) {
+        return issue('A longest axis is a whole number of millimetres.', 'invalid')
+      }
+      predicate.minLongestAxisMm = axis
+    }
+
+    if (String(form.get('category_in_large_format_set') ?? '') === 'true') {
+      predicate.categoryInLargeFormatSet = true
+    }
+
+    const rawBand = String(form.get('result_band') ?? '')
+    const resultBand =
+      rawBand === ''
+        ? null
+        : (SCALE_BANDS as readonly string[]).includes(rawBand)
+          ? (rawBand as ScaleBand)
+          : undefined
+    if (resultBand === undefined) return issue('That is not a scale band.', 'invalid')
+
+    const rawLarge = String(form.get('result_is_large') ?? '')
+    const resultIsLarge = rawLarge === 'true' ? true : rawLarge === 'false' ? false : null
+
+    // A RULE THAT DECIDES NOTHING CONSUMES A ROW'S FIRST MATCH AND LEAVES IT UNCLASSIFIED, which
+    // reads as a classifier bug rather than a configuration one. The row-level constraint says the
+    // same thing; this says it in a sentence.
+    if (resultBand === null && resultIsLarge === null) {
+      return issue('A rule has to decide something: a band, a verdict, or both.', 'invalid')
+    }
+
+    const client = await createClient()
+    await upsertScaleRule(client, {
+      priority,
+      predicate,
+      resultBand,
+      resultIsLarge,
+      isEnabled: String(form.get('is_enabled') ?? '') === 'true',
+      notes: String(form.get('notes') ?? '').trim() || null,
+      status: String(form.get('status') ?? 'DRAFT') === 'PUBLISHED' ? 'PUBLISHED' : 'DRAFT',
+      actorUserId: session.userId,
+    })
+
+    await writeAudit({
+      actorUserId: session.userId,
+      actorRole: session.role,
+      action: 'research.scale_rule.save',
+      result: 'SUCCESS',
+      entityType: 'research_large_format_rules',
+      entityId: String(priority),
+      summary: `priority ${String(priority)} → band ${resultBand ?? 'signature'}, large ${String(resultIsLarge)}`,
+    })
+
+    revalidatePath(DATA_QUALITY_PATH)
+    revalidatePath('/studio/research/large-format')
     return { status: 'saved' }
   } catch (error) {
     return refusal(error)

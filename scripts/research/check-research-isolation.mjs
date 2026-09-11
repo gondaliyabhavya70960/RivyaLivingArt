@@ -269,7 +269,24 @@ const PUBLIC_TREES = [
   join(ROOT, 'content'),
 ]
 
-const FORBIDDEN = /research_|researchProduct|researchSearch|\bscraper\b/i
+/*
+ * WHAT MAY NOT BE NAMED ON A PUBLIC SURFACE.
+ *
+ * PHASE 30 ADDS THE SCALE VOCABULARY, AND ONLY THE IDENTIFIERS. The phase document asks that a band
+ * token fail here, and taken literally that would ban the words "dining", "console" and
+ * "monumental" from a furniture maker's own website — which is absurd, and would be the kind of
+ * rule people work around rather than obey. What actually matters is that the research
+ * CLASSIFICATION does not leak: `scale_band`, `large_format_source` and the rules table are
+ * research columns, they mean something specific about a competitor's page, and none of them has
+ * any business in `app/(site)`.
+ *
+ * `is_large_format` IS DELIBERATELY ABSENT from this list. `products.is_large_format` is a
+ * first-party column the public Large Format experience reads, and banning the name would break the
+ * page this vocabulary was borrowed from. The two are different columns in different worlds; the
+ * I1 leg is what proves nothing joins them.
+ */
+const FORBIDDEN =
+  /research_|researchProduct|researchSearch|\bscraper\b|scale_band|scaleBand|large_format_source|largeFormatSource/i
 
 const EXTENSIONS = ['.tsx', '.ts', '.mjs', '.js', '.jsx']
 
