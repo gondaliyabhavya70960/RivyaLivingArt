@@ -13,7 +13,7 @@ already read says something different, and somebody has to decide what that mean
 shapes every table, every action and every guard is FEAT §25's last line: **changes are never
 automatically imported into Rivya products.** They are never automatically imported into anything.
 
-**Migrations `0270`–`0271`.** Seven tables — `research_changes`, `research_change_rules`,
+**Migrations `0270`–`0271`, applied locally AND to the hosted project** — with parity measured, not assumed: a structure digest over the seven tables' columns, constraints, indexes, policies, trigger functions and triggers (147 objects) matches byte for byte. Seven tables — `research_changes`, `research_change_rules`,
 `research_review_actions`, `research_notes`, `research_tags`, `research_product_tags`,
 `research_change_digests` — in three postures that answer one question: who may write. What the
 SYSTEM detected takes no write policy at all, for any role including owner, because a change row a

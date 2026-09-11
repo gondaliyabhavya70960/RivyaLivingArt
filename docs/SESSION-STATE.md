@@ -99,6 +99,26 @@ reach one row at a time.
 - Production build against the seeded database through a local PostgREST, then
   `security:check-bundle` clean.
 
+### Phase 29: hosted parity, measured rather than assumed
+
+`0270` and `0271` are applied to `ccvarsmzickdkryoakdg` as well as locally, and the two databases
+were compared rather than trusted. A structure digest over the seven tables' columns, constraints,
+indexes, policies, the two trigger functions and the two triggers — **147 objects** — returns
+`e6dc835ab9fbdd8de0ddfc5ab9bb9079` on both.
+
+The hosted apply used a comment-stripped copy, and the stripper was PROVED before it was trusted:
+the stripped migrations were applied to a throwaway database and digested against one built from
+the files as written, and the only differences were the `schema_migrations` ledger that `db:reset`
+creates and the raw psql loop does not. A first version of the stripper collapsed blank lines
+globally and changed three function bodies — harmless to behaviour, still a textual difference
+between local and hosted, and exactly what the digest exists to catch; it now preserves every
+dollar-quoted region byte for byte.
+
+Behaviour on hosted: eleven seeded global defaults, all PUBLISHED; the unique constraint carries
+`NULLS NOT DISTINCT`; `research_changes` has exactly one policy and it is a SELECT; not one `anon`
+policy exists on any of the seven (I2); and both ledger rows carry the local files' SHA-256, so
+`db:migrate` sees the two databases at the same version.
+
 ### The next exact action
 
 **Phase 30 — Large-Format Research Workspace**, migration `0280`. It adds scale banding to
