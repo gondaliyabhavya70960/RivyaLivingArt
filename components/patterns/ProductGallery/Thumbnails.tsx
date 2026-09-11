@@ -2,6 +2,7 @@
 
 import * as React from 'react'
 
+import { AspectBox } from '@/components/primitives/AspectBox'
 import { MediaImage } from '@/components/patterns/MediaImage'
 import { mediaRefOf } from '@/lib/media/ref'
 import type { MediaAsset } from '@/lib/supabase/schemas'
@@ -112,13 +113,34 @@ export function Thumbnails({
               onActivate?.(index)
             }}
           >
-            <MediaImage
-              media={mediaRefOf(asset)}
-              alt={asset.alt_text}
-              cloudName={cloudName}
-              preset="thumb"
-              sizes="80px"
-            />
+            {/*
+             * THE BOX IS RESERVED HERE, AND WITHOUT IT THE WHOLE STRIP WAS INVISIBLE — Phase 42.
+             *
+             * `MediaImage` renders `absolute inset-0 h-full w-full` and says so at the top of its
+             * own file: it FILLS a frame, and something else reserves one. Every other call site in
+             * the product passes through `BlockImage`, which wraps it in a `MediaFrame`. This one
+             * did not, so the `<img>` was out of flow, the button had nothing to give it height,
+             * and `data-gallery-thumbnails` measured **zero pixels tall on every product page with
+             * images**. The images loaded; nobody could see them.
+             *
+             * Found by `tests/e2e/product-minimal.spec.ts`, whose "no zero-height container" test
+             * is exactly this shape of defect and which had never run against a page with a product
+             * on it until the Phase 42 fixture published one.
+             *
+             * `AspectBox` rather than `MediaFrame` because a thumbnail has no fallback message and
+             * no veil — it is a control, not a picture with copy over it — and `MediaFrame` would
+             * need a `strings` prop this component has no reason to take. 4:5 matches the still it
+             * selects, so the strip is a row of small versions of what the viewer shows.
+             */}
+            <AspectBox ratio="4:5" className="w-full">
+              <MediaImage
+                media={mediaRefOf(asset)}
+                alt={asset.alt_text}
+                cloudName={cloudName}
+                preset="thumb"
+                sizes="80px"
+              />
+            </AspectBox>
           </button>
         </li>
       ))}

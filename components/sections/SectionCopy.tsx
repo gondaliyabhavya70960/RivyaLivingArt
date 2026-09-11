@@ -138,3 +138,19 @@ export function SectionCopy({
     </Stack>
   )
 }
+
+/**
+ * The level a CARD TITLE inside this section should take.
+ *
+ * A section that renders its own heading emits an `h2` (see `SectionCopy` above), so its cards are
+ * `h3` and the outline reads h1 → h2 → h3. A section whose heading is EMPTY emits nothing — which
+ * is correct, because inventing "Untitled" is the SEED §55 failure — and its cards then sit
+ * directly under the page's `h1`. At level 3 they belong to nothing, and a screen-reader user
+ * jumping the outline hears a level they cannot place.
+ *
+ * Found by `tests/e2e/a11y/headings.spec.ts` in Phase 42, on `/collection`, whose category grid is
+ * seeded without a heading. Stated once here so every card-bearing section answers it the same way.
+ */
+export function cardHeadingLevel(section: { readonly heading: string | null }): 2 | 3 {
+  return section.heading !== null ? 3 : 2
+}

@@ -74,7 +74,7 @@
     "search:prune-queries": "tsx scripts/search/prune-queries.ts",
     "search:check-scope": "node scripts/search/check-search-scope.mjs",
     "bulk:check-registry": "node scripts/bulk/check-bulk-registry.mjs",
-    "check": "npm run typecheck && npm run lint && npm run format:check && npm run media:check-ids && npm run media:assert-no-regen && npm run media:check-alt-text && npm run docs:check-contract && npm run cms:check-transitions && npm run cms:check-copy && npm run demo:check-register && npm run site:check-client-boundary && npm run site:check-islands && npm run site:check-whatsapp && npm run perf:check-image-props && npm run perf:check-video-props && npm run perf:check-bundle && npm run perf:count-islands && npm run design:check-tokens && npm run design:check-registry && npm run design:check-utilities && npm run search:check-scope && npm run bulk:check-registry && npm run research:check-isolation && npm run research:check-no-autoimport && npm run research:check-no-ml && npm run sheets:check-no-read && npm run logs:check-separation && npm run seo:check-jsonld-scope && npm run media:check-decoder && npm run a11y:check-focus-styles && npm run a11y:check-contrast && npm run security:check-action-guards && npm run security:check-licenses && npm run db:check-data-layer && npm run db:check-unit-offline",
+    "check": "npm run typecheck && npm run lint && npm run format:check && npm run media:check-ids && npm run media:assert-no-regen && npm run media:check-alt-text && npm run docs:check-contract && npm run cms:check-transitions && npm run cms:check-copy && npm run demo:check-register && npm run site:check-client-boundary && npm run site:check-islands && npm run site:check-whatsapp && npm run perf:check-image-props && npm run perf:check-video-props && npm run perf:check-bundle && npm run perf:count-islands && npm run design:check-tokens && npm run design:check-registry && npm run design:check-utilities && npm run search:check-scope && npm run bulk:check-registry && npm run research:check-isolation && npm run research:check-no-autoimport && npm run research:check-no-ml && npm run sheets:check-no-read && npm run logs:check-separation && npm run seo:check-jsonld-scope && npm run media:check-decoder && npm run a11y:check-focus-styles && npm run a11y:check-contrast && npm run security:check-action-guards && npm run security:check-licenses && npm run test:check-fixture && npm run test:check-fixture-media && npm run test:check-flaky && npm run db:check-data-layer && npm run db:check-unit-offline",
     "research:check-isolation": "node scripts/research/check-research-isolation.mjs",
     "research:check-no-autoimport": "node scripts/research/check-no-autoimport.mjs",
     "research:prune-snapshots": "tsx scripts/research/prune-snapshots.ts",
@@ -111,7 +111,14 @@
     "a11y:check-contrast": "node scripts/a11y/check-contrast.mjs",
     "security:check-action-guards": "node scripts/security/check-action-guards.mjs",
     "security:check-licenses": "node scripts/security/check-licenses.mjs",
-    "security:check-secret-exposure": "node scripts/security/check-secret-exposure.mjs"
+    "security:check-secret-exposure": "node scripts/security/check-secret-exposure.mjs",
+    "test:seed-fixture": "tsx scripts/test/seed-fixture.ts",
+    "test:check-fixture": "node scripts/test/check-fixture-isolation.mjs",
+    "test:coverage": "vitest run --project unit --coverage",
+    "test:build-fixture-media": "tsx scripts/test/build-fixture-media.ts",
+    "test:check-fixture-media": "tsx scripts/test/build-fixture-media.ts --check",
+    "test:check-flaky": "node scripts/test/check-flaky.mjs",
+    "test:visual": "npm run build && E2E_PRODUCTION=1 playwright test --project=visual-w1440 --project=visual-w768 --project=visual-w390"
   },
   "dependencies": {
     "@gltf-transform/core": "4.5.0",
@@ -145,6 +152,7 @@
     "@types/react-dom": "^19.2.7",
     "@types/three": "0.185.4",
     "@vitejs/plugin-react": "^6.1.1",
+    "@vitest/coverage-v8": "^5.0.0",
     "eslint": "^9.39.5",
     "eslint-config-next": "^16.3.4",
     "jsdom": "^30.0.1",

@@ -12,6 +12,22 @@ import AxeBuilder from '@axe-core/playwright'
  * build deliberately 404s this route.
  */
 
+/*
+ * THE GALLERY IS A DEVELOPMENT SURFACE. `/design-system` calls `notFound()` in production, by
+ * design: it is a catalogue of components for the people building them, not a page the studio
+ * ships. So every test in this file skips when the harness is driving a production build
+ * (`E2E_PRODUCTION=1`, set by `.github/workflows/e2e.yml`), with the reason stated rather than
+ * silently absent.
+ *
+ * ITS VISUAL BASELINES ARE LOCAL-ONLY FOR THE SAME REASON, and that is not a loss: they were
+ * produced in this repository's container, and font rasterisation differs on a GitHub runner by
+ * enough to fail a page of text. See `docs/ops/TESTING.md` §3.
+ */
+test.skip(
+  process.env.E2E_PRODUCTION === '1',
+  '/design-system is dev-only — it calls notFound() in a production build',
+)
+
 test.describe('design system gallery', () => {
   test('renders every primitive specimen', async ({ page }) => {
     await page.goto('/design-system')

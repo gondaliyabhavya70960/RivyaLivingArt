@@ -95,7 +95,24 @@ export const MediaFrame = React.forwardRef<HTMLElement, MediaFrameProps>(functio
       {hasMedia ? (
         children
       ) : (
-        <div className="absolute inset-0 flex items-center justify-center p-4 text-center">
+        <div
+          /*
+           * AN ASSERTION HOOK FOR THE EMPTY STATE — Phase 42.
+           *
+           * "This slot has no media bound" is a state several tests need to distinguish from "the
+           * image failed to load" and from "the page is broken", and until now it was only
+           * identifiable by the seeded sentence inside it — which is CMS copy, so a test pinned to
+           * it would break the moment an editor improved the wording. A data attribute is the
+           * house convention for exactly this (`data-product-card`, `data-inquiry-state`): it
+           * survives a CSS rename and a copy edit, and it costs nothing at runtime.
+           *
+           * `tests/e2e/perf-headers.spec.ts` reads it to tell an unbound hero — Phase 43 left two
+           * generation briefs awaiting the owner — from a hero that renders an image and forgets
+           * its priority hint, which is the regression that test exists to catch.
+           */
+          data-media-fallback=""
+          className="absolute inset-0 flex items-center justify-center p-4 text-center"
+        >
           <p className="text-ink-secondary text-sm">{fallbackLabel}</p>
         </div>
       )}

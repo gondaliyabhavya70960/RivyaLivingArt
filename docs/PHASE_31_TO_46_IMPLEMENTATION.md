@@ -1793,7 +1793,236 @@ soak the report-only policy, then set `CSP_ENFORCE=1`.
 
 ## Phase 42 — Comprehensive Testing
 
-**Status:** NOT STARTED
+**Status:** COMPLETED — 2026-09-11
+
+### Objective
+
+Build the test system the previous forty-one phases wrote specs against: one deterministic fixture,
+a browser suite that runs, a visual tier, coverage thresholds that mean something, and the CI to run
+all of it. Deferred by the owner's instruction until Phase 44's development had landed.
+
+### Requirements found
+
+`docs/project/phases/PHASE-39-46.md` §42 asks for a fixture seeder, committed media derivatives, a
+media-route interceptor, integration suites, a visual matrix, coverage thresholds, a flake register,
+a sharded e2e workflow, a security workflow, and `docs/ops/TESTING.md` rewritten. Everything it
+names exists. Two figures differ from its projections and both are explained below.
+
+### Implementation completed
+
+**The fixture.** `tests/fixtures/ids.ts` declares every id behind the reserved prefix
+`f0000000-0000-4000-8000-`; `scripts/test/seed-fixture.ts` writes six staff users, four products
+(one per `price_state`), one collection, one portfolio project, two articles, ten FAQs, five
+inquiries, one research source with a run and twenty products, and twelve media assets, all dated
+from a frozen clock. It refuses a non-local database, touches only prefixed ids, and is idempotent
+by construction. `--publish-seeded` walks the seeded sections up the real DRAFT → REVIEW → APPROVED
+→ PUBLISHED ladder, because a freshly seeded database 404s on every public route and a browser suite
+against it skips everything and reports green.
+
+**Twelve committed images.** `scripts/test/build-fixture-media.ts` writes indexed-colour PNGs with
+stored deflate blocks — a hand-written encoder rather than `sharp`, so the bytes are a pure function
+of the pixels and regenerating them elsewhere produces no diff.
+`tests/support/media-route.ts` answers every `res.cloudinary.com` request with one, so no test run
+touches the network.
+
+**Four integration suites**, in a new `integration` vitest project: row security across the whole
+schema, seed idempotency by digest, the publish gates attempted as the database owner, and the
+migration ledger against the files on disk.
+
+**Sixteen new browser specs**, including the seven under `tests/e2e/a11y/` that Phase 41 deferred,
+`security-headers` and `studio-authz` from Phase 41, and `inquiry-conversion`, `touch` and
+`catalogue-filters` from this phase.
+
+**Four visual specs** with 33 committed baselines at three widths, tiered by what a regression
+costs.
+
+**Three workflows**: `e2e.yml` (sharded four ways, publishes the seeded content first),
+`security.yml` (gitleaks over the whole history, `npm audit` split by runtime versus build), and
+`.github/dependabot.yml` weekly and grouped.
+
+### What the suite found — eight production defects
+
+| # | Defect | How long it had been true |
+|---|---|---|
+| 1 | **No enquiry could be saved, in any environment.** `submit-inquiry.ts` wrote a 32-character rate-limiter digest into `ip_hash`, whose CHECK demands 64. Every insert was refused | Since Phase 41 added the constraint |
+| 2 | **Nothing had ever been written to `system_logs`.** Seven of thirteen RPC parameters were sent as `undefined`; `supabase-js` drops those keys and PostgREST could not resolve the function | Since Phase 38 |
+| 3 | **Catalogue product cards were not links.** `ProductCard`'s own comment promised the anchor "in Phase 15"; Phase 15 shipped the route and not the anchor | Twenty-seven phases |
+| 4 | **Two listing pages skipped a heading level** — card titles at `h3` directly under the `h1` | Since those listings existed |
+| 5 | **The gallery thumbnail strip was zero pixels tall on every product page.** `MediaImage` renders `absolute inset-0` and says in its own header that an ancestor must reserve the box; every other call site goes through `BlockImage`, which wraps it in a `MediaFrame`. This one did not | Since the gallery existed |
+| 6 | **Every `/collection/[category]` page returned 500 in a production build.** `generateStaticParams` alongside `await searchParams` makes a prerendered page turn dynamic at request time, which Next refuses. `next build` succeeds, so no CI gate had ever seen it | Since the filters landed |
+| 7 | **The home page's material story failed AA.** `opacity-40` on a dimmed stage composites everything beneath it, so `MediaFrame`'s "image unavailable" label — which renders in every slot the owner has not bound media to yet — measured 2.77:1 | Since the stage dimming landed |
+| 8 | **Every page scrolled sideways at 1024px.** The masthead's inline search field appeared from `lg`, and at 1024 the content box is 930px against a wordmark, a nine-item nav and a field that together will not compress below 1054 | Since Phase 23 put the search box in the shell |
+
+Defect 1 is the serious one: the site's single non-negotiable business rule is that an enquiry is
+persisted before any WhatsApp handoff, and the path had never completed successfully. The action
+behaved correctly throughout — it refused to redirect — so the failure was silent.
+
+Defect 6 is the one that says most about why this phase exists. `next build` reports it as a
+success; the page only fails when a request arrives, which is the state no gate in this repository
+had ever been in. It took running the browser suite against `next start` to see it — and running
+the suite against `next start` is itself a Phase 42 change (see below).
+
+Defect 8 says something about the QA matrix. FEAT §45 names eight widths and this suite runs at all
+eight, but until this run it had only ever been executed at two — and 1024 is the width where the
+desktop chrome first appears, which is exactly where a masthead runs out of room. The arithmetic is
+not close (1054 needed against 930 available), so there is no shrinking that fixes it: one of the
+three had to go, and DESIGN_SYSTEM §8.2 pins the nav and its mega menu at ≥1024. The search field
+now appears from `xl`, which is the threshold `search-combobox-a11y.spec.ts` had been skipping below
+all along while its comment said `lg`. The consequence is recorded rather than hidden: between 1024
+and 1279 the masthead carries no search control, and §8.1 asks for a compact "search TRIGGER" rather
+than an inline field, which is the Phase 45 change that would close it.
+
+Defect 7 could not have been caught by `scripts/a11y/check-contrast.mjs` at any threshold: the gate
+compares token pairs, and no pair expresses "this ink and this surface, both composited through an
+ancestor's opacity onto the ground". No ink fixes it either — pure white through the same 40% reaches
+4.14:1. The fix moves the dim onto the photograph, which is what the effect was always about, and
+`MediaFrame` already draws the same distinction one layer down by gating its veil on `hasMedia`. The
+gate did have a real blind spot next to it, and it is closed: `--rv-surface-sunken` appeared in no
+pair at all, so the media well's label was unchecked in every scheme. It is now a pair of its own.
+
+**The harness could not express what six specs asserted.** `playwright.config.ts` gained
+`E2E_PRODUCTION=1`, which switches the web server from `npm run dev` to `npx next start`. A
+development server answers `no-cache, must-revalidate` to everything, so the four `perf-headers`
+assertions about the caching contract could never pass; two `model-*` specs counted module-graph
+requests that only a dev server makes. `e2e.yml` builds before it runs. `/design-system` calls
+`notFound()` in a production build by design, so its spec skips under the flag with that reason
+stated.
+
+**Three findings were about the visual harness, and one of them made every rule in it a no-op.**
+`tests/visual/stability.ts` called `addStyleTag` before `page.goto`, so its stylesheet went into
+`about:blank` and was thrown away by the navigation — animations, carets and the dev-overlay rule
+had never applied to a single baseline. It is injected in `settle()` now. The visible symptom was
+the development server's dev-tools indicator photographing collapsed on one run and expanded on the
+next, which is what `/large-format` at 390px had been failing on; the suite drives a production
+build now, where the overlay does not exist. And the committed baselines had been generated against
+a database carrying rows from other suites rather than the three steps `e2e.yml` runs, so the
+catalogue baseline was 673px taller than the fixture's four products can make it. All 33 were
+regenerated from `db:reset` → `seed:content` → `seed-fixture --publish-seeded` and hold across two
+consecutive runs.
+
+**Two suites had been passing on a dirty database, and CI is where that showed.** `publish-gates`
+ends with a deliberately LEGITIMATE write — a product pointing at the fixture's first media asset
+and its owner — because every refusal above it would also pass on a connection that refused
+everything. It never seeded the fixture: it passed because `seed-idempotency` seeds in its own
+`beforeAll` and vitest happened to run that file first, or because the developer's database already
+carried the rows. `ci.yml` does not seed the fixture at all — that is `e2e.yml`'s step — so on a
+runner the insert failed on `products_hero_media_id_fkey` and the suite reported the database
+refusing a write it should accept, which is the exact opposite of what the file is for. It seeds its
+own fixture now; `seedFixture` is idempotent, so it owes nothing to the order vitest picks.
+
+**And one more about the fixture.** `seed-idempotency`'s
+"leaves nothing behind after `--reset`" deletes the fixture's six staff rows, and
+`enforce_last_owner` refuses any statement that leaves the project with no ACTIVE owner. On a
+database built the way `e2e.yml` builds one — `db:reset`, `seed:content`, then the fixture — the
+fixture's owner IS the only owner, so the reset is refused at commit, correctly. The test had only
+ever run against developer databases carrying staff rows from other runs. It now creates a caretaker
+owner first and removes it after the fixture is back, which is the state any real project is in;
+suspending the trigger would be testing a database this project does not ship.
+
+Four further findings were about the tests rather than the code. The touch-target check initially
+measured the painted box and reported every small button; the design system already answers that
+rule with the `rv-hit-44` overlay, so the check now probes what the browser hit-tests.
+`/large-format` at 390px photographed unstably until `settle()` forced every lazy image to decode —
+fixed at its cause rather than quarantined. The honeypot assertion read `not.toBeVisible()`, but
+`VisuallyHidden` clips rather than removes (`display: none` would defeat the trap), so it now asserts
+the clip, the tab order and the `aria-hidden` ancestor. And the mega menu's "no network request"
+assertion caught `next/link`'s own RSC prefetches — the router making the next navigation instant,
+which is the opposite of the waterfall the test guards — so it now allows a prefetch of a URL the
+page links to and nothing else.
+
+### Files added
+
+`tests/fixtures/ids.ts` · `tests/fixtures/media/` (12 PNGs) · `tests/support/media-route.ts` ·
+`tests/integration/{rls-policies,seed-idempotency,publish-gates,migrations-replay}.test.ts` ·
+`tests/visual/{tiers,stability}.ts` + four `*.visual.spec.ts` + 33 baselines ·
+`tests/e2e/{inquiry-conversion,touch,catalogue-filters,security-headers,studio-authz}.spec.ts` ·
+`tests/e2e/a11y/{routes.ts,axe-sweep,landmarks,headings,forms,touch-targets,reduced-motion,zoom-reflow}.spec.ts` ·
+`tests/unit/{alt-text-coverage,env-schema,system-log-rpc,critical-branches}.test.ts` ·
+`tests/flaky.json` · `tests/support/inquiry-limiter.ts` ·
+`scripts/test/{seed-fixture.ts,build-fixture-media.ts,check-fixture-isolation.mjs,check-flaky.mjs}` ·
+`.github/workflows/{e2e,security}.yml` · `.github/dependabot.yml` · `.gitleaks.toml`
+
+### Files modified
+
+`app/(site)/_actions/submit-inquiry.ts` (defect 1) ·
+`lib/supabase/repositories/system-logs.ts` (defect 2) ·
+`components/patterns/{ProductCard,ArticleCard}/index.tsx` (defect 3) ·
+`components/sections/SectionCopy.tsx` + nine sections, `lib/catalog/listing.tsx`,
+`lib/journal/view.tsx` (defect 4) · `components/patterns/ProductGallery/Thumbnails.tsx` (defect 5) ·
+`app/(site)/collection/[category]/page.tsx` (defect 6) ·
+`components/sections/MaterialStorySection.tsx` (defect 7) ·
+`components/patterns/SiteHeader/index.tsx` (defect 8) ·
+`components/primitives/MediaFrame/index.tsx` (a `data-media-fallback` hook for the empty state) ·
+`scripts/a11y/check-contrast.mjs` (the media well added to the matrix) ·
+`lib/supabase/schemas/vitals.ts` · `vitest.config.ts` · `playwright.config.ts` ·
+`.github/workflows/e2e.yml` · `package.json` · `docs/ops/{TESTING,SECURITY}.md` ·
+`tests/e2e/homepage.spec.ts` and `tests/unit/cms-sections.test.tsx` (stale assertions corrected) ·
+`tests/e2e/{design-system,journal,inquiry-flow,catalog-studio,product-minimal,perf-headers,navigation-a11y}.spec.ts`
+(the harness split and four mis-specified assertions) · `tests/e2e/search-combobox-a11y.spec.ts`
+(its comment said `lg` where its own threshold said 1280)
+
+### Database changes
+
+None. Phase 42 has no migration, and the local database is unchanged at 109.
+
+### Supabase changes
+
+None.
+
+### Environment variables
+
+None added. `DATABASE_URL` is required by the fixture seeder and the integration project, and is
+already documented.
+
+### GitHub Actions changes
+
+`e2e.yml` and `security.yml` added; `ci.yml` unchanged. `npm run check` gained three gates —
+`test:check-fixture`, `test:check-fixture-media`, `test:check-flaky` — bringing it to 24 within a
+single command.
+
+### Tests performed
+
+Every command run on its own and its own exit status read, from the database state `e2e.yml`
+produces — `npm run db:reset`, `npm run seed:content`,
+`npx tsx scripts/test/seed-fixture.ts --publish-seeded` — against a cold production build.
+
+| Suite | Result |
+|---|---|
+| `vitest run` (unit · rls · integration) | 230 files · 3,570 tests, all passing |
+| `vitest run --project unit --coverage` | 193 files · 2,909 tests; thresholds met |
+| Playwright, all eight QA widths, full e2e | **1,902 passed · 2,242 skipped · 0 failed** (16m) |
+| Visual, three widths | 33 baselines, stable over three consecutive runs |
+| `npm run check` | green, 30 gates |
+
+The earlier verification in this phase read a grep's exit status instead of npm's and reported a
+failing `format:check` as green; every figure above comes from a command whose own status was
+captured. The browser row is the one that changed most: the first pass ran two widths, and
+1024 — where the desktop chrome first appears — is where defect 8 was waiting.
+
+### Issues found and fixed
+
+The four production defects above, plus: two stale test assertions (a JSON-LD graph asserted in
+Phase 11's node ORDER, which Phase 39's emitter reversed and which carries no meaning to a consumer;
+a section test asserting the old fixed card heading level), a fixture wipe that could not delete a
+product an enquiry referenced, and one CPU-bound unit test that timed out only under coverage
+instrumentation.
+
+### Build status
+
+`npm run check` green · `tsc` clean · ESLint and Prettier clean.
+
+### Deployment status
+
+No deployment change. Two new workflows will run on this pull request.
+
+### Remaining notes
+
+**The Studio has no browser coverage beyond its login page**, and 156 specs skip for want of an auth
+server the local harness cannot provide. **Coverage is 47.9% against the phase document's projected
+80%**, and `vitest.config.ts` carries the measured figure as a ratchet with the reason and what it
+would take to close. **Three public routes have no seeded sections.** All three are recorded in
+`docs/ops/TESTING.md` §13 rather than implied.
+
 
 ## Phase 43 — Media Coverage + Higgsfield Finalization
 

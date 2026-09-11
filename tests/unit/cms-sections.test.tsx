@@ -336,6 +336,27 @@ describe('category grid', () => {
       [section({ block_type: 'category-grid', payload: cards })],
       [asset(M1), asset(M2)],
     )
+    /*
+     * LEVEL 2 HERE, BECAUSE THIS SECTION HAS NO HEADING OF ITS OWN — the rule `cardHeadingLevel`
+     * states, added in Phase 42. A section that renders an `h2` puts its cards at 3; a section that
+     * renders nothing would otherwise leave them at 3 under the page's `h1`, belonging to no level
+     * above them. The case below is the other half.
+     */
+    expect(screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent)).toEqual([
+      'Wall art',
+      'Tables',
+      'Objects',
+    ])
+  })
+
+  it('drops its cards to level 3 when the section carries its own heading', () => {
+    renderSections(
+      [section({ block_type: 'category-grid', payload: cards, heading: 'Browse the collection' })],
+      [asset(M1), asset(M2)],
+    )
+    expect(screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent)).toEqual([
+      'Browse the collection',
+    ])
     expect(screen.getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toEqual([
       'Wall art',
       'Tables',

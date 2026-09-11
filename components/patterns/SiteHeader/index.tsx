@@ -143,7 +143,16 @@ export function SiteHeader({ chrome, cloudName }: SiteHeaderProps): React.ReactE
           {...(primaryLabel === null ? {} : { 'aria-label': primaryLabel })}
           className="hidden lg:block"
         >
-          <ul className="flex list-none items-center gap-6">
+          {/*
+           * A TIGHTER GAP BETWEEN `lg` AND `xl` — Phase 42, found by the overflow assertion.
+           *
+           * Nine top-level items at `gap-6` measure 834px once they have wrapped as far as they
+           * will, and the masthead's content box at 1024 is 930px. The wordmark took what was left
+           * — 54px, three lines — and the page scrolled sideways. 12px between items at `lg` gives
+           * the wordmark 168px, which is more than the 124 it needs, so it stays on one line and
+           * the row fits. `xl` restores the 24px the design system draws.
+           */}
+          <ul className="flex list-none items-center gap-3 xl:gap-6">
             {header.map((item) =>
               item.children.length === 0 ? (
                 <li key={item.id}>
@@ -211,12 +220,25 @@ export function SiteHeader({ chrome, cloudName }: SiteHeaderProps): React.ReactE
          * and the visitor gets the whole results page, so the island buys suggestions and nothing
          * load-bearing.
          *
-         * HIDDEN BELOW `lg`, where the drawer is the whole menu and the masthead has no room. The
-         * search field lives inside the drawer's own markup on those widths — MobileNav renders the
-         * menu, and `/search` is a menu item — rather than being squeezed beside the brand.
+         * HIDDEN BELOW `xl`, where the masthead has no room. Below `lg` the drawer is the whole
+         * menu and the search field lives inside its markup; MobileNav renders the menu and
+         * `/search` is a menu item there.
+         *
+         * IT USED TO SAY `lg`, AND EVERY PAGE SCROLLED SIDEWAYS AT 1024 — Phase 42. The arithmetic
+         * is not close: at 1024 the content box is 930px, the nine-item nav will not compress below
+         * 834, and this control will not compress below 118 (its submit button is `shrink-0` at 84).
+         * Brand, nav and field together need 1054 at their smallest, so the row overflowed by 77px
+         * on every `(site)` route — `homepage.spec.ts`'s overflow assertion caught it the first time
+         * this suite ran at w1024. No amount of shrinking fixes 124px of deficit; one of the three
+         * has to go, and §8.2 of the design system pins the nav and its mega menu at ≥1024.
+         *
+         * So between 1024 and 1279 the masthead carries no search control. `search-combobox-a11y`
+         * already skipped below 1280 — its threshold was right and its comment said `lg` — and
+         * DESIGN_SYSTEM §8.1 asks for a "search TRIGGER" rather than an inline field, which is the
+         * compact control that would close the gap. That is a design change and it is Phase 45's.
          */}
         <SearchCombobox
-          className="hidden max-w-xs flex-1 lg:block"
+          className="hidden max-w-xs flex-1 xl:block"
           label={searchLabel}
           placeholder={searchPlaceholder}
           submitLabel={searchSubmit}

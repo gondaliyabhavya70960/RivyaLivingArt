@@ -6,6 +6,90 @@ Every phase adds an entry; see `docs/architecture/CANONICAL-DECISIONS.md` D9 for
 
 ## [Unreleased]
 
+### Phase 42 — Comprehensive Testing (2026-09-11)
+
+The test system the previous forty-one phases wrote specs against. One deterministic fixture, a
+browser suite that actually runs, a visual tier, coverage thresholds that mean something, and the CI
+to run all of it.
+
+**It found eight production defects.** The worst: no enquiry could be saved, in any environment,
+since Phase 41 — `submit-inquiry.ts` wrote a 32-character rate-limiter digest into a column whose
+CHECK demands 64, so the database refused every insert and the site's one non-negotiable business
+rule had never completed successfully. Also: nothing had ever been written to `system_logs` (seven
+RPC parameters sent as `undefined`, which `supabase-js` drops); the catalogue's product cards were
+not links, twenty-seven phases after the component's own comment promised the anchor; two listing
+pages skipped a heading level; the product gallery's thumbnail strip was zero pixels tall on every
+product page; every `/collection/[category]` page returned 500 in a production build, because
+`generateStaticParams` cannot coexist with `await searchParams` and `next build` reports it as a
+success; the home page's material story dimmed a stage with `opacity-40`, which composited the
+media well's label down to 2.77:1; and every page scrolled sideways at 1024px, where the masthead's
+inline search field will not fit beside a nine-item nav.
+
+#### Added
+
+- `scripts/test/seed-fixture.ts` — six staff, four products (one per `price_state`), a collection, a
+  project, two articles, ten FAQs, five inquiries, a research corpus of twenty, twelve media assets,
+  all dated from a frozen clock, all behind a reserved id prefix, refusing any non-local database
+- `scripts/test/check-fixture-isolation.mjs` — preflight gate 9 at last: no fixture id and no
+  `tests/` import may reach the product
+- `scripts/test/build-fixture-media.ts` — twelve committed PNGs written by a hand-rolled encoder, so
+  the bytes are a pure function of the pixels
+- `tests/support/media-route.ts` — every Cloudinary request answered locally; no test touches the
+  network
+- A third vitest project, `integration`: row security across the schema, seed idempotency by digest,
+  the publish gates attempted as the database owner, the migration ledger against the files
+- Sixteen browser specs, including the seven `tests/e2e/a11y/**` Phase 41 deferred
+- Four visual specs, 33 baselines at three widths, tiered by what a regression costs
+- `.github/workflows/e2e.yml` (sharded four ways), `.github/workflows/security.yml` (gitleaks over
+  the whole history, `npm audit` split by runtime versus build), `.github/dependabot.yml`,
+  `.gitleaks.toml`, `tests/flaky.json` and the gate that keeps it honest
+
+#### Fixed
+
+- `ip_hash` is built with `hashAddress` rather than a slice of a bucket key, so an enquiry can be
+  saved
+- `writeSystemLog` sends every RPC parameter as `null` rather than `undefined`, so a log row is
+  written
+- `ProductCard` carries the heading anchor and `::after` overlay Phase 15 promised
+- `cardHeadingLevel` derives a card's heading level from whether its section rendered one
+- `ProductGallery/Thumbnails` wraps its `MediaImage` in an `AspectBox`, so the strip has a height
+- `/collection/[category]` no longer declares `generateStaticParams`, so reading `searchParams` at
+  request time is legal and the page renders instead of throwing
+- `MaterialStorySection` dims the stage's photograph rather than the whole stage, so the
+  media-unavailable label keeps the 10.42:1 `MediaFrame` claims for it
+- `scripts/a11y/check-contrast.mjs` checks `--rv-surface-sunken`, which appeared in no token pair
+- The masthead's search field appears from `xl` rather than `lg`, and the desktop nav's item gap
+  tightens between the two, so the row fits at 1024. Between 1024 and 1279 there is no search
+  control in the masthead; DESIGN_SYSTEM §8.1 asks for a compact search trigger, which is what would
+  close that, and it is a Phase 45 change
+
+#### Changed
+
+- `docs/ops/TESTING.md` rewritten, including a new §13 naming what the suite still cannot see
+- Coverage thresholds set to the measured figures as a ratchet, with the 80% target and what it
+  would take recorded in `vitest.config.ts`
+- The browser suite runs against a production build (`E2E_PRODUCTION=1` switches Playwright's web
+  server to `next start`, and `e2e.yml` builds first). A dev server answers
+  `no-cache, must-revalidate` to everything, so four caching assertions could never pass in one, and
+  two specs counted module-graph requests a production bundle never makes
+- `tests/integration/publish-gates.test.ts` seeds its own fixture. Its one legitimate write points
+  at the fixture's media and owner, and the file never seeded them — it passed only when another
+  suite had seeded first. `ci.yml` does not seed the fixture, so on a runner it reported the
+  database refusing a write it should accept
+- `tests/integration/seed-idempotency.test.ts` creates a caretaker owner around its `--reset` check.
+  `enforce_last_owner` refuses to leave the project with no active owner, and on a database built
+  the way CI builds one the fixture's owner is the only one — the test had been passing only on
+  databases carrying staff rows from other runs
+- The visual suite runs against a production build and injects its stabilising stylesheet after the
+  navigation rather than before it. Injected before, it landed in `about:blank` and was discarded —
+  so animations, carets and the dev-overlay rule had never applied, and the development server's
+  own dev-tools badge was photographed into the baselines in whichever state it happened to be in.
+  All 33 baselines regenerated from the database state `e2e.yml` produces
+- CI runs the eight behavioural width projects and not the three visual ones: a runner rasterises
+  text differently from this container by more than a page of it absorbs. `npm run test:visual`
+  stays the local check, and `docs/ops/TESTING.md` §3 records what would change that
+
+
 ### Phase 44 — Vercel Deployment (DEVELOPMENT COMPLETE; drills and tests outstanding)
 
 The property this phase buys is not "it is deployed" — it is that a bad deploy can be undone

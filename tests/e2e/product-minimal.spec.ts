@@ -1,5 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 
+import { interceptMedia } from '../support/media-route'
+
 /**
  * A product with almost nothing filled in must still read as a finished page.
  *
@@ -44,6 +46,19 @@ const OPTIONAL_BANDS = [
 ] as const
 
 test.describe('a minimally-populated product', () => {
+  /*
+   * IMAGES ARE ANSWERED LOCALLY, AND WITHOUT THIS THE SUITE MEASURES THE WRONG THING.
+   *
+   * `tests/support/media-route.ts` serves every `res.cloudinary.com` request from a committed
+   * derivative. Without it the requests leave the runner, fail against a cloud name that only
+   * exists for tests, and every `<img>` collapses to nothing — so `data-gallery-thumbnails`
+   * reports zero height and this file's "no zero-height container" test fails on a page that is
+   * perfectly correct. Found in Phase 42, the first time this spec ran anywhere.
+   */
+  test.beforeEach(async ({ page }) => {
+    await interceptMedia(page)
+  })
+
   test('renders exactly one h1', async ({ page }) => {
     const path = await firstProductPath(page)
     test.skip(path === null, 'no published products in this database')

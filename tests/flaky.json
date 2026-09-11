@@ -1,0 +1,22 @@
+{
+  "$comment": [
+    "Tests known to fail intermittently, and the ONLY place that fact is recorded — Phase 42.",
+    "",
+    "A flaky test is worse than a missing one: it teaches people to re-run a red build without",
+    "reading it, and the day a real failure arrives they re-run that too. So a test that flakes is",
+    "quarantined by NAME, here, where somebody has to write down what they saw and when — never by",
+    "adding a retry to the runner, which hides every flake including the ones nobody has noticed.",
+    "",
+    "THE LIST IS CAPPED AT THREE. A fourth entry is not an admin problem, it is a signal that the",
+    "suite has stopped being trusted, and the response is to fix one rather than to raise the cap.",
+    "",
+    "A row must carry: the test's full title, the date it was quarantined, what was observed, and",
+    "the reason it is not simply fixed. An entry with no owner and no date is deleted at the next",
+    "review, because nobody can act on it.",
+    "",
+    "EMPTY TODAY, AND THAT IS A CLAIM RATHER THAN AN OMISSION: the suites in this repository have",
+    "not been observed to flake. `scripts/test/check-flaky.mjs` reads this file, so an entry that",
+    "does not match a real test title fails the build."
+  ],
+  "quarantined": []
+}

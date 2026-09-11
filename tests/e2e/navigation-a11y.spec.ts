@@ -76,6 +76,18 @@ test.describe('the mega menu', () => {
      * The risk this closes: the mega menu becomes a client-side fetch and the header waterfalls.
      * `getSiteChrome()` is called once in the layout and the panel receives its contents as
      * server-rendered children, so opening it must cost nothing.
+     *
+     * NEXT'S OWN PREFETCHES ARE NOT THAT WATERFALL — Phase 42, the first run of this spec.
+     *
+     * `next/link` asks for a destination's RSC payload when the link enters the viewport, so
+     * opening the panel puts seven category links on screen and the router requests a `?_rsc=`
+     * payload per link the page renders — header, panel and footer alike — for THE PAGE BEHIND THE
+     * LINK. That is the router making the next navigation instant, and it is the opposite of the
+     * regression this test exists to catch. Asserting on an empty list failed on the feature.
+     *
+     * So the filter is: every fetch/xhr must be an RSC prefetch of a URL THIS PAGE LINKS TO. A
+     * panel that fetched its categories would ask for a route handler, an API path or its own
+     * page's payload, and none of those is a link on the page.
      */
     const trigger = page.locator('header button[aria-expanded]:visible').first()
     const requests: string[] = []
@@ -89,7 +101,21 @@ test.describe('the mega menu', () => {
     const panelId = await trigger.getAttribute('aria-controls')
     const links = page.locator(`#${panelId} a[href^="/collection/"]`)
     await expect(links).toHaveCount(7)
-    expect(requests).toEqual([])
+
+    // Read the hrefs AFTER opening: the panel's own links are only in the document once it is open.
+    const linked = new Set(
+      await page
+        .locator('a[href^="/"]')
+        .evaluateAll((nodes) =>
+          nodes.map((node) => new URL((node as HTMLAnchorElement).href).pathname),
+        ),
+    )
+
+    const unexplained = requests.filter((url) => {
+      const parsed = new URL(url)
+      return !parsed.searchParams.has('_rsc') || !linked.has(parsed.pathname)
+    })
+    expect(unexplained, 'requests no link on the page explains as a prefetch').toEqual([])
   })
 
   test('the panel is a named landmark', async ({ page }) => {

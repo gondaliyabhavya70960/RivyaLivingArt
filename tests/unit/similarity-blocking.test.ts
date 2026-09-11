@@ -59,48 +59,63 @@ describe('segment blocking', () => {
     }
   })
 
-  it('recall against brute force: 1.0 for NEAR_DUPLICATE, measured for the rest', () => {
-    const entries = fixture()
-    const truth = bruteForcePairs(entries)
-    const found = candidatePairs(entries)
-    const foundKeys = new Set(found.map((pair) => `${pair.leftId} ${pair.rightId}`))
+  /*
+   * 30 SECONDS, BECAUSE COVERAGE INSTRUMENTATION MAKES THIS ONE THREE TIMES SLOWER — Phase 42.
+   *
+   * It compares every pair in the fixture by brute force and then compares that to what blocking
+   * found, which is the only honest way to measure recall and is genuinely CPU-bound. It runs in
+   * about a second normally and timed out at five under `--coverage`, where v8 instruments every
+   * function it enters.
+   *
+   * RAISED HERE RATHER THAN GLOBALLY. A repository-wide timeout of thirty seconds would hide the
+   * next test that hangs; this one is slow for a reason written down beside it.
+   */
+  it(
+    'recall against brute force: 1.0 for NEAR_DUPLICATE, measured for the rest',
+    { timeout: 30_000 },
+    () => {
+      const entries = fixture()
+      const truth = bruteForcePairs(entries)
+      const found = candidatePairs(entries)
+      const foundKeys = new Set(found.map((pair) => `${pair.leftId} ${pair.rightId}`))
 
-    const perBand = new Map<string, { truth: number; found: number }>()
-    for (const pair of truth) {
-      const band = bandForDistance(pair.distance) ?? 'DISCARDED'
-      const tally = perBand.get(band) ?? { truth: 0, found: 0 }
-      tally.truth += 1
-      if (foundKeys.has(`${pair.leftId} ${pair.rightId}`)) tally.found += 1
-      perBand.set(band, tally)
-    }
+      const perBand = new Map<string, { truth: number; found: number }>()
+      for (const pair of truth) {
+        const band = bandForDistance(pair.distance) ?? 'DISCARDED'
+        const tally = perBand.get(band) ?? { truth: 0, found: 0 }
+        tally.truth += 1
+        if (foundKeys.has(`${pair.leftId} ${pair.rightId}`)) tally.found += 1
+        perBand.set(band, tally)
+      }
 
-    const near = perBand.get('NEAR_DUPLICATE')
-    expect(near).toBeDefined()
-    expect(near?.truth ?? 0).toBeGreaterThanOrEqual(200)
-    expect((near?.found ?? 0) / (near?.truth ?? 1)).toBe(1)
+      const near = perBand.get('NEAR_DUPLICATE')
+      expect(near).toBeDefined()
+      expect(near?.truth ?? 0).toBeGreaterThanOrEqual(200)
+      expect((near?.found ?? 0) / (near?.truth ?? 1)).toBe(1)
 
-    // Nothing beyond the ceiling is ever returned by either sweep.
-    expect(truth.every((pair) => pair.distance <= 18)).toBe(true)
-    expect(found.every((pair) => pair.distance <= 18)).toBe(true)
-    expect(perBand.has('DISCARDED')).toBe(false)
+      // Nothing beyond the ceiling is ever returned by either sweep.
+      expect(truth.every((pair) => pair.distance <= 18)).toBe(true)
+      expect(found.every((pair) => pair.distance <= 18)).toBe(true)
+      expect(perBand.has('DISCARDED')).toBe(false)
 
-    // Every blocked pair is a true pair (precision of the candidate set is 1 by construction —
-    // the distance is computed, not guessed).
-    const truthKeys = new Set(truth.map((pair) => `${pair.leftId} ${pair.rightId}`))
-    for (const pair of found) expect(truthKeys.has(`${pair.leftId} ${pair.rightId}`)).toBe(true)
+      // Every blocked pair is a true pair (precision of the candidate set is 1 by construction —
+      // the distance is computed, not guessed).
+      const truthKeys = new Set(truth.map((pair) => `${pair.leftId} ${pair.rightId}`))
+      for (const pair of found) expect(truthKeys.has(`${pair.leftId} ${pair.rightId}`)).toBe(true)
 
-    const report = [...perBand.entries()]
-      .map(
-        ([band, tally]) =>
-          `${band}: ${String(tally.found)}/${String(tally.truth)} = ${(tally.found / tally.truth).toFixed(3)}`,
-      )
-      .join('; ')
-    console.log(`blocking recall over ${String(entries.length)} hashes — ${report}`)
+      const report = [...perBand.entries()]
+        .map(
+          ([band, tally]) =>
+            `${band}: ${String(tally.found)}/${String(tally.truth)} = ${(tally.found / tally.truth).toFixed(3)}`,
+        )
+        .join('; ')
+      console.log(`blocking recall over ${String(entries.length)} hashes — ${report}`)
 
-    // The documented trade-off: PROBABLE_VARIANT recall is high but not guaranteed; WEAK lower.
-    const variant = perBand.get('PROBABLE_VARIANT')
-    expect((variant?.found ?? 0) / (variant?.truth ?? 1)).toBeGreaterThanOrEqual(0.9)
-  })
+      // The documented trade-off: PROBABLE_VARIANT recall is high but not guaranteed; WEAK lower.
+      const variant = perBand.get('PROBABLE_VARIANT')
+      expect((variant?.found ?? 0) / (variant?.truth ?? 1)).toBeGreaterThanOrEqual(0.9)
+    },
+  )
 
   it('a pair at exactly the near-duplicate ceiling is always a candidate', () => {
     for (let seed = 0; seed < 200; seed += 1) {

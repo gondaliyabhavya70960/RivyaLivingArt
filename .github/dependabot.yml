@@ -1,0 +1,42 @@
+# Phase 42.
+#
+# WEEKLY, NOT DAILY. A daily cadence on a repository this size produces more pull requests than
+# anybody reviews, and an unreviewed dependency bump is a merge nobody read — which is worse than
+# an old dependency, because it has the appearance of diligence.
+#
+# GROUPED, BECAUSE ONE PULL REQUEST PER PACKAGE IS HOW THIS GETS TURNED OFF. Fourteen bumps in one
+# branch run CI once and are read once. The exception is a major version: those change behaviour and
+# each deserves its own diff and its own decision.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '05:00'
+    open-pull-requests-limit: 5
+    groups:
+      # Patch and minor together: they are the ones that are usually safe and always numerous.
+      routine:
+        patterns: ['*']
+        update-types: ['minor', 'patch']
+    ignore:
+      # Major versions are proposed individually by the group rules above being scoped to
+      # minor/patch; this makes the intent explicit rather than implied.
+      - dependency-name: '*'
+        update-types: ['version-update:semver-major']
+    commit-message:
+      prefix: 'chore(deps)'
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '05:00'
+    groups:
+      actions:
+        patterns: ['*']
+    commit-message:
+      prefix: 'chore(ci)'

@@ -1,0 +1,70 @@
+name: Security
+
+# Phase 42. Two questions CI can answer that a reviewer cannot:
+#
+#   1. DID A SECRET REACH THE REPOSITORY? gitleaks reads the history, not the diff, so a key
+#      committed on a branch and "removed" in the next commit is still found — which is the only
+#      reading that matters, because the object is still there and still fetchable.
+#   2. DOES A DEPENDENCY HAVE A KNOWN HIGH-SEVERITY ADVISORY? `npm audit` answers it, and the
+#      threshold is `high` deliberately: at `moderate` the signal is mostly transitive advisories in
+#      build tooling that never ships, and a job that is amber every week is a job nobody reads.
+#
+# IT RUNS ON A SCHEDULE AS WELL AS ON A PUSH, because an advisory is published against code that
+# was already merged. A dependency check that only runs on a pull request learns about last
+# Tuesday's vulnerability next time somebody happens to open one.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # 04:00 UTC on Mondays: a finding lands before the week starts rather than during it.
+    - cron: '0 4 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  secrets:
+    name: No secret in the history
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # THE WHOLE HISTORY, NOT A SHALLOW CLONE. A shallow checkout scans the tip and reports
+          # clean on a repository whose third commit carries a service-role key.
+          fetch-depth: 0
+
+      - name: gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_CONFIG: .gitleaks.toml
+
+  dependencies:
+    name: No high-severity advisory
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # `--omit=dev` first: an advisory in a build tool that never ships is a different question
+      # from one in code that runs in production, and conflating them is what makes the report
+      # unreadable. The full audit runs after it and does not fail the job.
+      - name: Runtime dependencies
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Build dependencies, reported only
+        if: always()
+        continue-on-error: true
+        run: npm audit --audit-level=high

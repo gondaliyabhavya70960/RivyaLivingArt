@@ -12,6 +12,7 @@ import {
   addressFromHeaders,
   bucketKey,
   consume,
+  hashAddress,
 } from '@/lib/security/rate-limit'
 import { getSiteChrome } from '@/lib/site/chrome'
 import { createPublicClient } from '@/lib/supabase/public'
@@ -217,7 +218,26 @@ export async function submitInquiry(payload: unknown): Promise<SubmitInquiryResu
       enquiry_type: submission.kind === 'GENERAL' ? (submission.enquiryType ?? null) : null,
       referrer: requestHeaders.get('referer'),
       user_agent: requestHeaders.get('user-agent'),
-      ip_hash: bucketKey('ip', address).split(':')[1] ?? null,
+      /*
+       * `hashAddress`, NOT A SLICE OF A BUCKET KEY — Phase 42, and this was a total outage of the
+       * one rule this site cannot break.
+       *
+       * It read `bucketKey('ip', address).split(':')[1]`, which is the rate limiter's digest:
+       * `bucketKey` truncates to THIRTY-TWO characters because a bucket key only has to be
+       * unguessable, not unique across the corpus. `inquiries.ip_hash` carries
+       * `check (ip_hash ~ '^[a-f0-9]{64}$')`, so the insert was refused by the database — every
+       * time, on every enquiry, in every environment. The action caught the failure and returned
+       * `save_failed`, which is exactly right when a save fails, and the visitor was correctly NOT
+       * handed to WhatsApp. So the conversion path did not misbehave: IT DID NOT WORK AT ALL, and
+       * no enquiry has ever reached the table from the form.
+       *
+       * `hashAddress` is the function that exists for this column and returns sixty-four. The
+       * comment on it in `lib/security/rate-limit.ts` says so in as many words, which is what makes
+       * this a slip rather than a misunderstanding — and what made it invisible: every unit test
+       * stubs the insert, and the e2e spec that would have caught it skipped for want of published
+       * content until the Phase 42 fixture published some.
+       */
+      ip_hash: hashAddress(address),
     })
   } catch {
     /*

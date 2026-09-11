@@ -1,0 +1,192 @@
+name: E2E
+
+# Phase 42. The browser half of the suite, in its own workflow.
+#
+# WHY NOT IN ci.yml. `ci.yml` is the gate on every push and it finishes in about six minutes;
+# adding a browser suite to it would triple that and make every typo fix wait for Chromium. This
+# runs the same checks against the same database, sharded, and its failures mean something
+# different: a red `ci` is "the code is wrong", a red `e2e` is "the page is wrong".
+#
+# IT SHARDS FOUR WAYS. Four runners at roughly four minutes beats one at fifteen, and the owner has
+# authorised unlimited Actions minutes. Each shard builds its own database because a service
+# container belongs to a job, not to a workflow — which costs a minute per shard and buys complete
+# isolation between them.
+#
+# THE ORDER OF THE SEED STEPS IS LOAD-BEARING AND WAS LEARNED THE HARD WAY. `db:reset` applies the
+# migrations; `seed:content` writes the site's copy as DRAFT, because publishing is an editor's act
+# and the runner must never do it in production; `seed-fixture --publish-seeded` publishes it HERE,
+# in a throwaway database, because otherwise every public route 404s and the whole suite skips and
+# reports green. A suite that skips is the failure mode this workflow exists to prevent.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      update_snapshots:
+        description: 'Rewrite the visual baselines from this run'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  browser:
+    name: Browser (shard ${{ matrix.shard }}/4)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: rivya
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      # Loopback, so `db:reset` and `seed-fixture` run without their remote overrides. Both refuse
+      # any other host, which is what stops a misconfigured workflow reaching a real database — and
+      # the fixture writes invented prices and invented enquirer names, so that refusal matters.
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/rivya
+      NEXT_PUBLIC_SITE_URL: http://127.0.0.1:3000
+      NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: rivya-e2e
+      NEXT_TELEMETRY_DISABLED: '1'
+      # No Cloudinary request leaves this runner: `tests/support/media-route.ts` answers every one
+      # from a committed derivative. The cloud name above exists only so URL construction succeeds.
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: The committed fixture images are what the generator produces
+        run: npm run test:check-fixture-media
+
+      - name: Apply the migrations
+        run: npm run db:reset
+
+      - name: Seed the site's content
+        run: npm run seed:content
+
+      # Pinned by version and checksum, exactly as `ci.yml` does it: a changed release asset fails
+      # here rather than running.
+      - name: Install PostgREST (pinned)
+        env:
+          POSTGREST_VERSION: v13.0.4
+          POSTGREST_SHA256: a0052c8d4726f52349e0298f98da51140ef4941855548590ee88331afa617811
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/postgrest"
+          curl -sSfL -o "$RUNNER_TEMP/postgrest/postgrest.tar.xz" \
+            "https://github.com/PostgREST/postgrest/releases/download/${POSTGREST_VERSION}/postgrest-${POSTGREST_VERSION}-linux-static-x86-64.tar.xz"
+          echo "${POSTGREST_SHA256}  $RUNNER_TEMP/postgrest/postgrest.tar.xz" | sha256sum --check --strict
+          tar -xJf "$RUNNER_TEMP/postgrest/postgrest.tar.xz" -C "$RUNNER_TEMP/postgrest"
+          "$RUNNER_TEMP/postgrest/postgrest" --version
+
+      - name: Seed the test fixture and publish the seeded content
+        run: npx tsx scripts/test/seed-fixture.ts --publish-seeded
+
+      # A PRODUCTION BUILD, NOT `next dev`. `tests/e2e/perf-headers.spec.ts` asserts the caching
+      # contract — `immutable` on a hashed asset, ISR on a CMS page — and a dev server answers
+      # `no-cache, must-revalidate` to everything, so those assertions could never pass against one.
+      # `playwright.config.ts` switches its server on `E2E_PRODUCTION`; `design-system.spec.ts`
+      # skips under it, because `/design-system` calls notFound() in a build by design.
+      - name: Run the browser suite
+        env:
+          POSTGREST_BIN: ${{ runner.temp }}/postgrest/postgrest
+          LOCAL_REST_PORT: '3001'
+          PLAYWRIGHT_CHROMIUM_PATH: ''
+          E2E_PRODUCTION: '1'
+        run: |
+          set -euo pipefail
+          node scripts/db/local-rest.mjs > /tmp/local-rest.log 2>&1 &
+          rest_pid=$!
+          trap 'kill "$rest_pid" 2>/dev/null || true' EXIT
+
+          # PostgREST answers 503 until its schema cache is loaded and the gateway 502 before it
+          # listens at all. Either would fail the first query the page makes, so wait for the 200.
+          for _ in $(seq 1 60); do
+            curl -sf -o /dev/null http://127.0.0.1:3001/rest/v1/ && break
+            sleep 1
+          done
+          curl -sf -o /dev/null http://127.0.0.1:3001/rest/v1/
+
+          # The shim prints the two variables for the caller to put in front of a command. The key
+          # is a throwaway signed with a secret minted for this run only, so reading it from the log
+          # is the intended use, not a leak.
+          anon_key=$(sed -n 's/^ *NEXT_PUBLIC_SUPABASE_ANON_KEY=\(.*\) \\$/\1/p' /tmp/local-rest.log)
+          service_key=$(sed -n 's/^ *SUPABASE_SERVICE_ROLE_KEY=\(.*\) \\$/\1/p' /tmp/local-rest.log)
+          test -n "$anon_key"
+
+          export NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:3001
+          export NEXT_PUBLIC_SUPABASE_ANON_KEY="$anon_key"
+          export SUPABASE_SERVICE_ROLE_KEY="$service_key"
+
+          npm run build
+
+          npx playwright install --with-deps chromium
+
+          # THE BEHAVIOURAL PROJECTS ONLY, UNLESS THIS RUN IS REGENERATING BASELINES.
+          #
+          # A visual baseline belongs to the container that produced it: font rasterisation differs
+          # between this runner and the image the committed baselines were made in, by more than a
+          # page of text can absorb. Comparing them here would fail every snapshot for a reason that
+          # is not in the diff — which `docs/ops/TESTING.md` §3 says in as many words, and which the
+          # first run of this workflow proved by doing exactly that.
+          #
+          # So the visual tier runs only on a `workflow_dispatch` with `update_snapshots`, whose job
+          # is to PRODUCE baselines here rather than to check them. Once those are committed, this
+          # condition is what gets relaxed — deliberately, by somebody, in a diff.
+          if [ "${{ inputs.update_snapshots }}" = "true" ]; then
+            npx playwright test --shard=${{ matrix.shard }}/4 --update-snapshots
+          else
+            npx playwright test --shard=${{ matrix.shard }}/4 \
+              --project=w1920 --project=w1440 --project=w1280 --project=w1024 \
+              --project=w768 --project=w430 --project=w390 --project=w360
+          fi
+
+      # FOURTEEN DAYS, NOT NINETY. A trace is only read while somebody remembers the change that
+      # produced it; after a fortnight nobody opens one, and the storage is not free.
+      - name: Keep the report and the traces
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-shard-${{ matrix.shard }}
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 14
+
+      # Only on a dispatch that asked for it. A baseline that changed on an ordinary run would be a
+      # visual regression committing itself.
+      - name: Upload the rewritten baselines
+        if: ${{ inputs.update_snapshots }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-baselines-shard-${{ matrix.shard }}
+          path: tests/visual/**/*.png
+          retention-days: 14

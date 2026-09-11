@@ -9,7 +9,7 @@ import { secondaryObjectsBlock } from '@/content/blocks/secondary-objects'
 import { visibleEntries } from '@/lib/cms/entry-visibility'
 import { parseBlockPayload } from '@/lib/cms/registry'
 
-import { SectionCopy } from './SectionCopy'
+import { SectionCopy, cardHeadingLevel } from './SectionCopy'
 import { SectionShell } from './SectionShell'
 import type { SectionRenderProps } from './types'
 
@@ -68,7 +68,7 @@ export function SecondaryObjectsSection({
                   strings={strings}
                   cloudName={cloudName}
                 />
-                <Heading level={3} size="display-xs">
+                <Heading level={cardHeadingLevel(section)} size="display-xs">
                   {card.title}
                 </Heading>
                 {description.trim() === '' ? null : (
