@@ -51,6 +51,11 @@ export const ACTIVITY_ACTIONS = [
    */
   'bulk.applied',
   'bulk.undone',
+  /*
+   * Phase 31. A comparison set is a person's saved question; recomputing it is the one Studio act
+   * in that phase worth a feed line, because it is what changes the numbers colleagues are reading.
+   */
+  'research.comparison.recomputed',
 ] as const
 
 export type ActivityAction = (typeof ACTIVITY_ACTIONS)[number]

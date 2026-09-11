@@ -3594,6 +3594,60 @@ export type Database = {
           },
         ]
       }
+      research_analytics_snapshots: {
+        Row: {
+          id: string
+          scope_type: string
+          scope_id: string | null
+          metric_family: string
+          currency: string | null
+          payload: Json
+          row_count: number
+          computed_at: string
+          computed_by: string | null
+          input_run_max_id: string | null
+        }
+        Insert: {
+          id?: string
+          scope_type: string
+          scope_id?: string | null
+          metric_family: string
+          currency?: string | null
+          payload: Json
+          row_count: number
+          computed_at?: string
+          computed_by?: string | null
+          input_run_max_id?: string | null
+        }
+        Update: {
+          id?: string
+          scope_type?: string
+          scope_id?: string | null
+          metric_family?: string
+          currency?: string | null
+          payload?: Json
+          row_count?: number
+          computed_at?: string
+          computed_by?: string | null
+          input_run_max_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'research_analytics_snapshots_computed_by_fkey'
+            columns: ['computed_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'research_analytics_snapshots_input_run_max_id_fkey'
+            columns: ['input_run_max_id']
+            isOneToOne: false
+            referencedRelation: 'research_runs'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       research_change_digests: {
         Row: {
           id: string
@@ -3768,6 +3822,134 @@ export type Database = {
             columns: ['version_before_id']
             isOneToOne: false
             referencedRelation: 'research_product_versions'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      research_comparison_members: {
+        Row: {
+          id: string
+          set_id: string
+          member_type: string
+          source_id: string | null
+          research_product_id: string | null
+          position: number
+          note: string | null
+          created_at: string
+          created_by: string | null
+        }
+        Insert: {
+          id?: string
+          set_id: string
+          member_type: string
+          source_id?: string | null
+          research_product_id?: string | null
+          position?: number
+          note?: string | null
+          created_at?: string
+          created_by?: string | null
+        }
+        Update: {
+          id?: string
+          set_id?: string
+          member_type?: string
+          source_id?: string | null
+          research_product_id?: string | null
+          position?: number
+          note?: string | null
+          created_at?: string
+          created_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'research_comparison_members_created_by_fkey'
+            columns: ['created_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'research_comparison_members_research_product_id_fkey'
+            columns: ['research_product_id']
+            isOneToOne: false
+            referencedRelation: 'research_products'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'research_comparison_members_set_id_fkey'
+            columns: ['set_id']
+            isOneToOne: false
+            referencedRelation: 'research_comparison_sets'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'research_comparison_members_source_id_fkey'
+            columns: ['source_id']
+            isOneToOne: false
+            referencedRelation: 'research_sources'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      research_comparison_sets: {
+        Row: {
+          id: string
+          name: string
+          slug: string
+          description: string | null
+          scope_note: string | null
+          band_rule: string
+          band_edges: number[] | null
+          last_computed_at: string | null
+          status: Database['public']['Enums']['content_status']
+          created_at: string
+          created_by: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          name: string
+          slug: string
+          description?: string | null
+          scope_note?: string | null
+          band_rule?: string
+          band_edges?: number[] | null
+          last_computed_at?: string | null
+          status?: Database['public']['Enums']['content_status']
+          created_at?: string
+          created_by: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          name?: string
+          slug?: string
+          description?: string | null
+          scope_note?: string | null
+          band_rule?: string
+          band_edges?: number[] | null
+          last_computed_at?: string | null
+          status?: Database['public']['Enums']['content_status']
+          created_at?: string
+          created_by?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'research_comparison_sets_created_by_fkey'
+            columns: ['created_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'research_comparison_sets_updated_by_fkey'
+            columns: ['updated_by']
+            isOneToOne: false
+            referencedRelation: 'users'
             referencedColumns: ['id']
           },
         ]
@@ -4059,6 +4241,47 @@ export type Database = {
             columns: ['updated_by']
             isOneToOne: false
             referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      research_metric_coverage: {
+        Row: {
+          id: string
+          snapshot_id: string
+          metric_key: string
+          n: number
+          denominator: number
+          coverage_pct: number | null
+          excluded_reasons: Json
+          as_of: string
+        }
+        Insert: {
+          id?: string
+          snapshot_id: string
+          metric_key: string
+          n: number
+          denominator: number
+          coverage_pct?: number | null
+          excluded_reasons?: Json
+          as_of: string
+        }
+        Update: {
+          id?: string
+          snapshot_id?: string
+          metric_key?: string
+          n?: number
+          denominator?: number
+          coverage_pct?: number | null
+          excluded_reasons?: Json
+          as_of?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'research_metric_coverage_snapshot_id_fkey'
+            columns: ['snapshot_id']
+            isOneToOne: false
+            referencedRelation: 'research_analytics_snapshots'
             referencedColumns: ['id']
           },
         ]
@@ -5734,6 +5957,10 @@ export type Database = {
         Returns: Json
       }
       is_staff: {
+        Args: Record<string, unknown>
+        Returns: Json
+      }
+      is_strictly_ascending_bigint_array: {
         Args: Record<string, unknown>
         Returns: Json
       }

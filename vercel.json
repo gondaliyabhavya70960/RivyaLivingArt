@@ -8,6 +8,10 @@
     {
       "path": "/api/cron/research",
       "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/research-analytics",
+      "schedule": "30 2 * * *"
     }
   ]
 }

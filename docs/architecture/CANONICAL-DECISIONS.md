@@ -147,6 +147,7 @@ Roles: `owner · admin · editor · merchandiser · researcher · viewer`.
 ```
 CLAUDE.md · PROJECT_STATE.md · CONTEXT.md · CHANGELOG.md · README.md
 docs/SESSION-STATE.md
+docs/PHASE_31_TO_46_IMPLEMENTATION.md · docs/ASSET_GENERATION_PROMPTS.md   (amendment A31)
 docs/project/{ROADMAP.md,PRD.md,BUSINESS_RULES.md,phases/*.md}
 docs/architecture/{ARCHITECTURE.md,DATA_MODEL.md,CANONICAL-DECISIONS.md,SCRAPER.md}
 docs/design/{DESIGN_SYSTEM.md,COMPONENT_REGISTRY.md}
@@ -184,6 +185,43 @@ Brand and editorial copy may be written; anything asserting business capability 
 `OWNER_VERIFICATION_REQUIRED`. Empty states are used instead of invented projects.
 
 ## Amendments
+
+**2026-09-11 · A31 — Phase 31 takes migration `0291` for its generated policies and `0292` for its
+indexes, two documentation paths the owner asked for join D7, the chart patterns follow the
+registry's directory-per-pattern rule rather than the phase document's `charts/` folder, and every
+new cron route authenticates with `CRON_SECRET` (D7, D8, PHASE-31-38 §Phase 31, DATA_MODEL §12,
+SCRAPER §22).**
+
+- **`0291` is the phase's generated policy file, one past the document's `0290`.** The ninth time,
+  for the reason A23 gives for `0214` and every phase since: a generated policy file is rewritten
+  whole by `auth:gen-policies` and cannot also carry the DDL that creates its tables. `0292` holds
+  the indexes, which the phase document names as a deliverable of their own.
+- **Two paths join D7 at the owner's instruction:** `docs/PHASE_31_TO_46_IMPLEMENTATION.md` (the
+  per-phase implementation record for this block, with the field set the owner specified) and
+  `docs/ASSET_GENERATION_PROMPTS.md` (every asset a phase needs and cannot make from the manifest,
+  as a generation prompt the owner runs and a Cloudinary URL the owner pastes back). D7's map is
+  otherwise unchanged and `PHASE-39-46.md`'s "no new documentation paths" rule applies to every
+  other document.
+- **The four chart components live at `components/patterns/{BarSeries,BandStrip,Scatter,Sparkline}/index.tsx`**,
+  not under a `components/patterns/charts/` folder as the phase document writes. The registry gate
+  resolves a BUILT pattern at `components/patterns/<Name>/index.tsx` and nowhere else, and the
+  gate is the contract; the shared frame they compose sits at `components/patterns/charts/shared.tsx`
+  because it is not a component of its own. Studio components are indexed `PLANNED · index only`,
+  which is the registry's standing convention for `components/studio/**` — the gate does not
+  path-check that directory and `StudioPage` has carried that state since Phase 05.
+- **`app/api/cron/research-analytics` authenticates with `CRON_SECRET`**, as A25 settled for every
+  scheduled route, where the phase document names `REVALIDATE_SECRET`. This answers PHASE-31-38's
+  open question 5 for the whole block: the remaining cron routes (32, 36, 37, 38) take the same
+  secret, and D8 needs no new name.
+- **Snapshots and coverage take no session write policy of any kind.** The phase document says so
+  in prose; this records it as the posture `lib/auth/table-permissions.ts` encodes (no
+  `writePermission`), so `auth:check-rls` fails the build if a later phase grants one. A snapshot a
+  session could insert is a market figure nobody computed.
+- **`scope_id` carries no foreign key**, because one column that names a set, a source or a
+  category cannot reference three tables; the cascade a SET scope needs is
+  `tg_research_comparison_set_prune_snapshots()`, SECURITY DEFINER because sessions may not delete
+  a snapshot. A `CHECK` may not contain a subquery (0260 learned this twice), so the ascending-edges
+  rule is `is_strictly_ascending_bigint_array()`, IMMUTABLE.
 
 **2026-09-11 · A30 — the three-valued verdict is about the MEASUREMENT and not the band, Phase 30
 takes migration `0281`, `research_saved_views` is the first owner-scoped research table, the scale

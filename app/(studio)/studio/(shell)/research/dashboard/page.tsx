@@ -12,9 +12,11 @@ import { requirePermission } from '@/lib/auth/require'
 import { isEnabled } from '@/lib/flags'
 import { STAGE_ORDER } from '@/lib/scraper/core/stage'
 import { HealthPill } from '@/components/studio/research/HealthPill'
+import { SourceCoveragePanel } from '@/components/studio/research/SourceCoveragePanel'
 import { countProductsByStage } from '@/lib/supabase/repositories/research/products'
 import { listResearchRuns } from '@/lib/supabase/repositories/research/runs'
 import { countUndecided, oldestUndecided } from '@/lib/supabase/repositories/research/changes'
+import { countSourceCoverage } from '@/lib/supabase/repositories/research/analytics'
 import { listScaleRows } from '@/lib/supabase/repositories/research/scale'
 import { latestDigest } from '@/lib/supabase/repositories/research/digests'
 import { countUnresolvedCategoryMappings } from '@/lib/supabase/repositories/research/source-config'
@@ -64,6 +66,7 @@ export default async function Page() {
     undecided,
     oldest,
     scaleRows,
+    sourceCoverage,
   ] = await Promise.all([
     listResearchSources(client),
     listResearchRuns(client, 10),
@@ -76,6 +79,7 @@ export default async function Page() {
     countUndecided(client),
     oldestUndecided(client),
     listScaleRows(client, { limit: 5_000 }),
+    countSourceCoverage(client),
   ])
 
   /*
@@ -101,6 +105,21 @@ export default async function Page() {
 
   const healthById = new Map(health.map((entry) => [entry.sourceId, entry]))
 
+  /*
+   * PHASE 31'S COVERAGE PANEL — the honest header every analysis inherits. Captured, priced and
+   * parsed are counted here; health is READ from Phase 26's view rather than recomputed, so the
+   * dashboard cannot disagree with the sources page about what "failing" means.
+   */
+  const coverageById = new Map(sourceCoverage.map((entry) => [entry.sourceId, entry]))
+  const coverageEntries = sources.map((source) => ({
+    sourceId: source.id,
+    name: source.name,
+    captured: coverageById.get(source.id)?.captured ?? 0,
+    priced: coverageById.get(source.id)?.priced ?? 0,
+    parsed: coverageById.get(source.id)?.parsed ?? 0,
+    health: healthById.get(source.id) ?? null,
+  }))
+
   const approved = sources.filter((source) => source.policy_status === 'APPROVED')
 
   return (
@@ -121,6 +140,8 @@ export default async function Page() {
             body={t('studio.research.noSourcesBody')}
           />
         ) : null}
+
+        <SourceCoveragePanel entries={coverageEntries} />
 
         <Surface level={1} className="p-6">
           <PageHeader level={2} title={t('studio.research.stagesHeading')} />

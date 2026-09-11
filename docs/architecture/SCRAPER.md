@@ -2635,3 +2635,94 @@ No `disposition`, no `duplicate_of_id`, no `stage`. Everything it introduces is 
 the operating half of the Phase 04 split — because a scale band says what KIND of object a page
 describes and carries no judgement about whether Rivya should care. The Phase 29 action bar on the
 same screen is what needs `research.confirm`, and it checks it in its own module.
+
+## 22. Analytics and comparison as built — Phase 31
+
+The corpus becomes measurable, and every measurement carries its own error bars. Three questions,
+each answered by a pure module under `lib/scraper/analytics/` that takes rows and returns numbers
+with a **coverage record** beside them: what is being made and in what proportion (`assortment.ts`),
+at what price levels and how those levels are spaced (`price-architecture.ts` with `bands.ts`), and
+at what physical sizes (`dimensions.ts`). The Studio holds evidence after this phase; it still holds
+no opinion — scoring is Phase 32.
+
+### 22.1 The coverage record, and the identity it keeps
+
+```text
+{ metricKey, n, denominator, coveragePct, excludedReasons, asOf }
+n + Σ excludedReasons = denominator        — asserted by tests/unit/analytics-coverage.test.ts
+```
+
+Seven reasons and no eighth: `no_price`, `quote_only_price`, `ambiguous_currency`, `no_dimensions`,
+`dimensions_unparsed`, `unmapped_category`, `stale`. A thin result explains itself — "n = 4 of 140,
+38 quote-only, 98 stale" — rather than looking like a small market. `coverage_pct` is a **generated**
+column in `research_metric_coverage`, so the stored percentage can never disagree with the two
+integers beside it, and zero over zero is 0 %, never 100 %.
+
+Below **twelve** usable rows (`SAMPLE_FLOOR`) a price or dimension panel renders the distribution but
+withholds every percentile and says `INSUFFICIENT SAMPLE`. A median over six rows reads exactly like
+a median over six hundred unless the six is printed next to it.
+
+### 22.2 Currencies are never mixed, at three layers
+
+1. `computePriceArchitecture` **throws** `MixedCurrencyError` on rows of more than one currency.
+2. `lib/scraper/workflows/analytics.ts` splits by currency first and writes one
+   `PRICE_ARCHITECTURE` snapshot per currency; rows whose currency could not be read (`$` alone is
+   AMBIGUOUS, Phase 28) are counted under `ambiguous_currency` in every currency's coverage rather
+   than dropped.
+3. `research_analytics_snapshots.currency` is part of the unique key and
+   `research_analytics_snapshots_currency_matches_family` requires it on a price snapshot — there is
+   **no key** under which a combined-currency figure could be stored.
+
+Only `FIXED` and `STARTING_FROM` rows with an amount are priced. `REQUEST_QUOTE` and
+`PRICE_ON_REQUEST` are `quote_only_price`, never imputed as zero; `UNKNOWN` and a missing amount are
+`no_price`. For a range the comparable point is its lower bound, stated on the panel; the upper bound
+feeds only the range-width figure.
+
+Percentiles use **type-7 linear interpolation** (R, NumPy and every spreadsheet's default), stated
+because a hand-checked expectation is only a check if the definition is the one the reader assumed.
+Bands are cut by a **declared rule** stored with the set and with every snapshot — `QUANTILE`
+(quartile edges from the priced rows, deduplicated so no band is empty) or `FIXED` (edges the
+researcher typed, strictly ascending, enforced by `is_strictly_ascending_bigint_array()` because a
+CHECK may not hold a subquery).
+
+### 22.3 Dimensions measure PARSED rows and name every row they did not
+
+`AMBIGUOUS` and `UNPARSED` are `dimensions_unparsed`; `ABSENT` is `no_dimensions`. There is no
+numeric confidence to threshold on, deliberately: Phase 28 records a parse **state** because it
+refuses to infer a unit from a magnitude. Per-axis percentiles for width, depth, height and diameter;
+a longest-axis distribution over five fixed buckets that render at zero; a width-against-height
+scatter; and the table-scale cut at **1 800 mm**, read from `longest_axis_mm` so this panel and the
+Phase 30 workspace agree row for row.
+
+### 22.4 Assortment reports `unmapped` as a bucket of its own
+
+Per source and per mapped category: live rows, share, three-valued large-format tally, priced share,
+first/last-seen spread. A row with no `matched_category_id` is `unmapped` and is **never distributed**
+across the seven categories — shares sum to 100 ± 0.01 including that bucket, asserted by a test.
+"Live" means `disposition = 'NONE'` (the repository's filter) and seen within ninety days (`stale`
+otherwise).
+
+### 22.5 Comparison sets and snapshots
+
+`research_comparison_sets` is a person's saved question — a name, a band rule, and members that are
+whole sources or individual rows (`research_comparison_members`, exactly one target per row by two
+CHECKs, `unique nulls not distinct` so a source cannot be added twice). Sets and members are written
+**as the person** under `research.write`.
+
+`research_analytics_snapshots` and `research_metric_coverage` are the machine's record and have **no
+session write policy at all**: a snapshot a session could insert is a market figure nobody computed,
+indistinguishable from one that was. Three writers, one function — `snapshotScope()` in
+`lib/scraper/workflows/analytics.ts` — reached by `npm run research:analytics --snapshot`, the
+02:30 UTC cron at `app/api/cron/research-analytics` (`CRON_SECRET`, per amendment A25) and the
+Studio **Recompute** action, which reads the rows as the person and writes the snapshot as the
+system with `computed_by` recording who asked. `input_run_max_id` lets the workbench say "the
+corpus has grown since" instead of rendering a stale figure as current. Deleting a set removes its
+snapshot history through `tg_research_comparison_set_prune_snapshots()`, because `scope_id` points
+at a set, a source or a category and cannot carry a foreign key to three tables.
+
+### 22.6 What this phase does not do
+
+No score, rank or opportunity statement (32). No image comparison (33). No first-party metric or
+Analytics tab (37). No currency conversion — no rate source exists and inventing one would fabricate
+every figure computed from it. No spreadsheet export (36). No public surface: I3 holds, and the
+isolation guard's allowlist still holds exactly two constraints.

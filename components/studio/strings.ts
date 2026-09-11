@@ -5967,6 +5967,341 @@ export const STUDIO_STRINGS = {
     value: 'That change could not be saved.',
     contentKey: 'studio_help.merch_refusal_generic',
   },
+
+  // --- Phase 31: analytics + comparison ------------------------------------------------------------
+  'studio.research.compareSetsHeading': {
+    value: 'Comparison sets',
+    contentKey: 'studio_help.research_compare_sets_heading',
+  },
+  'studio.research.compareSetsBody': {
+    value:
+      'A named selection of sources and rows, recomputed on demand. Every figure it produces states how many rows it was computed from and how many it could not use.',
+    contentKey: 'studio_help.research_compare_sets_body',
+  },
+  'studio.research.compareSetsEmpty': {
+    value: 'No comparison sets yet.',
+    contentKey: 'studio_help.research_compare_sets_empty',
+  },
+  'studio.research.compareSetsEmptyBody': {
+    value: 'Create one below, then add whole sources or individual research rows to it.',
+    contentKey: 'studio_help.research_compare_sets_empty_body',
+  },
+  'studio.research.compareCreate': {
+    value: 'Create a set',
+    contentKey: 'studio_help.research_compare_create',
+  },
+  'studio.research.compareName': {
+    value: 'Name',
+    contentKey: 'studio_help.research_compare_name',
+  },
+  'studio.research.compareSlug': {
+    value: 'Slug',
+    contentKey: 'studio_help.research_compare_slug',
+  },
+  'studio.research.compareDescription': {
+    value: 'Description',
+    contentKey: 'studio_help.research_compare_description',
+  },
+  'studio.research.compareScopeNote': {
+    value: 'What this set is for',
+    contentKey: 'studio_help.research_compare_scope_note',
+  },
+  'studio.research.compareBandRule': {
+    value: 'Band rule',
+    contentKey: 'studio_help.research_compare_band_rule',
+  },
+  'studio.research.compareBandRuleQuantile': {
+    value: 'Quantile — edges derived from the priced rows',
+    contentKey: 'studio_help.research_compare_band_rule_quantile',
+  },
+  'studio.research.compareBandRuleFixed': {
+    value: 'Fixed — edges you type, in minor units, ascending',
+    contentKey: 'studio_help.research_compare_band_rule_fixed',
+  },
+  'studio.research.compareBandEdges': {
+    value: 'Fixed edges (comma-separated, minor units)',
+    contentKey: 'studio_help.research_compare_band_edges',
+  },
+  'studio.research.compareMembers': {
+    value: 'Members',
+    contentKey: 'studio_help.research_compare_members',
+  },
+  'studio.research.compareOwner': {
+    value: 'Created by',
+    contentKey: 'studio_help.research_compare_owner',
+  },
+  'studio.research.compareLastComputed': {
+    value: 'Last computed',
+    contentKey: 'studio_help.research_compare_last_computed',
+  },
+  'studio.research.compareNeverComputed': {
+    value: 'Not computed yet',
+    contentKey: 'studio_help.research_compare_never_computed',
+  },
+  'studio.research.compareOpen': {
+    value: 'Open',
+    contentKey: 'studio_help.research_compare_open',
+  },
+  'studio.research.compareDuplicate': {
+    value: 'Duplicate',
+    contentKey: 'studio_help.research_compare_duplicate',
+  },
+  'studio.research.compareDelete': {
+    value: 'Delete set',
+    contentKey: 'studio_help.research_compare_delete',
+  },
+  'studio.research.compareDeleteTitle': {
+    value: 'Delete this comparison set?',
+    contentKey: 'studio_help.research_compare_delete_title',
+  },
+  'studio.research.compareDeleteBody': {
+    value:
+      'The set, its members and its snapshot history are removed. No research row is touched — a set is a saved question, not evidence.',
+    contentKey: 'studio_help.research_compare_delete_body',
+  },
+  'studio.research.compareRecompute': {
+    value: 'Recompute',
+    contentKey: 'studio_help.research_compare_recompute',
+  },
+  'studio.research.compareComputedFrom': {
+    value: 'computed from',
+    contentKey: 'studio_help.research_compare_computed_from',
+  },
+  'studio.research.compareRowsOn': {
+    value: 'rows on',
+    contentKey: 'studio_help.research_compare_rows_on',
+  },
+  'studio.research.compareStale': {
+    value: 'The corpus has grown since this was computed. Recompute to refresh.',
+    contentKey: 'studio_help.research_compare_stale',
+  },
+  'studio.research.compareNoSnapshot': {
+    value: 'Nothing has been computed for this set yet. Add members, then recompute.',
+    contentKey: 'studio_help.research_compare_no_snapshot',
+  },
+  'studio.research.compareAddSource': {
+    value: 'Add a whole source',
+    contentKey: 'studio_help.research_compare_add_source',
+  },
+  'studio.research.compareAddProduct': {
+    value: 'Add one research row by id',
+    contentKey: 'studio_help.research_compare_add_product',
+  },
+  'studio.research.compareAdd': {
+    value: 'Add',
+    contentKey: 'studio_help.research_compare_add',
+  },
+  'studio.research.compareRemove': {
+    value: 'Remove',
+    contentKey: 'studio_help.research_compare_remove',
+  },
+  'studio.research.compareMoveUp': {
+    value: 'Move up',
+    contentKey: 'studio_help.research_compare_move_up',
+  },
+  'studio.research.compareMoveDown': {
+    value: 'Move down',
+    contentKey: 'studio_help.research_compare_move_down',
+  },
+  'studio.research.compareMembersEmpty': {
+    value: 'This set has no members.',
+    contentKey: 'studio_help.research_compare_members_empty',
+  },
+  'studio.research.compareMembersEmptyBody': {
+    value:
+      'Add a whole source, or an individual research row, to give the analyses something to read.',
+    contentKey: 'studio_help.research_compare_members_empty_body',
+  },
+  'studio.research.compareMemberSource': {
+    value: 'Source',
+    contentKey: 'studio_help.research_compare_member_source',
+  },
+  'studio.research.compareMemberProduct': {
+    value: 'Research row',
+    contentKey: 'studio_help.research_compare_member_product',
+  },
+  'studio.research.compareNote': {
+    value: 'Note',
+    contentKey: 'studio_help.research_compare_note',
+  },
+  'studio.research.assortmentHeading': {
+    value: 'Assortment',
+    contentKey: 'studio_help.research_assortment_heading',
+  },
+  'studio.research.assortmentBody': {
+    value:
+      'What is being listed and in what proportion, per source and per mapped category. Unmapped rows are their own bucket and are never spread across the categories.',
+    contentKey: 'studio_help.research_assortment_body',
+  },
+  'studio.research.assortmentBySource': {
+    value: 'By source',
+    contentKey: 'studio_help.research_assortment_by_source',
+  },
+  'studio.research.assortmentByCategory': {
+    value: 'By mapped category',
+    contentKey: 'studio_help.research_assortment_by_category',
+  },
+  'studio.research.assortmentLive': {
+    value: 'live rows',
+    contentKey: 'studio_help.research_assortment_live',
+  },
+  'studio.research.assortmentPriced': {
+    value: 'with a usable price',
+    contentKey: 'studio_help.research_assortment_priced',
+  },
+  'studio.research.assortmentUnmapped': {
+    value: 'unmapped',
+    contentKey: 'studio_help.research_assortment_unmapped',
+  },
+  'studio.research.priceArchitectureHeading': {
+    value: 'Price architecture',
+    contentKey: 'studio_help.research_price_architecture_heading',
+  },
+  'studio.research.priceArchitectureBody': {
+    value:
+      'Where the prices sit and how they are spaced, within one currency. Quote-only rows are counted, never imputed. For a price range the comparable point is its lower bound.',
+    contentKey: 'studio_help.research_price_architecture_body',
+  },
+  'studio.research.priceMultiCurrency': {
+    value:
+      'This set holds more than one currency. Each is shown on its own; no combined total exists because no exchange rate is configured.',
+    contentKey: 'studio_help.research_price_multi_currency',
+  },
+  'studio.research.priceInsufficient': {
+    value: 'INSUFFICIENT SAMPLE',
+    contentKey: 'studio_help.research_price_insufficient',
+  },
+  'studio.research.priceInsufficientBody': {
+    value:
+      'Fewer priced rows than the floor of twelve. The distribution is shown; percentiles are withheld.',
+    contentKey: 'studio_help.research_price_insufficient_body',
+  },
+  'studio.research.pricePercentiles': {
+    value: 'Percentiles',
+    contentKey: 'studio_help.research_price_percentiles',
+  },
+  'studio.research.priceHistogram': {
+    value: 'Histogram',
+    contentKey: 'studio_help.research_price_histogram',
+  },
+  'studio.research.priceBands': {
+    value: 'Bands',
+    contentKey: 'studio_help.research_price_bands',
+  },
+  'studio.research.priceRanges': {
+    value: 'rows carry a range; median width',
+    contentKey: 'studio_help.research_price_ranges',
+  },
+  'studio.research.dimensionsHeading': {
+    value: 'Dimensions',
+    contentKey: 'studio_help.research_dimensions_heading',
+  },
+  'studio.research.dimensionsBody': {
+    value:
+      'Measured over rows whose dimensions parsed. Ambiguous and unparsed rows are excluded and counted; nothing is inferred from a category, a price or a name.',
+    contentKey: 'studio_help.research_dimensions_body',
+  },
+  'studio.research.dimensionsAxes': {
+    value: 'Per axis (mm)',
+    contentKey: 'studio_help.research_dimensions_axes',
+  },
+  'studio.research.dimensionsLongest': {
+    value: 'Longest axis',
+    contentKey: 'studio_help.research_dimensions_longest',
+  },
+  'studio.research.dimensionsTableScale': {
+    value: 'at table scale (≥ 1 800 mm)',
+    contentKey: 'studio_help.research_dimensions_table_scale',
+  },
+  'studio.research.dimensionsScatter': {
+    value: 'Width against height',
+    contentKey: 'studio_help.research_dimensions_scatter',
+  },
+  'studio.research.coverageOf': {
+    value: 'of',
+    contentKey: 'studio_help.research_coverage_of',
+  },
+  'studio.research.coverageAsOf': {
+    value: 'as of',
+    contentKey: 'studio_help.research_coverage_as_of',
+  },
+  'studio.research.coverageExcluded': {
+    value: 'excluded',
+    contentKey: 'studio_help.research_coverage_excluded',
+  },
+  'studio.research.sourceCoverageHeading': {
+    value: 'Source coverage',
+    contentKey: 'studio_help.research_source_coverage_heading',
+  },
+  'studio.research.sourceCoverageBody': {
+    value:
+      'Per source: rows captured, rows with a usable price, rows with parsed dimensions, and the health the run history reports. This is the header every analysis inherits.',
+    contentKey: 'studio_help.research_source_coverage_body',
+  },
+  'studio.research.sourceCoverageCaptured': {
+    value: 'captured',
+    contentKey: 'studio_help.research_source_coverage_captured',
+  },
+  'studio.research.sourceCoveragePriced': {
+    value: 'priced',
+    contentKey: 'studio_help.research_source_coverage_priced',
+  },
+  'studio.research.sourceCoverageParsed': {
+    value: 'parsed dimensions',
+    contentKey: 'studio_help.research_source_coverage_parsed',
+  },
+  'studio.research.sourceCoverageLastRun': {
+    value: 'last run',
+    contentKey: 'studio_help.research_source_coverage_last_run',
+  },
+  'studio.research.sourceCoverageSuccess': {
+    value: '7-day success',
+    contentKey: 'studio_help.research_source_coverage_success',
+  },
+  'studio.research.sourceCoverageEmpty': {
+    value: 'No sources yet, so nothing to cover.',
+    contentKey: 'studio_help.research_source_coverage_empty',
+  },
+  'studio.research.chartTable': {
+    value: 'Data table',
+    contentKey: 'studio_help.research_chart_table',
+  },
+  'studio.research.chartValue': {
+    value: 'Value',
+    contentKey: 'studio_help.research_chart_value',
+  },
+  'studio.research.chartLabel': {
+    value: 'Label',
+    contentKey: 'studio_help.research_chart_label',
+  },
+  'studio.research.compareSaved': {
+    value: 'Saved.',
+    contentKey: 'studio_help.research_compare_saved',
+  },
+  'studio.research.compareRefusalName': {
+    value: 'Give the set a name.',
+    contentKey: 'studio_help.research_compare_refusal_name',
+  },
+  'studio.research.compareRefusalSlug': {
+    value: 'The slug must be lower-case words joined by hyphens.',
+    contentKey: 'studio_help.research_compare_refusal_slug',
+  },
+  'studio.research.compareRefusalEdges': {
+    value: 'Fixed edges must be whole numbers, ascending, at least one.',
+    contentKey: 'studio_help.research_compare_refusal_edges',
+  },
+  'studio.research.compareRefusalMember': {
+    value: 'Choose a source or paste a research row id.',
+    contentKey: 'studio_help.research_compare_refusal_member',
+  },
+  'studio.research.compareRefusalPermission': {
+    value: 'You do not have permission to do that.',
+    contentKey: 'studio_help.research_compare_refusal_permission',
+  },
+  'studio.research.compareRefusalGeneric': {
+    value: 'That could not be saved as written.',
+    contentKey: 'studio_help.research_compare_refusal_generic',
+  },
 } as const satisfies Record<string, StudioStringEntry>
 
 /** Every key this module resolves. A typo is a compile error, not a blank space on the page. */
