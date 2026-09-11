@@ -1,4 +1,5 @@
 import { Badge } from '@/components/primitives/Badge'
+import { RelativeTime } from '@/components/studio/RelativeTime'
 import { Stack } from '@/components/primitives/Stack'
 import { Surface } from '@/components/primitives/Surface'
 import { Text } from '@/components/primitives/Text'
@@ -12,6 +13,8 @@ import { STAGE_ORDER } from '@/lib/scraper/core/stage'
 import { HealthPill } from '@/components/studio/research/HealthPill'
 import { countProductsByStage } from '@/lib/supabase/repositories/research/products'
 import { listResearchRuns } from '@/lib/supabase/repositories/research/runs'
+import { countUndecided, oldestUndecided } from '@/lib/supabase/repositories/research/changes'
+import { latestDigest } from '@/lib/supabase/repositories/research/digests'
 import { countUnresolvedCategoryMappings } from '@/lib/supabase/repositories/research/source-config'
 import { listSourceHealth } from '@/lib/supabase/repositories/research/source-health'
 import { listResearchSources } from '@/lib/supabase/repositories/research/sources'
@@ -30,6 +33,11 @@ import { createClient } from '@/lib/supabase/server'
  * moving needs to know the master switch is down before they go looking at politeness settings,
  * and it is the single most common reason for a still queue.
  *
+ * PHASE 29 ADDS THE DIGEST AND, ABOVE IT, THE ONE NUMBER THAT MAKES A STALLED QUEUE UNDENIABLE:
+ * the DATE of the oldest undecided change. A count can sit at forty for a month and read as steady
+ * state; "the oldest undecided change is from 3 August" cannot be read as anything but a backlog,
+ * and a review queue people quietly stop reading is the risk that whole phase is arranged against.
+ *
  * PHASE 26 ADDS TWO FIGURES AND BOTH ARE GAPS RATHER THAN ACHIEVEMENTS. Health comes from the
  * derived view, so a source that has stopped running says so here without anything having to
  * remember to write it down. The unmapped-category count is the number of labels a source has
@@ -42,15 +50,26 @@ export default async function Page() {
   await requirePermission('research.read')
 
   const client = await createClient()
-  const [sources, runs, pending, stages, researchOn, health, unmapped] = await Promise.all([
-    listResearchSources(client),
-    listResearchRuns(client, 10),
-    countPendingWorkItems(client),
-    countProductsByStage(client),
-    isEnabled('research_enabled'),
-    listSourceHealth(client),
-    countUnresolvedCategoryMappings(client),
-  ])
+  const [sources, runs, pending, stages, researchOn, health, unmapped, digest, undecided, oldest] =
+    await Promise.all([
+      listResearchSources(client),
+      listResearchRuns(client, 10),
+      countPendingWorkItems(client),
+      countProductsByStage(client),
+      isEnabled('research_enabled'),
+      listSourceHealth(client),
+      countUnresolvedCategoryMappings(client),
+      latestDigest(client),
+      countUndecided(client),
+      oldestUndecided(client),
+    ])
+
+  const stats = (digest?.stats ?? {}) as {
+    productsDiscovered?: number
+    productsDisappeared?: number
+    materialChangeTotal?: number
+    materialChangesByField?: Record<string, number>
+  }
 
   const healthById = new Map(health.map((entry) => [entry.sourceId, entry]))
 
@@ -95,6 +114,48 @@ export default async function Page() {
           <Text tone="secondary" className="mt-2" data-unmapped-categories={String(unmapped)}>
             {`${unmapped} ${t('studio.research.unmappedCount')}`}
           </Text>
+        </Surface>
+
+        <Surface level={1} className="p-6" data-digest-panel="">
+          <PageHeader level={2} title={t('studio.research.digestHeading')} />
+          {digest === null ? (
+            <Text tone="secondary" className="mt-3">
+              {t('studio.research.digestNone')}
+            </Text>
+          ) : (
+            <Stack gap={2} className="mt-4">
+              <div className="flex flex-wrap gap-3">
+                <Badge tone="neutral" data-digest-changes="">
+                  {`${stats.materialChangeTotal ?? 0} material`}
+                </Badge>
+                <Badge tone="neutral" data-digest-discovered="">
+                  {`${stats.productsDiscovered ?? 0} ${t('studio.research.digestDiscovered')}`}
+                </Badge>
+                <Badge tone="neutral" data-digest-disappeared="">
+                  {`${stats.productsDisappeared ?? 0} ${t('studio.research.digestDisappeared')}`}
+                </Badge>
+              </div>
+              {Object.keys(stats.materialChangesByField ?? {}).length === 0 ? null : (
+                <div className="flex flex-wrap gap-2" data-digest-fields="">
+                  {Object.entries(stats.materialChangesByField ?? {}).map(([field, count]) => (
+                    <Badge key={field} tone="neutral">{`${field}: ${String(count)}`}</Badge>
+                  ))}
+                </div>
+              )}
+            </Stack>
+          )}
+
+          {/* THE DATE, NOT THE COUNT, IS THE POINT OF THIS LINE. Rendered even at zero, for the
+              reason the unmapped-category count is: a figure that appears only when it is
+              non-zero is a figure nobody learns to look for. */}
+          <Text tone="secondary" className="mt-4" data-oldest-undecided="">
+            {`${undecided} ${t('studio.research.digestOldest')}`}
+          </Text>
+          {oldest === null ? null : (
+            <Text tone="secondary" className="mt-1">
+              <RelativeTime value={oldest.detected_at} />
+            </Text>
+          )}
         </Surface>
 
         <Surface level={1} className="p-6">

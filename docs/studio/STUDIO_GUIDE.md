@@ -1808,8 +1808,24 @@ Field-by-field change detection between stored versions (FEAT §24). Each change
 record can always be reproduced from evidence.
 
 **Materiality is a stated rule, not a feeling** — `MATERIAL · MINOR · NOISE`, with per-field
-thresholds editable per source in `/studio/system/settings`. `NOISE` changes are recorded but hidden by
+thresholds editable per source. `NOISE` changes are recorded but hidden by
 default and never counted in the dashboard's "changed" figure.
+
+**The threshold editor is on `/studio/operations/data-quality`, beside the material lexicon — not on
+`/studio/system/settings`,** which is where PHASE-23-30 places it. That page is gated on
+`system.settings.write`, held only by an owner and an admin; a materiality threshold is
+`research.write`, held by a RESEARCHER — and a researcher is exactly who notices that a source is
+flooding the queue. A control behind a permission its user does not have would make the
+"tune it without a deploy" design decorative. Both editors are parsing configuration about other
+people's pages, and a person tuning one is usually there because of the other.
+
+**A draft threshold changes nothing.** Only `PUBLISHED` rules configure the detector, so an override
+can be prepared and looked at before it re-classifies a queue somebody else is working through.
+
+**The queue defaults to MATERIAL and undecided**, filters live in the URL, and `j`/`k`/`s`/`i`/`r`/`n`
+work the list from the keyboard. The shortcut keys drive the same forms the mouse does rather than
+posting on their own — so `i` and `r`, which need a reason, put the cursor in the reason field
+instead of submitting an empty one.
 
 **The nine FEAT §25 actions.** Eight of them mutate a disposition or a stage, and each writes a
 `research_review_actions` row, an `audit_logs` row and, if a stage moves, a `research_pipeline_events`
@@ -1834,6 +1850,27 @@ than assumed from the group.
 **Guardrails.** Changes are **never automatically imported into Rivya products**, or into anything.
 Change detection never moves a stage on its own — only a person does. `research_changes` is written by
 the service role only: the system detects, a person decides.
+
+**As built, Compare's action row is written by the SYSTEM rather than by the person**, which is what
+makes the `research.read` permission above real. `research_review_actions` is `research.confirm` at
+the table — correctly, because every other row in it is a verdict — so a researcher's session cannot
+insert one. Comparing is not a verdict: it stamps nothing on the change, it is not counted among the
+six deciding actions, and what is recorded is that a comparison HAPPENED. The system records that,
+in the same sense it records the pipeline event beside it, and the log stays complete for everybody
+who compares rather than only for the people permitted to decide.
+
+**Bulk review is the Phase 24 engine, not a second one.** The five research operations carry an
+`extraPermission` of `research.confirm` on top of `bulk.execute`, so a researcher cannot reach in
+bulk what they cannot reach one row at a time. `research.reject` is the only destructive one — it
+empties a queue — and takes `destructive.execute`, a typed row count and a reason applied to every
+item, with the same 24-hour undo as every other bulk operation.
+
+**The dashboard's digest** (`/studio/research/dashboard`) carries material changes by field,
+products first seen, products no longer listed, and — the number that makes a stalled queue
+undeniable — the DATE of the oldest undecided change. Disappearance is judged per source against
+that source's own second-most-recent successful run, never against the clock, and a source with
+fewer than two successful runs is counted separately rather than reported as zero: a zero and an
+unknown look identical and mean opposite things.
 
 ### 12.7 `/studio/research/large-format`
 

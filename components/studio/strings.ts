@@ -1594,6 +1594,160 @@ export const STUDIO_STRINGS = {
     value: 'Title contains',
     contentKey: 'studio_help.research_filter_title',
   },
+  // --- Phase 29: change detection and review ------------------------------------------------------
+  'studio.research.changesHeading': {
+    value: 'What changed',
+    contentKey: 'studio_help.research_changes_heading',
+  },
+  'studio.research.changesEmpty': {
+    value: 'Nothing to review',
+    contentKey: 'studio_help.research_changes_empty',
+  },
+  'studio.research.changesEmptyBody': {
+    value:
+      'A change appears here when a page Rivya has already read says something different. ' +
+      'Formatting churn is recorded but hidden.',
+    contentKey: 'studio_help.research_changes_empty_body',
+  },
+  'studio.research.filterMateriality': {
+    value: 'How loud',
+    contentKey: 'studio_help.research_filter_materiality',
+  },
+  'studio.research.filterField': {
+    value: 'Field',
+    contentKey: 'studio_help.research_filter_field',
+  },
+  'studio.research.filterDecided': {
+    value: 'Decided',
+    contentKey: 'studio_help.research_filter_decided',
+  },
+  'studio.research.filterAge': { value: 'Detected', contentKey: 'studio_help.research_filter_age' },
+  'studio.research.changeBefore': {
+    value: 'Before',
+    contentKey: 'studio_help.research_change_before',
+  },
+  'studio.research.changeAfter': {
+    value: 'After',
+    contentKey: 'studio_help.research_change_after',
+  },
+  'studio.research.changeWhy': {
+    value: 'Why it is classified this way',
+    contentKey: 'studio_help.research_change_why',
+  },
+  'studio.research.changeSnapshots': {
+    value: 'Stored pages this was read from',
+    contentKey: 'studio_help.research_change_snapshots',
+  },
+  'studio.research.actionReview': { value: 'Review', contentKey: 'studio_help.research_review' },
+  'studio.research.actionIgnore': { value: 'Ignore', contentKey: 'studio_help.research_ignore' },
+  'studio.research.actionShortlist': {
+    value: 'Shortlist',
+    contentKey: 'studio_help.research_shortlist',
+  },
+  'studio.research.actionReject': { value: 'Reject', contentKey: 'studio_help.research_reject' },
+  'studio.research.actionMarkDuplicate': {
+    value: 'Mark duplicate',
+    contentKey: 'studio_help.research_mark_duplicate',
+  },
+  'studio.research.actionConfirm': { value: 'Confirm', contentKey: 'studio_help.research_confirm' },
+  'studio.research.actionNote': { value: 'Add note', contentKey: 'studio_help.research_note' },
+  'studio.research.actionTag': { value: 'Add tag', contentKey: 'studio_help.research_tag' },
+  'studio.research.actionCompare': { value: 'Compare', contentKey: 'studio_help.research_compare' },
+  'studio.research.actionUndo': { value: 'Undo', contentKey: 'studio_help.research_undo' },
+  /*
+   * THE CONFIRM DIALOG'S COPY, AND IT IS ONE OF THE FOUR NEVER-AUTO-IMPORT GUARANTEES.
+   *
+   * The other three are code — a CI guard, a test, an isolation invariant — and this one is aimed
+   * at people. The risk it answers is not a developer adding an import; it is somebody reading a
+   * screen full of "confirmed" competitor rows and concluding, six months later, that the
+   * catalogue must have been approved from them.
+   */
+  'studio.research.confirmMeaning': {
+    value:
+      'Confirming marks this as a research reference. It creates no Rivya product, no draft, ' +
+      'no media and no page content. A Rivya product is only ever created by an owner.',
+    contentKey: 'studio_help.research_confirm_meaning',
+  },
+  'studio.research.reasonRequired': {
+    value: 'Say why. This closes the row without another read.',
+    contentKey: 'studio_help.research_reason_required',
+  },
+  'studio.research.decidedElsewhere': {
+    value: 'Deciding a change needs the merchandiser permission. You can read the queue.',
+    contentKey: 'studio_help.research_decided_elsewhere',
+  },
+  'studio.research.shortcuts': {
+    value: 'j and k move, s shortlists, i ignores, r rejects, n adds a note',
+    contentKey: 'studio_help.research_shortcuts',
+  },
+  'studio.research.compareHeading': {
+    value: 'Side by side',
+    contentKey: 'studio_help.research_compare_heading',
+  },
+  'studio.research.compareRecords': {
+    value: 'Comparing records nothing about these rows.',
+    contentKey: 'studio_help.research_compare_records',
+  },
+  'studio.research.digestHeading': {
+    value: 'Yesterday across every source',
+    contentKey: 'studio_help.research_digest_heading',
+  },
+  'studio.research.digestOldest': {
+    value: 'Oldest undecided change',
+    contentKey: 'studio_help.research_digest_oldest',
+  },
+  'studio.research.digestDiscovered': {
+    value: 'Products first seen',
+    contentKey: 'studio_help.research_digest_discovered',
+  },
+  'studio.research.digestDisappeared': {
+    value: 'Products no longer listed',
+    contentKey: 'studio_help.research_digest_disappeared',
+  },
+  'studio.research.digestNone': {
+    value: 'No digest has been generated yet.',
+    contentKey: 'studio_help.research_digest_none',
+  },
+  'studio.research.thresholdsHeading': {
+    value: 'Change thresholds',
+    contentKey: 'studio_help.research_thresholds_heading',
+  },
+  'studio.research.thresholdEverySource': {
+    value: 'Every source',
+    contentKey: 'studio_help.research_threshold_every_source',
+  },
+  'studio.research.thresholdAnyChange': {
+    value: 'any change',
+    contentKey: 'studio_help.research_threshold_any_change',
+  },
+  'studio.research.thresholdDetectField': {
+    value: 'Detect this field',
+    contentKey: 'studio_help.research_threshold_detect_field',
+  },
+  'studio.research.thresholdOff': {
+    value: 'off',
+    contentKey: 'studio_help.research_threshold_off',
+  },
+  'studio.research.statusLabel': {
+    value: 'Status',
+    contentKey: 'studio_help.research_status_label',
+  },
+  'studio.research.statusDraft': {
+    value: 'Draft',
+    contentKey: 'studio_help.research_status_draft',
+  },
+  'studio.research.statusPublished': {
+    value: 'Published',
+    contentKey: 'studio_help.research_status_published',
+  },
+  'studio.research.thresholdMaterial': {
+    value: 'Material at or beyond',
+    contentKey: 'studio_help.research_threshold_material',
+  },
+  'studio.research.thresholdMinor': {
+    value: 'Minor at or beyond',
+    contentKey: 'studio_help.research_threshold_minor',
+  },
   'studio.research.severityTruncated': {
     value:
       'Showing the products with the most recently detected findings. Narrow the filters to see the rest.',

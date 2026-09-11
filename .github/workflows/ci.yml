@@ -175,6 +175,16 @@ jobs:
       - name: Research stays isolated from everything a visitor can reach
         run: npm run research:check-isolation
 
+      # Phase 29's third never-auto-import guarantee. FEAT §25's last line is the hardest rule in
+      # this subsystem to keep, because breaking it always looks like an improvement: a confirmed
+      # competitor row already carries a title, a price, dimensions and eight image URLs, and
+      # creating the Rivya product by hand looks like waste. It is not. A Rivya product is created
+      # only by an owner typing one or by the Phase 24 approved-import path, and neither reads a
+      # research table. This fails the build on a research module that writes a catalogue table or
+      # imports a first-party write.
+      - name: Nothing imports a competitor's product into the catalogue
+        run: npm run research:check-no-autoimport
+
       # Proves the seeding contract end to end on a fresh database: every record inserts, then
       # every record updates and none inserts. A regression in the hashing makes the second run
       # insert or skip instead, which no unit test with a fake client could catch.

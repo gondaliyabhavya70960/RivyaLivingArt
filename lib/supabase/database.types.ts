@@ -3594,6 +3594,184 @@ export type Database = {
           },
         ]
       }
+      research_change_digests: {
+        Row: {
+          id: string
+          digest_date: string
+          stats: Json
+          generated_at: string
+        }
+        Insert: {
+          id?: string
+          digest_date: string
+          stats: Json
+          generated_at?: string
+        }
+        Update: {
+          id?: string
+          digest_date?: string
+          stats?: Json
+          generated_at?: string
+        }
+        Relationships: []
+      }
+      research_change_rules: {
+        Row: {
+          id: string
+          source_id: string | null
+          field: string
+          material_threshold: number | null
+          minor_threshold: number | null
+          is_enabled: boolean
+          status: Database['public']['Enums']['content_status']
+          created_at: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          source_id?: string | null
+          field: string
+          material_threshold?: number | null
+          minor_threshold?: number | null
+          is_enabled?: boolean
+          status?: Database['public']['Enums']['content_status']
+          created_at?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          source_id?: string | null
+          field?: string
+          material_threshold?: number | null
+          minor_threshold?: number | null
+          is_enabled?: boolean
+          status?: Database['public']['Enums']['content_status']
+          created_at?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'research_change_rules_source_id_fkey'
+            columns: ['source_id']
+            isOneToOne: false
+            referencedRelation: 'research_sources'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'research_change_rules_updated_by_fkey'
+            columns: ['updated_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      research_changes: {
+        Row: {
+          id: string
+          research_product_id: string
+          source_id: string
+          field: string
+          change_kind: string
+          materiality: string
+          before: Json | null
+          after: Json | null
+          version_before_id: string | null
+          version_after_id: string
+          run_id: string | null
+          snapshot_before_key: string | null
+          snapshot_after_key: string | null
+          detected_at: string
+          decided_action: string | null
+          decided_by: string | null
+          decided_at: string | null
+        }
+        Insert: {
+          id?: string
+          research_product_id: string
+          source_id: string
+          field: string
+          change_kind: string
+          materiality: string
+          before?: Json | null
+          after?: Json | null
+          version_before_id?: string | null
+          version_after_id: string
+          run_id?: string | null
+          snapshot_before_key?: string | null
+          snapshot_after_key?: string | null
+          detected_at?: string
+          decided_action?: string | null
+          decided_by?: string | null
+          decided_at?: string | null
+        }
+        Update: {
+          id?: string
+          research_product_id?: string
+          source_id?: string
+          field?: string
+          change_kind?: string
+          materiality?: string
+          before?: Json | null
+          after?: Json | null
+          version_before_id?: string | null
+          version_after_id?: string
+          run_id?: string | null
+          snapshot_before_key?: string | null
+          snapshot_after_key?: string | null
+          detected_at?: string
+          decided_action?: string | null
+          decided_by?: string | null
+          decided_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'research_changes_decided_by_fkey'
+            columns: ['decided_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'research_changes_research_product_id_fkey'
+            columns: ['research_product_id']
+            isOneToOne: false
+            referencedRelation: 'research_products'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'research_changes_run_id_fkey'
+            columns: ['run_id']
+            isOneToOne: false
+            referencedRelation: 'research_runs'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'research_changes_source_id_fkey'
+            columns: ['source_id']
+            isOneToOne: false
+            referencedRelation: 'research_sources'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'research_changes_version_after_id_fkey'
+            columns: ['version_after_id']
+            isOneToOne: false
+            referencedRelation: 'research_product_versions'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'research_changes_version_before_id_fkey'
+            columns: ['version_before_id']
+            isOneToOne: false
+            referencedRelation: 'research_product_versions'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       research_fetches: {
         Row: {
           id: string
@@ -3835,6 +4013,55 @@ export type Database = {
           },
         ]
       }
+      research_notes: {
+        Row: {
+          id: string
+          research_product_id: string
+          body: string
+          author_user_id: string | null
+          created_at: string
+          superseded_by: string | null
+        }
+        Insert: {
+          id?: string
+          research_product_id: string
+          body: string
+          author_user_id?: string | null
+          created_at?: string
+          superseded_by?: string | null
+        }
+        Update: {
+          id?: string
+          research_product_id?: string
+          body?: string
+          author_user_id?: string | null
+          created_at?: string
+          superseded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'research_notes_author_user_id_fkey'
+            columns: ['author_user_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'research_notes_research_product_id_fkey'
+            columns: ['research_product_id']
+            isOneToOne: false
+            referencedRelation: 'research_products'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'research_notes_superseded_by_fkey'
+            columns: ['superseded_by']
+            isOneToOne: false
+            referencedRelation: 'research_notes'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       research_pipeline_events: {
         Row: {
           id: string
@@ -3875,6 +4102,49 @@ export type Database = {
             columns: ['actor_user_id']
             isOneToOne: false
             referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      research_product_tags: {
+        Row: {
+          research_product_id: string
+          tag_id: string
+          assigned_by: string | null
+          assigned_at: string
+        }
+        Insert: {
+          research_product_id: string
+          tag_id: string
+          assigned_by?: string | null
+          assigned_at?: string
+        }
+        Update: {
+          research_product_id?: string
+          tag_id?: string
+          assigned_by?: string | null
+          assigned_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'research_product_tags_assigned_by_fkey'
+            columns: ['assigned_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'research_product_tags_research_product_id_fkey'
+            columns: ['research_product_id']
+            isOneToOne: false
+            referencedRelation: 'research_products'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'research_product_tags_tag_id_fkey'
+            columns: ['tag_id']
+            isOneToOne: false
+            referencedRelation: 'research_tags'
             referencedColumns: ['id']
           },
         ]
@@ -4183,6 +4453,71 @@ export type Database = {
             columns: ['source_id']
             isOneToOne: false
             referencedRelation: 'research_sources'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      research_review_actions: {
+        Row: {
+          id: string
+          research_product_id: string
+          change_id: string | null
+          action: string
+          reason: string | null
+          actor_user_id: string | null
+          actor_role: string
+          occurred_at: string
+          undone_by_action_id: string | null
+        }
+        Insert: {
+          id?: string
+          research_product_id: string
+          change_id?: string | null
+          action: string
+          reason?: string | null
+          actor_user_id?: string | null
+          actor_role: string
+          occurred_at?: string
+          undone_by_action_id?: string | null
+        }
+        Update: {
+          id?: string
+          research_product_id?: string
+          change_id?: string | null
+          action?: string
+          reason?: string | null
+          actor_user_id?: string | null
+          actor_role?: string
+          occurred_at?: string
+          undone_by_action_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'research_review_actions_actor_user_id_fkey'
+            columns: ['actor_user_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'research_review_actions_change_id_fkey'
+            columns: ['change_id']
+            isOneToOne: false
+            referencedRelation: 'research_changes'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'research_review_actions_research_product_id_fkey'
+            columns: ['research_product_id']
+            isOneToOne: false
+            referencedRelation: 'research_products'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'research_review_actions_undone_by_action_id_fkey'
+            columns: ['undone_by_action_id']
+            isOneToOne: false
+            referencedRelation: 'research_review_actions'
             referencedColumns: ['id']
           },
         ]
@@ -4620,6 +4955,50 @@ export type Database = {
           },
           {
             foreignKeyName: 'research_sources_updated_by_fkey'
+            columns: ['updated_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      research_tags: {
+        Row: {
+          id: string
+          slug: string
+          label: string
+          colour: string | null
+          is_enabled: boolean
+          status: Database['public']['Enums']['content_status']
+          created_at: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          slug: string
+          label: string
+          colour?: string | null
+          is_enabled?: boolean
+          status?: Database['public']['Enums']['content_status']
+          created_at?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          slug?: string
+          label?: string
+          colour?: string | null
+          is_enabled?: boolean
+          status?: Database['public']['Enums']['content_status']
+          created_at?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'research_tags_updated_by_fkey'
             columns: ['updated_by']
             isOneToOne: false
             referencedRelation: 'users'

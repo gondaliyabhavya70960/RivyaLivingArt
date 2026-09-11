@@ -154,6 +154,7 @@ export const PHASE_25_POLICIES = '0233_phase25_research_rls.sql'
 export const PHASE_26_POLICIES = '0241_phase26_source_config_rls.sql'
 export const PHASE_27_POLICIES = '0251_phase27_extraction_rls.sql'
 export const PHASE_28_POLICIES = '0261_phase28_normalization_rls.sql'
+export const PHASE_29_POLICIES = '0271_phase29_changes_rls.sql'
 
 export const TABLE_POLICIES = {
   // --- Shape A: content tables ------------------------------------------------------------------
@@ -1356,6 +1357,128 @@ export const TABLE_POLICIES = {
       "A parsing vocabulary for other people's words, editable in Studio so that a material " +
       'nobody anticipated is added without a deploy. Delete is destructive.execute because ' +
       'removing a token unmatches it on every stored row the next re-normalisation touches.',
+  },
+  /*
+   * Phase 29 — seven tables, and they sort into three groups by WHO MAY WRITE. The grouping is the
+   * phase's argument, so it is stated once here rather than seven times below.
+   *
+   *   DETECTED BY THE SYSTEM — `research_changes`, `research_change_digests`. No write policy of
+   *   any kind. A change somebody typed is not a change a page made, and the entire value of the
+   *   review queue is that every row in it is evidence of something a competitor actually did. The
+   *   same posture as `research_fetches` and `research_raw_items` in Phase 25, for the same reason.
+   *
+   *   DECIDED BY A PERSON — `research_review_actions`, `research_notes`, `research_product_tags`.
+   *   `research.confirm`: the Phase 04 split's judging half. All three are INSERT-ONLY at the
+   *   policy and append-only at the trigger, and a reversal is a new row.
+   *
+   *   CONFIGURED BY A PERSON — `research_change_rules`, `research_tags`. `research.write`: the
+   *   operating half, exactly as `research_material_lexicon`. A threshold is a parsing decision
+   *   about somebody else's page, not a verdict about a product.
+   *
+   * `research_product_tags` IS SHAPE C DESPITE BEING A JOIN TABLE. Shape B derives anon visibility
+   * from its parents, and no research table has an anon leg at all (I2) — so B would describe a
+   * public predicate for a row no member of the public may ever see.
+   */
+  research_changes: {
+    policiesIn: PHASE_29_POLICIES,
+    shape: 'C',
+    readPermission: 'research.read',
+    deviation:
+      'Detected, never authored. No write policy of any kind: the detector writes these through ' +
+      'the service role, and a change row a session could insert is a competitor price move ' +
+      'somebody could invent. No anon policy may ever exist on any research_* table (isolation ' +
+      'invariant I2). The decision columns are stamped by the same service-role path that writes ' +
+      'the append-only action row, so a person decides through an action and never by an UPDATE.',
+  },
+  research_change_rules: {
+    policiesIn: PHASE_29_POLICIES,
+    shape: 'C',
+    readPermission: 'research.read',
+    writePermission: 'research.write',
+    deletePermission: 'destructive.execute',
+    deviation:
+      'Configuration, like a URL pattern or a material token: research.write, because a ' +
+      'threshold is a parsing decision about how loudly a source is read, not a verdict about a ' +
+      'product. Delete is destructive.execute because removing a per-source override silently ' +
+      'returns that source to the global default on the next detection pass. No anon policy may ' +
+      'ever exist on any research_* table (isolation invariant I2).',
+  },
+  research_review_actions: {
+    policiesIn: PHASE_29_POLICIES,
+    shape: 'C',
+    readPermission: 'research.read',
+    writePermission: 'research.confirm',
+    writeIsInsertOnly: {
+      why:
+        'Append-only, enforced by tg_research_review_actions_append_only(), which refuses every ' +
+        'UPDATE except setting undone_by_action_id once from null and refuses DELETE outright. An ' +
+        'update policy would describe a path the database will not take, and a generated file is ' +
+        'read as a statement of what is possible. The reversal itself is written by the server ' +
+        'action through the service role, in the same call that inserts the reversing action.',
+    },
+    deviation:
+      'The record of who decided what and why, under research.confirm because every one of the ' +
+      'nine FEAT §25 actions is a disposition. No anon policy may ever exist on any research_* ' +
+      'table (isolation invariant I2), and no delete policy exists on this one at all: a decision ' +
+      'somebody could erase is not an audit trail.',
+  },
+  research_notes: {
+    policiesIn: PHASE_29_POLICIES,
+    shape: 'C',
+    readPermission: 'research.read',
+    writePermission: 'research.confirm',
+    writeIsInsertOnly: {
+      why:
+        'Append-only, enforced by tg_research_notes_append_only(). An edit is a NEW note with ' +
+        'superseded_by set on the old one — written by the server action through the service ' +
+        'role — because what somebody thought before they changed their mind is the useful half ' +
+        'of a note thread.',
+    },
+    deviation:
+      'Notes are never deleted, only superseded. research.confirm rather than research.write ' +
+      'because a note on a research row is part of the judging conversation, alongside the action ' +
+      'it usually accompanies. No anon policy may ever exist on any research_* table (I2).',
+  },
+  research_tags: {
+    policiesIn: PHASE_29_POLICIES,
+    shape: 'C',
+    readPermission: 'research.read',
+    writePermission: 'research.write',
+    deletePermission: 'destructive.execute',
+    deviation:
+      'A controlled vocabulary, configuration in exactly the sense research_material_lexicon is. ' +
+      'Delete is destructive.execute because the cascade takes the tag off every row it was ever ' +
+      'applied to, and a tag that was on forty rows yesterday and nothing today is unrecoverable. ' +
+      'No anon policy may ever exist on any research_* table (I2).',
+  },
+  research_product_tags: {
+    policiesIn: PHASE_29_POLICIES,
+    shape: 'C',
+    readPermission: 'research.read',
+    writePermission: 'research.confirm',
+    deletePermission: 'research.confirm',
+    writeIsInsertOnly: {
+      why:
+        'A tag is applied or removed, never amended: the composite primary key IS the row, so an ' +
+        'UPDATE could only move a tag from one product to another, which is two decisions ' +
+        'disguised as one.',
+    },
+    deviation:
+      'Shape C rather than B despite being a join table: shape B derives anon visibility from its ' +
+      'parents, and no research_* table has an anon leg to derive from (I2). Applying a tag is a ' +
+      'judgement about what a row IS, so research.confirm — and unlike every other table in this ' +
+      'phase it takes a DELETE policy, because removing a tag applied in error is the correction, ' +
+      'not a rewriting of history: no decision is recorded on this row, the action log holds it.',
+  },
+  research_change_digests: {
+    policiesIn: PHASE_29_POLICIES,
+    shape: 'C',
+    readPermission: 'research.read',
+    deviation:
+      'Generated by the digest job under the service role, one row per day, keyed by date so a ' +
+      'retried cron slice updates rather than duplicates. No write policy: a hand-edited summary ' +
+      'read as a trend is worse than no summary. No anon policy may ever exist on any research_* ' +
+      'table (isolation invariant I2).',
   },
 } as const satisfies Record<string, TablePolicy>
 

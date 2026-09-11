@@ -1,8 +1,11 @@
 import { NextResponse } from 'next/server'
 
 import { checkCronAuth } from '@/lib/cms/cron-auth'
+import { listProductsWithRecentVersions } from '@/lib/supabase/repositories/research/discovery'
 import { pruneSearchQueries } from '@/lib/supabase/repositories/search'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { detectChangesForProducts } from '@/lib/scraper/workflows/detect-changes'
+import { generateDigest } from '@/lib/scraper/workflows/digest'
 import { drainQueue } from '@/lib/scraper/workflows/drain'
 import { promoteDueJobs } from '@/lib/scraper/workflows/schedule'
 import { pruneSnapshots } from '@/lib/scraper/workflows/prune'
@@ -18,7 +21,7 @@ import { pruneSnapshots } from '@/lib/scraper/workflows/prune'
  * IT IS A ROUTE HANDLER AND NOT A PAGE, AND NOTHING PUBLIC LINKS TO IT (isolation invariant I3).
  * There is no sitemap entry, no feed and no JSON-LD block that mentions a research table.
  *
- * ORDER MATTERS AND IT IS: PROMOTE, DRAIN, PRUNE. Promoting first means a job that came due thirty
+ * ORDER MATTERS AND IT IS: PROMOTE, DRAIN, DETECT, DIGEST, PRUNE. Promoting first means a job that came due thirty
  * seconds ago is worked on THIS tick rather than in five minutes. Pruning last means the tick's
  * politeness budget goes to fetching, and the retention sweep gets whatever is left — a snapshot
  * that lives an extra five minutes past a hundred and eighty days costs nothing, and a fetch
@@ -50,6 +53,34 @@ export async function GET(request: Request): Promise<NextResponse> {
 
   const promoted = await promoteDueJobs(admin)
   const drained = await drainQueue(admin)
+
+  /*
+   * PHASE 29'S DETECTION PASS, IMMEDIATELY AFTER THE DRAIN AND BEFORE THE PRUNE.
+   *
+   * AFTER THE DRAIN because a version written this tick is what there is to diff; BEFORE THE PRUNE
+   * because a diff stores the snapshot keys of both sides, and running the retention sweep first
+   * would occasionally strip the evidence from the very comparison being recorded.
+   *
+   * THE WINDOW IS WIDER THAN THE TICK. Vercel calls this every five minutes; twenty minutes of
+   * overlap absorbs a tick that ran long, a retry, and a version that landed on a boundary.
+   * Detection is idempotent by (product, field, version_after), so the overlap costs upserts that
+   * change nothing and buys not silently missing a change until the page moves again.
+   */
+  const detectionWindow = new Date(Date.now() - 20 * 60 * 1000)
+  const recent = await listProductsWithRecentVersions(admin, detectionWindow)
+  const detected = await detectChangesForProducts(admin, admin, {
+    products: recent,
+    runId: null,
+  })
+
+  /*
+   * THE DIGEST IS REGENERATED EVERY TICK FOR TODAY, which sounds wasteful and is the cheap way to
+   * be correct. `digest_date` is unique and the write is an upsert, so today's row is rewritten
+   * with today's numbers; there is no scheduler entry to get wrong, no "did yesterday's digest
+   * run" question, and a tick that fails leaves the previous tick's row rather than a gap.
+   */
+  const digest = await generateDigest(admin, new Date())
+
   const pruned = await pruneSnapshots(admin)
 
   /*
@@ -73,6 +104,9 @@ export async function GET(request: Request): Promise<NextResponse> {
     // WHY THE TICK STOPPED, in the response, because "fetched: 0" has three very different causes
     // and an operator should not have to guess which.
     stopped_by: drained.stoppedBy,
+    products_examined: detected.productsExamined,
+    changes_recorded: detected.changesRecorded,
+    digest_date: digest.digestDate,
     snapshots_pruned: pruned,
     search_queries_pruned: searchQueriesPruned,
   })
