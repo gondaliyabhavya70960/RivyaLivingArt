@@ -41,6 +41,7 @@ import {
   PHASE_26_POLICIES,
   PHASE_27_POLICIES,
   PHASE_28_POLICIES,
+  PHASE_29_POLICIES,
   PHASE_19_POLICIES,
   TABLE_POLICY_MAP,
   type ManagedTable,
@@ -446,6 +447,41 @@ const GENERATED: Record<string, { title: string; preamble: string }> = {
 --
 -- ISOLATION INVARIANT I2 IS UNCHANGED: not one \`anon\` leg appears below, on any of the three, and
 -- \`scripts/research/check-research-isolation.mjs\` fails the build the moment one does.`,
+  },
+  [PHASE_29_POLICIES]: {
+    title: `-- ${PHASE_29_POLICIES} — Phase 29`,
+    preamble: `-- Policies for the seven tables migration 0270 creates. GENERATED from
+-- lib/auth/table-permissions.ts and rewritten whole, so it may hold nothing a human wrote. Its own
+-- file for the reason every generated policy file has one: 0270 carries the DDL, and a shipped
+-- generated file is never re-opened.
+--
+-- SEVEN TABLES, THREE POSTURES, AND THE QUESTION THAT SORTS THEM IS "WHO MAY WRITE":
+--
+--   DETECTED BY THE SYSTEM, no write policy at all
+--     \`research_changes\`           the detector's output; a change a session could insert is a
+--                                   competitor price move somebody could invent
+--     \`research_change_digests\`    a summary read as a trend, which is the worst thing to be able
+--                                   to hand-edit
+--
+--   DECIDED BY A PERSON, \`research.confirm\`, INSERT ONLY
+--     \`research_review_actions\`    append-only at the trigger as well as at the policy; a
+--                                   reversal is a new row
+--     \`research_notes\`             an edit is a new note; the old one is superseded, never rewritten
+--     \`research_product_tags\`      applied or removed, never amended — and the only table here
+--                                   with a DELETE policy, because removing a tag applied in error
+--                                   is a correction and no decision is recorded on the row
+--
+--   CONFIGURED BY A PERSON, \`research.write\`
+--     \`research_change_rules\`      a threshold is a parsing decision about somebody else's page
+--     \`research_tags\`              a controlled vocabulary, exactly as the material lexicon is
+--
+-- THE SPLIT IS THE PHASE 04 ONE, RESTATED AT THE COLUMN: a researcher OPERATES the pipeline and
+-- may tune how loudly a source is read; a merchandiser JUDGES its output and is the only one who
+-- may record a verdict. Neither may write what the detector found.
+--
+-- ISOLATION INVARIANT I2 IS UNCHANGED AND UNCHANGEABLE: not one \`anon\` leg appears below, on any
+-- of the seven, and \`scripts/research/check-research-isolation.mjs\` fails the build the moment
+-- one does.`,
   },
   [PHASE_24_POLICIES]: {
     title: `-- ${PHASE_24_POLICIES} — Phase 24`,

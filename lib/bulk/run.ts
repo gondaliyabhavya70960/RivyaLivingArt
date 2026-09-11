@@ -246,6 +246,15 @@ export async function applyBulkOperation(request: ApplyRequest): Promise<BulkOut
   if (row.is_destructive && !roleHasPermission(request.actor.role, 'destructive.execute')) {
     throw new PermissionError('bulk operation', 'apply-destructive', row.kind)
   }
+  // THE OPERATION'S OWN SECOND PERMISSION, where it has one. Phase 29's research dispositions need
+  // `research.confirm` as well as `bulk.execute`, because the dividing line in that subsystem is
+  // the column and not the screen: a researcher who may not reject one row may not reject forty.
+  if (
+    operation.extraPermission !== undefined &&
+    !roleHasPermission(request.actor.role, operation.extraPermission)
+  ) {
+    throw new PermissionError('bulk operation', 'apply', row.kind)
+  }
 
   const previewCounts = (row.counts ?? {}) as { willApply?: number }
   if (row.is_destructive) {

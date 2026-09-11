@@ -118,6 +118,15 @@ const config = [
        * therefore need the service role, with the column split enforced by the action's own check.
        */
       'app/(studio)/studio/(shell)/research/explorer/actions.ts',
+      /*
+       * Phase 29. The same two-client model, stated once in `review-actions.ts`: a person's ACTION
+       * ROW and NOTE go through the session client so RLS judges their `research.confirm` a second
+       * time, and the STAGE MOVE, the PIPELINE EVENT and the change row's DECISION STAMP go through
+       * the service role — because those three tables have no session write policy at all by
+       * design. An event a merchandiser could forge is not a record of what happened, and a change
+       * row a session could write is a competitor price move somebody invented.
+       */
+      'app/(studio)/studio/(shell)/research/changes/actions.ts',
     ],
     rules: {
       'no-restricted-imports': [

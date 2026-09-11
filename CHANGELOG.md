@@ -6,6 +6,64 @@ Every phase adds an entry; see `docs/architecture/CANONICAL-DECISIONS.md` D9 for
 
 ## [Unreleased]
 
+### Phase 29 — Change Detection + Review
+
+The research subsystem becomes useful **over time** rather than at a point in time. A page Rivya has
+already read says something different, and somebody has to decide what that means. The rule that
+shapes every table, every action and every guard is FEAT §25's last line: **changes are never
+automatically imported into Rivya products.** They are never automatically imported into anything.
+
+**Migrations `0270`–`0271`, applied locally AND to the hosted project** — with parity measured, not assumed: a structure digest over the seven tables' columns, constraints, indexes, policies, trigger functions and triggers (147 objects) matches byte for byte. Seven tables — `research_changes`, `research_change_rules`,
+`research_review_actions`, `research_notes`, `research_tags`, `research_product_tags`,
+`research_change_digests` — in three postures that answer one question: who may write. What the
+SYSTEM detected takes no write policy at all, for any role including owner, because a change row a
+session could insert is a competitor price move somebody invented. What a PERSON decided is
+`research.confirm` and append-only at a TRIGGER as well as at the policy, so the service role is
+refused too. What a person CONFIGURED is `research.write`, the same posture as the material lexicon.
+
+**Diffs are version-to-version, never against the mutable current row**, and both snapshot keys are
+stored — so a change record can still be reproduced years later, from the two gzipped pages it was
+actually read from, after the rule that produced it has been edited twice.
+
+**Materiality is a stated rule with three levels.** `NOISE` is recorded, hidden by default and never
+counted: a queue that reports a CDN rewriting an image URL beside a 12 % price rise is a queue
+people stop reading, and an organisation that believes it is watching its competitors while nobody
+reads the queue is worse off than one that knows it is not. Four of the eleven rules exist for a
+specific failure: a price STATE change overrides the percentage rule, because a competitor
+withdrawing a public price is not a 0 % move; the LARGEST axis decides a dimension change, not the
+average; an image is identified by its URL PATH, because a CDN swaps hosts constantly; and lists are
+compared as SETS, because markup gets rearranged.
+
+**The thresholds are rows, tuned per source without a deploy** — `unique nulls not distinct
+(source_id, field)`, because PostgreSQL's default would permit a second global default and the
+threshold in effect would depend on row order (amendment A29). The editor is on
+`/studio/operations/data-quality`, NOT on `/studio/system/settings` where the phase document places
+it: that page needs `system.settings.write`, which a researcher does not hold, and a researcher is
+exactly who notices a source flooding the queue.
+
+**The nine FEAT §25 actions**, all writing three things in an order chosen for what a crash between
+any two leaves behind: the append-only log first, the domain effect second, the queue's decision
+stamp last. Compare records an activity event and **nothing else**, and its row is written by the
+system rather than by the person — which is what makes `STUDIO_GUIDE.md`'s `research.read`
+permission for it real.
+
+**Bulk review runs on the Phase 24 engine**, which is what Phase 24's unavailable registration was
+for. All five carry a new `extraPermission` of `research.confirm` on top of `bulk.execute`, so a
+researcher cannot reach in bulk what they cannot reach one row at a time.
+
+**Four never-auto-import guarantees, because they fail differently**: the isolation guard's I4 leg,
+a new CI gate (`research:check-no-autoimport`) that refuses a catalogue write or a first-party write
+import from any research module, a test that runs that gate against a fixture tree containing the
+offence, and the seeded confirm-dialog copy plus one quotable sentence in `BUSINESS_RULES.md`. The
+RLS suite adds a fifth of a different kind: it counts `products`, `product_media`, `media_assets`
+and product audit rows either side of a confirm, proving there is no DATABASE path either.
+
+**One defect found by the tests rather than by an operator.** The append-only DELETE trigger made
+`research_sources` undeletable, because deleting a source cascades to its products and thence to
+their decisions. The rule is now stated precisely — a decision about a row may not be erased WHILE
+THAT ROW EXISTS — and the cascade is distinguished by whether the parent is still visible, which it
+is not during one.
+
 ### Phase 28 — eleven review findings fixed, and migration `0262`
 
 The merged phase was re-read adversarially. Nineteen findings came back, each was verified by

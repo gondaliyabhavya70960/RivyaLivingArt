@@ -8,6 +8,128 @@
 
 ## Current Phase
 
+**Phase 29 — Change Detection + Review. COMPLETE.** The research subsystem is now useful OVER TIME
+rather than at a point in time: a page Rivya has already read says something different, the
+difference is classified against a stated rule, and a person decides what it means.
+
+**Nothing has changed, because nothing has been fetched.** There are still no approved sources, so
+there are no versions to diff and the change queue is empty. What exists is the machinery, proved
+against fixture tables and against the database.
+
+The governing sentence, and the reason almost every decision below went the way it did: **changes
+are never automatically imported into Rivya products.** They are never automatically imported into
+anything.
+
+### Phase 29: what is built
+
+**Migrations `0270`–`0271`, applied locally.** Seven tables in three postures, and the posture
+answers one question — who may write:
+
+- **DETECTED BY THE SYSTEM** — `research_changes`, `research_change_digests`. No write policy for
+  any role, owner included. A change row a session could insert is a competitor price move somebody
+  invented, arriving in a merchandiser's queue looking exactly like a real one.
+- **DECIDED BY A PERSON** — `research_review_actions`, `research_notes`, `research_product_tags`.
+  `research.confirm`, insert-only at the policy and append-only at a TRIGGER — which is the part
+  that matters, because a policy stops PostgREST and a trigger stops the service role too.
+- **CONFIGURED BY A PERSON** — `research_change_rules`, `research_tags`. `research.write`, the same
+  posture as the material lexicon: a threshold is a parsing decision about somebody else's page.
+
+**Diffs are version-to-version, never against the mutable current row**, and both snapshot keys are
+stored. That is what makes a change record reproducible from evidence years later, after the rule
+that produced it has been edited twice and the page no longer exists.
+
+**Materiality is a stated rule with three levels**, per-source thresholds, and a Studio editor.
+`NOISE` is recorded, hidden by default and never counted. Four of the eleven rules exist for a
+named failure: a price STATE change overrides the percentage rule; the LARGEST axis decides a
+dimension move rather than the average; an image is identified by its URL PATH; lists are compared
+as SETS.
+
+**The nine FEAT §25 actions**, each writing three things in an order chosen for what a crash between
+any two leaves behind — the append-only log first, the domain effect second, the queue's stamp last.
+Two clients, deliberately: the action row and the note as the PERSON so RLS judges them again, the
+stage move and the stamp as the SYSTEM because those tables have no session write policy at all.
+
+**Bulk review runs on the Phase 24 engine**, which is exactly what Phase 24's unavailable
+registration was for. A new `extraPermission` field on the operation contract carries
+`research.confirm`, so a researcher holding `bulk.execute` cannot reach in bulk what they cannot
+reach one row at a time.
+
+### Phase 29: what is NOT built, and why
+
+- **No Rivya product is ever created, drafted or pre-filled from a research row** — permanently, by
+  four independent guarantees plus a database-level test.
+- **No image is fetched, hashed or compared visually.** An image change is a change to the URL SET.
+- **The shortlist workspace** beyond the stage transition is Phase 35's.
+- **Cross-source correlation** ("three sources raised prices this week") is Phase 31's analytics
+  question, not a detection one.
+- **No email, WhatsApp or push notification.** The digest is a Studio surface; outbound
+  notification is Phase 38's decision and its consequences are not this phase's to take on the side.
+- **The change queue has no row selection yet**, so the bulk toolbar stays in its named unavailable
+  state on that screen while the five operations are live in the engine. Selection is Phase 30's
+  workspace work.
+
+### Phase 29: three readings the repository forced
+
+1. **`unique (source_id, field)` does not make the global default unique**, because null is not
+   equal to null. The phase document's constraint would have permitted any number of default rows
+   for `price`, and the threshold in effect would then depend on which row the resolver read first —
+   a bug that cannot be reproduced on demand. It ships as `unique nulls not distinct`.
+2. **The append-only DELETE trigger made `research_sources` undeletable.** Deleting a source
+   cascades to its products and thence to their decisions, and the trigger refused the cascade. The
+   rule is now stated precisely — a decision about a row may not be erased WHILE THAT ROW EXISTS —
+   and a cascade is distinguished by whether the parent is still visible, which it is not during
+   one. Found by the RLS suite failing to clean up after itself, which is the cheapest possible
+   place to find it.
+3. **The threshold editor is on `/studio/operations/data-quality`, not `/studio/system/settings`.**
+   The phase document places it on the settings page, which is gated on `system.settings.write` —
+   held only by an owner and an admin. A threshold is `research.write`, and a researcher is exactly
+   who notices a source flooding the queue. Following the document would have put the control
+   behind a permission its user does not have.
+
+### Phase 29: verification, as actually run
+
+- `npm run check` — green, including the new `research:check-no-autoimport` gate.
+- Unit project — **140 files / 2,343 tests**, with no database.
+- RLS project — **22 files / 515 tests** with `RLS_TESTS_REQUIRED=1`, against a freshly recreated,
+  migrated and seeded database.
+- `db:check-migrations`, `db:check-schema`, `db:check-types`, `auth:check-rls`,
+  `research:check-isolation` — green against that database.
+- The no-auto-import gate proved to REFUSE a `products` write and a first-party write import from a
+  fixture tree, and to PERMIT the allowlisted taxonomy read.
+- Production build against the seeded database through a local PostgREST, then
+  `security:check-bundle` clean.
+
+### Phase 29: hosted parity, measured rather than assumed
+
+`0270` and `0271` are applied to `ccvarsmzickdkryoakdg` as well as locally, and the two databases
+were compared rather than trusted. A structure digest over the seven tables' columns, constraints,
+indexes, policies, the two trigger functions and the two triggers — **147 objects** — returns
+`e6dc835ab9fbdd8de0ddfc5ab9bb9079` on both.
+
+The hosted apply used a comment-stripped copy, and the stripper was PROVED before it was trusted:
+the stripped migrations were applied to a throwaway database and digested against one built from
+the files as written, and the only differences were the `schema_migrations` ledger that `db:reset`
+creates and the raw psql loop does not. A first version of the stripper collapsed blank lines
+globally and changed three function bodies — harmless to behaviour, still a textual difference
+between local and hosted, and exactly what the digest exists to catch; it now preserves every
+dollar-quoted region byte for byte.
+
+Behaviour on hosted: eleven seeded global defaults, all PUBLISHED; the unique constraint carries
+`NULLS NOT DISTINCT`; `research_changes` has exactly one policy and it is a SELECT; not one `anon`
+policy exists on any of the seven (I2); and both ledger rows carry the local files' SHA-256, so
+`db:migrate` sees the two databases at the same version.
+
+### The next exact action
+
+**Phase 30 — Large-Format Research Workspace**, migration `0280`. It adds scale banding to
+`research_products`, the ordered classification rules, and saved views — and it is the phase that
+brings row selection to the research surfaces, which is what leaves the change queue's bulk toolbar
+in its unavailable state today.
+
+---
+
+### Superseded — Phase 28's state
+
 **Phase 28 — Normalization + Validation. COMPLETE.** The strings Phase 27 extracted are now
 comparable data, and the data is judged before it is trusted. Three of FEAT §23's seven stages ship:
 `NORMALIZED`, `VALIDATED`, `MATCHED`.
@@ -255,15 +377,12 @@ database; `db:check-migrations`, `db:check-schema`, `db:check-types` and `resear
 (all four invariants, database included) green; a production build against that database through a
 local PostgREST, then `security:check-bundle` clean.
 
-### The next exact action
+### Phase 28: the next action it named, now taken
 
-**Phases 29 and 30 are stopped at the owner's instruction (2026-09-11) and no work has begun on
-either.** Nothing is half-built: the repository is at a clean Phase 28.
-
-When they resume, the next phase is **29 — Change Detection + Review**, migrations `0270`–`0271`.
-It diffs consecutive `research_product_versions` rows — which is why Phase 28 stamped `normalized`
-and `normalizer_version` on each version rather than only on the product, so "did the page change,
-or did we start reading it differently" stays answerable.
+Phases 29 and 30 were stopped at the owner's instruction on 2026-09-11 and resumed the same day.
+Phase 29 is above. It diffs consecutive `research_product_versions` rows — which is why Phase 28
+stamped `normalized` and `normalizer_version` on each version rather than only on the product, so
+"did the page change, or did we start reading it differently" stays answerable.
 
 ---
 

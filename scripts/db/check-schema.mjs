@@ -507,6 +507,63 @@ const EXPECTED = {
     'updated_at',
     'updated_by',
   ],
+  /*
+   * Phase 29 — seven tables, and the split is the same one the policies take: what the SYSTEM
+   * detected, what a PERSON decided, and what a person CONFIGURED.
+   *
+   * The two CONFIGURATION tables carry the full common set, `status` included, because every other
+   * staff-editable research configuration table already does — `research_source_url_patterns`,
+   * `research_source_category_map`, `research_source_schedules` and `research_material_lexicon`.
+   * A tag and a threshold are edited by a person who is accountable for them, which is what §1.2
+   * means by content-bearing.
+   *
+   * The five others are §1.4 exemptions of the "record of something that happened" kind, and none
+   * of them has `updated_at` or `updated_by`:
+   *
+   *   `research_changes`          was detected at a moment. Its decision columns are a cache of
+   *                               the action log and name their own actor and time.
+   *   `research_review_actions`   is APPEND-ONLY at the trigger. A row that could be updated is a
+   *                               decision somebody could rewrite, which is the one thing an audit
+   *                               trail may not permit; the reversal is a new row.
+   *   `research_notes`            the same, one step along: an edit is a new note.
+   *   `research_product_tags`     is an edge. `assigned_by`/`assigned_at` are its whole story, and
+   *                               the composite primary key IS the row — an UPDATE could only move
+   *                               a tag between products, which is two decisions disguised as one.
+   *   `research_change_digests`   is generated. `generated_at` is the only time anybody wants, and
+   *                               `updated_by` would name a person for a row the cron wrote.
+   */
+  research_changes: [
+    'research_product_id',
+    'source_id',
+    'field',
+    'change_kind',
+    'materiality',
+    'version_after_id',
+    'detected_at',
+  ],
+  research_change_rules: [
+    'source_id',
+    'field',
+    'is_enabled',
+    'status',
+    'created_at',
+    'updated_at',
+    'updated_by',
+  ],
+  research_review_actions: ['research_product_id', 'action', 'actor_role', 'occurred_at'],
+  research_notes: ['research_product_id', 'body', 'created_at'],
+  research_tags: [
+    'slug',
+    'label',
+    'is_enabled',
+    'status',
+    'created_at',
+    'updated_at',
+    'updated_by',
+  ],
+  research_product_tags: ['research_product_id', 'tag_id', 'assigned_at'],
+  research_change_digests: ['digest_date', 'stats', 'generated_at'],
+
   bulk_operations: [
     'kind',
     'target_entity',

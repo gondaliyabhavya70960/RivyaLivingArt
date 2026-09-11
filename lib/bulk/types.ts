@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { z } from 'zod'
 
-import type { Role } from '@/lib/auth/permissions'
+import type { Permission, Role } from '@/lib/auth/permissions'
 import type { Database } from '@/lib/supabase/database.types'
 
 /**
@@ -118,6 +118,21 @@ export interface BulkOperation<TParams = Record<string, never>> {
    */
   readonly available?: boolean
   readonly owningPhase?: number
+
+  /**
+   * A permission the actor must hold IN ADDITION to `bulk.execute`, checked by the engine.
+   *
+   * PHASE 29 IS WHY THIS EXISTS AND THE REASON IS THE PHASE 04 SPLIT. The five research operations
+   * are dispositions — shortlist, reject, mark duplicate, confirm — and the dividing line in this
+   * subsystem is the COLUMN, not the screen: `stage`, `disposition` and `duplicate_of_id` are
+   * `research.confirm` work, so a RESEARCHER who holds `bulk.execute` must not reach them in bulk
+   * when they cannot reach them one at a time. Without this field the engine's two checks
+   * (`bulk.execute`, plus `destructive.execute` when destructive) would let exactly that through.
+   *
+   * It is deliberately ONE permission and not a list. An operation needing two extra permissions is
+   * an operation whose gate belongs in its own `preview`, where it can say which rows and why.
+   */
+  readonly extraPermission?: Permission
 
   /** WRITES NOTHING. Reads the selection and reports what would happen to each row. */
   readonly preview: (

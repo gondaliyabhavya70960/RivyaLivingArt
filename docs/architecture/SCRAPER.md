@@ -2260,3 +2260,201 @@ behalf — not a filtered-empty group, which would still tell them the group exi
 
 `image_urls` is `text[]`. No competitor image is fetched, cached, hashed, measured or written to
 `media_assets`, in this phase or any other.
+
+---
+
+## 20. Change detection and review as built — Phase 29
+
+The subsystem becomes useful **over time** rather than at a point in time. A page Rivya has already
+read says something different; somebody has to decide what that means.
+
+The governing sentence is FEAT §25's last line and it is repeated here because it is the rule most
+likely to be argued away: **changes are never automatically imported into Rivya products.** They are
+never automatically imported into anything.
+
+### 20.1 Diffs are version-to-version, never against the current row
+
+`research_products` is overwritten by every normalisation pass. A diff computed against it could
+never be reproduced — by the time somebody opened the drawer to ask what the page said before, the
+before would be gone. So `lib/scraper/workflows/detect-changes.ts` compares the two most recent
+`research_product_versions` rows for a product, and stores both version ids and **both snapshot
+storage keys** on every change. The drawer links to the two gzipped pages the comparison was
+actually made from.
+
+Two versions rather than all of them, because a version exists only where the content hash
+DIFFERED: the two most recent are by construction the last two times the page said something new.
+
+A product with one version is not a product with no changes — it is a product first seen. Inventing
+a comparison against an empty version would report eleven `ADDED` changes for every new row a source
+publishes, which is the fastest possible way to make the queue useless.
+
+### 20.2 Eleven fields, and where each is read from
+
+`CHANGE_FIELDS` in `lib/scraper/analytics/materiality.ts` is the vocabulary, and it is the fourth
+field list in this subsystem — the others being FEAT §24's, `NORMALIZED_FIELDS` and `DRAFT_FIELDS`.
+They exist for different purposes and overlap only partly. Eight fields are diffed from the
+version's `normalized` payload; `description`, `customization` and `sku` are read and stored but
+never normalised — there is nothing to parse in a description — so they are diffed from `raw`.
+Amendment A29 records the reconciliation.
+
+`research_change_rules.field` is constrained to exactly these eleven. A field diffed with no rule
+row would be a classification nobody chose.
+
+### 20.3 Materiality — a stated rule, not a feeling
+
+Three levels. `MATERIAL` is worth somebody's attention, `MINOR` is real and small, and `NOISE` is
+recorded — never discarded, because "the page changed and we decided it did not matter" is itself
+evidence — but hidden by default and excluded from every count the dashboard shows.
+
+| Field | MATERIAL | MINOR | NOISE |
+|---|---|---|---|
+| `price` | ≥ 5 % in minor units, **or any change of price state or currency** | < 5 % | Equal minor units with an unchanged range |
+| `title` | Trigram similarity < 0.90 | 0.90–0.99 | Whitespace or case only |
+| `availability` | Any transition between the five tokens | — | The same token, whatever the prose |
+| `dimensions_mm` | Any axis ≥ 2 %, or an axis appearing or disappearing | < 2 % | Equal values |
+| `variant_count` | Any change | — | — |
+| `material_tokens` | A token added or removed | — | Reordering |
+| `image_urls` | Set membership of the URL **paths** changes | — | Query string, CDN host, or order |
+| `lead_time_days` | The parsed range changes | — | Text change with the same range |
+| `description` | Similarity < 0.80 | 0.80–0.95 | > 0.95, or whitespace only |
+| `customization` | The parsed token set changes | — | Reordering |
+| `sku` | Any change | — | — |
+
+Four of these rules exist because of a specific failure mode:
+
+- **A price state change overrides the percentage rule.** `FIXED £1,200` becoming `REQUEST_QUOTE`
+  is not a 0 % change; it is a competitor withdrawing a public price, and comparing amounts would
+  call it nothing at all because there is no longer an amount to compare.
+- **The largest axis decides a dimension change, not the average.** A depth that moved 40 % while
+  the other two held is a different product; averaging it against two zeroes reports 13 %.
+- **An image is identified by its URL path.** A CDN rewrites query strings and swaps hosts
+  constantly, and none of that is a new photograph.
+- **Lists are compared as SETS.** A page's markup gets rearranged; the materials did not change.
+
+`classifyPrice` refuses to divide by a zero previous price, because `Infinity` would classify by an
+arithmetic accident.
+
+### 20.4 The thresholds are data, per source, tuned without a deploy
+
+`research_change_rules` holds them: eleven global defaults seeded by `0270`, plus any number of
+per-source overrides. `resolveThresholds` expresses the precedence once — per-source, then global,
+then a built-in table — and the built-in fallback is what keeps a database whose rules were deleted
+classifying by the documented defaults rather than by silence.
+
+`unique nulls not distinct (source_id, field)` is load-bearing. PostgreSQL's default unique
+semantics would permit any number of global default rows for `price`, and the threshold in effect
+would then depend on which row the resolver read first (amendment A29).
+
+**Only PUBLISHED rules configure anything.** A researcher prepares an override, looks at it, and
+publishes it when they mean to — rather than every keystroke re-classifying a queue a colleague is
+working through. The editor is on `/studio/operations/data-quality`, beside the material lexicon,
+NOT on `/studio/system/settings` where the phase document places it: that page is gated on
+`system.settings.write`, which a researcher does not hold, and a threshold is `research.write`.
+
+**A disabled rule records `NOISE`, never nothing.** Turning a field off is "stop showing me this",
+not "stop looking", so turning it back on re-classifies rows already detected.
+
+### 20.5 Detection never moves a stage
+
+A row at `SHORTLISTED` whose price moves stays `SHORTLISTED` and gains a change. `core/stage.ts`
+remains the only writer of `stage`, and only a person calls into it — through
+`lib/scraper/workflows/review-actions.ts`. Detection knows a great deal about what happened and
+nothing about what it means.
+
+### 20.6 The nine actions, and the order every one of them writes in
+
+`REVIEW · IGNORE · SHORTLIST · REJECT · MARK_DUPLICATE · CONFIRM · NOTE · TAG · COMPARE`, all nine
+`research.confirm`. Each writes three things and the ORDER is the design, because there is no
+transaction — PostgREST offers no handle:
+
+1. the append-only `research_review_actions` row — who and why;
+2. the domain effect, if any — a stage move, a disposition, a duplicate flag;
+3. the `research_changes` decision stamp — the queue's index into (1).
+
+A crash after (1) leaves an audited decision the queue still shows as undecided: annoying and safe.
+The reverse order would leave a stage moved with nothing saying who moved it, which is the one
+outcome an audit trail may not permit.
+
+**Two clients, deliberately.** The action row and the note go through the SESSION client so RLS
+judges the person's `research.confirm` a second time; the stage move, the pipeline event and the
+decision stamp go through the ADMIN client, because those tables have no session write policy at all
+by design. Getting this backwards is how Phase 28 shipped a merchandiser who could not clear a
+duplicate.
+
+`REJECT` and `IGNORE` demand a reason, in the action and at the row. They are the two that take a
+row out of the queue without anybody looking again, and a queue emptied for unrecorded reasons is a
+queue whose emptiness means nothing.
+
+`COMPARE` records an activity event and **nothing else** — no stage, no disposition, no decision
+stamp, no change to any row being compared. Comparison is how somebody makes up their mind, and a
+tool that recorded a verdict for looking would make people avoid looking.
+
+**Undo is a new row.** `undone_by_action_id` is set on the row being reversed, once, from null; the
+trigger refuses a second, different reversal and permits re-writing the same link (a retry). The
+queue's stamp is then RECOMPUTED from the log rather than cleared, because undoing a shortlist does
+not always return a change to undecided — somebody may have reviewed it first.
+
+### 20.7 Append-only means append-only, at the trigger
+
+`tg_research_review_actions_append_only()` and `tg_research_notes_append_only()` refuse every UPDATE
+except one column and refuse DELETE outright — the service role included, which a missing policy
+would not achieve.
+
+One DELETE is permitted and it is the CASCADE. The rule is "a decision ABOUT A ROW may not be erased
+while that row exists"; when the research product itself is deleted, its decisions go with it.
+PostgreSQL deletes the parent before the cascaded children, so the child's BEFORE DELETE trigger runs
+in a snapshot where the parent is already gone — "can I still see my product" distinguishes the two
+cases exactly. Without this, `research_sources` would be undeletable, which the Phase 29 RLS suite
+found by failing to clean up after itself.
+
+### 20.8 Bulk review runs on the Phase 24 engine
+
+`lib/bulk/operations/research/` fills in the five operations Phase 24 registered with
+`available: false`: shortlist, reject, mark duplicate, set tags, confirm. They supply a `preview`,
+an `applyItem` and a Zod schema and inherit the preview step, the typed-count confirmation, the
+per-item snapshot and the 24-hour undo. There is no second bulk implementation.
+
+All five carry `extraPermission: 'research.confirm'`, a field Phase 29 added to the operation
+contract: every one of them writes a disposition-bearing column, so a researcher holding
+`bulk.execute` must not reach in bulk what they cannot reach one row at a time.
+
+`research.reject` is the only destructive one, and it is destructive because it EMPTIES A QUEUE.
+
+### 20.9 The digest
+
+`research_change_digests`, one row per day, keyed by `digest_date` so a retried cron slice updates
+rather than doubles a count somebody reads as a trend. The cron regenerates today's row every tick,
+which is the cheap way to be correct: no scheduler entry to get wrong and no "did yesterday's digest
+run" question.
+
+Disappearance is judged **per source, against that source's own second-most-recent successful run**,
+never against the clock. A product not seen because the source has been down for a week has not
+disappeared, and reporting it as discontinued would be a claim about somebody else's business drawn
+from our own outage. A source with fewer than two successful runs has no baseline and is counted
+separately: a zero and an unknown look identical on a dashboard and mean opposite things.
+
+The most useful number on it is the DATE of the oldest undecided change. A count can sit at forty
+for a month and read as steady state.
+
+### 20.10 The four never-auto-import guarantees
+
+They fail differently, which is why there are four:
+
+1. **The isolation guard's I4 leg** — no path from the scraper to a public write.
+2. **`scripts/research/check-no-autoimport.mjs`** — no research module writes a catalogue table or
+   imports a first-party write. Symbol-level, so the allowlisted taxonomy READ still passes.
+3. **`tests/unit/research-no-autoimport.test.ts`** — the guard is run against a fixture tree
+   containing the offence and must refuse it; a guard nobody has watched refuse anything has never
+   been tested.
+4. **The seeded confirm-dialog copy and `BUSINESS_RULES.md` BR-F2** — aimed at people rather than
+   at code, because the likeliest failure is a misunderstanding in a meeting.
+
+`tests/unit/rls/phase29.test.ts` adds a fifth check of a different kind: it counts `products`,
+`product_media`, `media_assets` and product audit rows either side of a confirm, which proves there
+is no DATABASE path — no trigger, no rule, no cascade.
+
+### 20.11 No image is fetched
+
+An image change is detected as a change to the `image_urls` SET, compared by path. No competitor
+image is downloaded, hashed by content, thumbnailed, cached or compared visually. That is Phase 33,
+and even there it is research-only.

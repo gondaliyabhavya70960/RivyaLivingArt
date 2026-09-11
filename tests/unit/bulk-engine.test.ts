@@ -167,15 +167,45 @@ describe('every shipped operation', () => {
     expect(flag({ status: 'REVIEW' })).toBe(true)
   })
 
-  it('registers all five research operations as unavailable, owned by Phase 29', () => {
+  /**
+   * Phase 24 registered these five unavailable and asserted exactly that; Phase 29 implemented them
+   * and this assertion moved with them.
+   *
+   * IT IS THE SAME TEST TURNED ROUND, WHICH IS THE POINT. The registration existed so that the
+   * phase implementing them would fill in a `preview` and an `applyItem` and inherit the one
+   * engine, rather than building a second bulk system with its own confirmation and its own undo.
+   * `owningPhase` stays 29 because it still says which phase owns them.
+   */
+  it('has all five research operations implemented against the one engine, owned by Phase 29', () => {
     const research = registeredOperations().filter((operation) =>
       operation.kind.startsWith('research.'),
     )
-    expect(research).toHaveLength(5)
+    expect(research.map((operation) => operation.kind).sort()).toEqual([
+      'research.confirm',
+      'research.mark_duplicate',
+      'research.reject',
+      'research.set_tags',
+      'research.shortlist',
+    ])
     for (const operation of research) {
-      expect(isAvailable(operation), operation.kind).toBe(false)
+      expect(isAvailable(operation), operation.kind).toBe(true)
       expect(operation.owningPhase, operation.kind).toBe(29)
+      // THE PHASE 04 SPLIT AT THE ENGINE. Every one of the five writes a disposition-bearing
+      // column, so a researcher holding `bulk.execute` must not reach in bulk what they cannot
+      // reach one row at a time.
+      expect(operation.extraPermission, operation.kind).toBe('research.confirm')
     }
+  })
+
+  it('makes research.reject the only destructive research operation', () => {
+    // It empties a queue: rejecting forty rows takes a week of somebody else's review out of the
+    // working set in one click. Nothing is deleted, and "recoverable if you know it happened" is
+    // not the same as recoverable.
+    const destructive = registeredOperations()
+      .filter((operation) => operation.kind.startsWith('research.'))
+      .filter((operation) => operation.isDestructive === true)
+      .map((operation) => operation.kind)
+    expect(destructive).toEqual(['research.reject'])
   })
 })
 

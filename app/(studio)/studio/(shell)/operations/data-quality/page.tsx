@@ -8,18 +8,20 @@ import { Tabs, type TabItem } from '@/components/patterns/Tabs'
 import { EmptyState } from '@/components/studio/EmptyState'
 import { PageHeader } from '@/components/studio/PageHeader'
 import { StudioPage, studioMetadata } from '@/components/studio/StudioPage'
+import { ChangeRuleEditor } from '@/components/studio/research/ChangeRuleEditor'
 import { LexiconEditor } from '@/components/studio/research/LexiconEditor'
 import { t } from '@/components/studio/strings'
 import { roleHasPermission } from '@/lib/auth/permissions'
 import { requirePermission } from '@/lib/auth/require'
 import { parseCoverage } from '@/lib/supabase/repositories/research/explorer'
+import { listChangeRules } from '@/lib/supabase/repositories/research/change-rules'
 import { listLexicon } from '@/lib/supabase/repositories/research/lexicon'
 import { countUnresolvedCategoryMappings } from '@/lib/supabase/repositories/research/source-config'
 import { listResearchSources } from '@/lib/supabase/repositories/research/sources'
 import { tallyIssues } from '@/lib/supabase/repositories/research/validation-issues'
 import { createClient } from '@/lib/supabase/server'
 
-import { deleteLexiconEntryAction, saveLexiconEntryAction } from './actions'
+import { deleteLexiconEntryAction, saveChangeRuleAction, saveLexiconEntryAction } from './actions'
 
 /**
  * /studio/operations/data-quality — what the checks are finding, and where the parser is not
@@ -77,12 +79,13 @@ async function ResearchTab({
   readonly canDelete: boolean
 }) {
   const client = await createClient()
-  const [tallies, coverage, sources, lexicon, unmapped] = await Promise.all([
+  const [tallies, coverage, sources, lexicon, unmapped, changeRules] = await Promise.all([
     tallyIssues(client),
     parseCoverage(client),
     listResearchSources(client),
     listLexicon(client),
     countUnresolvedCategoryMappings(client),
+    listChangeRules(client),
   ])
 
   const sourceNames = new Map(sources.map((source) => [source.id, source.name]))
@@ -221,6 +224,27 @@ async function ResearchTab({
           )}
         </Stack>
       </Surface>
+
+      {/*
+       * PHASE 29'S THRESHOLD EDITOR SITS HERE, NOT ON `/studio/system/settings`.
+       *
+       * The phase document places it there, and following that would lock out the person it is
+       * for. `/studio/system/settings` is gated on `system.settings.write`, which only an owner
+       * and an admin hold; a materiality threshold is `research.write`, which a RESEARCHER holds —
+       * and a researcher is exactly who notices that a source is flooding the queue. Putting the
+       * control behind a permission its user does not have would make the "tune it without a
+       * deploy" design decorative.
+       *
+       * It belongs beside the lexicon editor for a second reason as well: both are parsing
+       * configuration about somebody else's pages, both are `research.write`, and a person tuning
+       * one is usually there because of the other.
+       */}
+      <ChangeRuleEditor
+        rules={changeRules}
+        sources={sources.map((source) => ({ value: source.id, label: source.name }))}
+        canWrite={canWrite}
+        saveAction={saveChangeRuleAction}
+      />
 
       <LexiconEditor
         entries={lexicon}

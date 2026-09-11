@@ -185,6 +185,45 @@ Brand and editorial copy may be written; anything asserting business capability 
 
 ## Amendments
 
+**2026-09-11 · A29 — Phase 29 takes migration `0271`, a unique constraint over a nullable scope
+column needs `nulls not distinct`, the decision cache on a change row is declared as a cache, and
+the three "field" vocabularies are reconciled at eleven (PHASE-23-30 §Phase 29, DATA_MODEL §12,
+SCRAPER.md §20).**
+
+Four readings the repository forced.
+
+- **`0271` is the phase's generated policy file, one past the document's `0270`.** The seventh time
+  this has been necessary and for the seventh time the same mechanical reason: `auth:gen-policies`
+  rewrites a policy file whole on every run, and `db:migrate` refuses a migration edited after it
+  was applied, so the generated file cannot also carry the DDL that creates its tables. A23 `0214`,
+  A24 `0221`, A25 `0233`, A26 `0241`, A27 `0251`, A28 `0261`, and now A29 `0271`.
+- **`unique (source_id, field)` DOES NOT MAKE THE GLOBAL DEFAULT UNIQUE, because null is not equal
+  to null.** `research_change_rules` uses `source_id is null` to mean "the default", which is the
+  honest encoding — the alternative is a sentinel uuid that must then exist in `research_sources`.
+  But PostgreSQL's default unique semantics are `nulls distinct`, so the phase document's
+  `unique (source_id, field)` would permit any number of default rows for `price`, and the
+  threshold in effect would be whichever row the resolver read first. What ships is
+  `unique nulls not distinct (source_id, field)` (PostgreSQL 15+; local 16, hosted 17). This is the
+  same family as A28's `array_length` reading: a constraint that looks watertight and admits
+  exactly what it was written to refuse.
+- **`research_changes.decided_action` IS A CACHE OF THE APPEND-ONLY ACTION LOG, and is declared as
+  one.** The phase document lists the three decision columns on the change row and the
+  `research_review_actions` table separately, without saying which is authoritative. They cannot
+  both be: a decision that can be reversed, and whose reversal is a new row, has its truth in the
+  log. So the log is written FIRST and the change row is stamped second, in that order, and the
+  order is the design — a crash between the two leaves an audited decision the queue still shows as
+  undecided, which is the safe direction. The reverse would hide a decision nobody can account for.
+  Nothing but `lib/scraper/workflows/review-actions.ts` writes either.
+- **ELEVEN FIELDS, AND THE THREE VOCABULARIES THAT NAME THEM NOW AGREE.** FEAT §24 lists the fields
+  that may change, `NORMALIZED_FIELDS` in `lib/scraper/normalization/schema.ts` lists the ones that
+  carry a parse state, and `DRAFT_FIELDS` lists what an adapter reads. They are three different
+  lists for three different purposes and they overlap only partly — `description`, `customization`
+  and `sku` are read and stored but never normalised, so they are diffed from the version's `raw`
+  rather than from its `normalized`. `CHANGE_FIELDS` in `lib/scraper/analytics/materiality.ts` is
+  the fourth and final list, it is the one `research_change_rules.field` is constrained to, and its
+  eleven entries are the phase document's own materiality table. A field diffed with no rule row is
+  a classification nobody chose, so the constraint refuses the name outright.
+
 **2026-09-11 · A28 — the second and final research → public foreign key lands, a CHECK constraint
 cannot hold the subquery the phase document's SQL uses (twice), `AMBIGUOUS` stores nothing, an
 unlabelled triple is read positionally, and the *Scraped Products* provider is a table row rather

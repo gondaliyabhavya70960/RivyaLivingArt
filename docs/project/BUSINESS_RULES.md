@@ -595,6 +595,22 @@ contradiction rather than leaving an engineer to discover it when the equality a
 Adding a third entry — here, in `SECURITY.md` T5 and in the guard's allowlist — is a BR-K1
 amendment, not a pull request.
 
+**A RIVYA PRODUCT IS CREATED ONLY BY AN OWNER TYPING ONE, OR BY THE PHASE 24 APPROVED-IMPORT PATH,
+AND NEITHER READS A RESEARCH TABLE.** That is the whole rule in one quotable sentence, and it exists
+in this form because a sentence is what gets repeated in a meeting. Phase 29 added the fourth
+guarantee behind it: `scripts/research/check-no-autoimport.mjs` fails the build if any module under
+`lib/scraper/`, `lib/supabase/repositories/research/`, `app/(studio)/studio/(shell)/research/` or
+`scripts/research/` writes `products`, `product_media`, `product_specs`, `product_materials`,
+`media_assets`, `collections` or `product_collections` — or imports a first-party WRITE from
+anywhere. It permits a first-party READ, because the taxonomy crossing above is by design and a
+guard that refused it would be refusing the design.
+
+**`CONFIRMED` MEANS "CONFIRMED AS A RESEARCH REFERENCE" AND NOTHING ELSE.** It creates no product,
+no draft product, no media row and no CMS content. The Studio confirm dialog says so in seeded copy
+(`studio.research.confirmMeaning`), because the failure this guards against is not a developer
+adding an import — it is somebody reading a screen full of "confirmed" competitor rows and
+concluding, six months later, that the catalogue must have been approved from them.
+
 ### BR-F2b — Placeholder content is marked, listed and removable
 
 **Rule.** Content written to make the site demonstrable before the real catalogue exists carries
