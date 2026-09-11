@@ -149,6 +149,47 @@ describe('parseDimensions — what it refuses, and how loudly', () => {
   })
 })
 
+/**
+ * A LABELLED AXIS MUST NOT LEAVE THE NEXT NUMBER ON THE FIRST AXIS.
+ *
+ * The positional cursor only advanced for UNLABELLED atoms, so the first unlabelled number after a
+ * labelled one always took `length_mm`. `Ø 120 x 45 cm` came out as a diameter AND a length —
+ * giving a round table a length no page ever claimed, and making it read as rectangular to every
+ * later shape comparison.
+ */
+describe('a labelled measurement followed by an unlabelled one', () => {
+  it('reads a round table as a diameter and a HEIGHT, never a length', () => {
+    const reading = parseDimensions(['Ø 120 x 45 cm'])
+    expect(reading.state).toBe('PARSED')
+    expect(reading.dimensions).toEqual({ diameter_mm: 1200, height_mm: 450 })
+    expect(reading.dimensions).not.toHaveProperty('length_mm')
+  })
+
+  it('does the same when the diameter is spelled out', () => {
+    expect(parseDimensions(['Diameter 120 x 45 cm']).dimensions).toEqual({
+      diameter_mm: 1200,
+      height_mm: 450,
+    })
+  })
+
+  it('continues past a named axis rather than restarting at length', () => {
+    // `W 120` names width; the next two unlabelled numbers are the remaining axes in order.
+    expect(parseDimensions(['W 120 x 60 x 45 cm']).dimensions).toEqual({
+      width_mm: 1200,
+      length_mm: 600,
+      height_mm: 450,
+    })
+  })
+
+  it('leaves the plain triple exactly as it was, which is what the fix must not break', () => {
+    expect(parseDimensions(['120 x 60 x 45 cm']).dimensions).toEqual({
+      length_mm: 1200,
+      width_mm: 600,
+      height_mm: 450,
+    })
+  })
+})
+
 describe('largestExtentMm', () => {
   it('is null when nothing was measured', () => {
     expect(largestExtentMm(null)).toBeNull()

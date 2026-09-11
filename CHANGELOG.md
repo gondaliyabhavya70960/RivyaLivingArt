@@ -6,6 +6,43 @@ Every phase adds an entry; see `docs/architecture/CANONICAL-DECISIONS.md` D9 for
 
 ## [Unreleased]
 
+### Phase 28 — eleven review findings fixed, and migration `0262`
+
+The merged phase was re-read adversarially. Nineteen findings came back, each was verified by
+execution or by SQL rather than accepted, eight were wrong and eleven were real.
+
+**Migration `0262`, applied locally AND to the hosted project,** corrects two CHECK constraints in `0260` that passed what they were written to
+refuse — the same NULL-evaluates-to-PASS family `0260` documents once and then broke twice more.
+`research_material_lexicon_token_shape` was case-insensitive because `token` is `citext` and citext
+overloads `~` to the case-insensitive operator; `has_no_blank_pattern` let a SQL NULL element
+through because `btrim(null) = ''` is NULL. Forward-only, because `0260` is applied to both
+databases and `db:migrate` refuses an edited migration. Two RLS tests insert the rows that used to
+be accepted.
+
+**Three pipeline events violated their own table's constraint** — `moves_somewhere` requires a
+from-stage and a to-stage, and `match.ts` supplied neither. `recordEventAtCurrentStage()` is now the
+only way those sites record anything. **A merchandiser could not clear a duplicate they were
+permitted to clear**, because the audit write went through the session client and the events table
+is service-role-only; the two-client model is now explicit — the domain write runs as the person, so
+RLS still judges it, and only the event runs as the system.
+
+**Five parser defects, all one species: a confident wrong answer where the design calls for
+`AMBIGUOUS`.** A currency word welded to an adjacent number (`chfront` → `CHF`), replaced by a real
+ISO 4217 allowlist with a digit-adjacency test; a range invented out of a VAT line or a discount
+percentage; a zero guard that tested only the first amount; and a dimension cursor that mis-assigned
+the third number of a `W × D × H` triple once a diameter had taken a slot.
+
+**The explorer's severity filter** inlined up to twenty thousand uuids into a PostgREST `in.(…)`
+filter, which travels in the query string and would have failed opaquely at a few hundred findings.
+Capped at two hundred, most-recent-first, **and the screen says so when the cap bites**. `?row=` and
+`?source=` are shape-checked before they reach a `uuid` column instead of throwing a 500.
+
+**The offline gate had the hole it exists to close**: it read `*.test.ts` and nothing else, so a
+database import one `import './helper'` away passed — and the commit that added the gate added such
+a helper. It now walks each test's import closure (136 tests, 473 modules) and names the test that
+pulls the offending module in. Six cases in `tests/unit/db/unit-offline-gate.test.ts` hold it there,
+including that indirection.
+
 ### CI — the unit project runs without a database again
 
 `main` had been red since Phase 26 merged, through three merges, and the cause was Phase 26's.

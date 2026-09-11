@@ -178,6 +178,118 @@ describe('readPrice', () => {
   })
 })
 
+/**
+ * THE PRICE CELL AS A REAL CATALOGUE PAGE WRITES IT.
+ *
+ * Every row here is a defect that shipped. The original fixtures were clean — `£1,299.00`, `From
+ * £1,299` — and clean strings are exactly what a price parser gets right. What a real page puts in
+ * the same cell is a VAT line, a discount badge, a seat count and an APR, and each of those is a
+ * number that used to be read as money: `£1,299 3 seater` was stored as £12,993.00, and both
+ * `£1,299 inc. 20% VAT` and `Save 20% — £1,299` as "from £20.00".
+ *
+ * THE RULE THESE ROWS ENCODE IS THE PHASE'S OWN: a number has to earn its place, and where two
+ * numbers are not joined as a range the answer is UNPARSED rather than a guess.
+ */
+describe('a price cell with more than a price in it', () => {
+  it.each([
+    ['£1,299 3 seater', 129900, 'a seat count welded onto the price — stored as £12,993.00'],
+    ['3 seater £1,299', 129900, 'the same, with the noise first'],
+    ['£1,299 inc. 20% VAT', 129900, 'a VAT rate that became the price'],
+    ['Save 20% — £1,299', 129900, 'a discount badge that became the price'],
+    ['£1,299 0% APR available', 129900, 'a finance offer beside the price'],
+    ['£1,299.00 · 2 year guarantee', 129900, 'a guarantee term beside the price'],
+  ])('%s → %d (%s)', (text, expected) => {
+    const price = readPrice(text, UK, 'GBP')
+    expect(price.state).toBe('FIXED')
+    expect(price.minMinor).toBe(expected)
+    expect(price.maxMinor).toBeNull()
+  })
+
+  it('still reads a genuine range, which is the thing the rule must not break', () => {
+    const price = readPrice('£1,299.00 – £1,899.00', UK, 'GBP')
+    expect(price.state).toBe('STARTING_FROM')
+    expect(price.minMinor).toBe(129900)
+    expect(price.maxMinor).toBe(189900)
+  })
+
+  it('REFUSES TWO NUMBERS THAT NOTHING JOINS rather than inventing a range', () => {
+    // The honest answer when a cell holds two plausible prices and no range token: say so.
+    const price = readPrice('£1,299 £450 delivery', UK, 'GBP')
+    expect(price.parseState).toBe('UNPARSED')
+    expect(price.minMinor).toBeNull()
+  })
+
+  it('reads a space-grouped thousand, but only in groups of three', () => {
+    // A source that writes `1 299,00` is configured with a space as its thousands separator —
+    // Phase 26 makes that a required, person-answered field for exactly this reason. Read under
+    // its own convention the number is unambiguous; the three-digit-group rule is what stops the
+    // same space welding `£1,299 3 seater` into £12,993.
+    const spaceGrouped = priceExtractionSchema.parse({
+      strategy: 'NONE',
+      decimalSeparator: ',',
+      thousandsSeparator: ' ',
+    })
+    expect(readPrice('1 299,00 €', spaceGrouped, 'EUR').minMinor).toBe(129900)
+  })
+
+  it('refuses when a currency marker sits BETWEEN two numbers, because it marks only one', () => {
+    // `1 299,00 € 3 places` — the `€` is equally close to the price it follows and the seat count
+    // it precedes, and nothing in the string says which it marks. A suffix convention would bind it
+    // backwards and a prefix convention forwards; this parser knows neither, so it refuses. That
+    // costs one row on a chart. The alternative — picking one — is how `Save 20% — £1,299` became
+    // "from £20.00".
+    const spaceGrouped = priceExtractionSchema.parse({
+      strategy: 'NONE',
+      decimalSeparator: ',',
+      thousandsSeparator: ' ',
+    })
+    expect(readPrice('1 299,00 € 3 places', spaceGrouped, 'EUR').parseState).toBe('UNPARSED')
+  })
+
+  it('TESTS EVERY CHOSEN AMOUNT FOR A ZERO, not just the first', () => {
+    // The guard read amounts[0] and the code stored Math.min(...) — two different values — so a
+    // zero in second place was stored and then thrown on by the schema instead of being flagged.
+    const price = readPrice('£1,299 – £0', UK, 'GBP')
+    expect(price.minMinor).toBeNull()
+    expect(price.zeroOrNegative).toBe(true)
+  })
+})
+
+/**
+ * THE CURRENCY BESIDE THE PRICE IS OFTEN AN ENGLISH WORD.
+ *
+ * `readCurrency` used to take the first three capital letters as an ISO code, guarded by a denylist
+ * of eighteen words. `£1,299 RRP` was therefore priced in "RRP" and `1.299,00 € IVA incluido` — a
+ * Spanish page saying VAT included — in "IVA". A denylist of words cannot be completed; the list of
+ * currencies can.
+ */
+describe('a three-letter word beside the price is not a currency', () => {
+  it.each([
+    ['£1,299 RRP', 'GBP'],
+    ['£1,299 ALL WEATHER', 'GBP'],
+    ['1.299,00 € IVA incluido', 'EUR'],
+    ['1.299,00 € TTC', 'EUR'],
+    ['€1.299,00 MwSt inkl', 'EUR'],
+    ['₹64,000 GST extra', 'INR'],
+  ])('%s → %s', (text, expected) => {
+    expect(readCurrency(text, null, 'GBP').currency).toBe(expected)
+  })
+
+  it('still takes a REAL code when it sits beside the amount', () => {
+    // The case the allowlist has to keep working: a dollar sign cannot say which dollar, the code can.
+    expect(readCurrency('US$ 1,299 USD', null, 'INR').currency).toBe('USD')
+    expect(readCurrency('1,299 TRY', null, 'GBP').currency).toBe('TRY')
+    expect(readCurrency('64,000 INR', null, 'GBP').currency).toBe('INR')
+  })
+
+  it('DOES NOT take a real code out of a marketing sentence', () => {
+    // `TRY`, `ALL`, `TOP` and `MAD` are all real ISO codes and all ordinary English words. The
+    // adjacency test is what keeps them out — a code is written beside its number, a slogan is not.
+    expect(readCurrency('TRY OUR NEW RANGE — £1,299', null, 'GBP').currency).toBe('GBP')
+    expect(readCurrency('TOP SELLER £1,299', null, 'GBP').currency).toBe('GBP')
+  })
+})
+
 describe('NO FOREIGN-EXCHANGE CONVERSION EXISTS ANYWHERE UNDER lib/scraper', () => {
   /*
    * THE PHASE DOCUMENT'S OWN RISK, ASSERTED RATHER THAN PROMISED: "foreign-exchange conversion

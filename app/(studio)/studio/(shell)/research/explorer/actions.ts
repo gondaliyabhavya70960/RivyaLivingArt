@@ -5,7 +5,6 @@ import { z } from 'zod'
 
 import type { StudioFormState } from '@/components/studio/form-state'
 import { writeAudit } from '@/lib/auth/audit'
-import { roleHasPermission } from '@/lib/auth/permissions'
 import { requirePermission } from '@/lib/auth/require'
 import {
   applyOverrides,
@@ -14,9 +13,10 @@ import {
   RESEARCH_PRICE_STATES,
 } from '@/lib/scraper/normalization'
 import { normalizeStoredVersion, readPriceExtraction } from '@/lib/scraper/validation/run'
+import { recordEventAtCurrentStage } from '@/lib/scraper/core/stage'
 import { acceptCandidateAsDuplicate, clearDuplicate } from '@/lib/scraper/workflows/match'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { PermissionError, ValidationError } from '@/lib/supabase/errors'
-import { recordPipelineEvent } from '@/lib/supabase/repositories/research/events'
 import { getExplorerRow } from '@/lib/supabase/repositories/research/explorer'
 import { readLexicon } from '@/lib/supabase/repositories/research/lexicon'
 import { decideCandidate } from '@/lib/supabase/repositories/research/match-candidates'
@@ -46,6 +46,30 @@ import { createClient } from '@/lib/supabase/server'
  * `'use server'` PUBLISHES EVERY EXPORT AS AN HTTP ENDPOINT. `requirePermission` is therefore the
  * first statement of each one, before any argument is read — a check after a parse is a check that
  * an unauthorised caller has already got work out of.
+ *
+ * **TWO CLIENTS, AND WHICH WRITE USES WHICH IS THE WHOLE OF THE SECURITY MODEL HERE.**
+ *
+ *   The SESSION client makes every write a person is entitled to make under RLS — deciding a match
+ *   candidate, dismissing a finding, setting a duplicate flag. RLS is the second layer under the
+ *   permission check above it, and using an admin client for those would remove it.
+ *
+ *   The ADMIN client makes exactly two kinds of write, and each is one RLS cannot express:
+ *
+ *     1. `research_pipeline_events`, which has no insert policy for `authenticated` and never will
+ *        (0233). An event is the system's record of what a person did; a record its subject can
+ *        forge is not one.
+ *
+ *     2. The NORMALISED COLUMNS of `research_products` under `research.write`. RLS gates a TABLE,
+ *        not a COLUMN: `research_products_update_staff` requires `research.confirm` because that
+ *        table also carries `disposition` and `duplicate_of_id`, which are a merchandiser's. The
+ *        phase document is explicit that correcting a normalised VALUE is a researcher's, so the
+ *        column split is drawn here — `overrideSchema` is a strict allowlist of exactly the
+ *        columns `research.write` may touch — and the write goes round RLS because RLS has no way
+ *        to say it. Widening the policy instead would hand researchers `duplicate_of_id`.
+ *
+ * A FIRST DRAFT OF THIS FILE USED THE SESSION CLIENT FOR BOTH, and neither worked: the event
+ * inserts were refused outright, and a researcher's correction matched zero rows while the action
+ * reported success.
  */
 
 const EXPLORER_PATH = '/studio/research/explorer'
@@ -206,18 +230,17 @@ export async function saveOverrideAction(
       )
     }
 
-    await writeNormalizedOverride(client, {
+    // See the header: the column split `research_products`'s single UPDATE policy cannot express.
+    const admin = createAdminClient()
+    await writeNormalizedOverride(admin, {
       productId,
       overrides: merged,
       normalized: normalizedProductSchema.parse(pass.product),
       userId: session.userId,
     })
 
-    await recordPipelineEvent(client, {
-      entityType: 'research_product',
-      entityId: productId,
-      fromStage: null,
-      toStage: null,
+    await recordEventAtCurrentStage(admin, {
+      productId,
       actorUserId: session.userId,
       reason: `Corrected by hand: ${Object.keys(parsed.data).join(', ')}. Frozen against re-normalisation.`,
     })
@@ -289,10 +312,12 @@ export async function dismissIssueAction(
 /**
  * Decide a duplicate candidate. `research.confirm` — a merchandiser's, not a researcher's.
  *
- * THE SECOND CHECK IS NOT BELT AND BRACES. `requirePermission('research.confirm')` establishes the
- * role; the explicit `roleHasPermission` on `research.write` establishes that the same session may
- * also write the columns the acceptance moves. A role holding confirm without write does not exist
- * today, and a permission matrix is a thing that changes.
+ * **AND `research.confirm` ALONE.** A second check on `research.write` used to sit here, justified
+ * in a comment that said "a role holding confirm without write does not exist today". That role is
+ * MERCHANDISER — `research.write` is `[owner, admin, researcher]` and `research.confirm` is
+ * `[owner, admin, merchandiser]` — so the extra check locked the one role this action exists for
+ * out of it, and the comment asserting otherwise is what made it look deliberate. A defence in
+ * depth that refuses the intended user is not defence, it is a bug with a rationale attached.
  */
 export async function decideCandidateAction(
   _previous: StudioFormState,
@@ -300,10 +325,6 @@ export async function decideCandidateAction(
 ): Promise<StudioFormState> {
   try {
     const session = await requirePermission('research.confirm')
-    if (!roleHasPermission(session.role, 'research.write')) {
-      return issue('You cannot do that.', 'forbidden')
-    }
-
     const candidateRowId = String(form.get('candidate_id') ?? '')
     const decision = String(form.get('decision') ?? '')
     if (candidateRowId === '') return issue('That proposal could not be identified.', 'required')
@@ -313,7 +334,10 @@ export async function decideCandidateAction(
 
     const client = await createClient()
     if (decision === 'ACCEPTED') {
-      await acceptCandidateAsDuplicate(client, { candidateRowId, userId: session.userId })
+      await acceptCandidateAsDuplicate(client, createAdminClient(), {
+        candidateRowId,
+        userId: session.userId,
+      })
     } else {
       await decideCandidate(client, { candidateRowId, decided: 'REJECTED', userId: session.userId })
     }
@@ -356,7 +380,7 @@ export async function clearDuplicateAction(
     }
 
     const client = await createClient()
-    await clearDuplicate(client, { productId, userId: session.userId, reason })
+    await clearDuplicate(client, createAdminClient(), { productId, userId: session.userId, reason })
     await writeAudit({
       actorUserId: session.userId,
       actorRole: session.role,

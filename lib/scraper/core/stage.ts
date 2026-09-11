@@ -132,6 +132,48 @@ export async function moveStage(
 }
 
 /**
+ * Record that something happened to a row WITHOUT moving it, at whatever stage it is at.
+ *
+ * **THE CHECK THIS EXISTS FOR.** `research_pipeline_events_moves_somewhere` (0231) requires at
+ * least one of `from_stage`/`to_stage` to be present, so an event about a row that did not move
+ * cannot leave both null — it records the stage it happened AT in both columns, and a reader sees
+ * `VALIDATED → VALIDATED` and knows the row was edited while validated.
+ *
+ * PHASE 28 SHIPPED FOUR CALLERS THAT PASSED BOTH AS NULL — a hand correction, an auto-merge, a
+ * confirmed duplicate and its undo. Every one of them would have raised a constraint violation on
+ * first use, and because the event is the LAST write in each sequence with no transaction around
+ * it, the earlier writes had already committed: a product left flagged `DUPLICATE` with no event,
+ * and `clearDuplicate` — the documented undo — failing in the same way, so the flag could not be
+ * cleared from the screen that set it. This helper is what those callers use now.
+ *
+ * **IT TAKES AN ADMIN CLIENT AND THE PARAMETER IS NAMED FOR IT.** `research_pipeline_events` has no
+ * insert policy for `authenticated` and never will (0233): an event is the system's record of what
+ * happened, and a record its subject can forge is not one. Three of those four callers passed a
+ * SESSION client, so RLS would have refused the insert even had the columns been right.
+ */
+export async function recordEventAtCurrentStage(
+  admin: Client,
+  input: {
+    readonly productId: string
+    readonly actorUserId: string | null
+    readonly reason: string
+  },
+): Promise<void> {
+  const product = await getResearchProduct(admin, input.productId)
+  if (product === null) return
+
+  const at = product.stage as ResearchStage
+  await recordPipelineEvent(admin, {
+    entityType: 'research_product',
+    entityId: input.productId,
+    fromStage: at,
+    toStage: at,
+    actorUserId: input.actorUserId,
+    reason: input.reason,
+  })
+}
+
+/**
  * Set a disposition, leaving the stage alone.
  *
  * THE EVENT HAS NO `from_stage` AND NO `to_stage`, which is honest rather than lossy: nothing

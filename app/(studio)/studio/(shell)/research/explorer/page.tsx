@@ -119,11 +119,13 @@ export default async function Page({
     search: one(params.q) === '' ? undefined : one(params.q),
   }
 
-  const [rows, sources, categories] = await Promise.all([
+  const [products, sources, categories] = await Promise.all([
     listExplorerRows(client, filter),
     listResearchSources(client),
     listCategories(client),
   ])
+
+  const { rows, severityTruncated } = products
 
   const sourceNames = new Map(sources.map((source) => [source.id, source.name]))
   const categoryNames = new Map(categories.map((category) => [category.id, category.name]))
@@ -272,6 +274,16 @@ export default async function Page({
             decideAction={decideCandidateAction}
             clearDuplicateAction={clearDuplicateAction}
           />
+        )}
+
+        {/* A CAPPED LIST SAYS SO. The severity filter resolves through a bounded id list, and a
+            table that quietly showed the first two hundred products under a heading reading
+            "errors only" would be the exact kind of confident-looking half-answer this screen
+            exists to prevent. */}
+        {severityTruncated && (
+          <Text tone="secondary" size="sm">
+            {t('studio.research.severityTruncated')}
+          </Text>
         )}
 
         {/* THE EMPTY STATE IS THE TABLE'S OWN, not a branch around it. `DataTable` renders it in

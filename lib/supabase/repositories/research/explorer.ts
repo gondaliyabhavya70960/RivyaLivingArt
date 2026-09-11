@@ -50,6 +50,29 @@ export interface ExplorerFilter {
 export const EXPLORER_PAGE_SIZE = 100
 
 /**
+ * How many product ids the severity filter may put into a PostgREST `in.(…)` list.
+ *
+ * THE FILTER USED TO ALLOW TWENTY THOUSAND, AND THAT IS A BROKEN SCREEN RATHER THAN A SLOW ONE.
+ * PostgREST takes its filters in the QUERY STRING, so each id costs a 36-character uuid plus a
+ * comma — twenty thousand of them is roughly 740 KB of URL. Every gateway in front of the database
+ * refuses that long before it arrives: Supabase, and nginx defaults, cut off in the low tens of
+ * kilobytes. The filter therefore worked in development, where a handful of findings exist, and
+ * would have started returning an opaque error at a few hundred — which is the point at which an
+ * operator most needs it.
+ *
+ * Two hundred ids is about 7.4 KB of query string, comfortably inside every limit involved.
+ * `SEVERITY_SCAN_LIMIT` is larger because many findings share a product, so the distinct count is
+ * what has to be capped rather than the row count.
+ *
+ * WHAT THE CAP COSTS IS STATED ON THE SCREEN. Ordering by `detected_at desc` makes the survivors
+ * the most recently detected findings, and `ExplorerRows.severityTruncated` carries the fact upward
+ * so the page can say the list is partial — a truncated list that looks complete is the failure
+ * this whole subsystem is arranged against.
+ */
+export const SEVERITY_ID_LIMIT = 200
+const SEVERITY_SCAN_LIMIT = 2_000
+
+/**
  * The explorer's query, and the one filter that is not a column.
  *
  * SEVERITY IS RESOLVED IN TWO STEPS RATHER THAN AS AN EMBEDDED FILTER, and the reason is the same
@@ -65,24 +88,34 @@ export const EXPLORER_PAGE_SIZE = 100
  * bypassed RLS to render a screen would be removing the only protection that survives a bug in the
  * page's own gate.
  */
+export interface ExplorerRows {
+  readonly rows: readonly ExplorerRow[]
+  /** The severity filter hit `SEVERITY_ID_LIMIT`; rows outside the most recent findings are absent. */
+  readonly severityTruncated: boolean
+}
+
 export async function listExplorerRows(
   client: Client,
   filter: ExplorerFilter = {},
-): Promise<readonly ExplorerRow[]> {
+): Promise<ExplorerRows> {
   let allowedIds: readonly string[] | null = null
+  let severityTruncated = false
 
   if (filter.severity !== undefined) {
     const { data, error } = await client
       .from('research_validation_issues')
-      .select('research_product_id')
+      .select('research_product_id, detected_at')
       .eq('severity', filter.severity)
       .eq('is_dismissed', false)
-      .limit(20_000)
+      .order('detected_at', { ascending: false })
+      .limit(SEVERITY_SCAN_LIMIT)
     if (error !== null) throw toRepositoryError(ENTITY, 'severity', filter.severity, error)
-    allowedIds = [...new Set((data ?? []).map((row) => row.research_product_id))]
+    const distinct = [...new Set((data ?? []).map((row) => row.research_product_id))]
+    severityTruncated = distinct.length > SEVERITY_ID_LIMIT
+    allowedIds = distinct.slice(0, SEVERITY_ID_LIMIT)
     // AN EMPTY ANSWER IS AN ANSWER. `in ()` is not valid, and a filter that silently stopped being
     // applied would show every row under a heading saying "errors only".
-    if (allowedIds.length === 0) return []
+    if (allowedIds.length === 0) return { rows: [], severityTruncated }
   }
 
   let query = client
@@ -95,10 +128,13 @@ export async function listExplorerRows(
     .limit(filter.limit ?? EXPLORER_PAGE_SIZE)
 
   if (allowedIds !== null) query = query.in('id', allowedIds)
-  if (filter.sourceId !== undefined) query = query.eq('source_id', filter.sourceId)
+  // A UUID COLUMN REFUSES A NON-UUID WITH A 400, WHICH THE PAGE ANSWERS AS A 500. `?source=x` is
+  // something anybody can type, and every other filter on this screen ignores a value that names
+  // nothing rather than failing on it. These two now do the same.
+  if (isUuid(filter.sourceId)) query = query.eq('source_id', filter.sourceId)
   if (filter.stage !== undefined) query = query.eq('stage', filter.stage)
   if (filter.disposition !== undefined) query = query.eq('disposition', filter.disposition)
-  if (filter.categoryId !== undefined) query = query.eq('matched_category_id', filter.categoryId)
+  if (isUuid(filter.categoryId)) query = query.eq('matched_category_id', filter.categoryId)
   if (filter.priceState !== undefined) query = query.eq('price_state', filter.priceState)
   if (filter.currency !== undefined) query = query.eq('currency', filter.currency)
   if (filter.dimensionParseState !== undefined) {
@@ -112,10 +148,21 @@ export async function listExplorerRows(
 
   const { data, error } = await query
   if (error !== null) throw toRepositoryError(ENTITY, 'list', 'rows', error)
-  return (data ?? []) as unknown as ExplorerRow[]
+  return { rows: (data ?? []) as unknown as ExplorerRow[], severityTruncated }
+}
+
+/** The shape PostgreSQL will accept for a `uuid` column. Anything else is a 400 dressed as a 500. */
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/iu
+
+export function isUuid(value: string | undefined): value is string {
+  return value !== undefined && UUID.test(value)
 }
 
 export async function getExplorerRow(client: Client, id: string): Promise<ExplorerRow | null> {
+  // Guarded here as well as at the caller: this is exported, and a uuid column is not a place to
+  // find out that a query string was hostile.
+  if (!isUuid(id)) return null
+
   const { data, error } = await client
     .from('research_products')
     .select(
