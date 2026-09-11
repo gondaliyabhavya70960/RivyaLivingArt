@@ -7,56 +7,60 @@
 ---
 
 ## Current Phase
-**Phase 43 — Media Coverage + Higgsfield Finalization. DEVELOPMENT COMPLETE.** Phase 07 produced a
-projected gap list before most slots existed; this phase re-runs the analysis against the slots that
-now exist and resolves every one. The headline is how few needed anything generated.
+**Phase 44 — Vercel Deployment. DEVELOPMENT COMPLETE.** The property this phase buys is not "it is
+deployed" — it is that a bad deploy can be undone without guessing. Most of it is a runbook and two
+scripts, and the most useful thing in it is the list of what is NOT true.
 
-### Phase 43: what is built
+### Phase 44: what is built
 
-**Ten briefs became two.** `scripts/media/build-coverage-report.ts` joins the 26 declared slots
-against the 250 manifest assets and writes the result into `HIGGSFIELD_ASSET_STATUS.md` §5.0. Its
-first run proposed ten `GENERATE_NEW` — six slots carried an empty `fillableBy` that Phase 07's own
-prose had already answered, and two carried `GENERATE` where Phase 07 had concluded `LEAVE_EMPTY`.
-Final reading: **REUSE 15 · RECROP 6 · GENERATE 2 · EMPTY 3**.
+**`scripts/ops/preflight.ts`** — thirteen named gates in one command. Each prints its own row
+whether it passed, failed or skipped; failures sort first; a skipped gate names the phase that owns
+it. Ten run today. Gate 3 is spawned as `python3` rather than through npm, so a missing interpreter
+reads as a FAILED gate naming the interpreter rather than a media check that quietly did not happen.
 
-**`media_crops` (`0410`–`0411`)** — one editor-chosen crop per (asset, D6 ratio), a box in SOURCE
-pixels or a Cloudinary gravity and never neither, applied as `c_crop` BEFORE the delivery preset.
-`lib/media/crop.ts` is the pure resolver the Studio previews with and the site delivers with.
+**`scripts/ops/check-env.ts`** — presence AND shape, per environment, naming the variable and the
+rule and never a value. One cross-variable rule: a preview must not carry production's WhatsApp
+number.
 
-**All 250 alt texts rewritten** from prompt fragments into sentences that pass the SEED §43 rules,
-in `content/media/alt-text.ts` — committed TypeScript the generator will not overwrite, so a hand
-edit is a reviewable diff.
+**`scripts/docs/check-doc-contract.mjs`** — created at last (Phase 01 named it) and in
+`npm run check`. Every declared variable documented, every variable the code reads declared.
 
-**Studio:** Coverage and Concept Placement tabs, the crop editor (RC-359), the alt-text queue
-(RC-360) ordered bound-first, the brand-format panel (RC-361) read from the validator's own table.
+**`vercel.json`** (framework, region, function limits, the seven crons), **`next.config.ts`**
+(`www` → apex 308 derived from `NEXT_PUBLIC_SITE_URL`, one-host image allowlist),
+**`db-migrate.yml`** extended with a `pg_dump` snapshot and a GitHub Environment on the apply path,
+**`EnvironmentRibbon`** (RC-362) above the announcement bar, **`BuildPanel`** (RC-363) with the
+migration-state row.
 
-**`media:register-external`** takes an owner-generated image by Cloudinary URL, refuses any other
-origin, and registers it `is_ai_generated = true, is_concept = true` with no flag to turn that off.
+### Phase 44: what is NOT true, recorded rather than implied
 
-### Phase 43: readings the repository forced
-
-1. **The gap was metadata, not coverage.** The difference between ten briefs and two was six
-   `fillableBy` lists and two dispositions the registry had left stale against Phase 07's analysis.
-2. **The crop must be a separate URL component.** Merged into `TransformSpec` it emits one flat
-   component and the before/after ordering is silently lost.
-3. **An em-dash is not always the instruction seam.** `WALL-ART-003` opens with a parenthetical, and
-   cutting at the first one produced "A spare study."
-4. **A generated file that is never Prettier-clean makes `npm run check` fail after every
-   regeneration**, which teaches people to stop regenerating it.
-5. **`db:check-data-layer` covers scripts too.** `rewrite-alt-text.ts` queried directly; two
-   functions moved to the repository and `updateMediaAsset` now takes a null actor.
-
-### Phase 43: what is waiting on the owner
-
-| Item | Where |
+| Claim the phase document makes | What is actually true |
 |---|---|
-| `HOME-HERO-VIDEO-001` and `HOME-HERO-POSTER-001` — the only two generation briefs | `docs/ASSET_GENERATION_PROMPTS.md`, "Site heroes" |
-| Four brand assets, in the formats the validator accepts | `/studio/media/brand` |
-| Approving the 250 rewritten alt texts | `/studio/media/all`, the queue |
+| Two Supabase projects; a preview never reaches production | **One project (A42). A preview reads and writes production data.** DEPLOYMENT §1.1 lists the four consequences and what a second project would buy |
+| `check-env.ts` fails a preview pointing at production | It WARNS. That comparison would fail every preview build, and a gate that always fails gets deleted |
+| `migrate-staging.yml` | Does not exist. There is no staging database to push to |
+| A human approval gate on production migration | Declared. GitHub protects an environment only once somebody configures a required reviewer — an owner action, DEPLOYMENT §12 |
+| Both drills executed and timed | **Neither has been run and no time is claimed.** DEPLOYMENT §11.1 says why |
 
-**The 250 rewrites are drafts by a defensible rule, not descriptions by somebody who saw the
-pictures.** All true to the prompt, all passing the linter, all still
-`OWNER_VERIFICATION_REQUIRED`.
+### Phase 44: the four owner actions
+
+1. Create the `production-database` GitHub Environment with a required reviewer.
+2. Set `IP_HASH_SALT` and `RATE_LIMIT_SALT` in every Vercel environment.
+3. Disable public sign-up in Supabase Auth and create the first owner user — `auth.users` is empty,
+   so nobody can sign into the production Studio today.
+4. Decide whether a second Supabase project is worth its cost.
+
+---
+
+### Superseded — Phase 43's state
+
+**Phase 43 — Media Coverage + Higgsfield Finalization. DEVELOPMENT COMPLETE.** Ten generation briefs
+became two: six slots carried an empty `fillableBy` that Phase 07's own prose had already answered,
+and two carried GENERATE where it said LEAVE_EMPTY. Final reading REUSE 15 · RECROP 6 · GENERATE 2 ·
+EMPTY 3. `media_crops` (`0410`–`0411`) makes re-crop a first-class alternative to generating. All
+250 alt texts rewritten from prompt fragments into sentences that pass the SEED §43 rules, in a
+committed file the generator will not overwrite. Landed as PR #48.
+
+---
 
 ---
 
@@ -3653,8 +3657,9 @@ on `/studio` rather than a route segment.
 
 ## Next Exact Action
 
-**Phase 43 is development-complete. The next phase is 44 — Vercel Deployment**
-(`docs/project/phases/PHASE-39-46.md`), no migration. Phase 42 is DEFERRED and
+**Phase 44 is development-complete. The next phase is 42 — Comprehensive Testing**, which the owner
+deferred to run after Phase 44 and which now carries every test deferred from Phases 41–44. Phases
+45 and 46 follow it. Phase 42 is
 runs after Phase 44 with every test deferred from Phases 41–44: the owner's instruction is "complete
 all phase development work and do all test-related work after Phase 44".
 

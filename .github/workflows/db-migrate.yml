@@ -18,6 +18,22 @@
 #
 # COST. Manual dispatch only: no push, pull_request or schedule trigger. It consumes Actions
 # minutes only when somebody deliberately runs it, and a `plan` run costs the same as an `apply`.
+#
+# PHASE 44 EXTENDED THIS FILE RATHER THAN ADDING `migrate-production.yml` BESIDE IT. The phase
+# document names a second workflow; this one already does everything it asks for except a snapshot
+# and a human approval gate, and two workflows applying migrations to one project is how they drift
+# until somebody runs the wrong one. Added here instead:
+#
+#   * A `pg_dump` SNAPSHOT before any apply, uploaded as an artefact. It is the only thing standing
+#     between a bad migration and a point-in-time restore, and it is taken by the same job that is
+#     about to change the schema rather than by a person who might forget.
+#   * A GitHub ENVIRONMENT on the apply job. Configure `production-database` under Settings →
+#     Environments with a required reviewer, and an apply then stops and waits for a person. Until
+#     somebody configures it the environment is simply unprotected — GitHub does not fail the run —
+#     so DEPLOYMENT.md §5 lists it as an owner action rather than as something this file guarantees.
+#
+# There is no `migrate-staging.yml`: this project has ONE Supabase project by the owner's decision
+# (amendment A42), so there is no staging database to push to. DEPLOYMENT.md §2 says so plainly.
 
 name: Database migrate (hosted)
 
@@ -45,6 +61,10 @@ concurrency:
 jobs:
   migrate:
     runs-on: ubuntu-latest
+    # A human approval gate on the apply path, and only on it: a `plan` run changes nothing and
+    # waiting for a reviewer to read a report nobody has generated yet is friction with no safety
+    # behind it. GitHub evaluates `environment` per job, so the expression is what scopes it.
+    environment: ${{ inputs.mode == 'apply' && 'production-database' || '' }}
     # Least privilege: this job reads the repository and talks to Supabase. It writes nothing back
     # to GitHub, so it is given no write scope to take advantage of.
     permissions:
@@ -120,6 +140,35 @@ jobs:
       # The output lists exactly which files are pending.
       - name: Plan
         run: npm run db:migrate -- --allow-remote
+
+      # THE SNAPSHOT, BEFORE THE APPLY AND AFTER THE PLAN. It is the lever the rollback table's
+      # "data corruption" row depends on, and taking it here rather than asking a person to take it
+      # means it exists on the run that needed it rather than on the runs that did not.
+      #
+      # `--no-owner --no-privileges` because a restore goes back into a Supabase project whose roles
+      # are the platform's, not this dump's. Schema AND data: a schema-only dump cannot undo a
+      # migration that rewrote rows.
+      - name: Snapshot before applying
+        if: ${{ inputs.mode == 'apply' }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/snapshot
+          stamp="$(date -u +%Y%m%dT%H%M%SZ)"
+          pg_dump "$DATABASE_URL" \
+            --no-owner --no-privileges --format=custom \
+            --file="/tmp/snapshot/rivya-${stamp}.dump"
+          ls -l /tmp/snapshot
+          echo "SNAPSHOT_NAME=rivya-${stamp}" >> "$GITHUB_ENV"
+
+      # Retained for 30 days. Long enough to cover the window in which a bad migration is noticed,
+      # short enough that a database dump is not sitting in an artefact store for a year.
+      - name: Keep the snapshot
+        if: ${{ inputs.mode == 'apply' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.SNAPSHOT_NAME }}
+          path: /tmp/snapshot/
+          retention-days: 30
 
       - name: Apply
         if: ${{ inputs.mode == 'apply' }}

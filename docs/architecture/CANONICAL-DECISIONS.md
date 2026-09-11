@@ -189,6 +189,46 @@ Brand and editorial copy may be written; anything asserting business capability 
 
 ## Amendments
 
+**2026-09-11 · A42 — Phase 44 deploys against ONE Supabase project, not two, by the owner's
+decision; the production migrate workflow is the existing `db-migrate.yml` extended rather than a
+second file; and the two deployment drills are recorded as NOT RUN rather than claimed (D1, D8,
+DEPLOYMENT §1–§1.1, §7.0, §7.3, §11.1, §12, ENVIRONMENT §5.2, PHASE-39-46 §Phase 44).**
+
+- **One Supabase project, and the consequence is stated rather than implied.** The phase document
+  specifies `rivya-prod` and `rivya-staging`, with `check-env.ts` failing a preview whose project ref
+  equals production's. The owner chose one project so the build adds no recurring cost. **A preview
+  deployment therefore reads and writes production data**, and there is no technical stop — only
+  deployment protection, the environment ribbon, and the habit of not exercising the enquiry form on
+  a preview. `check-env.ts` reports that posture as a WARNING on every preview build rather than
+  enforcing a comparison that would fail every time: a gate that always fails is a gate that gets
+  deleted. DEPLOYMENT §1.1 lists what one project costs and exactly what a second would buy.
+- **`migrate-staging.yml` does not exist**, because there is no staging database to push to. Saying
+  so in the runbook is the point; a workflow file that pushed to production under a staging name
+  would be worse than its absence.
+- **The production migrate workflow is `db-migrate.yml`, extended.** It already did dispatch-only
+  invocation, a typed project-ref confirmation and plan/apply. Phase 44 added a `pg_dump` snapshot
+  before any apply (uploaded as a 30-day artefact — the lever the rollback table's data-corruption
+  row depends on) and a GitHub Environment on the apply path only. Two workflows applying migrations
+  to one project is how they drift until somebody runs the wrong one.
+- **The approval gate is declared, not guaranteed.** GitHub protects an environment only once
+  somebody configures a required reviewer on it; an unconfigured environment does not fail a run, it
+  simply does not wait. DEPLOYMENT §12 lists creating `production-database` with a reviewer as an
+  owner action rather than letting the workflow file imply a protection that is not there.
+- **Neither deployment drill has been run, and no time is recorded.** The rollback drill needs a
+  production deployment with a previous one to fall back to; the forward-fix drill, with one
+  project, would apply a migration to the production database. Both procedures are written out and
+  both are marked NOT RUN. A number nobody measured is worse than no number, because the first real
+  incident is when somebody discovers the runbook was aspirational.
+- **`scripts/docs/check-doc-contract.mjs` is created here, minimally.** Phase 01 named it, Phase 44
+  needs it as preflight gate 5, and Phase 46 extends it with the D7 map and the claim vocabulary.
+  Today it compares two sets in both directions: every name in `.env.example` must be documented in
+  `ENVIRONMENT.md`, and every variable the product reads must be in `.env.example`. A gate that does
+  not exist is a line in a table.
+- **Ten of preflight's thirteen gates run today.** Gates 9 and 13 belong to Phases 42 and 46 and
+  report SKIPPED naming the phase; gate 12 skips without `DATABASE_URL` and says to point it at a
+  throwaway database. A preflight that reported twelve green gates as thirteen would be the exact
+  failure the script exists to prevent.
+
 **2026-09-11 · A41 — Phase 41 adds three server-only variables to D8, two of them secrets, and
 records that the accessibility half of the phase ships its mechanisms without its proof (D8,
 SECURITY §5, §7.3–§7.5, §8.1, §9.1, §10.1, ACCESSIBILITY §3.1–§3.3, ENVIRONMENT §5.1–§5.2,

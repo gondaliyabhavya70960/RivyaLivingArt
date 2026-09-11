@@ -60,6 +60,54 @@ const nextConfig: NextConfig = {
       ...(preview ? [{ source: '/:path*', headers: [noindex] }] : []),
     ])
   },
+  /*
+   * Phase 44. `www` 308-redirects to the apex, and the apex is the only address the site has.
+   *
+   * ONE ADDRESS, NOT TWO. Two hosts serving the same pages is duplicate content to a crawler, two
+   * cookie scopes to a browser and two answers to "what is our URL" to a person. The canonical
+   * tags Phase 39 emits already name the apex; this makes the redirect match them rather than
+   * relying on a crawler to prefer one.
+   *
+   * 308 RATHER THAN 302, and permanent rather than temporary: the choice is permanent, a 308
+   * preserves the method (so a form POST to `www` is not silently turned into a GET), and it is
+   * cached, which is the point.
+   *
+   * DERIVED FROM `NEXT_PUBLIC_SITE_URL` at build time rather than hard-coded. The domain is
+   * owner-supplied and OWNER_VERIFICATION_REQUIRED; a literal here would be a second place it
+   * lives. Without the variable there is no redirect, which is correct for a local build that has
+   * no apex to redirect to.
+   */
+  redirects() {
+    const site = process.env.NEXT_PUBLIC_SITE_URL
+    if (site === undefined || site === '') return Promise.resolve([])
+    let host: string
+    try {
+      host = new URL(site).host
+    } catch {
+      return Promise.resolve([])
+    }
+    if (host.startsWith('www.')) return Promise.resolve([])
+    return Promise.resolve([
+      {
+        source: '/:path*',
+        has: [{ type: 'host' as const, value: `www.${host}` }],
+        destination: `${site}/:path*`,
+        permanent: true,
+      },
+    ])
+  },
+  /*
+   * Phase 44. The only remote origin an image may come from.
+   *
+   * `next/image` is not used for delivery — `MediaImage` builds Cloudinary URLs itself and renders
+   * a plain `<img>`, because Cloudinary already does the resizing and a second optimiser in front
+   * of it would re-encode what is already optimal. This block exists anyway, and narrowly: if
+   * anything ever does reach for `next/image`, the host allowlist should already be the same one
+   * the content security policy names, rather than whatever the first caller happens to need.
+   */
+  images: {
+    remotePatterns: [{ protocol: 'https' as const, hostname: 'res.cloudinary.com' }],
+  },
   // The Playwright harness drives the dev server over 127.0.0.1 rather than localhost, and
   // Next treats that as a cross-origin dev request. Declaring it keeps the e2e log free of
   // a warning that would otherwise train people to ignore dev-server output.

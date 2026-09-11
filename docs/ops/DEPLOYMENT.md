@@ -28,25 +28,47 @@ under five minutes without data loss.**
 
 ## 1. Environments
 
-Three environments, two Supabase projects. A preview deployment **never** connects to production.
+**Three environments, ONE Supabase project.** That is a departure from what this section used to
+say, it is the owner's decision (amendment **A42**), and §2 below is about nothing else — because a
+reader who skims this table and takes "preview is isolated" away from it would be wrong in a way
+that matters.
 
 | Environment | Git source | Vercel | Supabase project | Cloudinary | Data |
 |---|---|---|---|---|---|
-| **Production** | `main`, promoted manually | Production deployment | `rivya-prod` | Rivya account, `rivya/**` folders | Real content and real enquiries |
-| **Preview** | Every pull-request branch | Preview deployment, access-protected | `rivya-staging` | Same account, same folders (read-only usage) | Fixture data only |
-| **Development** | Local working tree | `next dev` | Local `supabase start` | Same account or unset | Fixture data only |
+| **Production** | `main`, promoted manually | Production deployment | `ccvarsmzickdkryoakdg` | Rivya account, `rivya/**` folders | Real content and real enquiries |
+| **Preview** | Every pull-request branch | Preview deployment, access-protected | **the same project** | Same account, same folders | **The same real data** |
+| **Development** | Local working tree | `next dev` | Local PostgreSQL | Same account or unset | Fixture data only |
 
-Rules that make the separation real:
+Rules that make the separation as real as one project allows:
 
-1. `scripts/ops/check-env.ts` compares the configured Supabase project ref against the value expected
-   for the current `VERCEL_ENV` and **fails the build** if a preview points at production.
-2. Production data is never copied downward (`BUSINESS_RULES.md` BR-I3). Staging is seeded from the
-   Phase 42 fixture.
-3. Preview and development use a **test** WhatsApp number. `check-env.ts` fails if the preview number
-   equals the production number, so a reviewer cannot message the owner's phone from a draft.
+1. **A preview writes to production data.** There is one database. Vercel deployment protection
+   keeps strangers out, and everything below reduces the damage a reviewer can do — but nothing
+   makes a preview safe to experiment in. §2 is the whole of it.
+2. Production data is never copied downward (`BUSINESS_RULES.md` BR-I3). There is nowhere to copy it
+   to; local development runs against a local PostgreSQL seeded from `seed:content`.
+3. Preview and development use a **test** WhatsApp number. `check-env.ts` fails if the preview
+   number equals the production number, so a reviewer cannot message the owner's phone from a draft.
 4. Every non-production response carries `X-Robots-Tag: noindex, nofollow`, Vercel deployment
-   protection is on, and `components/patterns/EnvironmentRibbon.tsx` renders a visible ribbon from
-   `VERCEL_ENV`.
+   protection is on, and `components/patterns/EnvironmentRibbon` renders a visible ribbon from
+   `VERCEL_ENV` — above the announcement bar and the header, so it is the first thing on the page.
+
+### 1.1 What one project costs, and what to do about it
+
+The owner chose one Supabase project so the project adds no recurring cost. That is a legitimate
+trade for a studio of this size, and these are the consequences, stated rather than implied:
+
+| Consequence | What reduces it |
+|---|---|
+| A preview deployment reads and writes real enquiries | Deployment protection; the ribbon; and the habit of not exercising the enquiry form on a preview. There is no technical stop |
+| A destructive migration reaches production data the moment it is applied | Migrations never run in a build (§4), the apply path takes a `pg_dump` snapshot first, and a human approves it |
+| A reviewer sees a real enquirer's name in a Studio screenshot | `inquiries.read` is a permission, previews are access-protected, and the PII policy (SECURITY §10.1) applies to a preview exactly as it does to production |
+| `check-env.ts` cannot enforce "preview ≠ production project" | It reports the posture as a WARNING on every preview instead, naming this section. A gate that always fails is a gate that gets deleted |
+
+**What a second project would buy, if the owner later wants it**: a preview that can be broken
+without consequence, a place to rehearse a migration against a copy, and a `migrate-staging`
+workflow between CI and production. The change is: create the project, apply the migration set, add
+a second set of Supabase variables to Vercel's Preview scope, and turn the warning above into the
+assertion the phase document originally asked for.
 
 ---
 
@@ -259,8 +281,32 @@ capability.
 
 ## 7. Release checklist
 
-Run top to bottom. `scripts/ops/preflight.ts` automates steps 1–8 and prints one summary table; the
-rest are human acts.
+Run top to bottom. **`npx tsx scripts/ops/preflight.ts` runs thirteen named gates in one command**
+and prints one summary table ordered failures-first; the rest are human acts.
+
+### 7.0 The thirteen gates, by name
+
+A gate that is skipped reports `SKIPPED` **with its reason** rather than being silently absent —
+because a preflight that reports twelve green gates as thirteen is worse than one that reports
+twelve.
+
+| # | Gate | Phase | Note |
+|---|---|---|---|
+| 1 | `npm run check` | 00 | Types, lint, format, and every offline guard |
+| 2 | `npm run manifest:verify` | 00 · 07 | The Python builder is still deterministic |
+| 3 | `python3 scripts/media/check-asset-ids.py` | 05–09 · 43 | **Spawned as `python3`, not through npm.** A missing interpreter is a FAILED gate naming the interpreter, never a media check that quietly did not happen (D6 amendment A1) |
+| 4 | `npm run media:assert-no-regen` | 07 | No brief targets an asset that already exists |
+| 5 | `node scripts/docs/check-doc-contract.mjs` | 01 · 46 | Every declared variable documented; every variable the code reads declared |
+| 6 | `npm run seo:check-jsonld-scope` | 39 | One structured-data emitter |
+| 7 | `npm run perf:count-islands` | 40 | Every route within its island budget |
+| 8 | `npm run a11y:check-contrast` | 41 | Every token pair at its WCAG ratio |
+| 9 | `node scripts/test/check-fixture-isolation.mjs` | 42 | **Skips today** — Phase 42 has not run |
+| 10 | `node scripts/media/check-alt-text.mjs` | 43 | 250 of 250 pass the SEED §43 rules |
+| 11 | `npx tsx scripts/ops/check-env.ts` | 44 | Every required variable present and well-formed; **no value printed** |
+| 12 | `npm run db:reset` | 03 · 44 | **Skips without `DATABASE_URL`**, and the reason says to point it at a THROWAWAY database — this gate drops every table |
+| 13 | `npm run content:verification-report` | 08 · 46 | **Skips today** — Phase 46 has not run |
+
+Ten of thirteen run today. The three that skip say which phase owns them.
 
 ### 7.1 Before merge
 
@@ -278,14 +324,24 @@ rest are human acts.
 ### 7.2 Merge and staging
 
 - [ ] 11. Squash-merge to `main`. Confirm the preview deployment built.
-- [ ] 12. `migrate-staging` ran `supabase db push` against `rivya-staging` and reported success.
-- [ ] 13. `tests/e2e/deploy-smoke.spec.ts` green against the staging deployment.
-- [ ] 14. Open the staging site: homepage, one category, one product, the inquiry form, `/studio`. Nothing 500s.
+- [ ] 12. **There is no staging step.** One Supabase project (§1, amendment A42), so there is no
+      staging database to push to and no `migrate-staging.yml` in this repository. The preview
+      deployment built from the merge commit is what step 14 checks, and it reads production data.
+- [ ] 13. `tests/e2e/deploy-smoke.spec.ts` green against the preview deployment (**Phase 42 writes
+      this spec**; until then step 14 is done by hand).
+- [ ] 14. Open the preview: homepage, one category, one product, the inquiry form, `/studio`.
+      Nothing 500s. **Do not submit the enquiry form** — it would write a real row.
 
 ### 7.3 Production migration
 
-- [ ] 15. Trigger `migrate-production`. Confirm it stops at the approval gate.
-- [ ] 16. Approve. Confirm the workflow log shows the `pg_dump` snapshot **and** the push.
+- [ ] 15. Trigger **`Database migrate (hosted)`** with `mode: apply` and the project ref typed
+      exactly. Phase 44 extended this workflow rather than adding a second one; two workflows
+      applying migrations to one project is how they drift until somebody runs the wrong one.
+      Confirm it stops at the approval gate — which requires a `production-database` GitHub
+      Environment with a required reviewer, an **owner action** listed in §12.
+- [ ] 16. Approve. Confirm the workflow log shows the `pg_dump` snapshot uploaded as an artefact
+      **and** the push. The snapshot is retained 30 days and is the lever §6's data-corruption row
+      depends on.
 - [ ] 17. `/studio/system/environment` on the previous production deployment still reports healthy (the old code runs against the new schema — expand/contract).
 
 ### 7.4 Promote
@@ -369,6 +425,28 @@ migration on merge (a production schema change requires a human) · a staging co
 
 ---
 
+## 11.1 The two drills, and why this document does not claim them
+
+The phase document asks for a **rollback drill** and a **forward-fix drill**, each executed and
+timed, with the elapsed time recorded here. **Neither has been run, and this section says so rather
+than printing a plausible number.**
+
+| Drill | Procedure | State |
+|---|---|---|
+| Rollback | Deploy a deliberately broken build, promote it, then promote the previous deployment. Target: under five minutes | **NOT RUN** |
+| Forward-fix | Apply an expand migration, deploy code using it, roll the code back only, and confirm the older code still works against the newer schema | **NOT RUN** |
+
+**Why not.** Both require a deployment a person can break — and with one Supabase project (§1) the
+forward-fix drill would apply a migration to the production database and the rollback drill would
+promote a broken build to the live site. The rollback drill is safe to run the moment there is a
+production deployment with a previous one to fall back to; the forward-fix drill wants a second
+project, which is backlog item 11.
+
+**A number nobody measured is worse than no number**, because the first real incident is when
+somebody discovers the runbook was aspirational. The procedures above are correct and untimed.
+
+---
+
 ## 12. Owner-verification backlog for this document
 
 | # | Item | Needed for |
@@ -380,6 +458,10 @@ migration on merge (a production schema change requires a human) · a staging co
 | 5 | Audience geography, to confirm or change the `bom1` region | §3 |
 | 6 | Whether MFA is enforced for `owner` and `admin` in Supabase | `SECURITY.md` |
 | 7 | Who holds the Vercel, Supabase, Cloudinary and Google Cloud accounts, and who may rotate each secret | §9 |
+| 8 | **Create a `production-database` GitHub Environment with a required reviewer** (Settings → Environments). Without it the migrate workflow's approval gate is declared but unprotected — GitHub does not fail the run, it simply does not wait | §7.3 |
+| 9 | **Set `IP_HASH_SALT` and `RATE_LIMIT_SALT`** in every Vercel environment. Without them `salt()` falls back to a public literal | `ENVIRONMENT.md` §5.2, `SECURITY.md` §15 |
+| 10 | **Disable public sign-up** in Supabase Auth, and create the first owner user — `auth.users` is empty, so nobody can sign into the Studio on production today | §5 |
+| 11 | **Decide whether a second Supabase project is worth its cost.** Today a preview deployment reads and writes production data | §1.1 |
 
 ---
 

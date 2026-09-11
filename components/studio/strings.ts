@@ -8253,6 +8253,11 @@ export const STUDIO_STRINGS = {
     value: 'migration files',
     contentKey: 'studio_help.env_build_migrations',
   },
+  'studio.env.buildNote': {
+    value:
+      'BEHIND means this build expects migrations the database has not been given — run the migrate workflow. AHEAD means a migration was applied and the code using it has not been promoted yet, which is what a deploy looks like mid-flight.',
+    contentKey: 'studio_help.env_build_note',
+  },
   'studio.docs.allowlistNote': {
     value:
       'Ten documents are served from a fixed allowlist and redacted when the index is built. The browser is read-only; the repository is the source.',
