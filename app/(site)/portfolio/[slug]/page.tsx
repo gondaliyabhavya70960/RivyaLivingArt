@@ -1,9 +1,12 @@
 import type { Metadata } from 'next'
 import * as React from 'react'
 
+import { JsonLd } from '@/components/patterns/JsonLd'
 import { LazyModelViewerMount } from '@/components/patterns/ModelViewerMount/lazy'
 import { Container } from '@/components/primitives/Container'
 import { cmsPageMetadata, renderCmsPage } from '@/lib/cms/render-page'
+import { entityBreadcrumbs } from '@/lib/seo/breadcrumbs'
+import { graphOf } from '@/lib/seo/jsonld'
 import { optionalEnv } from '@/lib/env'
 import { isEnabled } from '@/lib/flags'
 import { getSiteChrome } from '@/lib/site/chrome'
@@ -89,14 +92,57 @@ export async function generateStaticParams(): Promise<Params[]> {
   }
 }
 
+/** The project, or null — one read shared by the metadata, the trail and the model mount. */
+async function projectFor(slug: string) {
+  try {
+    return await getProjectBySlug(createPublicClient(), slug)
+  } catch (error) {
+    if (error instanceof NotFoundError) return null
+    throw error
+  }
+}
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params
-  return cmsPageMetadata(pathFor(slug))
+  const project = await projectFor(slug)
+  return cmsPageMetadata(pathFor(slug), {
+    ...(project === null
+      ? {}
+      : {
+          entity: {
+            type: 'portfolio_projects',
+            id: project.id,
+            description: project.summary,
+            ogMediaId: project.hero_media_id,
+          },
+        }),
+  })
 }
 
 export default async function ProjectPage({ params }: Props): Promise<React.ReactElement> {
   const { slug } = await params
-  return renderCmsPage(pathFor(slug), await projectModel(slug))
+  const path = pathFor(slug)
+  const project = await projectFor(slug)
+  /*
+   * Phase 39: `BreadcrumbList` only. There is no `CreativeWork` or `Project` node for a delivered
+   * project — a project page is a claim that Rivya delivered work, held to the database's own
+   * evidence gate, and structured data about it would republish that claim to a machine that
+   * cannot see the gate. The trail is home → the portfolio listing (while live) → this project.
+   */
+  const trail =
+    project === null
+      ? null
+      : await entityBreadcrumbs({
+          listingPath: '/portfolio',
+          entityName: project.title,
+          entityPath: path,
+        })
+  return (
+    <>
+      <JsonLd graph={graphOf([trail])} />
+      {await renderCmsPage(path, await projectModel(slug))}
+    </>
+  )
 }
 
 /**

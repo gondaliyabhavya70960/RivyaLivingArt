@@ -20,6 +20,8 @@ export type SeedableTable =
   | 'navigation_items'
   | 'seo_entries'
   | 'faqs'
+  // Phase 39. The SEED §42 keyword themes as research targets — seeded, never rendered.
+  | 'seo_keyword_themes'
   /**
    * Tables that do not exist yet. A record targeting one is `deferred` — authored now, written
    * when the phase that creates the table re-runs its module. They are in the union because they
@@ -51,6 +53,7 @@ export const SEEDABLE_TABLES: readonly SeedableTable[] = [
   'navigation_items',
   'seo_entries',
   'faqs',
+  'seo_keyword_themes',
   'journal_categories',
   'journal_articles',
   'customization_forms',

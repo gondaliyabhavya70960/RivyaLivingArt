@@ -10,6 +10,8 @@ import { SectionList } from '@/components/sections/SectionList'
 import { sectionRenderer } from '@/components/sections/registry'
 import { optionalEnv } from '@/lib/env'
 import { buildPageMetadata, type PageMetadataInput } from '@/lib/seo/metadata'
+import { redirectOrNotFound } from '@/lib/seo/redirects'
+import { deriveSeo } from '@/lib/seo/resolve'
 import { getSiteChrome } from '@/lib/site/chrome'
 import { createPublicClient } from '@/lib/supabase/public'
 import { createClient } from '@/lib/supabase/server'
@@ -137,11 +139,20 @@ const resolveForRequest = cache(
  */
 export async function cmsPageMetadata(
   path: string,
-  /** A listing route passes its canonical URL and pagination links; every other route passes none. */
-  extra: Pick<PageMetadataInput, 'canonicalPath' | 'pagination'> = {},
+  /**
+   * A listing route passes its page and pagination links, an entity route its ENTITY rung; every
+   * other route passes none. The DERIVED rung is computed here from the sections that will render,
+   * so a page and its metadata cannot disagree about what is on it.
+   */
+  extra: Pick<PageMetadataInput, 'entity' | 'listing' | 'pagination'> = {},
 ): Promise<Metadata> {
   const { resolved } = await resolveForRequest(path)
-  return buildPageMetadata({ path, liveSectionCount: resolved?.sections.length ?? 0, ...extra })
+  return buildPageMetadata({
+    path,
+    liveSectionCount: resolved?.sections.length ?? 0,
+    derived: resolved === null ? null : deriveSeo(resolved.sections),
+    ...extra,
+  })
 }
 
 /**
@@ -172,7 +183,9 @@ export async function renderCmsPage(
   productSlug: string | null = null,
 ): Promise<React.ReactElement> {
   const { resolved, draft } = await resolveForRequest(path)
-  if (resolved === null) notFound()
+  // Phase 39: the one moment a redirect is consulted. A path with no page row at all may be an
+  // address that moved; a page that exists but has nothing live on it is not, and stays a 404.
+  if (resolved === null) return redirectOrNotFound(path)
 
   // In draft mode an empty page is legitimate — an editor is looking at a page they are still
   // building, and answering with a 404 would hide the very thing they asked to preview.

@@ -61,6 +61,9 @@ describe('seed_key identity', () => {
       'global',
       'journal-article',
       'journal-category',
+      // Phase 39. The SEED §42 keyword themes as rows of `seo_keyword_themes`, one per theme,
+      // research targets with no metric column to fill.
+      'keyword',
       'nav',
       'page',
       'section',

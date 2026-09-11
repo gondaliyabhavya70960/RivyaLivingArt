@@ -1,5 +1,4 @@
 import type { Metadata } from 'next'
-import { notFound } from 'next/navigation'
 import * as React from 'react'
 
 import { Heading } from '@/components/primitives/Heading'
@@ -7,6 +6,9 @@ import { Stack } from '@/components/primitives/Stack'
 import { Text } from '@/components/primitives/Text'
 import { journalUrl, loadJournalListing } from '@/lib/journal/listing'
 import { JournalListingView } from '@/lib/journal/view'
+import { buildPageMetadata } from '@/lib/seo/metadata'
+import { redirectOrNotFound } from '@/lib/seo/redirects'
+import { deriveEntitySeo } from '@/lib/seo/resolve'
 import { createPublicClient } from '@/lib/supabase/public'
 import { NotFoundError } from '@/lib/supabase/errors'
 import { getCategoryBySlug, listCategories } from '@/lib/supabase/repositories/journal'
@@ -70,19 +72,19 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
   })
   const path = pathFor(slug)
 
-  return {
-    title: category.name,
-    ...(category.description === null ? {} : { description: category.description }),
-    alternates: { canonical: journalUrl(path, page) },
-    ...(page > 1 || page < pageCount
-      ? {
-          other: {
-            ...(page > 1 ? { 'link:prev': journalUrl(path, page - 1) } : {}),
-            ...(page < pageCount ? { 'link:next': journalUrl(path, page + 1) } : {}),
-          },
-        }
-      : {}),
-  }
+  // Phase 39: through the one builder, so this route gets the template, the ladder, the canonical
+  // rule and the social card like every other — the category's name and description are its
+  // DERIVED rung, and a PATH row an editor writes for it sits above them.
+  return buildPageMetadata({
+    path,
+    liveSectionCount: 1,
+    derived: deriveEntitySeo({ name: category.name, summary: category.description }),
+    listing: { page, filtered: false },
+    pagination: {
+      ...(page > 1 ? { previous: journalUrl(path, page - 1) } : {}),
+      ...(page < pageCount ? { next: journalUrl(path, page + 1) } : {}),
+    },
+  })
 }
 
 export default async function JournalCategoryPage({
@@ -91,7 +93,8 @@ export default async function JournalCategoryPage({
 }: Props): Promise<React.ReactElement> {
   const { slug } = await params
   const category = await categoryFor(slug)
-  if (category === null) notFound()
+  // Phase 39: the one moment a redirect is consulted — the address would otherwise 404.
+  if (category === null) return redirectOrNotFound(pathFor(slug))
 
   const listing = await loadJournalListing({
     searchParams: await searchParams,

@@ -107,7 +107,9 @@ test.describe('the product grid', () => {
 test.describe('with JavaScript disabled', () => {
   test.use({ javaScriptEnabled: false })
 
-  test('a filter applies, and the canonical URL says so', async ({ page }) => {
+  test('a filter applies, and the canonical points back at the unfiltered category', async ({
+    page,
+  }) => {
     test.skip(!(await hasProducts(page)), 'no published products in this database')
 
     const facet = page.locator('[data-facet-value]').first()
@@ -118,8 +120,13 @@ test.describe('with JavaScript disabled', () => {
     await page.locator('[data-filter-rail] button[type="submit"]').click()
 
     await expect(page).toHaveURL(new RegExp(`${value}`))
+    // Phase 39: a filtered view is one of an unbounded set; the category is the page and the
+    // view is noindex. Before Phase 39 the canonical carried the filter.
     const canonical = await page.locator('link[rel="canonical"]').getAttribute('href')
-    expect(canonical).toContain(String(value))
+    expect(canonical).not.toContain(String(value))
+    expect(canonical).toMatch(new RegExp(`${PATH}$`))
+    const robots = await page.locator('meta[name="robots"]').getAttribute('content')
+    expect(robots).toMatch(/noindex/)
   })
 
   test('an unparseable sort is dropped from the canonical URL', async ({ page }) => {
@@ -140,8 +147,9 @@ test.describe('with JavaScript disabled', () => {
     await page.locator('[data-sort-form] button[type="submit"]').click()
 
     await expect(page).toHaveURL(/sort=title/)
+    // A sort is a view too: the canonical is the bare category (Phase 39).
     const canonical = await page.locator('link[rel="canonical"]').getAttribute('href')
-    expect(canonical).toContain('sort=title')
+    expect(canonical).not.toContain('sort=')
   })
 
   test('pagination is real links with rel prev/next and a canonical per page', async ({ page }) => {

@@ -87,6 +87,16 @@ export const PERMISSION_ROLES = {
   'content.review': ['owner', 'admin', 'editor'],
   'content.publish': ['owner', 'admin', 'editor'],
   'content.verify': ['owner', 'admin'],
+  /**
+   * `seo.write` — Phase 39. Every SEO field on every page and entity: the `seo_entries` rows at all
+   * three scopes, the keyword themes and the redirects. The role set is `content.write`'s, and
+   * that is deliberate rather than lazy: a title tag is copy, and the people who may change the
+   * words on a page may change the words a search engine reads for it. It is a SEPARATE
+   * permission so the two can diverge later without a policy rewrite — and so the Server Actions
+   * under `/studio/content/seo` name the thing they check. The `seo_entries` policy file (0051)
+   * is shipped and generated whole, so it still spells `content.write`; the sets are identical.
+   */
+  'seo.write': ['owner', 'admin', 'editor'],
 
   // Media ---------------------------------------------------------------------------------------
   'media.read': ALL,

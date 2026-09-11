@@ -1,11 +1,13 @@
 import * as React from 'react'
 
 import { AnnouncementBar } from '@/components/patterns/AnnouncementBar'
+import { JsonLd } from '@/components/patterns/JsonLd'
 import { SiteFooter } from '@/components/patterns/SiteFooter'
 import { SiteErrorCopyProvider } from '@/components/patterns/SiteErrorCopy'
 import { SiteHeader } from '@/components/patterns/SiteHeader'
 import { siteString } from '@/lib/cms/strings'
 import { optionalEnv } from '@/lib/env'
+import { siteJsonLd } from '@/lib/seo/site-graph'
 import { getSiteChrome } from '@/lib/site/chrome'
 
 /**
@@ -60,7 +62,7 @@ export default async function SiteLayout({
 }: {
   children: React.ReactNode
 }): Promise<React.ReactElement> {
-  const chrome = await getSiteChrome()
+  const [chrome, siteGraph] = await Promise.all([getSiteChrome(), siteJsonLd()])
   /*
    * OPTIONAL, NOT REQUIRED, AND THE DIFFERENCE TOOK THE SITE DOWN ONCE.
    *
@@ -79,6 +81,10 @@ export default async function SiteLayout({
 
   return (
     <>
+      {/* Phase 39: `Organization` and `WebSite`, once, on every public route — the site's identity
+          is a property of the site, not of the homepage. Null (and nothing rendered) without an
+          origin or a brand name the owner has not withheld. */}
+      <JsonLd graph={siteGraph} />
       {/*
        * Visually hidden until focused — `sr-only` plus `focus:not-sr-only`, so it is in the
        * accessibility tree and the tab order at all times and on screen only when it is being

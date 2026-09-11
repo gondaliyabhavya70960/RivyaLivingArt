@@ -1235,7 +1235,175 @@ See the PR for this phase (`feat(phase-38)`); hash recorded in the final summary
 
 ## Phase 39 — SEO
 
-**Status:** NOT STARTED
+**Status:** COMPLETED
+
+### Objective
+Search engines stop seeing thirteen pages with fallback metadata and start seeing a governed,
+owner-editable information architecture: a four-level resolution ladder ending in the SEED §41
+defaults, a split sitemap over every published entity type, a structured-data allowlist in which
+every emitted property is traceable to something the owner typed and verified, a redirect table so
+a slug change never produces a dead link, and a keyword workspace that records the SEED §42 themes
+as research targets with no claimed ranking opportunity.
+
+### Requirements Found
+`docs/project/phases/PHASE-39-46.md` §Phase 39 (the ladder, the title template, the canonical
+table, the route-class robots table, the split sitemap with no priority / changefreq / image
+sitemap, the allowlist with its gates and the never-emitted list, `verifiedOnly()`, the keyword
+table with no metric column and two geography themes awaiting verification, redirects on the 404
+path only with one-hop chain detection, the seven tabs, verification 1–13, exit criteria);
+`DATA_MODEL.md` §12 row 39 and the register rows for both tables; STUDIO_GUIDE §9.3's row for
+`/studio/content/seo`; SEED §41, §42, §44; D3, D6, D10.
+
+### Implementation Completed
+- **Permission** `seo.write` (owner, admin, editor) in `lib/auth/permissions.ts` (count 39),
+  back-written into the `PHASE-00-04.md` matrix; the nav leaf's write permission.
+- **`0370`**: `seo_entries` + `structured_data_type` (CHECKed to the eight-type allowlist),
+  `noindex`, `nofollow`, `derived`; `seo_keyword_themes` (generated `normalized_theme citext`
+  unique, `research_status` CHECK, path and evidence shapes, `researched_at` coherent with the
+  status, Tier A+B+C, the Phase 08 triggers, **no numeric column**); `seo_redirects` (`unique
+  (from_path)`, `from_path <> to_path`, `status_code in (301, 308)`, `hit_count`, Tier A+B, created
+  PUBLISHED). **`0371`** generated: `seo_keyword_themes` shape C, `seo_redirects` shape A with
+  the anon PUBLISHED leg; `seo_entries` keeps `0051`.
+- **Seed**: the seventeen §42 themes as `seo_keyword_themes` rows (`keyword:<slug>`, two
+  `OWNER_VERIFICATION_REQUIRED`), replacing the one `SEO_DEFAULT.keyword_themes` string; four
+  `STUDIO_HELP` sentences; `seo_keyword_themes` in `SeedableTable`; `emit-sql.ts --table=`.
+- **`lib/seo/`**: `resolve.ts` (ENTITY → PATH → DERIVED → GLOBAL per field; `deriveSeo` /
+  `deriveEntitySeo`; `truncateAtWord` at 155 on a word boundary, no ellipsis); `canonical.ts`
+  (the rule table; `siteOrigin`, `sameOriginCanonical`, `paginatedPath`); `metadata.ts` rewritten
+  on the ladder with `entity`, `derived`, `listing`, `searchSurface` inputs and the object-form
+  `robots`; `jsonld/` (`guard.ts` with `verifiedOnly`, `FORBIDDEN_KEYS`, `FORBIDDEN_TYPES`,
+  `forbiddenKeysIn`; `organization`, `website`, `breadcrumb`, `product` — `offers` only FIXED and
+  VERIFIED, `material` from the join —, `collection`, `article`, `faq`, `contact`, `index` with
+  `graphOf` and `serialiseJsonLd`); `site-graph.ts`; `breadcrumbs.ts`; `redirects.ts`
+  (`redirectOrNotFound`, 308, best-effort hit count as the service role); `redirect-rules.ts`;
+  `sitemap.ts`; `coverage.ts`; `studio-resolution.ts`; `slug-redirect.ts`.
+- **Public surface**: `components/patterns/JsonLd` (RC-347) as the only emitter; Organization +
+  WebSite from `app/(site)/layout.tsx`; the product, collection, article, portfolio, FAQ and
+  contact routes on the builders; every route on the ladder; `/search` as a search surface; the
+  catalogue and journal listings on the canonical table (`isFilteredCatalogQuery`); the redirect
+  resolver at every `notFound()` for a missing address; `app/sitemap.xml/route.ts` and
+  `app/sitemaps/[file]/route.ts` (six children, `revalidate = 3600`, `images.xml` → 404);
+  `robots.ts`; `X-Robots-Tag` in `next.config.ts` for `/studio`, `/api` and every non-production
+  response.
+- **Studio**: `/studio/content/seo` with seven tabs (`SeoTabs`, `GlobalSeoForm`, `PagesTable`,
+  `EntitiesTable`, `SeoEntryForm` + `SerpPreview` (client), `KeywordsTable`,
+  `StructuredDataPanel` with live gates and a builder rendering, `RedirectsTable` with a GET
+  test box, `CoveragePanel`, `LevelBadge`); nine Server Actions under `seo.write`
+  (`content.publish` to publish, `destructive.execute` to delete an entry); `EntitySeoPanel` on
+  the product, collection, project and article editors; the product form's `create_redirect`
+  checkbox and `redirectForSlugChange` in `saveProductAction`.
+- **Repositories**: `seo.ts` (entries, entity summaries, derivable sections, global strings,
+  structured-data facts), `keywords.ts`, `redirects.ts`, `sitemap.ts`; schema `seo.ts`;
+  `OwnerVerification` type exported.
+- **Gates**: `scripts/seo/check-jsonld-scope.mjs` (in `check` and CI; `lib/scraper/**` exempt as
+  a reader), `scripts/seo/validate-jsonld.mjs` (CI step "Structured data on the real build":
+  crawls the sitemap and the static paths of a `next start`, one graph per route, forbidden keys
+  and types, `Offer` without a price, `robots.txt`, `X-Robots-Tag`), `scripts/seo/build-seo-
+  coverage.ts` feeding the inventory's "SEO coverage" section; the two research isolation gates
+  exempt `research_status`.
+
+### Files Added
+`supabase/migrations/0370_phase39_seo.sql`, `0371_phase39_seo_rls.sql` (generated);
+`lib/seo/{resolve,canonical,redirect-rules,redirects,sitemap,site-graph,breadcrumbs,coverage,studio-resolution,slug-redirect}.ts`,
+`lib/seo/jsonld/{guard,organization,website,breadcrumb,product,collection,article,faq,contact,index}.ts`
+(three moved from `lib/seo/*-jsonld.ts`); `lib/supabase/schemas/seo.ts`;
+`lib/supabase/repositories/{seo,keywords,redirects,sitemap}.ts`; `components/patterns/JsonLd/index.tsx`;
+`components/studio/seo/{SeoTabs,LevelBadge,SerpPreview,SeoEntryForm,GlobalSeoForm,PagesTable,EntitiesTable,KeywordsTable,StructuredDataPanel,RedirectsTable,CoveragePanel,EntitySeoPanel}.tsx`;
+`app/(studio)/studio/(shell)/content/seo/actions.ts`; `app/sitemap.xml/route.ts`,
+`app/sitemaps/[file]/route.ts`; `scripts/seo/{jsonld-scope.mjs,jsonld-scope.d.mts,check-jsonld-scope.mjs,validate-jsonld.mjs,validate-jsonld.d.mts,build-seo-coverage.ts}`;
+tests `tests/unit/{seo-resolve,seo-canonical,jsonld-guard,jsonld-builders,sitemap-scope,redirect-chain}.test.ts`,
+`tests/unit/rls/phase39.test.ts`, `tests/e2e/{seo-metadata,studio-seo}.spec.ts`.
+
+### Files Modified
+`lib/auth/{permissions,permissions.test,table-permissions,studio-nav}.ts`, `scripts/auth/gen-role-sql.ts`,
+`scripts/db/check-schema.mjs`, `scripts/research/check-research-isolation.mjs`,
+`scripts/search/check-search-scope.mjs`, `scripts/seed/emit-sql.ts`,
+`scripts/content/build-content-inventory.ts`, `lib/supabase/{database.types,schemas/cms,schemas/common,schemas/index}.ts`,
+`lib/seo/metadata.ts`, `lib/cms/render-page.tsx`, `lib/cms/docs/allowlist.ts` (PR #44),
+`lib/catalog/query.ts`, `content/seed/{seo,types,studio-help}.ts`, `components/studio/strings.ts`,
+`components/studio/catalog/ProductForm.tsx`, `app/(site)/layout.tsx` and the `page.tsx` of `/`,
+`/product/[slug]`, `/collections/[slug]`, `/journal/[slug]`, `/journal`, `/journal/category/[slug]`,
+`/portfolio/[slug]`, `/collection`, `/collection/[category]`, `/faq`, `/contact`, `/search`;
+`app/robots.ts` (`app/sitemap.ts` removed); `app/(studio)/studio/(shell)/content/seo/page.tsx`,
+`catalog/actions.ts`, the four entity editor pages; `next.config.ts`, `eslint.config.mjs`,
+`package.json`, `.github/workflows/ci.yml`; tests `seo-metadata`, `homepage-jsonld`,
+`product-jsonld`, `seed-modules`, `e2e/collection.spec.ts`; docs
+`docs/project/phases/PHASE-00-04.md`, `docs/architecture/{DATA_MODEL,CANONICAL-DECISIONS,ARCHITECTURE}.md`,
+`docs/content/{CONTENT_GUIDE,INITIAL_CONTENT_INVENTORY}.md`, `docs/studio/STUDIO_GUIDE.md`,
+`docs/ops/SECURITY.md`, `docs/design/COMPONENT_REGISTRY.md`, `CHANGELOG.md`, `PROJECT_STATE.md`,
+`docs/SESSION-STATE.md`.
+
+### Database Changes
+`0370`: `seo_entries` + four columns and the allowlist CHECK; `seo_keyword_themes`;
+`seo_redirects` (DDL above). `0371`: nine policies. Local: 104 migrations, 103 tables, RLS on all,
+D10 gate on 15 content tables (the two new tables added), `db:check-migrations`,
+`auth:check-policies`, `auth:check-rls` green.
+
+### Supabase Changes
+Hosted `ccvarsmzickdkryoakdg`: `0370` and `0371` applied (comment-stripped), ledger rows with the
+local files' SHA-256 (ledger 104 rows); seventeen keyword themes and four help rows seeded with
+their content hashes through `emit-sql.ts`; parity digests identical for constraints, indexes,
+policies and triggers on the three tables; security advisor: the standing findings only
+(`schema_migrations` RLS-no-policy INFO; the SECURITY DEFINER warnings on the inquiry functions,
+`has_role`, `is_staff`, `current_staff_role`, `research_restore_brief_revision`), nothing new.
+
+### Environment Variables
+None added. `NEXT_PUBLIC_SITE_URL` now also decides whether the sitemap index exists and whether
+an owner canonical can be checked; `VERCEL_ENV` decides the deployment-wide `X-Robots-Tag`.
+
+### GitHub Actions Changes
+`ci.yml`: "One structured-data emitter" (`seo:check-jsonld-scope`) and "Structured data on the real
+build" (restarts the PostgREST shim, `next start`, `validate-jsonld.mjs --base`). `check` chain
+gains `seo:check-jsonld-scope`.
+
+### Tests Performed
+- `npm run check` green (18 gates).
+- Unit: the six Phase 39 suites plus the updated `seo-metadata`, `homepage-jsonld`,
+  `product-jsonld`, `seed-modules`; whole unit project green: 182 files / 2,752 tests. RLS project:
+  32 files / 621 tests.
+- RLS: `phase39` (11 cases: no anon leg and no numeric column on the keyword table; editor
+  add/edit/refused duplicate in one transaction; merchandiser refused, viewer reads; status stamp
+  CHECK; anon sees a PUBLISHED redirect and not a paused one; self / duplicate / 302 refused;
+  editor writes, merchandiser and anon refused; the four columns' defaults and the allowlist
+  CHECK; the seeded themes; a DRAFT page of every kind invisible to anon).
+- Build through the local PostgREST shim, `security:check-bundle`, then `next start` and
+  `validate-jsonld.mjs` against it; `content:inventory` regenerated (580 rows + the coverage
+  section).
+- e2e `seo-metadata.spec.ts` and `studio-seo.spec.ts` written; the signed-in half is guarded by
+  `STUDIO_STORAGE_STATE` as every Studio spec is.
+
+### Issues Found / Fixed
+- The Vercel preview of the fix branch failed to build once because staged JSON-LD moves slipped
+  into the Phase 38 fix commit; the commit was rewritten to its two intended files.
+- `research_status` tripped both research isolation gates (`content/` and the public search path
+  are policed trees); the gates exempt exactly that name and the status constant was renamed
+  `KEYWORD_STATUSES`.
+- The `check-jsonld-scope` gate flagged the scraper's JSON-LD reader; `lib/scraper/**` is exempt as
+  a reader, with the reason in the gate.
+- The RLS harness rolls every `asSession` block back, so the suite was restructured to keep an
+  insert and its dependent statements in one block and to commit cross-block fixtures as the
+  superuser.
+- The category page and the category entity resolved as two rows; they are one address and now
+  resolve as one.
+
+### Build Status
+Production build green through the local PostgREST shim; `security:check-bundle` clean;
+`validate-jsonld.mjs` green against `next start`.
+
+### Deployment Status
+Landed on `main` by PR (merge commit after CI green); hosted database level `0371`.
+
+### Commit
+`feat(phase-39): SEO` (hash in the PR).
+
+### Remaining Notes
+- The brand OG asset does not exist yet (Phase 43): pages without a bound hero emit no `og:image`
+  rather than borrowing one; the Global tab's default social image is empty until then.
+- Product structured data carries `offers` only once a FIXED price is VERIFIED — the seeded demo
+  products are PRICE_ON_REQUEST and carry none by design.
+- Every seeded PATH entry is DRAFT (Phase 09's choice); the Pages tab shows the GLOBAL rung until
+  the owner publishes them.
+- The owner asked for a stop after Phase 39 lands; Phase 40 starts on their word.
 
 ## Phase 40 — Performance
 

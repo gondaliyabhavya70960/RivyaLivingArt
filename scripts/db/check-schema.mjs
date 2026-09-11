@@ -702,6 +702,14 @@ const EXPECTED = {
    */
   system_logs: ['occurred_at', 'first_occurred_at', 'level', 'channel', 'event', 'dedupe_key'],
 
+  /*
+   * Phase 39. A keyword theme is seeded (§42) and owner-edited, so it carries all three tiers; a
+   * redirect is operational and never seeded, so Tier A and B only — B because the anon leg keys
+   * on `status`, and a paused redirect is a DRAFT one.
+   */
+  seo_keyword_themes: [...TIER_A, ...TIER_B, ...TIER_C],
+  seo_redirects: [...TIER_A, ...TIER_B],
+
   research_scoring_models: [
     'version',
     'signals',
@@ -864,6 +872,11 @@ const CONTENT_TABLES = [
   // style — which is exactly the class of claim D10 exists for. It defaults to
   // OWNER_VERIFICATION_REQUIRED, so without this gate the default would be decorative.
   'product_attribute_terms',
+  // Phase 39. A keyword theme can assert a service geography ("custom furniture India") and two
+  // are seeded OWNER_VERIFICATION_REQUIRED; a redirect carries no claim but has the same status
+  // column and the same gate, so the rule is uniform rather than remembered per table.
+  'seo_keyword_themes',
+  'seo_redirects',
 ]
 const gates = q(`
   select conrelid::regclass::text

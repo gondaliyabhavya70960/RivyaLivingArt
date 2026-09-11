@@ -2319,6 +2319,18 @@ for `ERROR`/`SECURITY`, by first occurrence, purged by `/api/cron/log-retention`
 and `activity_events`, an append-only operational table and a documented exemption from the D5
 content-column rule (`scripts/db/check-schema.mjs`).
 
+### 11.af SEO — Phase 39 · migrations `0370`–`0371`
+
+| Object | Posture | Written by | Key rule |
+|---|---|---|---|
+| `seo_entries` (altered) | unchanged: RLS-A on `status`, `content.read` select, `content.write` write (the same three roles `seo.write` names — see the entry in `lib/auth/table-permissions.ts`), `destructive.execute` delete | the SEO workspace and the four entity editors' SEO panels, under `seo.write` | `+ structured_data_type text` CHECKed to the eight-type allowlist (`Organization · WebSite · BreadcrumbList · Product · CollectionPage · Article · FAQPage · ContactPoint`); `+ noindex`, `+ nofollow` (`boolean not null default false`, the editable directive; the free-text `robots` column stays and is read as a legacy directive); `+ derived boolean not null default false` marking a row the Studio generated from page content |
+| `seo_keyword_themes` | RLS-C (`content.read` select for every staff role; `seo.write` insert, update and delete; **no anon leg** — no keyword string is ever rendered and there is no keywords meta tag) | the content seed (seventeen SEED §42 rows, `keyword:<slug>`), then owners and editors from the Keywords tab | `theme` non-blank; `normalized_theme citext` **generated** as `lower(btrim(theme))` and unique; `research_status` CHECKed to `UNRESEARCHED · RESEARCHED · TARGETED · REJECTED`, default `UNRESEARCHED`; `mapped_path` site-relative; `evidence_url` `https?://`; `(research_status = 'UNRESEARCHED') = (researched_at is null)`; Tier A+B+C with the Phase 08 transition and verification triggers. **No numeric column exists** — nowhere to store a volume, a difficulty, a rank or an opportunity number (SEED §42, D10). The two geography themes are seeded `OWNER_VERIFICATION_REQUIRED` |
+| `seo_redirects` | RLS-A on `status`: anon and authenticated select of `PUBLISHED` rows (the 404 path resolves a redirect for a visitor with no session); `seo.write` insert, update and delete | the Redirects tab; `redirectForSlugChange` after a product's slug changes; the hit counter as the service role | `unique (from_path)`; `from_path <> to_path`; both paths site-relative lowercase; `status_code in (301, 308)` default 308 (served as 308 by `permanentRedirect`, recorded as chosen); `hit_count >= 0`, `last_hit_at`; Tier A+B, created `PUBLISHED`, paused as `DRAFT`. Loop and chain detection is a write-time rule in `lib/seo/redirect-rules.ts`, one hop |
+
+Permission `seo.write` (owner, admin, editor) is new in this phase and is the first line of every
+Server Action under `/studio/content/seo`; the `seo_entries` policy file `0051` is generated whole
+and never re-opened, so it keeps the name `content.write` while naming the same three roles.
+
 ## 12. Table register — Phase 03 versus later
 
 The spine an engineer builds in Phase 03 is small on purpose. Everything else is additive.
@@ -2415,7 +2427,7 @@ local and hosted is isolated to one file that can never be picked up by `supabas
 | 36 | `0340`–`0342` | T `sheets_export_definitions`, `sheets_sync_runs` |
 | 37 | `0350`–`0351` | T `analytics_snapshots` |
 | 38 | `0360`–`0361` | T `system_logs`; view `workflow_runs_v`; enums `log_level`, `log_channel` |
-| 39 | `0370` | T `seo_keyword_themes`, `seo_redirects`; A `seo_entries` |
+| 39 | `0370`–`0371` | T `seo_keyword_themes`, `seo_redirects`; A `seo_entries` (`structured_data_type`, `noindex`, `nofollow`, `derived`). `0371` is the generated RLS file |
 | 40 | `0380` | T `web_vitals_samples` |
 | 41 | `0390`–`0391` | T `rate_limit_buckets`; A `media_assets.is_decorative` and the alt-text constraint |
 | 42 | — | **None.** `tests/integration/migrations-replay.test.ts` asserts every migration replays from empty, in order, with no error |

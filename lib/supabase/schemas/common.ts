@@ -25,6 +25,7 @@ export const ownerVerificationSchema = z.enum([
   'OWNER_VERIFICATION_REQUIRED',
   'VERIFIED',
 ]) satisfies z.ZodType<Enums<'owner_verification'>>
+export type OwnerVerification = z.infer<typeof ownerVerificationSchema>
 
 export const factClassificationSchema = z.enum([
   'BRAND_COPY',

@@ -10,7 +10,16 @@ import type { Category, MediaAsset, Product } from '@/lib/supabase/schemas'
  * audience that cannot see the page's own careful wording. The key is therefore OMITTED ENTIRELY
  * rather than emitted with a zero, a null, or a `priceValidUntil` nobody chose. `price_minor` is
  * only ever populated beside FIXED — `products_price_state_coherent` in 0122 guarantees it — so the
- * one branch that emits a number is the one branch where a number exists.
+ * one branch that emits a number is the one branch where a number exists. Phase 39 tightened the
+ * rule once more: the row must ALSO be VERIFIED, because a fixed price the owner has not confirmed
+ * is a figure nobody quoted, however precise it looks.
+ *
+ * `material` ONLY FROM `product_materials` ROWS. A material name is a claim about what the piece is
+ * made of, and the join is the owner's record of it; the caller passes the joined names and this
+ * builder emits them as given, never inferring one from a title or a category.
+ *
+ * NO `gtin*`, NO `mpn`, NO INVENTED `sku`. There is no branch here for the first two at all; `sku`
+ * is emitted only when the row carries one.
  *
  * NO `aggregateRating`, NO `review`, EVER. This business has no reviews (D10 forbids inventing
  * them), and a rating stub with zero votes is a claim that a rating exists. There is no branch here
@@ -32,7 +41,6 @@ export type ProductOffer = {
 }
 
 export type ProductJsonLd = {
-  readonly '@context': 'https://schema.org'
   readonly '@type': 'Product'
   readonly name: string
   readonly url: string
@@ -41,6 +49,7 @@ export type ProductJsonLd = {
   readonly brand?: { readonly '@type': 'Brand'; readonly name: string }
   readonly category?: string
   readonly sku?: string
+  readonly material?: readonly string[]
   readonly offers?: ProductOffer
 }
 
@@ -54,6 +63,8 @@ export type ProductJsonLdInput = {
   readonly imageUrls: readonly string[]
   /** Minor units to a decimal string, so this module never divides by a guessed exponent. */
   readonly formatAmount: (minor: number, currency: string) => string | null
+  /** The names of the `product_materials` rows, in the owner's order. Absent means no `material`. */
+  readonly materialNames?: readonly string[]
 }
 
 function blank(value: string | null | undefined): boolean {
@@ -70,6 +81,9 @@ function blank(value: string | null | undefined): boolean {
 function offerFor(input: ProductJsonLdInput): ProductOffer | null {
   const { product } = input
   if (product.price_state !== 'FIXED') return null
+  // Phase 39: a fixed price is an offer only once the owner has confirmed the row — VERIFIED,
+  // not merely "nothing to verify", because a price is the one figure a card will show.
+  if (product.owner_verification !== 'VERIFIED') return null
   if (product.price_minor === null || blank(product.currency)) return null
 
   const price = input.formatAmount(product.price_minor, product.currency as string)
@@ -87,9 +101,11 @@ export function productJsonLd(input: ProductJsonLdInput): ProductJsonLd | null {
   if (blank(product.title)) return null
 
   const offer = offerFor(input)
+  const materials = (input.materialNames ?? [])
+    .map((name) => name.trim())
+    .filter((name) => name !== '')
 
   return {
-    '@context': 'https://schema.org',
     '@type': 'Product',
     name: (product.title as string).trim(),
     url: input.url,
@@ -100,6 +116,7 @@ export function productJsonLd(input: ProductJsonLdInput): ProductJsonLd | null {
       : { brand: { '@type': 'Brand' as const, name: input.brandName.trim() } }),
     ...(input.category === null ? {} : { category: input.category.name }),
     ...(blank(product.sku) ? {} : { sku: (product.sku as string).trim() }),
+    ...(materials.length === 0 ? {} : { material: materials }),
     ...(offer === null ? {} : { offers: offer }),
   }
 }

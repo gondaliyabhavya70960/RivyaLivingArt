@@ -15,14 +15,11 @@ import { optionalEnv } from '@/lib/env'
 import { isEnabled } from '@/lib/flags'
 import { listMaterials } from '@/lib/supabase/repositories/materials'
 import { loadPublicModel } from '@/lib/supabase/repositories/models'
-import {
-  canonicalCatalogUrl,
-  catalogUrl,
-  DEFAULT_SORT,
-  hasActiveFilters,
-} from '@/lib/catalog/query'
+import { catalogUrl, DEFAULT_SORT, hasActiveFilters } from '@/lib/catalog/query'
 import { categoryPinnedSlotKey, resolveSlot } from '@/lib/cms/merchandising'
 import { cmsPageMetadata, renderCmsPage } from '@/lib/cms/render-page'
+import { redirectOrNotFound } from '@/lib/seo/redirects'
+import { isFilteredCatalogQuery } from '@/lib/catalog/query'
 import { siteString } from '@/lib/cms/strings'
 import { createPublicClient } from '@/lib/supabase/public'
 import { listCategories } from '@/lib/supabase/repositories/categories'
@@ -95,7 +92,20 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
   const { query, page, pageCount } = loaded
 
   return cmsPageMetadata(path, {
-    canonicalPath: canonicalCatalogUrl(path, query),
+    // The category's own SEO columns are the ENTITY rung; the canonical is the unfiltered path
+    // (noindex) under any filter, and the paginated address itself on a bare page 2 onward.
+    ...(category === null
+      ? {}
+      : {
+          entity: {
+            type: 'categories',
+            id: category.id,
+            title: category.seo_title,
+            description: category.seo_description,
+            ogMediaId: category.hero_media_id,
+          },
+        }),
+    listing: { page, filtered: isFilteredCatalogQuery(query) },
     pagination: {
       ...(page > 1 ? { previous: catalogUrl(path, query, { page: page - 1 }) } : {}),
       ...(page < pageCount ? { next: catalogUrl(path, query, { page: page + 1 }) } : {}),
@@ -109,7 +119,8 @@ export default async function CategoryPage({
 }: Props): Promise<React.ReactElement> {
   const { category: slug } = await params
   const category = await categoryFor(slug)
-  if (category === null) notFound()
+  // Phase 39: the one moment a redirect is consulted — the address would otherwise 404.
+  if (category === null) return redirectOrNotFound(`${BASE}/${slug}`)
 
   const path = `${BASE}/${slug}`
   const loaded = await loadCatalogListing({

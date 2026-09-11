@@ -51,6 +51,7 @@ import {
   PHASE_36_POLICIES,
   PHASE_37_POLICIES,
   PHASE_38_POLICIES,
+  PHASE_39_POLICIES,
   PHASE_19_POLICIES,
   TABLE_POLICY_MAP,
   type ManagedTable,
@@ -608,6 +609,20 @@ const GENERATED: Record<string, { title: string; preamble: string }> = {
 --   \`system_logs\`   operations.logs.read select (owner, admin); no session write of any kind —
 --                   the service role writes through system_log_write() and the retention cron
 --                   deletes; update and delete are revoked in 0360. No anon leg.`,
+  },
+  [PHASE_39_POLICIES]: {
+    title: `-- ${PHASE_39_POLICIES} — Phase 39`,
+    preamble: `-- Policies for the two tables migration 0370 creates. GENERATED from
+-- lib/auth/table-permissions.ts and rewritten whole, so it may hold nothing a human wrote.
+--
+--   \`seo_keyword_themes\`  content.read select (every staff role); seo.write insert, update and
+--                         delete (owner, admin, editor). No anon leg: no keyword is ever rendered.
+--   \`seo_redirects\`       anon and authenticated select of PUBLISHED rows — the 404 path resolves
+--                         a redirect for a visitor with no session; seo.write insert, update and
+--                         delete.
+--
+-- \`seo_entries\` keeps its 0051 policies (content.write, the same three roles as seo.write); the
+-- Server Actions check seo.write. See the entry in lib/auth/table-permissions.ts.`,
   },
   [PHASE_31_POLICIES]: {
     title: `-- ${PHASE_31_POLICIES} — Phase 31`,

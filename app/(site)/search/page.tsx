@@ -54,7 +54,7 @@ import { getSiteChrome } from '@/lib/site/chrome'
 const PATH = '/search'
 
 export async function generateMetadata(): Promise<Metadata> {
-  return buildPageMetadata({ path: PATH, liveSectionCount: 0 })
+  return buildPageMetadata({ path: PATH, liveSectionCount: 0, searchSurface: true })
 }
 
 export default async function SearchPage({

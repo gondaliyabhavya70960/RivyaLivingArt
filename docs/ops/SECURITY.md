@@ -560,7 +560,7 @@ Set in `proxy.ts` for every response and asserted by e2e.
 | `Permissions-Policy` | `camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()` |
 | `Cross-Origin-Opener-Policy` | `same-origin` |
 | `X-Frame-Options` | `DENY` (belt and braces with `frame-ancestors`) |
-| `X-Robots-Tag` | `noindex, nofollow` on every non-production deployment and on `/studio/**` |
+| `X-Robots-Tag` | `noindex, nofollow` on every non-production deployment, on `/studio/**` and on `/api/**` — **delivered by Phase 39** through `next.config.ts` `headers()` (the preview case keys on `VERCEL_ENV` at build time); the rest of this table is Phase 41 |
 | `Cache-Control` | `private, no-store` on `/studio/**` and every `app/api/**` response |
 
 **Two documented exceptions, with reasons.** `style-src 'unsafe-inline'` is required by Next.js's

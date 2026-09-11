@@ -368,6 +368,13 @@ implementation detail of RC-213.
 | RC-344 | `LogDetail` | usability | 38 | PLANNED | index only — correlation ids as filter links, first occurrence, dedupe key, the context as JSON redacted again on render |
 | RC-345 | `DocBody` | usability | 38 | PLANNED | index only — the Markdown block tree as React: headings with ids, lists, code, quotes, tables; doc links in-app, anchors kept, external links as text with no `href`; no `dangerouslySetInnerHTML` |
 | RC-346 | `LogFilters` | usability | 38 | PLANNED | index only — a GET `FilterBar`: level, channel, range, event substring, actor, run, source, entity type and id; the URL is the filter |
+| RC-347 | `JsonLd` | product understanding | 39 | BUILT | index only — the ONLY emitter of `application/ld+json`; a Server Component taking one graph (or null, rendering nothing) and writing it through `serialiseJsonLd`, which escapes `<`; `scripts/seo/check-jsonld-scope.mjs` fails the build on a second emitter |
+| RC-348 | `SerpPreview` | usability | 39 | PLANNED | index only — Client Component owning the `title` and `description` inputs: live character counts against the 60 / 155 marks, a warning past them, a search-result preview with the template applied; guidance, never enforcement |
+| RC-349 | `SeoEntryForm` | usability | 39 | PLANNED | index only — one `seo_entries` row (PATH or ENTITY): the resolved value and its rung beside every field, the SERP preview, social card, social image, canonical, structured-data type, the two directives; publish and delete as separate forms |
+| RC-350 | `KeywordsTable` | usability | 39 | PLANNED | index only — the SEED §42 themes as research targets with §42's caveat printed above; theme, mapped path, status, notes, evidence link; no numeric field anywhere |
+| RC-351 | `RedirectsTable` | usability | 39 | PLANNED | index only — list with hit counts and chain warnings, a GET test box, add / pause / resume / delete |
+| RC-352 | `StructuredDataPanel` | product understanding | 39 | PLANNED | index only — the allowlist with each type's gate and live state, the never-emitted list, and a read-only rendering of exactly what a builder emits for a chosen entity, with `forbiddenKeysIn()` run over it |
+| RC-353 | `EntitySeoPanel` | usability | 39 | PLANNED | index only — `SeoEntryForm` for the ENTITY scope beside the product, collection, project and article editors; two audited acts under two permissions |
 
 ### 6.4 Three — `components/three/`
 

@@ -274,6 +274,12 @@ const config = [
       'lib/bulk/import/apply.ts',
       'lib/bulk/export/index.ts',
       /*
+       * `lib/seo/redirects.ts` — Phase 39. The one write the public 404 path makes is a hit
+       * counter on the redirect it just followed, and no visitor may update a row; the service
+       * role is the only actor. Best effort, swallowed on failure, never a read.
+       */
+      'lib/seo/redirects.ts',
+      /*
        * `lib/scraper/**` — the research pipeline. It runs from a cron tick with no user and no
        * cookie, and four of its nine tables (the work queue, the fetch log, the raw items and the
        * robots cache) have NO session write policy at all: a member of staff able to write them

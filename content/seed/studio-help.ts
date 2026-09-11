@@ -223,6 +223,34 @@ const PHASE_38_HELP: readonly [string, string, string][] = [
   ],
 ]
 
+/**
+ * Phase 39 — the four sentences the SEO workspace keeps in the database rather than in code:
+ * SEED §42's caveat verbatim, what "derived" means, the one-hop redirect rule, and the
+ * structured-data gate. Each is rendered by `/studio/content/seo` from `global_content`.
+ */
+const PHASE_39_HELP: readonly [string, string, string][] = [
+  [
+    'seo_keywords_caveat',
+    'SEO — keyword themes caveat',
+    'These themes are research targets, not a strategy. SEED §42: the actual SEO strategy must be refined through research before claiming ranking opportunity. No volume, difficulty, rank or opportunity figure is recorded anywhere; there is no column for one.',
+  ],
+  [
+    'seo_derived_note',
+    'SEO — derived metadata',
+    'A derived value is a default computed from the page’s own content: its first heading, and the first 155 characters of its first body. It is honest, and it is not the studio’s voice; replace it with your own words when you have them.',
+  ],
+  [
+    'seo_redirects_note',
+    'SEO — redirects',
+    'A redirect is consulted only on an address that would otherwise be a 404, and followed one hop. The form refuses a loop or a chain when it is saved.',
+  ],
+  [
+    'seo_structured_note',
+    'SEO — structured data',
+    'Every structured-data type passes a gate before it is emitted, and a closed gate emits nothing rather than a partial node. Nothing outside the allowlist is emitted anywhere on the site.',
+  ],
+]
+
 export const studioHelpSeed: SeedModule = {
   name: 'studio-help',
   description:
@@ -286,6 +314,9 @@ export const studioHelpSeed: SeedModule = {
     // --- Phase 38: the system pages' permanent lines --------------------------------------------
     ...PHASE_38_HELP.map(([key, label, value]) =>
       helpRow(key, value, label, 'Phase 38, PHASE-31-38 §Phase 38 (FEAT §29, §30).'),
+    ),
+    ...PHASE_39_HELP.map(([key, label, value]) =>
+      helpRow(key, value, label, 'Phase 39, PHASE-39-46 §Phase 39 (SEED §41, §42, §44).'),
     ),
 
     // --- Phase 12: per-section verification notes -----------------------------------------------

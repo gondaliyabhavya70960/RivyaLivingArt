@@ -9,6 +9,7 @@ import { HelpText } from '@/components/primitives/HelpText'
 import { Stack } from '@/components/primitives/Stack'
 import { Text } from '@/components/primitives/Text'
 import { ActionForm } from '@/components/studio/ActionForm'
+import { EntitySeoPanel } from '@/components/studio/seo/EntitySeoPanel'
 import { SelectField, TextAreaField, TextField } from '@/components/studio/FormField'
 import { PageHeader } from '@/components/studio/PageHeader'
 import { RelatedContentPicker } from '@/components/studio/RelatedContentPicker'
@@ -310,6 +311,15 @@ export default async function Page({
             action={setArticleRelationAction}
           />
         </Stack>
+
+        <EntitySeoPanel
+          entityType="journal_articles"
+          entityId={article.id}
+          entityPath={`/journal/${article.slug.toLowerCase()}`}
+          name={article.title}
+          summary={article.excerpt}
+          role={session.role}
+        />
       </Stack>
     </StudioPage>
   )

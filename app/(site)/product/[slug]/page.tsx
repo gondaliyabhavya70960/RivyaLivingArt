@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
-import { notFound } from 'next/navigation'
 import * as React from 'react'
 
+import { JsonLd } from '@/components/patterns/JsonLd'
 import { LazyModelViewerMount } from '@/components/patterns/ModelViewerMount/lazy'
 import { ProductGallery } from '@/components/patterns/ProductGallery'
 import { ProductInquiryRail } from '@/components/patterns/ProductInquiryRail'
@@ -18,9 +18,11 @@ import { forProduct } from '@/lib/supabase/repositories/customization-forms'
 import { getSiteChrome } from '@/lib/site/chrome'
 import { siteString } from '@/lib/cms/strings'
 import { optionalEnv } from '@/lib/env'
-import { serialiseJsonLd } from '@/lib/seo/jsonld'
+import { siteOrigin } from '@/lib/seo/canonical'
+import { breadcrumbJsonLd, graphOf, productImageUrls, productJsonLd } from '@/lib/seo/jsonld'
 import { buildPageMetadata } from '@/lib/seo/metadata'
-import { productImageUrls, productJsonLd } from '@/lib/seo/product-jsonld'
+import { redirectOrNotFound } from '@/lib/seo/redirects'
+import { deriveEntitySeo } from '@/lib/seo/resolve'
 import { imageUrl } from '@/lib/media/url'
 import { mediaRefOf } from '@/lib/cms/media'
 import { resolveSpec } from '@/lib/media/transform'
@@ -102,17 +104,28 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     // A product that is not visible is not indexable. `liveSectionCount` is the switch
     // `buildPageMetadata` already has for "there is nothing here", and it is the honest value.
     liveSectionCount: product === null ? 0 : 1,
-    override: {
-      title: product?.seo_title ?? product?.title ?? null,
-      description: product?.seo_description ?? product?.summary ?? null,
-    },
+    // The ENTITY rung: the product's own SEO columns, then any `seo_entries` ENTITY row for it
+    // (read inside); the DERIVED rung is its title and summary, cut by the one rule.
+    ...(product === null
+      ? {}
+      : {
+          entity: {
+            type: 'products',
+            id: product.id,
+            title: product.seo_title,
+            description: product.seo_description,
+            ogMediaId: product.hero_media_id,
+          },
+          derived: deriveEntitySeo({ name: product.title, summary: product.summary }),
+        }),
   })
 }
 
 export default async function Page({ params }: Props): Promise<React.ReactElement> {
   const { slug } = await params
   const product = await productFor(slug)
-  if (product === null) notFound()
+  // Phase 39: the one moment a redirect is consulted — the address would otherwise 404.
+  if (product === null) return redirectOrNotFound(`${BASE}/${slug}`)
 
   const client = createPublicClient()
   const chrome = await getSiteChrome()
@@ -216,11 +229,18 @@ export default async function Page({ params }: Props): Promise<React.ReactElemen
   const price = presentPrice(product, chrome.strings)
   const badges = productBadges(product, chrome.strings)
 
+  const origin = siteOrigin(optionalEnv('NEXT_PUBLIC_SITE_URL'))
+  const absolute = (path: string): string | null =>
+    origin === null ? null : new URL(path, origin).toString()
+  const productUrl = absolute(`${BASE}/${slug}`)
+
   const jsonLd = productJsonLd({
     product,
-    url: `${BASE}/${slug}`,
+    url: productUrl ?? `${BASE}/${slug}`,
     brandName: siteString(chrome.strings, 'BRAND.brand.name'),
     category,
+    // `material` only from the joined `product_materials` rows — the owner's record, never a guess.
+    materialNames: materials.map((material) => material.name),
     imageUrls:
       cloudName === ''
         ? []
@@ -235,16 +255,25 @@ export default async function Page({ params }: Props): Promise<React.ReactElemen
     },
   })
 
+  /*
+   * THE TRAIL IS REAL PUBLISHED PARENTS OR NOTHING. Home, then the category's own listing page —
+   * only when that page is live (`chrome.livePaths`), because a crumb to a 404 is a fabricated
+   * parent — then the product. Fewer than two crumbs and the list is not emitted.
+   */
+  const categoryPath = category === null ? null : `/collection/${category.slug.toLowerCase()}`
+  const breadcrumbs = breadcrumbJsonLd([
+    { name: siteString(chrome.strings, 'BRAND.brand.name'), url: absolute('/') },
+    ...(categoryPath !== null && chrome.livePaths.has(categoryPath)
+      ? [{ name: category?.name, url: absolute(categoryPath) }]
+      : []),
+    { name: product.title, url: productUrl },
+  ])
+
   return (
     <Container>
       <Stack gap={12}>
-        {jsonLd === null ? null : (
-          <script
-            type="application/ld+json"
-            // The value is escaped by `serialiseJsonLd`; `<` cannot close the element.
-            dangerouslySetInnerHTML={{ __html: serialiseJsonLd(jsonLd) }}
-          />
-        )}
+        {/* Phase 39: one graph per route, through the one emitter. */}
+        <JsonLd graph={graphOf([jsonLd, productUrl === null ? null : breadcrumbs])} />
 
         <Stack gap={4}>
           {/* The one h1 on this route. */}

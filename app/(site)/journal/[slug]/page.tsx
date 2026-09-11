@@ -1,14 +1,16 @@
 import type { Metadata } from 'next'
 import * as React from 'react'
 
+import { JsonLd } from '@/components/patterns/JsonLd'
 import { mediaRefOf } from '@/lib/cms/media'
 import { cmsPageMetadata, renderCmsPage } from '@/lib/cms/render-page'
 import { siteString } from '@/lib/cms/strings'
 import { optionalEnv } from '@/lib/env'
 import { resolveSpec } from '@/lib/media/transform'
 import { imageUrl } from '@/lib/media/url'
-import { articleJsonLd } from '@/lib/seo/article-jsonld'
-import { serialiseJsonLd } from '@/lib/seo/jsonld'
+import { entityBreadcrumbs } from '@/lib/seo/breadcrumbs'
+import { siteOrigin } from '@/lib/seo/canonical'
+import { articleJsonLd, graphOf } from '@/lib/seo/jsonld'
 import { getSiteChrome } from '@/lib/site/chrome'
 import { createPublicClient } from '@/lib/supabase/public'
 import { getArticleBySlug, listArticles, listCategories } from '@/lib/supabase/repositories/journal'
@@ -78,7 +80,21 @@ async function articleFor(slug: string): Promise<JournalArticle | null> {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params
-  return cmsPageMetadata(pathFor(slug))
+  const article = await articleFor(slug)
+  return cmsPageMetadata(pathFor(slug), {
+    // The ENTITY rung (a `seo_entries` ENTITY row, read inside) with the cover as the social
+    // image; the article page's own blocks are the DERIVED rung.
+    ...(article === null
+      ? {}
+      : {
+          entity: {
+            type: 'journal_articles',
+            id: article.id,
+            description: article.excerpt,
+            ogMediaId: article.cover_media_id,
+          },
+        }),
+  })
 }
 
 export default async function JournalArticlePage({ params }: Props): Promise<React.ReactElement> {
@@ -90,13 +106,7 @@ export default async function JournalArticlePage({ params }: Props): Promise<Rea
 
   return (
     <>
-      {graph === null ? null : (
-        <script
-          type="application/ld+json"
-          // The value is escaped by `serialiseJsonLd`; `<` cannot close the element.
-          dangerouslySetInnerHTML={{ __html: serialiseJsonLd(graph) }}
-        />
-      )}
+      <JsonLd graph={graph} />
       {await renderCmsPage(path)}
       {article === null ? null : <ArticleRelated article={article} />}
     </>
@@ -105,11 +115,11 @@ export default async function JournalArticlePage({ params }: Props): Promise<Rea
 
 /** The `Article` node, or null when there is nothing true to put in one. */
 async function jsonLdFor(article: JournalArticle, path: string) {
-  const origin = optionalEnv('NEXT_PUBLIC_SITE_URL')?.trim() ?? ''
+  const origin = siteOrigin(optionalEnv('NEXT_PUBLIC_SITE_URL'))
   const cloudName = optionalEnv('NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME')?.trim() ?? ''
   // A relative `url` in structured data is not a URL. With no origin configured there is nothing
   // valid to emit, which is the honest answer in development rather than a half-formed graph.
-  if (origin === '') return null
+  if (origin === null) return null
 
   const chrome = await getSiteChrome()
   const organisationName =
@@ -132,7 +142,7 @@ async function jsonLdFor(article: JournalArticle, path: string) {
       ? null
       : (categories.find((entry) => entry.id === article.primary_category_id) ?? null)
 
-  return articleJsonLd(article, {
+  const node = articleJsonLd(article, {
     url: new URL(path, origin).toString(),
     organisationName,
     imageUrl:
@@ -141,4 +151,11 @@ async function jsonLdFor(article: JournalArticle, path: string) {
         : imageUrl(cloudName, mediaRefOf(asset), resolveSpec('og')),
     categoryName: category?.name ?? null,
   })
+  // Home → the journal listing (only while it is live) → this article.
+  const trail = await entityBreadcrumbs({
+    listingPath: '/journal',
+    entityName: article.title,
+    entityPath: path,
+  })
+  return graphOf([node, trail])
 }

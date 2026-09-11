@@ -3718,6 +3718,11 @@ export const STUDIO_STRINGS = {
     value: 'Specification',
     contentKey: 'studio_help.catalog_product_specification_heading',
   },
+  'studio.catalog.product.createRedirect': {
+    value:
+      'If the address changes, redirect the old address to the new one (recommended — an old link keeps working)',
+    contentKey: 'studio_help.catalog_product_create_redirect',
+  },
   'studio.catalog.product.seoHeading': {
     value: 'Search and social',
     contentKey: 'studio_help.catalog_product_seo_heading',
@@ -8090,6 +8095,710 @@ export const STUDIO_STRINGS = {
   'studio.workflows.viewLogs': {
     value: 'View log lines',
     contentKey: 'studio_help.workflows_view_logs',
+  },
+
+  // --- Phase 39: the SEO workspace ---------------------------------------------------------------
+  'studio.seo.intro': {
+    value:
+      'What a search engine and a social card read for every page: titles, descriptions, canonical addresses, robots directives, structured data, keyword research targets and redirects. Every field shows the level it resolved from — your own words, a default computed from the page, or the site-wide fallback.',
+    contentKey: 'studio_help.seo_intro',
+  },
+  'studio.seo.tabsLabel': {
+    value: 'SEO workspace',
+    contentKey: 'studio_help.seo_tabs_label',
+  },
+  'studio.seo.tab.global': {
+    value: 'Global',
+    contentKey: 'studio_help.seo_tab_global',
+  },
+  'studio.seo.tab.pages': {
+    value: 'Pages',
+    contentKey: 'studio_help.seo_tab_pages',
+  },
+  'studio.seo.tab.entities': {
+    value: 'Entities',
+    contentKey: 'studio_help.seo_tab_entities',
+  },
+  'studio.seo.tab.keywords': {
+    value: 'Keywords',
+    contentKey: 'studio_help.seo_tab_keywords',
+  },
+  'studio.seo.tab.structuredData': {
+    value: 'Structured data',
+    contentKey: 'studio_help.seo_tab_structured_data',
+  },
+  'studio.seo.tab.redirects': {
+    value: 'Redirects',
+    contentKey: 'studio_help.seo_tab_redirects',
+  },
+  'studio.seo.tab.coverage': {
+    value: 'Coverage',
+    contentKey: 'studio_help.seo_tab_coverage',
+  },
+  'studio.seo.requiredLabel': {
+    value: 'required',
+    contentKey: 'studio_help.seo_required_label',
+  },
+  'studio.seo.level.entity': {
+    value: 'Own',
+    contentKey: 'studio_help.seo_level_entity',
+  },
+  'studio.seo.level.path': {
+    value: 'Path',
+    contentKey: 'studio_help.seo_level_path',
+  },
+  'studio.seo.level.derived': {
+    value: 'Derived',
+    contentKey: 'studio_help.seo_level_derived',
+  },
+  'studio.seo.level.global': {
+    value: 'Site default',
+    contentKey: 'studio_help.seo_level_global',
+  },
+  'studio.seo.level.none': {
+    value: 'Nothing',
+    contentKey: 'studio_help.seo_level_none',
+  },
+  'studio.seo.col.path': {
+    value: 'Path',
+    contentKey: 'studio_help.seo_col_path',
+  },
+  'studio.seo.col.title': {
+    value: 'Title',
+    contentKey: 'studio_help.seo_col_title',
+  },
+  'studio.seo.col.description': {
+    value: 'Description',
+    contentKey: 'studio_help.seo_col_description',
+  },
+  'studio.seo.col.directive': {
+    value: 'Robots',
+    contentKey: 'studio_help.seo_col_directive',
+  },
+  'studio.seo.col.entry': {
+    value: 'Entry',
+    contentKey: 'studio_help.seo_col_entry',
+  },
+  'studio.seo.col.entity': {
+    value: 'Entity',
+    contentKey: 'studio_help.seo_col_entity',
+  },
+  'studio.seo.col.status': {
+    value: 'Status',
+    contentKey: 'studio_help.seo_col_status',
+  },
+  'studio.seo.pages.caption': {
+    value: 'Every public path with what it currently resolves to',
+    contentKey: 'studio_help.seo_pages_caption',
+  },
+  'studio.seo.pages.emptyHeading': {
+    value: 'No pages yet',
+    contentKey: 'studio_help.seo_pages_empty_heading',
+  },
+  'studio.seo.pages.emptyBody': {
+    value: 'Pages appear here once the content seed has run.',
+    contentKey: 'studio_help.seo_pages_empty_body',
+  },
+  'studio.seo.entities.caption': {
+    value: 'Products, categories, collections, projects and articles',
+    contentKey: 'studio_help.seo_entities_caption',
+  },
+  'studio.seo.entities.emptyHeading': {
+    value: 'No entities yet',
+    contentKey: 'studio_help.seo_entities_empty_heading',
+  },
+  'studio.seo.entities.emptyBody': {
+    value: 'Products, collections, projects and articles appear here as they are created.',
+    contentKey: 'studio_help.seo_entities_empty_body',
+  },
+  'studio.seo.entities.all': {
+    value: 'All entities',
+    contentKey: 'studio_help.seo_entities_all',
+  },
+  'studio.seo.entities.derivedOnly': {
+    value: 'Using derived metadata',
+    contentKey: 'studio_help.seo_entities_derived_only',
+  },
+  'studio.seo.entities.products': {
+    value: 'Product',
+    contentKey: 'studio_help.seo_entities_products',
+  },
+  'studio.seo.entities.categories': {
+    value: 'Category',
+    contentKey: 'studio_help.seo_entities_categories',
+  },
+  'studio.seo.entities.collections': {
+    value: 'Collection',
+    contentKey: 'studio_help.seo_entities_collections',
+  },
+  'studio.seo.entities.projects': {
+    value: 'Project',
+    contentKey: 'studio_help.seo_entities_projects',
+  },
+  'studio.seo.entities.articles': {
+    value: 'Article',
+    contentKey: 'studio_help.seo_entities_articles',
+  },
+  'studio.seo.entry.noneYet': {
+    value: 'No entry of its own yet',
+    contentKey: 'studio_help.seo_entry_none_yet',
+  },
+  'studio.seo.entry.create': {
+    value: 'Create entry',
+    contentKey: 'studio_help.seo_entry_create',
+  },
+  'studio.seo.entry.save': {
+    value: 'Save entry',
+    contentKey: 'studio_help.seo_entry_save',
+  },
+  'studio.seo.entry.publish': {
+    value: 'Publish entry',
+    contentKey: 'studio_help.seo_entry_publish',
+  },
+  'studio.seo.entry.unpublish': {
+    value: 'Unpublish entry',
+    contentKey: 'studio_help.seo_entry_unpublish',
+  },
+  'studio.seo.entry.delete': {
+    value: 'Delete entry',
+    contentKey: 'studio_help.seo_entry_delete',
+  },
+  'studio.seo.resolved.title': {
+    value: 'Resolves to',
+    contentKey: 'studio_help.seo_resolved_title',
+  },
+  'studio.seo.resolved.description': {
+    value: 'Description resolves to',
+    contentKey: 'studio_help.seo_resolved_description',
+  },
+  'studio.seo.resolved.socialTitle': {
+    value: 'Social title resolves to',
+    contentKey: 'studio_help.seo_resolved_social_title',
+  },
+  'studio.seo.resolved.socialDescription': {
+    value: 'Social description resolves to',
+    contentKey: 'studio_help.seo_resolved_social_description',
+  },
+  'studio.seo.resolved.none': {
+    value: '(nothing)',
+    contentKey: 'studio_help.seo_resolved_none',
+  },
+  'studio.seo.field.title': {
+    value: 'Title',
+    contentKey: 'studio_help.seo_field_title',
+  },
+  'studio.seo.field.titleHelp': {
+    value:
+      'Around 60 characters shows whole in a result. Longer is allowed; the preview shows where it would cut.',
+    contentKey: 'studio_help.seo_field_title_help',
+  },
+  'studio.seo.field.description': {
+    value: 'Description',
+    contentKey: 'studio_help.seo_field_description',
+  },
+  'studio.seo.field.descriptionHelp': {
+    value: 'Around 155 characters shows whole. Longer is allowed.',
+    contentKey: 'studio_help.seo_field_description_help',
+  },
+  'studio.seo.field.socialTitle': {
+    value: 'Social card title',
+    contentKey: 'studio_help.seo_field_social_title',
+  },
+  'studio.seo.field.socialTitleHelp': {
+    value: 'Shown when the address is shared. Empty falls back to the title.',
+    contentKey: 'studio_help.seo_field_social_title_help',
+  },
+  'studio.seo.field.socialDescription': {
+    value: 'Social card description',
+    contentKey: 'studio_help.seo_field_social_description',
+  },
+  'studio.seo.field.ogImage': {
+    value: 'Social card image',
+    contentKey: 'studio_help.seo_field_og_image',
+  },
+  'studio.seo.field.ogImageHelp': {
+    value:
+      'Delivered at 1200 × 630 through the og preset. Empty falls back to the path, then the site default.',
+    contentKey: 'studio_help.seo_field_og_image_help',
+  },
+  'studio.seo.field.conceptAsset': {
+    value: 'concept visualisation',
+    contentKey: 'studio_help.seo_field_concept_asset',
+  },
+  'studio.seo.field.canonical': {
+    value: 'Canonical URL',
+    contentKey: 'studio_help.seo_field_canonical',
+  },
+  'studio.seo.field.canonicalHelp': {
+    value:
+      'Only when this page is a copy of another address on this site. Must be absolute and on the site’s own origin; otherwise the address itself is canonical.',
+    contentKey: 'studio_help.seo_field_canonical_help',
+  },
+  'studio.seo.field.structuredType': {
+    value: 'Structured data type',
+    contentKey: 'studio_help.seo_field_structured_type',
+  },
+  'studio.seo.field.structuredTypeHelp': {
+    value: 'From the allowlist only. The route decides what it can emit; this records the intent.',
+    contentKey: 'studio_help.seo_field_structured_type_help',
+  },
+  'studio.seo.field.noindex': {
+    value: 'Keep out of search results (noindex)',
+    contentKey: 'studio_help.seo_field_noindex',
+  },
+  'studio.seo.field.nofollow': {
+    value: 'Do not follow links from this page (nofollow)',
+    contentKey: 'studio_help.seo_field_nofollow',
+  },
+  'studio.seo.field.directiveNote': {
+    value:
+      'A page with nothing published on it is kept out of results whatever these say. Search results and filtered listings are always noindex.',
+    contentKey: 'studio_help.seo_field_directive_note',
+  },
+  'studio.seo.field.none': {
+    value: 'Not set',
+    contentKey: 'studio_help.seo_field_none',
+  },
+  'studio.seo.preview.heading': {
+    value: 'Search result preview',
+    contentKey: 'studio_help.seo_preview_heading',
+  },
+  'studio.seo.preview.characters': {
+    value: 'characters',
+    contentKey: 'studio_help.seo_preview_characters',
+  },
+  'studio.seo.preview.overMark': {
+    value: 'longer than a result usually shows',
+    contentKey: 'studio_help.seo_preview_over_mark',
+  },
+  'studio.seo.preview.resolvedFallback': {
+    value: 'showing the resolved fallback',
+    contentKey: 'studio_help.seo_preview_resolved_fallback',
+  },
+  'studio.seo.global.intro': {
+    value:
+      'The site-wide defaults. Every page falls back to these when its own entry, its path entry and its page content have nothing to say.',
+    contentKey: 'studio_help.seo_global_intro',
+  },
+  'studio.seo.global.siteName': {
+    value: 'Site name',
+    contentKey: 'studio_help.seo_global_site_name',
+  },
+  'studio.seo.global.titleTemplate': {
+    value: 'Title template',
+    contentKey: 'studio_help.seo_global_title_template',
+  },
+  'studio.seo.global.titleTemplateHelp': {
+    value:
+      '%s is the page title. The home page and any page resolving to the site default are never run through it.',
+    contentKey: 'studio_help.seo_global_title_template_help',
+  },
+  'studio.seo.global.defaultTitle': {
+    value: 'Default title',
+    contentKey: 'studio_help.seo_global_default_title',
+  },
+  'studio.seo.global.defaultTitleHelp': {
+    value:
+      'What a page with no title of its own shows. The home page shows this alone, without the template.',
+    contentKey: 'studio_help.seo_global_default_title_help',
+  },
+  'studio.seo.global.defaultDescription': {
+    value: 'Default description',
+    contentKey: 'studio_help.seo_global_default_description',
+  },
+  'studio.seo.global.ogHeadline': {
+    value: 'Social default headline',
+    contentKey: 'studio_help.seo_global_og_headline',
+  },
+  'studio.seo.global.ogHeadlineHelp': {
+    value: 'Used when neither the page nor its path has a social title.',
+    contentKey: 'studio_help.seo_global_og_headline_help',
+  },
+  'studio.seo.global.ogDescription': {
+    value: 'Social default description',
+    contentKey: 'studio_help.seo_global_og_description',
+  },
+  'studio.seo.global.ogImage': {
+    value: 'Default social image',
+    contentKey: 'studio_help.seo_global_og_image',
+  },
+  'studio.seo.global.ogImageHelp': {
+    value:
+      'The brand OG asset once one exists (a Phase 43 gap). Until then pages without an image emit no card image rather than borrowing one.',
+    contentKey: 'studio_help.seo_global_og_image_help',
+  },
+  'studio.seo.global.save': {
+    value: 'Save defaults',
+    contentKey: 'studio_help.seo_global_save',
+  },
+  'studio.seo.keywords.caveat': {
+    value:
+      'These themes are research targets, not a strategy. SEED §42: the actual SEO strategy must be refined through research before claiming ranking opportunity. No volume, difficulty, rank or opportunity figure is recorded anywhere; there is no column for one.',
+    contentKey: 'studio_help.seo_keywords_caveat',
+  },
+  'studio.seo.keywords.count': {
+    value:
+      '{{count}} themes. Nothing on this list is rendered on a public page and there is no keywords meta tag.',
+    contentKey: 'studio_help.seo_keywords_count',
+  },
+  'studio.seo.keywords.geographyNote': {
+    value:
+      'This theme asserts a service geography and awaits the owner’s confirmation before it is treated as a target.',
+    contentKey: 'studio_help.seo_keywords_geography_note',
+  },
+  'studio.seo.keywords.theme': {
+    value: 'Theme',
+    contentKey: 'studio_help.seo_keywords_theme',
+  },
+  'studio.seo.keywords.mappedPath': {
+    value: 'Mapped path',
+    contentKey: 'studio_help.seo_keywords_mapped_path',
+  },
+  'studio.seo.keywords.status': {
+    value: 'Research status',
+    contentKey: 'studio_help.seo_keywords_status',
+  },
+  'studio.seo.keywords.evidence': {
+    value: 'Evidence link',
+    contentKey: 'studio_help.seo_keywords_evidence',
+  },
+  'studio.seo.keywords.evidenceHelp': {
+    value:
+      'A link to whatever research tool or document informed the status. Paste it; nothing here fetches it.',
+    contentKey: 'studio_help.seo_keywords_evidence_help',
+  },
+  'studio.seo.keywords.notes': {
+    value: 'Notes',
+    contentKey: 'studio_help.seo_keywords_notes',
+  },
+  'studio.seo.keywords.save': {
+    value: 'Save theme',
+    contentKey: 'studio_help.seo_keywords_save',
+  },
+  'studio.seo.keywords.remove': {
+    value: 'Remove theme',
+    contentKey: 'studio_help.seo_keywords_remove',
+  },
+  'studio.seo.keywords.addHeading': {
+    value: 'Add a theme',
+    contentKey: 'studio_help.seo_keywords_add_heading',
+  },
+  'studio.seo.keywords.add': {
+    value: 'Add theme',
+    contentKey: 'studio_help.seo_keywords_add',
+  },
+  'studio.seo.structured.intro': {
+    value:
+      'Every type a page may emit, with the gate it must pass. A closed gate emits nothing rather than a partial node. Nothing outside this list is emitted anywhere.',
+    contentKey: 'studio_help.seo_structured_intro',
+  },
+  'studio.seo.structured.caption': {
+    value: 'The allowlist and its gates, as they stand now',
+    contentKey: 'studio_help.seo_structured_caption',
+  },
+  'studio.seo.structured.colType': {
+    value: 'Type',
+    contentKey: 'studio_help.seo_structured_col_type',
+  },
+  'studio.seo.structured.colRoute': {
+    value: 'Emitted on',
+    contentKey: 'studio_help.seo_structured_col_route',
+  },
+  'studio.seo.structured.colGate': {
+    value: 'Emitted only when',
+    contentKey: 'studio_help.seo_structured_col_gate',
+  },
+  'studio.seo.structured.colState': {
+    value: 'Right now',
+    contentKey: 'studio_help.seo_structured_col_state',
+  },
+  'studio.seo.structured.state.open': {
+    value: 'Emitting',
+    contentKey: 'studio_help.seo_structured_state_open',
+  },
+  'studio.seo.structured.state.partial': {
+    value: 'Some rows',
+    contentKey: 'studio_help.seo_structured_state_partial',
+  },
+  'studio.seo.structured.state.closed': {
+    value: 'Nothing yet',
+    contentKey: 'studio_help.seo_structured_state_closed',
+  },
+  'studio.seo.structured.route.layout': {
+    value: 'Every public page (the site layout)',
+    contentKey: 'studio_help.seo_structured_route_layout',
+  },
+  'studio.seo.structured.route.entities': {
+    value: 'Category, product, collection, project and article pages',
+    contentKey: 'studio_help.seo_structured_route_entities',
+  },
+  'studio.seo.structured.route.product': {
+    value: '/product/[slug]',
+    contentKey: 'studio_help.seo_structured_route_product',
+  },
+  'studio.seo.structured.route.collection': {
+    value: '/collections/[slug]',
+    contentKey: 'studio_help.seo_structured_route_collection',
+  },
+  'studio.seo.structured.route.article': {
+    value: '/journal/[slug]',
+    contentKey: 'studio_help.seo_structured_route_article',
+  },
+  'studio.seo.structured.route.faq': {
+    value: '/faq',
+    contentKey: 'studio_help.seo_structured_route_faq',
+  },
+  'studio.seo.structured.route.contact': {
+    value: '/contact',
+    contentKey: 'studio_help.seo_structured_route_contact',
+  },
+  'studio.seo.structured.gate.organization': {
+    value:
+      'The brand name row is not awaiting verification and the site has an origin. Logo only once a brand asset exists; sameAs only from owner-entered profile links.',
+    contentKey: 'studio_help.seo_structured_gate_organization',
+  },
+  'studio.seo.structured.gate.website': {
+    value: 'The site has an origin. Carries the one search action the site offers.',
+    contentKey: 'studio_help.seo_structured_gate_website',
+  },
+  'studio.seo.structured.gate.breadcrumb': {
+    value:
+      'The trail is built from parents that are live; a listing that is not published is left out.',
+    contentKey: 'studio_help.seo_structured_gate_breadcrumb',
+  },
+  'studio.seo.structured.gate.product': {
+    value:
+      'The product is published. Offers only when the price is FIXED and the row is VERIFIED; no rating, review, GTIN, MPN or availability, ever.',
+    contentKey: 'studio_help.seo_structured_gate_product',
+  },
+  'studio.seo.structured.gate.collection': {
+    value: 'The exhibition page is published. No item count.',
+    contentKey: 'studio_help.seo_structured_gate_collection',
+  },
+  'studio.seo.structured.gate.article': {
+    value:
+      'The article is published. Author is the studio unless a VERIFIED byline names a person.',
+    contentKey: 'studio_help.seo_structured_gate_article',
+  },
+  'studio.seo.structured.gate.faq': {
+    value: 'Only FAQ rows marked VERIFIED. None verified, no block at all.',
+    contentKey: 'studio_help.seo_structured_gate_faq',
+  },
+  'studio.seo.structured.gate.contact': {
+    value: 'The contact details section is VERIFIED. Never an address.',
+    contentKey: 'studio_help.seo_structured_gate_contact',
+  },
+  'studio.seo.structured.count.products': {
+    value: '{{a}} of {{b}} published products carry an offer',
+    contentKey: 'studio_help.seo_structured_count_products',
+  },
+  'studio.seo.structured.count.collections': {
+    value: '{{a}} of {{b}} collections are published',
+    contentKey: 'studio_help.seo_structured_count_collections',
+  },
+  'studio.seo.structured.count.articles': {
+    value: '{{a}} of {{b}} articles are published',
+    contentKey: 'studio_help.seo_structured_count_articles',
+  },
+  'studio.seo.structured.count.faqs': {
+    value: '{{a}} of {{b}} FAQ rows are verified',
+    contentKey: 'studio_help.seo_structured_count_faqs',
+  },
+  'studio.seo.structured.noOrigin': {
+    value: 'NEXT_PUBLIC_SITE_URL is not set: no absolute address, so nothing is emitted',
+    contentKey: 'studio_help.seo_structured_no_origin',
+  },
+  'studio.seo.structured.brandAwaiting': {
+    value: 'The brand name row awaits owner verification',
+    contentKey: 'studio_help.seo_structured_brand_awaiting',
+  },
+  'studio.seo.structured.contactVerified': {
+    value: 'Contact details verified',
+    contentKey: 'studio_help.seo_structured_contact_verified',
+  },
+  'studio.seo.structured.contactAwaiting': {
+    value: 'Contact details await owner verification',
+    contentKey: 'studio_help.seo_structured_contact_awaiting',
+  },
+  'studio.seo.structured.neverEmitted': {
+    value:
+      'Never emitted anywhere: LocalBusiness, Store, opening hours, an Offer for any price that is not FIXED, Review, Rating, AggregateRating, Award, Certification, areaServed, deliveryTime, shippingDetails, returnPolicy. Each asserts a capability, a delivered outcome or a commercial term the studio has not confirmed.',
+    contentKey: 'studio_help.seo_structured_never_emitted',
+  },
+  'studio.seo.structured.chooseType': {
+    value: 'Render a type',
+    contentKey: 'studio_help.seo_structured_choose_type',
+  },
+  'studio.seo.structured.chooseEntity': {
+    value: 'For this entity',
+    contentKey: 'studio_help.seo_structured_choose_entity',
+  },
+  'studio.seo.structured.chooseEntityHelp': {
+    value:
+      'Products, collections and articles. Organization, FAQPage and ContactPoint need no entity.',
+    contentKey: 'studio_help.seo_structured_choose_entity_help',
+  },
+  'studio.seo.structured.render': {
+    value: 'Show what would be emitted',
+    contentKey: 'studio_help.seo_structured_render',
+  },
+  'studio.seo.structured.renderingLabel': {
+    value: 'Exactly what the {{type}} builder emits for this choice',
+    contentKey: 'studio_help.seo_structured_rendering_label',
+  },
+  'studio.seo.structured.nothingEmitted': {
+    value: 'Nothing. The gate is closed for this choice, so no script would be written.',
+    contentKey: 'studio_help.seo_structured_nothing_emitted',
+  },
+  'studio.seo.structured.forbiddenCheck': {
+    value: 'Forbidden keys found in this output: {{count}}',
+    contentKey: 'studio_help.seo_structured_forbidden_check',
+  },
+  'studio.seo.redirects.intro': {
+    value:
+      'Consulted only on an address that would otherwise be a 404, so a working page never pays for this table. One hop: a target is never itself a source, and the form refuses a loop or a chain when it is saved.',
+    contentKey: 'studio_help.seo_redirects_intro',
+  },
+  'studio.seo.redirects.caption': {
+    value: 'Every redirect, with how often it has been followed',
+    contentKey: 'studio_help.seo_redirects_caption',
+  },
+  'studio.seo.redirects.emptyHeading': {
+    value: 'No redirects',
+    contentKey: 'studio_help.seo_redirects_empty_heading',
+  },
+  'studio.seo.redirects.emptyBody': {
+    value:
+      'A redirect is offered automatically when a product’s address changes; add one here for any other moved address.',
+    contentKey: 'studio_help.seo_redirects_empty_body',
+  },
+  'studio.seo.redirects.colFrom': {
+    value: 'From',
+    contentKey: 'studio_help.seo_redirects_col_from',
+  },
+  'studio.seo.redirects.colTo': {
+    value: 'To',
+    contentKey: 'studio_help.seo_redirects_col_to',
+  },
+  'studio.seo.redirects.colCode': {
+    value: 'Code',
+    contentKey: 'studio_help.seo_redirects_col_code',
+  },
+  'studio.seo.redirects.colHits': {
+    value: 'Followed',
+    contentKey: 'studio_help.seo_redirects_col_hits',
+  },
+  'studio.seo.redirects.colActions': {
+    value: 'Actions',
+    contentKey: 'studio_help.seo_redirects_col_actions',
+  },
+  'studio.seo.redirects.chainWarning': {
+    value: 'This target is itself a source: a visitor would be redirected twice. Retarget it.',
+    contentKey: 'studio_help.seo_redirects_chain_warning',
+  },
+  'studio.seo.redirects.pause': {
+    value: 'Pause',
+    contentKey: 'studio_help.seo_redirects_pause',
+  },
+  'studio.seo.redirects.resume': {
+    value: 'Resume',
+    contentKey: 'studio_help.seo_redirects_resume',
+  },
+  'studio.seo.redirects.delete': {
+    value: 'Delete',
+    contentKey: 'studio_help.seo_redirects_delete',
+  },
+  'studio.seo.redirects.addHeading': {
+    value: 'Add a redirect',
+    contentKey: 'studio_help.seo_redirects_add_heading',
+  },
+  'studio.seo.redirects.from': {
+    value: 'From path',
+    contentKey: 'studio_help.seo_redirects_from',
+  },
+  'studio.seo.redirects.fromHelp': {
+    value: 'The old address, site-relative: /product/old-name',
+    contentKey: 'studio_help.seo_redirects_from_help',
+  },
+  'studio.seo.redirects.to': {
+    value: 'To path',
+    contentKey: 'studio_help.seo_redirects_to',
+  },
+  'studio.seo.redirects.code': {
+    value: 'Status',
+    contentKey: 'studio_help.seo_redirects_code',
+  },
+  'studio.seo.redirects.codeHelp': {
+    value:
+      'Both are permanent. The site serves every redirect as 308, which keeps the request method; the choice is recorded.',
+    contentKey: 'studio_help.seo_redirects_code_help',
+  },
+  'studio.seo.redirects.reason': {
+    value: 'Reason',
+    contentKey: 'studio_help.seo_redirects_reason',
+  },
+  'studio.seo.redirects.add': {
+    value: 'Add redirect',
+    contentKey: 'studio_help.seo_redirects_add',
+  },
+  'studio.seo.redirects.testLabel': {
+    value: 'Test a path',
+    contentKey: 'studio_help.seo_redirects_test_label',
+  },
+  'studio.seo.redirects.testButton': {
+    value: 'Look up',
+    contentKey: 'studio_help.seo_redirects_test_button',
+  },
+  'studio.seo.redirects.testNone': {
+    value: 'No live redirect for that path. A visitor would see the page, or a 404.',
+    contentKey: 'studio_help.seo_redirects_test_none',
+  },
+  'studio.seo.redirects.testFound': {
+    value: 'Redirects to {{to}} (served as 308; recorded as {{code}}).',
+    contentKey: 'studio_help.seo_redirects_test_found',
+  },
+  'studio.seo.coverage.intro': {
+    value:
+      '{{total}} addresses resolved: {{pages}} pages and {{entities}} entities. Every figure is a count of rows in a named state, never a score or a ranking.',
+    contentKey: 'studio_help.seo_coverage_intro',
+  },
+  'studio.seo.coverage.derived': {
+    value: 'resolve a title or description from page content',
+    contentKey: 'studio_help.seo_coverage_derived',
+  },
+  'studio.seo.coverage.derivedBody': {
+    value:
+      'A derived value is a default the owner has not yet replaced. It is honest, and it is not the studio’s voice.',
+    contentKey: 'studio_help.seo_coverage_derived_body',
+  },
+  'studio.seo.coverage.missingDescription': {
+    value: 'have no description of their own',
+    contentKey: 'studio_help.seo_coverage_missing_description',
+  },
+  'studio.seo.coverage.missingOg': {
+    value: 'have no social card image',
+    contentKey: 'studio_help.seo_coverage_missing_og',
+  },
+  'studio.seo.coverage.duplicateTitles': {
+    value: 'titles are shared by more than one address',
+    contentKey: 'studio_help.seo_coverage_duplicate_titles',
+  },
+  'studio.seo.coverage.noindex': {
+    value: 'entities are kept out of search results',
+    contentKey: 'studio_help.seo_coverage_noindex',
+  },
+  'studio.seo.coverage.keywords': {
+    value: 'of {{total}} keyword themes are still unresearched',
+    contentKey: 'studio_help.seo_coverage_keywords',
+  },
+  'studio.seo.entityPanel.heading': {
+    value: 'Search and social',
+    contentKey: 'studio_help.seo_entity_panel_heading',
+  },
+  'studio.seo.entityPanel.body': {
+    value:
+      'This entity’s own search title, description, social card, canonical and robots directive. Empty fields fall back to the path entry, then to the entity’s own words, then to the site default; each line above says which.',
+    contentKey: 'studio_help.seo_entity_panel_body',
   },
 } as const satisfies Record<string, StudioStringEntry>
 

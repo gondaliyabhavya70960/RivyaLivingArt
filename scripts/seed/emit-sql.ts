@@ -4,7 +4,8 @@ import { contentHash } from './hash'
 /**
  * `npx tsx scripts/seed/emit-sql.ts [--only=key1,key2,…] > rows.sql`
  *
- * The seed runner's INSERT path, as SQL text, for `global_content` rows only.
+ * The seed runner's INSERT path, as SQL text, for `global_content` rows (or one other table via
+ * `--table=`).
  *
  * WHY IT EXISTS. `npm run seed:content` needs a `DATABASE_URL`, and there are environments where
  * the hosted database is reachable through the Supabase MCP and nowhere else. Hand-writing rows
@@ -27,6 +28,14 @@ const only = process.argv
 const wanted = only === undefined ? null : new Set(only)
 const version =
   process.argv.find((arg) => arg.startsWith('--version='))?.slice('--version='.length) ?? 'rivya-v1'
+/**
+ * `--table=` widens the emitter to another seedable table with the same Tier C columns and no
+ * unique seed key — Phase 39 added `seo_keyword_themes` (a `where not exists` on the seed key is
+ * still the idempotence rule there). Default stays `global_content`.
+ */
+const table =
+  process.argv.find((arg) => arg.startsWith('--table='))?.slice('--table='.length) ??
+  'global_content'
 
 function literal(value: unknown): string {
   if (value === null || value === undefined) return 'null'
@@ -39,7 +48,7 @@ function literal(value: unknown): string {
 const statements: string[] = []
 for (const seedModule of seedModules) {
   for (const record of seedModule.records) {
-    if (record.table !== 'global_content') continue
+    if (record.table !== table) continue
     if (wanted !== null && !wanted.has(record.seedKey)) continue
     if (record.refs !== undefined || record.media !== undefined) {
       throw new Error(`${record.seedKey} references other rows; apply it with the seed runner`)
@@ -62,7 +71,7 @@ for (const seedModule of seedModules) {
     // `seed_key` carries an index but no unique constraint (the unique key is `group_key, key`),
     // so idempotence is a `where not exists` on the seed key rather than an `on conflict`.
     statements.push(
-      `insert into global_content (${columns.map((c) => `"${c}"`).join(', ')})\n  select ${values.join(', ')}\n  where not exists (select 1 from global_content where seed_key = ${literal(record.seedKey)});`,
+      `insert into ${table} (${columns.map((c) => `"${c}"`).join(', ')})\n  select ${values.join(', ')}\n  where not exists (select 1 from ${table} where seed_key = ${literal(record.seedKey)});`,
     )
     wanted?.delete(record.seedKey)
   }

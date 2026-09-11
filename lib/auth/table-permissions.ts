@@ -173,6 +173,7 @@ export const PHASE_35_POLICIES = '0331_phase35_rls.sql'
 export const PHASE_36_POLICIES = '0341_phase36_sheets_rls.sql'
 export const PHASE_37_POLICIES = '0351_phase37_analytics_rls.sql'
 export const PHASE_38_POLICIES = '0361_phase38_system_logs_rls.sql'
+export const PHASE_39_POLICIES = '0371_phase39_seo_rls.sql'
 
 export const TABLE_POLICIES = {
   // --- Shape A: content tables ------------------------------------------------------------------
@@ -277,6 +278,14 @@ export const TABLE_POLICIES = {
     deletePermission: 'destructive.execute',
     publicClause: "status = 'PUBLISHED' and is_enabled",
   },
+  /**
+   * `seo_entries` — Phase 39 tightened the WRITE to `seo.write`, and this entry still says
+   * `content.write`. Both are true: `seo.write` is held by exactly the roles `content.write` is
+   * (owner, admin, editor), and 0051 is a generated file that is never re-opened, so the policy
+   * keeps the name it shipped with while every Server Action under `/studio/content/seo` checks
+   * `seo.write`. The day the two role sets diverge, a later migration drops and recreates these
+   * policies under the new name — and this comment is the reminder.
+   */
   seo_entries: {
     policiesIn: PHASE_08_POLICIES,
     shape: 'A',
@@ -1853,6 +1862,38 @@ export const TABLE_POLICIES = {
       'Append-only operational log. No anon policy, no authenticated write policy of any kind — ' +
       'lib/logging/system-log.ts writes through the service role and system_log_write(); update ' +
       'and delete are revoked outright (0360) so a session cannot rewrite what the machine did.',
+  },
+
+  /**
+   * `seo_keyword_themes` — Phase 39. The SEED §42 themes as research targets: read by every staff
+   * role (`content.read`), written under `seo.write`. No anon leg, because no keyword string is
+   * ever rendered on a public page — there is no keywords meta tag and there will not be one.
+   * Deleting a theme is the same permission as writing it: a theme is a note, not a record.
+   */
+  seo_keyword_themes: {
+    policiesIn: PHASE_39_POLICIES,
+    shape: 'C',
+    readPermission: 'content.read',
+    writePermission: 'seo.write',
+    deletePermission: 'seo.write',
+    deviation:
+      'Research targets, never rendered: no keyword string reaches a public page and there is ' +
+      'no keywords meta tag, so there is nothing for anon to read. Staff read is content.read; ' +
+      'every write is seo.write.',
+  },
+
+  /**
+   * `seo_redirects` — Phase 39. The one Phase 39 table with an anon leg, and the default shape-A
+   * clause is exactly the right one: the 404 path resolves a redirect for an anonymous visitor,
+   * so a PUBLISHED row must be readable without a session; a DRAFT row is a paused redirect and
+   * is not. Written and deleted under `seo.write`.
+   */
+  seo_redirects: {
+    policiesIn: PHASE_39_POLICIES,
+    shape: 'A',
+    readPermission: 'content.read',
+    writePermission: 'seo.write',
+    deletePermission: 'seo.write',
   },
 } as const satisfies Record<string, TablePolicy>
 

@@ -6,6 +6,33 @@ Every phase adds an entry; see `docs/architecture/CANONICAL-DECISIONS.md` D9 for
 
 ## [Unreleased]
 
+### Phase 39 — SEO (COMPLETE)
+
+Search engines stop seeing thirteen pages with fallback metadata. **The ladder** (`lib/seo/resolve.ts`):
+ENTITY → PATH → DERIVED → GLOBAL, climbed per field, first hit wins, with the one dumb derivation
+rule (first heading, first 155 characters of the first body on a word boundary) and the rung shown
+beside every field in the Studio. **The canonical table** (`lib/seo/canonical.ts`): a static path
+to itself, a filtered listing to the unfiltered category and `noindex`, page 2 onward to itself
+with `rel=prev/next`, `/search` none, an owner canonical only when absolute and same-origin.
+**One emitter** (`components/patterns/JsonLd`, RC-347) and eight gated builders under
+`lib/seo/jsonld/` — `Organization` and `WebSite` from the layout, `BreadcrumbList` from real live
+parents, `Product` with `offers` only for FIXED **and** VERIFIED and `material` only from the
+join, `CollectionPage`, `Article`, `FAQPage` from VERIFIED rows only, `ContactPoint` from a
+VERIFIED section — every capability-bearing property through `verifiedOnly()`, the forbidden-key
+list proved absent by `tests/unit/jsonld-guard.test.ts` and by `scripts/seo/validate-jsonld.mjs`
+crawling the real build in CI. **The sitemap** is an index over six route-handler children
+(PUBLISHED only, `lastmod`, no priority, no changefreq, no image sitemap); `robots.txt` names it;
+`X-Robots-Tag: noindex, nofollow` on `/studio`, `/api` and every non-production response.
+**Redirects** (`seo_redirects`) are consulted only on the path that would otherwise 404, one hop,
+refused at save time when they would loop or chain, and offered pre-ticked when a product's slug
+changes. **Keywords** (`seo_keyword_themes`): the seventeen SEED §42 themes as research targets
+with no numeric column to fill, the two geography themes awaiting verification. **The workspace**
+`/studio/content/seo` — Global · Pages · Entities · Keywords · Structured data · Redirects ·
+Coverage — under the new `seo.write` (owner, admin, editor), plus a "Search and social" panel on
+the product, collection, project and article editors. Migrations `0370`–`0371`; gates
+`seo:check-jsonld-scope` (check and CI) and the build-time validator; the inventory gains a
+generated "SEO coverage" section; amendment A40.
+
 ### Phase 38 — Environment + Documentation + Logs (COMPLETE)
 
 The System group stops being the place where an operator has to guess. Three read-only surfaces

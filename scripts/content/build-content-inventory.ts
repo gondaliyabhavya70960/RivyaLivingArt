@@ -3,6 +3,8 @@ import { writeFileSync } from 'node:fs'
 
 import pg from 'pg'
 
+import { buildSeoCoverage } from '../seo/build-seo-coverage'
+
 import { seedModules } from '../../content/seed/index'
 
 /**
@@ -123,6 +125,8 @@ async function main(): Promise<number> {
     ['navigation_items', "menu || ' · ' || label", 'Navigation', '/studio/content/navigation'],
     ['faqs', 'question', 'FAQ', '/studio/content/faqs'],
     ['seo_entries', "scope || coalesce(' ' || path, '')", 'SEO', '/studio/content/seo'],
+    // Phase 39: the seventeen SEED §42 themes, research targets at the Keywords tab.
+    ['seo_keyword_themes', 'theme', 'SEO keywords', '/studio/content/seo?tab=keywords'],
   ]
 
   for (const [table, label, pageLabel, studio] of simple) {
@@ -252,6 +256,8 @@ async function main(): Promise<number> {
     union all
     select seed_key from faqs             where seed_key is not null
     union all
+    select seed_key from seo_keyword_themes where seed_key is not null
+    union all
     select seed_key from categories       where seed_key is not null
     union all
     select seed_key from collections      where seed_key is not null
@@ -260,6 +266,8 @@ async function main(): Promise<number> {
   `)
   const seededKeys = new Set(present.rows.map((r) => r.seed_key))
 
+  // Phase 39: the SEO coverage section, from the same database, before the connection closes.
+  const seoCoverage = await buildSeoCoverage(client)
   await client.end()
 
   const flagged = rows.filter((r) => r.verify === 'Yes').length
@@ -327,7 +335,8 @@ async function main(): Promise<number> {
     return 1
   }
 
-  writeFileSync(OUT, md)
+  // Phase 39: the SEO coverage section, from the same database, in the same run.
+  writeFileSync(OUT, md.replace(/\n*$/, '\n\n') + seoCoverage)
   console.log(
     `✓ ${OUT}: ${String(rows.length)} rows, ${String(flagged)} awaiting verification, ${String(deferredCount)} deferred`,
   )

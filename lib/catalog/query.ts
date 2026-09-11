@@ -219,6 +219,21 @@ export function catalogSearchParams(query: CatalogQuery): URLSearchParams {
 }
 
 /** `basePath` plus the canonical query string. The address this result set should be indexed at. */
+/**
+ * Whether a listing carries any query beyond its page number — a filter, a facet, a sort.
+ *
+ * PHASE 39'S CANONICAL RULE TURNS ON THIS. A filtered view is canonical to the unfiltered path and
+ * `noindex`; a bare page 2 is canonical to itself. The test is "would `catalogSearchParams` emit
+ * anything other than `page`", asked of the same function that builds the URL, so the two cannot
+ * drift.
+ */
+export function isFilteredCatalogQuery(query: CatalogQuery): boolean {
+  const params = catalogSearchParams(query)
+  params.delete('page')
+  return [...params.keys()].length > 0
+}
+
+/** Every parameter the listing renders under — the address of THIS view, used for its links. */
 export function canonicalCatalogUrl(basePath: string, query: CatalogQuery): string {
   const params = catalogSearchParams(query)
   const search = params.toString()
