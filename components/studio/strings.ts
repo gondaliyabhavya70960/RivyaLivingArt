@@ -6302,6 +6302,210 @@ export const STUDIO_STRINGS = {
     value: 'That could not be saved as written.',
     contentKey: 'studio_help.research_compare_refusal_generic',
   },
+
+  // --- Phase 32: opportunity engine ---------------------------------------------------------------
+  'studio.research.oppHeading': {
+    value: 'Opportunities',
+    contentKey: 'studio_help.research_opp_heading',
+  },
+  'studio.research.oppBody': {
+    value:
+      'A ranking heuristic over research data, not a measurement of demand. Every score is the weighted mean of declared signals under a named model version, and every term is shown.',
+    contentKey: 'studio_help.research_opp_body',
+  },
+  'studio.research.oppActiveModel': {
+    value: 'Active model',
+    contentKey: 'studio_help.research_opp_active_model',
+  },
+  'studio.research.oppNoActiveModel': {
+    value:
+      'No model is active. Scores are not computed until an owner or admin activates one below.',
+    contentKey: 'studio_help.research_opp_no_active_model',
+  },
+  'studio.research.oppLastRun': {
+    value: 'Last computed',
+    contentKey: 'studio_help.research_opp_last_run',
+  },
+  'studio.research.oppNeverRun': {
+    value: 'never',
+    contentKey: 'studio_help.research_opp_never_run',
+  },
+  'studio.research.oppStale': {
+    value: 'These scores are more than fourteen days old.',
+    contentKey: 'studio_help.research_opp_stale',
+  },
+  'studio.research.oppTabScored': {
+    value: 'Scored',
+    contentKey: 'studio_help.research_opp_tab_scored',
+  },
+  'studio.research.oppTabInsufficient': {
+    value: 'Insufficient data',
+    contentKey: 'studio_help.research_opp_tab_insufficient',
+  },
+  'studio.research.oppInsufficientBody': {
+    value:
+      'Rows whose included signals carry less than half the weight. A score is stored for each but never ranked, because a low score and an absent score mean opposite things.',
+    contentKey: 'studio_help.research_opp_insufficient_body',
+  },
+  'studio.research.oppEmpty': {
+    value: 'Nothing has been scored.',
+    contentKey: 'studio_help.research_opp_empty',
+  },
+  'studio.research.oppEmptyBody': {
+    value: 'Activate a model, then recompute. With no approved source there are no rows to score.',
+    contentKey: 'studio_help.research_opp_empty_body',
+  },
+  'studio.research.oppRank': { value: 'Rank', contentKey: 'studio_help.research_opp_rank' },
+  'studio.research.oppScore': { value: 'Score', contentKey: 'studio_help.research_opp_score' },
+  'studio.research.oppConfidence': {
+    value: 'Confidence',
+    contentKey: 'studio_help.research_opp_confidence',
+  },
+  'studio.research.oppState': { value: 'State', contentKey: 'studio_help.research_opp_state' },
+  'studio.research.oppCategory': {
+    value: 'Category',
+    contentKey: 'studio_help.research_opp_category',
+  },
+  'studio.research.oppExplain': {
+    value: 'Explain',
+    contentKey: 'studio_help.research_opp_explain',
+  },
+  'studio.research.oppExplainHeading': {
+    value: 'Why this row is here',
+    contentKey: 'studio_help.research_opp_explain_heading',
+  },
+  'studio.research.oppExplainBody': {
+    value:
+      'Read from the stored components, never recomputed. contribution = weight × normalised ÷ 100; raw = Σ contribution ÷ Σ included weight × 100; score = raw × (0.6 + 0.4 × completeness).',
+    contentKey: 'studio_help.research_opp_explain_body',
+  },
+  'studio.research.oppSignal': { value: 'Signal', contentKey: 'studio_help.research_opp_signal' },
+  'studio.research.oppWeight': { value: 'Weight', contentKey: 'studio_help.research_opp_weight' },
+  'studio.research.oppNormalised': {
+    value: 'Normalised',
+    contentKey: 'studio_help.research_opp_normalised',
+  },
+  'studio.research.oppContribution': {
+    value: 'Contribution',
+    contentKey: 'studio_help.research_opp_contribution',
+  },
+  'studio.research.oppInput': { value: 'Input', contentKey: 'studio_help.research_opp_input' },
+  'studio.research.oppExcluded': {
+    value: 'excluded',
+    contentKey: 'studio_help.research_opp_excluded',
+  },
+  'studio.research.oppCompleteness': {
+    value: 'Completeness',
+    contentKey: 'studio_help.research_opp_completeness',
+  },
+  'studio.research.oppReproduced': {
+    value: 'Reproduced from the components',
+    contentKey: 'studio_help.research_opp_reproduced',
+  },
+  'studio.research.oppRecompute': {
+    value: 'Recompute scores',
+    contentKey: 'studio_help.research_opp_recompute',
+  },
+  'studio.research.oppModelsHeading': {
+    value: 'Scoring models',
+    contentKey: 'studio_help.research_opp_models_heading',
+  },
+  'studio.research.oppModelsBody': {
+    value:
+      'DRAFT is the only editable lifecycle. Activating a version retires the current one and freezes the new definition; old scores keep pointing at the model that produced them.',
+    contentKey: 'studio_help.research_opp_models_body',
+  },
+  'studio.research.oppVersion': {
+    value: 'Version',
+    contentKey: 'studio_help.research_opp_version',
+  },
+  'studio.research.oppLifecycle': {
+    value: 'Lifecycle',
+    contentKey: 'studio_help.research_opp_lifecycle',
+  },
+  'studio.research.oppActivate': {
+    value: 'Activate',
+    contentKey: 'studio_help.research_opp_activate',
+  },
+  'studio.research.oppActivateTitle': {
+    value: 'Activate this model?',
+    contentKey: 'studio_help.research_opp_activate_title',
+  },
+  'studio.research.oppActivateBody': {
+    value:
+      'The current active model is retired and this definition becomes immutable. Scores are recomputed on the next run; historical scores keep their version.',
+    contentKey: 'studio_help.research_opp_activate_body',
+  },
+  'studio.research.oppDiffHeading': {
+    value: 'What would move',
+    contentKey: 'studio_help.research_opp_diff_heading',
+  },
+  'studio.research.oppDiffBody': {
+    value:
+      'Weights side by side, and how many currently ranked rows would move by more than ten places if this draft replaced the active model.',
+    contentKey: 'studio_help.research_opp_diff_body',
+  },
+  'studio.research.oppDiffMoved': {
+    value: 'rows would move by more than',
+    contentKey: 'studio_help.research_opp_diff_moved',
+  },
+  'studio.research.oppDiffPlaces': {
+    value: 'places, of',
+    contentKey: 'studio_help.research_opp_diff_places',
+  },
+  'studio.research.oppDiffRanked': {
+    value: 'ranked',
+    contentKey: 'studio_help.research_opp_diff_ranked',
+  },
+  'studio.research.oppNewDraft': {
+    value: 'New draft from this version',
+    contentKey: 'studio_help.research_opp_new_draft',
+  },
+  'studio.research.oppDraftVersion': {
+    value: 'Version (v2, v2.1 …)',
+    contentKey: 'studio_help.research_opp_draft_version',
+  },
+  'studio.research.oppDraftName': {
+    value: 'Name',
+    contentKey: 'studio_help.research_opp_draft_name',
+  },
+  'studio.research.oppDraftWeights': {
+    value: 'Weights (must sum to 100)',
+    contentKey: 'studio_help.research_opp_draft_weights',
+  },
+  'studio.research.oppDraftMinConfidence': {
+    value: 'Minimum confidence (0–1)',
+    contentKey: 'studio_help.research_opp_draft_min_confidence',
+  },
+  'studio.research.oppSaveDraft': {
+    value: 'Save draft',
+    contentKey: 'studio_help.research_opp_save_draft',
+  },
+  'studio.research.oppExclusionsHeading': {
+    value: 'Exclusions per signal',
+    contentKey: 'studio_help.research_opp_exclusions_heading',
+  },
+  'studio.research.oppExclusionsBody': {
+    value:
+      'A signal excluded on most rows is a coverage collapse — usually an adapter that stopped reading a field — not a finding.',
+    contentKey: 'studio_help.research_opp_exclusions_body',
+  },
+  'studio.research.oppRefusalWeights': {
+    value: 'The weights must be whole numbers that sum to 100.',
+    contentKey: 'studio_help.research_opp_refusal_weights',
+  },
+  'studio.research.oppRefusalVersion': {
+    value: 'The version must look like v2 or v2.1 and be unused.',
+    contentKey: 'studio_help.research_opp_refusal_version',
+  },
+  'studio.research.oppRefusalDraft': {
+    value: 'Only a DRAFT can be activated or edited.',
+    contentKey: 'studio_help.research_opp_refusal_draft',
+  },
+  'studio.research.oppRefusalNoModel': {
+    value: 'Activate a model before recomputing.',
+    contentKey: 'studio_help.research_opp_refusal_no_model',
+  },
 } as const satisfies Record<string, StudioStringEntry>
 
 /** Every key this module resolves. A typo is a compile error, not a blank space on the page. */

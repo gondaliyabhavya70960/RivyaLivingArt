@@ -625,6 +625,31 @@ const EXPECTED = {
   ],
   research_metric_coverage: ['snapshot_id', 'metric_key', 'n', 'denominator', 'as_of'],
 
+  /*
+   * Phase 32 — the model register carries the full common set (a person publishes a version);
+   * scores and components are measurements of the `activity_events` kind: timestamped by
+   * `computed_at`, never edited.
+   */
+  research_scoring_models: [
+    'version',
+    'signals',
+    'weights_total',
+    'lifecycle',
+    'created_at',
+    'updated_at',
+    'updated_by',
+  ],
+  research_opportunity_scores: [
+    'research_product_id',
+    'model_id',
+    'model_version',
+    'confidence',
+    'completeness',
+    'state',
+    'computed_at',
+  ],
+  research_opportunity_components: ['score_id', 'signal_key', 'weight', 'included'],
+
   bulk_operations: [
     'kind',
     'target_entity',

@@ -347,6 +347,9 @@ implementation detail of RC-213.
 | RC-323 | `AnalysisPanels` | product understanding | 31 | PLANNED | index only — Assortment, Price architecture, Dimensions, rendered from snapshots; coverage badge required |
 | RC-324 | `SourceCoveragePanel` | usability | 31 | PLANNED | index only — captured / priced / parsed per source; health read from the Phase 26 view |
 | RC-325 | `DeleteSetButton` | usability | 31 | PLANNED | index only — Client Component: dialog state only; the delete is a plain server-action form it submits |
+| RC-326 | `ScoreExplain` | product understanding | 32 | PLANNED | index only — the component table that visibly sums to the stored score; renders stored rows, never recomputes |
+| RC-327 | `ScoringModelPanel` | usability | 32 | PLANNED | index only — versions, the rank-movement diff, activation; owner and admin only |
+| RC-328 | `ActivateModelButton` | usability | 32 | PLANNED | index only — Client Component: dialog state only; activation is a plain server-action form |
 
 ### 6.4 Three — `components/three/`
 

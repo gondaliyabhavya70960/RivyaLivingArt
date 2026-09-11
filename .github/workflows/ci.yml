@@ -185,6 +185,12 @@ jobs:
       - name: Nothing imports a competitor's product into the catalogue
         run: npm run research:check-no-autoimport
 
+      # Phase 32. The opportunity score is a weighted mean a person can recompute by hand. FEAT
+      # §22's prohibition on opaque scores is the design constraint; this fails the build on any
+      # learned, embedded, clustered or language-model term under the engine's directory.
+      - name: The opportunity engine has no learned or opaque term
+        run: npm run research:check-no-ml
+
       # Proves the seeding contract end to end on a fresh database: every record inserts, then
       # every record updates and none inserts. A regression in the hashing makes the second run
       # insert or skip instead, which no unit test with a fake client could catch.

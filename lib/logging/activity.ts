@@ -56,6 +56,8 @@ export const ACTIVITY_ACTIONS = [
    * in that phase worth a feed line, because it is what changes the numbers colleagues are reading.
    */
   'research.comparison.recomputed',
+  /** Phase 32. Activating a scoring model changes which competitor rows sort first for everyone. */
+  'research.scoring_model.activated',
 ] as const
 
 export type ActivityAction = (typeof ACTIVITY_ACTIONS)[number]

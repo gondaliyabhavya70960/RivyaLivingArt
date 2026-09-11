@@ -4335,6 +4335,124 @@ export type Database = {
           },
         ]
       }
+      research_opportunity_components: {
+        Row: {
+          id: string
+          score_id: string
+          signal_key: string
+          raw_input: string | null
+          normalised: number | null
+          weight: number
+          contribution: number | null
+          included: boolean
+          exclusion_reason: string | null
+        }
+        Insert: {
+          id?: string
+          score_id: string
+          signal_key: string
+          raw_input?: string | null
+          normalised?: number | null
+          weight: number
+          contribution?: number | null
+          included: boolean
+          exclusion_reason?: string | null
+        }
+        Update: {
+          id?: string
+          score_id?: string
+          signal_key?: string
+          raw_input?: string | null
+          normalised?: number | null
+          weight?: number
+          contribution?: number | null
+          included?: boolean
+          exclusion_reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'research_opportunity_components_score_id_fkey'
+            columns: ['score_id']
+            isOneToOne: false
+            referencedRelation: 'research_opportunity_scores'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      research_opportunity_scores: {
+        Row: {
+          id: string
+          research_product_id: string
+          model_id: string
+          model_version: string
+          score: number | null
+          raw: number | null
+          confidence: number
+          completeness: number
+          state: string
+          analytics_snapshot_id: string | null
+          computed_at: string
+          computed_by: string | null
+        }
+        Insert: {
+          id?: string
+          research_product_id: string
+          model_id: string
+          model_version: string
+          score?: number | null
+          raw?: number | null
+          confidence: number
+          completeness: number
+          state: string
+          analytics_snapshot_id?: string | null
+          computed_at?: string
+          computed_by?: string | null
+        }
+        Update: {
+          id?: string
+          research_product_id?: string
+          model_id?: string
+          model_version?: string
+          score?: number | null
+          raw?: number | null
+          confidence?: number
+          completeness?: number
+          state?: string
+          analytics_snapshot_id?: string | null
+          computed_at?: string
+          computed_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'research_opportunity_scores_analytics_snapshot_id_fkey'
+            columns: ['analytics_snapshot_id']
+            isOneToOne: false
+            referencedRelation: 'research_analytics_snapshots'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'research_opportunity_scores_computed_by_fkey'
+            columns: ['computed_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'research_opportunity_scores_model_id_fkey'
+            columns: ['model_id']
+            isOneToOne: false
+            referencedRelation: 'research_scoring_models'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'research_opportunity_scores_research_product_id_fkey'
+            columns: ['research_product_id']
+            isOneToOne: false
+            referencedRelation: 'research_products'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       research_pipeline_events: {
         Row: {
           id: string
@@ -4960,6 +5078,82 @@ export type Database = {
           },
           {
             foreignKeyName: 'research_saved_views_updated_by_fkey'
+            columns: ['updated_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      research_scoring_models: {
+        Row: {
+          id: string
+          version: string
+          name: string
+          description: string | null
+          signals: Json
+          weights_total: number
+          min_confidence: number
+          lifecycle: string
+          activated_at: string | null
+          activated_by: string | null
+          retired_at: string | null
+          created_at: string
+          created_by: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          version: string
+          name: string
+          description?: string | null
+          signals: Json
+          weights_total: number
+          min_confidence?: number
+          lifecycle?: string
+          activated_at?: string | null
+          activated_by?: string | null
+          retired_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          version?: string
+          name?: string
+          description?: string | null
+          signals?: Json
+          weights_total?: number
+          min_confidence?: number
+          lifecycle?: string
+          activated_at?: string | null
+          activated_by?: string | null
+          retired_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'research_scoring_models_activated_by_fkey'
+            columns: ['activated_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'research_scoring_models_created_by_fkey'
+            columns: ['created_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'research_scoring_models_updated_by_fkey'
             columns: ['updated_by']
             isOneToOne: false
             referencedRelation: 'users'

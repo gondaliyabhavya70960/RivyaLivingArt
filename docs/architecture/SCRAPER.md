@@ -2726,3 +2726,82 @@ No score, rank or opportunity statement (32). No image comparison (33). No first
 Analytics tab (37). No currency conversion — no rate source exists and inventing one would fabricate
 every figure computed from it. No spreadsheet export (36). No public surface: I3 holds, and the
 isolation guard's allowlist still holds exactly two constraints.
+
+## 23. The opportunity engine as built — Phase 32
+
+**This is a ranking heuristic over research data, not a measurement of demand.** A score is the
+weighted mean of seven declared signals, each normalised to 0–100 by a rule written in code and
+weighted by a versioned model. Every stored score keeps its own arithmetic — one component row per
+signal — and a researcher with a pocket calculator can reproduce the total. There is no
+machine-learning model, no language model, no embedding and no hidden term anywhere in
+`lib/scraper/analytics/opportunity/`, and `npm run research:check-no-ml` fails the build on one.
+
+### 23.1 The formula, verbatim from `score.ts`
+
+```text
+included   = signals whose coverage requirement is met
+raw        = Σ(weight_i × normalised_i) / Σ(weight_i)          for i in included
+confidence = Σ(weight_i) / Σ(weight_all)
+completeness = share of Phase 28 required fields present on the row
+score      = round(raw × (0.6 + 0.4 × completeness))
+state      = confidence < 0.5  →  INSUFFICIENT_DATA   (score is stored but never ranked)
+```
+
+`completeness` counts six fields, named once in `completeness.ts`: title, currency, a usable price,
+parsed dimensions, at least one material token, a mapped category. A sparse row is capped at 60 %
+of its raw score.
+
+**Excluded is not zero.** A signal whose coverage requirement is unmet contributes nothing and
+lowers `confidence`; it never contributes 0, which would read as "a poor fit" rather than "we do not
+know". `research_opportunity_components_included_means_value` is that rule at the row.
+
+### 23.2 The seven signals
+
+| Key | Question | Normalisation | Weight (v1) | Coverage |
+|---|---|---|---|---|
+| `category_gap` | how thinly does Rivya's published catalogue cover this mapped category? | 0 published → 100; ≥ 12 → 0; linear | 20 | the row is mapped |
+| `large_format_fit` | does it sit where SEED §56 says the priority sits? | the 24-cell table in `signals/large-format-fit.ts`: large → 100; not large → 50 / 75 / 70 / 60 / 40 / 25 / 10 by category; unknown → excluded | 20 | `is_large_format` known and category mapped |
+| `price_band_gap` | is this band unoccupied by Rivya's published range? | unoccupied → 100, adjacent → 50, occupied → 0, over Phase 31's quantile edges per currency | 15 | priced, and ≥ 5 published Rivya products priced in that currency |
+| `assortment_density` | how many independent sources list something comparable? | 1 → 30, 2 → 60, ≥ 3 → 100 in the same category and band | 15 | ≥ 3 enabled sources |
+| `change_velocity` | is this part of the market moving? | MATERIAL changes in the category, 90 days: 0 → 0, ≥ 10 → 100, linear | 10 | ≥ 30 days of run history for the source |
+| `customisation_signal` | does the market treat this as customisable? | the `customization` key of the current version's normalised payload: true → 100, false → 0 | 10 | the source declares the key AND the version carries it |
+| `material_adjacency` | is it made of what Rivya works in? | matched share of `material_tokens` in the `materials` vocabulary × 100 | 10 | at least one token |
+
+`furniture` that is **not** large-format scores 50 — the one cell SEED §56 does not name, recorded
+in the signal module as a judgement. Changing it means publishing v2.
+
+### 23.3 The first-party side is read, never joined and never written
+
+`category_gap`, `price_band_gap` and `material_adjacency` need Rivya's published catalogue and its
+material vocabulary. `buildScoringContext()` reads `products` and `materials` with a `select` and
+hands the counts and the token set to the signals as plain values; the comparison happens in
+TypeScript. No SQL join crosses the research boundary, no research module imports a first-party
+repository (the no-auto-import guard), and nothing writes back (I4).
+
+### 23.4 Models: versioned, and immutable once they leave DRAFT
+
+`research_scoring_models` holds the signal document (Zod in `model.ts`, weights summing to 100,
+every key one of the seven), a confidence floor, and a lifecycle `DRAFT → ACTIVE → RETIRED`. Exactly
+one model is ACTIVE (partial unique index). `freeze_active_scoring_model()` rejects any change to
+`signals`, `weights_total` or `min_confidence` on a non-draft row, naming the version — so old scores
+keep pointing at the model that produced them and changing weights means publishing a new version.
+v1 is seeded DRAFT by `0302`; activation is a human act under `research.score.manage` (owner,
+admin), audited, and the panel renders the rank-movement diff — the draft's weights beside the
+active model's, and how many ranked rows would move by more than ten places — before the button.
+The diff re-weights stored components; it scans nothing.
+
+### 23.5 Recomputation is explicit
+
+`snapshotScope` has its twin here: `scoreScope()` in `lib/scraper/workflows/score.ts` is the one
+place a score is produced, reached by `npm run research:score`, the 03:15 UTC cron
+(`app/api/cron/research-score`, `CRON_SECRET`, answering `skipped: no_active_model` rather than
+failing while no human has activated one) and the Studio Recompute action. A DRAFT can be dry-run
+and never stored. `--explain=<id>` prints the component table the drawer shows; both read the same
+function, and the drawer's footer reproduces the total from the stored components.
+
+### 23.6 What this phase does not do
+
+No demand forecast, sales estimate, revenue projection or recommended price — every one is a
+fabricated business fact. No automatic consequence: a score of 100 sorts first and does nothing
+else. No shortlisting or confirming (35). No image or visual signal (33). No scoring of Rivya's own
+products.

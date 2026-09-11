@@ -7,6 +7,65 @@
 ---
 
 ## Current Phase
+**Phase 32 — Opportunity Engine. COMPLETE, WITH NO MODEL ACTIVE.** Rivya has a ranked view of where
+the market looks under-served, and anyone can see exactly why a row is where it is: a score is the
+weighted mean of seven declared signals under a versioned model, every stored score keeps one
+component row per signal, and the drawer's footer reproduces the total from those rows.
+
+**Nothing is ranked, because nothing has been fetched and v1 is a DRAFT.** Activation is an owner
+or admin's act on `/studio/research/opportunities`; the nightly cron answers
+`skipped: no_active_model` until then. That is the shipped state, not a gap.
+
+### Phase 32: what is built
+
+**Migrations `0300`–`0302`.** `research_scoring_models` (lifecycle, one ACTIVE, the immutability
+trigger verbatim), `research_opportunity_scores`, `research_opportunity_components`
+(`included = (normalised is not null)`), and v1 seeded DRAFT as configuration.
+
+**The formula, once.** `lib/scraper/analytics/opportunity/score.ts`; printed verbatim in SCRAPER
+§23; a worked example with hand-written literals in `tests/unit/opportunity-score.test.ts`.
+`large_format_fit` resolves all 24 category × flag cells with no default (exhaustive test).
+
+**The first-party side is read, never joined.** `buildScoringContext()` selects `products` and
+`materials` and hands counts and a token set to the signals; the comparison happens in TypeScript.
+The no-auto-import guard still holds.
+
+**Studio.** `/studio/research/opportunities`: provenance header, Scored / Insufficient-data tabs,
+Explain drawer, exclusions panel, model panel (owner, admin) with the rank-movement diff before the
+Activate button. `npm run research:score` with `--explain`; `app/api/cron/research-score` at
+03:15 UTC; `npm run research:check-no-ml` in `check` and CI, proved to fail on a fixture.
+
+### Phase 32: readings the repository forced
+
+1. **A seeded model has no author.** `created_by` is nullable (A32).
+2. **The diff needs no scan.** Normalisation lives in code; only weights differ between versions, so
+   the rank movement is computed from stored components.
+3. **A row with no band still has a density answer.** Unpriced rows fall in `(category, none)`;
+   the worked example's second case was corrected to that reading.
+
+### Phase 32: verification, as actually run
+
+- `npm run check` green (now including `research:check-no-ml`).
+- Unit project — see the PR for counts; RLS project with `RLS_TESTS_REQUIRED=1` including
+  `tests/unit/rls/phase32.test.ts` (8 cases: seeded v1, I2, weights CHECK, one ACTIVE, the trigger
+  naming the version, owner may draft and researcher may not, owner refused a score insert,
+  excluded ≠ zero at the row).
+- Production build through the local PostgREST shim; `security:check-bundle` clean.
+
+### Phase 32: hosted parity
+
+`0300`–`0302` applied to `ccvarsmzickdkryoakdg` with ledger rows; digest recorded in the PR.
+
+### The next exact action
+
+**Phase 33 — Visual Similarity, first-party half.** The owner's decision: competitor images are
+referenced by URL only and never fetched. Pure hashers, `media_asset_hashes`, the upload duplicate
+guard, the backfill of the 250 manifest assets.
+
+---
+
+### Superseded — Phase 31's state
+
 **Phase 31 — Analytics + Comparison. COMPLETE.** The research corpus is measurable, and every
 measurement carries its own error bars: three pure analyses — assortment, price architecture,
 dimensions — each returning a coverage record (`n`, denominator, percentage, and a count per reason
