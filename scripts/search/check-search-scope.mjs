@@ -48,7 +48,13 @@ const ENTRIES = [
  * `scraper` is included alongside the two research spellings because the Phase 25 fetcher lives at
  * `lib/scraper/**`, and an import of it is exactly as bad as a reference to the table.
  */
-const FORBIDDEN = /research_|researchProduct|researchSearch|\bscraper\b/i
+/*
+ * `research_status` IS EXEMPT for the reason the research isolation gate gives: it is the column
+ * on `seo_keyword_themes` (Phase 39) that records the OWNER'S progress on a keyword, and the
+ * schema module that names it sits on the public path because the redirect resolver imports it.
+ * Every other `research_` identifier is still refused.
+ */
+const FORBIDDEN = /research_(?!status\b)|researchProduct|researchSearch|\bscraper\b/i
 
 /**
  * Files that MAY name the forbidden identifiers.

@@ -7,8 +7,8 @@ SEED §54’s audit of what the content seed actually put in the database, read 
 database rather than from the seed modules. Its target is §54’s: **100% of intended launch
 copy mapped to a Studio editing control.**
 
-- **560** rows audited
-- **68** await owner verification and cannot be published until it is given
+- **580** rows audited
+- **70** await owner verification and cannot be published until it is given
 - **0** are authored and deferred to a later phase’s tables
 - **0** carry a bound media asset
 
@@ -274,7 +274,6 @@ the phase that creates its table.
 | Global content | global:NEWSLETTER.body | NEWSLETTER.body | Yes | Yes | `/studio/content/pages/global` | No | — | — | DRAFT |
 | Global content | global:NEWSLETTER.cta_label | NEWSLETTER.cta_label | Yes | Yes | `/studio/content/pages/global` | No | — | — | DRAFT |
 | Global content | global:NEWSLETTER.heading | NEWSLETTER.heading | Yes | Yes | `/studio/content/pages/global` | No | — | — | DRAFT |
-| Global content | global:SEO_DEFAULT.keyword_themes | SEO_DEFAULT.keyword_themes | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | global:SEO_DEFAULT.site_name | SEO_DEFAULT.site_name | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | global:SEO_DEFAULT.title_template | SEO_DEFAULT.title_template | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | global:SOCIAL.og_description | SOCIAL.og_description | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
@@ -307,6 +306,10 @@ the phase that creates its table.
 | Global content | global:STUDIO_HELP.research_bridge_acknowledgement | STUDIO_HELP.research_bridge_acknowledgement | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | global:STUDIO_HELP.research_cf_intro | STUDIO_HELP.research_cf_intro | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | global:STUDIO_HELP.research_sl_intro | STUDIO_HELP.research_sl_intro | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:STUDIO_HELP.seo_derived_note | STUDIO_HELP.seo_derived_note | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:STUDIO_HELP.seo_keywords_caveat | STUDIO_HELP.seo_keywords_caveat | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:STUDIO_HELP.seo_redirects_note | STUDIO_HELP.seo_redirects_note | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:STUDIO_HELP.seo_structured_note | STUDIO_HELP.seo_structured_note | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | global:STUDIO_HELP.verification.about.03.scale | STUDIO_HELP.verification.about.03.scale | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | global:STUDIO_HELP.verification.about.04.bespoke | STUDIO_HELP.verification.about.04.bespoke | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | global:STUDIO_HELP.verification.process.02.brief | STUDIO_HELP.verification.process.02.brief | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
@@ -483,6 +486,23 @@ the phase that creates its table.
 | SEO | seo:path.large-format | PATH /large-format | Yes | Yes | `/studio/content/seo` | No | — | DRAFT | DRAFT |
 | SEO | seo:path.portfolio | PATH /portfolio | Yes | Yes | `/studio/content/seo` | No | — | DRAFT | DRAFT |
 | SEO | seo:path.process | PATH /process | Yes | Yes | `/studio/content/seo` | No | — | DRAFT | DRAFT |
+| SEO keywords | keyword:3d-printed-furniture | 3D printed furniture | Yes | Yes | `/studio/content/seo?tab=keywords` | No | — | — | DRAFT |
+| SEO keywords | keyword:bespoke-resin-furniture | bespoke resin furniture | Yes | Yes | `/studio/content/seo?tab=keywords` | No | — | — | DRAFT |
+| SEO keywords | keyword:collectible-furniture | collectible furniture | Yes | Yes | `/studio/content/seo?tab=keywords` | No | — | — | DRAFT |
+| SEO keywords | keyword:custom-furniture-india | custom furniture India | Yes | Yes | `/studio/content/seo?tab=keywords` | Yes | — | — | DRAFT |
+| SEO keywords | keyword:custom-resin-art | custom resin art | Yes | Yes | `/studio/content/seo?tab=keywords` | No | — | — | DRAFT |
+| SEO keywords | keyword:custom-resin-table | custom resin table | Yes | Yes | `/studio/content/seo?tab=keywords` | No | — | — | DRAFT |
+| SEO keywords | keyword:epoxy-resin-furniture | epoxy resin furniture | Yes | Yes | `/studio/content/seo?tab=keywords` | No | — | — | DRAFT |
+| SEO keywords | keyword:large-resin-art | large resin art | Yes | Yes | `/studio/content/seo?tab=keywords` | No | — | — | DRAFT |
+| SEO keywords | keyword:resin-coffee-table | resin coffee table | Yes | Yes | `/studio/content/seo?tab=keywords` | No | — | — | DRAFT |
+| SEO keywords | keyword:resin-console-table | resin console table | Yes | Yes | `/studio/content/seo?tab=keywords` | No | — | — | DRAFT |
+| SEO keywords | keyword:resin-dining-table | resin dining table | Yes | Yes | `/studio/content/seo?tab=keywords` | No | — | — | DRAFT |
+| SEO keywords | keyword:resin-furniture | resin furniture | Yes | Yes | `/studio/content/seo?tab=keywords` | No | — | — | DRAFT |
+| SEO keywords | keyword:resin-furniture-india | resin furniture India | Yes | Yes | `/studio/content/seo?tab=keywords` | Yes | — | — | DRAFT |
+| SEO keywords | keyword:resin-preservation | resin preservation | Yes | Yes | `/studio/content/seo?tab=keywords` | No | — | — | DRAFT |
+| SEO keywords | keyword:resin-wall-art | resin wall art | Yes | Yes | `/studio/content/seo?tab=keywords` | No | — | — | DRAFT |
+| SEO keywords | keyword:river-table | river table | Yes | Yes | `/studio/content/seo?tab=keywords` | No | — | — | DRAFT |
+| SEO keywords | keyword:sculptural-furniture | sculptural furniture | Yes | Yes | `/studio/content/seo?tab=keywords` | No | — | — | DRAFT |
 | Commissions | commission-form:furniture | Furniture Commission | Yes | Yes | `/studio/catalog/customization-forms` | No | — | — | DRAFT |
 | Commissions | commission-step:furniture.project_type | Product / Project Type | Yes | Yes | `/studio/catalog/customization-forms` | No | — | — | — |
 | Commissions | commission-step:furniture.dimensions | Approximate Dimensions | Yes | Yes | `/studio/catalog/customization-forms` | No | — | — | — |
@@ -578,3 +598,16 @@ the phase that creates its table.
 | Journal | journal-article:08 | Preserving Flowers in Resin: What a Custom Brief Should Include | Yes | Yes | `/studio/content/journal` | Yes | — | — | DRAFT |
 | Journal | journal-article:09 | How Material Choice Changes the Character of a Space | Yes | Yes | `/studio/content/journal` | No | — | — | DRAFT |
 | Journal | journal-article:10 | Why Bespoke Furniture Starts With Context | Yes | Yes | `/studio/content/journal` | No | — | — | DRAFT |
+
+## SEO coverage
+
+> GENERATED by the same run as the inventory above (`scripts/seo/build-seo-coverage.ts`).
+> Counts of rows in a named state; no figure here is a ranking, a volume or a claim.
+
+- **39** addresses resolved (19 pages, 20 entities)
+- **27** resolve a title or description from page content (DERIVED): `/collection/3d-resin`, `/collection/collectible-design`, `/collection/decor`, `/collection/furniture`, `/collection/gifts`, `/collection/preservation`, `/collection/wall-statement-art`, `/collections/aurora`, `/collections/bespoke`, `/collections/botanical`, `/collections/clear`, `/collections/earth`, `/collections/forest`, `/collections/geode`, `/collections/midnight`, `/collections/monsoon`, `/collections/ocean`, `/journal/a-guide-to-resin-colour-transparency-and-visual-depth`, `/journal/choosing-the-right-size-for-a-statement-dining-table`, `/journal/from-digital-form-to-physical-object`, `/journal/how-material-choice-changes-the-character-of-a-space`, `/journal/large-wall-art-thinking-beyond-decoration`, `/journal/preserving-flowers-in-resin-what-a-custom-brief-should-include`, `/journal/resin-and-wood-designing-around-contrast`, `/journal/what-makes-a-resin-table-more-than-a-surface`, `/journal/what-to-prepare-before-requesting-a-custom-furniture-commission`, `/journal/why-bespoke-furniture-starts-with-context`
+- **30** have no description of their own: `/collection/3d-resin`, `/collection/collectible-design`, `/collection/decor`, `/collection/furniture`, `/collection/gifts`, `/collection/preservation`, `/collection/wall-statement-art`, `/faq`, `/privacy`, `/terms`, `/collections/aurora`, `/collections/bespoke`, `/collections/botanical`, `/collections/clear`, `/collections/earth`, `/collections/forest`, `/collections/geode`, `/collections/midnight`, `/collections/monsoon`, `/collections/ocean`, `/journal/a-guide-to-resin-colour-transparency-and-visual-depth`, `/journal/choosing-the-right-size-for-a-statement-dining-table`, `/journal/from-digital-form-to-physical-object`, `/journal/how-material-choice-changes-the-character-of-a-space`, `/journal/large-wall-art-thinking-beyond-decoration`, `/journal/preserving-flowers-in-resin-what-a-custom-brief-should-include`, `/journal/resin-and-wood-designing-around-contrast`, `/journal/what-makes-a-resin-table-more-than-a-surface`, `/journal/what-to-prepare-before-requesting-a-custom-furniture-commission`, `/journal/why-bespoke-furniture-starts-with-context`
+- **39** have no social image: `/`, `/about`, `/collection`, `/collection/3d-resin`, `/collection/collectible-design`, `/collection/decor`, `/collection/furniture`, `/collection/gifts`, `/collection/preservation`, `/collection/wall-statement-art`, `/contact`, `/custom-commissions`, `/faq`, `/journal`, `/large-format`, `/portfolio`, `/privacy`, `/process`, `/terms`, `/collections/aurora`, `/collections/bespoke`, `/collections/botanical`, `/collections/clear`, `/collections/earth`, `/collections/forest`, `/collections/geode`, `/collections/midnight`, `/collections/monsoon`, `/collections/ocean`, `/journal/a-guide-to-resin-colour-transparency-and-visual-depth`, `/journal/choosing-the-right-size-for-a-statement-dining-table`, `/journal/from-digital-form-to-physical-object`, `/journal/how-material-choice-changes-the-character-of-a-space`, `/journal/large-wall-art-thinking-beyond-decoration`, `/journal/preserving-flowers-in-resin-what-a-custom-brief-should-include`, `/journal/resin-and-wood-designing-around-contrast`, `/journal/what-makes-a-resin-table-more-than-a-surface`, `/journal/what-to-prepare-before-requesting-a-custom-furniture-commission`, `/journal/why-bespoke-furniture-starts-with-context`
+- **0** titles are shared by more than one address
+- **0** entities are `noindex`: —
+- **17** of 17 keyword themes are still UNRESEARCHED — SEED §42: the strategy must be refined through research before claiming ranking opportunity

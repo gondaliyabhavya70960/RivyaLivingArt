@@ -6458,6 +6458,10 @@ export type Database = {
           updated_by: string | null
           published_at: string | null
           published_by: string | null
+          structured_data_type: string | null
+          noindex: boolean
+          nofollow: boolean
+          derived: boolean
         }
         Insert: {
           id?: string
@@ -6485,6 +6489,10 @@ export type Database = {
           updated_by?: string | null
           published_at?: string | null
           published_by?: string | null
+          structured_data_type?: string | null
+          noindex?: boolean
+          nofollow?: boolean
+          derived?: boolean
         }
         Update: {
           id?: string
@@ -6512,6 +6520,10 @@ export type Database = {
           updated_by?: string | null
           published_at?: string | null
           published_by?: string | null
+          structured_data_type?: string | null
+          noindex?: boolean
+          nofollow?: boolean
+          derived?: boolean
         }
         Relationships: [
           {
@@ -6530,6 +6542,182 @@ export type Database = {
           },
           {
             foreignKeyName: 'seo_entries_updated_by_fkey'
+            columns: ['updated_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      seo_keyword_themes: {
+        Row: {
+          id: string
+          theme: string
+          normalized_theme: string
+          mapped_path: string | null
+          research_status: string
+          notes: string | null
+          evidence_url: string | null
+          researched_by: string | null
+          researched_at: string | null
+          status: Database['public']['Enums']['content_status']
+          owner_verification: Database['public']['Enums']['owner_verification']
+          fact_classification: Database['public']['Enums']['fact_classification']
+          seed_key: string | null
+          content_seed_version: string | null
+          seed_content_hash: string | null
+          seed_last_applied_at: string | null
+          owner_edited: boolean
+          created_at: string
+          updated_at: string
+          updated_by: string | null
+          published_at: string | null
+          published_by: string | null
+        }
+        Insert: {
+          id?: string
+          theme: string
+          normalized_theme: string
+          mapped_path?: string | null
+          research_status?: string
+          notes?: string | null
+          evidence_url?: string | null
+          researched_by?: string | null
+          researched_at?: string | null
+          status?: Database['public']['Enums']['content_status']
+          owner_verification?: Database['public']['Enums']['owner_verification']
+          fact_classification?: Database['public']['Enums']['fact_classification']
+          seed_key?: string | null
+          content_seed_version?: string | null
+          seed_content_hash?: string | null
+          seed_last_applied_at?: string | null
+          owner_edited?: boolean
+          created_at?: string
+          updated_at?: string
+          updated_by?: string | null
+          published_at?: string | null
+          published_by?: string | null
+        }
+        Update: {
+          id?: string
+          theme?: string
+          normalized_theme?: string
+          mapped_path?: string | null
+          research_status?: string
+          notes?: string | null
+          evidence_url?: string | null
+          researched_by?: string | null
+          researched_at?: string | null
+          status?: Database['public']['Enums']['content_status']
+          owner_verification?: Database['public']['Enums']['owner_verification']
+          fact_classification?: Database['public']['Enums']['fact_classification']
+          seed_key?: string | null
+          content_seed_version?: string | null
+          seed_content_hash?: string | null
+          seed_last_applied_at?: string | null
+          owner_edited?: boolean
+          created_at?: string
+          updated_at?: string
+          updated_by?: string | null
+          published_at?: string | null
+          published_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'seo_keyword_themes_published_by_fkey'
+            columns: ['published_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'seo_keyword_themes_researched_by_fkey'
+            columns: ['researched_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'seo_keyword_themes_updated_by_fkey'
+            columns: ['updated_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      seo_redirects: {
+        Row: {
+          id: string
+          from_path: string
+          to_path: string
+          status_code: number
+          reason: string | null
+          hit_count: number
+          last_hit_at: string | null
+          created_by: string | null
+          status: Database['public']['Enums']['content_status']
+          owner_verification: Database['public']['Enums']['owner_verification']
+          fact_classification: Database['public']['Enums']['fact_classification']
+          created_at: string
+          updated_at: string
+          updated_by: string | null
+          published_at: string | null
+          published_by: string | null
+        }
+        Insert: {
+          id?: string
+          from_path: string
+          to_path: string
+          status_code?: number
+          reason?: string | null
+          hit_count?: number
+          last_hit_at?: string | null
+          created_by?: string | null
+          status?: Database['public']['Enums']['content_status']
+          owner_verification?: Database['public']['Enums']['owner_verification']
+          fact_classification?: Database['public']['Enums']['fact_classification']
+          created_at?: string
+          updated_at?: string
+          updated_by?: string | null
+          published_at?: string | null
+          published_by?: string | null
+        }
+        Update: {
+          id?: string
+          from_path?: string
+          to_path?: string
+          status_code?: number
+          reason?: string | null
+          hit_count?: number
+          last_hit_at?: string | null
+          created_by?: string | null
+          status?: Database['public']['Enums']['content_status']
+          owner_verification?: Database['public']['Enums']['owner_verification']
+          fact_classification?: Database['public']['Enums']['fact_classification']
+          created_at?: string
+          updated_at?: string
+          updated_by?: string | null
+          published_at?: string | null
+          published_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'seo_redirects_created_by_fkey'
+            columns: ['created_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'seo_redirects_published_by_fkey'
+            columns: ['published_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'seo_redirects_updated_by_fkey'
             columns: ['updated_by']
             isOneToOne: false
             referencedRelation: 'users'

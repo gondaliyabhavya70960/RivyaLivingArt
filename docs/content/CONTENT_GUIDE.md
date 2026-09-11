@@ -469,3 +469,47 @@ twelfth commerce label.
   would then depend on a seed having been run against that environment.
 - **The public routes.** Nothing under `app/(site)/` consumes `resolvePage` yet. The copy, the
   windowing, the media resolution and the renderers all exist; no route calls them.
+
+## 10. Search engines and social cards — Phase 39
+
+**Every page resolves its metadata through one ladder, per field, first hit wins:**
+
+| Rung | What answers | Where it is edited |
+|---|---|---|
+| ENTITY | a `seo_entries` row of scope ENTITY for this one product, category, collection, project or article; beneath it the entity's own columns (`products.seo_title`, `categories.seo_description`) | the SEO panel on the entity's editor, or `/studio/content/seo?tab=entities` |
+| PATH | a `seo_entries` row of scope PATH for this address | `/studio/content/seo?tab=pages` |
+| DERIVED | the page's first `heading` and the first 155 characters of its first `body`, cut on a word boundary — never a sentence invented, never two sections joined | nowhere: it is a default, and the Coverage tab counts it as one |
+| GLOBAL | the single GLOBAL row and the `SEO_DEFAULT` / `SOCIAL` strings (SEED §41, §44) | `/studio/content/seo?tab=global` |
+
+The Studio prints the rung beside every field, so an editor always knows whether they are reading
+their own words or a default. The title template (`%s | Rivya Living Art`) is applied to a page
+title and never to a title that resolved from the GLOBAL rung, which is how `/` renders the brand
+once.
+
+**Canonical and robots** follow one table: a static path is canonical to itself; a filtered
+listing is canonical to the unfiltered category and `noindex, follow`; page 2 onward of a bare
+listing is canonical to itself with `rel=prev/next`; `/search` has no canonical and is `noindex,
+follow`; an owner-set canonical must be absolute and on the site's own origin. A page with no
+published section is `noindex` whatever its row says. `/studio/**` and `/api/**` carry
+`X-Robots-Tag: noindex, nofollow` on every response, and so does every route of a non-production
+deployment.
+
+**Structured data** is an allowlist of eight types, each emitted by one builder that returns
+nothing when its gate fails: `Organization` and `WebSite` on every page (the brand row not awaiting
+verification), `BreadcrumbList` on entity routes (real published parents only), `Product`
+(`offers` only for a FIXED price on a VERIFIED row — no rating, review, GTIN, MPN or availability,
+ever), `CollectionPage`, `Article` (the author is the studio unless a VERIFIED byline names a
+person), `FAQPage` (only VERIFIED rows; none verified, no block) and `ContactPoint` (the contact
+section VERIFIED; never an address). `LocalBusiness`, opening hours, shipping and return terms,
+awards and certifications are never emitted anywhere — each is a claim the studio has not made.
+
+**Keyword themes** (`/studio/content/seo?tab=keywords`) are the seventeen SEED §42 themes as
+research targets: theme, mapped path, status, notes and an evidence link. SEED §42 is binding —
+"the actual SEO strategy must be refined through research before claiming ranking opportunity" —
+so no volume, difficulty, rank or opportunity figure is recorded anywhere; the table has no column
+for one. No keyword string is rendered on a public page and there is no keywords meta tag.
+
+**Redirects** (`/studio/content/seo?tab=redirects`) are consulted only on an address that would
+otherwise be a 404, followed one hop, and refused at save time when they would loop or chain. A
+product whose address changes in Studio offers a redirect from the old address, pre-ticked.
+

@@ -4,7 +4,7 @@ import type * as React from 'react'
 
 import { MerchandisedRow } from '@/components/patterns/MerchandisedRow'
 import { CatalogListing, loadCatalogListing } from '@/lib/catalog/listing'
-import { canonicalCatalogUrl, catalogUrl } from '@/lib/catalog/query'
+import { catalogUrl, isFilteredCatalogQuery } from '@/lib/catalog/query'
 import { optionalEnv } from '@/lib/env'
 import { resolveSlot } from '@/lib/cms/merchandising'
 import { cmsPageMetadata, renderCmsPage } from '@/lib/cms/render-page'
@@ -50,7 +50,7 @@ export async function generateMetadata({
   })
 
   return cmsPageMetadata(PATH, {
-    canonicalPath: canonicalCatalogUrl(PATH, query),
+    listing: { page, filtered: isFilteredCatalogQuery(query) },
     pagination: {
       ...(page > 1 ? { previous: catalogUrl(PATH, query, { page: page - 1 }) } : {}),
       ...(page < pageCount ? { next: catalogUrl(PATH, query, { page: page + 1 }) } : {}),

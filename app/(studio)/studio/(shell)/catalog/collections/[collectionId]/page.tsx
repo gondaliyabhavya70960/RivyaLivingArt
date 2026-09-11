@@ -9,6 +9,7 @@ import { Text } from '@/components/primitives/Text'
 import { Button } from '@/components/primitives/Button'
 import { CollectionCurator } from '@/components/studio/CollectionCurator'
 import { ActionForm } from '@/components/studio/ActionForm'
+import { EntitySeoPanel } from '@/components/studio/seo/EntitySeoPanel'
 import { PageHeader } from '@/components/studio/PageHeader'
 import { RelatedContentPicker } from '@/components/studio/RelatedContentPicker'
 import { StatusPill } from '@/components/studio/StatusPill'
@@ -222,6 +223,15 @@ export default async function Page({
             action={setRelationAction}
           />
         </Stack>
+
+        <EntitySeoPanel
+          entityType="collections"
+          entityId={collection.id}
+          entityPath={`/collections/${collection.slug.toLowerCase()}`}
+          name={collection.name}
+          summary={collection.statement}
+          role={session.role}
+        />
       </Stack>
     </StudioPage>
   )

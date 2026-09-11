@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { productImageUrls, productJsonLd } from '@/lib/seo/product-jsonld'
+import { productImageUrls, productJsonLd } from '@/lib/seo/jsonld/product'
 import type { Category, MediaAsset, Product } from '@/lib/supabase/schemas'
 
 /**
@@ -71,22 +71,41 @@ describe('productJsonLd — offers', () => {
     expect(JSON.stringify(node)).not.toContain('12500')
   })
 
-  it('emits offers for FIXED, with the amount and its currency', () => {
+  it('emits offers for FIXED and VERIFIED, with the amount and its currency', () => {
     const node = productJsonLd(
-      input({ price_state: 'FIXED', price_minor: 1_250_000, currency: 'INR' }),
+      input({
+        price_state: 'FIXED',
+        price_minor: 1_250_000,
+        currency: 'INR',
+        owner_verification: 'VERIFIED',
+      }),
     )
     expect(node?.offers).toEqual({ '@type': 'Offer', price: '12500.00', priceCurrency: 'INR' })
   })
 
+  it('omits offers for a FIXED row the owner has not verified (Phase 39)', () => {
+    const node = productJsonLd(
+      input({ price_state: 'FIXED', price_minor: 1_250_000, currency: 'INR' }),
+    )
+    expect(node).not.toHaveProperty('offers')
+  })
+
   it('omits offers for a FIXED row with no currency — half an offer is worse than none', () => {
-    const node = productJsonLd(input({ price_state: 'FIXED', price_minor: 1_250_000 }))
+    const node = productJsonLd(
+      input({ price_state: 'FIXED', price_minor: 1_250_000, owner_verification: 'VERIFIED' }),
+    )
     expect(node).not.toHaveProperty('offers')
   })
 
   it('omits offers when the formatter cannot express the amount', () => {
     const node = productJsonLd(
       input(
-        { price_state: 'FIXED', price_minor: 1_250_000, currency: 'ZZZ' },
+        {
+          price_state: 'FIXED',
+          price_minor: 1_250_000,
+          currency: 'ZZZ',
+          owner_verification: 'VERIFIED',
+        },
         {
           formatAmount: () => null,
         },

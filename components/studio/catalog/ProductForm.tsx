@@ -133,6 +133,20 @@ export function ProductForm({
             required
             requiredLabel={t('studio.catalog.requiredLabel')}
           />
+          {/*
+           * Phase 39. PRE-TICKED, AND ONLY MEANINGFUL WHEN THE SLUG CHANGES: the action compares
+           * the saved slug with the submitted one and, if they differ and this is ticked, writes a
+           * `seo_redirects` row from the old address to the new. A product being created has no
+           * old address, so the box is absent rather than disabled.
+           */}
+          {values.id === null ? null : (
+            <Checkbox
+              name="create_redirect"
+              label={t('studio.catalog.product.createRedirect')}
+              defaultChecked
+              data-create-redirect=""
+            />
+          )}
           <TextField
             name="sku"
             label={t('studio.catalog.product.sku')}

@@ -23,7 +23,6 @@ import type { Collection } from '@/lib/supabase/schemas'
  */
 
 export type CollectionJsonLd = {
-  readonly '@context': 'https://schema.org'
   readonly '@type': 'CollectionPage'
   readonly name: string
   readonly url: string
@@ -36,6 +35,9 @@ export function collectionJsonLd(
   url: string,
   imageUrl: string | null,
 ): CollectionJsonLd | null {
+  // Phase 39's gate: the row is PUBLISHED. The route only reaches here through the anon client,
+  // which already refuses a draft; the check is stated so a test can state it too.
+  if (collection.status !== 'PUBLISHED') return null
   const name = collection.name?.trim() ?? ''
   // A node with no name is not a description of anything. The column is `not null`, so this is a
   // guard against whitespace rather than against absence.
@@ -44,7 +46,6 @@ export function collectionJsonLd(
   const statement = collection.statement?.trim() ?? ''
 
   return {
-    '@context': 'https://schema.org',
     '@type': 'CollectionPage',
     name,
     url,

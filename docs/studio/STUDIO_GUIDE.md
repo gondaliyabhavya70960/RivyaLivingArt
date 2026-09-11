@@ -1304,6 +1304,38 @@ Publish At / Unpublish At where scheduling applies.
 
 ---
 
+### 9.4 `/studio/content/seo` — the SEO workspace — **BUILT, Phase 39**
+
+Seven tabs, one query parameter each (`?tab=`), every write under `seo.write` (owner, admin,
+editor; the Server Action checks it first and RLS agrees at the table), publishing under
+`content.publish`, deleting an entry under `destructive.execute` — the permission each control's
+policy actually names. **Every field shows the rung it resolved from** (`Own · Path · Derived ·
+Site default · Nothing`), so an editor always knows whether they are reading their own words or
+a default.
+
+| Tab | What it shows | What it changes |
+|---|---|---|
+| **Global** | The SEED §41/§44 defaults: site name, title template (`%s` is the page title), the GLOBAL `seo_entries` row (default title, description, social card, default social image, directives) and the two SOCIAL strings | `saveGlobalSeoAction`: the GLOBAL row and the four `global_content` strings, audited as `seo.global.update` |
+| **Pages** | One row per D3 path (PAGE and CATEGORY kinds), resolved title and description with their rungs, the directive, and whether the path has an entry of its own; `?path=` opens the entry form above the table | `saveSeoEntryAction` (PATH scope): title and description through the SERP preview, social title and description, social image, canonical URL (absolute, same-origin — anything else is refused with the reason), structured-data type from the allowlist, `noindex` / `nofollow`; publish / unpublish; delete |
+| **Entities** | Products, collections, projects and articles (a category is its page, listed under Pages), with a "using derived metadata" filter; `?entity_type=&entity_id=` opens the entry form | the same action, ENTITY scope |
+| **Keywords** | The seventeen SEED §42 themes as research targets: theme, mapped path, status (`UNRESEARCHED · RESEARCHED · TARGETED · REJECTED`), notes, evidence link; the two geography themes flagged as awaiting the owner's verification; §42's caveat printed verbatim above the list | add, edit, remove a theme. **No number anywhere** — the table has no column for a volume, difficulty, rank or opportunity figure |
+| **Structured data** | The eight-type allowlist with each type's route, gate and live state (emitting · some rows · nothing yet) and the live counts behind it; the never-emitted list; a chooser that renders **exactly what the builder would emit** for a chosen product, collection or article, or for the site graph, the FAQ page and the contact point | nothing — it reads |
+| **Redirects** | Every redirect with target, status code, how often it was followed and when, paused or live, and a chain warning where a hand edit produced one; a test box that looks a path up the way the 404 path does | add (loops and chains refused with the row named), pause, resume, delete |
+| **Coverage** | Counts of addresses in a named state: derived title or description, no description of their own, no social image, shared titles, `noindex` entities, unresearched themes | nothing — it reads. The same arithmetic writes the "SEO coverage" section of `INITIAL_CONTENT_INVENTORY.md` |
+
+**The SERP preview** (`SerpPreview`, a client island) counts characters against the 60 / 155 marks,
+warns past them and shows where a result would cut — and never blocks a save. A title is editorial.
+
+**The entity editors** — product, collection, project, article — carry the same entry form as a
+"Search and social" panel beside their own form (a form cannot nest a form; the two saves are two
+audited acts under two permissions). The product form additionally offers **"redirect the old
+address to the new one"**, pre-ticked, when its slug changes; the collection, project and article
+editors do not change a slug after creation, so they offer none.
+
+**Strings and help.** Every label is a `studio.seo.*` Studio string; four sentences are seeded
+into `global_content` under `STUDIO_HELP` (`seo_keywords_caveat`, `seo_derived_note`,
+`seo_redirects_note`, `seo_structured_note`) so the caveat can be reworded without a deploy.
+
 ## 10. `/studio/media/*` — the media manager
 
 **What the group is for.** One governed way to store, describe and deliver every non-code asset.

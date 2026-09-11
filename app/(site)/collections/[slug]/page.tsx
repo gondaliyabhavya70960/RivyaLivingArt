@@ -1,13 +1,15 @@
 import type { Metadata } from 'next'
 import * as React from 'react'
 
+import { JsonLd } from '@/components/patterns/JsonLd'
 import { mediaRefOf } from '@/lib/cms/media'
 import { cmsPageMetadata, renderCmsPage } from '@/lib/cms/render-page'
 import { optionalEnv } from '@/lib/env'
 import { resolveSpec } from '@/lib/media/transform'
 import { imageUrl } from '@/lib/media/url'
-import { collectionJsonLd } from '@/lib/seo/collection-jsonld'
-import { serialiseJsonLd } from '@/lib/seo/jsonld'
+import { entityBreadcrumbs } from '@/lib/seo/breadcrumbs'
+import { siteOrigin } from '@/lib/seo/canonical'
+import { collectionJsonLd, graphOf } from '@/lib/seo/jsonld'
 import { listCollections } from '@/lib/supabase/repositories/collections'
 import { listMediaAssetsByIds } from '@/lib/supabase/repositories/media'
 import { createPublicClient } from '@/lib/supabase/public'
@@ -83,7 +85,16 @@ async function collectionFor(slug: string) {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params
-  return cmsPageMetadata(pathFor(slug))
+  const collection = await collectionFor(slug)
+  return cmsPageMetadata(pathFor(slug), {
+    // The ENTITY rung (a `seo_entries` ENTITY row, read inside) above the page's PATH row; the
+    // page's own sections are the DERIVED rung, computed by `cmsPageMetadata`.
+    ...(collection === null
+      ? {}
+      : {
+          entity: { type: 'collections', id: collection.id, ogMediaId: collection.hero_media_id },
+        }),
+  })
 }
 
 export default async function CollectionPage({ params }: Props): Promise<React.ReactElement> {
@@ -95,13 +106,7 @@ export default async function CollectionPage({ params }: Props): Promise<React.R
 
   return (
     <>
-      {graph === null ? null : (
-        <script
-          type="application/ld+json"
-          // The value is escaped by `serialiseJsonLd`; `<` cannot close the element.
-          dangerouslySetInnerHTML={{ __html: serialiseJsonLd(graph) }}
-        />
-      )}
+      <JsonLd graph={graph} />
       {await renderCmsPage(path)}
     </>
   )
@@ -118,22 +123,32 @@ async function jsonLdFor(
   collection: Awaited<ReturnType<typeof collectionFor>> & object,
   path: string,
 ) {
-  const origin = optionalEnv('NEXT_PUBLIC_SITE_URL')?.trim() ?? ''
+  const origin = siteOrigin(optionalEnv('NEXT_PUBLIC_SITE_URL'))
   const cloudName = optionalEnv('NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME')?.trim() ?? ''
   // A relative `url` in structured data is not a URL. With no origin configured there is nothing
   // valid to emit, which is the honest answer in development rather than a half-formed graph.
-  if (origin === '') return null
+  if (origin === null) return null
 
   const mediaId = collection.signature_media_id ?? collection.hero_media_id
-  const assets =
-    mediaId === null ? new Map() : await listMediaAssetsByIds(createPublicClient(), [mediaId])
+  const [assets, trail] = await Promise.all([
+    mediaId === null
+      ? Promise.resolve(new Map())
+      : listMediaAssetsByIds(createPublicClient(), [mediaId]),
+    // Home → the collections listing (only while it is live) → this exhibition.
+    entityBreadcrumbs({
+      listingPath: '/collection',
+      entityName: collection.name,
+      entityPath: path,
+    }),
+  ])
   const asset = mediaId === null ? null : (assets.get(mediaId) ?? null)
 
-  return collectionJsonLd(
+  const node = collectionJsonLd(
     collection,
     new URL(path, origin).toString(),
     asset === null || cloudName === ''
       ? null
       : imageUrl(cloudName, mediaRefOf(asset), resolveSpec('og')),
   )
+  return graphOf([node, trail])
 }

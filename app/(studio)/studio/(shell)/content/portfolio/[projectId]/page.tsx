@@ -10,6 +10,7 @@ import { HelpText } from '@/components/primitives/HelpText'
 import { Stack } from '@/components/primitives/Stack'
 import { Text } from '@/components/primitives/Text'
 import { ActionForm } from '@/components/studio/ActionForm'
+import { EntitySeoPanel } from '@/components/studio/seo/EntitySeoPanel'
 import { ProjectGalleryPanel } from '@/components/studio/content/ProjectGalleryPanel'
 import { ProjectPublishControls } from '@/components/studio/content/ProjectPublishControls'
 import { SelectField, TextAreaField, TextField } from '@/components/studio/FormField'
@@ -339,6 +340,15 @@ export default async function Page({
             action={setProjectRelationAction}
           />
         </Stack>
+
+        <EntitySeoPanel
+          entityType="portfolio_projects"
+          entityId={project.id}
+          entityPath={`/portfolio/${project.slug.toLowerCase()}`}
+          name={project.title}
+          summary={project.summary}
+          role={session.role}
+        />
       </Stack>
     </StudioPage>
   )

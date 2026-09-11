@@ -37,7 +37,7 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   return cmsPageMetadata(PATH, {
     // Page 2 is its own address and its own canonical: telling a crawler that every page of a
     // listing is really page 1 loses every article that is not on the first one.
-    canonicalPath: journalUrl(PATH, page),
+    listing: { page, filtered: false },
     pagination: {
       ...(page > 1 ? { previous: journalUrl(PATH, page - 1) } : {}),
       ...(page < pageCount ? { next: journalUrl(PATH, page + 1) } : {}),

@@ -2,35 +2,38 @@ import 'server-only'
 
 import type { Metadata } from 'next'
 
+import { mediaRefOf } from '@/lib/cms/media'
 import { siteString } from '@/lib/cms/strings'
+import { optionalEnv } from '@/lib/env'
+import { resolveSpec } from '@/lib/media/transform'
+import { imageUrl } from '@/lib/media/url'
 import { getSiteChrome } from '@/lib/site/chrome'
 import { createPublicClient } from '@/lib/supabase/public'
 import { getGlobalSeoEntry, getSeoEntryByPath } from '@/lib/supabase/repositories/cms'
 import { listMediaAssetsByIds } from '@/lib/supabase/repositories/media'
-import { resolveSpec } from '@/lib/media/transform'
-import { imageUrl } from '@/lib/media/url'
-import { mediaRefOf } from '@/lib/cms/media'
-import { optionalEnv } from '@/lib/env'
-import type { SeoEntry } from '@/lib/supabase/schemas'
+import { getSeoEntryForEntity, type SeoEntityType } from '@/lib/supabase/repositories/seo'
+
+import { canonicalFor, siteOrigin } from './canonical'
+import { resolveSeo, type DerivedSeo, type ResolvedSeo } from './resolve'
 
 /**
- * A page's `Metadata`, from `seo_entries` with the SEED §41 fallbacks behind it.
+ * A page's `Metadata`, from the four-level ladder in `lib/seo/resolve.ts` — Phase 39.
  *
- * THE FALLBACK CHAIN IS THREE DEEP AND EVERY STEP IS A ROW, not a literal: the path's own entry,
- * then the single `GLOBAL` entry, then the `SEO_DEFAULT` strings. Only the last resort — an empty
- * title — is decided in code, and it is empty rather than invented. There is one literal in this
- * file, `'%s'`, and it is a format placeholder rather than copy.
+ * ENTITY → PATH → DERIVED → GLOBAL, per field, first hit wins; then the SEED §41 title template
+ * over whatever the ladder answered; then the canonical rule table in `lib/seo/canonical.ts`; then
+ * the directive. Every rung is a row or a computation over rows — the only literal in this file is
+ * `'%s'`, and it is a format placeholder rather than copy.
  *
- * ALL EIGHT PER-PATH ENTRIES ARE `DRAFT` AS SEEDED, so the anonymous client returns none of them
- * and every page currently renders from the GLOBAL row. That is not a defect to code around: the
- * titles assert what Rivya makes ("Resin Furniture & Functional Art"), so Phase 09 left them for
- * the owner to confirm. The chain means the site still has a coherent title and description in the
- * meantime instead of nothing.
+ * THE TEMPLATE IS APPLIED HERE, NOT THROUGH NEXT'S `title.template`. That field lives on a layout
+ * and applies to every descendant, including the home page, whose title IS the brand: run through
+ * the template it would read "Rivya Living Art | Rivya Living Art". The phase document's rule —
+ * `/` renders an absolute title — falls out of resolving per page instead: a title that resolved
+ * from the GLOBAL rung is the brand itself and is never templated.
  *
- * `noindex` FOR A PAGE WITH NO PUBLISHED SECTIONS. `renderCmsPage` already answers such a path
- * with a 404, so this is the belt to that braces: a route that starts rendering something before
- * its content is ready must not enter an index on the strength of it, and a crawler that saw the
- * page in a window where it briefly resolved would otherwise keep it.
+ * `noindex` FOR A PAGE WITH NO PUBLISHED SECTIONS, WHATEVER THE ROW SAYS. `renderCmsPage` already
+ * answers such a path with a 404; this is the belt to that braces, kept from Phase 10. The row's
+ * own `noindex`/`nofollow` add to it; a filtered listing and `/search` add `noindex` from the
+ * canonical rule; nothing subtracts.
  */
 
 const TITLE_PLACEHOLDER = '%s'
@@ -40,169 +43,137 @@ export type PageMetadataInput = {
   /** How many sections the page will actually render. Zero means `noindex`. */
   readonly liveSectionCount: number
   /**
-   * The address this particular view should be indexed at, when it is not `path`.
-   *
-   * A LISTING HAS MORE ADDRESSES THAN ROUTES. `/collection/furniture?sort=title&page=2` is a real,
-   * linkable, crawlable page and its canonical URL is itself — pointing every filtered and paged
-   * view back at the bare path would tell a crawler that page 2 is a duplicate of page 1 and that
-   * its products do not exist. Phase 14 passes the canonical URL its own query builder produced,
-   * so what is indexed is exactly what is rendered.
+   * The ENTITY rung: the `seo_entries` row of scope ENTITY for this entity is read here; the
+   * entity's OWN SEO columns (a product's `seo_title`) come in as `title`/`description`, because
+   * both are words an owner typed for this one thing and rank above the path's row.
    */
-  readonly canonicalPath?: string
-  /** `rel="prev"` / `rel="next"` for a paginated view, as absolute-from-root paths. */
-  readonly pagination?: { readonly previous?: string; readonly next?: string }
-  /**
-   * Title and description from the ROW ITSELF, for a route whose page is an entity rather than a
-   * `pages` record.
-   *
-   * `/product/[slug]` has no `seo_entries` row and cannot have one: entries are keyed by path, and
-   * there is one path per product. The words live on `products.seo_title` / `seo_description`
-   * instead. Passing them here rather than writing a second metadata builder is what keeps the
-   * §41 fallback chain — global entry, then `SEO_DEFAULT.site_name`, then the title template, then
-   * the social keys and the OG image — in one place. A second builder would drift from this one
-   * the first time either changed.
-   *
-   * Absent or blank falls through to exactly what a page with no entry gets.
-   */
-  readonly override?: {
+  readonly entity?: {
+    readonly type: SeoEntityType
+    readonly id: string
     readonly title?: string | null
     readonly description?: string | null
+    readonly ogMediaId?: string | null
   }
+  /** The DERIVED rung, computed by the caller from what it will render (`deriveSeo`). */
+  readonly derived?: DerivedSeo | null
+  /** A listing's page and whether any query beyond `page` narrows it. */
+  readonly listing?: { readonly page: number; readonly filtered: boolean }
+  /** `rel="prev"` / `rel="next"` for a paginated view, as absolute-from-root paths. */
+  readonly pagination?: { readonly previous?: string; readonly next?: string }
+  /** `/search`: no canonical, `noindex, follow`. */
+  readonly searchSurface?: boolean
 }
 
-function nonEmpty(value: string | null | undefined): string | null {
-  const trimmed = value?.trim() ?? ''
-  return trimmed === '' ? null : trimmed
+export type PageSeo = {
+  readonly metadata: Metadata
+  readonly resolved: ResolvedSeo
+  readonly canonicalHref: string | null
 }
 
-/**
- * `NEXT_PUBLIC_SITE_URL` as a `URL`, or null.
- *
- * NULL RATHER THAN A GUESS. `metadataBase` decides what a relative OpenGraph image resolves to; a
- * wrong origin there produces a card pointing at a domain that is not ours. An absent variable in
- * development is ordinary, and Next simply omits the absolute URLs.
- */
-function siteUrl(): URL | null {
-  const raw = process.env['NEXT_PUBLIC_SITE_URL']
-  if (raw === undefined || raw.trim() === '') return null
-  try {
-    return new URL(raw)
-  } catch {
-    return null
-  }
-}
-
-/** The og:image, if the entry names one and RLS admits it. */
-async function socialImage(entry: SeoEntry | null): Promise<string | null> {
-  if (entry?.og_media_id == null) return null
-  const assets = await listMediaAssetsByIds(createPublicClient(), [entry.og_media_id])
-  const asset = assets.get(entry.og_media_id)
+/** The og:image, if the ladder names one and RLS admits it. */
+async function socialImage(ogMediaId: string | null): Promise<string | null> {
+  if (ogMediaId === null) return null
+  const assets = await listMediaAssetsByIds(createPublicClient(), [ogMediaId])
+  const asset = assets.get(ogMediaId)
   if (asset === undefined) return null
   /*
    * NO CLOUD NAME MEANS NO CARD IMAGE, NOT A FAILED PAGE. `requiredEnv` here would throw inside
-   * `generateMetadata` — so a deployment without the variable would 500 on exactly those pages
-   * whose SEO entry names an image, which is the opposite of how a missing OPTIONAL asset should
-   * behave. Phase 10 made the same change in the site layout and `MediaSlot` for the same reason;
-   * this call was the one left holding `requiredEnv`, and it only fires once an entry has an
-   * `og_media_id`, which is why nothing had caught it.
+   * `generateMetadata`, so a deployment without the variable would 500 on exactly those pages
+   * whose SEO entry names an image. Phase 10 made the same choice in the site layout.
    */
   const cloudName = optionalEnv('NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME')
   if (cloudName === null) return null
-
   // The `og` preset, not an ad-hoc size: it fixes 1200x630 and `f_jpg` rather than `f_auto`,
   // because format negotiation needs an `Accept` header and the crawlers that fetch a card do
   // not send a useful one.
   return imageUrl(cloudName, mediaRefOf(asset), resolveSpec('og'))
 }
 
-export async function buildPageMetadata(input: PageMetadataInput): Promise<Metadata> {
+export async function resolvePageSeo(input: PageMetadataInput): Promise<PageSeo> {
   const client = createPublicClient()
 
-  const [entry, globalEntry, chrome] = await Promise.all([
+  const [pathEntry, globalEntry, entityEntry, chrome] = await Promise.all([
     getSeoEntryByPath(client, input.path),
     getGlobalSeoEntry(client),
+    input.entity === undefined
+      ? Promise.resolve(null)
+      : getSeoEntryForEntity(client, input.entity.type, input.entity.id),
     getSiteChrome(),
   ])
+
+  const resolved = resolveSeo({
+    entity: entityEntry,
+    entityOwn:
+      input.entity === undefined
+        ? null
+        : {
+            title: input.entity.title,
+            description: input.entity.description,
+            ogMediaId: input.entity.ogMediaId,
+          },
+    path: pathEntry,
+    derived: input.derived ?? null,
+    global: globalEntry,
+  })
 
   const template = siteString(chrome.strings, 'SEO_DEFAULT.title_template')
   const siteName = siteString(chrome.strings, 'SEO_DEFAULT.site_name')
 
-  const pageTitle = nonEmpty(input.override?.title) ?? nonEmpty(entry?.title)
-  const fallbackTitle = nonEmpty(globalEntry?.title) ?? siteName
-
   /**
-   * The template is applied HERE rather than through Next's `title.template`, because that field
-   * lives on a layout and applies to every descendant — including the pages whose own entry is
-   * already a full title. §41's `%s | Rivya Living Art` is meant for a page title, and the GLOBAL
-   * entry's title is the brand itself: run through the template it would read
-   * "Rivya Living Art | Rivya Living Art".
+   * The template applies to a PAGE title. A title that came from the GLOBAL rung is the brand's
+   * own, and the site name is the last resort behind it; neither is templated.
    */
   const title =
-    pageTitle === null
-      ? (fallbackTitle ?? '')
-      : template === null
-        ? pageTitle
-        : template.replace(TITLE_PLACEHOLDER, pageTitle)
+    resolved.title.level === 'NONE'
+      ? (siteName ?? '')
+      : resolved.title.level === 'GLOBAL' || template === null
+        ? (resolved.title.value ?? '')
+        : template.replace(TITLE_PLACEHOLDER, resolved.title.value ?? '')
 
-  const description =
-    nonEmpty(input.override?.description) ??
-    nonEmpty(entry?.description) ??
-    nonEmpty(globalEntry?.description) ??
-    undefined
+  const description = resolved.description.value ?? undefined
 
   const socialTitle =
-    nonEmpty(entry?.social_title) ??
-    // The override is the page's own title, so it precedes the GLOBAL social fallbacks but not a
-    // social title an editor wrote for this specific path.
-    nonEmpty(input.override?.title) ??
-    nonEmpty(globalEntry?.social_title) ??
-    siteString(chrome.strings, 'SOCIAL.og_headline') ??
-    title
+    resolved.socialTitle.value ?? siteString(chrome.strings, 'SOCIAL.og_headline') ?? title
   const socialDescription =
-    nonEmpty(entry?.social_description) ??
-    nonEmpty(input.override?.description) ??
-    nonEmpty(globalEntry?.social_description) ??
+    resolved.socialDescription.value ??
     siteString(chrome.strings, 'SOCIAL.og_description') ??
     description
 
-  const image = await socialImage(entry ?? globalEntry)
-  const base = siteUrl()
+  const rawSiteUrl = optionalEnv('NEXT_PUBLIC_SITE_URL')
+  const origin = siteOrigin(rawSiteUrl)
+  const canonical = canonicalFor({
+    siteUrl: origin,
+    path: input.path,
+    page: input.listing?.page,
+    filtered: input.listing?.filtered,
+    searchSurface: input.searchSurface,
+    ownerCanonical: resolved.canonicalUrl.value,
+  })
 
-  /**
-   * `robots` comes from the row when it is set, but a page with nothing on it is `noindex`
-   * regardless of what the row says. The row expresses editorial intent; this expresses whether
-   * there is anything to index at all, and the second one wins.
-   */
-  const indexable = input.liveSectionCount > 0
-  const robotsValue = nonEmpty(entry?.robots) ?? nonEmpty(globalEntry?.robots)
+  const image = await socialImage(resolved.ogMediaId.value)
 
-  /**
-   * ONE RESOLVED PATH FOR BOTH THE CANONICAL AND `og:url`, because they answer the same question.
-   *
-   * `canonicalPath` is what the catalogue routes pass so that page 3 of a filtered listing is
-   * canonical to itself rather than to page 1. `og:url` used `input.path` — the bare route — so the
-   * two disagreed on exactly the pages where `canonicalPath` was supplied: pasting
-   * `/collection/lighting?page=3` into WhatsApp previewed page 1's title and image, and the share
-   * silently sent the recipient somewhere the sender had not been looking at.
-   */
-  const canonicalPath = input.canonicalPath ?? input.path
+  const indexable = input.liveSectionCount > 0 && !resolved.noindex && !canonical.noindex
+  const follow = !resolved.nofollow
 
-  return {
+  const metadata: Metadata = {
     title,
     ...(description === undefined ? {} : { description }),
-    ...(base === null ? {} : { metadataBase: base, alternates: { canonical: canonicalPath } }),
+    ...(origin === null
+      ? {}
+      : {
+          metadataBase: new URL(origin),
+          ...(canonical.path === null ? {} : { alternates: { canonical: canonical.path } }),
+        }),
     ...(input.pagination === undefined ? {} : { pagination: input.pagination }),
-    robots: indexable
-      ? (robotsValue ?? undefined)
-      : // Explicit rather than `robots: 'noindex'`: `follow` still lets a crawler discover the
-        // links on the page, so an incomplete page does not become a dead end in the graph.
-        { index: false, follow: true },
+    // Explicit rather than a bare string: `follow` still lets a crawler discover the links on a
+    // page it will not index, so an incomplete page does not become a dead end in the graph.
+    robots: { index: indexable, follow },
     openGraph: {
       type: 'website',
       title: socialTitle,
       ...(socialDescription === undefined ? {} : { description: socialDescription }),
       ...(siteName === null ? {} : { siteName }),
-      ...(base === null ? {} : { url: new URL(canonicalPath, base).toString() }),
+      ...(canonical.href === null ? {} : { url: canonical.href }),
       ...(image === null ? {} : { images: [image] }),
     },
     twitter: {
@@ -214,4 +185,10 @@ export async function buildPageMetadata(input: PageMetadataInput): Promise<Metad
       ...(image === null ? {} : { images: [image] }),
     },
   }
+
+  return { metadata, resolved, canonicalHref: canonical.href }
+}
+
+export async function buildPageMetadata(input: PageMetadataInput): Promise<Metadata> {
+  return (await resolvePageSeo(input)).metadata
 }

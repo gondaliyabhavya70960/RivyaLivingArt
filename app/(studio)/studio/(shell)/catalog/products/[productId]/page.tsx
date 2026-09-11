@@ -4,6 +4,7 @@ import { Stack } from '@/components/primitives/Stack'
 import { ProductForm } from '@/components/studio/catalog/ProductForm'
 import { PublishControls } from '@/components/studio/catalog/PublishControls'
 import { ReadinessChecklist } from '@/components/studio/catalog/ReadinessChecklist'
+import { EntitySeoPanel } from '@/components/studio/seo/EntitySeoPanel'
 import { roleHasPermission } from '@/lib/auth/permissions'
 import { requirePermission } from '@/lib/auth/require'
 import { readinessChecklist } from '@/lib/catalog/validation'
@@ -82,6 +83,18 @@ export default async function Page({ params }: { params: Promise<{ productId: st
         mediaOptions={options.mediaOptions}
         action={saveProductAction}
         canWrite={roleHasPermission(session.role, 'catalog.write')}
+      />
+
+      {/* Phase 39: the ENTITY-scope SEO row, beside the form rather than inside it. */}
+      <EntitySeoPanel
+        entityType="products"
+        entityId={product.id}
+        entityPath={`/product/${product.slug.toLowerCase()}`}
+        name={product.title}
+        summary={product.summary}
+        ownTitle={product.seo_title}
+        ownDescription={product.seo_description}
+        role={session.role}
       />
     </Stack>
   )

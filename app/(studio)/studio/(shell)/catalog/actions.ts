@@ -32,6 +32,7 @@ import {
 } from '@/lib/supabase/repositories/catalog-admin'
 import { listConceptMediaAssets, listMediaAssets } from '@/lib/supabase/repositories/media'
 import { countProductSpecs } from '@/lib/supabase/repositories/product-specs'
+import { redirectForSlugChange } from '@/lib/seo/slug-redirect'
 
 /**
  * The catalogue editor's Server Actions.
@@ -331,6 +332,9 @@ export async function saveProductAction(
     const productId = text(form, 'id')
     const { draft, materialIds, issues } = parseProductForm(form)
 
+    // Phase 39: the address before this save, so a slug change can leave a redirect behind it.
+    const previousSlug = productId === null ? null : (await getProductById(client, productId)).slug
+
     // The chosen materials become part of the context so the readiness snapshot written below
     // reflects what is about to be saved rather than what was there before.
     const context = { ...(await contextFor(client, productId)), materialIds }
@@ -360,6 +364,20 @@ export async function saveProductAction(
     )
 
     await setProductMaterials(client, saved.id, materialIds, session.userId)
+
+    /*
+     * Phase 39. A slug change with the box ticked writes `/product/<old>` → `/product/<new>`, as
+     * `seo.write` and audited on its own; a role without it saves the product and gets no
+     * redirect, which the message names. Never on create: there is no old address.
+     */
+    if (previousSlug !== null && previousSlug !== saved.slug && checkbox(form, 'create_redirect')) {
+      await redirectForSlugChange(client, session, {
+        entityType: 'products',
+        entityId: saved.id,
+        fromPath: `/product/${previousSlug.toLowerCase()}`,
+        toPath: `/product/${saved.slug.toLowerCase()}`,
+      })
+    }
 
     revalidateCatalog(`/studio/catalog/products/${saved.id}`)
     return { status: 'saved', id: saved.id }

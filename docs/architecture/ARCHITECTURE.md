@@ -172,7 +172,7 @@ boundary rules under the table are what keep the tree from rotting.
 | `app/api/studio/**` | Studio-only JSON: `search`, `inquiries/export`, `models/inspect`. Permission-checked, never cached. **No media or competitor-image proxy route exists here or anywhere under `app/api/**`** — adding one is the change §1's boundary row forbids |
 | `app/api/auth/sign-out` | POST only, clears the session, writes an audit row |
 | `app/not-found.tsx`, `app/(site)/error.tsx`, `app/global-error.tsx` | Error surfaces. Token-only, **no media**, copy from `global_content` |
-| `app/robots.ts`, `app/sitemap.ts` | Published paths only |
+| `app/robots.ts`, `app/sitemap.xml/route.ts`, `app/sitemaps/[file]/route.ts` | Phase 39. `robots.txt` disallows `/studio` and `/api` and names the sitemap index when there is an origin; the index lists six children (`pages · categories · products · collections · portfolio · journal`), each PUBLISHED rows only, `lastmod` from `published_at` then `updated_at`, no `priority`, no `changefreq`, no image sitemap; `revalidate = 3600` |
 
 ### `components/`
 
@@ -205,7 +205,7 @@ D2's list, verbatim, with responsibilities:
 | `lib/whatsapp/` | `templates.ts`, `render.ts`, `shorten.ts`, `number.ts`, `link.ts`. Two builders only: `buildHandoffUrl` (requires a persisted `inquiryId`) and `buildDirectContactUrl` (generic greeting, allowlisted call sites) |
 | `lib/scraper/` | `core · adapters · normalization · validation · workflows · analytics`, exactly as D2 names them. See `SCRAPER.md` |
 | `lib/analytics/` | First-party metric registry, dashboard-card registry, availability resolution, daily snapshots. Every number carries `n`, a denominator and an `as of` |
-| `lib/seo/` | `metadata.ts`, structured data, canonical resolution, the SEED §41 fallbacks |
+| `lib/seo/` | Phase 39. `resolve.ts` (the four-level ladder ENTITY → PATH → DERIVED → GLOBAL, per field, with the one dumb derivation rule), `canonical.ts` (the rule table), `metadata.ts` (the ladder as `Metadata`: title template, canonical, `robots`, OG/Twitter), `jsonld/` (one gated builder per allowlisted type, `guard.ts` with `verifiedOnly()` and the forbidden-key list), `site-graph.ts` (Organization + WebSite for the layout), `breadcrumbs.ts`, `redirects.ts` (consulted only on the 404 path, one hop, 308), `redirect-rules.ts` (loop and chain detection), `sitemap.ts`, `coverage.ts`, `studio-resolution.ts`, `slug-redirect.ts` |
 | `lib/logging/` | `activity.ts` (`logActivity`), `system-log.ts` (`logSystem`), `redact.ts`. The redactor is shared by logs, environment checks and the documentation browser |
 | `lib/flags/` | `index.ts`, `flags.ts`. Typed flag union, evaluated server-side, default `false` |
 

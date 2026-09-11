@@ -287,8 +287,15 @@ const PUBLIC_TREES = [
  * page this vocabulary was borrowed from. The two are different columns in different worlds; the
  * I1 leg is what proves nothing joins them.
  */
+/*
+ * `research_status` IS THE ONE `research_` NAME THAT IS NOT RESEARCH DATA. It is a column on
+ * `seo_keyword_themes` (Phase 39) recording how far the OWNER has got with a keyword — UNRESEARCHED,
+ * RESEARCHED, TARGETED, REJECTED — and nothing about a competitor. The seed module that writes it
+ * lives under `content/`, a public tree, so the pattern excludes exactly that one name. Every
+ * other `research_` identifier is still refused.
+ */
 const FORBIDDEN =
-  /research_|researchProduct|researchSearch|\bscraper\b|scale_band|scaleBand|large_format_source|largeFormatSource/i
+  /research_(?!status\b)|researchProduct|researchSearch|\bscraper\b|scale_band|scaleBand|large_format_source|largeFormatSource/i
 
 const EXTENSIONS = ['.tsx', '.ts', '.mjs', '.js', '.jsx']
 

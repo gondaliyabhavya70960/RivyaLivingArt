@@ -232,7 +232,7 @@ export const STUDIO_NAV: readonly StudioNavGroup[] = [
         href: '/studio/content/seo',
         labelKey: 'studio.nav.content.seo',
         permission: 'content.read',
-        writePermission: 'content.write',
+        writePermission: 'seo.write',
         phases: [8, 39],
       },
     ],

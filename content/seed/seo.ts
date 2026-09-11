@@ -56,26 +56,57 @@ const socialRow = (key: string, value: string, label: string): SeedRecord => ({
   },
 })
 
-/** §42's seventeen themes, in its order. Research input, never rendered. */
-const KEYWORD_THEMES = [
-  'resin furniture',
-  'resin dining table',
-  'river table',
-  'epoxy resin furniture',
-  'custom resin table',
-  'bespoke resin furniture',
-  'resin coffee table',
-  'resin console table',
-  'sculptural furniture',
-  'collectible furniture',
-  '3D printed furniture',
-  'resin wall art',
-  'large resin art',
-  'custom furniture India',
-  'resin furniture India',
-  'custom resin art',
-  'resin preservation',
-] as const
+/**
+ * §42's seventeen themes, in its order, each with the path PHASE-39-46 §Phase 39 suggests it maps
+ * to. Research input, never rendered — Phase 39 moved them from one `global_content` row into
+ * `seo_keyword_themes`, one row per theme, so the owner can record research against each.
+ *
+ * TWO CARRY A VERIFICATION. `custom furniture India` and `resin furniture India` assert a service
+ * geography rather than a product category, and a geography is a claim about where the studio
+ * delivers; they are seeded OWNER_VERIFICATION_REQUIRED and stay so until the owner says otherwise.
+ * No theme carries a volume, a difficulty, a rank or an opportunity number: the table has no
+ * column for one.
+ */
+export const KEYWORD_THEMES: readonly {
+  readonly theme: string
+  readonly path: string
+  readonly geography?: true
+}[] = [
+  { theme: 'resin furniture', path: '/collection/furniture' },
+  { theme: 'resin dining table', path: '/large-format' },
+  { theme: 'river table', path: '/large-format' },
+  { theme: 'epoxy resin furniture', path: '/collection/furniture' },
+  { theme: 'custom resin table', path: '/large-format' },
+  { theme: 'bespoke resin furniture', path: '/collection/furniture' },
+  { theme: 'resin coffee table', path: '/large-format' },
+  { theme: 'resin console table', path: '/large-format' },
+  { theme: 'sculptural furniture', path: '/collection/collectible-design' },
+  { theme: 'collectible furniture', path: '/collection/collectible-design' },
+  { theme: '3D printed furniture', path: '/collection/3d-resin' },
+  { theme: 'resin wall art', path: '/collection/wall-statement-art' },
+  { theme: 'large resin art', path: '/collection/wall-statement-art' },
+  { theme: 'custom furniture India', path: '/contact', geography: true },
+  { theme: 'resin furniture India', path: '/contact', geography: true },
+  { theme: 'custom resin art', path: '/custom-commissions' },
+  { theme: 'resin preservation', path: '/collection/preservation' },
+]
+
+const keywordTheme = (row: (typeof KEYWORD_THEMES)[number]): SeedRecord => ({
+  seedKey: `keyword:${row.theme.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
+  table: 'seo_keyword_themes',
+  fields: {
+    theme: row.theme,
+    mapped_path: row.path,
+    research_status: 'UNRESEARCHED',
+    notes: null,
+    evidence_url: null,
+    // Never published: a theme is a research target, and nothing renders it. DRAFT is the honest
+    // state of a row that has no public face.
+    status: 'DRAFT',
+    fact_classification: 'SEO_COPY',
+    owner_verification: row.geography ? 'OWNER_VERIFICATION_REQUIRED' : 'NOT_REQUIRED',
+  },
+})
 
 /**
  * The per-path entries, from each page's own SEO block in the specification.
@@ -152,7 +183,7 @@ const pathEntry = (p: (typeof PATHS)[number]): SeedRecord => ({
 export const seoSeed: SeedModule = {
   name: 'seo',
   description:
-    'The global SEO defaults (§41), keyword themes (§42), social defaults (§44) and 8 per-path entries.',
+    'The global SEO defaults (§41), the 17 keyword themes (§42) as research targets, social defaults (§44) and 8 per-path entries.',
   records: [
     // --- §41 the one GLOBAL entry ---------------------------------------------------------------
     {
@@ -182,12 +213,8 @@ export const seoSeed: SeedModule = {
       'Title template',
       'SEED §41. `%s` is the page title; the template is what puts the brand after it.',
     ),
-    seoGlobal(
-      'keyword_themes',
-      KEYWORD_THEMES.join('\n'),
-      'Keyword themes',
-      'SEED §42. RESEARCH INPUT, NOT METADATA — nothing renders these. §42 says do not keyword-stuff and that the actual strategy must be refined through research before claiming ranking opportunity. They are here for whoever does that work.',
-    ),
+    // --- §42 keyword themes, one row each, in seo_keyword_themes (Phase 39) -----------------------
+    ...KEYWORD_THEMES.map(keywordTheme),
 
     // --- §44 social -----------------------------------------------------------------------------
     socialRow('og_headline', SITE_NAME, 'Social — default headline'),

@@ -146,7 +146,8 @@ describe('robots', () => {
   it("honours the row's own directive once the page has content", async () => {
     repo.path = entry({ robots: 'noindex,nofollow' })
     const metadata = await buildPageMetadata({ path: '/about', liveSectionCount: 4 })
-    expect(metadata.robots).toBe('noindex,nofollow')
+    // Phase 39 reads the legacy string into the two booleans and always emits the object form.
+    expect(metadata.robots).toEqual({ index: false, follow: false })
   })
 })
 

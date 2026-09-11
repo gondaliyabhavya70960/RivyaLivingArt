@@ -24,7 +24,6 @@ import type { JournalArticle } from '@/lib/supabase/schemas'
  */
 
 export type ArticleJsonLd = {
-  readonly '@context': 'https://schema.org'
   readonly '@type': 'Article'
   readonly headline: string
   readonly url: string
@@ -48,6 +47,8 @@ export function articleJsonLd(
     readonly categoryName: string | null
   },
 ): ArticleJsonLd | null {
+  // Phase 39's gate: PUBLISHED, stated here so the builder is safe whatever client fed it.
+  if (article.status !== 'PUBLISHED') return null
   const headline = article.title.trim()
   const organisation = options.organisationName.trim()
   // A node with no headline describes nothing, and one with no publisher name cannot say who
@@ -63,7 +64,6 @@ export function articleJsonLd(
   const modified = article.updated_at
 
   return {
-    '@context': 'https://schema.org',
     '@type': 'Article',
     headline,
     url: options.url,

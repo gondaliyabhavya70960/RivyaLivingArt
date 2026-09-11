@@ -232,6 +232,37 @@ DEPLOYMENT §3.1, PHASE-31-38 §Phase 38).**
 - **`request_id`** exists on both logs and is filterable; `proxy.ts` assigning one per request lands
   with Phase 41's security headers (SECURITY §10 corrected).
 
+
+**2026-09-11 · A40 — Phase 39 delivers the SEO system with five readings the repository forced:
+`seo.write` is checked in every Server Action while the shipped `0051` policy on `seo_entries`
+keeps the name `content.write` (the same three roles — a generated policy file is never
+re-opened); the sitemap index and its six children are route handlers (`app/sitemap.xml/route.ts`,
+`app/sitemaps/[file]/route.ts`) because the metadata-file convention cannot write a
+`<sitemapindex>`; `X-Robots-Tag` by route class is declared in `next.config.ts` `headers()` rather
+than `proxy.ts` (A2·b keeps the proxy to two jobs, and a whole-deployment header from there would
+widen its matcher to every path); a redirect stored as 301 is served as 308 by
+`permanentRedirect`, the column recording the owner's choice; and a redirect is offered on slug
+change for products only, because the collection, project and article editors do not change a
+slug after creation (D3, D4, D8, DATA_MODEL §11.af, STUDIO_GUIDE §9.4, ARCHITECTURE, CONTENT_GUIDE
+§10, PHASE-39-46 §Phase 39).**
+
+- **The ladder is per field.** ENTITY → PATH → DERIVED → GLOBAL, climbed once per field, so a path
+  row with a title and no description lends its title and lets the description fall through. An
+  entity's own SEO columns (`products.seo_title`) sit inside the ENTITY rung, below its
+  `seo_entries` row.
+- **A category page is one address.** `/collection/<slug>` is a `pages` row and a `categories`
+  row; the Studio and the coverage report resolve them as one row under Pages, with the category's
+  own columns as its ENTITY rung, and categories do not appear again under Entities.
+- **The keyword table has no number.** `seo_keyword_themes` carries status, path, notes and an
+  evidence link; `research_status` is the one `research_` identifier the two isolation gates
+  exempt, because it records the owner's progress on a keyword and nothing about a competitor.
+- **`KEYWORD_STATUSES`, not `RESEARCH_STATUSES`.** The schema module sits on the public search
+  path (the redirect resolver imports it), and the search-scope gate refuses a `RESEARCH_`
+  identifier there; the constant is named for what it is.
+- **One emitter.** `components/patterns/JsonLd` is the only file that writes a structured-data
+  script element; `scripts/seo/check-jsonld-scope.mjs` exempts `lib/scraper/**`, which reads a
+  competitor's page and never renders a byte to a visitor.
+
 **2026-09-11 · A38 — Phase 37: the policy generator gains a `selectScope` predicate (a row-level
 narrowing of the staff SELECT alone); `advanced_analytics` gates presentation, never access; the
 analytics cron authenticates with `CRON_SECRET`; the dashboard card registry is raised to Phase 36

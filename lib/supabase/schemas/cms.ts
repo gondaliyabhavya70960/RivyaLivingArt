@@ -164,6 +164,12 @@ export const seoEntrySchema = z.object({
   og_media_id: uuidSchema.nullable(),
   canonical_url: z.string().nullable(),
   robots: z.string().nullable(),
+  // Phase 39. The editable directive as two booleans, the one structured-data type the page may
+  // emit, and whether the Studio derived this row from page content rather than an owner typing.
+  structured_data_type: z.string().nullable(),
+  noindex: z.boolean(),
+  nofollow: z.boolean(),
+  derived: z.boolean(),
   ...auditColumns,
   ...cmsContentColumns,
   ...seedColumns,

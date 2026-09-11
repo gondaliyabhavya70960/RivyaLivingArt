@@ -22,6 +22,30 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     '/studio/**': ['./content/docs/index.generated.json', './data/higgsfield/asset-manifest.json'],
   },
+  /*
+   * Phase 39. Robots directives by route class, as response headers — the layer a crawler reads
+   * before it parses anything. `/studio` and `/api` are `noindex, nofollow` on every response
+   * (beside the auth redirect and the robots.txt `Disallow`, three independent layers); and on a
+   * deployment that is not production, so is everything else. `VERCEL_ENV` is read at build
+   * time, which is when Vercel sets it — a preview build carries the header into every response
+   * it will ever serve, and a production build never does.
+   *
+   * IN `next.config.ts` RATHER THAN `proxy.ts`. The proxy matches `/studio` alone and, under
+   * amendment A2·b, does exactly two things; a whole-deployment header from there would widen
+   * its matcher to every path and spend a function invocation per request on a static string.
+   * Headers declared here are applied by the platform in front of the runtime.
+   */
+  headers() {
+    const noindex = { key: 'X-Robots-Tag', value: 'noindex, nofollow' }
+    const vercelEnv = process.env['VERCEL_ENV']
+    const preview = vercelEnv !== undefined && vercelEnv !== 'production'
+    return Promise.resolve([
+      { source: '/studio', headers: [noindex] },
+      { source: '/studio/:path*', headers: [noindex] },
+      { source: '/api/:path*', headers: [noindex] },
+      ...(preview ? [{ source: '/:path*', headers: [noindex] }] : []),
+    ])
+  },
   // The Playwright harness drives the dev server over 127.0.0.1 rather than localhost, and
   // Next treats that as a cross-origin dev request. Declaring it keeps the e2e log free of
   // a warning that would otherwise train people to ignore dev-server output.

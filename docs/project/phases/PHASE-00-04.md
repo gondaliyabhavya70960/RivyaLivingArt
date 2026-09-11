@@ -906,6 +906,7 @@ can ever hold.
 | `content.read` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | `content.write` | ✓ | ✓ | ✓ | — | — | — |
 | `content.publish` | ✓ | ✓ | ✓ | — | — | — |
+| `seo.write` | ✓ | ✓ | ✓ | — | — | — |
 | `media.read` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | `media.write` | ✓ | ✓ | ✓ | ✓ | — | — |
 | `media.delete` | ✓ | ✓ | — | — | — | — |
@@ -948,6 +949,7 @@ matrix can be checked against the requirement without reading the scraper phases
 | `integrations.sheets.manage` | Creating, editing, pausing and resuming a Google Sheets export definition; the only holders who may set `includes_pii` (Phase 36) | owner · admin | FEAT §32, PHASE-31-38 §Phase 36 |
 | `integrations.sheets.run` | Running an export definition now; INQUIRIES additionally needs `inquiries.export` in the action (Phase 36) | owner · admin · merchandiser · researcher | FEAT §32, PHASE-31-38 §Phase 36 |
 | `operations.logs.export` | Downloading the system log as CSV from `/studio/operations/logs`, audited (Phase 38) | owner · admin | FEAT §31, PHASE-31-38 §Phase 38 |
+| `seo.write` | Every SEO field on every page and entity — `seo_entries` at all three scopes, `seo_keyword_themes`, `seo_redirects` — from `/studio/content/seo` and the entity editors' SEO panels (Phase 39). The same role set as `content.write`, declared separately so the Server Actions name what they check and so the two may diverge later | owner · admin · editor | PHASE-39-46 §Phase 39 |
 | `research.confirm` | Every one of the nine FEAT §25 row actions — Review · Ignore · Shortlist · Reject · Mark Duplicate · Confirm · Add Note · Add Tag · Compare | owner · admin · merchandiser | FEAT §25 |
 
 So the merchandiser holding `research.confirm` without `research.write` is deliberate and complete:

@@ -203,6 +203,11 @@ jobs:
       - name: Three logs stay three
         run: npm run logs:check-separation
 
+      # Phase 39. components/patterns/JsonLd is the only file that may write application/ld+json.
+      # A second emitter is a second place a forbidden key could reach a crawler.
+      - name: One structured-data emitter
+        run: npm run seo:check-jsonld-scope
+
       # Phase 33. Image bytes are decoded in exactly one first-party module, lib/media/hashes.ts,
       # which never fetches and never writes. A decoder anywhere else — the scraper above all —
       # is the beginning of an image cache, and this fails the build on one.
@@ -317,6 +322,40 @@ jobs:
       # Runs on the real output of the build above. .next/static is what ships to browsers.
       - name: No service-role key in the client bundle
         run: npm run security:check-bundle
+
+      # Phase 39. The build above, started and crawled: every application/ld+json block on every
+      # reachable route is parsed and checked against the forbidden-key list, one graph per route,
+      # and robots.txt / X-Robots-Tag are read as the route-class table says. The shim is started
+      # again because the build step's trap stopped it.
+      - name: Structured data on the real build
+        env:
+          POSTGREST_BIN: ${{ runner.temp }}/postgrest/postgrest
+          LOCAL_REST_PORT: '3001'
+          NEXT_PUBLIC_SITE_URL: http://127.0.0.1:3000
+          NEXT_TELEMETRY_DISABLED: '1'
+        run: |
+          set -euo pipefail
+          node scripts/db/local-rest.mjs > /tmp/local-rest-2.log 2>&1 &
+          rest_pid=$!
+          for _ in $(seq 1 60); do
+            curl -sf -o /dev/null http://127.0.0.1:3001/rest/v1/ && break
+            sleep 1
+          done
+          curl -sf -o /dev/null http://127.0.0.1:3001/rest/v1/
+          anon_key=$(sed -n 's/^ *NEXT_PUBLIC_SUPABASE_ANON_KEY=\(.*\) \\$/\1/p' /tmp/local-rest-2.log)
+          test -n "$anon_key"
+
+          NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:3001 \
+          NEXT_PUBLIC_SUPABASE_ANON_KEY="$anon_key" \
+          npx next start -p 3000 > /tmp/next-start.log 2>&1 &
+          next_pid=$!
+          trap 'kill "$next_pid" "$rest_pid" 2>/dev/null || true' EXIT
+          for _ in $(seq 1 60); do
+            curl -s -o /dev/null http://127.0.0.1:3000/robots.txt && break
+            sleep 1
+          done
+
+          node scripts/seo/validate-jsonld.mjs --base http://127.0.0.1:3000
 
       # Proves the rule the whole seed runner exists for: an owner's edit is never overwritten.
       - name: Seeding does not overwrite an owner edit

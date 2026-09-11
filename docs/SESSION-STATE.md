@@ -7,45 +7,61 @@
 ---
 
 ## Current Phase
-**Phase 38 — Environment + Documentation + Logs. COMPLETE.** An operator can answer "is it up,
-what is deployed, what broke and where is that documented" without a terminal, and none of the
-three pages can show a secret: one redactor with three layers and one fixed token, proved by a
-sentinel test that is also shown to fail when a check leaks four characters.
+**Phase 39 — SEO. COMPLETE.** Search engines stop seeing thirteen pages with fallback metadata:
+a four-level ladder resolves every field and prints its rung in the Studio, one emitter writes
+eight gated structured-data types with every capability-bearing property through
+`verifiedOnly()`, the sitemap is an index over six PUBLISHED-only children, redirects are
+consulted only on the 404 path, and the SEED §42 themes are research targets with nowhere to store
+a number.
 
-### Phase 38: what is built
+### Phase 39: what is built
 
-Migrations `0360`–`0361` (`system_logs`, `log_level`, `log_channel`, `system_log_write()`,
-`workflow_runs_v`, generated policy); `lib/logging/redact.ts` (key, value, shape),
-`lib/logging/system-log.ts` (`logSystem()`, never throws), `lib/logging/log-filters.ts`;
-`lib/ops/` (eight checks, the runner, `build-info.ts`); `lib/cms/docs/` (allowlist, Markdown block
-parser with no HTML branch, index reader); `lib/supabase/repositories/{system-logs,ops}.ts`;
-`scripts/build/build-info.mjs` (inlined by `next.config.ts`), `scripts/docs/build-index.ts`
-(`prebuild`), `scripts/logging/check-log-separation.mjs` (gate); pages environment, documentation
-(+ `[docKey]`), logs (+ CSV export route), workflows; components RC-342–346; the scraper's
-`warnScraper`, Sheets failures and failed checks write the log; `/api/cron/log-retention`;
-permission `operations.logs.export`; 78 Studio strings; two seeded permanent lines; amendment A39.
-Hosted: level through `0361`.
+Migrations `0370`–`0371` (`seo_keyword_themes`, `seo_redirects`, four columns on `seo_entries`,
+generated policy); permission `seo.write` (owner, admin, editor); `lib/seo/` (`resolve.ts`,
+`canonical.ts`, `metadata.ts` rewritten on the ladder, `jsonld/` with `guard.ts`, `site-graph.ts`,
+`breadcrumbs.ts`, `redirects.ts`, `redirect-rules.ts`, `sitemap.ts`, `coverage.ts`,
+`studio-resolution.ts`, `slug-redirect.ts`); `components/patterns/JsonLd` (RC-347, the only
+emitter); `app/sitemap.xml/route.ts` + `app/sitemaps/[file]/route.ts` replacing `app/sitemap.ts`;
+`robots.ts` extended; `X-Robots-Tag` by route class in `next.config.ts`; the public routes moved
+onto the ladder, the canonical table and the redirect resolver; `/studio/content/seo` with seven
+tabs and its actions; `EntitySeoPanel` on the four entity editors; the product form's pre-ticked
+redirect on slug change; repositories `seo`, `keywords`, `redirects`, `sitemap`; schemas `seo.ts`;
+gates `seo:check-jsonld-scope` (check and CI) and `scripts/seo/validate-jsonld.mjs` (CI, against
+the real build); the inventory's generated "SEO coverage" section; 170 Studio strings; four seeded
+help sentences; amendment A40. Hosted: level through `0371`, seventeen themes and four help rows
+seeded, parity digests identical.
 
-### Phase 38: readings the repository forced
+### Phase 39: readings the repository forced
 
-1. **Build information is inlined by `next.config.ts`**, not a gitignored generated module the
-   type-checker would have to find before the build.
-2. **`first_minute` is a defaulted epoch-minute column** — every date function over `timestamptz`
-   is STABLE, and a unique expression needs IMMUTABLE.
-3. **The two environment reads live in a repository** (`.from()` only there) and the admin client
-   takes an injectable `fetch` so the sentinel test needs no network.
-4. **The workflows page is built here**, because `workflow_runs_v` is allocated to `0360`.
-5. **`request_id` threading waits for Phase 41's proxy work**; the column and the filter exist.
+1. **`seo.write` is checked in every action; `0051` keeps the name `content.write`** for the same
+   three roles, because a generated policy file is never re-opened.
+2. **The sitemap index is a route handler** — the metadata-file convention writes a `<urlset>`,
+   never a `<sitemapindex>`.
+3. **`X-Robots-Tag` lives in `next.config.ts`**, not `proxy.ts`: A2·b keeps the proxy to two jobs.
+4. **A category page is one address**: the `pages` row and the `categories` row resolve as one row
+   under Pages, and categories do not appear again under Entities.
+5. **`research_status` is the one `research_` name the two isolation gates exempt**, and the
+   status constant is `KEYWORD_STATUSES` because the schema sits on the public search path.
+6. **A redirect is offered on slug change for products only**; the other three editors do not
+   change a slug after creation.
 
 ### The next exact action
 
-**Phase 39 — SEO** (`0370`–`0371`): permission `seo.write`; `seo_keyword_themes` (no numeric metric
-column), `seo_redirects` (anon select of PUBLISHED only), `seo_entries` extended; `lib/seo/`
-resolve ladder, canonical, redirects, JSON-LD builders with `verifiedOnly()`, the single
-`JsonLd` emitter; sitemap index and six children; `robots.ts`; `X-Robots-Tag` by route class;
-`/studio/content/seo/**` seven tabs; the three SEO gates in `check` and CI.
+**Phase 40 — Performance** (`0380`): `web_vitals_samples` (no identifier columns), the sampled
+vitals reporter and its endpoint, `perf/budgets.json` and the bundle baseline, the seven perf
+guards, the caching contract, `VitalsCard` on the Phase 37 surface, PERFORMANCE.md as the single
+source with dated measurements. **The owner asked for a stop after Phase 39 lands on `main`; Phase
+40 starts on their word.**
 
 ---
+
+### Superseded — Phase 38's state
+
+**Phase 38 — Environment + Documentation + Logs. COMPLETE.** Three read-only System surfaces
+sharing one redactor (key, value, shape; fixed token), eight environment checks that report
+reachability only, ten allowlisted documents rendered without an HTML branch, and the third log
+(`system_logs`, append-only, five-minute dedupe, 90/400-day retention). Landed as PR #43 with the
+`scripts/build` tracking and documentation-key fixes in PR #44.
 
 ### Superseded — Phase 37's state
 
