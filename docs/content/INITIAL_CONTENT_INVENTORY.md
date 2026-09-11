@@ -7,7 +7,7 @@ SEED §54’s audit of what the content seed actually put in the database, read 
 database rather than from the seed modules. Its target is §54’s: **100% of intended launch
 copy mapped to a Studio editing control.**
 
-- **580** rows audited
+- **583** rows audited
 - **70** await owner verification and cannot be published until it is given
 - **0** are authored and deferred to a later phase’s tables
 - **0** carry a bound media asset
@@ -199,6 +199,9 @@ the phase that creates its table.
 | Global content | chrome:action_label.open_menu | ACTION_LABEL.open_menu | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | chrome:action_label.search.submit | ACTION_LABEL.search.submit | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | chrome:action_label.skip_to_content | ACTION_LABEL.skip_to_content | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | chrome:action_label.skip_to_filters | ACTION_LABEL.skip_to_filters | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | chrome:action_label.skip_to_results | ACTION_LABEL.skip_to_results | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | chrome:action_label.skip_to_sections | ACTION_LABEL.skip_to_sections | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | chrome:action_label.try_again | ACTION_LABEL.try_again | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | chrome:cta.return_home | CTA.return_home | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | chrome:ui_label.announcement.region | UI_LABEL.announcement.region | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |

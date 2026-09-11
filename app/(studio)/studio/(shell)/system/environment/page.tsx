@@ -3,11 +3,13 @@ import { Stack } from '@/components/primitives/Stack'
 import { Surface } from '@/components/primitives/Surface'
 import { Text } from '@/components/primitives/Text'
 import { EnvironmentChecks } from '@/components/studio/ops/EnvironmentChecks'
+import { SecurityPostureSection } from '@/components/studio/ops/SecurityPosture'
 import { StudioPage, studioMetadata } from '@/components/studio/StudioPage'
 import { t } from '@/components/studio/strings'
 import { requirePermission } from '@/lib/auth/require'
 import { readBuildInfo, shortSha } from '@/lib/ops/build-info'
 import { runEnvironmentChecks, worstStatus } from '@/lib/ops/environment'
+import { readSecurityPosture } from '@/lib/ops/security-posture'
 
 /**
  * `/studio/system/environment` — Phase 38. Eight reachability checks, run server-side in parallel
@@ -24,6 +26,7 @@ export default async function Page() {
   const results = await runEnvironmentChecks()
   const overall = worstStatus(results)
   const build = readBuildInfo()
+  const posture = readSecurityPosture()
 
   return (
     <StudioPage path="/studio/system/environment">
@@ -51,6 +54,9 @@ export default async function Page() {
         </Surface>
 
         <EnvironmentChecks results={results} />
+
+        {/* Phase 41. State only, below the reachability table it complements. */}
+        <SecurityPostureSection posture={posture} />
 
         <Surface level={1} className="p-4" data-env-build="">
           <Stack gap={1}>

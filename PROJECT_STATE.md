@@ -1,7 +1,7 @@
 # PROJECT_STATE — what is actually built
 
 > Verified against the repository, not against intent. Update at the end of every phase.
-> Last verified: Phase 38 (Environment + Documentation + Logs), 2026-09-11.
+> Last verified: Phase 41 (Accessibility + Security), 2026-09-11.
 
 ## Summary
 
@@ -374,7 +374,8 @@ local only, so every browser figure in this document is from a local run.
 | 38 | Environment + Documentation + Logs | **COMPLETE** | Migrations `0360`–`0361`: `system_logs` (`level` × `channel`, append-only, `system_log_write()` dedupe on a five-minute window, retention 90/400 days), enums `log_level` / `log_channel`, `workflow_runs_v`. One redactor for every surface (key, value, shape; fixed token). `/studio/system/environment` (eight checks, reachability only, sentinel-proved), `/studio/system/documentation` (ten allowlisted documents from a `prebuild` index, no HTML branch), `/studio/operations/logs` (URL filters, redacted detail, audited CSV export under `operations.logs.export`), `/studio/operations/workflows`; `warnScraper`, Sheets failures and failed checks write the log; `/api/cron/log-retention`; `logs:check-separation` gate; `lib/ops/` in D2 (A39). Hosted level through `0361`. |
 | 39 | SEO | **COMPLETE** | Migrations `0370`–`0371`: `seo_keyword_themes` (no numeric column; seventeen SEED §42 themes seeded `UNRESEARCHED`, two geography themes awaiting verification), `seo_redirects` (anon select of PUBLISHED only; one hop; loop and chain refused at save), `seo_entries` + `structured_data_type` / `noindex` / `nofollow` / `derived`. `lib/seo/`: the four-level ladder per field, the canonical table, one JSON-LD emitter with eight gated builders and `verifiedOnly()`, the sitemap index over six children, `robots.txt`, `X-Robots-Tag` by route class. `/studio/content/seo` (seven tabs) and the entity editors' SEO panels under the new `seo.write`. Gates `seo:check-jsonld-scope` and the build-time validator in CI. Hosted level through `0371`. |
 | 40 | Performance | **COMPLETE** | Migration `0380`–`0381`: `web_vitals_samples` — ten columns, no identifier and no column one could go in, `route_pattern` CHECKed three ways, `analytics.read` select and no write policy at all. `perf/budgets.json` is the single source for every budget; `perf/bundle-baseline.json` records what each route measures and CI fails on 5% growth. Guards: per-route island census, third-party origin allowlist, caching contract, exactly-one-priority-image. `MediaImage` gained `priority` (`fetchpriority="high"`), fixing an LCP defect on every route; Studio gained `private, no-store`. `VitalsReporter` (RC-354) beacons at 10% from production only; `VitalsCard` (RC-355) shows p75 per route. The ~98 kB the section registry costs every CMS route is measured, evidenced and tracked in `PERFORMANCE.md` §4.5, not fixed here. |
-| 41–46 | Security, testing, media, launch | **PLANNED** | Specified in `docs/project/phases/`. |
+| 41 | Accessibility + Security | **DEVELOPMENT COMPLETE** — tests deferred to Phase 42 by the owner's instruction | Migration `0390` (`0391` allocated and unused): `media_assets.is_decorative`, and the alt-text CHECK re-expressed as "a usable alternative, or explicitly decorative". `proxy.ts` attaches a per-request-nonce CSP and six static headers to every matched response, including the redirect, with the matcher widened to the public site; the policy ships REPORT-ONLY and `CSP_ENFORCE=1` flips it after an owner-read soak. `POST /api/csp-report` collects violations at `SECURITY` level. The rate-limit key became `hmac(salt, value)` under two separate salts, and the five surfaces SECURITY.md already listed are now wired. `validateUpload` runs in the save path against the first 4 kB of the stored original and refuses the ROW, destroying the Cloudinary object. A data request panel on `/studio/inquiries/all` and `ops:anonymise-inquiries` give subject access and erasure, owner-only and preview-first. `/studio/media/all/[assetId]` edits alt text and the decorative flag together with live quality warnings. Five new gates in `npm run check`. **Not built:** EXIF stripping (SECURITY §7.5), `request_id` in the proxy, and the whole test track. |
+| 42–46 | Testing, media, launch, polish, handoff | **PLANNED** | Specified in `docs/project/phases/`. Phase 42 also carries every test deferred from Phases 41–44. |
 
 ## What exists on disk
 
@@ -397,6 +398,19 @@ docs/SESSION-STATE.md
 ```
 
 ## What does NOT exist yet
+
+**The entire test track for Phases 41–44 is unwritten, by the owner's instruction, and Phase 42 owns
+it.** That is a schedule rather than a judgement, but it is load-bearing when reading any claim in
+this file: the accessibility mechanisms in Phase 41 are built and are not proved by an axe sweep. The
+deferred set is the seven `tests/e2e/a11y/*` specs with `exceptions.json`, `tests/unit/alt-text-coverage`,
+`rate-limit-window`, `upload-validation` and `pii-scope`, the `security-headers` and `studio-authz`
+e2e specs, and the `gitleaks` + `npm audit` workflow with `.gitleaks.toml` and Dependabot.
+
+**Three Phase 41 items are not built and are recorded where somebody would look for them.** EXIF is
+not stripped from stored originals (SECURITY §7.5 names the mechanism and why it was not shipped
+blind); `proxy.ts` assigns no `request_id`, so `audit_logs` and `system_logs` cannot yet be joined on
+one (SECURITY §10); and `/studio/system/environment`'s Security section carries no dependency-audit
+figure, because a number from somebody's last CI run would be a stale figure wearing a live badge.
 
 Eight of the twenty-eight blocks have no renderer; the eight are listed as `null` in
 `components/sections/registry.ts` and the two registries are asserted to agree, so a block cannot be

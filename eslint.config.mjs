@@ -288,6 +288,16 @@ const config = [
        */
       'app/api/vitals/route.ts',
       /*
+       * `app/(studio)/studio/(shell)/inquiries/actions.ts` and
+       * `app/api/studio/inquiries/data-request/route.ts` — Phase 41, the data request. Erasure
+       * writes columns no session may write (`ip_hash` among them) and both surfaces act for a
+       * person who has no login here at all; the acting staff session is checked first with
+       * `requirePermission('inquiries.export')`, and the erasure additionally with the owner's own
+       * role, before the service role is touched.
+       */
+      'app/(studio)/studio/(shell)/inquiries/actions.ts',
+      'app/api/studio/inquiries/data-request/route.ts',
+      /*
        * `lib/scraper/**` — the research pipeline. It runs from a cron tick with no user and no
        * cookie, and four of its nine tables (the work queue, the fetch log, the raw items and the
        * robots cache) have NO session write policy at all: a member of staff able to write them

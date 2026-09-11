@@ -258,6 +258,9 @@ even a prefix or a length.
 | `GOOGLE_SERVICE_ACCOUNT_JSON` | Secret — impersonates an identity | Never | Never | Reachability boolean only |
 | `GOOGLE_SHEETS_SPREADSHEET_ID` | Sensitive — identifies private data | Never | Never | Configured / not configured |
 | `REVALIDATE_SECRET` | Secret — forces invalidation and cron | Never | Never | Configured / not configured |
+| `CRON_SECRET` | Secret — authorises every scheduled job | Never | Never | Configured / not configured |
+| `IP_HASH_SALT` | Secret — knowing it makes every stored `ip_hash` reversible by guessing addresses | Never | Never | Configured / not configured |
+| `RATE_LIMIT_SALT` | Secret — knowing it makes a bucket key predictable, and a predictable key can be exhausted on somebody else's behalf | Never | Never | Configured / not configured |
 | `SCRAPER_USER_AGENT` | Server-only, not secret | Never | Value permitted | Value permitted |
 | `NEXT_PUBLIC_*` (five names) | Public by design | Yes | Yes | Value permitted |
 
@@ -442,7 +445,7 @@ and how far the allowlist and the ceiling are narrowed.
 | Signing | The browser never sees `CLOUDINARY_API_SECRET`. `app/api/media/sign` returns a signature after session, `media.write`, folder allowlist, MIME allowlist, byte ceiling and per-user rate limit. `app/api/inquiries/upload-sign` returns one after origin check, Zod, per-`ip_hash` rate limit and the narrowed visitor allowlist below — **no session**, because a visitor has no account (BR-A3). Signature TTL 10 minutes; `overwrite: false` on every upload |
 | Type detection | **Magic bytes, never the extension or the declared MIME.** A JPEG renamed `.glb` is rejected, and so is a JPEG whose declared MIME says `application/pdf` |
 | Folder | Server-chosen on both paths. The visitor route forces `rivya/inquiries/incoming/<uuid v4 issued by the server>`; the staff route accepts only a key from `lib/media/folders.ts` |
-| Metadata | EXIF and GPS stripped on ingest — a visitor's reference photo of their home must not carry its coordinates |
+| Metadata | **Not yet stripped from the stored original — see §7.5.** Every PUBLIC delivery is a transformed derivative and Cloudinary drops EXIF, IPTC and XMP from derivatives by default, so nothing a visitor's browser receives carries coordinates. The ORIGINAL keeps them, and a visitor's reference photo is served to staff as its original through a signed URL. Phase 41 corrected this row rather than leaving a control documented as built when it is not |
 | 3D models | Parsed with `@gltf-transform/core` before acceptance; rejected on parse failure. The same parser backs `app/api/studio/models/inspect` |
 | Visitor attachments | Stored in a **private** bucket; served only through an authenticated, short-lived signed URL, always with `Content-Disposition: attachment`; orphans purged at 30 days |
 | Storage of record | `media_assets` rows carry `alt_text`, `is_ai_generated`, `is_concept`; a visitor upload is `source = 'USER_UPLOAD'`, `status = 'DRAFT'`, `is_ai_generated = false`, `is_concept = false`, never returned by a public read path |
@@ -497,8 +500,64 @@ rows to the table above; until it does, this section and `PHASE-39-46.md` are th
 `CLOUDINARY.md` alone would ship the one file type §4 T6 exists to keep out.
 
 Proof: `tests/unit/upload-validation.test.ts` — extension-lie rejection, declared-MIME-lie rejection,
-SVG rejection on **both** signing routes, per-path size rejection, visitor file-count rejection, EXIF
-stripping, GLB parse failure.
+SVG rejection on **both** signing routes, per-path size rejection, visitor file-count rejection and
+GLB parse failure. **That suite is written in Phase 42** with the rest of the deferred test work; the
+validator itself shipped in Phase 41 and is exercised by the save path described next.
+
+### 7.3 Where the byte check actually runs, and why it is not at the signature (Phase 41)
+
+`lib/media/validate-upload.ts` is a pure function over a buffer, and the awkward fact about this
+product is that **the server never holds the buffer**. Uploads go from the browser straight to
+Cloudinary against a signature — that is what keeps `CLOUDINARY_API_SECRET` out of the client and what
+lets a 200 MB video avoid a round trip through a serverless function with a 4.5 MB body limit. By the
+time any code of ours could read a byte, Cloudinary already has the file.
+
+So the check runs where the consequence is, in `saveUploadedAssetAction`:
+
+1. The action fetches the stored original back with a `Range: bytes=0-4095` request.
+2. `validateUpload` runs on that prefix, with the length the delivery origin reported passed in
+   separately — every rule except the size ceiling reads only the first bytes, and the ceiling needs
+   a number rather than the bytes themselves.
+3. A refusal **destroys the Cloudinary object** and writes a `DENIED` audit row naming the rule and
+   the sniffed type. No `media_assets` row is written.
+
+**Refusing the ROW is the control, not refusing the upload.** Nothing in this product reads Cloudinary
+except through `media_assets`: every renderer takes a row, and an object with no row is unreferenced
+storage. So a file whose bytes are not what the upload claimed never becomes an asset, which is the
+property that matters, even though it briefly existed in the account.
+
+**An unreadable original is refused, not waved through.** A verdict that fell open on a network error
+would make this gate absent exactly when the delivery origin is misbehaving.
+
+The visitor path is unchanged and is guarded differently: `app/api/inquiries/upload-sign` applies the
+narrowed allowlist and the 10 MB ceiling at the signature, and the attachments live in a private
+bucket that no public read path touches.
+
+### 7.4 What the Phase 41 validator refuses, in order
+
+`EMPTY` → `MARKUP_REJECTED` → `UNRECOGNISED_FORMAT` → `TYPE_NOT_ALLOWED` → `DECLARED_TYPE_MISMATCH` →
+`TOO_LARGE`. The order is deliberate: markup is sniffed **before** the allowlist so a polyglot cannot
+pass by also satisfying a raster signature; an unrecognised signature is refused rather than accepted;
+and size is last, so a 200 MB file that was never going to be accepted is refused for what it is
+rather than for how big it is. One disagreement is tolerated — a GLB declared `model/gltf+json`,
+because that is what a browser reports for a `.gltf` and both names describe the same acceptable
+thing.
+
+### 7.5 EXIF stripping: outstanding, with the mechanism identified
+
+**This is not implemented, and Phase 41 says so rather than shipping an untested change to a signed
+upload path.** The exposure is narrow and specific: a visitor's reference photograph is stored as its
+original and handed to staff through a signed URL, so its GPS coordinates are readable by whoever
+opens it. Public delivery is unaffected — every public URL is a transformation, and Cloudinary drops
+metadata from derivatives.
+
+The mechanism is an **incoming transformation** on the visitor signature, which re-encodes the stored
+original and drops its metadata with it. It was not done in this phase because every signed parameter
+must also be sent by the browser, byte for byte, or Cloudinary rejects the upload — so the change
+spans `lib/media/providers/cloudinary.ts`, `components/patterns/Configurator/ReferenceUpload.tsx` and
+`components/studio/MediaUploader.tsx`, and it cannot be verified anywhere but against the real
+Cloudinary account. Shipping it blind risks breaking every upload in production to fix a staff-only
+metadata leak. It is recorded in §15 as outstanding with an owner-visible reason.
 
 ---
 
@@ -545,6 +604,31 @@ the limiter). The `/api` surfaces above still answer 429.
 **Known limitation, accepted and documented:** a fixed window permits a 2× burst at a window
 boundary. The threat here is abuse volume, not precision; a sliding window would require Redis.
 
+### 8.1 What Phase 41 changed in the limiter
+
+**Every row in the table above is now wired.** Phase 20 built the limiter and used it on the two
+inquiry surfaces; Phase 40 added the vitals beacon; Phase 41 connected the remaining five — search
+suggestions, the Studio signing route, the revalidate endpoint, the CSP report endpoint and Studio
+sign-in — so the table describes the code rather than the intention.
+
+**The bucket key is an HMAC, not a hash.** `createHash('sha256')` over an address is reversible by
+enumeration: there are four billion IPv4 addresses and a laptop walks them in minutes, so an
+unsalted digest of an IP is the IP. The key is now `hmac(RATE_LIMIT_SALT, …)`, and `ip_hash` on an
+inquiry is `hmac(IP_HASH_SALT, …)`. **Two salts rather than one**, because they protect different
+things with different lifetimes: rotating the rate-limit salt should cost nothing but a cleared
+window, while rotating the inquiry salt breaks the ability to recognise a returning enquirer's
+address and is therefore a decision, not maintenance.
+
+**A limited surface answers with `Retry-After`.** `retryAfterSeconds(windows)` returns the SHORTEST
+window in force, which is the soonest a caller could legitimately try again — a longer figure would
+be a lie in the polite direction and would keep a legitimate visitor waiting.
+
+**Degrading rather than failing, where that is the honest answer.** Search suggestions return
+`{ error, groups: [] }` instead of 429: a suggestion list is an enhancement, and a type-ahead that
+throws at the tenth keystroke is worse than one that quietly stops suggesting. Sign-in does the
+opposite — it refuses with a seeded message and writes a `SECURITY`-level log — because silently
+failing a sign-in is how somebody concludes their password is wrong.
+
 ---
 
 ## 9. Response headers
@@ -569,8 +653,34 @@ Draco and meshopt decoders the 3D viewer loads. `payment=()` is deliberate and p
 no payment surface (D1). Fonts are self-hosted through `next/font`, so `font-src 'self'` needs no
 external origin.
 
-**Rollout:** CSP ships `Report-Only` for one week against a preview deployment, with reports
-collected into `system_logs`, then enforced.
+### 9.1 The rollout, and how to finish it (Phase 41)
+
+**The policy ships `Content-Security-Policy-Report-Only` and that is the shipped state, not an
+oversight.** A policy that breaks the 3D viewer or a Cloudinary video breaks it in production, on
+somebody's device, and the first report is usually a person saying the page is blank. So it is
+collected before it is enforced.
+
+| Step | State |
+|---|---|
+| Header applied to every matched response | Done — `proxy.ts`, including the redirect it may return, because a redirect is a response a browser acts on |
+| Per-request nonce | Done — minted in `proxy.ts`, written onto the REQUEST as `x-rivya-nonce` so `requestNonce()` can read it during render. It is never a response header: a nonce the client can read is a nonce an injected script can reuse |
+| Violations collected | Done — `POST /api/csp-report`, rate-limited before the body is read, six capped fields, query strings stripped from every path, always 204, logged at `level: SECURITY, channel: SYSTEM` |
+| Soak on a deployment | **Outstanding — owner action.** Run the site with real traffic and read `/studio/operations/logs` filtered to `SECURITY` |
+| Flip to enforced | **Outstanding — owner action.** Set `CSP_ENFORCE=1` in Vercel and redeploy. The variable is the only switch; `/studio/system/environment` shows which header is in use |
+
+**The default is report-only, which is the safe direction**: forgetting the variable costs
+enforcement, not availability.
+
+**Two documented exceptions live in code, not prose.** `CSP_EXCEPTIONS` in `lib/security/headers.ts`
+carries `style-src 'unsafe-inline'` and `worker-src blob:` each with its reason, and the Security
+section of `/studio/system/environment` renders them — so the policy's weak points are named on the
+page somebody opens after an incident, rather than only here.
+
+**The proxy matcher was widened to reach them.** It previously matched only what the Studio guard
+needed; a header set that does not run on the public site is not a header set. It now matches
+everything except `_next/static`, `_next/image`, `favicon.ico`, `robots.txt`, `sitemap.xml` and
+`sitemaps/`, and the Supabase session call is scoped by `STUDIO_GUARDED` so a visitor's page view
+still costs no auth round trip.
 
 ---
 
@@ -598,9 +708,11 @@ Never a prefix, a suffix, a length or a hash (`tests/unit/redact.test.ts`).
 the last hour" is one query.
 
 **Correlation.** `audit_logs` and `system_logs` both carry a `request_id` column and the logs page
-filters on it; `proxy.ts` assigning one per request and threading it into every server-action error
-lands with the Phase 41 security headers. Until then a workflow run's lines are joined by
-`workflow_run_id` (`/studio/operations/workflows` links each run to its lines).
+filters on it. **`proxy.ts` does not yet assign one**: Phase 41 gave the proxy a per-request nonce
+and the header set, and threading an id from there into every server action means a mechanism for
+carrying request-scoped state into a Server Action, which the nonce solves for RENDER only. Recorded
+here as outstanding rather than described as done. Until it exists, a workflow run's lines are joined
+by `workflow_run_id` (`/studio/operations/workflows` links each run to its lines).
 
 **Volume control.** Every log call carries a `dedupe_key`; identical events within five minutes
 increment `occurrence_count`. Retention: `INFO`/`WARNING` 90 days, `ERROR`/`SECURITY` 400 days.
@@ -608,6 +720,60 @@ increment `occurrence_count`. Retention: `INFO`/`WARNING` 90 days, `ERROR`/`SECU
 **Security events that must always be logged:** permission denial · rate-limit trip · upload
 rejection with its reason class · sign-in failure · role change · destructive action and its undo ·
 CSP violation report · research fetch refused by policy or by the SSRF guard.
+
+---
+
+## 10.1 Personal data: retention, access and erasure (Phase 41)
+
+`inquiries` is the only personal data in the system (§1 A1). There are no customer accounts (D1), so
+an enquirer has no login, no stable id and no self-service anything — every request they make is a
+request to a person at the studio, and this is what that person does.
+
+| Field | On erasure |
+|---|---|
+| `name` | `[erased]` |
+| `phone` | `[erased]` |
+| `email` | null |
+| `city` | null |
+| `message` | null |
+| `ip_hash` | null |
+| `answers` | null — the configurator's free-text map, a brief in the enquirer's own words, which routinely names their house or their street. There is no way to erase the person from it and keep it useful |
+
+**The row survives, the person does not.** Status, dates, reference code and pipeline history stay,
+so the studio's record of what happened is not rewritten and a deleted enquiry cannot be used to hide
+one. That is the difference between erasing a person's data and deleting evidence.
+
+**Two sentinels rather than nulls for name and phone.** A null name renders as an empty cell that
+looks like a data-entry failure; `[erased]` says a decision was made.
+
+| Surface | Who | What it does |
+|---|---|---|
+| `/studio/inquiries/all` — Data request panel | `inquiries.export`; erasure additionally the **owner's own role** | Preview (dry run), download what is held, erase |
+| `npm run ops:anonymise-inquiries` | Whoever holds the service role | The same three acts from a terminal, plus the scheduled retention pass |
+
+**Matching is by contact detail, which is why the preview is mandatory.** There is no stable id, so an
+enquirer is found by the email or phone they typed and a mistyped digit finds somebody else. The
+preview returns the REFERENCE CODES it would touch and writes nothing; the erasure sends those codes
+back, the server re-runs the dry run, and it refuses if the set has moved. Without that, "I read the
+list before I confirmed" would mean nothing.
+
+**The CLI refuses to write without `--apply`**, and that is the most important line in the file. It
+prints reference codes and never contact details, because a terminal is a place text gets pasted into
+tickets. `--export` is the exception, and it writes JSON to stdout so it is redirected to a file
+rather than read in a scrollback.
+
+**Retention is 24 months from LAST ACTIVITY, not from creation.** An enquiry that became an
+eighteen-month commission is live correspondence; one created the same day and never answered is not.
+`updated_at` moves on every status change and every note, so it is the right clock. An already-erased
+row is skipped rather than written again, so a repeated run reports zero and the operator can tell
+"nothing was due" from "it ran and did nothing".
+
+**The scheduled pass is not yet scheduled.** `anonymiseExpired` exists and the CLI runs it; wiring it
+to a cron route is Phase 44's deployment work, and until then the retention window is a procedure
+rather than a guarantee.
+
+**`--months` has a floor of one, never zero.** `--months=0` would match every row in the table, which
+is the accident the floor exists to refuse.
 
 ---
 
@@ -675,6 +841,28 @@ Run before any release that touches auth, RLS, uploads, headers or the research 
 - [ ] `gitleaks detect --redact` and `npm audit --audit-level=high` clean.
 - [ ] `/studio/system/environment` shows no value, prefix or length — asserted by `deploy-smoke.spec.ts`.
 
+### 14.1 The Phase 41 gates
+
+Five new gates, each of which found something real the first time it ran. They are listed with
+what they actually refuse, because a gate described only by its name teaches nobody what it protects.
+
+| Gate | Refuses | Current reading |
+|---|---|---|
+| `security:check-secret-exposure` **(needs a build; not in `npm run check`)** | A D8 server-only name used as an `env` ACCESS in a client chunk, a live secret's VALUE anywhere in `.next/static`, six known key shapes, and a high-entropy string sitting near a suspicious word. A bare MENTION of a variable name in Studio copy is reported separately as advisory — a name is not a value (D8) | 74 client file(s) clean; 2 advisory name mentions |
+| `security:check-action-guards` | An exported Server Action that does not reach `requirePermission` or a named guard, following one level of delegation into `lib/` | 179 actions across 38 modules; 2 files exempt with a stated reason |
+| `security:check-licences` | AGPL, GPL, LGPL, SSPL, CC-BY-NC, BUSL or a Commons Clause anywhere in the transitive closure of `dependencies` — `devDependencies` are exempt because a build tool that never ships imposes nothing on what it builds. Read from `node_modules`, not the lockfile, because a lockfile records versions and a licence can change between two of them | 102 packages, none refused |
+| `a11y:check-contrast` | A token pair below its WCAG ratio, resolved through `var()` chains across every colour scheme | 33 pairs across 3 schemes |
+| `a11y:check-focus-styles` | An outline removed without a replacement, unless it is scoped to the pointer-only case or sits on a `tabIndex={-1}` programmatic focus target — and the exempt cases are COUNTED, so the number is visible rather than invisible | 1 CSS rule, 2 class lists, 1 programmatic target |
+
+**Four of the five run offline on every `npm run check`.** `security:check-secret-exposure` is the
+exception and is run by hand today: it reads `.next/static`, so it needs a build first, and a gate
+that passes because there is nothing to inspect is worse than no gate — it exits 1 when the directory
+is empty rather than reporting success.
+
+**`gitleaks` and `npm audit` are not wired at all yet.** They are workflow files, and Phase 42 owns
+the CI work along with the rest of the deferred test track — including running
+`security:check-secret-exposure` after the build step that already exists there.
+
 ---
 
 ## 15. Owner decisions still outstanding
@@ -686,6 +874,9 @@ Run before any release that touches auth, RLS, uploads, headers or the research 
 | 3 | Cloudinary backup enablement and retention | An accidental asset deletion may be unrecoverable |
 | 4 | Legal entity, jurisdiction, controller and statutory basis | `/privacy` and `/terms` stay `DRAFT`; incident notification duties are undefined |
 | 5 | Whether a cookie banner is required | None is implemented; none is technically necessary |
+| 6 | **Flip CSP to enforced** — set `CSP_ENFORCE=1` after reading `/studio/operations/logs` filtered to `SECURITY` for a week of real traffic | The policy collects violations and blocks nothing. An injected script would be reported, not stopped |
+| 7 | **Set `IP_HASH_SALT` and `RATE_LIMIT_SALT` in every Vercel environment** | Neither is set today. `salt()` falls back to `SUPABASE_SERVICE_ROLE_KEY` and finally to the literal `'rivya'` — the chain exists so a rename does not reset every live window on deploy, and the last rung is a PUBLIC value, which makes every stored `ip_hash` reproducible by anyone who guesses an address. `/studio/system/environment` shows each as set or not set |
+| 8 | Strip EXIF from stored originals on the visitor upload path (§7.5) | A visitor's reference photograph keeps its GPS coordinates in the private bucket, readable by staff through a signed URL. No public surface is affected |
 | 6 | Whether to commission a penetration test | The posture is untested by an adversary |
 | 7 | Who holds each platform account and who may rotate each secret | Rotation ownership in `ENVIRONMENT.md` §5 is nominal |
 

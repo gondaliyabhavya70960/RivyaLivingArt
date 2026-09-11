@@ -210,6 +210,16 @@ export type MediaAssetEdit = {
   readonly caption?: string | null
   readonly tags?: string[]
   readonly subject_tags?: string[]
+  /**
+   * Phase 41. The one honest way to render `alt=""`.
+   *
+   * IT IS EDITED BESIDE `alt_text`, NOT INSTEAD OF IT. The database CHECK is
+   * `is_decorative or alt_text is non-empty`, so marking an asset decorative does not require
+   * clearing the sentence somebody wrote — and clearing the sentence is still refused. The two
+   * together are what let an audit tell "nobody has written this yet" from "this deliberately says
+   * nothing".
+   */
+  readonly is_decorative?: boolean
 }
 
 export async function updateMediaAsset(

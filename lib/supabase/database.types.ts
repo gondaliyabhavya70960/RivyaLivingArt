@@ -2013,6 +2013,7 @@ export type Database = {
           manifest_version: string | null
           migrated_at: string | null
           viewer_settings: Json
+          is_decorative: boolean
         }
         Insert: {
           id?: string
@@ -2062,6 +2063,7 @@ export type Database = {
           manifest_version?: string | null
           migrated_at?: string | null
           viewer_settings?: Json
+          is_decorative?: boolean
         }
         Update: {
           id?: string
@@ -2111,6 +2113,7 @@ export type Database = {
           manifest_version?: string | null
           migrated_at?: string | null
           viewer_settings?: Json
+          is_decorative?: boolean
         }
         Relationships: [
           {

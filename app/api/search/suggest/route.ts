@@ -7,6 +7,13 @@ import { QUERY_MAX, QUERY_MIN } from '@/lib/search/query'
 import { createPublicClient } from '@/lib/supabase/public'
 import { listGlobalContent } from '@/lib/supabase/repositories/cms'
 import { searchDocuments } from '@/lib/supabase/repositories/search'
+import {
+  SUGGEST_WINDOWS,
+  bucketKey,
+  callerAddress,
+  consume,
+  retryAfterSeconds,
+} from '@/lib/security/rate-limit'
 import { PUBLIC_ENTITY_TYPES, type PublicEntityType } from '@/lib/supabase/schemas'
 
 /**
@@ -41,6 +48,26 @@ const MAX_GROUPS = 3
 const querySchema = z.string().trim().min(QUERY_MIN).max(QUERY_MAX)
 
 export async function GET(request: Request): Promise<NextResponse> {
+  /*
+   * RATE LIMITED FIRST — Phase 41. Sixty a minute per hashed address, which is several searches with
+   * room to spare for a debounced box, and far below what a script produces.
+   *
+   * A REFUSAL DEGRADES TO SILENCE, and that is the whole reason this limit is safe to add to a
+   * visitor-facing surface. The combobox treats a non-200 as "no suggestions" and the plain
+   * `<form method="get" action="/search">` beneath it still submits, so a limited visitor loses
+   * autocomplete and keeps search. `Retry-After` is sent anyway, for a client that wants it.
+   */
+  const { allowed } = await consume(bucketKey('suggest', callerAddress(request)), SUGGEST_WINDOWS)
+  if (!allowed) {
+    return NextResponse.json(
+      { error: 'rate-limited', groups: [] },
+      {
+        status: 429,
+        headers: { ...NO_STORE, 'Retry-After': String(retryAfterSeconds(SUGGEST_WINDOWS)) },
+      },
+    )
+  }
+
   const raw = new URL(request.url).searchParams.get('q') ?? ''
   const parsed = querySchema.safeParse(raw)
 

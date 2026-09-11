@@ -76,6 +76,11 @@ export const STUDIO_STRINGS = {
    * address, unconfirmed account — because a message that distinguishes them is an account
    * enumeration oracle for anyone willing to submit a list of addresses.
    */
+  'studio.login.errorThrottled': {
+    value:
+      'Too many sign-in attempts. Wait a few minutes and try again — your details may well be correct.',
+    contentKey: 'studio_help.login_error_throttled',
+  },
   'studio.login.errorSignIn': {
     value:
       'Those sign-in details were not accepted. Check the email address and password, then try again.',
@@ -608,6 +613,10 @@ export const STUDIO_STRINGS = {
   'studio.shell.productName': {
     value: 'Rivya Studio',
     contentKey: 'studio_help.shell_product_name',
+  },
+  'studio.shell.skipToSections': {
+    value: 'Skip to sections',
+    contentKey: 'studio_help.shell_skip_to_sections',
   },
   'studio.shell.skipToContent': {
     value: 'Skip to content',
@@ -2185,6 +2194,107 @@ export const STUDIO_STRINGS = {
   'studio.media.colAdded': {
     value: 'Added',
     contentKey: 'studio_help.media_col_added',
+  },
+  /* --- Phase 41: the accessibility panel --------------------------------------------------- */
+  'studio.media.a11y.heading': {
+    value: 'Accessibility',
+    contentKey: 'studio_help.media_a11y_heading',
+  },
+  'studio.media.a11y.altLabel': {
+    value: 'Text alternative',
+    contentKey: 'studio_help.media_a11y_alt_label',
+  },
+  'studio.media.a11y.altHelp': {
+    value:
+      'What somebody who cannot see this image needs to know. Describe what it shows, not how it was made — no camera or lighting language, no file name, and never the word image.',
+    contentKey: 'studio_help.media_a11y_alt_help',
+  },
+  'studio.media.a11y.decorativeLabel': {
+    value: 'Decorative — a screen reader should skip this',
+    contentKey: 'studio_help.media_a11y_decorative_label',
+  },
+  'studio.media.a11y.decorativeHelp': {
+    value:
+      'Only for an image carrying nothing the surrounding text does not already say. If in doubt it is not decorative: somebody skipping a described image loses nothing, while somebody told nothing about an informative one cannot know it was there.',
+    contentKey: 'studio_help.media_a11y_decorative_help',
+  },
+  'studio.media.a11y.save': { value: 'Save', contentKey: 'studio_help.media_a11y_save' },
+  'studio.media.a11y.saved': { value: 'Saved', contentKey: 'studio_help.media_a11y_saved' },
+  'studio.media.a11y.refused': {
+    value: 'That could not be saved. Check the text alternative is not empty and try again.',
+    contentKey: 'studio_help.media_a11y_refused',
+  },
+  'studio.media.a11y.promptWarning': {
+    value:
+      'This reads like generation prompt text rather than a description. Rewrite it as a sentence about what the picture shows.',
+    contentKey: 'studio_help.media_a11y_prompt_warning',
+  },
+  'studio.media.a11y.truncatedWarning': {
+    value: 'This ends mid-sentence. It was truncated when it was imported and needs rewriting.',
+    contentKey: 'studio_help.media_a11y_truncated_warning',
+  },
+  'studio.media.asset.back': {
+    value: 'Back to the media library',
+    contentKey: 'studio_help.media_asset_back',
+  },
+  'studio.media.asset.detailsHeading': {
+    value: 'Details',
+    contentKey: 'studio_help.media_asset_details_heading',
+  },
+  'studio.media.asset.readOnly': {
+    value:
+      'You can read this asset but not change it. Ask somebody with media permissions to make the edit.',
+    contentKey: 'studio_help.media_asset_read_only',
+  },
+  'studio.media.asset.noPreview': {
+    value: 'No preview — this kind of asset has no picture to show.',
+    contentKey: 'studio_help.media_asset_no_preview',
+  },
+  /* --- Phase 41: the Security section of /studio/system/environment ------------------------ */
+  'studio.security.heading': {
+    value: 'Security',
+    contentKey: 'studio_help.security_heading',
+  },
+  'studio.security.note': {
+    value:
+      'The configuration this deployment was started with. It shows state, never a value: no secret, prefix, length or hash appears here. It is not a test — it cannot tell you a browser honoured the policy or that a proxy in front of this app left the headers alone.',
+    contentKey: 'studio_help.security_note',
+  },
+  'studio.security.rowCsp': {
+    value: 'Content security policy',
+    contentKey: 'studio_help.security_row_csp',
+  },
+  'studio.security.rowIpHashSalt': {
+    value: 'IP hash salt set (IP_HASH_SALT)',
+    contentKey: 'studio_help.security_row_ip_hash_salt',
+  },
+  'studio.security.rowRateLimitSalt': {
+    value: 'Rate-limit salt set (RATE_LIMIT_SALT)',
+    contentKey: 'studio_help.security_row_rate_limit_salt',
+  },
+  'studio.security.rowCronSecret': {
+    value: 'Scheduled-job secret set (CRON_SECRET)',
+    contentKey: 'studio_help.security_row_cron_secret',
+  },
+  'studio.security.headerInUse': {
+    value: 'Policy header in use:',
+    contentKey: 'studio_help.security_header_in_use',
+  },
+  'studio.security.headersApplied': {
+    value: 'Applied to every matched response:',
+    contentKey: 'studio_help.security_headers_applied',
+  },
+  'studio.security.exceptions': {
+    value: 'Policy exceptions, each documented in SECURITY.md:',
+    contentKey: 'studio_help.security_exceptions',
+  },
+  'studio.security.rateLimits': {
+    value: 'Rate-limited surfaces:',
+    contentKey: 'studio_help.security_rate_limits',
+  },
+  'studio.security.tightestWindow': {
+    value: 'tightest window',
+    contentKey: 'studio_help.security_tightest_window',
   },
   'studio.media.emptyHeading': {
     value: 'No assets here yet',
@@ -5386,6 +5496,83 @@ export const STUDIO_STRINGS = {
     value:
       'The export carries what a person needs to follow an enquiry up. It omits the hashed address and the browser string: those exist to catch abuse, not to travel in a spreadsheet.',
     contentKey: 'studio_help.inquiries_export_note',
+  },
+  /* --- Phase 41: the data request ---------------------------------------------------------- */
+  'studio.inquiries.dataRequest.heading': {
+    value: 'Data request',
+    contentKey: 'studio_help.inquiries_data_request_heading',
+  },
+  'studio.inquiries.dataRequest.body': {
+    value:
+      'When somebody asks what you hold about them, or asks you to erase it. Enquiries are matched on the email or phone number the person typed, so always preview first and read the reference codes before you erase anything.',
+    contentKey: 'studio_help.inquiries_data_request_body',
+  },
+  'studio.inquiries.dataRequest.emailLabel': {
+    value: 'Their email',
+    contentKey: 'studio_help.inquiries_data_request_email_label',
+  },
+  'studio.inquiries.dataRequest.phoneLabel': {
+    value: 'Their phone number',
+    contentKey: 'studio_help.inquiries_data_request_phone_label',
+  },
+  'studio.inquiries.dataRequest.preview': {
+    value: 'Preview',
+    contentKey: 'studio_help.inquiries_data_request_preview',
+  },
+  'studio.inquiries.dataRequest.download': {
+    value: 'Download what we hold',
+    contentKey: 'studio_help.inquiries_data_request_download',
+  },
+  'studio.inquiries.dataRequest.downloadNote': {
+    value:
+      'A file for the person who asked. It holds their enquiries in full, so treat it as their property: send it to them and keep no copy.',
+    contentKey: 'studio_help.inquiries_data_request_download_note',
+  },
+  'studio.inquiries.dataRequest.erase': {
+    value: 'Erase these enquirers',
+    contentKey: 'studio_help.inquiries_data_request_erase',
+  },
+  'studio.inquiries.dataRequest.eraseNote': {
+    value:
+      'Erasing clears the name, phone, email, city, message, brief answers and hashed address. The enquiries themselves stay, with their status and dates, so the studio record of what happened is not rewritten. It cannot be undone.',
+    contentKey: 'studio_help.inquiries_data_request_erase_note',
+  },
+  'studio.inquiries.dataRequest.matched': {
+    value: 'Enquiries matched:',
+    contentKey: 'studio_help.inquiries_data_request_matched',
+  },
+  'studio.inquiries.dataRequest.none': {
+    value: 'Nothing matched that email or phone number.',
+    contentKey: 'studio_help.inquiries_data_request_none',
+  },
+  'studio.inquiries.dataRequest.erased': {
+    value: 'Erased. The enquiries remain; the person no longer appears in them.',
+    contentKey: 'studio_help.inquiries_data_request_erased',
+  },
+  'studio.inquiries.dataRequest.needsOne': {
+    value: 'Enter an email or a phone number.',
+    contentKey: 'studio_help.inquiries_data_request_needs_one',
+  },
+  'studio.inquiries.dataRequest.refused': {
+    value: 'That could not be done. You may not have the permission this needs.',
+    contentKey: 'studio_help.inquiries_data_request_refused',
+  },
+  'studio.inquiries.dataRequest.ownerOnly': {
+    value: 'Only the owner can erase an enquirer. Ask them to do it.',
+    contentKey: 'studio_help.inquiries_data_request_owner_only',
+  },
+  'studio.inquiries.dataRequest.moved': {
+    value:
+      'The matching enquiries changed since you previewed them — a new one may have arrived. Preview again and read the list before erasing.',
+    contentKey: 'studio_help.inquiries_data_request_moved',
+  },
+  'studio.inquiries.dataRequest.nothing': {
+    value: 'There is nothing left to erase for that person.',
+    contentKey: 'studio_help.inquiries_data_request_nothing',
+  },
+  'studio.inquiries.dataRequest.confirmLabel': {
+    value: 'Type ERASE to confirm',
+    contentKey: 'studio_help.inquiries_data_request_confirm_label',
   },
   'studio.inquiry.back': {
     value: 'Back to enquiries',

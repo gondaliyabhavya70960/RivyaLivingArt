@@ -3,6 +3,12 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 
 import { secretMatches } from '@/lib/cms/cron-auth'
+import {
+  REVALIDATE_WINDOWS,
+  bucketKey,
+  consume,
+  retryAfterSeconds,
+} from '@/lib/security/rate-limit'
 
 /**
  * The one way a cached public page is invalidated from outside the process.
@@ -81,6 +87,33 @@ export async function POST(request: Request): Promise<NextResponse> {
   const prefix = 'Bearer '
   if (!header.startsWith(prefix) || !secretMatches(header.slice(prefix.length), expected)) {
     return NextResponse.json({ error: 'unauthorised' }, { status: 401 })
+  }
+
+  /*
+   * RATE LIMITED AFTER THE SECRET CHECK, AND KEYED ON THE SECRET — Phase 41.
+   *
+   * Keyed on the credential rather than the caller because of what is left to bound. Anybody without
+   * the secret is already refused above, so the remaining risk is a HOLDER of it looping: a
+   * misconfigured webhook, a retry storm, a script that revalidates on every row change. The thing
+   * doing that is the credential, wherever it is running from, and an address key would let the same
+   * runaway process spread its load across a fleet.
+   *
+   * The key is a hash of the secret, never the secret: `bucketKey` is an HMAC, so `rate_limit_buckets`
+   * holds a value that identifies a repeat caller and reveals nothing (D8 — never log or store a
+   * secret, not even a prefix or a length).
+   */
+  const { allowed } = await consume(bucketKey('revalidate', expected), REVALIDATE_WINDOWS)
+  if (!allowed) {
+    return NextResponse.json(
+      { error: 'rate_limited' },
+      {
+        status: 429,
+        headers: {
+          'cache-control': 'no-store',
+          'Retry-After': String(retryAfterSeconds(REVALIDATE_WINDOWS)),
+        },
+      },
+    )
   }
 
   let payload: unknown

@@ -36,6 +36,14 @@ export const SERVER_ONLY_VARIABLES = [
   'SCRAPER_USER_AGENT',
   'REVALIDATE_SECRET',
   'CRON_SECRET',
+  /*
+   * PHASE 41 ADDED THE TWO SALTS. Neither is a credential to a service, and both are exactly as
+   * dangerous as one for the thing they protect: `ip_hash` is an HMAC over an address, and the
+   * address space is four billion values — minutes of work against a leaked salt. A salt in a log
+   * turns every hashed address in `inquiries` and `rate_limit_buckets` back into an IP.
+   */
+  'IP_HASH_SALT',
+  'RATE_LIMIT_SALT',
 ] as const
 
 /**
@@ -64,6 +72,21 @@ const REDACTED_KEYS = [
   'message',
   'note',
   'address',
+  /*
+   * PHASE 41 WIDENED THIS TO THE REST OF THE PERSONAL-DATA SET. `inquiries` is the only place this
+   * product holds personal data (`lib/inquiries/pii.ts`), and its columns are what a log line about
+   * an enquiry would otherwise carry: a name, a city, the configurator's free-text answers, and the
+   * hashed address. `ip_hash` is included even though it is already a hash — a hash beside a
+   * timestamp and a route is still a way to follow one visitor through a log file.
+   */
+  'name',
+  'city',
+  'answers',
+  'ip_hash',
+  'ip',
+  'user_agent',
+  'useragent',
+  'referrer',
 ]
 
 /**
@@ -72,7 +95,28 @@ const REDACTED_KEYS = [
  * (it is an enquiry's free text as often as not); the system log's own message column never
  * passes through this by-key layer — `logSystem()` scrubs it as a string.
  */
-const KEPT_KEYS = new Set(['error_code', 'metric_key', 'dedupe_key'])
+const KEPT_KEYS = new Set([
+  'error_code',
+  'metric_key',
+  'dedupe_key',
+  /*
+   * PHASE 41'S ADDITIONS FORCED THESE. `name` is a needle now, and half the log lines in this
+   * product legitimately carry one: a block type's name, a metric's, a source's, a column's. The
+   * rule that separates them is whether the value could be a PERSON — so the specific
+   * machine-name keys are kept and the bare `name` stays redacted, which is the safe default when
+   * a new one is added and nobody updates this list.
+   */
+  'block_name',
+  'metric_name',
+  'source_name',
+  'column_name',
+  'table_name',
+  'file_name',
+  'event_name',
+  'rule_name',
+  'field_name',
+  'step_name',
+])
 
 export const REDACTED = '[redacted]'
 

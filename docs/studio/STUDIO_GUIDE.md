@@ -1377,10 +1377,44 @@ editor, merchandiser). **Deletion needs `media.delete` (owner, admin only).**
   `POST /api/media/sign` enforces session, `media.write`, the folder allowlist in
   `lib/media/folders.ts`, a MIME allowlist and byte ceilings (25 MB image · 200 MB video · 50 MB
   model), and is rate-limited per user.
+- **The bytes are checked after the upload, not at the signature — Phase 41.** Uploads go from the
+  browser straight to Cloudinary, so the server never holds the file. `saveUploadedAssetAction`
+  fetches the first 4 kB of the stored original back and refuses the ROW on a magic-byte mismatch, a
+  declared-type lie, markup (SVG is refused on every path, staff included) or an over-ceiling length,
+  destroying the Cloudinary object and writing a `DENIED` audit row. Nothing reads Cloudinary except
+  through `media_assets`, so an object with no row is unreferenced storage. SECURITY §7.3.
 - **Only the eight D6 ratios are crop targets.** Any other ratio throws.
 - **Delivery is capped at 2560 px** even though manifest sources reach 6336 px wide.
 - Naming follows `<page>-<section>-<variant>.<ext>`, but **the Rivya asset ID is authoritative, not the
   filename**.
+
+### 10.1a `/studio/media/all/[assetId]` — the accessibility surface, Phase 41
+
+**A route rather than a drawer, and that is a departure the phase document should know about.** The
+six Media Manager sections are one shared Server-rendered table with no per-asset surface at all, so a
+drawer would have meant making that table a Client Component to own an open/closed state — turning six
+server routes into client ones to host a form that is itself a client island. A route has an address
+instead: Phase 43's alt-text queue can link straight at one asset, and somebody can send a colleague
+the thing that needs rewriting.
+
+**Reached from the asset's name** in any Media Manager section. It shows the picture large, because a
+text alternative written without looking at the image is how 124 truncated prompt fragments came to be
+in the database.
+
+| Control | Behaviour |
+|---|---|
+| Text alternative | A textarea, 500 characters. Quality warnings appear **as you type**, beneath it |
+| Decorative | A checkbox. Ticked, the asset renders `alt=""` deliberately; the sentence is still stored |
+| Save | `media.write`, one audit row either way, revalidates the media surfaces |
+
+**The warnings are advice and never block a save.** Whether a sentence describes a picture is a
+person's judgement, and a validator confident enough to refuse would eventually refuse a correct
+description that happened to mention light. Four rules fire: the text ends mid-sentence, it carries
+generation-prompt vocabulary (lighting rigs, lens language, backdrop notes), it opens by announcing
+that it is an image, or it is under fifteen characters.
+
+**`media.read` reaches this page and `media.write` is what saving needs.** A role holding only the
+first sees the asset and a sentence naming who can change it, rather than a form that fails on submit.
 
 ### 10.2 `/studio/media/higgsfield` — the Higgsfield tracker
 
@@ -1596,6 +1630,43 @@ field, assignment, and **Open in WhatsApp**, which re-renders the same seeded te
 | Handoff | `whatsapp_state` (`NOT_SENT · REDIRECTED · SHORTENED · UNAVAILABLE`) · `whatsapp_shortened_at_level` |
 | Internal | `referrer` · `utm` · `ip_hash` (salted) · `user_agent` |
 | History | `inquiry_events` — `CREATED · WHATSAPP_REDIRECT · VIEWED · STATUS_CHANGED · NOTE_ADDED · ASSIGNED · EXPORTED` |
+
+### 11.0a The data request panel — Phase 41
+
+On `/studio/inquiries/all`, beside the CSV export and behind the same permission, because both answer
+"give me the customer data" and putting them on one screen is what stops somebody reaching for the CSV
+when what they were asked for was one person's own record.
+
+**Three acts, in one order: identify, preview, then act.**
+
+| Step | What happens |
+|---|---|
+| Identify | An email, a phone number, or both. There are no customer accounts (D1), so this is the only handle that exists |
+| Preview | A dry run. Returns the **reference codes** it would touch and writes nothing. Download and Erase stay disabled until it has matched something |
+| Download what we hold | A file, for the person who asked. `POST /api/studio/inquiries/data-request` answers with `Content-Disposition: attachment`, so the data goes to disk and never through the page |
+| Erase these enquirers | `inquiries.export` **and the owner's own role**. Asks for the word ERASE to be typed |
+
+**Why the preview is mandatory rather than polite.** A mistyped digit matches a different person, and
+an erasure cannot be undone. The reference codes are the only chance anybody has to notice. The
+erasure sends those codes back with it; the server re-runs the dry run and refuses if the set has
+moved — a new enquiry from the same person, or an erasure somebody else already did — so "I read the
+list before I confirmed" means something.
+
+**What erasure does and does not do.** It clears name, phone, email, city, message, brief answers and
+the hashed address. **The enquiries themselves stay**, with their status, dates and reference codes,
+so the studio's record of what happened is not rewritten and a deleted enquiry cannot be used to hide
+one. Name and phone become `[erased]` rather than null, because a null renders as an empty cell that
+looks like a data-entry failure while `[erased]` says a decision was made.
+
+**Owner-only for the erasure, by a role check inside the action.** `inquiries.export` is held by the
+merchandiser too, which is right for reading and wrong for an irreversible write against somebody's
+record. A refusal writes a `DENIED` audit row. Everything here is audited: the preview, the export
+and the erasure, each naming reference codes and counts and never a contact detail — an audit log is
+read by more people than an inbox is.
+
+**A terminal does the same three things**, for the scheduled retention pass and for when the Studio
+is not the right tool: `npm run ops:anonymise-inquiries -- [--apply] [--months=24] [--email=…]
+[--phone=…] [--export]`. It refuses to write without `--apply`.
 
 **Guardrails.**
 
@@ -2393,9 +2464,31 @@ none is ever read into a result.
 | `build` | Commit, branch, build time, environment, Node version |
 
 A check that reports `UNREACHABLE` or `DEGRADED` also writes a `system_logs` row on its channel, so
-a broken Cloudinary credential appears at `ERROR` on `MEDIA` with a redacted context. Phase 41 adds
-a Security section: header presence, CSP mode, rate-limit configuration and the last
-dependency-audit result — configuration state only.
+a broken Cloudinary credential appears at `ERROR` on `MEDIA` with a redacted context.
+
+**The Security section, added by Phase 41.** Below the checks, state only:
+
+| Row | Reads |
+|---|---|
+| Content security policy | `ENFORCED` or `REPORT_ONLY`, from `CSP_ENFORCE`, with the header name actually in use printed beneath |
+| IP hash salt, rate-limit salt, scheduled-job secret | `CONFIGURED` or `NOT_CONFIGURED`, each from the presence of the name alone |
+| Headers applied | The names in `STATIC_SECURITY_HEADERS`, in order |
+| Policy exceptions | The two relaxed directives from `CSP_EXCEPTIONS`, each documented in SECURITY §9 |
+| Rate-limited surfaces | A count, and the tightest window in force, in seconds |
+
+**A missing salt is red, not amber.** It is not cosmetic: the hashes it keys stop being unguessable,
+and `salt()` falls all the way back to a public literal. Report-only is `info` rather than a warning,
+because it is the intended shipping state until the soak is done and a yellow badge on the intended
+state teaches people to ignore yellow badges.
+
+**The dependency-audit result is not here.** The phase document lists it, and `npm audit` is a
+workflow rather than a runtime fact — the page reports what this deployment was started with, and a
+number from somebody's last CI run would be a stale figure wearing a live badge. It belongs with the
+security workflow in Phase 42.
+
+**There is no action on this section, deliberately.** Enforcing the policy is a variable change and a
+deploy; a button here that appeared to do it would be a button that lies about where the state lives.
+The page names the variable and the dashboard owns it.
 
 **Guardrails.** `configured` is computed from the **presence of the variable name**, collapsed to a
 boolean before it leaves the runner — never from its content, and never as a length; an

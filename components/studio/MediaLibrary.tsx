@@ -1,3 +1,6 @@
+import type { Route } from 'next'
+import Link from 'next/link'
+
 import { Badge } from '@/components/primitives/Badge'
 import { Field } from '@/components/primitives/Field'
 import { Input } from '@/components/primitives/Input'
@@ -67,7 +70,17 @@ export function MediaLibrary({
       header: t('studio.media.colName'),
       cell: (asset) => (
         <Stack gap={1}>
-          <Text>{asset.title ?? asset.filename ?? asset.public_id}</Text>
+          {/*
+            The name is the row's link to `/studio/media/all/[assetId]` — Phase 41. One link per
+            row rather than a button per row: the destination is a page with an address, so it can
+            be opened in a new tab, bookmarked and linked to from the Phase 43 alt-text queue.
+          */}
+          <Link
+            href={`/studio/media/all/${asset.id}` as Route}
+            className="underline underline-offset-4"
+          >
+            {asset.title ?? asset.filename ?? asset.public_id}
+          </Link>
           {/* The alt text is shown, not hidden behind a detail view. It is the field most likely
               to be wrong and least likely to be looked at, and a table that displays it is the
               cheapest review anybody will ever do of it. */}

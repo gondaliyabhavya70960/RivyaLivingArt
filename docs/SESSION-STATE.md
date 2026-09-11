@@ -7,61 +7,87 @@
 ---
 
 ## Current Phase
-**Phase 40 — Performance. COMPLETE.** The performance budget stops being a property of the homepage
-and becomes a property of the site — and, more usefully, something anybody can re-measure in one
-command. `perf/budgets.json` is the single source for every budget; `scripts/perf/measure-bundles.mjs`
-produces the first-load figure from what the browser is actually sent; three real defects were found
-by the first reading and two of them are fixed here.
+**Phase 41 — Accessibility + Security. DEVELOPMENT COMPLETE.** Every test, e2e spec and CI workflow
+the phase document asks for is deferred to Phase 42, by the owner's instruction that all development
+across the remaining phases comes before any testing work. `SECURITY.md` and `ACCESSIBILITY.md` were
+both written ahead of the code and described controls in the present tense; this phase built them,
+and corrected the document in the three places where it could not.
 
-### Phase 40: what is built
+### Phase 41: what is built
 
-Migrations `0380`–`0381`: `web_vitals_samples` — ten columns and **no column an identifier could go
-in**, `route_pattern` CHECKed three ways to refuse anything still resolved, `analytics.read` select
-and no write policy for any session. `perf/budgets.json` (every route, a `/studio` group rule, two
-exclusions with reasons) and `perf/bundle-baseline.json` (measured, dated, CI-enforced at 5%).
-`lib/supabase/schemas/vitals.ts` (`.strict()`, the forbidden-key list as data),
-`lib/supabase/repositories/web-vitals.ts` (insert, purge, p75 summary), `app/api/vitals/route.ts`
-(same-origin → rate limit → Zod → service-role insert, 204 and silent),
-`components/patterns/VitalsReporter` (RC-354) and `VitalsCard` (RC-355). `lib/security/origin.ts`
-extracted so the two unauthenticated POST endpoints share one predicate. Guards:
-`scripts/perf/{island-graph,count-islands,measure-bundles,check-third-party,check-cache-headers,check-priority-images}.mjs`
-plus the baseline and `--explain` halves of `check-bundle.mjs`. `MediaImage` gained `priority`;
-`next.config.ts` gained `private, no-store` on Studio; the Phase 38 retention cron gained the 90-day
-vitals purge. `docs/ops/PERFORMANCE.md` rewritten with dated measurements and the three findings.
+Migration `0390` (`0391` allocated and unused — `rate_limit_buckets` shipped in `0182` under A18):
+`media_assets.is_decorative`, and the alt-text CHECK re-expressed as **a usable alternative, or
+explicitly decorative**, which is WCAG 1.1.1 in one line with no third state.
 
-### Phase 40: readings the repository forced
+`lib/security/headers.ts` (policy builder, six static headers, the two exceptions as DATA so the
+Studio can render them), `lib/security/csp.ts` (per-request nonce on the REQUEST, never a response
+header). `proxy.ts` attaches the set to the pass-through, the authenticated response AND the
+redirect, with the matcher widened to the public site and the Supabase call scoped by
+`STUDIO_GUARDED`. The policy ships **report-only**; `app/api/csp-report/route.ts` collects violations
+at `SECURITY` level.
 
-1. **Next 16's build table no longer prints per-route JavaScript sizes.** The figure is taken from
-   the served HTML instead — every script the page asks for, fetched and gzipped — which matches the
-   phase document's definition exactly and cannot drift when the bundler moves its internals.
-2. **`@next/bundle-analyzer` cannot be wired.** It is a webpack plugin and this project builds with
-   Turbopack. `check-bundle.mjs --explain <route>` replaces it and is what found the Zod chunk.
-3. **The island budgets are set at the measured count, not the phase document's.** Its numbers
-   predate the Phase 10 shell and the Phase 23 search box; every public route inherits five islands
-   it did not choose, and a budget red on day one is a budget nobody reads.
-4. **`eager` is not `fetchpriority`.** Every hero was eager and none was prioritised, so the largest
-   image on every page queued behind the parser's discoveries. Ten routes were failing the new gate
-   before the fix.
-5. **Two priority images are worth about as much as none**, so `ResponsiveMedia` gives the hint to
-   the mobile half of a pair only — the constrained device is the one it is for.
-6. **Three listing routes are dynamic where the caching contract asks for ISR**, all for one reason:
-   awaiting `searchParams` in Next 16 opts the whole route in, including the request with no
-   parameters. Recorded on the contract rows themselves.
-7. **The section registry costs every CMS route ~98 kB gzipped, 83.5 kB of it Zod**, reaching the
-   browser through a lazy island whose shared dependency Turbopack hoists into an eager chunk.
-   Measured, evidenced, and deliberately not fixed here — both candidate fixes are architecture.
+`lib/security/rate-limit.ts`: `createHmac` replaces `createHash`, two salts, `retryAfterSeconds`
+returning the shortest window. Five surfaces wired — search suggest (degrades to an empty list),
+media sign, revalidate, csp-report, sign-in.
 
-### The next exact action
+`lib/media/validate-upload.ts` called from `saveUploadedAssetAction` against the first 4 kB of the
+stored original; a refusal destroys the Cloudinary object and writes a DENIED row.
 
-**Phase 41 — Accessibility + Security** (`0390`–`0391`): the full header set with a per-request nonce
-CSP shipped report-only first, rate limiting extended to eight surfaces, upload validation by magic
-bytes, `media_assets.is_decorative` and the alt-text constraint, the PII anonymiser, the axe sweep
-across every public route and seven Studio routes, and the `IP_HASH_SALT` variable.
+`lib/inquiries/pii.ts` + `scripts/ops/anonymise-inquiries.ts` + the data request panel on
+`/studio/inquiries/all` + `POST /api/studio/inquiries/data-request`.
 
-**Outstanding from Phase 40, for whoever picks it up:** the owner must add `NEXT_PUBLIC_VERCEL_ENV`
-in the Vercel dashboard per environment or the reporter never reports; migrations `0380`–`0381` are
-**not yet applied to hosted**; and CI wiring for the four runtime guards is the last task of this
-phase.
+`/studio/media/all/[assetId]` (RC-356 `AccessibilityPanel`), the Security section on
+`/studio/system/environment` (RC-357 `SecurityPosture`, state only), RC-358 `DataRequestPanel`.
+Three route-specific skip links. Five new gates in `npm run check`.
+
+### Phase 41: readings the repository forced
+
+1. **The server never holds an uploaded byte.** Uploads go browser → Cloudinary against a signature,
+   so `validateUpload` cannot refuse an upload. It refuses the ROW and destroys the object, which is
+   the property that matters: nothing reads Cloudinary except through `media_assets`.
+2. **A drawer would have made six Server routes client routes.** The Media Manager is one shared
+   table; the accessibility panel got an address instead, which Phase 43's alt-text queue can link at.
+3. **Owner-only did not justify a permission.** A permission for a rule with exactly one holder means
+   a migration, a generated policy file and a second place the rule can disagree with itself. The
+   erasure checks the owner's role inside the action and writes a DENIED row when it refuses.
+4. **`0391` had nothing to do.** Its table shipped two phases early. Recorded as allocated-and-unused
+   rather than filled.
+5. **Three documented controls did not exist.** EXIF stripping, `request_id` in the proxy, and the
+   dependency-audit figure on the environment page. All three corrected in the documents rather than
+   left claiming more than the code does.
+
+### Phase 41: what is NOT built, and where it is recorded
+
+| Gap | Recorded in |
+|---|---|
+| EXIF not stripped from stored originals; the mechanism is named | SECURITY §7.5, §15 row 8 |
+| `proxy.ts` assigns no `request_id` | SECURITY §10 |
+| No dependency-audit figure on the environment page | STUDIO_GUIDE §13.10 |
+| No contrast preview beside the section editor | ACCESSIBILITY §3.3 |
+| The retention pass is a CLI, not a cron route | SECURITY §10.1; Phase 44 owns the wiring |
+| The whole test track | ACCESSIBILITY §3.2, CHANGELOG, Phase 42 |
+
+**Owner actions before this phase's security is in force:** set `IP_HASH_SALT` and `RATE_LIMIT_SALT`
+in every Vercel environment (without them `salt()` falls back to a public literal), soak the
+report-only policy while reading `/studio/operations/logs` filtered to `SECURITY`, then set
+`CSP_ENFORCE=1` and redeploy.
+
+**Hosted Supabase is level `0390`.** Phase 40's `0380`–`0381` were applied in the same session and
+verified structurally identical to local; `0390` followed. `get_advisors(security)` reports nothing
+new.
+
+---
+
+### Superseded — Phase 40's state
+
+**Phase 40 — Performance. COMPLETE.** Migrations `0380`–`0381`: `web_vitals_samples`, ten columns and
+no column an identifier could go in. `perf/budgets.json` as the single source for every budget;
+`measure-bundles.mjs` taking the first-load figure from the served HTML because Next 16 prints none
+and the webpack analyzer cannot run against Turbopack. Three findings: no priority hint on any image
+site-wide (fixed), no `Cache-Control` on Studio (fixed), and ~98 kB of section registry on every CMS
+route (measured, evidenced, tracked in PERFORMANCE §4.5, not fixed). Landed as PR #46, with a
+follow-up fix teaching `design:check-registry` about `components/studio/` — the gate had failed
+Phase 40's first CI run by refusing a row that was true.
 
 ---
 
@@ -3631,7 +3657,14 @@ on `/studio` rather than a route segment.
 
 ## Next Exact Action
 
-**STOP. Phase 22 is finished, and the owner asked that no new phase start until they say so.**
+**Phase 41 is development-complete. The next phase is 43 — Media Coverage + Higgsfield
+Finalization** (`docs/project/phases/PHASE-39-46.md`), migration `0410`. Phase 42 is DEFERRED and
+runs after Phase 44 with every test deferred from Phases 41–44: the owner's instruction is "complete
+all phase development work and do all test-related work after Phase 44".
+
+*(The paragraph below is Phase 22's, kept for its record.)*
+
+**Phase 22 is finished, and the owner asked that no new phase start until they say so.**
 The next phase is **23 — Global Search + Product Relationships** (`docs/project/phases/PHASE-23-30.md`),
 whose migrations are `0210`–`0213`, unspent. It assumes `entity_relations` and `product_relations`
 populated only by human action (16), searchable projects and articles (17, 18), queryable forms

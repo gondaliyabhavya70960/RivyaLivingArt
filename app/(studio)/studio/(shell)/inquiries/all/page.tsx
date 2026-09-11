@@ -1,6 +1,7 @@
 import { HelpText } from '@/components/primitives/HelpText'
 import { Stack } from '@/components/primitives/Stack'
 import { Text } from '@/components/primitives/Text'
+import { DataRequestPanel } from '@/components/studio/inquiries/DataRequestPanel'
 import { InquiryInbox } from '@/components/studio/inquiries/InquiryInbox'
 import { StudioPage, studioMetadata } from '@/components/studio/StudioPage'
 import { t } from '@/components/studio/strings'
@@ -9,6 +10,8 @@ import { requirePermission } from '@/lib/auth/require'
 import { listProductsForStudio } from '@/lib/supabase/repositories/catalog-admin'
 import { listInquiriesForStudio } from '@/lib/supabase/repositories/inquiries'
 import { createClient } from '@/lib/supabase/server'
+
+import { eraseDataRequestAction, previewDataRequestAction } from '../actions'
 
 /**
  * /studio/inquiries/all
@@ -57,6 +60,21 @@ export default async function Page() {
               </Text>
             </a>
           </Stack>
+        ) : null}
+
+        {/*
+          THE DATA REQUEST SITS BESIDE THE EXPORT AND BEHIND THE SAME PERMISSION — Phase 41. Both
+          answer "give me the customer data", and putting them on one screen is what stops somebody
+          reaching for the CSV when what they were asked for was one person's own record. Erasure
+          needs more than this page can grant: the panel shows the control to the owner and a
+          sentence naming them to everybody else, and the action re-decides regardless.
+        */}
+        {roleHasPermission(session.role, 'inquiries.export') ? (
+          <DataRequestPanel
+            canErase={session.role === 'owner'}
+            onPreview={previewDataRequestAction}
+            onErase={eraseDataRequestAction}
+          />
         ) : null}
       </Stack>
     </StudioPage>

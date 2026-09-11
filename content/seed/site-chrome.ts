@@ -64,6 +64,39 @@ export const siteChromeSeed: SeedModule = {
       'Skip link',
       'The first focusable control on every page. A keyboard user presses Tab once and this appears, letting them jump past the header to the page itself.',
     ),
+    /*
+     * PHASE 41'S THREE ADDITIONAL SKIP LINKS (WCAG 2.2 §2.4.1).
+     *
+     * "Skip to content" is enough when the repeated block is the header. It is not enough on a
+     * listing: a keyboard user reaching `/collection/[category]` lands in a filter rail of twenty
+     * controls, and reaching the products means twenty Tab presses on every category they look at.
+     * The same is true of the search page's filters and of the Studio page editor's section list,
+     * which is the longest repeated block in the product.
+     *
+     * EACH ONE POINTS PAST A BLOCK, NOT TO A LANDMARK. A skip link that jumps to `<main>` when the
+     * filters are inside `<main>` skips nothing.
+     */
+    chromeRow(
+      'ACTION_LABEL',
+      'skip_to_filters',
+      'Skip to filters',
+      'Skip link on a category page',
+      'Lets a keyboard user jump straight to the filter controls on a category page instead of tabbing through the header first.',
+    ),
+    chromeRow(
+      'ACTION_LABEL',
+      'skip_to_results',
+      'Skip to results',
+      'Skip link on a listing or search page',
+      'Lets a keyboard user jump past the filters to the products or results themselves. Without it, reaching the first product on a filtered category means tabbing through every filter control.',
+    ),
+    chromeRow(
+      'ACTION_LABEL',
+      'skip_to_sections',
+      'Skip to sections',
+      'Skip link in the Studio page editor',
+      'Lets a member of staff jump past the editor chrome to the list of sections on the page they are editing.',
+    ),
     chromeRow(
       'ACTION_LABEL',
       'open_menu',

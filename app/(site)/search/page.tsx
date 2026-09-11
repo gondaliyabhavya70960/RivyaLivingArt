@@ -70,6 +70,7 @@ export default async function SearchPage({
   const label = siteString(strings, 'UI_LABEL.search.label')
   const placeholder = siteString(strings, 'FORM_COPY.search.placeholder')
   const submit = siteString(strings, 'ACTION_LABEL.search.submit')
+  const skipToResults = siteString(strings, 'ACTION_LABEL.skip_to_results')
   const emptyHeading = siteString(strings, 'EMPTY_STATE.search.heading')
   const emptyBody = siteString(strings, 'EMPTY_STATE.search.body')
   const similarHeading = siteString(strings, 'UI_LABEL.search.similar.heading')
@@ -177,6 +178,25 @@ export default async function SearchPage({
 
         {/* Unchanged from Phase 10: a GET form, so a search is a URL a visitor can bookmark,
             share and reload — and so it works with no JavaScript. Not a client island. */}
+        {/*
+         * PHASE 41: SKIP TO RESULTS (WCAG 2.2 §2.4.1).
+         *
+         * The shell's "skip to content" lands above the search form, which is where a visitor who
+         * has just searched does NOT want to be — they have typed their query and want the answers.
+         * This points past the form to the results region.
+         *
+         * Visually hidden until focused, so it is in the tab order and the accessibility tree at all
+         * times and on screen only while in use.
+         */}
+        {skipToResults === null ? null : (
+          <a
+            href="#search-results"
+            className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:rounded-sm focus:bg-surface-raised focus:px-4 focus:py-2 focus:text-ink"
+          >
+            {skipToResults}
+          </a>
+        )}
+
         <form method="get" action={PATH} role="search" className="flex items-end gap-3">
           <div className="flex-1">
             {label === null ? null : (
@@ -203,7 +223,8 @@ export default async function SearchPage({
           )}
         </form>
 
-        <div aria-live="polite" className="mt-10">
+        {/* `tabIndex={-1}` so the skip link moves focus and not only the viewport. */}
+        <div id="search-results" tabIndex={-1} aria-live="polite" className="mt-10">
           {!searchable ? null : (
             <>
               {countSentence === null ? null : (

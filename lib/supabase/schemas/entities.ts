@@ -139,10 +139,19 @@ export const mediaAssetSchema = z.object({
   filename: z.string().nullable(),
   rivya_asset_id: z.string().nullable(),
   kind: mediaKindSchema,
-  // D6's three mandatory columns. `alt_text` is non-empty here as well as in the database,
-  // because a blank alt text is worse than a missing one: it tells a screen reader the image
-  // carries no information, when in fact nobody wrote the sentence yet.
+  /*
+   * D6's three mandatory columns. `alt_text` is non-empty here as well as in the database, because a
+   * blank alt text is worse than a missing one: it tells a screen reader the image carries no
+   * information, when in fact nobody wrote the sentence yet.
+   *
+   * PHASE 41 ADDED THE ONE HONEST WAY TO SAY "NO INFORMATION". `is_decorative` renders `alt=""`
+   * deliberately, for an image carrying nothing the surrounding text does not already give — and the
+   * database CHECK is now `is_decorative or alt_text is non-empty`, so the two states are
+   * distinguishable. `alt_text` stays `min(1)` here because a decorative asset still carries the
+   * sentence somebody wrote; it is the RENDERER that suppresses it, not the row.
+   */
   alt_text: z.string().min(1),
+  is_decorative: z.boolean(),
   is_ai_generated: z.boolean(),
   is_concept: z.boolean(),
   width: z.number().int().nullable(),

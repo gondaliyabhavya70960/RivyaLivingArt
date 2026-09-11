@@ -1561,7 +1561,235 @@ Pending.
 
 ## Phase 41 — Accessibility + Security
 
-**Status:** NOT STARTED
+**Status:** DEVELOPMENT COMPLETE — every test, e2e spec and CI workflow the phase document asks for
+is deferred to Phase 42 by the owner's instruction ("complete all phase development work and do all
+test-related work after Phase 44").
+
+### Objective
+Turn the security posture from a document into code, and give the accessibility rules a place in the
+database and in the Studio where they can be enforced rather than remembered. `SECURITY.md` and
+`ACCESSIBILITY.md` were both written ahead of implementation and described controls in the present
+tense; the job here was to build them, and — where they could not be built honestly — to correct the
+document rather than let it keep the claim.
+
+### Requirements Found
+`docs/project/phases/PHASE-39-46.md` §Phase 41, plus `SECURITY.md` §5, §7–§10, `ACCESSIBILITY.md`
+§1–§3, DATA_MODEL §12 row 41, and the four open questions the phase document carries.
+
+- Header set with a per-request nonce CSP, shipped report-only and flipped deliberately.
+- The rate limiter extended from two surfaces to eight, keyed by HMAC with a named salt.
+- Upload validation against magic bytes, with SVG refused on every path including staff.
+- Personal-data export, erasure and a retention pass.
+- `media_assets.is_decorative` and the alt-text CHECK it makes expressible.
+- Three route-specific skip links.
+- Offline guards for contrast, focus styles, secret exposure, action guards and licences.
+- A Security section on `/studio/system/environment`, state only.
+
+### Implementation Completed
+
+**1. Headers and the content security policy.** `lib/security/headers.ts` holds the policy builder,
+the six static headers and the two documented exceptions as data (`CSP_EXCEPTIONS`), so the Studio
+can render the policy's weak points rather than only this document naming them.
+`lib/security/csp.ts` mints a 16-byte nonce per request and writes it onto the REQUEST as
+`x-rivya-nonce` — never a response header, because a nonce the client can read is a nonce an injected
+script can reuse. `proxy.ts` attaches the set to the pass-through, the authenticated response AND the
+redirect, because a redirect is a response a browser acts on.
+
+The matcher was widened to everything except `_next/static`, `_next/image`, `favicon.ico`,
+`robots.txt`, `sitemap.xml` and `sitemaps/`. It previously matched only what the Studio guard needed,
+which meant a header set that never ran on the public site. The Supabase session call is now scoped
+by `STUDIO_GUARDED`, so a visitor's page view still costs no auth round trip.
+
+`app/api/csp-report/route.ts` takes violations: rate-limited **before** the body is read, six capped
+fields, `pathOf()` strips query strings from every path in the report, and it always answers 204 —
+a reporting endpoint that returns an error teaches a browser to retry. Logged at `level: SECURITY`,
+`channel: SYSTEM` (SECURITY is a level, not a channel).
+
+**2. The rate limiter.** `createHmac` replaced `createHash`: an unsalted digest of an IPv4 address is
+the address, because there are only four billion of them. `salt()` prefers `IP_HASH_SALT` and keeps a
+fallback chain so a rename does not reset every live window at deploy time. Added `hashAddress`,
+`hashIdentifier`, eight window constants and `retryAfterSeconds(windows)`, which returns the
+SHORTEST window — the soonest a caller could legitimately try again.
+
+Wired: `app/api/search/suggest` (degrades to `{ error, groups: [] }` rather than 429),
+`app/api/media/sign` (keyed on `session.userId`, after the permission check),
+`app/api/revalidate` (keyed on the secret), `app/api/csp-report`, and Studio sign-in
+(`app/(studio)/studio/login/page.tsx`, two keys, a `SECURITY`-level log on `AUTH`, and a new
+`throttled` error code with its own seeded string).
+
+**3. Upload validation.** `lib/media/validate-upload.ts`: nine magic-byte signatures longest-first,
+`looksLikeMarkup` by CONTENT because SVG has no magic bytes, the brand-slot format table, and a fixed
+rejection-code union. The refusal order is `EMPTY` → `MARKUP_REJECTED` → `UNRECOGNISED_FORMAT` →
+`TYPE_NOT_ALLOWED` → `DECLARED_TYPE_MISMATCH` → `TOO_LARGE`, and every step of that order is a
+decision explained in the file.
+
+It is called from `saveUploadedAssetAction`, which is the only place it can be: uploads go from the
+browser straight to Cloudinary against a signature, so the server never holds the bytes. The action
+fetches the first 4 kB of the stored original with a `Range` request, passes the reported length in
+separately, and on a refusal destroys the Cloudinary object and writes a `DENIED` audit row. The
+control is the ROW, not the upload — nothing in this product reads Cloudinary except through
+`media_assets`.
+
+**4. Personal data.** `lib/inquiries/pii.ts` (`PERSONAL_FIELDS`, `exportEnquirerData`,
+`eraseEnquirer`, `anonymiseExpired`, `matchingInquiryIds` with digits-only phone matching),
+`scripts/ops/anonymise-inquiries.ts` (refuses to write without `--apply`, prints reference codes and
+never contact details), the data request panel on `/studio/inquiries/all`, and
+`POST /api/studio/inquiries/data-request` for the subject-access file.
+
+**5. Accessibility.** `0390` adds `is_decorative` and re-expresses the alt-text CHECK.
+`lib/media/alt-text-quality.ts` holds four quality rules as a pure function shared with Phase 43's
+gate. `/studio/media/all/[assetId]` is a new route hosting `AccessibilityPanel`. Skip links added
+to the catalogue listing (filters and results), `/search` and the Studio page editor.
+`components/patterns/MediaSlot` renders `alt=""` only when the asset is decorative and no override
+was given.
+
+**6. Gates.** `scripts/security/check-secret-exposure.mjs`, `check-action-guards.mjs`,
+`check-licenses.mjs`, `scripts/a11y/check-contrast.mjs`, `check-focus-styles.mjs` — all five in
+`npm run check`.
+
+**7. Redaction.** `lib/logging/redact.ts` gained `IP_HASH_SALT` and `RATE_LIMIT_SALT` as server-only
+names, eight person-shaped keys (`name`, `city`, `answers`, `ip_hash`, `ip`, `user_agent`,
+`useragent`, `referrer`) and ten machine-name keys kept explicitly, so a redactor that erased
+`route_pattern` or `metric` would be useless for debugging.
+
+### Files Added
+`lib/security/headers.ts` · `lib/security/csp.ts` · `lib/media/validate-upload.ts` ·
+`lib/media/alt-text-quality.ts` · `lib/inquiries/pii.ts` · `lib/ops/security-posture.ts` ·
+`app/api/csp-report/route.ts` · `app/api/studio/inquiries/data-request/route.ts` ·
+`app/(studio)/studio/(shell)/inquiries/actions.ts` ·
+`app/(studio)/studio/(shell)/media/asset/[assetId]/page.tsx` ·
+`components/studio/media/AccessibilityPanel.tsx` · `components/studio/ops/SecurityPosture.tsx` ·
+`components/studio/inquiries/DataRequestPanel.tsx` · `scripts/ops/anonymise-inquiries.ts` ·
+`scripts/security/check-secret-exposure.mjs` · `scripts/security/check-action-guards.mjs` ·
+`scripts/security/check-licenses.mjs` · `scripts/a11y/check-contrast.mjs` ·
+`scripts/a11y/check-focus-styles.mjs` · `supabase/migrations/0390_phase41_media_decorative.sql`
+
+### Files Modified
+`proxy.ts` · `lib/security/rate-limit.ts` · `lib/logging/redact.ts` ·
+`lib/supabase/schemas/entities.ts` · `lib/supabase/repositories/media.ts` · `lib/catalog/listing.tsx` ·
+`components/patterns/MediaSlot/index.tsx` · `components/studio/MediaLibrary.tsx` ·
+`components/studio/strings.ts` · `content/seed/site-chrome.ts` ·
+`app/(site)/search/page.tsx` · `app/(studio)/studio/login/page.tsx` ·
+`app/(studio)/studio/(shell)/media/actions.ts` ·
+`app/(studio)/studio/(shell)/inquiries/all/page.tsx` ·
+`app/(studio)/studio/(shell)/system/environment/page.tsx` ·
+`app/(studio)/studio/(shell)/content/pages/[pageId]/page.tsx` ·
+`app/api/search/suggest/route.ts` · `app/api/media/sign/route.ts` · `app/api/revalidate/route.ts` ·
+`eslint.config.mjs` · `package.json` · `.env.example`
+
+### Database Changes
+`0390_phase41_media_decorative.sql` — `media_assets.is_decorative boolean not null default false`;
+`media_assets_alt_text_present` dropped and re-added as
+`check (is_decorative or (alt_text is not null and length(btrim(alt_text)) > 0))`.
+
+**`0391` is allocated and unused.** DATA_MODEL §12 gave Phase 41 a pair for `rate_limit_buckets` and
+the `media_assets` change, but `rate_limit_buckets` shipped in `0182` under amendment A18 — Phase 19
+needed it two phases before its number came up. No policy set changed in this phase, so there was no
+generated RLS file to write and the number stays empty rather than being filled with a migration that
+had nothing to do. `0390`'s header records this; §12's row now does too.
+
+### Supabase Changes
+`0390` applied to `ccvarsmzickdkryoakdg` with a ledger row carrying the local file's SHA-256
+(`7c2f6c76…`). Phase 40's `0380`–`0381` were applied in the same session and their structure verified
+identical to local (10 columns, 11 CHECKs, 3 indexes, 1 policy, RLS on). `get_advisors(security)`
+returns the same pre-existing set as previous phases and nothing new.
+
+### Environment Variables
+| Variable | Type | Who sets it | Without it |
+|---|---|---|---|
+| `IP_HASH_SALT` | Secret | Owner, in Vercel | `salt()` falls back to `RATE_LIMIT_SALT`, then `SUPABASE_SERVICE_ROLE_KEY`, then the literal `'rivya'` — a public value, which makes every stored `ip_hash` reproducible by guessing an address |
+| `RATE_LIMIT_SALT` | Secret | Owner, in Vercel | Same chain; bucket keys become predictable |
+| `CSP_ENFORCE` | Server, not secret | Owner, after the soak | The policy ships report-only and blocks nothing |
+
+All three are in `.env.example` with their consequences, in ENVIRONMENT §5.1's matrix and §5.2's
+"Added by Phase 41" table, and in D8 through amendment A41. `/studio/system/environment` shows each
+as set or not set and never a value.
+
+### GitHub Actions Changes
+**None in this phase.** `.github/workflows/security.yml` (gitleaks + `npm audit --audit-level=high`),
+`.gitleaks.toml` and `.github/dependabot.yml` are workflow files and belong to the deferred test
+track; Phase 42 owns them along with wiring Phase 40's four runtime guards into CI.
+
+### Tests Performed
+No new test files, by the owner's instruction. What was verified:
+
+- `npm run db:reset` → 107 migrations; `db:check-migrations` → "107 migrations up to 0390";
+  `db:check-schema` → 104 tables.
+- `npx tsc --noEmit` clean; ESLint clean but for six pre-existing warnings about `<a>` elements in
+  test files; Prettier clean.
+- The full unit suite green at 184 files / 2,792 tests (unchanged — no new suites).
+- `npm run check` green end to end, including all five new gates.
+- Each new gate run individually and read: contrast 33 pairs across 3 schemes; focus styles 1 CSS
+  rule, 2 class lists, 1 counted programmatic exemption; action guards 179 actions across 38 modules
+  with 2 stated exemptions; licences 102 packages; secret exposure 74 client files clean with 2
+  advisory name mentions.
+
+### Issues Found / Fixed
+
+**Found in the documents, and corrected there rather than papered over:**
+
+1. **`SECURITY.md` §7 claimed EXIF and GPS are stripped on ingest. They are not.** Public delivery is
+   unaffected — every public URL is a transformation and Cloudinary drops metadata from derivatives —
+   but a visitor's reference photograph is stored as its original and handed to staff through a
+   signed URL with its coordinates intact. The fix is an incoming transformation on the visitor
+   signature; every signed parameter must also be sent by the browser byte for byte, so it spans
+   `lib/media/providers/cloudinary.ts` and both uploaders and can only be verified against the real
+   Cloudinary account. Shipping it blind risks breaking every upload in production to close a
+   staff-only leak. Recorded in SECURITY §7.5 and §15 row 8.
+2. **`SECURITY.md` §10 said `proxy.ts` assigning a `request_id` "lands with the Phase 41 security
+   headers".** It does not. Threading an id from the proxy into a Server Action needs a mechanism for
+   request-scoped state that the nonce solves for render only. Corrected to say so.
+3. **The phase document asks for the last dependency-audit result on the environment page.** `npm
+   audit` is a workflow, not a runtime fact; a number from somebody's last CI run would be a stale
+   figure wearing a live badge. Omitted, with the reason on the page's own documentation.
+
+**Found by the new gates, on their first run:**
+
+4. `check-secret-exposure` flagged Studio copy that NAMES `GOOGLE_SERVICE_ACCOUNT_JSON`. The first
+   fix — `/env/i` over the preceding 40 characters — matched the word "environment". Replaced with
+   `ENV_ACCESS = /env\s*(?:\.|\[\s*["'])\s*$/i` anchored to the end of a 24-character window, and a
+   bare mention is now reported as advisory rather than as a finding: a name is not a value (D8).
+5. `check-action-guards` produced 18 false positives, then two brace-matching bugs in a row: the
+   first `{` after a function name was a DESTRUCTURED PARAMETER, and after fixing that, the next `{`
+   was inside a GENERIC RETURN TYPE (`): Promise<ActionResult<{ id: string }>>`). Fixed by balancing
+   the parameter parentheses first and then taking the first `{` at angle-bracket depth zero.
+6. `check-contrast` could not resolve 15 of 33 pairs because it was not stripping CSS comments — a
+   nine-line header comment was being read as part of a selector. A failure to resolve is now an
+   error rather than a silent pass.
+7. `check-focus-styles` flagged `Configurator/index.tsx:343`, which is a `tabIndex={-1}` programmatic
+   focus target. Exempted, documented, and COUNTED on every run so the exemption cannot grow quietly.
+
+**Found in the code:**
+
+8. `SECURITY` is a log LEVEL, not a channel. Used `level: 'SECURITY', channel: 'SYSTEM'` (and
+   `channel: 'AUTH'` for sign-in).
+9. The generated `InquiryUpdate` type rejects an index-signature object, so `erasedValues()` is
+   written out explicitly with each value drawn from `PERSONAL_FIELDS` — a cast would have turned a
+   typo into an erasure that reported success and wrote nothing.
+10. `design:check-registry` refused `RC-355 VitalsCard` as BUILT because its path resolution knew
+    only the design-system directories. **This failed Phase 40's CI.** Fixed by teaching the gate
+    about `components/studio/`, which exposed the same error in the opposite direction: forty rows
+    sat at PLANNED with their files on disk. Landed as a fix on PR #46 before this phase's work.
+
+### Build Status
+`npm run check` green; `npx tsc --noEmit` clean; 107 migrations replay from empty; unit suite 184
+files / 2,792 tests green.
+
+### Deployment Status
+Hosted Supabase level `0390`. Vercel deployment of this phase follows the merge. **Three owner
+actions before the phase's security is fully in force:** set `IP_HASH_SALT` and `RATE_LIMIT_SALT`,
+soak the report-only policy, then set `CSP_ENFORCE=1`.
+
+### Commit
+`feat(phase-41): Accessibility + Security`
+
+### Remaining Notes
+- The whole test track (see GitHub Actions Changes above) is Phase 42's, with everything deferred
+  from Phases 41–44.
+- EXIF stripping, `request_id` threading and the contrast preview beside the section editor are
+  recorded as outstanding in SECURITY §7.5, §10 and ACCESSIBILITY §3.3.
+- The retention pass exists as a CLI and is not yet on a cron route; Phase 44 owns the deployment
+  wiring, so until then the 24-month window is a procedure rather than a guarantee.
 
 ## Phase 42 — Comprehensive Testing
 

@@ -104,6 +104,13 @@ export function BlockImage({
           preset={preset}
           sizes={sizes}
           alt={altTextOf(deliverable, altOverride)}
+          /*
+           * PHASE 41: THE ROW DECIDES, NOT THE CALL SITE. `is_decorative` is the one honest way to
+           * render `alt=""` — an image carrying nothing the surrounding text does not already give,
+           * which a screen reader should skip rather than describe. An `altOverride` still wins,
+           * because a caller supplying one is describing this particular use of the asset.
+           */
+          decorative={deliverable.is_decorative && altOverride === null}
           ratio={ratio}
           loading={eager ? 'eager' : 'lazy'}
           priority={priority}

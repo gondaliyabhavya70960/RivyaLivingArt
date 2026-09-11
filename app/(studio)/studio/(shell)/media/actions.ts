@@ -12,9 +12,10 @@ import { checkMediaAgainstResearch, type GuardVerdict } from '@/lib/media/duplic
 import { isAllowedFolder } from '@/lib/media/folders'
 import { hashImageBytes, sha256OfStream, type MediaHashes } from '@/lib/media/hashes'
 import { UPLOAD_KINDS, UPLOAD_LIMITS } from '@/lib/media/upload-limits'
+import { validateUpload, type UploadVerdict } from '@/lib/media/validate-upload'
 import { originalUrl } from '@/lib/media/url'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { insertMediaAsset } from '@/lib/supabase/repositories/media'
+import { insertMediaAsset, updateMediaAsset } from '@/lib/supabase/repositories/media'
 import {
   listMediaAssetHashes,
   upsertMediaAssetHash,
@@ -88,6 +89,27 @@ export async function saveUploadedAssetAction(input: unknown): Promise<SaveMedia
         actorRole: session.role,
         entityType: 'media_assets',
         summary: `Refused to record an asset in "${folder}", which is not on the allowlist.`,
+      })
+      return { ok: false, error: t('studio.media.upload.refused') }
+    }
+
+    // --- Phase 41: the bytes, before anything trusts the declared type ----------------------
+    //
+    // The signature is spent and Cloudinary holds the file, so this refuses the ROW and destroys
+    // the object. That is the whole control: `media_assets` never gains a row for a file whose
+    // bytes are not what the upload said they were, and nothing in the product reads Cloudinary
+    // except through that table.
+    const bytes = await inspectBytes(kind, publicId, mimeType)
+    if (!bytes.ok) {
+      await discardUpload(publicId, kind)
+      await writeAudit({
+        action: 'media.save',
+        result: 'DENIED',
+        actorUserId: session.userId,
+        actorRole: session.role,
+        entityType: 'media_assets',
+        // The rule and the sniffed type, never the file's contents.
+        summary: `Refused ${publicId}: ${bytes.reason ?? 'UNVERIFIED'} — ${bytes.detail ?? 'the bytes could not be read back'}.`,
       })
       return { ok: false, error: t('studio.media.upload.refused') }
     }
@@ -245,14 +267,191 @@ function refusalMessage(verdict: Extract<GuardVerdict, { ok: false }>): string {
   return `${lead} ${verdict.label}.`
 }
 
-/** Best effort: a refused upload should not linger in the library's folder. */
-async function discardUpload(publicId: string, kind: 'IMAGE' | 'VIDEO'): Promise<void> {
+/**
+ * Best effort: a refused upload should not linger in the library's folder.
+ *
+ * Phase 41 widened this from the two hashable kinds to all five, because the byte check refuses
+ * documents and models too and an orphaned PDF is no more welcome than an orphaned JPEG. The
+ * resource type comes from the limits table rather than a ternary, so a new kind cannot be
+ * destroyed under the wrong namespace.
+ */
+async function discardUpload(publicId: string, kind: keyof typeof UPLOAD_LIMITS): Promise<void> {
   try {
     await getMediaProvider().destroy({
       publicId,
-      resourceType: kind === 'IMAGE' ? 'image' : 'video',
+      resourceType: UPLOAD_LIMITS[kind].resourceType,
     })
   } catch {
     // The row was never written; an orphaned file is a cost, not a correctness problem.
+  }
+}
+
+/* --- Phase 41: byte verification --------------------------------------------------------------- */
+
+/**
+ * The first 4 kB of the stored original, plus the length the delivery origin reports, run through
+ * `validateUpload` — Phase 41, SECURITY.md §7.
+ *
+ * A PREFIX RATHER THAN THE WHOLE FILE. Every rule that can refuse a file reads the first bytes: the
+ * magic-byte signature, the markup sniff, the declared-type agreement. Size is the one that needs
+ * the whole file, and the origin already knows it and says so in a header — so a 200 MB video is
+ * judged without 200 MB crossing the wire. 4 kB is far more than any signature needs and enough for
+ * `looksLikeMarkup` to see past a byte-order mark and leading whitespace.
+ *
+ * A `Range` HEADER THE ORIGIN MAY IGNORE. If it answers 200 with the whole body the read is
+ * cancelled after the first chunks, so the cost is bounded either way.
+ *
+ * UNREADABLE IS REFUSED, NOT WAVED THROUGH. A verdict that fell open on a network error would make
+ * this gate absent exactly when the origin is misbehaving.
+ */
+async function inspectBytes(
+  kind: keyof typeof UPLOAD_LIMITS,
+  publicId: string,
+  declaredMime: string,
+): Promise<UploadVerdict> {
+  const cloudName = requiredEnv('NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME')
+  const { resourceType } = UPLOAD_LIMITS[kind]
+  const url = originalUrl(cloudName, { publicId, resourceType })
+
+  let head: Uint8Array
+  let byteLength: number
+  try {
+    const response = await fetch(url, {
+      headers: { Range: 'bytes=0-4095' },
+      signal: AbortSignal.timeout(30_000),
+      cache: 'no-store',
+    })
+    if (!response.ok || response.body === null) {
+      return {
+        ok: false,
+        reason: 'UNRECOGNISED_FORMAT',
+        detail: `delivery answered ${String(response.status)}`,
+      }
+    }
+    byteLength = totalLength(response.headers)
+    head = await readPrefix(response.body, 4096)
+  } catch {
+    return {
+      ok: false,
+      reason: 'UNRECOGNISED_FORMAT',
+      detail: 'the original could not be read back',
+    }
+  }
+
+  return validateUpload({
+    kind,
+    buffer: head,
+    declaredMime,
+    // A `content-range` total, a `content-length` on a full answer, or the prefix itself — in
+    // which case the file is no larger than what was read and the ceiling cannot be exceeded.
+    byteLength: byteLength === -1 ? head.byteLength : byteLength,
+  })
+}
+
+/**
+ * The file's real length: `Content-Range`'s total when the range was honoured, else
+ * `Content-Length`.
+ *
+ * THE CANONICAL SPELLING, not the lower-case one. `Headers.get` is case-insensitive either way, and
+ * `'content-range'` is indistinguishable from a Tailwind utility to `scripts/design/check-utilities.mjs`
+ * — `content-` is a real prefix — so the gate reported it as a class that generates no CSS.
+ */
+function totalLength(headers: Headers): number {
+  const range = headers.get('Content-Range')
+  const total = range === null ? null : /\/(\d+)\s*$/.exec(range)?.[1]
+  if (total !== null && total !== undefined) return Number.parseInt(total, 10)
+  const length = headers.get('Content-Length')
+  // 206 with no content-range, or no length at all: unknown, and the caller falls back safely.
+  if (length === null || range !== null) return -1
+  return Number.parseInt(length, 10)
+}
+
+/** At most `limit` bytes, then the body is cancelled — the origin may have ignored the Range. */
+async function readPrefix(body: ReadableStream<Uint8Array>, limit: number): Promise<Uint8Array> {
+  const reader = body.getReader()
+  const chunks: Uint8Array[] = []
+  let taken = 0
+  try {
+    while (taken < limit) {
+      const { done, value } = await reader.read()
+      if (done) break
+      chunks.push(value)
+      taken += value.byteLength
+    }
+  } finally {
+    await reader.cancel().catch(() => undefined)
+  }
+  const out = new Uint8Array(Math.min(taken, limit))
+  let offset = 0
+  for (const chunk of chunks) {
+    if (offset >= out.byteLength) break
+    const slice = chunk.subarray(0, out.byteLength - offset)
+    out.set(slice, offset)
+    offset += slice.byteLength
+  }
+  return out
+}
+
+/* --- Phase 41: the accessibility panel -------------------------------------------------------- */
+
+const accessibilitySchema = z.object({
+  id: z.string().uuid(),
+  altText: z.string().trim().min(1).max(500),
+  isDecorative: z.boolean(),
+})
+
+export type AccessibilityResult = { ok: true } | { ok: false; error: string }
+
+/**
+ * Save an asset's text alternative and its decorative state — Phase 41, WCAG 1.1.1.
+ *
+ * THE TWO FIELDS ARE SAVED TOGETHER BECAUSE THE RULE IS ABOUT BOTH. An asset either has a usable
+ * sentence or is explicitly marked as carrying nothing the surrounding text does not already give.
+ * `0390`'s CHECK enforces exactly that, and editing the two in one act is what stops somebody
+ * clearing the alt text, hitting the constraint, and reaching for the decorative toggle to get past
+ * it — which would mark an informative image decorative to satisfy a database error.
+ *
+ * THE SENTENCE IS KEPT EVEN WHEN DECORATIVE. Marking an asset decorative changes what is RENDERED
+ * (`alt=""`), not what is recorded. If the decision is reversed later the sentence is still there,
+ * and an audit can read what somebody thought the image showed.
+ *
+ * `media.write`, and an audit row either way. Alt text is the thing a sighted reviewer never sees
+ * change, which makes it exactly the field worth a record of who changed it.
+ */
+export async function saveAccessibilityAction(input: unknown): Promise<AccessibilityResult> {
+  try {
+    const session = await requirePermission('media.write')
+
+    const parsed = accessibilitySchema.safeParse(input)
+    if (!parsed.success) return { ok: false, error: t('studio.media.a11y.refused') }
+
+    const { id, altText, isDecorative } = parsed.data
+
+    await updateMediaAsset(
+      await createClient(),
+      id,
+      { alt_text: altText, is_decorative: isDecorative },
+      session.userId,
+    )
+
+    await writeAudit({
+      action: 'media.accessibility.save',
+      result: 'SUCCESS',
+      actorUserId: session.userId,
+      actorRole: session.role,
+      entityType: 'media_assets',
+      entityId: id,
+      summary: isDecorative
+        ? 'Marked decorative: the image renders alt="" and a screen reader skips it.'
+        : 'Text alternative updated.',
+    })
+
+    revalidatePath('/studio/media')
+    return { ok: true }
+  } catch (error) {
+    if (error instanceof AuthenticationError || error instanceof AuthorizationError) {
+      return { ok: false, error: t('studio.media.a11y.refused') }
+    }
+    throw error
   }
 }

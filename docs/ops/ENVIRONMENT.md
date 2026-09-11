@@ -269,6 +269,10 @@ a screenshot.
 | `GOOGLE_SHEETS_SPREADSHEET_ID` | Sensitive | prod sheet | test sheet | test sheet | **Owner** |
 | `SCRAPER_USER_AGENT` | Server | set | set | set | Engineer |
 | `REVALIDATE_SECRET` | Secret | unique | unique | any | Engineer, 90 d |
+| `CRON_SECRET` | Secret | unique | — | any | Engineer, 90 d |
+| `IP_HASH_SALT` | Secret | unique | unique | any | Engineer — rotation breaks enquirer recognition, so treat it as a decision |
+| `RATE_LIMIT_SALT` | Secret | unique | unique | any | Engineer, 90 d |
+| `CSP_ENFORCE` | Server, not secret | `1` after the soak | unset | unset | Engineer |
 
 ### 5.2 Setting these in Vercel — the actual list, as of Phase 25
 
@@ -319,6 +323,33 @@ Three separate gates, deliberately.
 defaulting. That is deliberate: a default would mean an unconfigured deployment crawling
 anonymously, which is precisely the conduct this subsystem is built to avoid, arriving through a
 convenience.
+
+#### Added by Phase 41 — the two salts and the policy switch
+
+| # | Variable | Vercel type | Environments | Value |
+|---|---|---|---|---|
+| 9 | `IP_HASH_SALT` | **Sensitive** | Production, Preview | `openssl rand -base64 32`. The key for `hmac(salt, ip)` on `inquiries.ip_hash` |
+| 10 | `RATE_LIMIT_SALT` | **Sensitive** | Production, Preview | A DIFFERENT `openssl rand -base64 32`. The key for rate-limit bucket keys |
+| 11 | `CSP_ENFORCE` | Plain | Production, once the soak is done | `1` to enforce the content security policy. Anything else, including unset, ships it report-only |
+
+**Nothing breaks if the salts are unset, and that is exactly the danger.** `salt()` falls back to
+`RATE_LIMIT_SALT`, then to `SUPABASE_SERVICE_ROLE_KEY`, then to the literal string `'rivya'`. The
+chain exists so that renaming the variable does not reset every live rate-limit window at the moment
+of a deploy — the worst possible time for a limit to be off — and its last rung is a value anyone can
+read in this file. With it in force, every stored `ip_hash` is reproducible by guessing an address,
+which is the whole property the column exists to deny.
+
+**Two salts, not one, because they rotate on different clocks.** Rotating `RATE_LIMIT_SALT` costs one
+cleared window. Rotating `IP_HASH_SALT` means every existing `ip_hash` stops matching, so a returning
+enquirer is no longer recognisable as one — a decision, not maintenance. Sharing a value between them
+would make the cheap rotation carry the expensive consequence.
+
+**`CSP_ENFORCE` is the only switch for the policy, and unset is the safe direction.** Forgetting it
+costs enforcement, not availability. Soak first: deploy, leave it unset, and read
+`/studio/operations/logs` filtered to `SECURITY` for a week of real traffic. Violations arrive through
+`POST /api/csp-report`. When the log is quiet, set it to `1` and redeploy.
+`/studio/system/environment` shows which header is actually in use, so the flip is visible without
+reading a response by hand.
 
 **The snapshot bucket is not an environment variable.** Fetched page bodies are gzipped into a
 PRIVATE Supabase Storage bucket named `research-snapshots`, in the project `SUPABASE_SERVICE_ROLE_KEY`

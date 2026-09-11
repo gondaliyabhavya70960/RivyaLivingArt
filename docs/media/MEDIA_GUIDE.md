@@ -87,7 +87,16 @@ One table, discriminated by `kind`, covering all six FEAT §13 Media Manager sec
 | `VIDEO` | `video` | Videos · AI Assets | MP4 (H.264) source; `f_auto:video` delivery | 26 Higgsfield concept videos |
 | `MODEL_3D` | `raw` | 3D Models | `GLB`, `GLTF` | **0** — none exists, none is generated |
 | `DOCUMENT` | `raw` | Documents | PDF | **0** — owner-supplied care guides, spec sheets |
-| `BRAND` | `image` | Brand Assets | SVG, PNG | **0** — owner-supplied, never generated |
+| `BRAND` | `image` | Brand Assets | **PNG, JPEG, ICO — never SVG** | **0** — owner-supplied, never generated |
+
+**The `BRAND` row was corrected in Phase 41.** It read "SVG, PNG", and SVG is refused on every
+upload path in this product — staff and owner included — because an SVG is XML the browser executes
+in the same origin and a sanitiser must be right forever. The accepted formats, which
+`/studio/media/brand` states BEFORE the owner chooses a file: logo and wordmark as PNG with alpha at
+≥ 1024 px on the long edge, favicon as ICO or a 512 × 512 PNG, default OG asset at exactly
+1200 × 630. If the owner holds only an SVG the answer is a PNG export at 2×, made by whoever supplies
+the mark — never a sanitiser and never an exception in `lib/media/validate-upload.ts`. SECURITY §7.2
+owns this table; `CLOUDINARY.md` §4 still carries the old row and Phase 43 owns correcting it.
 
 `media_source` mirrors the D6 priority ladder exactly:
 `REAL · USER_UPLOAD · HIGGSFIELD · RENDER · FALLBACK`.
@@ -183,6 +192,17 @@ assets bound to a published slot first. See `HIGGSFIELD_ASSET_STATUS.md` §6, DQ
 
 `scripts/media/check-alt-text.mjs` fails on: prompt vocabulary, `#RRGGBB`, a trailing ellipsis,
 the string "AI", and anything under 15 characters.
+
+**Phase 41 put the same rules in front of the person editing.** `lib/media/alt-text-quality.ts` is a
+pure function returning `TRUNCATED`, `PROMPT_VOCABULARY`, `REDUNDANT_PREFIX` or `TOO_SHORT`, and
+`/studio/media/all/[assetId]` shows them **as somebody types** — because the person editing is
+usually fixing one of the 250, and a warning that only appears after a save is a warning they will
+not read. It is shared with the gate above so the Studio and CI cannot disagree about what bad alt
+text looks like, which is the only way the rewrite in Phase 43 can be checked at all.
+
+**It is advice and never a refusal.** Whether a sentence describes a picture is a person's judgement;
+a validator confident enough to block would eventually block a correct description that happened to
+mention light.
 
 ---
 
