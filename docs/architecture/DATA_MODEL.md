@@ -2295,6 +2295,16 @@ migration alters a type (the §12 row for Phase 35 is corrected accordingly, ame
 `0342` seeds the seven default definitions (`allow-insert`, structure): all `MANUAL`, all without
 PII, `comparison-set` without a scope until an admin chooses one.
 
+### 11.ad Studio analytics snapshots — Phase 37 · migrations `0350`–`0351`
+
+| Table | Posture | Written by | Key rule |
+|---|---|---|---|
+| `analytics_snapshots` | RLS-SERVICE (`analytics.read` select for every staff role; a `dimension = 'COMPETITIVE'` row additionally needs `research.read`, ANDed into the select policy as a `selectScope` predicate; no session write; no anon) | the snapshot writer (`npm run analytics:snapshot`, the 03:45 UTC cron) as the service role | one row per `(metric_id, as_of)`; `dimension` and `availability` CHECKed; **`(availability = 'UNAVAILABLE') = (unavailable_reason is not null)`** — the phase's invariant; the reason non-blank; `value` an object; `n ≤ denominator`; retention 400 days by `as_of` |
+
+Not a second `research_analytics_snapshots`: that table is the competitive computation's own
+record (scope × metric family); this one is the tab's record (metric × date) and holds first-party
+figures too. No seed, fixture or demo inserts a row — a unit test greps for it.
+
 ## 12. Table register — Phase 03 versus later
 
 The spine an engineer builds in Phase 03 is small on purpose. Everything else is additive.

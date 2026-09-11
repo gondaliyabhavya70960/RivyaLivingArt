@@ -179,6 +179,36 @@ const VERIFICATION_NOTES: readonly [string, string, string][] = [
   ],
 ]
 
+/**
+ * Phase 37: the Analytics tab's fixed sentences — the traffic note above all, which is the one
+ * statement on the tab that stops a reader mistaking database-derived content health for page
+ * views. Seeded so the owner can reword it; the reasons a metric is unavailable are composed in
+ * code because they name tables, keys and sources.
+ */
+const PHASE_37_HELP: readonly [string, string, string][] = [
+  [
+    'analytics_traffic_note',
+    'Analytics — traffic note',
+    'Traffic analytics are not connected: no page views, sessions or visitors are measured. Content performance is read from the database.',
+  ],
+  ['analytics_unavailable_lead', 'Analytics — unavailable lead', 'Not measured, and here is why:'],
+  [
+    'analytics_work_item',
+    'Analytics — work item',
+    'What would make it available is named above; it is a work item, not missing data.',
+  ],
+  [
+    'analytics_no_snapshot_body',
+    'Analytics — no snapshot yet',
+    'The daily job has not run since this deployment. Run npm run analytics:snapshot, or wait for the 03:45 UTC cron; nothing is estimated in the meantime.',
+  ],
+  [
+    'analytics_trend_single',
+    'Analytics — single snapshot',
+    'One snapshot so far — a trend needs two. Nothing is extrapolated.',
+  ],
+]
+
 export const studioHelpSeed: SeedModule = {
   name: 'studio-help',
   description:
@@ -226,6 +256,16 @@ export const studioHelpSeed: SeedModule = {
         value,
         label,
         'Phase 35, PHASE-31-38 §Phase 35. Seeded, not hard-coded: the bridge dialog renders this row, and the copy states what is NOT imported.',
+      ),
+    ),
+
+    // --- Phase 37: the Analytics tab's fixed sentences -------------------------------------------
+    ...PHASE_37_HELP.map(([key, label, value]) =>
+      helpRow(
+        key,
+        value,
+        label,
+        'Phase 37, PHASE-31-38 §Phase 37. The traffic note is the sentence that keeps content performance from being read as page views.',
       ),
     ),
 

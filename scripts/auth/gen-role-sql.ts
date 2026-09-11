@@ -49,6 +49,7 @@ import {
   PHASE_34_POLICIES,
   PHASE_35_POLICIES,
   PHASE_36_POLICIES,
+  PHASE_37_POLICIES,
   PHASE_19_POLICIES,
   TABLE_POLICY_MAP,
   type ManagedTable,
@@ -587,6 +588,17 @@ const GENERATED: Record<string, { title: string; preamble: string }> = {
 -- in the Server Action, the CLI and the cron; the run itself writes as the service role. No anon
 -- leg on either table: a spreadsheet export is a staff act.`,
   },
+  [PHASE_37_POLICIES]: {
+    title: `-- ${PHASE_37_POLICIES} — Phase 37`,
+    preamble: `-- Policies for the one table migration 0350 creates. GENERATED from
+-- lib/auth/table-permissions.ts and rewritten whole, so it may hold nothing a human wrote.
+--
+--   \`analytics_snapshots\`   analytics.read select (every staff role), and a COMPETITIVE row
+--                           additionally needs research.read — the predicate below, so a direct
+--                           request as an editor returns no competitive row. No session write:
+--                           the daily cron and npm run analytics:snapshot write as the service
+--                           role. No anon leg: nothing here is public.`,
+  },
   [PHASE_31_POLICIES]: {
     title: `-- ${PHASE_31_POLICIES} — Phase 31`,
     preamble: `-- Policies for the four tables migration 0290 creates. GENERATED from
@@ -679,6 +691,10 @@ function policiesFor(table: ManagedTable): string {
   const scoped = (predicate: string): string =>
     policy.ownerScope ? `${predicate} and ${policy.ownerScope.clause}` : predicate
 
+  /** AND the select scope into the staff SELECT alone — a row-level narrowing of the read. */
+  const readScoped = (predicate: string): string =>
+    policy.selectScope ? `${predicate} and ${policy.selectScope.clause}` : predicate
+
   const out: string[] = []
 
   out.push(`-- ${'-'.repeat(94)}`)
@@ -739,8 +755,11 @@ function policiesFor(table: ManagedTable): string {
   if (policy.ownerScope) {
     for (const line of wrap(`OWNER SCOPE. ${policy.ownerScope.why}`, 96)) out.push(`-- ${line}`)
   }
+  if (policy.selectScope) {
+    for (const line of wrap(`SELECT SCOPE. ${policy.selectScope.why}`, 96)) out.push(`-- ${line}`)
+  }
   out.push(`create policy ${table}_select_staff on ${table} for select`)
-  out.push(`  to authenticated using (${scoped(hasRole(readRoles))});`)
+  out.push(`  to authenticated using (${readScoped(scoped(hasRole(readRoles)))});`)
   out.push('')
 
   if (policy.extraSelectPolicy) {

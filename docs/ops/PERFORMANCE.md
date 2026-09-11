@@ -246,6 +246,17 @@ reads it as complete data (FEAT §28: do not manufacture unavailable analytics).
 `tests/unit/vitals-payload.test.ts` asserts the Zod schema rejects `ip`, `userAgent`, `sessionId`,
 `userId` and `url`, and rejects any extra key.
 
+### 7.5 Traffic analytics — not connected (owner decision)
+
+No web-analytics provider is in the approved stack (D1), none is instrumented, and none may be
+estimated. The Studio's `content_performance` metric (Phase 37, STUDIO_GUIDE §5.4) is therefore
+**database-derived content health** — published versus draft pages, sections per page, days since
+update, enquiries attributed by `source_path` — and the Analytics tab says in one sentence that
+traffic analytics are not connected. Page views, sessions, bounce rate, funnels, referrers and
+heatmaps do not exist anywhere in the repository. Connecting a provider has privacy consequences
+(FEAT §46, §7.2 above) and is the owner's call: **OWNER_VERIFICATION_REQUIRED**, raised in
+PHASE-31-38 §Phase 37's open questions and left open here.
+
 ### 7.3 Bundle
 
 `perf/bundle-baseline.json` is committed. `scripts/perf/check-bundle.mjs` diffs the production build

@@ -1,4 +1,4 @@
-import type { Permission, Role } from './permissions'
+import { rolesWithPermission, type Permission, type Role } from './permissions'
 
 /**
  * Which permission governs reads and writes on each table in `public`, and which policy shape the
@@ -108,6 +108,15 @@ export type TablePolicy = {
    */
   ownerScope?: { clause: string; why: string }
   /**
+   * A predicate ANDed into the staff SELECT only: a row a role holding the read permission may
+   * still not see. `ownerScope` narrows every policy to a person's own rows; this narrows the read
+   * alone, by a column the row carries, and leaves the (absent) writes untouched. One table needs
+   * it — `analytics_snapshots`, whose COMPETITIVE rows need `research.read` on top of
+   * `analytics.read` (Phase 37) — and the rule is enforced here rather than in application code,
+   * so a direct PostgREST request as an editor returns no competitive row.
+   */
+  selectScope?: { clause: string; why: string }
+  /**
    * The migration file that defines this table's policies.
    *
    * Policy migrations are GENERATED, and a generated file that grows as tables are added would be
@@ -162,6 +171,7 @@ export const PHASE_33_POLICIES = '0313_phase33_similarity_rls.sql'
 export const PHASE_34_POLICIES = '0321_phase34_direction_rls.sql'
 export const PHASE_35_POLICIES = '0331_phase35_rls.sql'
 export const PHASE_36_POLICIES = '0341_phase36_sheets_rls.sql'
+export const PHASE_37_POLICIES = '0351_phase37_analytics_rls.sql'
 
 export const TABLE_POLICIES = {
   // --- Shape A: content tables ------------------------------------------------------------------
@@ -1796,6 +1806,35 @@ export const TABLE_POLICIES = {
     deviation:
       'The record of what a run did: counts, attempts, a sanitised error code. Written by the ' +
       'service role only — a run row a session could insert is a run nobody ran. No anon policy.',
+  },
+
+  /**
+   * `analytics_snapshots` — Phase 37.
+   *
+   * THE TAB'S RECORD, NOT A SECOND COMPUTATION. One row per metric per day, written by the daily
+   * cron or `npm run analytics:snapshot` as the service role; no session writes anything, because
+   * a figure a person could type is a figure nobody measured. Every staff role reads the
+   * first-party rows (`analytics.read` is held by all six); a COMPETITIVE row additionally needs
+   * `research.read`, which is why `editor` sees eight tiles and `researcher` eighteen — decided by
+   * the policy, not by the page.
+   */
+  analytics_snapshots: {
+    policiesIn: PHASE_37_POLICIES,
+    shape: 'C',
+    readPermission: 'analytics.read',
+    selectScope: {
+      clause: `(dimension <> 'COMPETITIVE' or public.has_role(${rolesWithPermission('research.read')
+        .map((role) => `'${role}'`)
+        .join(',')}))`,
+      why:
+        'A COMPETITIVE snapshot is a reading of competitor data and stays behind research.read; ' +
+        "the FIRST_PARTY rows are every staff member's. The role list is research.read's, " +
+        'derived here so it cannot drift from the matrix.',
+    },
+    deviation:
+      'Written by the service role only — the snapshot writer runs from the cron and the CLI with ' +
+      'no user session, and a row a session could insert would be an analytics figure nobody ' +
+      'computed. No anon policy: nothing here is public.',
   },
 } as const satisfies Record<string, TablePolicy>
 

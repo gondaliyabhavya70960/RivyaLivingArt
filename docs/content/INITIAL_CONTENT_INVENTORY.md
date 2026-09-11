@@ -7,7 +7,7 @@ SEED §54’s audit of what the content seed actually put in the database, read 
 database rather than from the seed modules. Its target is §54’s: **100% of intended launch
 copy mapped to a Studio editing control.**
 
-- **553** rows audited
+- **558** rows audited
 - **68** await owner verification and cannot be published until it is given
 - **0** are authored and deferred to a later phase’s tables
 - **0** carry a bound media asset
@@ -279,6 +279,11 @@ the phase that creates its table.
 | Global content | global:SEO_DEFAULT.title_template | SEO_DEFAULT.title_template | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | global:SOCIAL.og_description | SOCIAL.og_description | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | global:SOCIAL.og_headline | SOCIAL.og_headline | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:STUDIO_HELP.analytics_no_snapshot_body | STUDIO_HELP.analytics_no_snapshot_body | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:STUDIO_HELP.analytics_traffic_note | STUDIO_HELP.analytics_traffic_note | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:STUDIO_HELP.analytics_trend_single | STUDIO_HELP.analytics_trend_single | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:STUDIO_HELP.analytics_unavailable_lead | STUDIO_HELP.analytics_unavailable_lead | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:STUDIO_HELP.analytics_work_item | STUDIO_HELP.analytics_work_item | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | global:STUDIO_HELP.dashboard.action.add_portfolio_project | STUDIO_HELP.dashboard.action.add_portfolio_project | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | global:STUDIO_HELP.dashboard.action.add_product | STUDIO_HELP.dashboard.action.add_product | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | global:STUDIO_HELP.dashboard.action.create_journal_post | STUDIO_HELP.dashboard.action.create_journal_post | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |

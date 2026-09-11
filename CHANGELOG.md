@@ -6,6 +6,28 @@ Every phase adds an entry; see `docs/architecture/CANONICAL-DECISIONS.md` D9 for
 
 ## [Unreleased]
 
+### Phase 37 — Studio Analytics (COMPLETE; the market section waits for `advanced_analytics`)
+
+The Analytics tab Phase 05 stubbed on `/studio` becomes real and honest. Eighteen metrics — FEAT
+§28's eight first-party and ten competitive — are declared one module each under
+`lib/analytics/metrics/` with a definition, a data requirement, a coverage rule and a `compute()`
+that only the snapshot writer may call; the registry is held to the specification's list by test.
+Migrations `0350`–`0351`: `analytics_snapshots` (one row per metric per day; **an UNAVAILABLE row
+must carry a reason and an AVAILABLE one must not** — a CHECK), read by every staff role with the
+COMPETITIVE rows additionally behind `research.read` at the policy (the generator's new
+`selectScope`, amendment A38), written by the service role only.
+
+`npm run analytics:snapshot` (`--date`, `--only`, `--dry-run`) and the 03:45 UTC cron write the
+rows and prune past 400 days; the tab reads the newest row per metric and computes nothing.
+Against an empty database every tile is a true zero with `n = 0` or a named reason — "no product
+dimensions recorded", "no enabled adapter captures resin style: no attribute key for it exists in
+the source schema; sources that would need it: …" — proved by `analytics-no-fabrication.test.ts`
+over the in-memory empty reads. `content_performance` is database-derived and the tab says traffic
+analytics are not connected (PERFORMANCE §7.5, owner decision). Trends need two snapshots. Flag
+`advanced_analytics = false` gates the market section and trend lines, never the access. The
+FEAT §17 dashboard cards stop showing their Phase 05 unavailable state: every card whose table
+exists has a query. Hosted level through `0351`.
+
 ### Phase 36 — Google Sheets (COMPLETE; flag off until the owner's setup)
 
 A one-way export from the research and enquiry tables to a Google Sheets tab, with **no new

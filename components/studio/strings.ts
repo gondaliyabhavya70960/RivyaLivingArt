@@ -7560,6 +7560,214 @@ export const STUDIO_STRINGS = {
     value: 'Activate a model before recomputing.',
     contentKey: 'studio_help.research_opp_refusal_no_model',
   },
+
+  // --- Phase 37: the Analytics tab ---------------------------------------------------------------
+  'studio.analytics.studioSection': {
+    value: 'This studio',
+    contentKey: 'studio_help.analytics_studio_section',
+  },
+  'studio.analytics.studioIntro': {
+    value:
+      'Eight figures read from the catalogue, the site and the enquiry pipeline. Every figure carries n, its denominator and the date it was measured.',
+    contentKey: 'studio_help.analytics_studio_intro',
+  },
+  'studio.analytics.marketSection': {
+    value: 'The market',
+    contentKey: 'studio_help.analytics_market_section',
+  },
+  'studio.analytics.marketIntro': {
+    value:
+      'Ten readings of the research corpus, taken from the Phase 31 and 32 snapshots — nothing is recomputed on this page.',
+    contentKey: 'studio_help.analytics_market_intro',
+  },
+  'studio.analytics.trafficNote': {
+    value:
+      'Traffic analytics are not connected: no page views, sessions or visitors are measured. Content performance is read from the database.',
+    contentKey: 'studio_help.analytics_traffic_note',
+  },
+  'studio.analytics.noSnapshotHeading': {
+    value: 'No snapshot yet',
+    contentKey: 'studio_help.analytics_no_snapshot_heading',
+  },
+  'studio.analytics.noSnapshotBody': {
+    value:
+      'The daily job has not run since this deployment. Run npm run analytics:snapshot, or wait for the 03:45 UTC cron; nothing is estimated in the meantime.',
+    contentKey: 'studio_help.analytics_no_snapshot_body',
+  },
+  'studio.analytics.unreadableHeading': {
+    value: 'The snapshots could not be read',
+    contentKey: 'studio_help.analytics_unreadable_heading',
+  },
+  'studio.analytics.unreadableBody': {
+    value: 'The analytics rows did not load. This is a read failure, not an empty catalogue.',
+    contentKey: 'studio_help.analytics_unreadable_body',
+  },
+  'studio.analytics.asOf': {
+    value: 'Snapshot of',
+    contentKey: 'studio_help.analytics_as_of',
+  },
+  'studio.analytics.unavailable': {
+    value: 'Unavailable',
+    contentKey: 'studio_help.analytics_unavailable',
+  },
+  'studio.analytics.unavailableLead': {
+    value: 'Not measured, and here is why:',
+    contentKey: 'studio_help.analytics_unavailable_lead',
+  },
+  'studio.analytics.workItem': {
+    value: 'What would make it available is named above; it is a work item, not missing data.',
+    contentKey: 'studio_help.analytics_work_item',
+  },
+  'studio.analytics.definition': {
+    value: 'Definition',
+    contentKey: 'studio_help.analytics_definition',
+  },
+  'studio.analytics.coverageRule': {
+    value: 'Coverage',
+    contentKey: 'studio_help.analytics_coverage_rule',
+  },
+  'studio.analytics.trendLabel': {
+    value: 'Trend over the stored snapshots',
+    contentKey: 'studio_help.analytics_trend_label',
+  },
+  'studio.analytics.trendCaption': {
+    value: 'The figure on each snapshot date',
+    contentKey: 'studio_help.analytics_trend_caption',
+  },
+  'studio.analytics.trendDate': {
+    value: 'Date',
+    contentKey: 'studio_help.analytics_trend_date',
+  },
+  'studio.analytics.trendFigure': {
+    value: 'Figure',
+    contentKey: 'studio_help.analytics_trend_figure',
+  },
+  'studio.analytics.trendSingle': {
+    value: 'One snapshot so far — a trend needs two. Nothing is extrapolated.',
+    contentKey: 'studio_help.analytics_trend_single',
+  },
+  'studio.analytics.seriesCaption': {
+    value: 'The figures behind the bars',
+    contentKey: 'studio_help.analytics_series_caption',
+  },
+  'studio.analytics.seriesLabel': {
+    value: 'Label',
+    contentKey: 'studio_help.analytics_series_label',
+  },
+  'studio.analytics.seriesValue': {
+    value: 'Value',
+    contentKey: 'studio_help.analytics_series_value',
+  },
+  'studio.analytics.groups': {
+    value: 'Breakdown',
+    contentKey: 'studio_help.analytics_groups',
+  },
+  'studio.analytics.notes': {
+    value: 'Notes',
+    contentKey: 'studio_help.analytics_notes',
+  },
+  'studio.analytics.unitPercent': {
+    value: '%',
+    contentKey: 'studio_help.analytics_unit_percent',
+  },
+  'studio.analytics.unitMm': {
+    value: 'mm',
+    contentKey: 'studio_help.analytics_unit_mm',
+  },
+  'studio.analytics.unitDays': {
+    value: 'days',
+    contentKey: 'studio_help.analytics_unit_days',
+  },
+  'studio.analytics.unitScore': {
+    value: 'points',
+    contentKey: 'studio_help.analytics_unit_score',
+  },
+  'studio.analytics.unitMinor': {
+    value: 'minor units',
+    contentKey: 'studio_help.analytics_unit_minor',
+  },
+  'studio.analytics.marketOff': {
+    value:
+      'The market section is switched off (advanced_analytics). The competitive rows stay behind research.read regardless.',
+    contentKey: 'studio_help.analytics_market_off',
+  },
+  'studio.analytics.exportHint': {
+    value:
+      'To take any tile to a spreadsheet, use a Sheets export definition rather than a second exporter.',
+    contentKey: 'studio_help.analytics_export_hint',
+  },
+  'studio.analytics.metric.catalog': {
+    value: 'Catalogue',
+    contentKey: 'studio_help.analytics_metric_catalog',
+  },
+  'studio.analytics.metric.product_categories': {
+    value: 'Product categories',
+    contentKey: 'studio_help.analytics_metric_product_categories',
+  },
+  'studio.analytics.metric.product_scale': {
+    value: 'Product scale',
+    contentKey: 'studio_help.analytics_metric_product_scale',
+  },
+  'studio.analytics.metric.large_format_share': {
+    value: 'Large-format share',
+    contentKey: 'studio_help.analytics_metric_large_format_share',
+  },
+  'studio.analytics.metric.collection_mix': {
+    value: 'Collection mix',
+    contentKey: 'studio_help.analytics_metric_collection_mix',
+  },
+  'studio.analytics.metric.inquiry_trends': {
+    value: 'Enquiry trends',
+    contentKey: 'studio_help.analytics_metric_inquiry_trends',
+  },
+  'studio.analytics.metric.content_performance': {
+    value: 'Content performance',
+    contentKey: 'studio_help.analytics_metric_content_performance',
+  },
+  'studio.analytics.metric.media_coverage': {
+    value: 'Media coverage',
+    contentKey: 'studio_help.analytics_metric_media_coverage',
+  },
+  'studio.analytics.metric.assortment': {
+    value: 'Assortment',
+    contentKey: 'studio_help.analytics_metric_assortment',
+  },
+  'studio.analytics.metric.price_architecture': {
+    value: 'Price architecture',
+    contentKey: 'studio_help.analytics_metric_price_architecture',
+  },
+  'studio.analytics.metric.dimensions': {
+    value: 'Dimensions',
+    contentKey: 'studio_help.analytics_metric_dimensions',
+  },
+  'studio.analytics.metric.materials': {
+    value: 'Materials',
+    contentKey: 'studio_help.analytics_metric_materials',
+  },
+  'studio.analytics.metric.resin_styles': {
+    value: 'Resin styles',
+    contentKey: 'studio_help.analytics_metric_resin_styles',
+  },
+  'studio.analytics.metric.colours': {
+    value: 'Colours',
+    contentKey: 'studio_help.analytics_metric_colours',
+  },
+  'studio.analytics.metric.customization': {
+    value: 'Customisation',
+    contentKey: 'studio_help.analytics_metric_customization',
+  },
+  'studio.analytics.metric.production_model': {
+    value: 'Production model',
+    contentKey: 'studio_help.analytics_metric_production_model',
+  },
+  'studio.analytics.metric.opportunity_scores': {
+    value: 'Opportunity scores',
+    contentKey: 'studio_help.analytics_metric_opportunity_scores',
+  },
+  'studio.analytics.metric.source_freshness': {
+    value: 'Source freshness',
+    contentKey: 'studio_help.analytics_metric_source_freshness',
+  },
 } as const satisfies Record<string, StudioStringEntry>
 
 /** Every key this module resolves. A typo is a compile error, not a blank space on the page. */

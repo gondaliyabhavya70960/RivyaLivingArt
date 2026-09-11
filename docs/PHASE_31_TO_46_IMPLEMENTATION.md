@@ -928,7 +928,143 @@ See the PR for this phase (`feat(phase-36)`); hash recorded in the final summary
 
 ## Phase 37 — Studio Analytics
 
-**Status:** NOT STARTED
+**Status:** COMPLETED — the tab is real and honest: every tile is a figure with `n`, a denominator
+and a date, or `UNAVAILABLE` with the reason named. The market section waits for the owner to turn
+`advanced_analytics` on; the row policy, not the flag, decides who may read a competitive figure.
+
+### Objective
+Fill the Analytics tab Phase 05 stubbed with the eighteen FEAT §28 metrics, declared once, computed
+by a daily snapshot writer and never in the request path, with `UNAVAILABLE` rendered as a named
+work item rather than a zero, a dash or an estimate — and give the FEAT §17 dashboard cards real
+numbers wherever their tables exist.
+
+### Requirements Found
+`docs/project/phases/PHASE-31-38.md` §Phase 37 (the eighteen-row metric table with availability
+rules, the adapter-capability declaration, the not-traffic rule for `content_performance`, snapshots
+and trends, role scoping, rendering, the `analytics_snapshots` DDL with its CHECK, the RLS predicate,
+verification 1–11, exit criteria); `DATA_MODEL.md` §12 row 37 (`0350`–`0351`); FEAT §28's last line
+("do not manufacture unavailable analytics data"); STUDIO_GUIDE §5.3 (card definitions) and §5.4;
+amendment A25 (`CRON_SECRET`).
+
+### Implementation Completed
+- `lib/analytics/metrics/ids.ts` (the eighteen ids, FEAT §28 order), `types.ts`, `shared.ts`,
+  `first-party.ts` (8), `competitive.ts` (10), `index.ts` (the registry, `metricById`).
+- `lib/analytics/reads.ts` — the one interface every metric computes from, with
+  `emptyAnalyticsReads()`; `lib/analytics/availability.ts` — the fixed reason vocabulary (missing
+  table; attribute key with the enabled sources that would need it, under an EXTRACT adapter;
+  missing capability with the Phase 26/27 change named; no successful run in 30 days; no ACTIVE
+  model); `lib/analytics/snapshot.ts` — the only caller of `compute()`, idempotent per date, a
+  throwing metric stored UNAVAILABLE with the error's name, retention 400 days.
+- `lib/supabase/repositories/analytics.ts` — `createAnalyticsReads()` (explicit selects; the enquiry
+  read is five columns and no person), `createSnapshotWriter()` (upsert on `(metric_id, as_of)`,
+  prune), `listLatestAnalyticsSnapshots()`, `listAnalyticsSeries()`; `lib/supabase/schemas/analytics.ts`.
+- `lib/auth/table-permissions.ts` gains `selectScope` (A38) and the `analytics_snapshots` entry with
+  the `research.read` role list derived from the matrix; `scripts/auth/gen-role-sql.ts` applies it
+  to the staff SELECT alone and re-renders every earlier file byte-identically.
+- The tab: `components/studio/analytics/{AnalyticsTab,MetricTile,MetricUnavailable,MetricTrend}.tsx`
+  (RC-338–341), wired into `/studio?tab=analytics`; "This studio" with the traffic sentence,
+  "The market" for `research.read` while `advanced_analytics` is on; `CoverageBadge`, `BarSeries`
+  with its data table, `Sparkline` from two snapshots, the definition disclosure.
+- Dashboard cards: `BUILT_THROUGH_PHASE` 5 → 36; thirteen new head-counts in
+  `lib/supabase/repositories/metrics.ts`; `readCounts()` on the overview sources every card whose
+  table exists.
+- CLI `npm run analytics:snapshot -- [--date=] [--only=] [--dry-run]`; cron
+  `app/api/cron/analytics-snapshot` at 03:45 UTC under `CRON_SECRET`; `vercel.json`; flag
+  `advanced_analytics = false`; 51 Studio strings; five seeded Studio-help sentences (the traffic
+  note among them); the content inventory regenerated (558 rows).
+
+### Files Added
+`supabase/migrations/0350_phase37_analytics_snapshots.sql`, `0351_phase37_analytics_rls.sql`
+(generated); `lib/analytics/{reads,availability,snapshot}.ts`,
+`lib/analytics/metrics/{ids,types,shared,first-party,competitive,index}.ts`;
+`lib/supabase/repositories/analytics.ts`, `lib/supabase/schemas/analytics.ts`;
+`components/studio/analytics/{AnalyticsTab,MetricTile,MetricUnavailable,MetricTrend}.tsx`;
+`scripts/analytics/snapshot.ts`; `app/api/cron/analytics-snapshot/route.ts`; tests
+`tests/unit/analytics-{registry,availability,no-fabrication}.test.ts`, `tests/unit/rls/phase37.test.ts`,
+`tests/e2e/studio-analytics.spec.ts`.
+
+### Files Modified
+`app/(studio)/studio/(shell)/page.tsx` (stub → tab; every card counted),
+`lib/analytics/dashboard-cards.ts`, `lib/supabase/repositories/metrics.ts`,
+`lib/auth/table-permissions.ts`, `scripts/auth/gen-role-sql.ts`, `scripts/db/check-schema.mjs`,
+`lib/flags/flags.ts`, `lib/supabase/database.types.ts`, `components/studio/strings.ts`,
+`content/seed/studio-help.ts`, `docs/content/INITIAL_CONTENT_INVENTORY.md`, `eslint.config.mjs`,
+`package.json`, `vercel.json`, `docs/studio/STUDIO_GUIDE.md` (§5.3, §5.4 with the eighteen
+definitions verbatim), `docs/ops/PERFORMANCE.md` (§7.5), `docs/ops/DEPLOYMENT.md` (§3.1 row),
+`docs/architecture/{DATA_MODEL,CANONICAL-DECISIONS}.md`, `docs/design/COMPONENT_REGISTRY.md`,
+`CHANGELOG.md`, `PROJECT_STATE.md`, `docs/SESSION-STATE.md`.
+
+### Database Changes
+One table, `analytics_snapshots`: 11 constraints (the unique `(metric_id, as_of)`; `dimension`,
+`availability` and the id shape CHECKed; **`(availability = 'UNAVAILABLE') = (unavailable_reason
+is not null)`**; the reason non-blank; `value` an object; counts non-negative; `n ≤ denominator`),
+4 indexes (retention by `as_of`, the series index), 1 policy (staff select with the COMPETITIVE
+predicate), no function, no trigger, no enum, no seed. No session write policy of any kind.
+
+### Supabase Changes
+`0350`–`0351` applied to `ccvarsmzickdkryoakdg` through the MCP with ledger rows carrying the local
+files' SHA-256 (100 rows on both). Parity on the new table: constraints 11 (`7aebba20…`), indexes 4
+(`72406fe7…`), policies 1 (`bc0de5e1…`), identical on both databases; 100 tables, RLS on all.
+Security advisor: nothing new for the phase. No storage, auth or edge-function change.
+
+### Environment Variables
+None new. `CRON_SECRET` (existing) now also authenticates `/api/cron/analytics-snapshot`.
+
+### GitHub Actions Changes
+None. The three new unit suites and the RLS suite run inside the existing steps.
+
+### Tests Performed
+`npm run check` (typecheck, lint, format, the sixteen gates) green; `db:check-migrations` green;
+unit project 172 files / 2,652 tests, including `analytics-registry` (7: FEAT §28 id parity,
+dimensions, definitions verbatim in STUDIO_GUIDE, `compute()` called only from the writer, the flag),
+`analytics-availability` (9: every reason the resolver gives) and `analytics-no-fabrication` (5: the
+whole registry against empty reads is a true zero or a named reason; the writer's rows satisfy the
+CHECK; two runs for one date give eighteen rows, not thirty-six; no trend through one point; no
+seed, fixture or demo inserts a row); RLS project 30 files / 603 tests with `RLS_TESTS_REQUIRED=1`
+against a fresh, seeded local database, including `phase37.test.ts` (7: RLS on and no anon, no
+session insert for the owner, editor sees the first-party row and no competitive row, researcher and
+viewer see both, the reason-iff-unavailable and non-blank CHECKs, one row per metric per day,
+dimension and n ≤ denominator). Verification 3–5 run against the local database through the
+PostgREST shim: `npm run analytics:snapshot -- --dry-run` printed eighteen lines with a reason on
+every UNAVAILABLE one and wrote nothing; two real runs for the same date left exactly 18 rows, every
+UNAVAILABLE row with a non-empty reason and every AVAILABLE row with none. Production build through
+the shim; `security:check-bundle` clean. E2E `studio-analytics.spec.ts` (anonymous half runs
+everywhere; the signed-in half at 1920/1440/430/390 is guarded by `STUDIO_STORAGE_STATE`).
+
+### Issues Found
+- The generator had no way to narrow a staff SELECT by a column (only `ownerScope`, which narrows
+  every policy to a person's rows, and `extraSelectPolicy`, which widens); added `selectScope`
+  (A38) rather than misusing either.
+- `filter(isRecord)` on a `Json[]` does not narrow (a `Record<string, unknown>` is not assignable to
+  `Json`), so the source attribute keys are read through `unknown[]`.
+- The generated `Json` type cannot see through a Zod object; the writer casts the validated payload.
+- `listLatestScores` returns `state` as `string`; mapped to the two-value union at the seam.
+- One unused re-export import after the split (eslint).
+- The phase table and verification 7 disagree on `product_scale`'s floor (five versus three); the
+  table wins and the reading is recorded in A38.
+
+### Issues Fixed
+All six above.
+
+### Build Status
+Green — `next build` against the seeded local database through PostgREST; bundle secret check clean.
+
+### Deployment Status
+Merged to `main`; Vercel builds from `main`; the daily cron is registered in `vercel.json` and
+writes eighteen rows a day from the first production tick (all first-party true zeros or named
+reasons until the catalogue and the corpus fill).
+
+### Commit
+See the PR for this phase (`feat(phase-37)`); hash recorded in the final summary.
+
+### Remaining Notes
+- **Owner action:** turn `advanced_analytics` on when a research corpus exists; until then the market
+  section is absent for every role. Connecting a traffic-analytics provider is the owner's decision
+  (PERFORMANCE §7.5, `OWNER_VERIFICATION_REQUIRED`) and nothing in the repository estimates traffic.
+- `resin_styles`, `colours` and `production_model` stay `UNAVAILABLE` until Phase 26/27 gain an
+  attribute key for them; `customization` until Phase 28 normalises it. Each tile says so.
+- The role matrix on the tab (editor eight, researcher eighteen) is proved at the row by the RLS
+  suite; the browser pass per role needs a storage state per role and is a manual step.
 
 ## Phase 38 — Environment + Documentation + Logs
 

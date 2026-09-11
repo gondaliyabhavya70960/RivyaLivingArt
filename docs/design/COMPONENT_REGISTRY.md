@@ -359,6 +359,10 @@ implementation detail of RC-213.
 | RC-335 | `StartProductDialog` | usability | 35 | PLANNED | index only — Client Component: the bridge's slug, category and seeded acknowledgement (unticked on open; the submit depends on it); disabled with the reason when the bridge cannot run |
 | RC-336 | `ExportDefinitionForm` | usability | 36 | PLANNED | index only — Client Component for one reason (the column checkboxes follow the entity select); allowlist columns, filter, tab, schedule, the enquiries-only PII toggle; the action validates everything again |
 | RC-337 | `SheetsRunHistory` | usability | 36 | PLANNED | index only — status, rows, cells, attempts, duration and a sanitised error code; the >50 % row-count warning badge; never what the upstream said |
+| RC-338 | `AnalyticsTab` | usability | 37 | PLANNED | index only — Server Component: reads the newest snapshot per metric under the session's policies and renders two sections; the market section only for `research.read` with `advanced_analytics` on; No snapshot yet before the first run |
+| RC-339 | `MetricTile` | usability | 37 | PLANNED | index only — figure with unit, `CoverageBadge`, breakdown, `BarSeries` with its data table, trend, definition disclosure; every number read from the row |
+| RC-340 | `MetricUnavailable` | usability | 37 | PLANNED | index only — the named reason and the fixed "work item" sentence; never a zero, a dash or a placeholder |
+| RC-341 | `MetricTrend` | usability | 37 | PLANNED | index only — `Sparkline` from ≥ 2 AVAILABLE snapshots (`trendPoints()`), else the single-snapshot sentence; an UNAVAILABLE day is a gap |
 
 ### 6.4 Three — `components/three/`
 

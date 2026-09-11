@@ -6,6 +6,7 @@ import { Text } from '@/components/primitives/Text'
 import { ActorChip } from '@/components/studio/ActorChip'
 import { EmptyState } from '@/components/studio/EmptyState'
 import { RelativeTime } from '@/components/studio/RelativeTime'
+import { AnalyticsTab } from '@/components/studio/analytics/AnalyticsTab'
 import { StatCard } from '@/components/studio/StatCard'
 import { StudioPage, studioMetadata } from '@/components/studio/StudioPage'
 import { t, type StudioStringKey } from '@/components/studio/strings'
@@ -16,16 +17,30 @@ import { readActivityFeed } from '@/lib/logging/activity'
 import { createClient } from '@/lib/supabase/server'
 import {
   countCollections,
+  countHiggsfieldPending,
+  countJournalArticles,
+  countLargeFormatPublished,
   countMediaAssets,
+  countOpenCommissionInquiries,
+  countOpenInquiries,
+  countOpenShortlistEntries,
+  countPortfolioProjects,
   countProducts,
   countProductsByStatus,
+  countResearchProductsAwaitingReview,
+  countResearchProductsNewLast7Days,
+  countResearchRunsLast7Days,
+  countResearchValidationErrors,
+  countUnarchivedConfirmations,
+  countUndecidedMaterialChanges,
   type MetricCount,
 } from '@/lib/supabase/repositories/metrics'
 
 /**
  * `/studio` — the Overview. The one Studio surface Phase 05 fills rather than stubs.
  *
- * D4 gives it three tabs: Overview, Analytics, Activity. Analytics is Phase 37's and says so.
+ * D4 gives it three tabs: Overview, Analytics, Activity. Phase 37 filled Analytics and gave every
+ * FEAT §17 card whose table exists a real count.
  *
  * TABS ARE A QUERY PARAMETER, NOT CLIENT STATE. The whole page is a Server Component, so a tab is a
  * link and the browser's back button works, the state survives a reload, and a colleague can be
@@ -82,11 +97,7 @@ export default async function StudioOverviewPage({
         </nav>
 
         {tab === 'overview' && <OverviewTab role={session.role} />}
-        {tab === 'analytics' && (
-          <Surface level={1} className="p-6">
-            <Text tone="secondary">{t('studio.analytics.stub')}</Text>
-          </Surface>
-        )}
+        {tab === 'analytics' && <AnalyticsTab role={session.role} />}
         {tab === 'activity' && <ActivityTab />}
       </Stack>
     </StudioPage>
@@ -122,21 +133,54 @@ async function OverviewTab({ role }: { role: Role }) {
 }
 
 /**
- * The counts Phase 05 can actually source.
+ * The counts the cards can actually source — Phase 05's five, and from Phase 37 every card whose
+ * table exists (STUDIO_GUIDE §5.3 gives each its definition).
  *
  * Keyed by card id, and every card NOT listed here resolves to `undefined` — which the renderer
  * shows as unavailable rather than as zero. That is the whole rule: a card shows a number only when
- * a query behind it returned one.
+ * a query behind it returned one. A query that failed returns `null`, rendered as unreadable.
  */
 async function readCounts(): Promise<Record<string, MetricCount>> {
   try {
     const supabase = await createClient()
-    const [products, published, draft, collections, media] = await Promise.all([
+    const [
+      products,
+      published,
+      draft,
+      collections,
+      media,
+      largeFormat,
+      portfolio,
+      journal,
+      inquiriesOpen,
+      inquiriesCommission,
+      scraperRuns,
+      competitorNew,
+      competitorChanged,
+      awaitingReview,
+      shortlisted,
+      confirmed,
+      higgsfieldPending,
+      dataQuality,
+    ] = await Promise.all([
       countProducts(supabase),
       countProductsByStatus(supabase, 'PUBLISHED'),
       countProductsByStatus(supabase, 'DRAFT'),
       countCollections(supabase),
       countMediaAssets(supabase),
+      countLargeFormatPublished(supabase),
+      countPortfolioProjects(supabase),
+      countJournalArticles(supabase),
+      countOpenInquiries(supabase),
+      countOpenCommissionInquiries(supabase),
+      countResearchRunsLast7Days(supabase),
+      countResearchProductsNewLast7Days(supabase),
+      countUndecidedMaterialChanges(supabase),
+      countResearchProductsAwaitingReview(supabase),
+      countOpenShortlistEntries(supabase),
+      countUnarchivedConfirmations(supabase),
+      countHiggsfieldPending(supabase),
+      countResearchValidationErrors(supabase),
     ])
     return {
       products,
@@ -144,6 +188,19 @@ async function readCounts(): Promise<Record<string, MetricCount>> {
       'products-draft': draft,
       collections,
       'media-assets': media,
+      'products-large-format': largeFormat,
+      'portfolio-projects': portfolio,
+      'journal-articles': journal,
+      'inquiries-open': inquiriesOpen,
+      'inquiries-commission': inquiriesCommission,
+      'scraper-runs': scraperRuns,
+      'competitor-products-new': competitorNew,
+      'competitor-products-changed': competitorChanged,
+      'products-awaiting-review': awaitingReview,
+      'products-shortlisted': shortlisted,
+      'products-confirmed': confirmed,
+      'higgsfield-pending': higgsfieldPending,
+      'data-quality-errors': dataQuality,
     }
   } catch {
     return {}

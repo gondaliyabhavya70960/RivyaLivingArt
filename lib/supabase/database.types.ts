@@ -58,6 +58,56 @@ export type Database = {
           },
         ]
       }
+      analytics_snapshots: {
+        Row: {
+          id: string
+          metric_id: string
+          dimension: string
+          as_of: string
+          value: Json
+          n: number | null
+          denominator: number | null
+          availability: string
+          unavailable_reason: string | null
+          computed_at: string
+          computed_by: string | null
+        }
+        Insert: {
+          id?: string
+          metric_id: string
+          dimension: string
+          as_of: string
+          value?: Json
+          n?: number | null
+          denominator?: number | null
+          availability: string
+          unavailable_reason?: string | null
+          computed_at?: string
+          computed_by?: string | null
+        }
+        Update: {
+          id?: string
+          metric_id?: string
+          dimension?: string
+          as_of?: string
+          value?: Json
+          n?: number | null
+          denominator?: number | null
+          availability?: string
+          unavailable_reason?: string | null
+          computed_at?: string
+          computed_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'analytics_snapshots_computed_by_fkey'
+            columns: ['computed_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       audit_logs: {
         Row: {
           id: string
