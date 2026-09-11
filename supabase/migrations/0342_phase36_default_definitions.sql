@@ -9,10 +9,9 @@
 -- until one is.
 -- ============================================================================================
 
--- check-migrations: allow-insert (the seven default export definitions — the shape of an export, MANUAL, no PII, inert while google_sheets is off; nothing runs until a person asks)
-
 set search_path = public, extensions;
 
+-- check-migrations: allow-insert (the seven default export definitions — the shape of an export, MANUAL, no PII, inert while google_sheets is off; nothing runs until a person asks)
 insert into sheets_export_definitions (slug, name, entity, columns, tab_name)
 values
   ('research-products', 'Research products', 'RESEARCH_PRODUCTS',
