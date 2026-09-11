@@ -54,6 +54,13 @@ export type ReferenceCardsProps = {
   readonly sizes: string
   readonly strings: SiteStrings
   readonly cloudName: string
+  /**
+   * The level the card titles take. Defaults to 3.
+   *
+   * `ReferenceCards` takes no section — it is a shared grid several sections render — so it cannot
+   * call `cardHeadingLevel` itself. The caller passes what its own section resolves to.
+   */
+  readonly headingLevel?: 2 | 3
 }
 
 export function ReferenceCards({
@@ -65,6 +72,7 @@ export function ReferenceCards({
   sizes,
   strings,
   cloudName,
+  headingLevel = 3,
 }: ReferenceCardsProps): React.ReactElement | null {
   if (cards.length === 0) return null
 
@@ -94,7 +102,7 @@ export function ReferenceCards({
                 strings={strings}
                 cloudName={cloudName}
               />
-              <Heading level={3} size="display-xs">
+              <Heading level={headingLevel} size="display-xs">
                 {card.title}
               </Heading>
               {card.summary === null ? null : (

@@ -252,7 +252,15 @@ export function CatalogListing({
           >
             {listing.rows.map((product) => (
               <div key={product.id} {...(gridName === null ? {} : { role: 'listitem' })}>
+                {/*
+                 * LEVEL 2, BECAUSE THIS GRID IS THE PAGE. The catalogue listing is appended by the
+                 * route rather than rendered as a CMS section, so nothing above it emits an `h2`
+                 * and a card title at level 3 sat directly under the `h1`. Found by Phase 42's
+                 * heading spec; the grid already carries `role="list"` and a name from the CMS, so
+                 * this is the last piece of the outline.
+                 */}
                 <ProductCard
+                  headingLevel={2}
                   product={product}
                   asset={
                     product.hero_media_id === null

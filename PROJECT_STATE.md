@@ -1,7 +1,8 @@
 # PROJECT_STATE — what is actually built
 
 > Verified against the repository, not against intent. Update at the end of every phase.
-> Last verified: Phase 41 (Accessibility + Security), 2026-09-11.
+> Last verified: Phase 42 (Comprehensive Testing), 2026-09-11. Phases 43 and 44 landed
+> between them; Phase 42 ran last, by the owner's instruction to finish development first.
 
 ## Summary
 

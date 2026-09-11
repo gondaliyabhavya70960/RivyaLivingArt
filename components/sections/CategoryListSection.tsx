@@ -10,7 +10,7 @@ import { visibleEntries } from '@/lib/cms/entry-visibility'
 import { parseBlockPayload } from '@/lib/cms/registry'
 import { resolveInternalTarget } from '@/lib/site/resolve-target'
 
-import { hasSectionCopy, SectionCopy } from './SectionCopy'
+import { hasSectionCopy, SectionCopy, cardHeadingLevel } from './SectionCopy'
 import { SectionShell } from './SectionShell'
 import type { SectionRenderProps } from './types'
 
@@ -82,7 +82,7 @@ export function CategoryListSection({
                       cloudName={cloudName}
                     />
                   )}
-                  <Heading level={3} size="display-sm">
+                  <Heading level={cardHeadingLevel(section)} size="display-sm">
                     {entry.title}
                   </Heading>
                   {entry.description.trim() === '' ? null : (

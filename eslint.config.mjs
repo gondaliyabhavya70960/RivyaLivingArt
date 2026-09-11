@@ -21,6 +21,10 @@ const config = [
       'next-env.d.ts',
       'playwright-report/**',
       'test-results/**',
+      // Phase 42: v8's coverage reporter writes its own bundled HTML and JavaScript here. It is a
+      // measurement of a run rather than source, it is gitignored, and linting it reports a finding
+      // in somebody else's minified file.
+      'coverage/**',
       // Vendored decoders (Phase 21, RC-905/906): third-party Emscripten output, byte-for-byte from
       // three@0.186.0. Not ours to lint, and never edited by hand.
       'public/draco/**',

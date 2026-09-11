@@ -1,0 +1,49 @@
+# gitleaks configuration — Phase 42.
+#
+# The default rule set is kept in full and extended, never replaced: the defaults know about
+# hundreds of credential shapes, and a configuration that starts from nothing finds only what its
+# author happened to think of.
+#
+# WHAT IS ADDED HERE IS THIS PROJECT'S OWN SHAPES. A Supabase service-role key is a JWT whose
+# payload names the role, and a JWT is not on the default list because most JWTs are public. A
+# Cloudinary URL carries its API secret in the userinfo of the URL, which reads as an ordinary URL
+# to anything not looking for it.
+#
+# WHAT IS ALLOWLISTED IS ONLY EVER A SHAPE THAT CANNOT BE A SECRET — a throwaway minted per test
+# run, a documented placeholder. Never a path, because "ignore this file" is how the one real
+# finding gets ignored with it.
+
+[extend]
+useDefault = true
+
+[[rules]]
+id = "supabase-service-role-jwt"
+description = "A JWT whose payload names the service_role. It bypasses every row-level policy."
+# A three-segment JWT whose middle segment base64-decodes to something containing service_role.
+# Matched on the encoded form, because that is what lands in a file.
+regex = '''eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]*c2VydmljZV9yb2xl[A-Za-z0-9_-]*\.[A-Za-z0-9_-]{10,}'''
+keywords = ["eyJ"]
+
+[[rules]]
+id = "cloudinary-url"
+description = "A Cloudinary URL with the API key and secret in its userinfo."
+regex = '''cloudinary://[0-9]{10,}:[A-Za-z0-9_-]{20,}@[a-z0-9-]+'''
+keywords = ["cloudinary://"]
+
+[[rules]]
+id = "google-service-account-key"
+description = "A Google service-account private key, as delivered in the JSON credential file."
+regex = '''"private_key"\s*:\s*"-----BEGIN [A-Z ]*PRIVATE KEY-----'''
+keywords = ["private_key"]
+
+[allowlist]
+description = "Values that cannot be secrets"
+regexes = [
+  # `scripts/db/local-rest.mjs` mints a JWT per run from a secret generated for that run, and prints
+  # it for the caller to put in front of a command. It is a throwaway and its whole purpose is to be
+  # read from a log.
+  '''LOCAL_REST_THROWAWAY''',
+  # The documented placeholders in `.env.example` and `docs/ops/ENVIRONMENT.md`.
+  '''TO_BE_PROVIDED''',
+  '''<your-[a-z-]+>''',
+]

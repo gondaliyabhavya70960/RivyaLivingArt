@@ -50,19 +50,44 @@ export interface SystemLogWrite {
  * within five minutes increments the existing row. Service role only; the caller has redacted.
  */
 export async function writeSystemLog(admin: Client, input: SystemLogWrite): Promise<string> {
+  /*
+   * EVERY PARAMETER IS SENT, AS `null` RATHER THAN `undefined` — Phase 42, and this was a live bug
+   * rather than a tidy-up.
+   *
+   * `system_log_write` takes thirteen parameters and declares a default for NONE of them
+   * (`pronargdefaults = 0`). PostgREST resolves an RPC by matching the JSON keys it receives against
+   * a function signature, and `supabase-js` drops keys whose value is `undefined` before
+   * serialising. So the seven optional arguments vanished from the request, six keys arrived, no
+   * overload matched, and PostgREST answered:
+   *
+   *     PGRST202 — Searched for the function public.system_log_write with parameters
+   *     p_channel, p_context, p_dedupe_key, p_event, p_level, p_message … no matches
+   *
+   * `logSystem` catches every error and prints only the error's NAME, so the failure showed up as
+   * one unexplained line — `[system-log] write failed (ValidationError)` — and NOT ONE ROW HAS EVER
+   * BEEN WRITTEN TO `system_logs` BY THE APPLICATION since Phase 38. CSP violations, scraper
+   * warnings, retention runs: all of it went nowhere, while the Studio's log page showed an empty
+   * table that read as "nothing has gone wrong".
+   *
+   * Found by running the e2e suite for the first time and reading the dev server's output, which is
+   * the only place the line appears.
+   *
+   * `null` is also the honest value: the column is nullable and the absence is a fact worth
+   * recording, not an argument to leave out.
+   */
   const { data, error } = await admin.rpc('system_log_write', {
     p_level: input.level,
     p_channel: input.channel,
     p_event: input.event,
     p_message: input.message,
     p_context: input.context as Json,
-    p_actor_id: input.actorId ?? undefined,
-    p_actor_role: input.actorRole ?? undefined,
-    p_request_id: input.requestId ?? undefined,
-    p_workflow_run_id: input.workflowRunId ?? undefined,
-    p_research_source_id: input.researchSourceId ?? undefined,
-    p_entity_type: input.entityType ?? undefined,
-    p_entity_id: input.entityId ?? undefined,
+    p_actor_id: input.actorId ?? null,
+    p_actor_role: input.actorRole ?? null,
+    p_request_id: input.requestId ?? null,
+    p_workflow_run_id: input.workflowRunId ?? null,
+    p_research_source_id: input.researchSourceId ?? null,
+    p_entity_type: input.entityType ?? null,
+    p_entity_id: input.entityId ?? null,
     p_dedupe_key: input.dedupeKey,
   })
   if (error !== null) throw toRepositoryError(ENTITY, 'write', input.event, error)

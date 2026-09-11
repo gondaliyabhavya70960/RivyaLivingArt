@@ -1793,7 +1793,147 @@ soak the report-only policy, then set `CSP_ENFORCE=1`.
 
 ## Phase 42 — Comprehensive Testing
 
-**Status:** NOT STARTED
+**Status:** COMPLETED — 2026-09-11
+
+### Objective
+
+Build the test system the previous forty-one phases wrote specs against: one deterministic fixture,
+a browser suite that runs, a visual tier, coverage thresholds that mean something, and the CI to run
+all of it. Deferred by the owner's instruction until Phase 44's development had landed.
+
+### Requirements found
+
+`docs/project/phases/PHASE-39-46.md` §42 asks for a fixture seeder, committed media derivatives, a
+media-route interceptor, integration suites, a visual matrix, coverage thresholds, a flake register,
+a sharded e2e workflow, a security workflow, and `docs/ops/TESTING.md` rewritten. Everything it
+names exists. Two figures differ from its projections and both are explained below.
+
+### Implementation completed
+
+**The fixture.** `tests/fixtures/ids.ts` declares every id behind the reserved prefix
+`f0000000-0000-4000-8000-`; `scripts/test/seed-fixture.ts` writes six staff users, four products
+(one per `price_state`), one collection, one portfolio project, two articles, ten FAQs, five
+inquiries, one research source with a run and twenty products, and twelve media assets, all dated
+from a frozen clock. It refuses a non-local database, touches only prefixed ids, and is idempotent
+by construction. `--publish-seeded` walks the seeded sections up the real DRAFT → REVIEW → APPROVED
+→ PUBLISHED ladder, because a freshly seeded database 404s on every public route and a browser suite
+against it skips everything and reports green.
+
+**Twelve committed images.** `scripts/test/build-fixture-media.ts` writes indexed-colour PNGs with
+stored deflate blocks — a hand-written encoder rather than `sharp`, so the bytes are a pure function
+of the pixels and regenerating them elsewhere produces no diff.
+`tests/support/media-route.ts` answers every `res.cloudinary.com` request with one, so no test run
+touches the network.
+
+**Four integration suites**, in a new `integration` vitest project: row security across the whole
+schema, seed idempotency by digest, the publish gates attempted as the database owner, and the
+migration ledger against the files on disk.
+
+**Sixteen new browser specs**, including the seven under `tests/e2e/a11y/` that Phase 41 deferred,
+`security-headers` and `studio-authz` from Phase 41, and `inquiry-conversion`, `touch` and
+`catalogue-filters` from this phase.
+
+**Four visual specs** with 33 committed baselines at three widths, tiered by what a regression
+costs.
+
+**Three workflows**: `e2e.yml` (sharded four ways, publishes the seeded content first),
+`security.yml` (gitleaks over the whole history, `npm audit` split by runtime versus build), and
+`.github/dependabot.yml` weekly and grouped.
+
+### What the suite found — four production defects
+
+| # | Defect | How long it had been true |
+|---|---|---|
+| 1 | **No enquiry could be saved, in any environment.** `submit-inquiry.ts` wrote a 32-character rate-limiter digest into `ip_hash`, whose CHECK demands 64. Every insert was refused | Since Phase 41 added the constraint |
+| 2 | **Nothing had ever been written to `system_logs`.** Seven of thirteen RPC parameters were sent as `undefined`; `supabase-js` drops those keys and PostgREST could not resolve the function | Since Phase 38 |
+| 3 | **Catalogue product cards were not links.** `ProductCard`'s own comment promised the anchor "in Phase 15"; Phase 15 shipped the route and not the anchor | Twenty-seven phases |
+| 4 | **Two listing pages skipped a heading level** — card titles at `h3` directly under the `h1` | Since those listings existed |
+
+Defect 1 is the serious one: the site's single non-negotiable business rule is that an enquiry is
+persisted before any WhatsApp handoff, and the path had never completed successfully. The action
+behaved correctly throughout — it refused to redirect — so the failure was silent.
+
+Two further findings were about the tests rather than the code. The touch-target check initially
+measured the painted box and reported every small button; the design system already answers that
+rule with the `rv-hit-44` overlay, so the check now probes what the browser hit-tests. And
+`/large-format` at 390px photographed unstably until `settle()` forced every lazy image to decode —
+fixed at its cause rather than quarantined.
+
+### Files added
+
+`tests/fixtures/ids.ts` · `tests/fixtures/media/` (12 PNGs) · `tests/support/media-route.ts` ·
+`tests/integration/{rls-policies,seed-idempotency,publish-gates,migrations-replay}.test.ts` ·
+`tests/visual/{tiers,stability}.ts` + four `*.visual.spec.ts` + 33 baselines ·
+`tests/e2e/{inquiry-conversion,touch,catalogue-filters,security-headers,studio-authz}.spec.ts` ·
+`tests/e2e/a11y/{routes.ts,axe-sweep,landmarks,headings,forms,touch-targets,reduced-motion,zoom-reflow}.spec.ts` ·
+`tests/unit/{alt-text-coverage,env-schema,system-log-rpc,critical-branches}.test.ts` ·
+`tests/flaky.json` · `scripts/test/{seed-fixture.ts,build-fixture-media.ts,check-fixture-isolation.mjs,check-flaky.mjs}` ·
+`.github/workflows/{e2e,security}.yml` · `.github/dependabot.yml` · `.gitleaks.toml`
+
+### Files modified
+
+`app/(site)/_actions/submit-inquiry.ts` (defect 1) ·
+`lib/supabase/repositories/system-logs.ts` (defect 2) ·
+`components/patterns/{ProductCard,ArticleCard}/index.tsx` (defect 3) ·
+`components/sections/SectionCopy.tsx` + nine sections, `lib/catalog/listing.tsx`,
+`lib/journal/view.tsx` (defect 4) · `lib/supabase/schemas/vitals.ts` ·
+`vitest.config.ts` · `playwright.config.ts` · `package.json` · `docs/ops/{TESTING,SECURITY}.md` ·
+`tests/e2e/homepage.spec.ts` and `tests/unit/cms-sections.test.tsx` (stale assertions corrected)
+
+### Database changes
+
+None. Phase 42 has no migration, and the local database is unchanged at 109.
+
+### Supabase changes
+
+None.
+
+### Environment variables
+
+None added. `DATABASE_URL` is required by the fixture seeder and the integration project, and is
+already documented.
+
+### GitHub Actions changes
+
+`e2e.yml` and `security.yml` added; `ci.yml` unchanged. `npm run check` gained three gates —
+`test:check-fixture`, `test:check-fixture-media`, `test:check-flaky` — bringing it to 24 within a
+single command.
+
+### Tests performed
+
+| Suite | Result |
+|---|---|
+| `vitest run` (unit · rls · integration) | 229 files · 3,561 tests, all passing |
+| `vitest run --project unit --coverage` | 193 files · 2,907 tests; thresholds met |
+| Playwright, w1440, full e2e | 77 passed · 156 skipped (Studio, no auth server) · 0 failed |
+| Playwright, w390, a11y + touch | all passing |
+| Visual, three widths | 33 baselines, stable over two consecutive verification runs |
+| `npm run check` | green |
+
+### Issues found and fixed
+
+The four production defects above, plus: two stale test assertions (a JSON-LD graph asserted in
+Phase 11's node ORDER, which Phase 39's emitter reversed and which carries no meaning to a consumer;
+a section test asserting the old fixed card heading level), a fixture wipe that could not delete a
+product an enquiry referenced, and one CPU-bound unit test that timed out only under coverage
+instrumentation.
+
+### Build status
+
+`npm run check` green · `tsc` clean · ESLint and Prettier clean.
+
+### Deployment status
+
+No deployment change. Two new workflows will run on this pull request.
+
+### Remaining notes
+
+**The Studio has no browser coverage beyond its login page**, and 156 specs skip for want of an auth
+server the local harness cannot provide. **Coverage is 47.9% against the phase document's projected
+80%**, and `vitest.config.ts` carries the measured figure as a ratchet with the reason and what it
+would take to close. **Three public routes have no seeded sections.** All three are recorded in
+`docs/ops/TESTING.md` §13 rather than implied.
+
 
 ## Phase 43 — Media Coverage + Higgsfield Finalization
 

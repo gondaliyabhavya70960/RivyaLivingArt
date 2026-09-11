@@ -568,7 +568,7 @@ adding one would be an amendment.
 
 | Surface | Limit | Key |
 |---|---|---|
-| `submitInquiry` — `app/(site)/_actions/submit-inquiry.ts` (server action) | **5 per hour** (Phase 20; the phase document's figure, not this table's earlier 5-per-10-min) | `ip_hash` alone — a "form fingerprint" would be a second identifier derived from what the visitor typed, which is more data about them, not less |
+| `submitInquiry` — `app/(site)/_actions/submit-inquiry.ts` (server action) | **5 per 10 minutes AND 10 per hour** — two windows, see below | `ip_hash` alone — a "form fingerprint" would be a second identifier derived from what the visitor typed, which is more data about them, not less |
 | `POST app/api/inquiries/upload-sign` (visitor reference images) | 10 per hour, 3 per min | `ip_hash` |
 | `POST app/api/media/sign` (Studio) | 20 per hour | staff `user_id` |
 | `GET app/api/search/suggest` | 60 per min | `ip_hash` |
@@ -600,6 +600,15 @@ rather than sit in the column for a year looking like a hash. A limited SERVER A
 429 — it is not an HTTP handler — so it returns `{ ok: false, code: 'rate_limited' }` and the form
 renders the seeded refusal (`FORM_COPY.error.too_many`, added in Phase 20 because SEED §49 predates
 the limiter). The `/api` surfaces above still answer 429.
+
+**The inquiry limit is TWO windows, and this table said one until Phase 42's test caught it.** The
+row read "5 per hour", which is the phase document's figure; the code has shipped
+`5 per 10 minutes` plus `10 per hour` since Phase 20, with the reasoning in
+`lib/security/rate-limit.ts`. Five an hour refuses a second enquiry from a shared address the same
+afternoon — a household, an office, a hotel — and the person on the other end has no way to learn
+why. Five per ten minutes catches the flood a script produces just as well, and the hourly ten is a
+ceiling a patient script cannot walk past. The code is right; this row was wrong, and
+`tests/unit/rate-limit-window.test.ts` now pins both windows so the two cannot drift again.
 
 **Known limitation, accepted and documented:** a fixed window permits a 2× burst at a window
 boundary. The threat here is abuse volume, not precision; a sliding window would require Redis.

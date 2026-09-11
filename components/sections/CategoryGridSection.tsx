@@ -8,7 +8,7 @@ import { categoryGridBlock, type CategoryGridPayload } from '@/content/blocks/ca
 import { visibleEntries } from '@/lib/cms/entry-visibility'
 import { parseBlockPayload } from '@/lib/cms/registry'
 
-import { hasSectionCopy, SectionCopy } from './SectionCopy'
+import { hasSectionCopy, SectionCopy, cardHeadingLevel } from './SectionCopy'
 import { BlockImage } from '@/components/patterns/MediaSlot'
 import { SectionShell } from './SectionShell'
 import type { SectionRenderProps } from './types'
@@ -87,7 +87,7 @@ export function CategoryGridSection({
                     strings={strings}
                     cloudName={cloudName}
                   />
-                  <Heading level={3} size="display-xs">
+                  <Heading level={cardHeadingLevel(section)} size="display-xs">
                     {card.title}
                   </Heading>
                   {card.description.trim() === '' ? null : (

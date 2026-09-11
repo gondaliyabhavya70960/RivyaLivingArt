@@ -6,7 +6,7 @@ import { Stack } from '@/components/primitives/Stack'
 
 import { ReferenceCards } from './ReferenceCards'
 import { SectionActions } from './SectionActions'
-import { SectionCopy } from './SectionCopy'
+import { SectionCopy, cardHeadingLevel } from './SectionCopy'
 import { SectionShell } from './SectionShell'
 import type { SectionRenderProps } from './types'
 
@@ -89,6 +89,7 @@ export function SelectedWorksSection({
           )
         ) : (
           <ReferenceCards
+            headingLevel={cardHeadingLevel(section)}
             cards={cards}
             assets={reference?.assets ?? new Map()}
             marker="data-product-card"

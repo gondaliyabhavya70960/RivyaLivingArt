@@ -94,7 +94,12 @@ export async function JournalListingView({
       {listing.articles.length === 0 ? null : (
         <section aria-label={regionName ?? undefined}>
           {regionName === null ? null : <VisuallyHidden>{regionName}</VisuallyHidden>}
+          {/*
+           * LEVEL 2, BECAUSE THIS GRID IS THE PAGE. `/journal` has one `h1` and this region below
+           * it; a card title at level 3 would sit under nothing. Phase 42's heading spec found it.
+           */}
           <ArticleCardGrid
+            headingLevel={2}
             articles={listing.articles}
             covers={listing.covers}
             categoryNames={listing.categoryNames}

@@ -1,3 +1,5 @@
+import type { Route } from 'next'
+import Link from 'next/link'
 import * as React from 'react'
 
 import { BlockImage } from '@/components/patterns/MediaSlot'
@@ -19,11 +21,22 @@ import type { MediaAsset, Product } from '@/lib/supabase/schemas'
  * any kind. Those are not omissions to fill in later: there is no checkout and there will not be
  * one, so a control implying otherwise would be a lie about how this business works.
  *
- * IT IS NOT A LINK, AND THAT IS THE PHASE BOUNDARY. `/product/[slug]` is Phase 15. Wrapping the
- * card in an anchor now would put a 404 behind every card in the grid, which is the same mistake
- * Phase 13's `resolveInternalTarget` exists to prevent — a door that does not open. Phase 15 adds
- * the heading anchor and the `::after` overlay the registry record describes; until then the card
- * is an `<article>` and the grid is a list of things, not a list of links to nowhere.
+ * IT IS A LINK FROM PHASE 42, AND IT SHOULD HAVE BEEN ONE FROM PHASE 15.
+ *
+ * This comment used to read "it is not a link, and that is the phase boundary": `/product/[slug]`
+ * did not exist in Phase 14, so an anchor would have put a 404 behind every card — the dead door
+ * `resolveInternalTarget` exists to refuse. Phase 15 shipped the route and was supposed to add "the
+ * heading anchor and the `::after` overlay the registry record describes". It shipped the route and
+ * not the anchor, and NOTHING NOTICED FOR TWENTY-SEVEN PHASES: every unit test asserted what the
+ * card renders, the registry row described the intent, and no test asked the only question a
+ * visitor asks — can I open this. `tests/e2e/touch.spec.ts` asked it in Phase 42 and found a
+ * catalogue whose products could not be reached from the catalogue.
+ *
+ * THE ANCHOR IS ON THE HEADING AND THE OVERLAY IS A `::after`, which is the shape the registry
+ * record specifies and the right one: the accessible name is the product's title rather than
+ * "read more", there is exactly ONE link per card — a whole-card anchor wrapping the image would
+ * announce the picture and the title as two separate links to the same place — and the `::after`
+ * makes the entire card tappable, which is what a finger expects.
  *
  * `data-product-card` IS AN ASSERTION HOOK, not styling. The phase's own verification counts these
  * elements to prove the catalogue is empty — "zero `[data-product-card]` on every category page" —
@@ -61,6 +74,20 @@ export interface ProductCardProps {
   readonly cloudName: string
   /** The grid's `sizes` attribute, which only the grid knows. */
   readonly sizes?: string
+  /**
+   * The heading level this card's title takes. Defaults to 3.
+   *
+   * A CARD TITLE IS NOT ALWAYS THE SAME DEPTH, and fixing it at 3 produced a real defect that
+   * Phase 42's heading spec found: on `/collection` and `/journal` the grid is the page's own
+   * region, the only heading above it is the `h1`, and every card title arrived as an `h3` with no
+   * `h2` between. A screen-reader user jumping the outline hears level 3 headings belonging to
+   * nothing.
+   *
+   * THE PAGE KNOWS AND THE CARD CANNOT. Inside a CMS section that renders its own `h2` the card is
+   * correctly an `h3`; as the page's top-level grid it is an `h2`. So the level is passed in, and 3
+   * remains the default because that is the common case.
+   */
+  readonly headingLevel?: 2 | 3
 }
 
 /** The registry caps the card at two badges; `productBadges` returns them in priority order. */
@@ -73,6 +100,7 @@ export function ProductCard({
   strings,
   cloudName,
   sizes = '(min-width: 1024px) 30vw, (min-width: 640px) 45vw, 100vw',
+  headingLevel = 3,
 }: ProductCardProps): React.ReactElement {
   const price = presentPrice(product, strings)
   const badges = productBadges(product, strings).slice(0, MAX_BADGES)
@@ -82,7 +110,10 @@ export function ProductCard({
       data-product-card=""
       data-product-slug={product.slug}
       data-price-state={product.price_state}
-      className="group"
+      // `relative` is what the overlay below is positioned against. Without it the `::after`
+      // stretches to the nearest positioned ancestor, which is the grid, and one card swallows
+      // every other card's taps.
+      className="group relative"
     >
       <Stack gap={3}>
         <BlockImage
@@ -96,8 +127,20 @@ export function ProductCard({
         />
 
         {product.title === null ? null : (
-          <Heading level={3} size="display-xs">
-            {product.title}
+          <Heading level={headingLevel} size="display-xs">
+            <Link
+              href={`/product/${product.slug}` as Route}
+              data-product-link=""
+              /*
+               * `after:absolute after:inset-0` is the overlay: the anchor's own box is the title,
+               * and its `::after` covers the card. A tap anywhere lands on this link, while the
+               * accessible name stays the title and the focus ring renders on the card outline
+               * rather than around the words — which is what the registry record asks for.
+               */
+              className="after:absolute after:inset-0 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-(--rv-ink-accent)"
+            >
+              {product.title}
+            </Link>
           </Heading>
         )}
 

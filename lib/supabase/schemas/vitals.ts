@@ -117,8 +117,21 @@ export type VitalsRow = z.infer<typeof vitalsRowSchema>
  * Kept as data rather than left implicit in `.strict()` because the list is the POINT — a reader
  * of this file should be able to see what the endpoint refuses without reasoning about Zod's
  * default behaviour, and `vitals-payload.test.ts` iterates it.
+ *
+ * PHASE 42 ADDED THE ENQUIRER'S OWN FIELDS to the technical identifiers this list started with.
+ * `.strict()` already refuses every unknown key, so nothing changes at runtime — but the list is
+ * read by a person deciding what may go in a beacon, and one that named `sessionId` while saying
+ * nothing about `email` reads as an oversight rather than as a rule. `pii-scope.test.ts` asserts
+ * that every column in `PERSONAL_FIELDS` appears here, so the two cannot drift.
  */
 export const FORBIDDEN_PAYLOAD_KEYS = [
+  // The enquirer's own fields — the only personal data in this product (SECURITY §1 A1).
+  'name',
+  'email',
+  'phone',
+  'city',
+  'message',
+  'answers',
   'ip',
   'ip_hash',
   'ipAddress',

@@ -15,7 +15,7 @@ import { altTextOf, mediaRefOf } from '@/lib/cms/media'
 import { MEDIA_PLAY_LABEL_KEY, siteStringOrEmpty } from '@/lib/cms/strings'
 
 import { SectionActions } from './SectionActions'
-import { hasSectionCopy, SectionCopy } from './SectionCopy'
+import { hasSectionCopy, SectionCopy, cardHeadingLevel } from './SectionCopy'
 import { BlockImage } from '@/components/patterns/MediaSlot'
 import { SectionShell } from './SectionShell'
 import type { SectionRenderProps } from './types'
@@ -139,7 +139,7 @@ export function ProcessStepsSection({
                     {payload.numbered ? (
                       <Eyebrow tone="accent">{String(index + 1).padStart(2, '0')}</Eyebrow>
                     ) : null}
-                    <Heading level={3} size="display-sm">
+                    <Heading level={cardHeadingLevel(section)} size="display-sm">
                       {step.title}
                     </Heading>
                     {step.body.trim() === '' ? null : (

@@ -199,10 +199,21 @@ test.describe('the homepage', () => {
     await expect(scripts).toHaveCount(1)
 
     const payload = JSON.parse((await scripts.first().textContent()) ?? '{}')
-    expect(payload['@graph'].map((node: { '@type': string }) => node['@type'])).toEqual([
-      'WebSite',
-      'Organization',
-    ])
+    /*
+     * AS A SET, NOT A SEQUENCE — corrected in Phase 42, when this spec was run for the first time
+     * since Phase 39 replaced the emitter.
+     *
+     * It asserted `['WebSite', 'Organization']` in that exact order, which was the order Phase 11
+     * emitted. Phase 39's `lib/seo/site-graph.ts` builds `graphOf([organization, website])`, so the
+     * array arrives the other way round and this failed — on a correct page, about nothing a
+     * consumer can observe. Order inside a JSON-LD `@graph` carries no meaning: every node is
+     * identified by its `@id`, and a parser that cared about position would be broken.
+     *
+     * What is worth pinning is that BOTH nodes are present and NOTHING ELSE is, which is what the
+     * sorted comparison says.
+     */
+    const types = payload['@graph'].map((node: { '@type': string }) => node['@type']).sort()
+    expect(types).toEqual(['Organization', 'WebSite'])
 
     const serialised = JSON.stringify(payload)
     for (const key of ['aggregateRating', 'award', 'founder', 'foundingDate', 'offers', 'review']) {

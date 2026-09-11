@@ -6,6 +6,55 @@ Every phase adds an entry; see `docs/architecture/CANONICAL-DECISIONS.md` D9 for
 
 ## [Unreleased]
 
+### Phase 42 — Comprehensive Testing (2026-09-11)
+
+The test system the previous forty-one phases wrote specs against. One deterministic fixture, a
+browser suite that actually runs, a visual tier, coverage thresholds that mean something, and the CI
+to run all of it.
+
+**It found four production defects on its first run.** The worst: no enquiry could be saved, in any
+environment, since Phase 41 — `submit-inquiry.ts` wrote a 32-character rate-limiter digest into a
+column whose CHECK demands 64, so the database refused every insert and the site's one
+non-negotiable business rule had never completed successfully. Also: nothing had ever been written
+to `system_logs` (seven RPC parameters sent as `undefined`, which `supabase-js` drops); the
+catalogue's product cards were not links, twenty-seven phases after the component's own comment
+promised the anchor; and two listing pages skipped a heading level.
+
+#### Added
+
+- `scripts/test/seed-fixture.ts` — six staff, four products (one per `price_state`), a collection, a
+  project, two articles, ten FAQs, five inquiries, a research corpus of twenty, twelve media assets,
+  all dated from a frozen clock, all behind a reserved id prefix, refusing any non-local database
+- `scripts/test/check-fixture-isolation.mjs` — preflight gate 9 at last: no fixture id and no
+  `tests/` import may reach the product
+- `scripts/test/build-fixture-media.ts` — twelve committed PNGs written by a hand-rolled encoder, so
+  the bytes are a pure function of the pixels
+- `tests/support/media-route.ts` — every Cloudinary request answered locally; no test touches the
+  network
+- A third vitest project, `integration`: row security across the schema, seed idempotency by digest,
+  the publish gates attempted as the database owner, the migration ledger against the files
+- Sixteen browser specs, including the seven `tests/e2e/a11y/**` Phase 41 deferred
+- Four visual specs, 33 baselines at three widths, tiered by what a regression costs
+- `.github/workflows/e2e.yml` (sharded four ways), `.github/workflows/security.yml` (gitleaks over
+  the whole history, `npm audit` split by runtime versus build), `.github/dependabot.yml`,
+  `.gitleaks.toml`, `tests/flaky.json` and the gate that keeps it honest
+
+#### Fixed
+
+- `ip_hash` is built with `hashAddress` rather than a slice of a bucket key, so an enquiry can be
+  saved
+- `writeSystemLog` sends every RPC parameter as `null` rather than `undefined`, so a log row is
+  written
+- `ProductCard` carries the heading anchor and `::after` overlay Phase 15 promised
+- `cardHeadingLevel` derives a card's heading level from whether its section rendered one
+
+#### Changed
+
+- `docs/ops/TESTING.md` rewritten, including a new §13 naming what the suite still cannot see
+- Coverage thresholds set to the measured figures as a ratchet, with the 80% target and what it
+  would take recorded in `vitest.config.ts`
+
+
 ### Phase 44 — Vercel Deployment (DEVELOPMENT COMPLETE; drills and tests outstanding)
 
 The property this phase buys is not "it is deployed" — it is that a bad deploy can be undone

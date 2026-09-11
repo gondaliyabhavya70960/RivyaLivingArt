@@ -47,6 +47,13 @@ export type ArticleCardProps = {
   readonly strings: SiteStrings
   readonly cloudName: string
   readonly copy: ArticleCardStrings
+  /**
+   * The heading level this card's title takes. Defaults to 3. See the note on `ProductCardProps`:
+   * inside a CMS section that renders its own `h2` a card title is an `h3`; as the page's own grid
+   * — which is what `/journal` is — it is an `h2`, and fixing it at 3 left every card title
+   * dangling under the `h1` with no level 2 between.
+   */
+  readonly headingLevel?: 2 | 3
 }
 
 /** `{{minutes}} min read`, filled. Null when there is no body or no seeded string to say it with. */
@@ -63,6 +70,7 @@ export function ArticleCard({
   strings,
   cloudName,
   copy,
+  headingLevel = 3,
 }: ArticleCardProps): React.ReactElement {
   const minutes = readingTime(article, copy)
   const published = article.published_at
@@ -94,7 +102,11 @@ export function ArticleCard({
         <Stack gap={2} className="min-w-0 sm:mt-3">
           {categoryName === null ? null : <Eyebrow>{categoryName}</Eyebrow>}
           {/* Three lines on a phone, where the card is a row and the title is most of it. */}
-          <Heading level={3} size="display-xs" className="line-clamp-3 sm:line-clamp-none">
+          <Heading
+            level={headingLevel}
+            size="display-xs"
+            className="line-clamp-3 sm:line-clamp-none"
+          >
             {article.title}
           </Heading>
           {article.excerpt === null ? null : (
@@ -151,6 +163,7 @@ export function ArticleCardGrid({
   strings,
   cloudName,
   copy,
+  headingLevel = 3,
 }: {
   readonly articles: readonly JournalArticle[]
   readonly covers: ReadonlyMap<string, MediaAsset>
@@ -158,6 +171,7 @@ export function ArticleCardGrid({
   readonly strings: SiteStrings
   readonly cloudName: string
   readonly copy: ArticleCardStrings
+  readonly headingLevel?: 2 | 3
 }): React.ReactElement | null {
   if (articles.length === 0) return null
 
@@ -176,6 +190,7 @@ export function ArticleCardGrid({
               : (categoryNames.get(article.primary_category_id) ?? null)
           }
           sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 96px"
+          headingLevel={headingLevel}
           strings={strings}
           cloudName={cloudName}
           copy={copy}

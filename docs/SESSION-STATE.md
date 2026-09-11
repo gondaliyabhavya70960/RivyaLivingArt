@@ -7,9 +7,67 @@
 ---
 
 ## Current Phase
-**Phase 44 — Vercel Deployment. DEVELOPMENT COMPLETE.** The property this phase buys is not "it is
-deployed" — it is that a bad deploy can be undone without guessing. Most of it is a runbook and two
-scripts, and the most useful thing in it is the list of what is NOT true.
+**Phase 42 — Comprehensive Testing. COMPLETE.** The test system the previous forty-one phases wrote
+specs against: one deterministic fixture, a browser suite that actually runs, a visual tier,
+coverage thresholds that mean something, and the CI to run all of it. Deferred by the owner's
+instruction until Phase 44's development had landed, then executed in full.
+
+### Phase 42: what it found
+
+Running these suites for the first time produced **four production defects** that every existing
+check had passed over.
+
+1. **No enquiry could be saved. In any environment, since Phase 41.** `submit-inquiry.ts` wrote a
+   32-character rate-limiter digest into `ip_hash`, whose CHECK demands 64. The database refused
+   every insert; the action correctly declined to redirect; so the site's one non-negotiable rule —
+   persist before the WhatsApp handoff — had never completed successfully for anybody. Fixed by
+   using `hashAddress`, the function that exists for that column.
+2. **Nothing had ever been written to `system_logs`.** `writeSystemLog` sent seven of thirteen RPC
+   parameters as `undefined`; `supabase-js` drops those keys and PostgREST could not resolve the
+   function. `logSystem` caught the error and printed the error's NAME only, so the symptom was one
+   word in a dev server's output and an empty log table that reads like "nothing has gone wrong".
+3. **The catalogue's product cards were not links** — twenty-seven phases after `ProductCard`'s own
+   comment promised the heading anchor "in Phase 15".
+4. **Two listing pages skipped a heading level.** `cardHeadingLevel` now derives it from whether the
+   section rendered a heading of its own.
+
+### Phase 42: what is built
+
+**The fixture.** `tests/fixtures/ids.ts` + `scripts/test/seed-fixture.ts`: six staff, four products
+(one per `price_state`), a collection, a DRAFT portfolio project, two articles, ten FAQs, five
+inquiries, a research corpus of twenty, twelve media assets — all from a frozen clock, all behind a
+reserved id prefix, refusing any non-local database. `--publish-seeded` walks the seeded sections up
+the real DRAFT → REVIEW → APPROVED → PUBLISHED ladder, because otherwise every public route 404s and
+the browser suite skips everything and reports green.
+
+**`scripts/test/check-fixture-isolation.mjs`** — preflight gate 9 at last, and in `npm run check`.
+
+**Twelve committed PNGs** from a hand-rolled encoder (stored deflate, so the bytes are a pure
+function of the pixels), served for every Cloudinary request by `tests/support/media-route.ts`.
+
+**A third vitest project, `integration`** — row security across the schema, seed idempotency by
+digest, the publish gates attempted as the database owner, the migration ledger against the files.
+
+**Sixteen browser specs** including the seven `tests/e2e/a11y/**` Phase 41 deferred, and **four
+visual specs with 33 baselines** at three widths, tiered by what a regression costs.
+
+**`e2e.yml`** (sharded four ways), **`security.yml`** (gitleaks over the whole history, `npm audit`
+split by runtime versus build), **`dependabot.yml`**, **`.gitleaks.toml`**, **`tests/flaky.json`**
+and the gate that keeps it honest.
+
+### Phase 42: what is NOT true
+
+- **The Studio has no browser coverage beyond its login page.** 156 specs skip for want of an auth
+  server the local harness cannot provide. Recorded in `docs/ops/TESTING.md` §13.
+- **Coverage is 47.9%, not the 80% the phase document projected.** `vitest.config.ts` carries the
+  measured figure as a ratchet with the reason and what it would take to close.
+- **33 visual baselines, not 127.** One width per breakpoint band; the projection predates the
+  routes.
+- **Three public routes have no seeded sections** (`/faq`, `/privacy`, `/terms`) and skip.
+
+---
+
+## Previous phase — Phase 44 (Vercel Deployment)
 
 ### Phase 44: what is built
 
