@@ -653,7 +653,123 @@ See the PR for this phase (`feat(phase-35)`); hash recorded in the final summary
 
 ## Phase 35b — Demo catalogue + image prompt book
 
-**Status:** NOT STARTED
+**Status:** COMPLETED — the images themselves wait for the owner: every entry in the prompt book
+reads `Cloudinary Status: WAITING_FOR_UPLOAD` until a URL is pasted in.
+
+### Objective
+
+Carry out owner decision 5: an owner-authorised placeholder catalogue of around thirty pieces that
+suit the studio, with a ChatGPT prompt for each so the images can be made after launch; every demo
+row present on the hosted project; and the same honesty rules the placeholders always had — no
+price, dimension, material, lead time or claim, and AI imagery labelled a concept visualisation.
+
+### Requirements Found
+
+The owner's instruction (recorded verbatim in the plan and in amendment A36); CLAUDE.md and D10 on
+fabricated business facts; `docs/content/DEMO_CONTENT.md` (the register the owner's authorisation
+depends on); D6 (nothing in the manifest is regenerated; planned IDs never borrow a family prefix);
+`HIGGSFIELD_GUIDE.md` §2 (the house prompt grammar, palette clause and `RIVYA-NEG-V2`); D7 as
+amended by A31 (`docs/ASSET_GENERATION_PROMPTS.md` is a documented path).
+
+### Implementation Completed
+
+- **Thirty-five demo products** (`scripts/demo/content.ts`): the thirty from Phase 21 reviewed and
+  kept; five added where a category was thin — `collectible-form-study-three`,
+  `decor-catch-all-bowl`, `decor-bookends-pair`, `gift-ring-dish`, `gift-keepsake-box` — so every
+  category holds at least four. All `is_demo`, `PRICE_ON_REQUEST`, `MADE_TO_ORDER`, no dimension,
+  material, specification, lead time or claim (`tests/unit/demo-content.test.ts`, now 35 with a
+  per-category floor).
+- **`npm run demo:sql`** (`scripts/demo/build-sql.ts`): the seed — or the purge, `--purge` — as
+  idempotent SQL for environments the seeder cannot connect to. Validated locally by purging and
+  replaying twice (35 / 10 / 30 / 7 published / 6 / 6, unchanged on the second run).
+- **Hosted seeded through the MCP** from that SQL: 35 products (20 before), 10 demo article pages
+  with 30 sections (7 published, the 3 `OWNER_VERIFICATION_REQUIRED` articles hold their body in
+  DRAFT), all 10 articles linked to a body, 6 DRAFT projects, 6 DRAFT testimonials; six categories
+  published, `3d-resin` withheld by its own verification flag exactly as locally.
+- **`docs/ASSET_GENERATION_PROMPTS.md`**: 45 entries — a 4:5 hero for every product
+  (`PRODUCT-HERO-001…035`) and a 16:9 room scene for each of the ten furniture pieces
+  (`PRODUCT-SCENE-001…010`) — each with Asset ID, name, required for, file type, minimum
+  dimensions, ratio, filename, exact placement (`products.hero_media_id` on the slug, or a
+  `product_media` gallery row; Cloudinary folder `rivya/product/<slug>`), purpose, the full prompt
+  in the house grammar with the verbatim palette clause and `RIVYA-NEG-V2`, negative requirements,
+  `Cloudinary Status: WAITING_FOR_UPLOAD`, `Cloudinary URL: TO_BE_PROVIDED`. Category heroes and
+  journal covers are deliberately absent (the library binds them; D6); the Phase 43 gap briefs stay
+  in the master plan.
+- **Amendment A36** (proposed; the owner's instruction is the authority): a generated product image
+  is a concept visualisation, registered `is_ai_generated = true, is_concept = true`, bound to a
+  product only once Phase 43's `0411` and the seeded label exist; the intake path is Phase 43's
+  `register-external-asset.ts`.
+- Register regenerated (`demo:register`), `media:check-ids` passes on the new IDs, CHANGELOG,
+  PROJECT_STATE row 35b, SESSION-STATE.
+
+### Files Added
+
+`scripts/demo/build-sql.ts`; `docs/ASSET_GENERATION_PROMPTS.md`.
+
+### Files Modified
+
+`scripts/demo/content.ts`, `scripts/demo/build-register.ts`, `package.json` (`demo:sql`),
+`tests/unit/demo-content.test.ts`, `docs/content/DEMO_CONTENT.md` (generated),
+`docs/architecture/CANONICAL-DECISIONS.md` (A36), `CHANGELOG.md`, `PROJECT_STATE.md`,
+`docs/SESSION-STATE.md`, this document.
+
+### Database Changes
+
+No migration. Rows only, all `is_demo`, all removable by `npm run demo:purge` or
+`npm run demo:sql -- --purge`.
+
+### Supabase Changes
+
+Demo rows written to `ccvarsmzickdkryoakdg` as listed above; no schema change, no ledger row.
+
+### Environment Variables
+
+None.
+
+### GitHub Actions Changes
+
+None. `demo:check-register` (in `npm run check`) and the unit suite cover the new rows.
+
+### Tests Performed
+
+- `npm run check` (all gates, including `demo:check-register` and `media:check-ids`); the
+  `demo-content` unit suite (14 cases); local `demo:seed` (35/10/6/6) and the SQL replay after a
+  purge, twice.
+- Hosted counts read back after the replay: products 35, pages 10, sections 30, published 7,
+  linked articles 10, projects 6, testimonials 6.
+
+### Issues Found
+
+1. The article bodies, projects and testimonials had never been seeded on hosted (only 20 products
+   were) — replayed through the SQL.
+2. `demo:check-register` and `content:check-inventory` compare against the committed file, so they
+   fail locally on an uncommitted regeneration — a property of the gates, not a defect.
+
+### Issues Fixed
+
+Both above (the second by committing the regenerated files).
+
+### Build Status
+
+Green (no code path changed; the check gates and unit suite pass).
+
+### Deployment Status
+
+Hosted holds every demo row. The public site shows the 35 products with the seeded SEED §47
+unavailable-media state until the owner uploads images and Phase 43 binds them.
+
+### Commit
+
+See the PR for this track (`feat(phase-35b)`); hash recorded in the final summary.
+
+### Remaining Notes
+
+- **Owner:** generate the 45 images from the prompt book, upload each to the folder named in its
+  entry, paste the URL, set the status to `UPLOADED`. Phase 43 registers and binds them.
+- **Owner:** verify the ten FAQ answers and the three verification-flagged articles in Studio;
+  `3d-resin`'s category page stays a 404 until its description is verified.
+- Portfolio projects and testimonials remain DRAFT layout previews behind the evidence gates and
+  are not in the prompt book; a real project the owner confirms gets its own imagery then.
 
 ## Phase 36 — Google Sheets
 

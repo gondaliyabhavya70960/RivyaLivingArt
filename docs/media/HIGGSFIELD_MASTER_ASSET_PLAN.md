@@ -530,6 +530,11 @@ uploads: `rivya/home/hero` (G1, G2, G6), `rivya/commission` (G9), `rivya/collect
 every manifest folder appears in the allowlist; the allowlist is a superset, so additions are
 legal without weakening the assertion.
 
+> **Product imagery lives elsewhere.** The briefs below are the site's own slots (heroes, cards,
+> landing). Prompts for the demo catalogue's product images — a concept visualisation per
+> placeholder product, never a library asset — are in `docs/ASSET_GENERATION_PROMPTS.md`
+> (Phase 35b, amendment A36) under planned IDs `PRODUCT-HERO-NNN` / `PRODUCT-SCENE-NNN`.
+
 ### 6.1 Full briefs
 
 All prompts use the house grammar defined in `HIGGSFIELD_GUIDE.md` §2. Palette clause and

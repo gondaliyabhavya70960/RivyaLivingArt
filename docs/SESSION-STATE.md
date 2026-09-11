@@ -7,6 +7,39 @@
 ---
 
 ## Current Phase
+**Phase 35b — Demo catalogue + image prompt book. COMPLETE; the images wait for the owner.** The
+owner-authorised placeholder catalogue is thirty-five pieces, every demo row is on the hosted
+project, and `docs/ASSET_GENERATION_PROMPTS.md` holds one ChatGPT prompt per product hero and one
+room scene per furniture piece, each with its planned asset ID, exact slot and `WAITING_FOR_UPLOAD`
+status. Amendment A36 records the rule that makes the imagery honest: a concept visualisation,
+registered and labelled as one, never presented as a photograph.
+
+### Phase 35b: what is built
+
+`scripts/demo/content.ts` (35 products), `scripts/demo/build-sql.ts` (`npm run demo:sql`, the seed
+or the purge as idempotent SQL), the regenerated register, the prompt book (45 entries,
+`PRODUCT-HERO-NNN` / `PRODUCT-SCENE-NNN`, `rivya/product/<slug>`), amendment A36. Hosted: 35
+products, 10 article bodies (7 published), 6 DRAFT projects, 6 DRAFT testimonials.
+
+### Phase 35b: readings the repository forced
+
+1. **Category heroes and journal covers are not in the book** — the library binds them and D6
+   forbids regenerating what the manifest holds; the Phase 43 gap briefs stay in the master plan.
+2. **Product images go to `rivya/product/<slug>`**, the folder prefix Phase 14 mints per slug.
+3. **The hosted seed went through SQL**, because the seeder needs a direct connection this
+   environment does not have; the SQL was validated by a purge-and-replay locally first.
+
+### The next exact action
+
+**Phase 36 — Google Sheets** (`0340`–`0342`): `lib/sheets/` with a service-account JWT minted by
+`node:crypto`, the seven MANUAL export definitions, `/studio/research/sheets`, `npm run sheets:sync`,
+the hourly cron, flag `google_sheets = false`, env `GOOGLE_SERVICE_ACCOUNT_JSON` +
+`GOOGLE_SHEETS_SPREADSHEET_ID` documented for the owner.
+
+---
+
+### Superseded — Phase 35's state
+
 **Phase 35 — Shortlist + Confirmation. COMPLETE-WITH-FLAG-OFF.** The pipeline has its workspace
 (why a row was shortlisted, the decision note behind a confirmation, two screens a merchandiser sits
 in front of) and its gate (the stage-writer trigger). The one hand-operated bridge to an empty draft
@@ -59,14 +92,6 @@ production build through the local PostgREST shim; `security:check-bundle`. Coun
 
 `0330`–`0331` applied to `ccvarsmzickdkryoakdg` with ledger rows; digest recorded in the
 implementation document.
-
-### The next exact action
-
-**Phase 35b — the owner-authorised demo catalogue and the image prompt book** (owner decision 5):
-review and enrich the 30 demo products in `scripts/demo/content.ts`, seed the missing rows on
-hosted, and write `docs/ASSET_GENERATION_PROMPTS.md`. Then Phase 36 — Google Sheets (`0340`–`0342`).
-
----
 
 ### Superseded — Phase 34's state
 

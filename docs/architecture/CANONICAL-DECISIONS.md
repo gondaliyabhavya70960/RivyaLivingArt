@@ -186,6 +186,38 @@ Brand and editorial copy may be written; anything asserting business capability 
 
 ## Amendments
 
+**2026-09-11 · A36 (proposed; the owner's instruction is the authority) — AI-generated product
+imagery is a concept visualisation, registered as one and labelled as one; the demo catalogue grows
+to thirty-five pieces and carries a prompt for each (D6, D10, DEMO_CONTENT, ASSET_GENERATION_PROMPTS,
+PHASE_31_TO_46_IMPLEMENTATION §Phase 35b).**
+
+- **The instruction.** The owner asked for around thirty placeholder products that suit the studio,
+  with a ChatGPT prompt for each so the images can be made after launch, on the understanding that
+  a piece that does not look right will be changed or removed — and that the same applies to every
+  placeholder the sessions wrote (testimonials, products, articles, portfolio, FAQ).
+- **What it does not suspend.** D10 and CLAUDE.md still forbid a fabricated business fact: the
+  thirty-five demo products carry no price, dimension, material, lead time or claim
+  (`tests/unit/demo-content.test.ts`); portfolio projects and testimonials stay DRAFT behind the
+  evidence gates and are not in the prompt book; FAQ answers stay `OWNER_VERIFICATION_REQUIRED`.
+- **The transparency rule, so the imagery stays honest under D6 and D10.** A generated product
+  image is registered `is_ai_generated = true, is_concept = true`. Today `products_reject_concept_hero`
+  (migration `0122`) refuses a concept asset on a product, and that stands until Phase 43 amends it
+  (`0411`) so that a concept asset may be bound to a product ONLY when the product page and card
+  render the seeded "concept visualisation" label from `global_content` — never presented as a
+  photograph. Until then the prompt book records the images as `WAITING_FOR_UPLOAD` and the cards
+  keep the seeded SEED §47 unavailable state.
+- **Coverage under D6.** The prompt book asks for nothing the library already supplies: category
+  heroes and journal covers are bound from the 250 manifest assets, and the Phase 43 gap briefs
+  (G1–G12) keep their place in HIGGSFIELD_MASTER_ASSET_PLAN §6. What it asks for is what no
+  library asset may supply — a product image — as a concept visualisation of each demo piece.
+- **The intake path** is Phase 43's `scripts/media/register-external-asset.ts`: the owner pastes a
+  Cloudinary URL into the prompt book entry, the script validates the URL belongs to the project
+  cloud, registers the `media_assets` row with the planned ID and the two flags, and binds the slot.
+- **Planned IDs** use the `<PAGE>-<SECTION>-<NNN>` form (`PRODUCT-HERO-001`, `PRODUCT-SCENE-001`),
+  never a manifest family prefix; `scripts/media/check-asset-ids.py` scans the book with every
+  other document. One new Cloudinary folder, `rivya/collection/collectible-design`, joins the
+  allowlist when the first collectible image is registered (Phase 43).
+
 **2026-09-11 · A35 (proposed; inert until the owner enables the flag) — Phase 35 narrows
 invariant I4 to "no automatic and no field-copying path" with one named carve-out, the
 hand-operated bridge `startProductFromConfirmation`; alters no enum and corrects DATA_MODEL §12's

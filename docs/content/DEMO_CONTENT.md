@@ -32,7 +32,7 @@ placeholders. It is the reason the placeholders look the way they do:
 
 | Never | Why | What the rows carry instead |
 |---|---|---|
-| A price | A number would be a price the business never set, on a live site | `PRICE_ON_REQUEST` on all 30 |
+| A price | A number would be a price the business never set, on a live site | `PRICE_ON_REQUEST` on all 35 |
 | A dimension | A visitor reading `2400 × 1100 mm` has been told a fact | `dimensions` is null |
 | A material | Naming a timber species is a claim about what the studio sources | no `product_materials` rows |
 | A specification | A specification is a measurement somebody took | no `product_specs` rows |
@@ -58,7 +58,7 @@ state, which is the honest thing for it to say.
 
 ---
 
-## Products — 30 rows, `products`, PUBLISHED
+## Products — 35 rows, `products`, PUBLISHED
 
 ### `3d-resin` — 4
 
@@ -69,20 +69,23 @@ state, which is the honest thing for it to say.
 | `three-d-form-desk-object` | Desk Object, Fabricated Form | — | yes |
 | `three-d-form-architectural-model` | Architectural Study, Cast | — | yes |
 
-### `collectible-design` — 3
+### `collectible-design` — 4
 
 | Slug | Title | Large format | Customisable |
 |---|---|---|---|
 | `collectible-form-study-one` | Form Study I | — | — |
 | `collectible-form-study-two` | Form Study II | — | — |
 | `collectible-material-panel` | Material Panel | — | — |
+| `collectible-form-study-three` | Form Study III | — | — |
 
-### `decor` — 2
+### `decor` — 4
 
 | Slug | Title | Large format | Customisable |
 |---|---|---|---|
 | `decor-tray-serving` | Serving Tray | — | yes |
 | `decor-coaster-set` | Coaster Set | — | — |
+| `decor-catch-all-bowl` | Catch-All Bowl | — | yes |
+| `decor-bookends-pair` | Bookends, Matched Pair | — | yes |
 
 ### `furniture` — 10
 
@@ -99,12 +102,14 @@ state, which is the honest thing for it to say.
 | `bench-entryway` | Bench, Entryway | — | yes |
 | `monumental-table-long-span` | Monumental Table, Long Span | yes | yes |
 
-### `gifts` — 2
+### `gifts` — 4
 
 | Slug | Title | Large format | Customisable |
 |---|---|---|---|
 | `gift-desk-piece` | Desk Piece | — | — |
 | `gift-paperweight` | Paperweight | — | — |
+| `gift-ring-dish` | Ring Dish | — | yes |
+| `gift-keepsake-box` | Keepsake Box | — | yes |
 
 ### `preservation` — 4
 
