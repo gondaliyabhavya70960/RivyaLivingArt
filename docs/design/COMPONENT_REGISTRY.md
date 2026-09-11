@@ -305,6 +305,10 @@ and Phase 10's site shell then reuses it.
 | RC-241 | `ProductInquiryRail` | conversion | 15 | BUILT | §7.46 |
 | RC-242 | `RelatedContent` | navigation | 15 | BUILT | §7.47 |
 | RC-243 | `MerchandisedRow` | conversion | 22 | BUILT | §7.49 |
+| RC-318 | `BarSeries` | usability | 31 | BUILT | index only — inline SVG from tokens, `role="img"` + data table; no chart library |
+| RC-319 | `BandStrip` | usability | 31 | BUILT | index only — one strip cut into price bands, edges printed |
+| RC-320 | `Scatter` | usability | 31 | BUILT | index only — two-axis points, every pair in the table |
+| RC-321 | `Sparkline` | usability | 31 | BUILT | index only — a single point, never a line, below two entries |
 
 `Breadcrumbs` and `DropdownMenu` are Phase 02, not Phase 10. `docs/project/phases/PHASE-00-04.md`
 pulls both forward on purpose and requires their rows to be opened in that phase: Phase 05's
@@ -337,8 +341,12 @@ implementation detail of RC-213.
 | RC-313 | `ActorChip` | usability | 05 | PLANNED | index only |
 | RC-314 | `CommandPalette` | navigation | 05 | PLANNED | §7.27 |
 | RC-315 | `ModelInspectorDrawer` | product understanding | 21 | PLANNED | index only — composes RC-202/RC-304 |
-| RC-316 | `CoverageBadge` | usability | 31 | PLANNED | index only |
+| RC-316 | `CoverageBadge` | usability | 31 | PLANNED | index only — `n / denominator · coverage % · as of` on every analytic figure; reused by 32, 33, 37 |
 | RC-317 | `ToastRegion` + `Toast` | usability | 05 | PLANNED | §7.40 |
+| RC-322 | `ComparisonBuilder` | usability | 31 | PLANNED | index only — server-rendered member forms; no drag island |
+| RC-323 | `AnalysisPanels` | product understanding | 31 | PLANNED | index only — Assortment, Price architecture, Dimensions, rendered from snapshots; coverage badge required |
+| RC-324 | `SourceCoveragePanel` | usability | 31 | PLANNED | index only — captured / priced / parsed per source; health read from the Phase 26 view |
+| RC-325 | `DeleteSetButton` | usability | 31 | PLANNED | index only — Client Component: dialog state only; the delete is a plain server-action form it submits |
 
 ### 6.4 Three — `components/three/`
 

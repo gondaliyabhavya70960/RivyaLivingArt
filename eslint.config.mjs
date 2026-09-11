@@ -108,6 +108,7 @@ const config = [
     ignores: [
       'app/api/cron/content-schedule/route.ts',
       'app/api/cron/research/route.ts',
+      'app/api/cron/research-analytics/route.ts',
       'app/(studio)/studio/(shell)/content/actions.ts',
       'app/(studio)/studio/(shell)/research/scrape/actions.ts',
       'app/(studio)/studio/(shell)/research/sources/actions.ts',
@@ -139,6 +140,7 @@ const config = [
        * exactly the check that matters.
        */
       'app/(studio)/studio/(shell)/research/large-format/actions.ts',
+      'app/(studio)/studio/(shell)/research/compare/actions.ts',
     ],
     rules: {
       'no-restricted-imports': [

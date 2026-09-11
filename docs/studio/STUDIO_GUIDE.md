@@ -1950,6 +1950,30 @@ Named comparison sets with four panels — Members, Assortment, Price architectu
 headed by a `CoverageBadge`. **Cross-currency price comparison is refused**, because no rate source
 exists and inventing one would fabricate a figure.
 
+**As built (Phase 31).** The list shows every set with its band rule and when it was last computed;
+`research.read` sees it, `research.write` creates, duplicates and deletes (delete sits behind the
+confirm dialog and removes the set's snapshot history; it touches no research row). The workbench
+opens with a header stating **computed from N rows on <date>**, or "not computed yet", and a stale
+badge when the corpus has a newer run than the newest snapshot saw. Members are added as a whole
+source from a select or as one research row by id, moved with up/down buttons and removed — every
+control is a plain form, so the builder works with no JavaScript and RLS judges every change as you.
+
+**Recompute** is the only way a figure on this screen changes. It reads the rows as you and writes
+the snapshot as the system, recording who asked; nothing recomputes on page load, so two people
+reading the same set an hour apart see the same numbers. Every panel is drawn from the stored
+snapshot and headed by its coverage badge — `n of denominator · % · as of` plus the excluded rows by
+reason. A set holding two currencies renders **two** price panels, each named by its currency, with a
+notice and no combined total. Below twelve priced rows a price panel shows the distribution and the
+words INSUFFICIENT SAMPLE, and no median.
+
+The **band rule** is per set: quantile edges derived from the priced rows, or fixed edges typed as a
+comma-separated list in minor units, ascending. The rule is stored with every snapshot, so two
+snapshots are comparable only when their rule agrees, and the panel says which rule it used.
+
+`/studio/research/dashboard` gains the **source coverage** panel: per source, rows captured, rows
+with a usable price, rows with parsed dimensions, last run, seven-day success and health — the last
+four read from the Phase 26 health view rather than recomputed.
+
 ### 12.9 `/studio/research/similarity`
 
 Perceptual image similarity over hashes, behind the `advanced_similarity` flag. Three regions: Run

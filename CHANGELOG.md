@@ -6,6 +6,45 @@ Every phase adds an entry; see `docs/architecture/CANONICAL-DECISIONS.md` D9 for
 
 ## [Unreleased]
 
+### Phase 31 — Analytics + Comparison
+
+The research corpus becomes measurable, and every measurement carries its own error bars. Three
+pure modules under `lib/scraper/analytics/` answer three questions — what is being made and in what
+proportion, at what price levels and how those levels are spaced, at what physical sizes — and
+each returns a **coverage record** beside its result: `n`, the denominator, the percentage and a
+count per reason for every row it could not use. `n + Σ excluded = denominator` is asserted by a
+unit test on every module's output. The Studio holds evidence after this phase; it still holds no
+opinion.
+
+**Migrations `0290`–`0292`.** `research_comparison_sets` and `research_comparison_members` — a
+person's saved question, written as the person under `research.write`. `research_analytics_snapshots`
+and `research_metric_coverage` — the machine's record, with **no session write policy at all**: a
+snapshot a session could insert is a market figure nobody computed. `coverage_pct` is a generated
+column, so the stored percentage cannot disagree with its integers, and zero over zero is 0 %.
+
+**Currencies are never mixed, at three layers.** `computePriceArchitecture` throws
+`MixedCurrencyError`; the workflow splits by currency first and writes one price snapshot per
+currency; and the snapshot table's unique key includes the currency, with a CHECK requiring it on a
+price row — there is no key under which a combined figure could be stored. Quote-only rows are
+counted, never imputed as zero. Below twelve priced rows the panel says INSUFFICIENT SAMPLE and
+withholds every percentile.
+
+**`/studio/research/compare` and `/compare/[setId]`** are filled: sets, members (whole sources or
+individual rows, one target per row by two CHECKs), a recompute action that reads as the person and
+writes as the system, and four panels each headed by `CoverageBadge`. The dashboard gains a
+per-source coverage panel that reads health from the Phase 26 view rather than recomputing it.
+Charts are four token-only inline-SVG patterns (`BarSeries`, `BandStrip`, `Scatter`, `Sparkline`),
+each `role="img"` with a data table beside it and no chart library.
+
+**`npm run research:analytics`** computes any scope with `--dry-run` printing every coverage record,
+and `app/api/cron/research-analytics` writes the corpus, every enabled source and every set nightly
+under `CRON_SECRET` (amendment A25). A deleted set takes its snapshot history with it through a
+SECURITY DEFINER trigger, because `scope_id` names a set, a source or a category and cannot carry a
+foreign key to three tables.
+
+Verified: unit project 154 files / 2,497 tests; RLS project 24 files / 545 tests with
+`RLS_TESTS_REQUIRED=1`; `npm run check` green; migrations applied locally and to the hosted project.
+
 ### Phase 30 — Large-Format Research Workspace
 
 SEED §56 puts large-format furniture first in the content hierarchy; this gives the same priority to

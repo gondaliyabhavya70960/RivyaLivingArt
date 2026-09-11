@@ -43,6 +43,7 @@ import {
   PHASE_28_POLICIES,
   PHASE_29_POLICIES,
   PHASE_30_POLICIES,
+  PHASE_31_POLICIES,
   PHASE_19_POLICIES,
   TABLE_POLICY_MAP,
   type ManagedTable,
@@ -483,6 +484,25 @@ const GENERATED: Record<string, { title: string; preamble: string }> = {
 -- ISOLATION INVARIANT I2 IS UNCHANGED AND UNCHANGEABLE: not one \`anon\` leg appears below, on any
 -- of the seven, and \`scripts/research/check-research-isolation.mjs\` fails the build the moment
 -- one does.`,
+  },
+  [PHASE_31_POLICIES]: {
+    title: `-- ${PHASE_31_POLICIES} — Phase 31`,
+    preamble: `-- Policies for the four tables migration 0290 creates. GENERATED from
+-- lib/auth/table-permissions.ts and rewritten whole, so it may hold nothing a human wrote.
+--
+-- FOUR TABLES IN TWO POSTURES, AND THE POSTURE ANSWERS ONE QUESTION: WHO MAY WRITE.
+--
+--   \`research_comparison_sets\`      research.write — a PERSON'S WORKSPACE. A named selection of
+--   \`research_comparison_members\`   sources and rows a researcher builds and recomputes. Choosing
+--                                    rows to look at judges none of them, so this is the operating
+--                                    half of the Phase 04 split and not \`research.confirm\`.
+--
+--   \`research_analytics_snapshots\`  NO SESSION WRITE POLICY AT ALL. A snapshot a session could
+--   \`research_metric_coverage\`      insert is a market figure nobody computed, sitting in the
+--                                    dashboard beside the ones that were. The CLI, the cron and the
+--                                    Studio recompute action write through the service role.
+--
+-- ISOLATION INVARIANT I2 IS UNCHANGED: not one \`anon\` leg appears below, on any of the four.`,
   },
   [PHASE_30_POLICIES]: {
     title: `-- ${PHASE_30_POLICIES} — Phase 30`,

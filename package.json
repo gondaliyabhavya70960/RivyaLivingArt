@@ -72,7 +72,8 @@
     "research:prune-snapshots": "tsx scripts/research/prune-snapshots.ts",
     "research:reextract": "tsx scripts/research/reextract.ts",
     "research:renormalize": "tsx scripts/research/renormalize.ts",
-    "research:reclassify-scale": "tsx scripts/research/reclassify-scale.ts"
+    "research:reclassify-scale": "tsx scripts/research/reclassify-scale.ts",
+    "research:analytics": "tsx scripts/research/analytics.ts"
   },
   "dependencies": {
     "@gltf-transform/core": "4.5.0",

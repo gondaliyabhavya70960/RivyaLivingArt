@@ -156,6 +156,7 @@ export const PHASE_27_POLICIES = '0251_phase27_extraction_rls.sql'
 export const PHASE_28_POLICIES = '0261_phase28_normalization_rls.sql'
 export const PHASE_29_POLICIES = '0271_phase29_changes_rls.sql'
 export const PHASE_30_POLICIES = '0281_phase30_large_format_rls.sql'
+export const PHASE_31_POLICIES = '0291_phase31_research_analytics_rls.sql'
 
 export const TABLE_POLICIES = {
   // --- Shape A: content tables ------------------------------------------------------------------
@@ -1539,6 +1540,63 @@ export const TABLE_POLICIES = {
       'The one research table whose rows belong to individual people. Readable by its owner and, ' +
       'when shared, by anyone holding research.read; writable only by its owner. No anon policy ' +
       'may ever exist on any research_* table (isolation invariant I2).',
+  },
+
+  /*
+   * Phase 31 — four tables in two postures, and the posture answers the same question 0271's did:
+   * who may write.
+   *
+   * A PERSON'S WORKSPACE — `research_comparison_sets`, `research_comparison_members`. A named
+   * selection a researcher builds and recomputes. `research.write`, the operating half of the
+   * Phase 04 split, because naming a set of rows to look at judges none of them. Delete is the
+   * same permission: a set is a saved question, not evidence, and removing one destroys nothing
+   * the corpus holds.
+   *
+   * THE MACHINE'S RECORD — `research_analytics_snapshots`, `research_metric_coverage`. NO session
+   * write policy of any kind. A snapshot a session could insert is a market figure nobody computed,
+   * sitting in the dashboard beside the ones that were and indistinguishable from them. The CLI,
+   * the cron and the Studio recompute action all write through the service role, and the Studio
+   * action records who asked in `computed_by`.
+   *
+   * Isolation invariant I2 holds on all four: no anon policy, ever.
+   */
+  research_comparison_sets: {
+    policiesIn: PHASE_31_POLICIES,
+    shape: 'C',
+    readPermission: 'research.read',
+    writePermission: 'research.write',
+    deletePermission: 'research.write',
+    deviation:
+      'A named comparison set a researcher owns. research.write because choosing rows to look at ' +
+      'judges none of them; delete is the same permission because a set is a saved question, not ' +
+      'evidence. No anon policy may ever exist on any research_* table (isolation invariant I2).',
+  },
+  research_comparison_members: {
+    policiesIn: PHASE_31_POLICIES,
+    shape: 'C',
+    readPermission: 'research.read',
+    writePermission: 'research.write',
+    deletePermission: 'research.write',
+    deviation:
+      'One member of a comparison set — a whole source or one research product. Same posture as ' +
+      'its set. No anon policy may ever exist on any research_* table (isolation invariant I2).',
+  },
+  research_analytics_snapshots: {
+    policiesIn: PHASE_31_POLICIES,
+    shape: 'C',
+    readPermission: 'research.read',
+    deviation:
+      'A computed result with its denominator. No session write: a snapshot a session could insert ' +
+      'is a market figure nobody computed, indistinguishable from one that was. Written by the ' +
+      'service role only — CLI, cron, and the Studio recompute action, which records who asked.',
+  },
+  research_metric_coverage: {
+    policiesIn: PHASE_31_POLICIES,
+    shape: 'C',
+    readPermission: 'research.read',
+    deviation:
+      'n, denominator and per-reason exclusions for one metric of one snapshot. Service-role ' +
+      'writes only, with its snapshot. No anon policy (isolation invariant I2).',
   },
 } as const satisfies Record<string, TablePolicy>
 

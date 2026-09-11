@@ -15,6 +15,100 @@
  * disagreeing about the sample size is worse than either being wrong on its own.
  */
 
+import { z } from 'zod'
+
+/**
+ * THE COVERAGE RECORD — Phase 31's contract, returned beside every result and stored with every
+ * snapshot.
+ *
+ * `n + Σ excludedReasons = denominator`, always, and `assertCoverageAddsUp` is the check that a
+ * result cannot quietly drop a row. A thin result explains itself: "n = 4 of 140, 38 quote-only,
+ * 98 stale" is a sentence a reader can act on; "n = 4" is a number that looks like a market.
+ *
+ * THE REASON VOCABULARY IS CLOSED. Seven reasons, named in the phase document, and a module that
+ * wanted an eighth would add it here and to the test rather than inventing a key at the call site.
+ */
+export const EXCLUSION_REASONS = [
+  'no_price',
+  'quote_only_price',
+  'ambiguous_currency',
+  'no_dimensions',
+  'dimensions_unparsed',
+  'unmapped_category',
+  'stale',
+] as const
+export type ExclusionReason = (typeof EXCLUSION_REASONS)[number]
+
+export type ExclusionCounts = Readonly<Partial<Record<ExclusionReason, number>>>
+
+export interface CoverageRecord {
+  readonly metricKey: string
+  readonly n: number
+  readonly denominator: number
+  /** Whole percent, 0 when the denominator is 0 — never 100 over nothing. */
+  readonly coveragePct: number
+  readonly excludedReasons: ExclusionCounts
+  /** ISO timestamp the rows were read at. */
+  readonly asOf: string
+}
+
+export const coverageRecordSchema = z.object({
+  metricKey: z.string().min(1),
+  n: z.number().int().nonnegative(),
+  denominator: z.number().int().nonnegative(),
+  coveragePct: z.number().min(0).max(100),
+  excludedReasons: z.partialRecord(z.enum(EXCLUSION_REASONS), z.number().int().nonnegative()),
+  asOf: z.string().datetime({ offset: true }),
+})
+
+/** Build a record from a denominator and the exclusions; `n` is derived so it cannot disagree. */
+export function coverageRecord(
+  metricKey: string,
+  denominator: number,
+  excludedReasons: ExclusionCounts,
+  asOf: string,
+): CoverageRecord {
+  const excluded = sumExclusions(excludedReasons)
+  const n = Math.max(0, denominator - excluded)
+  return {
+    metricKey,
+    n,
+    denominator,
+    coveragePct: denominator === 0 ? 0 : Math.round((n / denominator) * 100),
+    excludedReasons: Object.fromEntries(
+      Object.entries(excludedReasons).filter(([, count]) => (count ?? 0) > 0),
+    ) as ExclusionCounts,
+    asOf,
+  }
+}
+
+export function sumExclusions(excludedReasons: ExclusionCounts): number {
+  return Object.values(excludedReasons).reduce((total, count) => total + (count ?? 0), 0)
+}
+
+/** `n + Σ excluded = denominator`. Asserted by a unit test on every module's output. */
+export function coverageAddsUp(record: CoverageRecord): boolean {
+  return record.n + sumExclusions(record.excludedReasons) === record.denominator
+}
+
+/** A tally of exclusions, built one row at a time. */
+export class ExclusionTally {
+  readonly #counts: Partial<Record<ExclusionReason, number>> = {}
+  add(reason: ExclusionReason): void {
+    this.#counts[reason] = (this.#counts[reason] ?? 0) + 1
+  }
+  get counts(): ExclusionCounts {
+    return { ...this.#counts }
+  }
+}
+
+/**
+ * Below this many usable rows a panel renders the distribution but suppresses percentiles and
+ * says INSUFFICIENT SAMPLE. A median over six rows is read as a market fact; twelve is the floor
+ * the phase document sets and the workbench may raise but never lower.
+ */
+export const SAMPLE_FLOOR = 12
+
 export interface Coverage {
   /** Rows the panel's filter selected, before anything was excluded for being unmeasurable. */
   readonly inScope: number

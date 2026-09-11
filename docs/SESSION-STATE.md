@@ -7,6 +7,101 @@
 ---
 
 ## Current Phase
+**Phase 31 — Analytics + Comparison. COMPLETE.** The research corpus is measurable, and every
+measurement carries its own error bars: three pure analyses — assortment, price architecture,
+dimensions — each returning a coverage record (`n`, denominator, percentage, and a count per reason
+for every row it could not use) beside its result. `/studio/research/compare` holds named sets a
+person builds and recomputes; the dashboard states per-source coverage above everything else.
+
+**Nothing is measured, because nothing has been fetched.** There are still no approved sources, so
+every panel renders its empty state and `research_analytics_snapshots` holds only what the unit and
+RLS suites wrote and removed. What exists is the machinery, proved against hand-computed fixtures
+and against the database.
+
+### Phase 31: what is built
+
+**Migrations `0290`–`0292`.** `research_comparison_sets` and `research_comparison_members` (a
+person's workspace, `research.write`), `research_analytics_snapshots` and
+`research_metric_coverage` (the machine's record, **no session write policy of any kind**),
+`is_strictly_ascending_bigint_array()` (a CHECK may not hold a subquery) and
+`tg_research_comparison_set_prune_snapshots()` (a deleted set takes its history with it, because
+`scope_id` names a set, a source or a category and cannot carry a foreign key to three tables).
+
+**The coverage record is the contract.** `n + Σ excludedReasons = denominator`, seven reasons and no
+eighth, `coverage_pct` GENERATED so the stored percentage cannot disagree with its integers, zero
+over zero as 0 %. Below twelve usable rows a panel withholds every percentile and says
+INSUFFICIENT SAMPLE.
+
+**Currencies are never mixed, at three layers.** `computePriceArchitecture` throws
+`MixedCurrencyError`; `snapshotScope` splits by currency first and writes one price snapshot per
+currency; `currency` is part of the snapshot's unique key and required on a price row by CHECK, so
+a combined figure has no key to live under. Quote-only rows are counted, never imputed as zero; a
+range's comparable point is its lower bound.
+
+**Three writers, one function.** `snapshotScope()` in `lib/scraper/workflows/analytics.ts` is
+reached by `npm run research:analytics --snapshot`, by `app/api/cron/research-analytics` (02:30
+UTC, `CRON_SECRET` per A25) and by the Studio Recompute action, which reads the rows as the person
+and writes the snapshot as the system with `computed_by` recording who asked. Nothing recomputes on
+page load.
+
+**Charts are four token-only inline-SVG patterns** — `BarSeries`, `BandStrip`, `Scatter`,
+`Sparkline` — each `role="img"` with a data table rendered from the same array, and no chart
+library. They live at `components/patterns/<Name>/index.tsx` because that is the only path the
+registry gate resolves (amendment A31).
+
+### Phase 31: what is NOT built, and why
+
+- **Any score, rank or opportunity statement.** Phase 32.
+- **Currency conversion.** No rate source exists; inventing one fabricates every figure computed
+  from it. Multi-currency sets render one panel per currency and no total.
+- **The Studio Analytics tab and first-party metrics.** Phase 37 presents this computation beside
+  first-party figures.
+- **Any public surface.** I3 holds; the isolation guard's allowlist still holds exactly two.
+
+### Phase 31: readings the repository forced
+
+1. **`z.record` with an enum key is exhaustive in Zod 4.** The coverage schema uses
+   `z.partialRecord`, or every record would have to name all seven reasons.
+2. **A quantile edge at the minimum defines an empty band beneath it.** Edges at or below the
+   minimum are skipped, as repeated edges are; a set whose prices all agree gets no edges and one
+   band, which is the honest output.
+3. **The registry gate, not the phase document, decides where a pattern lives.** Recorded as A31.
+
+### Phase 31: verification, as actually run
+
+- `npm run check` — green.
+- Unit project — **154 files / 2,497 tests**, with no database.
+- RLS project — **24 files / 545 tests** with `RLS_TESTS_REQUIRED=1`, against the migrated and
+  seeded database, including `tests/unit/rls/phase31.test.ts` (13 cases: I2 on all four tables, the
+  owner refused a snapshot insert, one target per member, the FIXED/QUANTILE edge rule, no key for
+  a combined-currency price row, generated coverage, the prune trigger).
+- `db:check-migrations` (85 migrations up to `0292`), `db:check-schema` (84 tables),
+  `db:check-types`, `auth:check-policies`, `auth:check-rls` (84 tables, 276 policies),
+  `research:check-isolation` — green.
+- Production build against the seeded database through a local PostgREST, then
+  `security:check-bundle` clean.
+
+### Phase 31: hosted parity, measured rather than assumed
+
+`0290`–`0292` are applied to `ccvarsmzickdkryoakdg` with ledger rows carrying the local files'
+SHA-256 (85 rows on both). A structure digest over the four new tables — 40 columns, 37
+constraints, 13 indexes, 10 policies, the two function bodies and the trigger, **103 objects** —
+returns `9acc01582bfdada9d66d76252f60c3af` on both databases when both are read with
+`search_path = public, extensions`. Read without it, local prints the `citext` operator
+schema-qualified and the digest differs for that reason alone — the same lesson Phase 28 recorded.
+The security advisor reports nothing new for the phase: the two functions revoke EXECUTE from
+`public` and `anon`, and the only findings are the pre-existing Phase 20 inquiry functions.
+
+### The next exact action
+
+**Phase 32 — Opportunity Engine**: seven declared signals, a weighted mean a person can recompute by
+hand, versioned models with an immutability trigger, and `INSUFFICIENT_DATA` where the inputs are
+too thin.
+
+---
+
+### Superseded — Phase 30's state
+
 **Phase 30 — Large-Format Research Workspace. COMPLETE.** The research subsystem now answers the
 question Rivya actually cares about: SEED §56 puts large-format furniture first in the content
 hierarchy, and `/studio/research/large-format` gives the same priority to research — a workspace

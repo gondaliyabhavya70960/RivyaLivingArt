@@ -596,6 +596,35 @@ const EXPECTED = {
     'updated_by',
   ],
 
+  /*
+   * Phase 31 — a person's workspace and the machine's record, and the tiers say which is which.
+   *
+   * `research_comparison_sets` carries the full common set because a human names and owns it.
+   * `research_comparison_members` is a join row under it: `created_at`/`created_by` and nothing
+   * to publish or verify. `research_analytics_snapshots` and `research_metric_coverage` are
+   * measurements — a §1.4 exemption of the `activity_events` kind, timestamped by `computed_at` /
+   * `as_of` and never edited, so `updated_at` would record an event that cannot happen.
+   */
+  research_comparison_sets: [
+    'name',
+    'slug',
+    'band_rule',
+    'status',
+    'created_at',
+    'created_by',
+    'updated_at',
+    'updated_by',
+  ],
+  research_comparison_members: ['set_id', 'member_type', 'position', 'created_at'],
+  research_analytics_snapshots: [
+    'scope_type',
+    'metric_family',
+    'payload',
+    'row_count',
+    'computed_at',
+  ],
+  research_metric_coverage: ['snapshot_id', 'metric_key', 'n', 'denominator', 'as_of'],
+
   bulk_operations: [
     'kind',
     'target_entity',
