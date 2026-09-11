@@ -630,6 +630,31 @@ const EXPECTED = {
    * scores and components are measurements of the `activity_events` kind: timestamped by
    * `computed_at`, never edited.
    */
+  /*
+   * Phase 33 — every table is a measurement or a record of one, timestamped by `computed_at` /
+   * `started_at` / `created_at` and never edited (the `activity_events` exemption of §1.4). A
+   * suppression is a person's judgement, so it carries `created_by`.
+   */
+  research_image_hashes: [
+    'research_product_id',
+    'source_id',
+    'source_image_key',
+    'checksum',
+    'phash',
+    'dhash',
+    'computed_at',
+  ],
+  research_similarity_runs: ['scope_type', 'method', 'status', 'started_at'],
+  research_similarity_pairs: ['run_id', 'left_hash_id', 'right_hash_id', 'band', 'created_at'],
+  research_similarity_suppressions: [
+    'left_hash_id',
+    'right_hash_id',
+    'reason',
+    'created_at',
+    'created_by',
+  ],
+  media_asset_hashes: ['media_asset_id', 'kind', 'checksum', 'computed_at'],
+
   research_scoring_models: [
     'version',
     'signals',

@@ -191,6 +191,12 @@ jobs:
       - name: The opportunity engine has no learned or opaque term
         run: npm run research:check-no-ml
 
+      # Phase 33. Image bytes are decoded in exactly one first-party module, lib/media/hashes.ts,
+      # which never fetches and never writes. A decoder anywhere else — the scraper above all —
+      # is the beginning of an image cache, and this fails the build on one.
+      - name: Only lib/media/hashes.ts imports an image decoder
+        run: npm run media:check-decoder
+
       # Proves the seeding contract end to end on a fresh database: every record inserts, then
       # every record updates and none inserts. A regression in the hashing makes the second run
       # insert or skip instead, which no unit test with a fake client could catch.

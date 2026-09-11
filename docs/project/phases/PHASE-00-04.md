@@ -917,6 +917,7 @@ can ever hold.
 | `research.write` | ✓ | ✓ | — | — | ✓ | — |
 | `research.confirm` | ✓ | ✓ | — | ✓ | — | — |
 | `research.score.manage` | ✓ | ✓ | — | — | — | — |
+| `research.similarity.run` | ✓ | ✓ | — | — | ✓ | — |
 | `analytics.read` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | `bulk.execute` | ✓ | ✓ | — | ✓ | — | — |
 | `destructive.execute` | ✓ | ✓ | — | — | — | — |
@@ -936,6 +937,7 @@ matrix can be checked against the requirement without reading the scraper phases
 | `research.read` | Reading any `/studio/research/**` surface | owner · admin · merchandiser · researcher · viewer | FEAT §19 |
 | `research.write` | Source, job and schedule configuration; queueing and cancelling runs; re-running normalization | owner · admin · researcher | FEAT §26/§27 |
 | `research.score.manage` | Creating, editing and activating an opportunity-scoring model (Phase 32); the weights decide which competitor rows sort first | owner · admin | FEAT §22, PHASE-31-38 §Phase 32 |
+| `research.similarity.run` | Starting a similarity run over stored hashes (Phase 33) — the library self-check; never a fetch of a competitor image under amendment A33 | owner · admin · researcher | FEAT §21, PHASE-31-38 §Phase 33 |
 | `research.confirm` | Every one of the nine FEAT §25 row actions — Review · Ignore · Shortlist · Reject · Mark Duplicate · Confirm · Add Note · Add Tag · Compare | owner · admin · merchandiser | FEAT §25 |
 
 So the merchandiser holding `research.confirm` without `research.write` is deliberate and complete:

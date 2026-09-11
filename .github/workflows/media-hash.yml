@@ -1,0 +1,76 @@
+# Hash the Rivya media library on the hosted project (Phase 33, `npm run media:hash`).
+#
+# WHY A WORKFLOW. The backfill fetches the ORIGINAL bytes of every image and video from the
+# Cloudinary delivery origin and writes a SHA-256 (and, for images, a pHash and dHash) to
+# `media_asset_hashes`. The development containers this repository is worked in cannot reach
+# res.cloudinary.com; a GitHub-hosted runner can. The runner is the connection, not a convenience —
+# the same reason db-migrate.yml exists.
+#
+# WHAT IT KEEPS. Hashes and nothing else: no file is written to the runner's disk by the script,
+# no width, height or thumbnail is recorded, and the buffer is released once the row is written.
+#
+# COST. Manual dispatch only. A `plan` run lists the work and fetches nothing; an `apply` run
+# fetches once per unhashed asset and is idempotent, so a second run over an unchanged library
+# makes zero requests.
+#
+# SECRETS (repository secrets, set by the owner; documented in docs/ops/ENVIRONMENT.md):
+#   NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
+
+name: Media hash backfill (hosted)
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'plan = list the work, fetch nothing. apply = fetch, hash and write rows.'
+        type: choice
+        options: [plan, apply]
+        default: plan
+        required: true
+      limit:
+        description: 'Optional cap on the number of assets hashed in this run.'
+        type: string
+        default: ''
+        required: false
+
+concurrency:
+  group: media-hash-hosted
+  cancel-in-progress: false
+
+jobs:
+  hash:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: ${{ secrets.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: The secrets are present
+        run: |
+          missing=""
+          [ -z "${NEXT_PUBLIC_SUPABASE_URL}" ] && missing="$missing NEXT_PUBLIC_SUPABASE_URL"
+          [ -z "${SUPABASE_SERVICE_ROLE_KEY}" ] && missing="$missing SUPABASE_SERVICE_ROLE_KEY"
+          [ -z "${NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}" ] && missing="$missing NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME"
+          if [ -n "$missing" ]; then
+            echo "::error::missing repository secret(s):$missing"
+            exit 1
+          fi
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Hash the library
+        run: |
+          args=""
+          if [ "${{ inputs.mode }}" = "plan" ]; then args="$args --dry-run"; fi
+          if [ -n "${{ inputs.limit }}" ]; then args="$args --limit=${{ inputs.limit }}"; fi
+          npm run media:hash -- $args

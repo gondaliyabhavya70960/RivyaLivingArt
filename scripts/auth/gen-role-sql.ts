@@ -45,6 +45,7 @@ import {
   PHASE_30_POLICIES,
   PHASE_31_POLICIES,
   PHASE_32_POLICIES,
+  PHASE_33_POLICIES,
   PHASE_19_POLICIES,
   TABLE_POLICY_MAP,
   type ManagedTable,
@@ -501,6 +502,32 @@ const GENERATED: Record<string, { title: string; preamble: string }> = {
 --                                      Studio recompute action write through the service role.
 --
 -- ISOLATION INVARIANT I2 IS UNCHANGED: not one \`anon\` leg appears below.`,
+  },
+  [PHASE_33_POLICIES]: {
+    title: `-- ${PHASE_33_POLICIES} — Phase 33`,
+    preamble: `-- Policies for the four research tables migration 0310 creates and the ONE first-party table
+-- migration 0311 creates. GENERATED from lib/auth/table-permissions.ts and rewritten whole, so it
+-- may hold nothing a human wrote.
+--
+--   \`research_image_hashes\`            SERVICE-ROLE WRITES ONLY, and under amendment A33 there is
+--                                      no writer: competitor images are referenced by URL and never
+--                                      fetched, so the table holds no rows. Readable by research.read.
+--
+--   \`research_similarity_runs\`         research.similarity.run — owner, admin, researcher. A run is
+--                                      an operator's act, recorded with its counts. No delete leg.
+--
+--   \`research_similarity_pairs\`        SERVICE-ROLE WRITES ONLY, with its run. Readable by research.read.
+--
+--   \`research_similarity_suppressions\` research.write records and undoes a dismissal.
+--
+--   \`media_asset_hashes\`               NOT A RESEARCH TABLE. Read under media.read, exactly as
+--                                      media_assets is; written by the service role only (the
+--                                      upload path and npm run media:hash). A hash is not published
+--                                      content, so there is no anon leg here either.
+--
+-- ISOLATION INVARIANT I2 IS UNCHANGED: not one \`anon\` leg appears below, on any of the five.
+-- I1 IS UNCHANGED TOO: the research tables reference research tables; media_asset_hashes
+-- references media_assets; neither names the other, in a constraint or a policy.`,
   },
   [PHASE_31_POLICIES]: {
     title: `-- ${PHASE_31_POLICIES} — Phase 31`,

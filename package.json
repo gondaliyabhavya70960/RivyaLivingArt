@@ -66,7 +66,7 @@
     "search:prune-queries": "tsx scripts/search/prune-queries.ts",
     "search:check-scope": "node scripts/search/check-search-scope.mjs",
     "bulk:check-registry": "node scripts/bulk/check-bulk-registry.mjs",
-    "check": "npm run typecheck && npm run lint && npm run format:check && npm run media:check-ids && npm run media:assert-no-regen && npm run cms:check-transitions && npm run cms:check-copy && npm run demo:check-register && npm run site:check-client-boundary && npm run site:check-islands && npm run site:check-whatsapp && npm run perf:check-bundle && npm run design:check-tokens && npm run design:check-registry && npm run design:check-utilities && npm run search:check-scope && npm run bulk:check-registry && npm run research:check-isolation && npm run research:check-no-autoimport && npm run research:check-no-ml && npm run db:check-data-layer && npm run db:check-unit-offline",
+    "check": "npm run typecheck && npm run lint && npm run format:check && npm run media:check-ids && npm run media:assert-no-regen && npm run cms:check-transitions && npm run cms:check-copy && npm run demo:check-register && npm run site:check-client-boundary && npm run site:check-islands && npm run site:check-whatsapp && npm run perf:check-bundle && npm run design:check-tokens && npm run design:check-registry && npm run design:check-utilities && npm run search:check-scope && npm run bulk:check-registry && npm run research:check-isolation && npm run research:check-no-autoimport && npm run research:check-no-ml && npm run media:check-decoder && npm run db:check-data-layer && npm run db:check-unit-offline",
     "research:check-isolation": "node scripts/research/check-research-isolation.mjs",
     "research:check-no-autoimport": "node scripts/research/check-no-autoimport.mjs",
     "research:prune-snapshots": "tsx scripts/research/prune-snapshots.ts",
@@ -75,7 +75,11 @@
     "research:reclassify-scale": "tsx scripts/research/reclassify-scale.ts",
     "research:analytics": "tsx scripts/research/analytics.ts",
     "research:score": "tsx scripts/research/score.ts",
-    "research:check-no-ml": "node scripts/research/check-no-ml.mjs"
+    "research:check-no-ml": "node scripts/research/check-no-ml.mjs",
+    "research:similarity": "tsx scripts/research/similarity.ts",
+    "research:similarity-sample": "tsx scripts/research/similarity-sample.ts",
+    "media:hash": "tsx scripts/media/hash-media.ts",
+    "media:check-decoder": "node scripts/media/check-decoder-scope.mjs"
   },
   "dependencies": {
     "@gltf-transform/core": "4.5.0",

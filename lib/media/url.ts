@@ -160,6 +160,15 @@ export function rawUrl(cloudName: string, ref: MediaRef): string {
   return buildUrl(cloudName, { ...ref, resourceType: 'raw' }, '')
 }
 
+/**
+ * The ORIGINAL bytes of an image or video, with no transformation segment at all — the URL the
+ * first-party hasher fetches (Phase 33). A `q_auto`/`f_auto` delivery would hash and checksum
+ * a re-encode, and the upload guard and the `media:hash` backfill must agree on the same bytes.
+ */
+export function originalUrl(cloudName: string, ref: MediaRef): string {
+  return buildUrl(cloudName, ref, '')
+}
+
 export function posterUrl(cloudName: string, ref: MediaRef, spec: TransformSpec = {}): string {
   const { format, ...rest } = spec
   void format

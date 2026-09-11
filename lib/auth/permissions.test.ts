@@ -24,7 +24,7 @@ import { redact } from '../logging/redact'
  */
 
 describe('the permission matrix', () => {
-  it('has all 32 permissions', () => {
+  it('has all 33 permissions', () => {
     // A tripwire, not a specification. Its only job is to make a change to the matrix impossible
     // to make accidentally: adding or removing a cell fails here and sends the author to read the
     // assertions below, which are the ones that carry meaning.
@@ -32,7 +32,7 @@ describe('the permission matrix', () => {
     // 25 at the end of Phase 04. Phase 05 adds four: `studio.access` and `activity.read` for its
     // own surfaces, and `system.environment.read` / `system.docs.read` because every D4 leaf needs
     // a real permission to be gated by, including the ones later phases fill.
-    expect(PERMISSIONS).toHaveLength(32)
+    expect(PERMISSIONS).toHaveLength(33)
   })
 
   it('names exactly the six D5 roles', () => {

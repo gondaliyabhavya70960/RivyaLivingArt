@@ -377,7 +377,7 @@ Studio (MediaUploader)
 | MIME | Per `kind`: image `webp/avif/png/jpeg`; video `mp4`; model `model/gltf-binary`, `model/gltf+json`; document `application/pdf` |
 | Size ceiling | 25 MB image · 200 MB video · 50 MB model at the signature; **the model inspector then refuses above 15 MB** and requires compression above 5 MB (§7.3) |
 | Rate limit | Per user, per minute |
-| Duplicate guard | `lib/media/duplicate-guard.ts` refuses a checksum already present in the folder |
+| Duplicate guard | **Phase 33.** After the upload and BEFORE the row: the save action fetches the original back from the delivery origin, hashes it in memory (`lib/media/hashes.ts`: SHA-256; pHash and dHash for an image), and `lib/media/duplicate-guard.ts` refuses a byte-identical file on either side or an image within six bits of a Rivya asset or a research image — naming the asset or the source. A refused upload is destroyed and audited `DENIED`. Videos are caught by exact checksum only. The accepted asset's hash is written to `media_asset_hashes` so the next copy is refused by name |
 
 A `MODEL_3D` upload adds an inspection on each side of the signature (Phase 21):
 
@@ -440,6 +440,8 @@ Two things that must never happen and are designed against:
 | Public reads see only published media | RLS: anon `select` where `status = 'PUBLISHED'` |
 | Visitor uploads are not public | Separate signing endpoint, separate folder, no session, rate-limited, never publicly readable |
 | Competitor imagery is never republished | Research snapshots are private Supabase Storage, outside this seam entirely |
+| A competitor's photograph cannot become Rivya media | The Phase 33 upload guard compares every image and video upload against `research_image_hashes` (empty under amendment A33, but the read is wired) and refuses a match before the row exists; `media_asset_hashes` is first-party and never joined to a research table (I1) |
+| Image bytes are decoded in one place | `lib/media/hashes.ts` is the only module that may import a decoder; `npm run media:check-decoder` fails the build on a second, so a decoder cannot drift toward the scraper and become an image cache |
 | Secrets never appear in logs | The log redactor strips credentialed URLs and JWT-shaped strings by pattern |
 
 ---

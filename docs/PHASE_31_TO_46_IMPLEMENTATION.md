@@ -244,7 +244,133 @@ See the PR for this phase (`feat(phase-32)`); hash recorded in the final summary
 
 ## Phase 33 — Visual Similarity (first-party half)
 
-**Status:** NOT STARTED
+**Status:** COMPLETED
+
+### Objective
+"Have we seen this picture before?" answered with 64-bit perceptual hashes and a Hamming distance,
+never with a claim about the object. Under the owner's decision (competitor images are referenced
+by URL only and never fetched — amendment A33) the machinery is turned inward: Rivya's own library
+is hashed, a re-upload of one of its pictures is refused at the upload step by name, and the band
+legend with its "does not mean" column sits above every result.
+
+### Requirements Found
+`docs/project/phases/PHASE-31-38.md` §Phase 33 (the fetch-to-hash amendment as open question 12,
+the band table, blocking with a measured recall, the two hash tables on two sides of I1, the upload
+guard before the insert, the 250-asset backfill with 224 pHashes and 26 checksums, the precision
+rule, verification 1–14, exit criteria); `DATA_MODEL.md` §12 row 33; the owner's decision from the
+planning session.
+
+### Implementation Completed
+- Pure modules `lib/scraper/analytics/similarity/{gray,dhash,phash,hamming,bands,blocking,index}.ts`:
+  area-average resize, dHash (9×8), DCT pHash (32×32 → 8×8), Hamming, the band table as the single
+  source (thresholds, "means", "does not mean", `PRECISION_NOT_YET_MEASURED`, an empty
+  `MEASURED_PRECISION`), seven-segment blocking with NEAR_DUPLICATE recall 1.0 by construction.
+- First-party: `lib/media/hashes.ts` (the one decoder module; video = checksum only),
+  `lib/media/duplicate-guard.ts` (two injected reads, compared in TypeScript),
+  `lib/media/library-check.ts` (the self-check), `originalUrl()` in `lib/media/url.ts`.
+- Repositories `lib/supabase/repositories/media-hashes.ts` (first-party, imports no research
+  module) and `lib/supabase/repositories/research/similarity.ts`; schemas
+  `lib/supabase/schemas/similarity.ts`.
+- The upload guard wired into `saveUploadedAssetAction` before the `media_assets` insert: fetch the
+  original back, hash in memory, refuse a byte-identical file on either side or an image within six
+  bits, destroy the Cloudinary object, audit DENIED naming the match; write the accepted asset's
+  hash row.
+- Studio `/studio/research/similarity`: decision and flags, `SimilarityLegend`, library coverage,
+  `LibraryCheckPanel` (`research.similarity.run`), run history.
+- CLI `npm run media:hash` (`--dry-run --limit --only`), `npm run research:similarity`
+  (`--scope=corpus|source:<slug>|media --method --rehash --dry-run`),
+  `npm run research:similarity-sample`; gate `npm run media:check-decoder` in `check` and CI;
+  workflow `.github/workflows/media-hash.yml` (dispatch only).
+- Flags `research_image_hashing` and `advanced_similarity` registered `false` with the decision in
+  their descriptions; permission `research.similarity.run` (owner, admin, researcher).
+
+### Files Added
+`supabase/migrations/0310_phase33_similarity.sql`, `0311_phase33_media_hashes.sql`,
+`0313_phase33_similarity_rls.sql` (generated); `lib/scraper/analytics/similarity/*` (7 files);
+`lib/media/{hashes,duplicate-guard,library-check}.ts`; `lib/supabase/schemas/similarity.ts`;
+`lib/supabase/repositories/media-hashes.ts`, `lib/supabase/repositories/research/similarity.ts`;
+`app/(studio)/studio/(shell)/research/similarity/actions.ts`;
+`components/studio/research/{SimilarityLegend,LibraryCheckPanel}.tsx`;
+`scripts/media/{hash-media.ts,check-decoder-scope.mjs}`,
+`scripts/research/{similarity,similarity-sample}.ts`; `.github/workflows/media-hash.yml`;
+tests `tests/unit/similarity-{fixture,phash.test,bands.test,blocking.test,legend.test,decoder-scope.test}.ts*`,
+`tests/unit/media-duplicate-guard.test.ts`, `tests/unit/rls/phase33.test.ts`,
+`tests/e2e/research-similarity.spec.ts`.
+
+### Files Modified
+`app/(studio)/studio/(shell)/research/similarity/page.tsx` (stub → surface),
+`app/(studio)/studio/(shell)/media/actions.ts`, `lib/media/url.ts`,
+`lib/supabase/repositories/media.ts` (`checksum` on insert), `lib/scraper/analytics/similarity`
+exports, `lib/auth/permissions.ts` (+ test count 33), `lib/auth/table-permissions.ts`,
+`scripts/auth/gen-role-sql.ts`, `scripts/db/check-schema.mjs`, `lib/flags/flags.ts`,
+`lib/supabase/database.types.ts`, `components/studio/strings.ts`, `eslint.config.mjs`,
+`package.json`, `.github/workflows/ci.yml`, `tests/unit/extract-workflow.test.ts` (fixture column),
+`docs/project/phases/PHASE-00-04.md`, `docs/architecture/{SCRAPER,DATA_MODEL,CANONICAL-DECISIONS}.md`,
+`docs/studio/STUDIO_GUIDE.md`, `docs/media/MEDIA_GUIDE.md`, `docs/ops/{SECURITY,ENVIRONMENT}.md`,
+`docs/design/COMPONENT_REGISTRY.md`, `CHANGELOG.md`, `PROJECT_STATE.md`, `docs/SESSION-STATE.md`.
+
+### Database Changes
+One enum, one column + CHECK on `research_sources`, five tables (four research, one first-party),
+eleven indexes, 30 CHECK/unique constraints, 10 policies. No function, no trigger. I1 allowlist
+unchanged at two entries; `media_asset_hashes → media_assets` is a first-party reference.
+
+### Supabase Changes
+`0310`, `0311`, `0313` applied to `ccvarsmzickdkryoakdg` through the MCP with ledger rows carrying
+the local files' SHA-256 (91 ledger rows on both). Parity digest by object kind, identical on both
+databases: tables 93 (`eb7e10ee…`), constraints 733 (`bac80966…`), indexes 376 (`59d21f37…`),
+policies 292 (`017cb699…`), triggers 112 (`537c94b2…`), enums 34 (`a72caf60…`). Security advisor:
+nothing new for the phase. `0312` not applied (unused). No storage, auth or edge-function change.
+
+### Environment Variables
+None new for the application. Three **repository secrets** for the dispatch-only backfill
+workflow — `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`,
+`NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME` — documented in ENVIRONMENT §5.x; the owner sets them.
+
+### GitHub Actions Changes
+`ci.yml` gains the `media:check-decoder` gate step. New `media-hash.yml` (workflow_dispatch only:
+`plan` lists the work and fetches nothing; `apply` hashes).
+
+### Tests Performed
+`npm run check` (all gates, now including `media:check-decoder`); unit project 159 files / 2,553
+tests; RLS project 26 files / 566 tests with `RLS_TESTS_REQUIRED=1` against a fresh, seeded local
+database, including `phase33.test.ts` (13 cases: five tables with RLS, I1 references, I2 no anon, the per-source
+opt-in CHECK, who may read/open/dismiss, no session hash insert on either side, the pair CHECKs,
+non-unique checksums, the media-scope CHECK, the video/image hash CHECK); production build
+through the local PostgREST shim; `security:check-bundle`. E2E `research-similarity.spec.ts`
+anonymous half runs everywhere; the signed-in half is guarded by `STUDIO_STORAGE_STATE`.
+
+### Issues Found
+- A 16-bit prefix bucket cannot meet the phase document's own ≥ 0.98 NEAR_DUPLICATE recall on
+  uniformly placed bit flips (about 83 % of six-bit differences touch the prefix). Replaced by
+  seven-segment blocking, recall 1.0 by the pigeonhole principle, measured against brute force.
+- The document's "10 % centre crop ≤ 6" measures 8 on the synthetic fixture; the test records the
+  measured figure (5 % → 2, 8 % → 4, 10 % → 8) instead of loosening the band.
+- This container cannot reach `res.cloudinary.com` (proxy policy), so the 250-asset backfill
+  cannot run here; built as a dispatch-only workflow for the owner.
+- The guard's reads under the uploader's session would skip the research table for an editor;
+  they run under the service role.
+- The generated `research_sources` Row type gained a column, so one unit fixture needed it.
+
+### Issues Fixed
+All five above.
+
+### Build Status
+Green — `next build` against the seeded local database through PostgREST; bundle secret check clean.
+
+### Deployment Status
+Merged to `main`; Vercel builds from `main`. No cron. The backfill workflow awaits the owner's
+dispatch with the three repository secrets.
+
+### Commit
+See the PR for this phase (`feat(phase-33)`); hash recorded in the final summary.
+
+### Remaining Notes
+- **Owner action:** set the three repository secrets and run `Media hash backfill (hosted)` in
+  `plan` then `apply` mode. Expected result: `IMAGE 224 224 224`, `VIDEO 26 26 0`. Until then the
+  Studio library panel shows coverage 0 of 250 and the upload guard compares against an empty
+  Rivya hash table (it still refuses an exact re-upload of anything uploaded after this phase).
+- No precision figure exists; `MEASURED_PRECISION` is empty and the Studio says so.
+- The research-side tables hold no rows and will until the owner reverses A33.
 
 ## Phase 34 — Product Direction Tool
 

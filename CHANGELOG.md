@@ -6,6 +6,40 @@ Every phase adds an entry; see `docs/architecture/CANONICAL-DECISIONS.md` D9 for
 
 ## [Unreleased]
 
+### Phase 33 — Visual Similarity (the first-party half)
+
+**The owner decided: competitor images are referenced by URL only and never fetched** (amendment
+A33, closing the phase document's open question 12). So the research hash tables are created and
+hold no rows, `research_image_hashing` and `advanced_similarity` ship `false` with descriptions
+that say why, and the machinery is turned inward: every Rivya asset is hashed, and a re-upload of
+one is refused at the upload step, by name.
+
+**Migrations `0310`, `0311`, `0313`** (`0312`, embeddings, allocated and unused). `research_image_hashes`,
+`research_similarity_runs` (a `MEDIA_ASSET` scope stores no pairs, by CHECK), `research_similarity_pairs`
+(ordered, within the ceiling, banded by its own distance at the table), `research_similarity_suppressions`,
+the `similarity_band` enum, `research_sources.image_hashing_enabled` gated on an APPROVED policy; and
+**`media_asset_hashes`, first-party**, in its own file, never joined to a research table.
+
+**Pure hashers** — 64-bit dHash and DCT pHash over a gray buffer, Hamming distance, the band table
+with its "does not mean" column as the single source, and **seven-segment blocking with NEAR_DUPLICATE
+recall of exactly 1.0 by the pigeonhole principle**, measured against brute force over a 2,000-hash
+fixture on every test run. Fixture distances are measured, not assumed: a 10 % centre crop lands at 8
+on the synthetic scene and the test records it.
+
+**The upload guard.** `saveUploadedAssetAction` fetches the original back from the delivery origin,
+hashes it in memory (`lib/media/hashes.ts`, the one module allowed to import a decoder — a new build
+gate, `media:check-decoder`), and refuses a byte-identical file on either side or an image within six
+bits of a Rivya asset or a research image, naming the match; the Cloudinary object is destroyed and a
+DENIED audit row written. Videos by exact checksum only, and the library panel says so.
+
+**`/studio/research/similarity`** is filled: the owner's decision and the two flags, the legend with
+`PRECISION NOT YET MEASURED` beside every band, library coverage, **Check the library against itself**
+(`research.similarity.run`, new permission: owner, admin, researcher), and run history.
+`npm run media:hash` plus the dispatch-only `Media hash backfill (hosted)` workflow (the development
+container cannot reach Cloudinary); `npm run research:similarity` records a corpus run with every
+source skipped and the gate that stopped it; `npm run research:similarity-sample` writes the labelling
+CSV a precision figure must come from.
+
 ### Phase 32 — Opportunity Engine
 
 Rivya gets a ranked view of where the market looks under-served — and anyone can see exactly why a

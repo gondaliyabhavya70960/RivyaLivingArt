@@ -158,6 +158,7 @@ export const PHASE_29_POLICIES = '0271_phase29_changes_rls.sql'
 export const PHASE_30_POLICIES = '0281_phase30_large_format_rls.sql'
 export const PHASE_31_POLICIES = '0291_phase31_research_analytics_rls.sql'
 export const PHASE_32_POLICIES = '0301_phase32_opportunity_rls.sql'
+export const PHASE_33_POLICIES = '0313_phase33_similarity_rls.sql'
 
 export const TABLE_POLICIES = {
   // --- Shape A: content tables ------------------------------------------------------------------
@@ -1637,6 +1638,64 @@ export const TABLE_POLICIES = {
     deviation:
       'The arithmetic behind a score, one row per signal. Service-role writes only, with its ' +
       'score. No anon policy (I2).',
+  },
+
+  /*
+   * Phase 33 — perceptual similarity, the first-party half (amendment A33).
+   *
+   * Four research tables, created so the schema stays level with the phase document and holding
+   * no rows: nothing in the repository fetches a competitor's image bytes. Hashes and pairs are
+   * service-role writes (there is no writer today); a RUN is a person's act under
+   * `research.similarity.run`; a SUPPRESSION ("this pair is not interesting") is a judgement a
+   * researcher may record under `research.write` and undo.
+   *
+   * `media_asset_hashes` IS NOT A RESEARCH TABLE. It follows the Phase 06 media policy — read under
+   * `media.read` — and takes no session write: the upload path and `npm run media:hash` write it
+   * through the service role. Shape C because a hash is not published content and never anon.
+   */
+  research_image_hashes: {
+    policiesIn: PHASE_33_POLICIES,
+    shape: 'C',
+    readPermission: 'research.read',
+    deviation:
+      'Perceptual hashes of competitor images. Service-role writes only, and under amendment A33 ' +
+      'no writer exists: competitor images are referenced by URL and never fetched. No anon policy (I2).',
+  },
+  research_similarity_runs: {
+    policiesIn: PHASE_33_POLICIES,
+    shape: 'C',
+    readPermission: 'research.read',
+    writePermission: 'research.similarity.run',
+    deviation:
+      'A similarity run is an operator act: research.similarity.run (owner, admin, researcher) ' +
+      'inserts and closes it. Delete is nobody: a run is a record of what was compared. No anon policy (I2).',
+  },
+  research_similarity_pairs: {
+    policiesIn: PHASE_33_POLICIES,
+    shape: 'C',
+    readPermission: 'research.read',
+    deviation:
+      'Two research hashes and a banded distance. Service-role writes only, with its run. ' +
+      'No anon policy (I2).',
+  },
+  research_similarity_suppressions: {
+    policiesIn: PHASE_33_POLICIES,
+    shape: 'C',
+    readPermission: 'research.read',
+    writePermission: 'research.write',
+    deletePermission: 'research.write',
+    deviation:
+      'A dismissed pair, with its reason. research.write records and undoes a dismissal — a ' +
+      'judgement about a picture, not a verdict on a product. No anon policy (I2).',
+  },
+  media_asset_hashes: {
+    policiesIn: PHASE_33_POLICIES,
+    shape: 'C',
+    readPermission: 'media.read',
+    deviation:
+      "FIRST-PARTY, not research: the hashes of Rivya's own library, following the Phase 06 media " +
+      'read policy. Service-role writes only (the upload path and media:hash). A hash is not ' +
+      'published content, so no anon policy.',
   },
 } as const satisfies Record<string, TablePolicy>
 

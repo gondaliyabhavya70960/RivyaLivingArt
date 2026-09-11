@@ -52,6 +52,20 @@ export const FLAGS = {
    */
   research_enabled:
     'Allows the research cron to fetch anything at all. Off until the owner has approved a source, and the fastest way to stop every source at once.',
+  /**
+   * Phase 33. The fetch-to-hash amendment the phase document raised as open question 12. THE
+   * OWNER DECIDED AGAINST IT (amendment A33): competitor images are referenced by URL and never
+   * fetched, so nothing in the repository reads this flag to start a fetch — it exists so the
+   * decision is visible at /studio/system/flags, with its reason, rather than implied by absence.
+   */
+  research_image_hashing:
+    'Would allow competitor image URLs to be fetched once and reduced to a 64-bit hash. The owner decided that competitor images are referenced by URL only and never fetched (amendment A33); no code path in the repository fetches one, whatever this flag says.',
+  /**
+   * Phase 33. Embedding-based FORM_SIMILAR pairs. Unreachable: the embedding path is not built,
+   * because it would need competitor bytes the owner has decided are never fetched.
+   */
+  advanced_similarity:
+    'Would enable embedding-based FORM_SIMILAR pairs (low precision, flag-gated by design). Not built under amendment A33; the Studio says so.',
 } as const satisfies Record<string, string>
 
 export type FeatureFlagKey = keyof typeof FLAGS

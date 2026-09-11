@@ -1111,6 +1111,11 @@ settle it; this document does not add a ninth. Nothing else above diverges from
 
 ---
 
+**Open question 12 — the fetch-to-hash amendment (Phase 33) — is CLOSED by the owner's decision,
+recorded as amendment A33: competitor images are referenced by URL only and never fetched.
+`research_image_hashing` and `advanced_similarity` ship `false`; §24 records what that leaves
+built.**
+
 ## 17. Source configuration as built — Phase 26
 
 > §6 is the design, read out of FEAT §26's field table before anything existed. This chapter is what
@@ -2805,3 +2810,95 @@ No demand forecast, sales estimate, revenue projection or recommended price — 
 fabricated business fact. No automatic consequence: a score of 100 sorts first and does nothing
 else. No shortlisting or confirming (35). No image or visual signal (33). No scoring of Rivya's own
 products.
+
+## 24. Visual similarity as built — Phase 33, the first-party half
+
+**The owner's decision shapes this section (amendment A33): competitor images are referenced by
+URL and never fetched.** The phase document proposed narrowing PHASE-23-30's no-download rule so
+that each `research_products.image_urls` entry could be fetched once, hashed and discarded. That
+amendment was put to the owner as open question 12 and declined. So the research-side tables exist
+and hold no rows, the two flags ship `false` with descriptions that say why, and the machinery is
+turned inward: Rivya's own library is hashed, and a re-upload of one of its pictures is refused at
+the upload step, by name.
+
+### 24.1 What ships, and what does not
+
+| Built and live | Deliberately not built |
+|---|---|
+| Pure hashers `lib/scraper/analytics/similarity/{dhash,phash,hamming,blocking,bands}.ts` — no I/O anywhere in the directory | `hash-run.ts`, the competitor byte fetcher; `research_sources.image_hashing_enabled` is never set |
+| `media_asset_hashes` (migration `0311`, first-party) and `lib/media/hashes.ts`, the ONE module that imports an image decoder (`npm run media:check-decoder` fails the build on a second) | `research_image_hashes` rows — the table is created by `0310` so the schema stays level with the phase document, and nothing writes it |
+| The upload guard `lib/media/duplicate-guard.ts`, called by the Studio save action BEFORE the `media_assets` insert: exact checksum on either side, then pHash within 6 bits; refusal destroys the Cloudinary object and writes a DENIED audit row naming the match | `0312` embeddings (`pgvector`) — unreachable while `advanced_similarity` is false, and there are no competitor bytes to embed; the number stays allocated and unapplied |
+| `npm run media:hash` and the `Media hash backfill (hosted)` workflow, which hash the 250 manifest assets from a runner that can reach Cloudinary | Any thumbnail, proxy or cache of another seller's photograph |
+| `/studio/research/similarity`: the band legend with its "does not mean" column above everything, the two flags, library coverage, the library self-check, run history | Per-pair Mark-duplicate and Dismiss actions — there are no research pairs to act on; the suppressions table and its `research.write` policy exist for the day there are |
+| `npm run research:similarity` — a corpus run opens a run row, lists every source under `sources_skipped` with the first gate that stops it (`KILL_SWITCH`, `FLAG_OFF`, `SOURCE_OPT_OUT`) and `NOT_BUILT`, closes it with `images_fetched = 0` | |
+| `npm run research:similarity-sample` — writes the stratified labelling CSV; today a header only, and says so | |
+
+### 24.2 The bands, verbatim from `bands.ts`
+
+| Band | Method | Threshold | What it reliably means | What it does **not** mean |
+|---|---|---|---|---|
+| `NEAR_DUPLICATE` | pHash | Hamming ≤ 6, including 0 | the same image file, or a re-encode, resize or mild crop of it | that the two listings are the same physical object, or that either seller made it |
+| `PROBABLE_VARIANT` | pHash | 7–12 | very likely the same photo shoot, set or listing family | that the products are the same, or comparable in size or price |
+| `WEAK` | pHash | 13–18 | similar composition, crop or palette | anything at all about the object, its material or its maker |
+| `FORM_SIMILAR` | embedding, cosine | ≥ 0.86, flag-gated | similar visual form and material impression, at low precision | similarity of design, dimensions, construction, or that one copies the other |
+
+Pairs beyond 18 are discarded, and `research_similarity_pairs_distance_within_ceiling` refuses one;
+`research_similarity_pairs_band_matches_distance` holds the band function at the table so a stored
+pair cannot carry a band its own distance contradicts. No band name contains the word *same*.
+
+**Measured on the fixture, not assumed.** The phase document lists a 10 % centre crop at ≤ 6. On
+the synthetic scene in `tests/unit/similarity-phash.test.ts` a 5 % crop measures 2, an 8 % crop 4,
+a 10 % crop **8** — PROBABLE_VARIANT, not NEAR_DUPLICATE — and the test records that figure rather
+than loosening the band to fit. Whether a 10 % crop of a real photograph lands under 6 is exactly
+the kind of claim the precision table below exists to carry.
+
+### 24.3 Precision
+
+| Band | Precision | `sample_size` | `sampled_on` | Labelled by |
+|---|---|---|---|---|
+| all four | **PRECISION NOT YET MEASURED** | — | — | — |
+
+`MEASURED_PRECISION` in `bands.ts` is empty; the Studio renders the words above beside every band;
+`tests/unit/similarity-bands.test.ts` refuses a populated row without a sample size and a date.
+No figure may be written here unless `npm run research:similarity-sample` produced the sample it
+came from — and under A33 that sample is empty, because the research hash corpus is.
+
+### 24.4 Blocking, and the recall it buys
+
+The 64 bits are cut into seven segments (six of nine bits, one of ten); two hashes are candidates
+when identical in at least one segment. By the pigeonhole principle a pair at distance ≤ 6 differs
+in at most six segments and shares the seventh, so **NEAR_DUPLICATE recall is 1.0 by
+construction**. `tests/unit/similarity-blocking.test.ts` measures it against a brute-force sweep
+over a 2,000-hash fixture and prints the figure for every band on each run; PROBABLE_VARIANT and
+WEAK recall are high but not guaranteed, and the test asserts the first stays above 0.9. The phase
+document's 16-bit prefix bucket would miss most pairs at distance 6 (about 83 % of uniformly placed
+flips touch the prefix) and could not meet the ≥ 0.98 recall the same document requires; the DDL
+keeps the `substring(phash from 1 for 16)` index it names, harmlessly, and the comparison happens in
+memory over 64-bit strings.
+
+### 24.5 The two corpora never meet in SQL
+
+I1 forbids a `research_*` table from referencing `media_assets`, and `check-research-isolation.mjs`
+fails the build on a third boundary-crossing constraint. So `media_asset_hashes` is a first-party
+table in its own migration, referencing `media_assets`; the research tables reference research
+tables; and `checkMediaAgainstResearch()` takes two READS as arguments and compares in TypeScript.
+`lib/media/duplicate-guard.ts` imports no repository at all — the Studio action injects the reads,
+both under the service role, because an editor's session cannot see the research table and a guard
+that could only see what the uploader may read would let a competitor's photograph past exactly
+the person most likely to upload one.
+
+### 24.6 Video
+
+A perceptual hash over an 8×8 / 32×32 gray reduction is defined for a still image. A video row
+carries `kind = 'VIDEO'`, its SHA-256 and null hashes (`media_asset_hashes_image_has_phash`), and
+the guard catches a re-uploaded video only by exact bytes. A re-encoded one is not caught, and the
+library panel says so.
+
+### 24.7 Where the bytes go
+
+Nowhere. `lib/media/hashes.ts` decodes into one gray channel inside one call and returns two
+64-bit strings and a digest; the upload action and the backfill fetch the ORIGINAL from the
+delivery origin (`originalUrl()`, no transformation segment, so both agree on every checksum), and
+neither writes a file, a width, a height, a thumbnail or a colour. Under A33 no competitor byte is
+fetched at all.
+

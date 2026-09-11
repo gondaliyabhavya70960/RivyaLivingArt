@@ -290,6 +290,7 @@ function sourceRow(overrides: Partial<ResearchSourceRow> = {}): ResearchSourceRo
   return {
     id: SOURCE_ID,
     slug: 'fixture-source',
+    image_hashing_enabled: false,
     name: 'Fixture Source',
     base_url: 'https://shop.example.com',
     region: null,
