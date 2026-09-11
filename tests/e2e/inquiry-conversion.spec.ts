@@ -2,6 +2,7 @@ import pg from 'pg'
 import { expect, test, type Page } from '@playwright/test'
 
 import { FIXTURE_PRODUCTS, FIXTURE_PRODUCT_SLUG } from '../fixtures/ids'
+import { clearInquiryRateLimit } from '../support/inquiry-limiter'
 
 /**
  * THE CONVERSION PATH, ASSERTED AT THE TABLE — Phase 42.
@@ -45,29 +46,6 @@ async function removeProbeRows(): Promise<void> {
   const client = await db()
   try {
     await client.query('delete from inquiries where message like $1', [`%${MARKER}%`])
-  } finally {
-    await client.end()
-  }
-}
-
-/**
- * Clear the enquiry rate-limit buckets for this machine.
- *
- * THE LIMITER FOUND THIS SUITE BEFORE THIS SUITE FOUND ANYTHING — the first run failed on
- * "That is several enquiries from this connection in a short time", which is Phase 41's rule
- * working exactly as written: five per ten minutes and ten per hour from one connection. Three
- * tests, one of which submits twice, is four in a few seconds from one address.
- *
- * The limit is real and must not be relaxed, so the test resets the counter instead — the same
- * thing waiting ten minutes would do, minus the ten minutes. `bucket_key` is `<surface>:<ip hash>`
- * and the enquiry surface is `inq`, so this leaves the `vitals`, `csp_report` and `inq_upload`
- * buckets alone. Matched with the colon rather than by prefix, so `inq_upload` is not swept up with
- * it.
- */
-async function clearInquiryRateLimit(): Promise<void> {
-  const client = await db()
-  try {
-    await client.query("delete from rate_limit_buckets where bucket_key like 'inq:%'")
   } finally {
     await client.end()
   }

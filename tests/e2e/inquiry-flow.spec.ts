@@ -1,6 +1,8 @@
 import AxeBuilder from '@axe-core/playwright'
 import { expect, test, type Page } from '@playwright/test'
 
+import { clearInquiryRateLimit } from '../support/inquiry-limiter'
+
 /**
  * The conversion path, end to end: `/contact`, a product enquiry, and the rule that governs both.
  *
@@ -22,6 +24,23 @@ import { expect, test, type Page } from '@playwright/test'
  */
 
 const CONTACT = '/contact'
+
+/*
+ * THE RATE LIMITER COUNTS THE WHOLE SUITE AS ONE VISITOR — Phase 42, found by the first run at
+ * eight widths.
+ *
+ * Three tests here submit an enquiry, and each width project runs all three from the same address.
+ * Phase 41's rule admits five in ten minutes and ten in an hour, so somewhere around the third
+ * project the save starts coming back refused and the test reports a broken conversion path that is
+ * in fact working exactly as designed. `inquiry-conversion.spec.ts` hit this first and answered it
+ * the same way; the helper now lives in `tests/support/` so both use one copy.
+ *
+ * Resetting the counter rather than relaxing the limit is the whole point: the rule under test is
+ * unchanged, and what the test stops asserting is only "no other test ran before me".
+ */
+test.beforeEach(async () => {
+  await clearInquiryRateLimit()
+})
 
 async function reachable(page: Page, path: string): Promise<boolean> {
   const response = await page.goto(path)
@@ -71,8 +90,40 @@ test.describe('/contact', () => {
 
     const honeypot = page.locator('[data-inquiry-form] input[name="website"]')
     await expect(honeypot).toHaveCount(1)
-    await expect(honeypot).not.toBeVisible()
+
+    /*
+     * NOT `toBeVisible()`, AND THE REASON IS THE TECHNIQUE — corrected in Phase 42, the first time
+     * this spec ran anywhere.
+     *
+     * The field is wrapped in `VisuallyHidden`, which CLIPS it to a single pixel and deliberately
+     * leaves it in the layout. `display: none` would be simpler and would defeat the honeypot: a
+     * script that skips hidden inputs is the common case, and the whole point is that a bot filling
+     * every field it finds fills this one. Playwright reports a clipped element as visible, because
+     * it is — it has a box and it is not `visibility: hidden` — so `not.toBeVisible()` failed on a
+     * correct page and would have been "fixed" by switching to the mechanism that breaks the trap.
+     *
+     * What "hidden from everybody" actually means here is asserted instead: a single clipped pixel,
+     * out of the tab order, and absent from the accessibility tree.
+     */
+    const hidden = await honeypot.evaluate((node) => {
+      const element = node as HTMLElement
+      // The clip lives on the `VisuallyHidden` wrapper, not on the input.
+      const wrapper = element.closest('[aria-hidden="true"]')?.parentElement ?? element
+      const style = window.getComputedStyle(wrapper)
+      return {
+        clipped: style.clipPath === 'inset(50%)' || style.clip === 'rect(0px, 0px, 0px, 0px)',
+        painted: style.display !== 'none' && style.visibility !== 'hidden',
+      }
+    })
+    expect(hidden.clipped, 'the honeypot is not clipped — a visitor can see it').toBe(true)
+    expect(hidden.painted, 'the honeypot is display:none, which a bot can detect and skip').toBe(
+      true,
+    )
     await expect(honeypot).toHaveAttribute('tabindex', '-1')
+    expect(
+      await honeypot.evaluate((node) => node.closest('[aria-hidden="true"]') !== null),
+      'the honeypot is in the accessibility tree — a screen reader would announce it',
+    ).toBe(true)
   })
 
   test('offers no price, cart or checkout anywhere on the page', async ({ page }) => {
@@ -91,6 +142,15 @@ test.describe('/contact', () => {
     test.skip(!(await formPresent(page)), 'the contact form is not on this page')
 
     await fillBasics(page)
+
+    /*
+     * THREE AND A HALF SECONDS BEFORE SUBMITTING, because `submit-inquiry.ts` refuses anything
+     * completed in under three and answers with the same generic error a real failure gets —
+     * telling a bot which guard it tripped is telling it what to change. A harness fills four
+     * fields in about a second, so without this the enquiry is refused as automated and the test
+     * fails with no clue why. Waiting is the fix; lowering the floor would remove the guard.
+     */
+    await page.waitForTimeout(3_500)
 
     /*
      * THE AUTO-FORWARD IS BLOCKED SO THE SUCCESS STATE CAN BE READ. Aborting the `wa.me` navigation

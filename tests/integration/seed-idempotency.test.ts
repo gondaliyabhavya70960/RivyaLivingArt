@@ -181,11 +181,50 @@ describeDb('the fixture seeds the same thing every time', () => {
 
   it('leaves nothing behind after --reset', async () => {
     const db = await connect()
-    await seedFixture(db, { reset: true, allowRemote: true, publishSeeded: false })
-    const after = await digest()
-    for (const [table] of FIXTURE_TABLES) {
-      const [count] = (after[table] ?? '?:').split(':')
-      expect(Number(count), `${table} still holds fixture rows after --reset`).toBe(0)
+
+    /*
+     * A CARETAKER OWNER FIRST, BECAUSE THE DATABASE WILL NOT BE LEFT WITHOUT ONE — Phase 42.
+     *
+     * `enforce_last_owner` (migration 0009) is a deferred constraint trigger that refuses any
+     * statement leaving zero ACTIVE owners, and on a database built the way `e2e.yml` builds one —
+     * `db:reset`, `seed:content`, then this fixture — the fixture's own owner is the ONLY owner.
+     * So `--reset` was refused at commit with "refusing to leave the project with no active
+     * owner", and that refusal is the rule working exactly as written rather than a defect in the
+     * seeder.
+     *
+     * It passed for a long time only because a developer's database had accumulated staff rows
+     * from other runs. Restoring the canonical state is what exposed it, which is the argument for
+     * building the database the same way CI does before believing a green run.
+     *
+     * The state a real project is always in is "somebody else owns this", so the test puts the
+     * database into that state, resets, re-seeds, and then removes the caretaker — by which point
+     * the fixture's owner is back and the rule is satisfied in both directions. Suspending the
+     * trigger instead would be testing a database this project does not ship, which is the same
+     * reason `--publish-seeded` walks the status ladder rather than disabling
+     * `enforce_status_transition`.
+     */
+    const caretaker = '00000000-0000-4000-8000-00000000c001'
+    await db.query('insert into auth.users (id, email) values ($1, $2)', [
+      caretaker,
+      'caretaker@seed-idempotency.invalid',
+    ])
+    await db.query(
+      `update staff_profiles set role = 'owner', status = 'ACTIVE', display_name = $2
+         where user_id = $1`,
+      [caretaker, 'Reset caretaker'],
+    )
+
+    try {
+      await seedFixture(db, { reset: true, allowRemote: true, publishSeeded: false })
+      const after = await digest()
+      for (const [table] of FIXTURE_TABLES) {
+        const [count] = (after[table] ?? '?:').split(':')
+        expect(Number(count), `${table} still holds fixture rows after --reset`).toBe(0)
+      }
+    } finally {
+      // Re-seeded BEFORE the caretaker goes, so the same guard is satisfied on the way out.
+      await seedFixture(db, { reset: false, allowRemote: true, publishSeeded: false })
+      await db.query('delete from auth.users where id = $1', [caretaker])
     }
   })
 })

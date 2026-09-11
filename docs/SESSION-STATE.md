@@ -14,7 +14,7 @@ instruction until Phase 44's development had landed, then executed in full.
 
 ### Phase 42: what it found
 
-Running these suites for the first time produced **four production defects** that every existing
+Running these suites for the first time produced **eight production defects** that every existing
 check had passed over.
 
 1. **No enquiry could be saved. In any environment, since Phase 41.** `submit-inquiry.ts` wrote a
@@ -30,6 +30,24 @@ check had passed over.
    comment promised the heading anchor "in Phase 15".
 4. **Two listing pages skipped a heading level.** `cardHeadingLevel` now derives it from whether the
    section rendered a heading of its own.
+5. **The gallery thumbnail strip was zero pixels tall on every product page.** `MediaImage` fills a
+   frame and says so in its own header; every other call site wraps it in one, this one did not. The
+   images loaded and nobody could see them. Now wrapped in an `AspectBox`.
+6. **Every `/collection/[category]` page returned 500 in a production build.** `generateStaticParams`
+   cannot coexist with `await searchParams` — Next pre-renders the page, then refuses it at request
+   time. `next build` succeeds, so every CI gate in this repository had passed it. The route is
+   dynamic now, which is what a page keyed on the query string already was.
+7. **The home page's material story failed AA.** `opacity-40` on a dimmed stage composites
+   everything under it, including `MediaFrame`'s "image unavailable" label — 2.77:1 where the token
+   pair measures 10.42:1, and no ink would have fixed it. The dim moved onto the photograph, which
+   is what the effect was always about. `--rv-surface-sunken` also joined the static contrast
+   matrix, where it had never appeared.
+8. **Every page scrolled sideways at 1024px.** The masthead's inline search field appeared from
+   `lg`; at 1024 the content box is 930px and a wordmark, a nine-item nav and that field will not
+   compress below 1054. The field now appears from `xl` — the threshold `search-combobox-a11y` had
+   been skipping below all along — and the nav's gap tightens between the two. Between 1024 and
+   1279 the masthead carries no search control; DESIGN_SYSTEM §8.1 asks for a compact search
+   *trigger*, which is the Phase 45 change that closes it.
 
 ### Phase 42: what is built
 
@@ -64,6 +82,17 @@ and the gate that keeps it honest.
 - **33 visual baselines, not 127.** One width per breakpoint band; the projection predates the
   routes.
 - **Three public routes have no seeded sections** (`/faq`, `/privacy`, `/terms`) and skip.
+- **The visual harness was photographing the development server, and its stabilising stylesheet had
+  never applied** — `addStyleTag` before `page.goto` lands in `about:blank`. Both fixed, and all 33
+  baselines regenerated from `db:reset` → `seed:content` → `seed-fixture --publish-seeded`, the
+  three steps `e2e.yml` runs, so a baseline is reproducible by somebody else.
+- **CI does not compare the visual baselines.** A runner rasterises text differently from this
+  container by more than a page of it absorbs, so `e2e.yml` runs the eight behavioural width
+  projects and the visual tier runs only on a dispatch that regenerates baselines.
+  `npm run test:visual` is the local check; `docs/ops/TESTING.md` §3 records what would change it.
+- **The browser suite needs a production build** (`E2E_PRODUCTION=1` → `next start`). A dev server
+  answers `no-cache, must-revalidate` to everything, so four caching assertions could never pass in
+  one. `/design-system` calls `notFound()` in a build, so its spec skips under the flag.
 
 ---
 

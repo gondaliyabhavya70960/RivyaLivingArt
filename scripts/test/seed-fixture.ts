@@ -323,17 +323,42 @@ async function seedArticlePage(db: Client): Promise<string> {
       NOW,
     ],
   )
+  /*
+   * A `hero` THEN A `statement`, WITH THE HERO'S PAYLOAD, and every part of that is load-bearing.
+   *
+   *   `hero` FIRST is what produces the `h1`: `HeroSection` renders its heading at level 1 when it
+   *   is the page's first section and at level 2 otherwise, and no other block emits an `h1` at
+   *   all. An article page without one is an article with no title in the outline.
+   *
+   *   THE PAYLOAD IS NOT `{}`. `parseBlockPayload(heroBlock, …)` needs the three keys the seeded
+   *   heroes carry; with an empty object the section renders nothing and the page comes back 200
+   *   and blank — which is exactly what the first version of this fixture produced, and what
+   *   `tests/e2e/journal.spec.ts` caught.
+   *
+   *   `statement`, NOT `RICH_TEXT`. There is no `RICH_TEXT` renderer in this build: `unrenderable()`
+   *   drops any block type the section registry does not know, silently in production. The
+   *   `RICH_TEXT` rows in this database are debris from an RLS suite, not a block the site can draw
+   *   — a fixture is only useful if every row in it is one the product would actually accept.
+   */
   await db.query(
-    `insert into page_sections (id, page_id, block_type, position, is_visible, heading, body,
-                                status, owner_verification, fact_classification, created_at, updated_at)
-     values ($1,$2,'RICH_TEXT',0,true,$3,$4,'PUBLISHED','NOT_REQUIRED','EDITORIAL_COPY',$5,$5)`,
+    `insert into page_sections (id, page_id, block_type, layout_variant, position, is_visible,
+                                heading, body, payload, status, owner_verification,
+                                fact_classification, created_at, updated_at)
+     values ($1,$2,'hero','contained',0,true,$3,$4,
+             '{"scrim": 30, "autoplay": false, "is_video": false}'::jsonb,
+             'PUBLISHED','NOT_REQUIRED','EDITORIAL_COPY',$5,$5),
+            ($6,$2,'statement',null,1,true,$7,$8,'{}'::jsonb,
+             'PUBLISHED','NOT_REQUIRED','EDITORIAL_COPY',$5,$5)`,
     [
       sectionId,
       pageId,
+      'Choosing a resin table',
+      'Fixture standfirst, rendered by the hero block.',
+      NOW,
+      fixtureId('media', 92),
       'What a resin table has to survive',
       'Fixture body copy. It exists so the article has a body, which is what ' +
         '`enforce_article_has_body` requires before an article may be published.',
-      NOW,
     ],
   )
   return pageId

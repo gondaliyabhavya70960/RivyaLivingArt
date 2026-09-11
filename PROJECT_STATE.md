@@ -378,7 +378,8 @@ local only, so every browser figure in this document is from a local run.
 | 41 | Accessibility + Security | **DEVELOPMENT COMPLETE** — tests deferred to Phase 42 by the owner's instruction | Migration `0390` (`0391` allocated and unused): `media_assets.is_decorative`, and the alt-text CHECK re-expressed as "a usable alternative, or explicitly decorative". `proxy.ts` attaches a per-request-nonce CSP and six static headers to every matched response, including the redirect, with the matcher widened to the public site; the policy ships REPORT-ONLY and `CSP_ENFORCE=1` flips it after an owner-read soak. `POST /api/csp-report` collects violations at `SECURITY` level. The rate-limit key became `hmac(salt, value)` under two separate salts, and the five surfaces SECURITY.md already listed are now wired. `validateUpload` runs in the save path against the first 4 kB of the stored original and refuses the ROW, destroying the Cloudinary object. A data request panel on `/studio/inquiries/all` and `ops:anonymise-inquiries` give subject access and erasure, owner-only and preview-first. `/studio/media/all/[assetId]` edits alt text and the decorative flag together with live quality warnings. Five new gates in `npm run check`. **Not built:** EXIF stripping (SECURITY §7.5), `request_id` in the proxy, and the whole test track. |
 | 43 | Media Coverage + Higgsfield Finalization | **DEVELOPMENT COMPLETE** — tests deferred to Phase 42 | Migrations `0410`–`0411`: `media_crops`, one editor-chosen crop per (asset, D6 ratio), applied as `c_crop` BEFORE the delivery preset. The coverage report resolves all 26 declared slots — 15 reuse, 6 re-crop, 3 empty, **2 generate** — after correcting six `fillableBy` mappings and two dispositions the registry had left stale against Phase 07's own analysis. All 250 imported alt-text drafts rewritten from prompt fragments into sentences that pass the SEED §43 rules, in a committed file the generator will not overwrite. Studio: Coverage and Concept Placement tabs, the crop editor, the alt-text queue, the brand-format panel. `media:register-external` takes an owner-generated image by Cloudinary URL and refuses any other origin. **Nothing was generated**, and brand marks, 3D models and portfolio imagery never will be. |
 | 44 | Vercel Deployment | **DEVELOPMENT COMPLETE** — drills NOT RUN, tests deferred to Phase 42 | No migration. `scripts/ops/preflight.ts` runs 13 named gates in one command, 10 of which run today; a skipped gate names the phase that owns it. `scripts/ops/check-env.ts` checks presence AND shape per environment and prints no value. `scripts/docs/check-doc-contract.mjs` exists at last and joins `npm run check`. `vercel.json` pins the framework, region and function limits; `next.config.ts` 308s `www` to the apex. `EnvironmentRibbon` (RC-362) and `BuildPanel` (RC-363). `db-migrate.yml` extended with a `pg_dump` snapshot and a GitHub Environment on the apply path. **One Supabase project (A42): a preview reads and writes production data**, recorded in DEPLOYMENT §1.1. **Neither the rollback nor the forward-fix drill has been run and no time is claimed.** |
-| 42, 45–46 | Testing, polish, handoff | **PLANNED** | Specified in `docs/project/phases/`. Phase 42 also carries every test deferred from Phases 41–44. |
+| 42 | Comprehensive Testing | **COMPLETE** — ran last, by the owner's instruction to finish development first | No migration. `tests/fixtures/ids.ts` + `scripts/test/seed-fixture.ts`: one deterministic fixture behind the reserved id prefix `f0000000-0000-4000-8000-`, refusing any non-local database, with `--publish-seeded` walking the seeded sections up the real DRAFT → REVIEW → APPROVED → PUBLISHED ladder. Twelve committed PNGs from a hand-written encoder, served for every Cloudinary request by `tests/support/media-route.ts`. A third vitest project, `integration` — row security across the schema, seed idempotency by digest, the publish gates as the database owner, the migration ledger and every RPC call site against its function's non-defaulted parameters. Sixteen browser specs including the seven `tests/e2e/a11y/**` Phase 41 deferred; four visual specs with 33 baselines at three widths. `e2e.yml` (four shards, against a production build), `security.yml` (gitleaks over the whole history), `dependabot.yml`, `.gitleaks.toml`, `tests/flaky.json`. **It found eight production defects**, listed in `docs/PHASE_31_TO_46_IMPLEMENTATION.md`; the worst is that no enquiry could be saved in any environment since Phase 41. **Not true:** the Studio has no browser coverage beyond its login page (156 specs skip for want of an auth server), coverage is 47.9% and set as a ratchet, and CI does not compare the visual baselines. |
+| 45–46 | Polish, handoff | **PLANNED** | Specified in `docs/project/phases/`. |
 
 ## What exists on disk
 
@@ -402,12 +403,18 @@ docs/SESSION-STATE.md
 
 ## What does NOT exist yet
 
-**The entire test track for Phases 41–44 is unwritten, by the owner's instruction, and Phase 42 owns
-it.** That is a schedule rather than a judgement, but it is load-bearing when reading any claim in
-this file: the accessibility mechanisms in Phase 41 are built and are not proved by an axe sweep. The
-deferred set is the seven `tests/e2e/a11y/*` specs with `exceptions.json`, `tests/unit/alt-text-coverage`,
-`rate-limit-window`, `upload-validation` and `pii-scope`, the `security-headers` and `studio-authz`
-e2e specs, and the `gitleaks` + `npm audit` workflow with `.gitleaks.toml` and Dependabot.
+**The test track deferred from Phases 41–44 is written and running — Phase 42 did it.** The seven
+`tests/e2e/a11y/*` specs, `tests/unit/{alt-text-coverage,rate-limit-window,upload-validation,pii-scope}`,
+the `security-headers` and `studio-authz` e2e specs, and the gitleaks + `npm audit` workflow with
+`.gitleaks.toml` and Dependabot all exist. There is no `exceptions.json` and there should not be one:
+the axe sweep fails on critical and serious with no allowlist, and an argument that a rule is wrong
+for this product belongs in `docs/ops/ACCESSIBILITY.md` beside the disabling.
+
+**What is still not proved is the Studio.** 156 browser specs skip for want of a Supabase Auth server
+the local PostgREST harness cannot provide, so the larger half of this product — the half the owner
+works in — has browser coverage of its login page and nothing else. `docs/ops/TESTING.md` §13 lists
+that and the three other blind spots, including that CI runs the behavioural widths and does not
+compare the visual baselines.
 
 **Three Phase 41 items are not built and are recorded where somebody would look for them.** EXIF is
 not stripped from stored originals (SECURITY §7.5 names the mechanism and why it was not shipped

@@ -170,9 +170,31 @@ test.describe('a published article, when one exists', () => {
     const href = await page.locator('[data-article-card]').first().getAttribute('href')
     await page.goto(href ?? '/journal')
 
-    const raw = await page.locator('script[type="application/ld+json"]').first().textContent()
-    const graph = JSON.parse(raw ?? '{}') as { '@type'?: string; publisher?: { name?: string } }
-    expect(graph['@type']).toBe('Article')
-    expect(graph.publisher?.name).toBeTruthy()
+    /*
+     * EVERY BLOCK, AND EVERY NODE INSIDE ITS `@graph` — corrected in Phase 42, the first time this
+     * spec ever ran.
+     *
+     * It read `.first()` and treated the result as a single node. That was true in Phase 12, when
+     * the article page emitted the only structured data on the page. Phase 39 added the site graph
+     * — `Organization` and `WebSite`, from the root layout — so `.first()` is now that, and
+     * `graph['@type']` is `undefined` on a page whose Article node is present and correct one block
+     * further down.
+     *
+     * Searching rather than indexing is also the right shape regardless: which block carries which
+     * node is an implementation detail of the emitter, and a test pinned to the order fails on a
+     * refactor that changes nothing a consumer can observe.
+     */
+    const blocks = await page.locator('script[type="application/ld+json"]').allTextContents()
+    expect(blocks.length, 'the page emits no structured data at all').toBeGreaterThan(0)
+
+    type Node = { '@type'?: string; publisher?: { name?: string } }
+    const nodes = blocks.flatMap((block) => {
+      const parsed = JSON.parse(block) as Node & { '@graph'?: Node[] }
+      return parsed['@graph'] ?? [parsed]
+    })
+
+    const article = nodes.find((node) => node['@type'] === 'Article')
+    expect(article, 'no Article node in any structured-data block').toBeDefined()
+    expect(article?.publisher?.name).toBeTruthy()
   })
 })

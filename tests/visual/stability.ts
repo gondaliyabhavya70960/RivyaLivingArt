@@ -12,6 +12,13 @@ import type { Page } from '@playwright/test'
  *   TIME.   A page showing "2 days ago" changes every night. The fixture's clock is frozen, and
  *           anything the page computes from `Date.now()` is frozen here to match.
  *   CARETS. A focused input blinks. The blink is a 50/50 coin toss in any screenshot.
+ *
+ * A FIFTH, AND IT IS NOT ON THE PAGE AT ALL: the development server's own dev-tools indicator.
+ * It floats over the bottom-left corner, it renders as a collapsed badge or an expanded one
+ * depending on what it has to say and when it is asked, and it photographed both ways — which made
+ * `/large-format` at 390px differ from its own baseline one run later with no code between them.
+ * `settle()` hides it, and `npm run test:visual` now drives a PRODUCTION build where it does not
+ * exist at all: a baseline of a dev server is a baseline of a page no visitor is ever served.
  */
 
 /** The frozen instant, matching `tests/fixtures/ids.ts`. */
@@ -36,22 +43,6 @@ export async function stabilise(page: Page): Promise<void> {
     Date.UTC = RealDate.UTC
     Date.parse = RealDate.parse
   }`)
-
-  await page.addStyleTag({
-    content: `
-      *, *::before, *::after {
-        animation-duration: 0s !important;
-        animation-delay: 0s !important;
-        transition-duration: 0s !important;
-        transition-delay: 0s !important;
-        scroll-behavior: auto !important;
-      }
-      /* A blinking caret is a coin toss in every screenshot. */
-      * { caret-color: transparent !important; }
-      /* The dev server's own launcher is not part of the page. */
-      nextjs-portal, [data-nextjs-dev-tools-button] { display: none !important; }
-    `,
-  })
 }
 
 /**
@@ -63,6 +54,43 @@ export async function stabilise(page: Page): Promise<void> {
  * the swap is a different image every time — and that one frame has been painted since.
  */
 export async function settle(page: Page): Promise<void> {
+  /*
+   * THE STYLESHEET GOES IN AFTER THE NAVIGATION, AND IT USED NOT TO — Phase 42.
+   *
+   * `addStyleTag` injects into the document that is open WHEN IT RUNS, and `stabilise()` runs
+   * before `page.goto`: the tag landed in `about:blank` and was discarded by the very navigation
+   * it was meant to stabilise. Every rule below was silently doing nothing, which is why the dev
+   * server's overlay reached a committed baseline despite a rule that hides it. Injecting here —
+   * after the navigation, before the shutter — is what makes them apply. It is also after
+   * hydration, so nothing here can be mistaken for a server/client mismatch.
+   */
+  await page.addStyleTag({
+    content: `
+      *, *::before, *::after {
+        animation-duration: 0s !important;
+        animation-delay: 0s !important;
+        transition-duration: 0s !important;
+        transition-delay: 0s !important;
+        scroll-behavior: auto !important;
+      }
+      /* A blinking caret is a coin toss in every screenshot. */
+      * { caret-color: transparent !important; }
+      /*
+       * The dev server's own overlay is not part of the page. The visual suite runs against a
+       * production build, where none of this exists; the rule stays for anyone pointing the visual
+       * projects at a development server, and it is deliberately broad because the element has been
+       * renamed more than once across Next versions and a selector that silently stops matching
+       * puts a floating badge into a committed baseline.
+       */
+      nextjs-portal,
+      [data-nextjs-dev-tools-button],
+      [data-nextjs-toast],
+      [data-next-badge-root],
+      #__next-build-watcher,
+      #__next-prerender-indicator { display: none !important; }
+    `,
+  })
+
   /*
    * EVERY LAZY IMAGE IS FORCED IN BEFORE THE SHUTTER OPENS.
    *

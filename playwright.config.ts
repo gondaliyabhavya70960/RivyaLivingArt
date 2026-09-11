@@ -49,11 +49,34 @@ export default defineConfig({
   // as ready, and `/` legitimately 404s until Phase 10 adds a home page — polling it makes
   // the server look permanently unready and the run dies on a 120s timeout that says
   // nothing about the cause.
+  /**
+   * TWO SERVERS, AND WHICH ONE RUNS IS THE DIFFERENCE BETWEEN TWO KINDS OF TRUTH — Phase 42.
+   *
+   * The harness ran `next dev` because `/design-system` calls `notFound()` in production: the
+   * gallery is a development surface and there is no way to photograph it from a build. That was
+   * right and it hid something. `tests/e2e/perf-headers.spec.ts` asserts the CACHING CONTRACT —
+   * `immutable` on a hashed asset, ISR on a CMS page — and `next dev` answers every request with
+   * `no-cache, must-revalidate`. Those four tests could never pass, and nobody knew, because CI had
+   * never run Playwright at all until this phase added the workflow.
+   *
+   * So `E2E_PRODUCTION=1` switches the harness to a real build. `.github/workflows/e2e.yml` sets it;
+   * a developer running `npx playwright test` locally still gets the dev server and the gallery.
+   * `design-system.spec.ts` skips under the flag, naming the route as dev-only — which is the honest
+   * statement, not a workaround: a gallery that does not exist in production cannot be asserted
+   * against one.
+   *
+   * THE READINESS URL MOVES WITH IT. Playwright polls until it gets a 2xx, and `/design-system`
+   * 404s on a production build — so polling it there would make a perfectly good server look
+   * permanently unready and kill the run on a timeout that says nothing about the cause.
+   */
   webServer: {
-    command: 'npm run dev',
-    url: 'http://127.0.0.1:3000/design-system',
+    command: process.env.E2E_PRODUCTION === '1' ? 'npx next start -p 3000' : 'npm run dev',
+    url:
+      process.env.E2E_PRODUCTION === '1'
+        ? 'http://127.0.0.1:3000/collection'
+        : 'http://127.0.0.1:3000/design-system',
     reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
+    timeout: 180_000,
   },
   projects: QA_WIDTHS.flatMap((width) => [
     {

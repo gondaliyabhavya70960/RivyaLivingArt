@@ -1119,6 +1119,21 @@ CSS only — no scroll listener, no client component, no layout thrash.
 Nav labels, order, hrefs and visibility come from `navigation_items` (SEED §8). The header renders
 whatever is published; it hard-codes no label.
 
+**The search is an inline field from `xl` up, and nothing between `lg` and `xl` — a divergence from
+the "search trigger" above, recorded rather than left silent (Phase 42).** Phase 23 shipped
+`SearchCombobox`, a labelled input with a submit button, where this table says *trigger*. It was
+visible from `lg`, and at 1024 it does not fit: the content box is 930px, the nine published
+top-level items will not compress below 783 once the gap is tightened, and the field will not
+compress below 118 because its submit button is `shrink-0`. Every `(site)` route scrolled sideways
+at that width until the field was moved to `xl`. §8.2 pins the nav and its mega menu at ≥1024, so the
+field was the only one of the three that could move.
+
+What closes the gap is the control this table originally specified: a compact trigger, one control
+wide, that opens the field rather than being it. That is a Phase 45 change. Until it exists, a
+visitor between 1024 and 1279 reaches `/search` by URL or from a page that links it, and
+`tests/e2e/search-combobox-a11y.spec.ts` asserts the field only at and above 1280 — which is the
+threshold it had always used, while its comment said `lg`.
+
 ### 8.2 Mega menu
 
 The Collection item opens a panel. Only the panel and the mobile drawer are client components.

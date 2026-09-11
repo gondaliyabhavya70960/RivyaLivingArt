@@ -34,6 +34,23 @@ import type { SectionRenderProps } from './types'
  * AN `<ol>` BECAUSE THE ORDER IS THE ARGUMENT. Liquid before form before craft before object is
  * the sentence the section is making; a stack of divs would leave a screen reader with four
  * unrelated images.
+ *
+ * THE DIM LANDS ON THE PHOTOGRAPH, NOT ON THE STAGE — Phase 42, found by the axe sweep.
+ *
+ * It used to be `opacity-40` on the `<li>`, and an ancestor's opacity composites EVERYTHING
+ * beneath it, including `MediaFrame`'s fallback label in the slots whose media the owner has
+ * not bound yet. At 40% over DEEP's ground that label measured 2.77:1 against its own well —
+ * and no ink fixes it, because pure white through the same 40% only reaches 4.14:1. The dim
+ * itself was the failure.
+ *
+ * `MediaFrame` already draws this exact distinction one layer down: it gates the veil on
+ * `hasMedia` because "there is no photograph to protect the ink from, and the gradient would
+ * only drag `fallbackLabel` under AA". This is the same rule stated at the stage level. A
+ * stage recedes by dimming its picture; a stage with no picture has nothing to recede, and
+ * its label stays at the 10.42:1 the frame's docstring claims for it.
+ *
+ * Visually identical wherever media exists — the image is `absolute inset-0` and covers the
+ * well completely, so dimming the image and dimming the box paint the same pixels.
  */
 export function MaterialStorySection({
   section,
@@ -59,7 +76,7 @@ export function MaterialStorySection({
               <li
                 key={stage.key}
                 data-entry-key={stage.key}
-                className="transition-opacity duration-500 data-[active=false]:opacity-40 motion-reduce:transition-none"
+                className="[&_img]:transition-opacity [&_img]:duration-500 data-[active=false]:[&_img]:opacity-40 motion-reduce:[&_img]:transition-none"
               >
                 <BlockImage
                   asset={stage.media_index === null ? null : (assets[stage.media_index] ?? null)}

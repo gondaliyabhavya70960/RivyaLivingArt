@@ -43,8 +43,27 @@ import { listMediaAssetsByIds } from '@/lib/supabase/repositories/media'
  *   not rescue it — a grid under a heading nobody has approved is the same failure wearing a
  *   different hat.
  *
- * `generateStaticParams` LISTS PUBLISHED CATEGORIES ONLY. An unpublished one is not pre-rendered
- * and, because the same visibility rule applies at request time, is not reachable either.
+ * THIS ROUTE IS DYNAMIC, AND IT HAD TO BECOME SO — Phase 42.
+ *
+ * It used to declare `generateStaticParams`, listing the published categories so the seven pages
+ * were pre-rendered. That is contradictory with the rest of the route: `generateMetadata` and the
+ * page both `await searchParams`, because the filters, the sort and the page number live in the
+ * query string. Next pre-rendered the page as static and then, at request time, refused it:
+ *
+ *     Error: Page changed from static to dynamic at runtime /collection/furniture,
+ *     reason: `await searchParams`, `searchParams.then`, or similar
+ *
+ * **Every category page answered 500 in a production build.** `next build` succeeds — the error is
+ * at request time, not at build time — so CI, which built the site and never asked it for a page,
+ * reported green throughout. It surfaced the first time Phase 42's browser suite ran against
+ * `next start` rather than `next dev`, where `/collection/not-a-real-category` came back 500 where
+ * a 404 was expected and the real categories came back 500 too.
+ *
+ * Removing `generateStaticParams` makes the route dynamic, which is what a page whose content
+ * depends on the query string already is — `/collection`, `/journal` and `/search` all read
+ * `searchParams` with no static params and have always been dynamic for the same reason. The
+ * visibility rule is unchanged and still applied per request: an unpublished category is not
+ * reachable, and an unknown slug is `notFound()`.
  */
 
 type Params = { readonly category: string }
@@ -60,11 +79,6 @@ const MODEL_CATEGORY_SLUG = '3d-resin'
 const PINNED_HEADING_KEY = 'UI_LABEL.merchandising.pinned'
 
 const BASE = '/collection'
-
-export async function generateStaticParams(): Promise<Params[]> {
-  const categories = await listCategories(createPublicClient())
-  return categories.map((category) => ({ category: category.slug }))
-}
 
 /** The category row for this slug, or null. One read, shared by metadata and the render. */
 async function categoryFor(slug: string) {

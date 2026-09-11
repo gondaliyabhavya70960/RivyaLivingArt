@@ -68,6 +68,17 @@ test.describe('the publication readiness gate', () => {
     hero_media_id: 'm1',
     seo_title: 'A Piece',
     seo_description: 'Described.',
+    /*
+     * THE SPECIFICATIONS DECISION, WITHOUT WHICH THIS PRODUCT IS NOT COMPLETE — added in Phase 42,
+     * the first time this spec ran anywhere.
+     *
+     * `Specifications` is met when a product carries specs OR declares that it has none, and that
+     * is the business rule rather than a technicality: a piece with no dimensions listed is either
+     * missing them or genuinely has none, and only a person can say which. `COMPLETE` claimed to be
+     * a fully-populated product and answered neither, so `unmetForPublish` correctly reported one
+     * unmet item and the assertion below — that a complete product has nothing unmet — failed.
+     */
+    specifications_omitted: true,
   }
 
   test('names Hero image when it is missing, rather than refusing without a reason', () => {

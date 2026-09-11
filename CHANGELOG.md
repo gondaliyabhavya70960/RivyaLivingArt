@@ -12,13 +12,18 @@ The test system the previous forty-one phases wrote specs against. One determini
 browser suite that actually runs, a visual tier, coverage thresholds that mean something, and the CI
 to run all of it.
 
-**It found four production defects on its first run.** The worst: no enquiry could be saved, in any
-environment, since Phase 41 — `submit-inquiry.ts` wrote a 32-character rate-limiter digest into a
-column whose CHECK demands 64, so the database refused every insert and the site's one
-non-negotiable business rule had never completed successfully. Also: nothing had ever been written
-to `system_logs` (seven RPC parameters sent as `undefined`, which `supabase-js` drops); the
-catalogue's product cards were not links, twenty-seven phases after the component's own comment
-promised the anchor; and two listing pages skipped a heading level.
+**It found eight production defects.** The worst: no enquiry could be saved, in any environment,
+since Phase 41 — `submit-inquiry.ts` wrote a 32-character rate-limiter digest into a column whose
+CHECK demands 64, so the database refused every insert and the site's one non-negotiable business
+rule had never completed successfully. Also: nothing had ever been written to `system_logs` (seven
+RPC parameters sent as `undefined`, which `supabase-js` drops); the catalogue's product cards were
+not links, twenty-seven phases after the component's own comment promised the anchor; two listing
+pages skipped a heading level; the product gallery's thumbnail strip was zero pixels tall on every
+product page; every `/collection/[category]` page returned 500 in a production build, because
+`generateStaticParams` cannot coexist with `await searchParams` and `next build` reports it as a
+success; the home page's material story dimmed a stage with `opacity-40`, which composited the
+media well's label down to 2.77:1; and every page scrolled sideways at 1024px, where the masthead's
+inline search field will not fit beside a nine-item nav.
 
 #### Added
 
@@ -47,12 +52,38 @@ promised the anchor; and two listing pages skipped a heading level.
   written
 - `ProductCard` carries the heading anchor and `::after` overlay Phase 15 promised
 - `cardHeadingLevel` derives a card's heading level from whether its section rendered one
+- `ProductGallery/Thumbnails` wraps its `MediaImage` in an `AspectBox`, so the strip has a height
+- `/collection/[category]` no longer declares `generateStaticParams`, so reading `searchParams` at
+  request time is legal and the page renders instead of throwing
+- `MaterialStorySection` dims the stage's photograph rather than the whole stage, so the
+  media-unavailable label keeps the 10.42:1 `MediaFrame` claims for it
+- `scripts/a11y/check-contrast.mjs` checks `--rv-surface-sunken`, which appeared in no token pair
+- The masthead's search field appears from `xl` rather than `lg`, and the desktop nav's item gap
+  tightens between the two, so the row fits at 1024. Between 1024 and 1279 there is no search
+  control in the masthead; DESIGN_SYSTEM §8.1 asks for a compact search trigger, which is what would
+  close that, and it is a Phase 45 change
 
 #### Changed
 
 - `docs/ops/TESTING.md` rewritten, including a new §13 naming what the suite still cannot see
 - Coverage thresholds set to the measured figures as a ratchet, with the 80% target and what it
   would take recorded in `vitest.config.ts`
+- The browser suite runs against a production build (`E2E_PRODUCTION=1` switches Playwright's web
+  server to `next start`, and `e2e.yml` builds first). A dev server answers
+  `no-cache, must-revalidate` to everything, so four caching assertions could never pass in one, and
+  two specs counted module-graph requests a production bundle never makes
+- `tests/integration/seed-idempotency.test.ts` creates a caretaker owner around its `--reset` check.
+  `enforce_last_owner` refuses to leave the project with no active owner, and on a database built
+  the way CI builds one the fixture's owner is the only one — the test had been passing only on
+  databases carrying staff rows from other runs
+- The visual suite runs against a production build and injects its stabilising stylesheet after the
+  navigation rather than before it. Injected before, it landed in `about:blank` and was discarded —
+  so animations, carets and the dev-overlay rule had never applied, and the development server's
+  own dev-tools badge was photographed into the baselines in whichever state it happened to be in.
+  All 33 baselines regenerated from the database state `e2e.yml` produces
+- CI runs the eight behavioural width projects and not the three visual ones: a runner rasterises
+  text differently from this container by more than a page of it absorbs. `npm run test:visual`
+  stays the local check, and `docs/ops/TESTING.md` §3 records what would change that
 
 
 ### Phase 44 — Vercel Deployment (DEVELOPMENT COMPLETE; drills and tests outstanding)

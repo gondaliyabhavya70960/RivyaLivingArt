@@ -1,8 +1,8 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { roleHasPermission, rolesWithPermission } from '@/lib/auth/permissions'
 import { ratioDrift } from '@/lib/media/crop'
-import { callerAddress } from '@/lib/security/rate-limit'
+import { callerAddress, hashAddress } from '@/lib/security/rate-limit'
 import type { MediaCropRow } from '@/lib/media/crop'
 
 /**
@@ -100,5 +100,60 @@ describe('callerAddress', () => {
   it('falls back to something rather than throwing when no header is present', () => {
     const request = new Request('https://rivyalivingart.com/api/vitals')
     expect(typeof callerAddress(request)).toBe('string')
+  })
+})
+
+describe('the salt the hashes are keyed with', () => {
+  /**
+   * FOUR SOURCES IN PRIORITY ORDER, AND THE LAST IS A PUBLIC LITERAL.
+   *
+   * `salt()` reads `IP_HASH_SALT`, then `RATE_LIMIT_SALT`, then the service-role key, then falls
+   * back to the string `rivya`. That fallback is the branch worth pinning: with it in play, every
+   * stored `ip_hash` is derived from a value anybody can read in this repository, so the whole
+   * corpus is reversible by anybody who can guess an address — which is why
+   * `scripts/ops/check-env.ts` requires `IP_HASH_SALT` in production and says exactly that.
+   *
+   * The test asserts the PRIORITY rather than any value: that a configured salt changes the digest,
+   * and that the four sources are consulted in order. It never prints a salt, and the values below
+   * are obviously synthetic.
+   */
+  const KEYS = ['IP_HASH_SALT', 'RATE_LIMIT_SALT', 'SUPABASE_SERVICE_ROLE_KEY'] as const
+  const saved: Record<string, string | undefined> = {}
+
+  beforeEach(() => {
+    for (const key of KEYS) {
+      saved[key] = process.env[key]
+      delete process.env[key]
+    }
+  })
+
+  afterEach(() => {
+    for (const key of KEYS) {
+      if (saved[key] === undefined) delete process.env[key]
+      else process.env[key] = saved[key]
+    }
+  })
+
+  it('falls back to a public literal when nothing is configured', () => {
+    // The digest is still well-formed — the danger is that it is guessable, not that it is absent.
+    expect(hashAddress('203.0.113.10')).toMatch(/^[a-f0-9]{64}$/)
+  })
+
+  it('consults the four sources in priority order', () => {
+    const unconfigured = hashAddress('203.0.113.10')
+
+    process.env['SUPABASE_SERVICE_ROLE_KEY'] = 'not-a-real-key-3'
+    const fromServiceKey = hashAddress('203.0.113.10')
+    expect(fromServiceKey, 'the service-role key is not consulted').not.toBe(unconfigured)
+
+    process.env['RATE_LIMIT_SALT'] = 'not-a-real-salt-2'
+    const fromRateLimit = hashAddress('203.0.113.10')
+    expect(fromRateLimit, 'RATE_LIMIT_SALT does not outrank the service-role key').not.toBe(
+      fromServiceKey,
+    )
+
+    process.env['IP_HASH_SALT'] = 'not-a-real-salt-1'
+    const fromIpHash = hashAddress('203.0.113.10')
+    expect(fromIpHash, 'IP_HASH_SALT does not outrank RATE_LIMIT_SALT').not.toBe(fromRateLimit)
   })
 })

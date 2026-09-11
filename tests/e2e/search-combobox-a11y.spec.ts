@@ -13,14 +13,19 @@ import { expect, test } from '@playwright/test'
  * reach `/search` — the combobox is an enhancement over a `<form method="get">`, and if the bundle
  * fails the visitor must still be able to search.
  *
- * IT RUNS AT THE DESKTOP WIDTHS ONLY. Below `lg` the box is hidden and the drawer is the whole
- * menu, so asserting it at 360px would be asserting the absence of something deliberately absent.
+ * IT RUNS AT THE DESKTOP WIDTHS ONLY. Below `xl` the box is hidden — below `lg` because the drawer
+ * is the whole menu, and between `lg` and `xl` because the masthead has no room for it beside a
+ * nine-item nav (SiteHeader says so at the call site, with the arithmetic). Asserting it at 360px
+ * would be asserting the absence of something deliberately absent.
+ *
+ * The 1280 below was always right; the comment beside it used to say `lg`, and the component said
+ * `lg` too, which is how every page came to scroll sideways at 1024 until Phase 42.
  */
 
 const DESKTOP = 1280
 
 test.describe('the header search combobox', () => {
-  test.skip(({ viewport }) => (viewport?.width ?? 0) < DESKTOP, 'hidden below lg by design')
+  test.skip(({ viewport }) => (viewport?.width ?? 0) < DESKTOP, 'hidden below xl by design')
 
   test('is a combobox before anything is typed', async ({ page }) => {
     await page.goto('/search')

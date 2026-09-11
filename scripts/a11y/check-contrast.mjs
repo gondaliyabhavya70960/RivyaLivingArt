@@ -53,6 +53,21 @@ const PAIRS = [
     ratio: 4.5,
     what: 'secondary text on a card',
   },
+  /*
+   * THE MEDIA WELL — Phase 42.
+   *
+   * `MediaFrame` paints `--rv-surface-sunken` and, when no media resolves, writes the SEED §47
+   * label on it in `--rv-ink-secondary`. Its docstring claims 10.42:1 on DEEP and 9.88:1 on BONE
+   * for exactly this pair, and until now nothing checked the claim: the sunken surface appeared in
+   * no pair here, so a scheme could have moved its well under the label and the gate would have
+   * stayed green. Every unbound media slot on the live site renders this text.
+   */
+  {
+    ink: '--rv-ink-secondary',
+    surface: '--rv-surface-sunken',
+    ratio: 4.5,
+    what: 'the media-unavailable label on its well',
+  },
   // Tertiary is used for captions and metadata, which are body-sized in this product.
   { ink: '--rv-ink-tertiary', surface: '--rv-surface-ground', ratio: 4.5, what: 'tertiary text' },
   {

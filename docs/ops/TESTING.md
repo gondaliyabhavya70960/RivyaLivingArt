@@ -187,11 +187,38 @@ differently**: motion (animations disabled rather than waited out), images (answ
 every lazy image forced to decode before the shutter), time (the clock frozen by an init script, so
 a component that reads it during its first render sees the frozen value) and carets.
 
+**And a fifth, which is not on the page at all: the development server's own dev-tools indicator.**
+It floats over a corner, renders collapsed or expanded depending on what it has to say and when it
+is asked, and photographed both ways — which is what made `/large-format` at 390px differ from a
+baseline generated one run earlier with no code in between. There was already a rule hiding it, and
+the rule was doing nothing: `addStyleTag` injects into the document that is open when it runs, and
+it ran before `page.goto`, so the whole stylesheet landed in `about:blank` and was discarded by the
+navigation it was meant to stabilise. It is injected in `settle()` now, after the navigation and
+before the shutter.
+
+**The visual suite runs against a production build** (`npm run test:visual` builds first and sets
+`E2E_PRODUCTION=1`), which is the real answer to that class of difference: no dev overlay exists
+there, and a baseline of a development server is a baseline of a page no visitor is ever served.
+None of the tiered routes is dev-only, so nothing is lost by it.
+
+**A baseline is reproducible from the documented database state and no other**: `npm run db:reset`,
+`npm run seed:content`, then `npx tsx scripts/test/seed-fixture.ts --publish-seeded` — the same three
+steps `e2e.yml` runs. Regenerating against a database that has accumulated rows from other suites
+produces baselines nobody else can reproduce, and it did: the catalogue was 673px taller in the
+committed baseline than the fixture's four products can make it.
+
 **A baseline belongs to the container that made it.** Font rasterisation differs between machines by
 a pixel here and there — under the tolerance for a paragraph, over it for a page of them. The
 committed baselines were produced in this repository's pinned image. To rewrite them in CI, dispatch
 `e2e.yml` with `update_snapshots` and download the artefact; an ordinary run never rewrites one,
 because a baseline that changed on a push would be a visual regression committing itself.
+
+**So CI does not compare baselines — `npm run test:visual` is a local check.** An ordinary `e2e.yml`
+run executes the eight behavioural width projects and skips the three visual ones, because a GitHub
+runner rasterises text differently from this container by more than a page of it can absorb: every
+tier-A page would fail on every push, and a gate that is always red is a gate nobody reads. What
+would change that is a baseline set produced on the runner image itself — dispatch with
+`update_snapshots`, commit the artefact, and the visual projects can join the ordinary run.
 
 ## 4. The tests that exist because a business rule exists
 
@@ -321,7 +348,7 @@ Three workflows, and they fail for different reasons.
 | Workflow | Trigger | What it answers | Roughly |
 |---|---|---|---|
 | `ci.yml` | every push, every PR | Is the code correct? Types, lint, format, 24 gates, 2,907 unit tests, 632 RLS tests, 29 integration tests, migrations replayed from empty, a production build through the local PostgREST shim | 6 min |
-| `e2e.yml` | push to `main`, PR to `main`, dispatch | Is the page correct? The browser and visual suites, sharded four ways | 4 shards × ~8 min |
+| `e2e.yml` | push to `main`, PR to `main`, dispatch | Is the page correct? The browser suite against a production build, sharded four ways | 4 shards × ~8 min |
 | `security.yml` | push, PR, Mondays 04:00 UTC, dispatch | Has a secret reached the history? Does a shipped dependency carry a high-severity advisory? | 2 min |
 
 **A red `ci` means the code is wrong; a red `e2e` means the page is wrong.** They are separate
@@ -332,6 +359,16 @@ wait for Chromium.
 belongs to a job rather than to a workflow. That costs a minute per shard and buys complete
 isolation. Failures upload the report and traces for 14 days — after a fortnight nobody opens a
 trace, and the storage is not free.
+
+**The browser suite runs against `next start`, not `next dev` (`E2E_PRODUCTION=1`).** A development
+server answers `no-cache, must-revalidate` to everything it serves and rebuilds modules as they are
+requested, so four specs asserting the caching contract — `immutable` on a hashed asset, ISR on a
+CMS page — could not pass in it however correct the code, and two more counted module-graph requests
+the production bundle never makes. The flag switches `playwright.config.ts`'s web server and
+`e2e.yml` builds before it runs. Two consequences worth knowing: `/design-system` calls `notFound()`
+in a production build by design, so its spec skips under the flag with that reason stated; and a
+local re-run needs `rm -rf .next` first, because `next start` will otherwise serve ISR output
+generated against an earlier state of the fixture.
 
 **`security.yml` runs on a schedule as well as on a push**, because an advisory is published against
 code that was already merged. gitleaks reads the **whole history** rather than the diff: a key
@@ -446,6 +483,15 @@ preview with a fixture account or GoTrue added to the local harness. Both are re
 this phase.
 
 **Coverage is measured on the unit project alone**, so the figure understates what is tested. See §7.
+
+**The static contrast gate reads token pairs, and a rendered page composites.** `check-contrast.mjs`
+proves that every ink named in its matrix clears AA on every surface it is paired with, in all three
+schemes — which is the right shape for a design system and cannot, by construction, see an ancestor
+`opacity` blending that ink and that surface into the ground behind them. Phase 42's axe sweep found
+exactly that on the home page: a stage dimmed to 40% took the media well's label from a compliant
+10.42:1 to 2.77:1, and no ink would have fixed it, because pure white through the same 40% reaches
+only 4.14:1. The browser sweep is what covers this class; the static gate is what covers the tokens
+before a page exists to sweep. Neither replaces the other.
 
 **Three public routes have no seeded sections** (`/faq`, `/privacy`, `/terms`), so they 404 and
 every suite skips them. A content gap, not a test gap, and it is the reason the visual baseline count
