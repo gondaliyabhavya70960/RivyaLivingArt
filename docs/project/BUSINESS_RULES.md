@@ -605,6 +605,32 @@ guarantee behind it: `scripts/research/check-no-autoimport.mjs` fails the build 
 anywhere. It permits a first-party READ, because the taxonomy crossing above is by design and a
 guard that refused it would be refusing the design.
 
+**PHASE 35 — THE ONE BRIDGE, AND EXACTLY WHAT IT WRITES.** `startProductFromConfirmation`
+(`app/(studio)/studio/(shell)/research/confirmed/actions.ts`) is the only symbol in the repository
+that writes `products` while importing a research repository. It reads
+`getConfirmationForBridge(id) → { id, stage, archived_at }` — a `.strict()` projection with no
+competitor text in scope — and, given a `CONFIRMED` row with a live decision, `catalog.write`, the
+`research_product_bridge` flag, a slug the person typed, a category they chose and the seeded
+acknowledgement ticked, inserts **exactly** these five fields and nothing else:
+
+| Field | Value |
+|---|---|
+| `slug` | typed by the person |
+| `title` | the slug's title case — a placeholder the owner replaces |
+| `category_id` | chosen by the person |
+| `status` | `DRAFT` |
+| `price_state` | `PRICE_ON_REQUEST` |
+
+No title, description, price, currency, dimension, material, availability, lead time or image
+crosses that line, in any code path, ever; there is no "import fields" option to disable. Proof:
+`lib/scraper/workflows/bridge-draft.ts` is the builder; `tests/unit/confirmation-no-import.test.ts`
+and `tests/unit/rls/phase35.test.ts` put a research row of sentinels through the projection and the
+insert and find none in any column of `products`, `product_media`, `product_materials` or
+`product_collections`. The I4 carve-out is one symbol in one file with one permitted reader,
+encoded in `scripts/research/bridge-isolation.mjs` under `check-research-isolation.mjs` and proved
+to fail on a second writer, a moved symbol and a wider projection (amendment A35, proposed). **The
+flag ships `false`**: the bridge is inert until the owner accepts the amendment by enabling it.
+
 **`CONFIRMED` MEANS "CONFIRMED AS A RESEARCH REFERENCE" AND NOTHING ELSE.** It creates no product,
 no draft product, no media row and no CMS content. The Studio confirm dialog says so in seeded copy
 (`studio.research.confirmMeaning`), because the failure this guards against is not a developer

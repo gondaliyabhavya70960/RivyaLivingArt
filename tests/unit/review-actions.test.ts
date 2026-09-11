@@ -66,13 +66,55 @@ vi.mock('@/lib/supabase/repositories/research/products', () => ({
   setDuplicateOf: track('setDuplicateOf', setDuplicateOf),
 }))
 
-vi.mock('@/lib/scraper/core/stage', () => ({
+vi.mock('@/lib/scraper/core/stage', async (importOriginal) => ({
+  // Phase 35: the movement table and its reason rule are pure and come from the real module.
+  ...(await importOriginal<typeof import('@/lib/scraper/core/stage')>()),
   moveStage: track('moveStage', moveStage),
   setDisposition: track('setDisposition', setDisposition),
   recordEventAtCurrentStage: track('recordEventAtCurrentStage', recordEventAtCurrentStage),
 }))
 
 vi.mock('@/lib/auth/audit', () => ({ writeAudit }))
+
+/*
+ * PHASE 35: the shortlist entry and the confirmation record, mocked at the same boundary. The
+ * entry is opened as the person (session client); the score capture is a read.
+ */
+const getOpenEntry = vi.fn(async () => null)
+const openShortlistEntry = vi.fn(async () => ({ id: 'entry-1' }))
+const closeShortlistEntry = vi.fn(async () => true)
+const readScoreCapture = vi.fn(async () => ({
+  score: null,
+  confidence: null,
+  modelVersion: null,
+  scoredAt: null,
+}))
+const recordConfirmation = vi.fn(async () => ({ id: 'confirmation-1' }))
+const getLiveConfirmation = vi.fn(async () => null)
+const archiveConfirmation = vi.fn(async () => true)
+const logActivity = vi.fn(async () => undefined)
+
+vi.mock('@/lib/supabase/repositories/research/shortlist', () => ({
+  getOpenEntry: track('getOpenEntry', getOpenEntry),
+  openShortlistEntry: track('openShortlistEntry', openShortlistEntry),
+  closeShortlistEntry: track('closeShortlistEntry', closeShortlistEntry),
+  readScoreCapture: track('readScoreCapture', readScoreCapture),
+  recordConfirmation: track('recordConfirmation', recordConfirmation),
+  getLiveConfirmation: track('getLiveConfirmation', getLiveConfirmation),
+  archiveConfirmation: track('archiveConfirmation', archiveConfirmation),
+}))
+
+vi.mock('@/lib/logging/activity', () => ({ logActivity }))
+
+/** The reads an action makes before it writes. The write-order claim is about the writes. */
+const READS = new Set([
+  'getResearchProduct',
+  'getOpenEntry',
+  'getLiveConfirmation',
+  'readScoreCapture',
+  'latestStandingAction',
+])
+const writes = () => calls.filter((call) => !READS.has(call.name)).map((call) => call.name)
 
 const {
   DECIDING_ACTIONS,
@@ -138,7 +180,7 @@ describe('the write order', () => {
   it('records the action before the effect and stamps the decision last', async () => {
     await shortlistProduct(SESSION, ADMIN, input)
 
-    const order = calls.map((call) => call.name)
+    const order = writes()
     expect(order[0]).toBe('recordAction')
     expect(order.indexOf('markDecided')).toBe(order.length - 1)
     expect(order.indexOf('moveStage')).toBeGreaterThan(order.indexOf('recordAction'))
@@ -195,9 +237,40 @@ describe('the rules each action carries', () => {
     )
   })
 
-  it('accepts the other seven without one', async () => {
+  it('accepts the other six without one', async () => {
     await expect(reviewChange(SESSION, ADMIN, input)).resolves.toBeDefined()
-    await expect(confirmProduct(SESSION, ADMIN, input)).resolves.toBeDefined()
+    await expect(shortlistProduct(SESSION, ADMIN, input)).resolves.toBeDefined()
+  })
+
+  it('refuses CONFIRM without a decision note, and confirms only a shortlisted row (Phase 35)', async () => {
+    getResearchProduct.mockResolvedValue({ id: 'p1', stage: 'SHORTLISTED' })
+    await expect(confirmProduct(SESSION, ADMIN, input)).rejects.toBeInstanceOf(ReviewActionError)
+    await expect(
+      confirmProduct(SESSION, ADMIN, { ...input, reason: 'A reference for the console family.' }),
+    ).resolves.toBeDefined()
+    // The decision record is written as the PERSON, after the stage moved, and the entry closes.
+    const names = writes()
+    expect(names.indexOf('moveStage')).toBeLessThan(names.indexOf('recordConfirmation'))
+    expect(calls.find((call) => call.name === 'recordConfirmation')?.client).toBe('session')
+    expect(names).toContain('closeShortlistEntry')
+
+    getResearchProduct.mockResolvedValue({ id: 'p1', stage: 'REVIEW' })
+    await expect(
+      confirmProduct(SESSION, ADMIN, { ...input, reason: 'too early' }),
+    ).rejects.toBeInstanceOf(ReviewActionError)
+  })
+
+  it('opens a shortlist entry as the person when the row lands on the shortlist (Phase 35)', async () => {
+    await shortlistProduct(SESSION, ADMIN, { ...input, reason: 'Right scale for the atrium.' })
+    // The stage mock leaves the row at MATCHED, so no entry opens; move it and it does.
+    getResearchProduct.mockResolvedValue({ id: 'p1', stage: 'SHORTLISTED' })
+    calls.length = 0
+    await shortlistProduct(SESSION, ADMIN, { ...input, reason: 'Right scale for the atrium.' })
+    expect(calls.find((call) => call.name === 'openShortlistEntry')?.client).toBe('session')
+    expect(openShortlistEntry).toHaveBeenLastCalledWith(
+      expect.anything(),
+      expect.objectContaining({ reason: 'Right scale for the atrium.' }),
+    )
   })
 
   it('refuses a row that is its own duplicate', async () => {

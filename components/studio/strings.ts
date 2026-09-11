@@ -6811,6 +6811,250 @@ export const STUDIO_STRINGS = {
     value: 'not yet written',
     contentKey: 'studio_help.research_dir_not_written',
   },
+
+  /*
+   * PHASE 35 — the shortlist, the confirmed list and the one bridge.
+   */
+  'studio.research.slHeading': {
+    value: 'Shortlist',
+    contentKey: 'studio_help.research_sl_heading',
+  },
+  'studio.research.slIntro': {
+    value:
+      'Rows a merchandiser set aside, with the reason and the score as it stood. A row leaving the shortlist closes its entry; nothing here is deleted.',
+    contentKey: 'studio_help.research_sl_intro',
+  },
+  'studio.research.slEmpty': {
+    value: 'Nothing is shortlisted.',
+    contentKey: 'studio_help.research_sl_empty',
+  },
+  'studio.research.slEmptyBody': {
+    value:
+      'Shortlist a row from the review queue, the explorer or the large-format workspace and it appears here with its reason.',
+    contentKey: 'studio_help.research_sl_empty_body',
+  },
+  'studio.research.slColRow': {
+    value: 'Row',
+    contentKey: 'studio_help.research_sl_col_row',
+  },
+  'studio.research.slColScore': {
+    value: 'Score at entry',
+    contentKey: 'studio_help.research_sl_col_score',
+  },
+  'studio.research.slColAge': {
+    value: 'On the list',
+    contentKey: 'studio_help.research_sl_col_age',
+  },
+  'studio.research.slColTags': {
+    value: 'Tags',
+    contentKey: 'studio_help.research_sl_col_tags',
+  },
+  'studio.research.slColReason': {
+    value: 'Reason',
+    contentKey: 'studio_help.research_sl_col_reason',
+  },
+  'studio.research.slColOpenedBy': {
+    value: 'Shortlisted by',
+    contentKey: 'studio_help.research_sl_col_opened_by',
+  },
+  'studio.research.slNotScored': {
+    value: 'not scored',
+    contentKey: 'studio_help.research_sl_not_scored',
+  },
+  'studio.research.slFilterAge': {
+    value: 'Open longer than (days)',
+    contentKey: 'studio_help.research_sl_filter_age',
+  },
+  'studio.research.slStaleHeading': {
+    value: 'Open longer than 60 days',
+    contentKey: 'studio_help.research_sl_stale_heading',
+  },
+  'studio.research.slStaleBody': {
+    value: 'A shortlist nobody prunes is a graveyard. These entries have waited longest.',
+    contentKey: 'studio_help.research_sl_stale_body',
+  },
+  'studio.research.slSendBack': {
+    value: 'Send back to review',
+    contentKey: 'studio_help.research_sl_send_back',
+  },
+  'studio.research.slSendBackReason': {
+    value: 'Why it leaves the shortlist. Closes the entry and moves the row back to review.',
+    contentKey: 'studio_help.research_sl_send_back_reason',
+  },
+  'studio.research.slConfirmHelp': {
+    value: 'Confirming needs a decision note. It becomes the record behind the confirmation.',
+    contentKey: 'studio_help.research_sl_confirm_help',
+  },
+  'studio.research.decisionNote': {
+    value: 'Decision note',
+    contentKey: 'studio_help.research_decision_note',
+  },
+  'studio.research.decisionNoteHelp': {
+    value: 'Why this row is a research reference. Required; it is kept with the decision.',
+    contentKey: 'studio_help.research_decision_note_help',
+  },
+  'studio.research.cfHeading': {
+    value: 'Confirmed references',
+    contentKey: 'studio_help.research_cf_heading',
+  },
+  'studio.research.cfIntro': {
+    value:
+      'Research decisions, not products. Each row is a competitor reference somebody confirmed with a note. A Rivya product exists only where a person started one by hand, and it holds nothing copied from here.',
+    contentKey: 'studio_help.research_cf_intro',
+  },
+  'studio.research.cfEmpty': {
+    value: 'No confirmed references.',
+    contentKey: 'studio_help.research_cf_empty',
+  },
+  'studio.research.cfEmptyBody': {
+    value: 'Confirm a shortlisted row with a decision note and it appears here.',
+    contentKey: 'studio_help.research_cf_empty_body',
+  },
+  'studio.research.cfColRow': {
+    value: 'Research row',
+    contentKey: 'studio_help.research_cf_col_row',
+  },
+  'studio.research.cfColNote': {
+    value: 'Decision note',
+    contentKey: 'studio_help.research_cf_col_note',
+  },
+  'studio.research.cfColConfirmedBy': {
+    value: 'Confirmed',
+    contentKey: 'studio_help.research_cf_col_confirmed_by',
+  },
+  'studio.research.cfColBrief': {
+    value: 'Brief',
+    contentKey: 'studio_help.research_cf_col_brief',
+  },
+  'studio.research.cfColProduct': {
+    value: 'Rivya product',
+    contentKey: 'studio_help.research_cf_col_product',
+  },
+  'studio.research.cfColState': {
+    value: 'Decision',
+    contentKey: 'studio_help.research_cf_col_state',
+  },
+  'studio.research.cfIncludeArchived': {
+    value: 'Include archived decisions',
+    contentKey: 'studio_help.research_cf_include_archived',
+  },
+  'studio.research.cfLive': {
+    value: 'Stands',
+    contentKey: 'studio_help.research_cf_live',
+  },
+  'studio.research.cfArchived': {
+    value: 'Archived',
+    contentKey: 'studio_help.research_cf_archived',
+  },
+  'studio.research.cfNoBrief': {
+    value: 'none',
+    contentKey: 'studio_help.research_cf_no_brief',
+  },
+  'studio.research.cfArchive': {
+    value: 'Archive decision',
+    contentKey: 'studio_help.research_cf_archive',
+  },
+  'studio.research.cfArchiveReason': {
+    value:
+      'Why the decision is retired. The row stays a confirmed reference; a fresh decision may follow.',
+    contentKey: 'studio_help.research_cf_archive_reason',
+  },
+  'studio.research.cfReopen': {
+    value: 'Reopen on the shortlist',
+    contentKey: 'studio_help.research_cf_reopen',
+  },
+  'studio.research.cfReopenReason': {
+    value: 'Why it goes back to the shortlist. Archives the decision and opens a fresh entry.',
+    contentKey: 'studio_help.research_cf_reopen_reason',
+  },
+  'studio.research.cfProductNone': {
+    value: 'none started',
+    contentKey: 'studio_help.research_cf_product_none',
+  },
+  'studio.research.cfProductMissing': {
+    value: 'product no longer exists',
+    contentKey: 'studio_help.research_cf_product_missing',
+  },
+  'studio.research.cfProductOpen': {
+    value: 'Open the draft',
+    contentKey: 'studio_help.research_cf_product_open',
+  },
+  'studio.research.cfDecisionLabel': {
+    value: 'Research decision',
+    contentKey: 'studio_help.research_cf_decision_label',
+  },
+  'studio.research.bridgeButton': {
+    value: 'Start a Rivya product',
+    contentKey: 'studio_help.research_bridge_button',
+  },
+  'studio.research.bridgeTitle': {
+    value: 'Start an empty draft product',
+    contentKey: 'studio_help.research_bridge_title',
+  },
+  'studio.research.bridgeIntro': {
+    value:
+      'This creates a DRAFT product with the slug you type and the category you choose, and nothing else. Title is a placeholder from the slug; price is on request; there is no description, dimension, material, image or lead time. You fill it in by hand.',
+    contentKey: 'studio_help.research_bridge_intro',
+  },
+  'studio.research.bridgeSlug': {
+    value: 'Slug',
+    contentKey: 'studio_help.research_bridge_slug',
+  },
+  'studio.research.bridgeSlugHelp': {
+    value:
+      'Lower-case words joined by hyphens, typed by you. It is not taken from the research row.',
+    contentKey: 'studio_help.research_bridge_slug_help',
+  },
+  'studio.research.bridgeCategory': {
+    value: 'Category',
+    contentKey: 'studio_help.research_bridge_category',
+  },
+  'studio.research.bridgeAcknowledge': {
+    value:
+      'I understand that no competitor data is being imported. The draft holds only the slug and category I chose; every other field stays empty for a person to write.',
+    contentKey: 'studio_help.research_bridge_acknowledgement',
+  },
+  'studio.research.bridgeSubmit': {
+    value: 'Create the empty draft',
+    contentKey: 'studio_help.research_bridge_submit',
+  },
+  'studio.research.bridgeCancel': {
+    value: 'Cancel',
+    contentKey: 'studio_help.research_bridge_cancel',
+  },
+  'studio.research.bridgeClose': {
+    value: 'Close',
+    contentKey: 'studio_help.research_bridge_close',
+  },
+  'studio.research.bridgeFlagOff': {
+    value:
+      'The bridge is switched off. It stays off until the owner accepts the narrowing of research isolation recorded as amendment A35 and enables research_product_bridge.',
+    contentKey: 'studio_help.research_bridge_flag_off',
+  },
+  'studio.research.bridgeNeedsPermission': {
+    value: 'Starting a product needs the catalogue write permission.',
+    contentKey: 'studio_help.research_bridge_needs_permission',
+  },
+  'studio.research.bridgeNotAvailable': {
+    value: 'Only a confirmed row with a live decision can start a product.',
+    contentKey: 'studio_help.research_bridge_not_available',
+  },
+  'studio.research.bridgeAlreadyStarted': {
+    value: 'A product was already started from this decision.',
+    contentKey: 'studio_help.research_bridge_already_started',
+  },
+  'studio.research.bridgeStarted': {
+    value: 'The empty draft exists. Open it to write the product.',
+    contentKey: 'studio_help.research_bridge_started',
+  },
+  'studio.research.bridgeSlugTaken': {
+    value: 'That slug is already in use. Choose another.',
+    contentKey: 'studio_help.research_bridge_slug_taken',
+  },
+  'studio.research.bridgeAcknowledgeMissing': {
+    value: 'Tick the acknowledgement before creating the draft.',
+    contentKey: 'studio_help.research_bridge_acknowledge_missing',
+  },
   'studio.research.oppHeading': {
     value: 'Opportunities',
     contentKey: 'studio_help.research_opp_heading',

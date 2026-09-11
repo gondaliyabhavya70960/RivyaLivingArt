@@ -109,6 +109,8 @@ describe('every shipped operation', () => {
       'product.set_status',
       'product.set_tags',
       'product.unpublish',
+      'research.archive_confirmation',
+      'research.close_entry',
       'research.confirm',
       'research.mark_duplicate',
       'research.reject',
@@ -176,11 +178,13 @@ describe('every shipped operation', () => {
    * engine, rather than building a second bulk system with its own confirmation and its own undo.
    * `owningPhase` stays 29 because it still says which phase owns them.
    */
-  it('has all five research operations implemented against the one engine, owned by Phase 29', () => {
+  it('has all seven research operations implemented against the one engine, owned by Phase 29 and 35', () => {
     const research = registeredOperations().filter((operation) =>
       operation.kind.startsWith('research.'),
     )
     expect(research.map((operation) => operation.kind).sort()).toEqual([
+      'research.archive_confirmation',
+      'research.close_entry',
       'research.confirm',
       'research.mark_duplicate',
       'research.reject',
@@ -189,7 +193,12 @@ describe('every shipped operation', () => {
     ])
     for (const operation of research) {
       expect(isAvailable(operation), operation.kind).toBe(true)
-      expect(operation.owningPhase, operation.kind).toBe(29)
+      // Phase 29's five; Phase 35's close_entry and archive_confirmation.
+      expect(operation.owningPhase, operation.kind).toBe(
+        ['research.close_entry', 'research.archive_confirmation'].includes(operation.kind)
+          ? 35
+          : 29,
+      )
       // THE PHASE 04 SPLIT AT THE ENGINE. Every one of the five writes a disposition-bearing
       // column, so a researcher holding `bulk.execute` must not reach in bulk what they cannot
       // reach one row at a time.

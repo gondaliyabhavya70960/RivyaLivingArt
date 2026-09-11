@@ -114,10 +114,17 @@ export async function writeProductStage(
     readonly actorId: string | null
   },
 ): Promise<void> {
-  const { error } = await admin
-    .from('research_products')
-    .update({ stage: input.stage, updated_by: input.actorId, updated_at: new Date().toISOString() })
-    .eq('id', input.id)
+  // Phase 35. The stage-writer guard trigger refuses a change to `stage` or `disposition` unless
+  // the transaction-local flag is set, and PostgREST gives this call no transaction of its own —
+  // so the write goes through research_write_stage(), which sets the flag and updates in one
+  // transaction. Service role only: a session cannot reach the function, and cannot pass the
+  // trigger without it.
+  const { error } = await admin.rpc('research_write_stage', {
+    p_id: input.id,
+    p_stage: input.stage,
+    p_disposition: undefined,
+    p_actor: input.actorId ?? undefined,
+  })
   if (error) throw toRepositoryError(ENTITY, 'stage', input.id, error)
 }
 
@@ -130,14 +137,12 @@ export async function writeProductDisposition(
     readonly actorId: string | null
   },
 ): Promise<void> {
-  const { error } = await admin
-    .from('research_products')
-    .update({
-      disposition: input.disposition,
-      updated_by: input.actorId,
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', input.id)
+  const { error } = await admin.rpc('research_write_stage', {
+    p_id: input.id,
+    p_stage: undefined,
+    p_disposition: input.disposition,
+    p_actor: input.actorId ?? undefined,
+  })
   if (error) throw toRepositoryError(ENTITY, 'disposition', input.id, error)
 }
 

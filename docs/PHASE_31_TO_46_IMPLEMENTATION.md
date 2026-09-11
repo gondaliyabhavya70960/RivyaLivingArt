@@ -483,7 +483,173 @@ See the PR for this phase (`feat(phase-34)`); hash recorded in the final summary
 
 ## Phase 35 — Shortlist + Confirmation
 
-**Status:** NOT STARTED
+**Status:** COMPLETED — reported **COMPLETE-WITH-FLAG-OFF**, as the phase document requires: the
+bridge is built, proved to copy nothing, and switched off (`research_product_bridge = false`) until
+the owner accepts amendment A35 by enabling the flag.
+
+### Objective
+
+Give the FEAT §23 pipeline its workspace and its gate: a record of why a row was shortlisted and by
+whom, a mandatory decision note behind every confirmation, the two screens a merchandiser works in,
+the stage-writer guard at the database, and the one hand-operated bridge from a confirmed research
+row to an **empty** draft product — with no new stage, no enum change, no second transition log and
+no second state machine.
+
+### Requirements Found
+
+`docs/project/phases/PHASE-31-38.md` §Phase 35 (the movement table, the two decision records, the
+guard trigger verbatim, the bridge and its I4 reconciliation, the field-provenance test, the two
+bulk operations, the two screens, 14 verification steps, 14 exit criteria), DATA_MODEL §12 row 35
+(corrected: it said `ARCHIVED_DECISION` and a `research_pipeline_transitions` table; the phase
+document wins — A35), PHASE-23-30 (seven stages, four dispositions, `stage.ts` the only writer).
+
+### Implementation Completed
+
+- **Migrations** `0330_phase35_shortlist_confirmation.sql` (two tables, the guard trigger verbatim,
+  `research_write_stage()` SECURITY DEFINER for the service role only, RLS enabled) and
+  `0331_phase35_rls.sql` (generated: `research.read` select, `research.confirm` insert/update, no
+  anon leg). No `alter type` in either.
+- **Stage machine** — `MOVEMENTS` (eight rows, cell for cell from the phase document), `movementFor`,
+  `requireMovementReason`, `MovementReasonError`, `InvalidStageTransitionError` (= the Phase 25
+  error), `isLegalMove` admits `MATCHED → SHORTLISTED`. `writeProductStage` /
+  `writeProductDisposition` now call the RPC that carries the flag; `match.ts`'s two session-client
+  disposition writes moved to the admin client.
+- **Review actions** — Shortlist opens an entry (score captured from the newest opportunity score)
+  and from CONFIRMED archives the decision and reopens; Confirm requires a decision note, admits only
+  a shortlisted row (or a confirmed row whose decision was archived), records the confirmation as the
+  person, closes the entry, logs `research.product.confirmed`; `returnToReview`; `archiveDecision`
+  (audit row, no pipeline event).
+- **Bulk** — `research.close_entry`, `research.archive_confirmation` (one audit row per row), and
+  Phase 29's five rerouted through `moveStage` / `setDisposition` with their own `undoItem`
+  (`research.confirm` now takes the decision note); `RESEARCH_BULK_CAP = 200` refused by name in
+  `previewResearchBulkAction`; the two new surfaces in the redirect allowlist; the reason field for
+  the four reason-bearing kinds.
+- **Studio** — `/studio/research/shortlist` (open entries oldest first; score at entry with
+  confidence; age; tags; reason; Confirm with note, Send back to review, Reject; source and
+  "open longer than N days" filters; stale-60-days panel; `PipelineBulkBar`) and
+  `/studio/research/confirmed` (research-decision label and Stands/Archived pill; note; confirming
+  person; brief link; product-started link resolved by `resolveStartedProducts`; Archive and Reopen
+  with reasons; `StartProductDialog`); the decision note on `RowActionBar`; the dashboard's
+  stale-entry count; ~60 Studio strings and three seeded `STUDIO_HELP` rows including the
+  acknowledgement.
+- **The bridge** — `startProductFromConfirmation` in `confirmed/actions.ts`: flag, `catalog.write`,
+  `getConfirmationForBridge` (`.strict()` `{ id, stage, archived_at }`), slug + category +
+  acknowledgement `yes`, claim-first `markProductStarted` (conditional on nothing started),
+  `insertProduct` of exactly five fields from `lib/scraper/workflows/bridge-draft.ts`, release on a
+  failed insert, audit + activity rows.
+- **Guards** — `scripts/research/bridge-isolation.mjs` (+ `.d.mts`) under I4: one writer file, the
+  symbol defined there only, research imports limited to the reader and the two claim writers;
+  `checkCreatedProductResolution()`; `check-no-autoimport.mjs` admits `insertProduct` in that file
+  only.
+- **Registries** — `PHASE_35_POLICIES`, table permissions, `gen-role-sql` preamble, check-schema
+  tiers, flag `research_product_bridge`, activity actions `research.product.started` /
+  `research.product.confirmed`, DATA_MODEL §12 row corrected, `lib/supabase/database.types.ts`.
+
+### Files Added
+
+`supabase/migrations/0330_phase35_shortlist_confirmation.sql`, `0331_phase35_rls.sql`;
+`lib/supabase/schemas/research-shortlist.ts`; `lib/supabase/repositories/research/shortlist.ts`;
+`lib/scraper/workflows/bridge-draft.ts`; `lib/bulk/operations/research/close-entry.ts`,
+`archive-confirmation.ts`; `app/(studio)/studio/(shell)/research/confirmed/actions.ts`;
+`components/studio/research/PipelineBulkBar.tsx`, `StartProductDialog.tsx`;
+`scripts/research/bridge-isolation.mjs`, `bridge-isolation.d.mts`;
+`tests/unit/pipeline-transitions.test.ts`, `confirmation-no-import.test.ts`,
+`tests/unit/rls/phase35.test.ts`, `tests/e2e/research-shortlist-confirm.spec.ts`.
+
+### Files Modified
+
+`lib/scraper/core/stage.ts`, `lib/scraper/workflows/review-actions.ts`, `match.ts`;
+`lib/supabase/repositories/research/products.ts`, `review.ts`; `lib/bulk/operations/research/
+index.ts`, `lib/bulk/research-surface.ts`; `app/(studio)/studio/(shell)/research/{shortlist,
+confirmed,dashboard}/page.tsx`, `changes/actions.ts`, `bulk-actions.ts`;
+`components/studio/research/BulkToolbar.tsx`, `RowActionBar.tsx`, `components/studio/strings.ts`;
+`content/seed/studio-help.ts`; `lib/auth/table-permissions.ts`, `lib/flags/flags.ts`,
+`lib/logging/activity.ts`, `lib/supabase/database.types.ts`; `scripts/auth/gen-role-sql.ts`,
+`scripts/db/check-schema.mjs`, `scripts/research/check-research-isolation.mjs`,
+`check-no-autoimport.mjs`; `eslint.config.mjs`; tests `research-isolation`, `review-actions`,
+`bulk-engine`, `research-selection`, `research-no-autoimport`, `rls/phase25`, `rls/phase29`;
+docs SCRAPER §26, STUDIO_GUIDE §12.12–12.13, BUSINESS_RULES BR-F2, DATA_MODEL §11.ab + §12,
+CANONICAL-DECISIONS A35, COMPONENT_REGISTRY RC-334/335, CHANGELOG, PROJECT_STATE, SESSION-STATE.
+
+### Database Changes
+
+Two tables, two functions, one trigger, six generated policies, four indexes. `research_stage`
+still seven values, `research_disposition` four. No foreign key from `research_confirmations` to
+`products`.
+
+### Supabase Changes
+
+`0330`–`0331` applied to `ccvarsmzickdkryoakdg` with comment-stripped SQL, ledger rows carrying the
+local files' SHA-256, parity digest local vs hosted: 95 ledger rows on both; digests by object kind for the phase's objects identical on both databases — tables 2 (`7fd8d809…`), constraints 18 (`88855f4b…`), indexes 6 (`16d5b2e5…`), policies 6 (`cf91bc40…`), trigger 1 (`3c891a68…`), functions 2 (`3613bfb3…`, after `alter function … set search_path` on both sides and the ledger checksum updated to the final file). Security advisors: no new finding attributable to Phase 35 once `guard_research_stage_writer()` carries `set search_path` (added over the verbatim body for the `function_search_path_mutable` lint); the remaining WARN/INFO rows pre-date this phase (inquiry RPCs, `has_role`, `schema_migrations` RLS without policies).
+
+### Environment Variables
+
+None added.
+
+### GitHub Actions Changes
+
+None. `ci.yml` runs the new unit and RLS suites through the existing steps.
+
+### Tests Performed
+
+- `npm run check`: exit 0 (every gate green; the six pre-existing `no-html-link-for-pages` warnings only).
+- Unit project (`npx vitest run --project unit`): 164 files, 2,601 tests, all passing.
+- RLS project (`RLS_TESTS_REQUIRED=1`, local PostgreSQL 16 after `db:reset` + `seed:content`):
+  28 files, 589 tests, all passing, including `phase35.test.ts` (12 cases: enums unchanged, RLS on, no anon leg, no key to
+  products, the guard refuses bare `stage` and `disposition` updates, `research_write_stage()` is
+  service-role only, entry and confirmation constraints, orthogonality, archival, the sentinel test
+  at the database).
+- Verification 3 (the guard-widening proof) performed by hand: adding `getLiveConfirmation` to the
+  bridge file's research import fails `findBridgeViolations` naming the symbol; the
+  `research-isolation` suite carries the same fixture permanently. The `.strict()` projection
+  refuses a widened row in `confirmation-no-import`.
+- Production build through the local PostgREST shim: exit 0 (Next.js 16.3.4, compiled and type-checked); `security:check-bundle`:
+  clean — no service-role key name, role name or service_role JWT in `.next/static`.
+- Playwright `research-shortlist-confirm.spec.ts`: written; the signed-in half is guarded by
+  `STUDIO_STORAGE_STATE` and could not run in this container (no Studio session), as for every
+  Studio spec since Phase 23.
+
+### Issues Found
+
+1. The stage-writer trigger's transaction-local flag cannot be set by `stage.ts` under PostgREST
+   (no transaction handle) — resolved with `research_write_stage()`.
+2. The bulk engine's generic snapshot restore writes `stage` directly and would be refused by the
+   trigger — resolved with per-operation `undoItem`s through the machine.
+3. Three existing RLS tests updated `stage`/`disposition` directly (`phase25`, `phase29`) — adapted.
+4. `research-no-autoimport`'s "CONFIRM calls nothing else" assertion listed two calls; Phase 35's
+   confirm makes ten, all research writes or reads — the allowlist was updated and a negative check
+   for catalogue writes added.
+5. The migration header said "contains no `alter type`", which the spec's `grep -c` would count —
+   reworded.
+6. `bridge-isolation.d.mts` needed `declare` for the lint parser.
+
+### Issues Fixed
+
+All six above. No open issue.
+
+### Build Status
+
+Green. `npm run check` exit 0; unit 164/2,601; RLS 28/589; production build exit 0; bundle clean.
+
+### Deployment Status
+
+Hosted schema level through `0331`. Vercel deploys from `main` on merge; the two screens render on
+production once an owner user exists (hosted `auth.users` is still empty — Phase 44 checklist item 1).
+The bridge is off on production by default (`feature_flags` row absent → off).
+
+### Commit
+
+See the PR for this phase (`feat(phase-35)`); hash recorded in the final summary.
+
+### Remaining Notes
+
+- **COMPLETE-WITH-FLAG-OFF.** Enabling `research_product_bridge` in `/studio/system/flags` is the
+  owner's acceptance of amendment A35 (the I4 narrowing). Until then the button is disabled with the
+  reason and a direct POST is refused.
+- `stage-guard-trigger.test.ts` lives as a describe block inside `tests/unit/rls/phase35.test.ts`
+  (it needs a database; the unit project is offline by gate).
+- The spec's `PipelineBulkBar` wraps the Phase 29 toolbar rather than duplicating it; the "confirm
+  dialog" it asks for is the engine's preview → typed-count → apply step.
 
 ## Phase 35b — Demo catalogue + image prompt book
 

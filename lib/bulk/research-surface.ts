@@ -20,7 +20,19 @@
 export const RESEARCH_BULK_SURFACES = [
   '/studio/research/large-format',
   '/studio/research/changes',
+  '/studio/research/shortlist',
+  '/studio/research/confirmed',
 ] as const
+
+/**
+ * Phase 35: no research bulk action takes more than this many rows in one invocation.
+ *
+ * LOWER THAN THE ENGINE'S `MAX_SELECTION`, AND CHECKED BEFORE THE ENGINE SEES THE SELECTION. The
+ * phase document's risk is "a bulk action moves 4,000 rows and nobody can explain why"; the cap,
+ * the mandatory reason and one audit row per row are the three halves of the answer. The action
+ * refuses above it with a message naming the number.
+ */
+export const RESEARCH_BULK_CAP = 200
 
 export type ResearchBulkSurface = (typeof RESEARCH_BULK_SURFACES)[number]
 
@@ -46,6 +58,8 @@ export const RESEARCH_FILTER_KEYS = [
   'materiality',
   'decided',
   'age',
+  // Phase 35: the confirmed list's "include archived" toggle.
+  'archived',
 ] as const
 
 export function researchBulkQuery(raw: unknown): URLSearchParams {
@@ -76,6 +90,11 @@ export function researchBulkParams(
 ): Record<string, unknown> {
   switch (kind) {
     case 'research.reject':
+    // Phase 35: the movement table requires a reason for these three — the decision note, the
+    // closing reason and the archival reason respectively.
+    case 'research.confirm':
+    case 'research.close_entry':
+    case 'research.archive_confirmation':
       return { reason: read('reason') }
     case 'research.mark_duplicate':
       return { survivingProductId: read('surviving_product_id') }

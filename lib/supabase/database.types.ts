@@ -3992,6 +3992,77 @@ export type Database = {
           },
         ]
       }
+      research_confirmations: {
+        Row: {
+          id: string
+          research_product_id: string
+          decision_note: string
+          brief_id: string | null
+          confirmed_at: string
+          confirmed_by: string
+          created_product_id: string | null
+          product_started_at: string | null
+          product_started_by: string | null
+          archived_at: string | null
+          archived_reason: string | null
+        }
+        Insert: {
+          id?: string
+          research_product_id: string
+          decision_note: string
+          brief_id?: string | null
+          confirmed_at?: string
+          confirmed_by: string
+          created_product_id?: string | null
+          product_started_at?: string | null
+          product_started_by?: string | null
+          archived_at?: string | null
+          archived_reason?: string | null
+        }
+        Update: {
+          id?: string
+          research_product_id?: string
+          decision_note?: string
+          brief_id?: string | null
+          confirmed_at?: string
+          confirmed_by?: string
+          created_product_id?: string | null
+          product_started_at?: string | null
+          product_started_by?: string | null
+          archived_at?: string | null
+          archived_reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'research_confirmations_brief_id_fkey'
+            columns: ['brief_id']
+            isOneToOne: false
+            referencedRelation: 'research_direction_briefs'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'research_confirmations_confirmed_by_fkey'
+            columns: ['confirmed_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'research_confirmations_product_started_by_fkey'
+            columns: ['product_started_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'research_confirmations_research_product_id_fkey'
+            columns: ['research_product_id']
+            isOneToOne: false
+            referencedRelation: 'research_products'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       research_direction_brief_evidence: {
         Row: {
           id: string
@@ -5504,6 +5575,74 @@ export type Database = {
         }
         Relationships: []
       }
+      research_shortlist_entries: {
+        Row: {
+          id: string
+          research_product_id: string
+          reason: string
+          captured: Json
+          brief_id: string | null
+          opened_at: string
+          opened_by: string
+          closed_at: string | null
+          closed_reason: string | null
+          closed_by: string | null
+        }
+        Insert: {
+          id?: string
+          research_product_id: string
+          reason: string
+          captured?: Json
+          brief_id?: string | null
+          opened_at?: string
+          opened_by: string
+          closed_at?: string | null
+          closed_reason?: string | null
+          closed_by?: string | null
+        }
+        Update: {
+          id?: string
+          research_product_id?: string
+          reason?: string
+          captured?: Json
+          brief_id?: string | null
+          opened_at?: string
+          opened_by?: string
+          closed_at?: string | null
+          closed_reason?: string | null
+          closed_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'research_shortlist_entries_brief_id_fkey'
+            columns: ['brief_id']
+            isOneToOne: false
+            referencedRelation: 'research_direction_briefs'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'research_shortlist_entries_closed_by_fkey'
+            columns: ['closed_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'research_shortlist_entries_opened_by_fkey'
+            columns: ['opened_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'research_shortlist_entries_research_product_id_fkey'
+            columns: ['research_product_id']
+            isOneToOne: false
+            referencedRelation: 'research_products'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       research_similarity_pairs: {
         Row: {
           id: string
@@ -6693,6 +6832,10 @@ export type Database = {
         Returns: Json
       }
       research_restore_brief_revision: {
+        Args: Record<string, unknown>
+        Returns: Json
+      }
+      research_write_stage: {
         Args: Record<string, unknown>
         Returns: Json
       }

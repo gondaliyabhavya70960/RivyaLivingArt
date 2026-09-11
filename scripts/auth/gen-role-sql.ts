@@ -47,6 +47,7 @@ import {
   PHASE_32_POLICIES,
   PHASE_33_POLICIES,
   PHASE_34_POLICIES,
+  PHASE_35_POLICIES,
   PHASE_19_POLICIES,
   TABLE_POLICY_MAP,
   type ManagedTable,
@@ -551,6 +552,23 @@ const GENERATED: Record<string, { title: string; preamble: string }> = {
 --
 -- PUBLISHED IS UNREACHABLE: the CHECK on research_direction_briefs.status admits four values and
 -- not that one, so no policy here could ever admit a public read. ISOLATION INVARIANT I2 IS
+-- UNCHANGED: not one \`anon\` leg appears below.`,
+  },
+  [PHASE_35_POLICIES]: {
+    title: `-- ${PHASE_35_POLICIES} — Phase 35`,
+    preamble: `-- Policies for the two tables migration 0330 creates. GENERATED from
+-- lib/auth/table-permissions.ts and rewritten whole, so it may hold nothing a human wrote.
+--
+--   \`research_shortlist_entries\`   research.confirm — owner, admin, merchandiser. Why a row was
+--                                   shortlisted and by whom; closed, never deleted.
+--
+--   \`research_confirmations\`       research.confirm — the decision note behind CONFIRMED, archived
+--                                   as a column and never deleted. created_product_id is written by
+--                                   the service role from the hand-operated bridge and carries no
+--                                   foreign key: research never joins the catalogue.
+--
+-- NOT research.write, and the phase document's permission table is explicit about why: a
+-- researcher OPERATES the pipeline; a merchandiser JUDGES its output. ISOLATION INVARIANT I2 IS
 -- UNCHANGED: not one \`anon\` leg appears below.`,
   },
   [PHASE_31_POLICIES]: {

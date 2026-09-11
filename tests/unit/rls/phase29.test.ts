@@ -521,7 +521,9 @@ describeDb('Phase 29 — confirming a research row creates no Rivya product', ()
 
     const before = await counts()
 
-    await db.query(`update research_products set stage = 'CONFIRMED' where id = $1`, [PRODUCT_ID])
+    // Phase 35: a bare update is refused by guard_research_stage_writer(); the machine's door is
+    // research_write_stage(), which sets the flag and writes in one transaction.
+    await db.query(`select research_write_stage($1, 'CONFIRMED', null, null)`, [PRODUCT_ID])
     await db.query(
       `insert into research_review_actions (research_product_id, action, actor_role)
        values ($1, 'CONFIRM', 'merchandiser')`,

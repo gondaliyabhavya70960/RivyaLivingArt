@@ -69,6 +69,16 @@ export async function recordAction(
  * decision from two screens is a race, and the loser should be told rather than silently
  * overwriting the winner's link.
  */
+export async function getAction(client: Client, actionId: string): Promise<ReviewActionRow | null> {
+  const { data, error } = await client
+    .from('research_review_actions')
+    .select(ACTION_COLUMNS)
+    .eq('id', actionId)
+    .maybeSingle()
+  if (error !== null) throw toRepositoryError(ENTITY, 'get action', actionId, error)
+  return (data ?? null) as unknown as ReviewActionRow | null
+}
+
 export async function markUndone(
   admin: Client,
   input: { readonly actionId: string; readonly undoneByActionId: string },
@@ -202,6 +212,20 @@ export async function listProductTags(
  * the second insert an error; treating that error as success would mean swallowing every error on
  * this path, so the upsert says so explicitly instead.
  */
+/** Tags over a set of rows, for a list screen — one query, not one per row. */
+export async function listTagsForProducts(
+  client: Client,
+  productIds: readonly string[],
+): Promise<readonly ProductTagRow[]> {
+  if (productIds.length === 0) return []
+  const { data, error } = await client
+    .from('research_product_tags')
+    .select('research_product_id, tag_id, assigned_by, assigned_at')
+    .in('research_product_id', [...productIds])
+  if (error !== null) throw toRepositoryError(ENTITY, 'list tags', String(productIds.length), error)
+  return (data ?? []) as ProductTagRow[]
+}
+
 export async function assignTag(
   client: Client,
   input: { readonly productId: string; readonly tagId: string; readonly actorUserId: string },

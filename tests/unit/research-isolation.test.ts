@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs'
 
-import { describe, expect, it } from 'vitest'
+import { afterAll, describe, expect, it } from 'vitest'
 
 import { emptyDraft, rawProductDraftSchema } from '@/lib/scraper/adapters/draft-schema'
 import { MAX_LINKS_PER_PAGE, rawItemSchema, readRawItem } from '@/lib/scraper/core/raw'
@@ -11,6 +11,11 @@ import {
   snapshotKey,
 } from '@/lib/scraper/core/fetch'
 import { stripCommentsAndStrings } from '@/scripts/db/strip-code.mjs'
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+
+import { BRIDGE_FILE, findBridgeViolations } from '../../scripts/research/bridge-isolation.mjs'
 
 /**
  * The four isolation invariants, and the prohibitions that sit alongside them.
@@ -40,6 +45,10 @@ describe('the guard still guards', () => {
       'checkScraperImports()',
       'checkCatalogImports()',
       'checkStageWriter()',
+      // Phase 34 and Phase 35 extensions of I4.
+      'checkDirectionCoupling()',
+      'checkBridgeCarveOut()',
+      'checkCreatedProductResolution()',
     ]) {
       expect(GUARD).toContain(check)
     }
@@ -228,5 +237,83 @@ describe('reading a page', () => {
     // The date prefix makes "delete everything older than 180 days" a prefix listing; the hash
     // makes an unchanged page cost one object rather than one per day.
     expect(key).toBe('research/acme/2026/03/04/abc123.html.gz')
+  })
+})
+
+/**
+ * PHASE 35 — THE BRIDGE CARVE-OUT IS EXACTLY ONE SYMBOL WIDE (verification 12).
+ *
+ * Three fixtures that must fail: a second server action that writes `products` while importing a
+ * research repository; the bridge symbol defined in another file; the bridge file importing a
+ * wider research reader. And the real tree, which must pass.
+ */
+describe('the bridge carve-out (amendment A35)', () => {
+  const scratch = mkdtempSync(join(tmpdir(), 'bridge-isolation-'))
+  afterAll(() => rmSync(scratch, { recursive: true, force: true }))
+
+  const BRIDGE_SOURCE =
+    "import { insertProduct } from '@/lib/supabase/repositories/catalog-admin'\n" +
+    "import { getConfirmationForBridge, markProductStarted } from '@/lib/supabase/repositories/research/shortlist'\n" +
+    'export async function startProductFromConfirmation() { return [insertProduct, getConfirmationForBridge, markProductStarted] }\n'
+
+  function tree(name: string, files: Readonly<Record<string, string>>): string {
+    const root = join(scratch, name)
+    for (const [path, source] of Object.entries(files)) {
+      mkdirSync(join(root, path, '..'), { recursive: true })
+      writeFileSync(join(root, path), source, 'utf8')
+    }
+    return root
+  }
+
+  it('holds across the repository', () => {
+    expect(findBridgeViolations(process.cwd())).toEqual([])
+  })
+
+  it('admits the bridge file as written', () => {
+    const root = tree('clean', { [BRIDGE_FILE]: BRIDGE_SOURCE })
+    expect(findBridgeViolations(root)).toEqual([])
+  })
+
+  it('fails on a second writer that reads research', () => {
+    const root = tree('second', {
+      [BRIDGE_FILE]: BRIDGE_SOURCE,
+      'app/(studio)/studio/(shell)/research/shortlist/actions.ts':
+        "import { insertProduct } from '@/lib/supabase/repositories/catalog-admin'\n" +
+        "import { getOpenEntry } from '@/lib/supabase/repositories/research/shortlist'\n" +
+        'export async function importIt() { return [insertProduct, getOpenEntry] }\n',
+    })
+    const found = findBridgeViolations(root)
+    expect(found).toHaveLength(1)
+    expect(found[0]).toContain('shortlist/actions.ts')
+  })
+
+  it('fails when the symbol moves to another file', () => {
+    const root = tree('moved', {
+      'lib/scraper/workflows/bridge.ts': BRIDGE_SOURCE,
+    })
+    const found = findBridgeViolations(root)
+    expect(found.some((entry) => entry.includes('defines startProductFromConfirmation'))).toBe(true)
+    expect(found.some((entry) => entry.includes('writes products AND imports'))).toBe(true)
+  })
+
+  it('fails on a wider projection', () => {
+    const root = tree('wider', {
+      [BRIDGE_FILE]: BRIDGE_SOURCE.replace(
+        'getConfirmationForBridge, markProductStarted',
+        'getConfirmationForBridge, getLiveConfirmation, markProductStarted',
+      ),
+    })
+    const found = findBridgeViolations(root)
+    expect(found).toHaveLength(1)
+    expect(found[0]).toContain('getLiveConfirmation')
+  })
+
+  it('ignores a comment that names the symbol', () => {
+    const root = tree('commented', {
+      [BRIDGE_FILE]: BRIDGE_SOURCE,
+      'lib/x/doc.ts':
+        '// function startProductFromConfirmation lives elsewhere\nexport const a = 1\n',
+    })
+    expect(findBridgeViolations(root)).toEqual([])
   })
 })

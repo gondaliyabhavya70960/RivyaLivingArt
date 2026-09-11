@@ -140,18 +140,49 @@ describe('the review path contains no catalogue write', () => {
      * third call is the thing that would need explaining.
      */
     const source = readFileSync(join(REPO, 'lib/scraper/workflows/review-actions.ts'), 'utf8')
+    const start = source.indexOf('export async function confirmProduct')
     const body = source
-      .slice(
-        source.indexOf('export async function confirmProduct'),
-        source.indexOf('/** 7. Add Note. */'),
-      )
+      .slice(start, source.indexOf('\n/**', start))
       .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/^[ \t]*\/\/.*$/gm, '')
 
     const called = [...body.matchAll(/\b([a-zA-Z_][a-zA-Z0-9_]*)\s*\(/gu)]
-      .map((match) => match[1])
-      .filter((name) => name !== 'confirmProduct' && name !== 'async' && name !== 'function')
+      .map((match) => match[1] ?? '')
+      .filter(
+        (name) =>
+          ![
+            'confirmProduct',
+            'async',
+            'function',
+            'if',
+            'for',
+            'while',
+            'switch',
+            'catch',
+          ].includes(name),
+      )
 
-    expect([...new Set(called)].sort()).toEqual(['raiseTo', 'withAction'])
+    /*
+     * PHASE 35 WIDENED THE LIST, AND EVERY ADDITION IS A RESEARCH WRITE OR A READ. The decision
+     * note is recorded in research_confirmations, the shortlist entry is closed, an activity row
+     * says a research reference was confirmed. Not one of them names a catalogue table, and a
+     * name appearing here that is not on this list is the thing that would need explaining.
+     */
+    expect([...new Set(called)].sort()).toEqual([
+      'ReviewActionError',
+      'closeShortlistEntry',
+      'getLiveConfirmation',
+      'getResearchProduct',
+      'logActivity',
+      'moveStage',
+      'recordConfirmation',
+      'requireMovement',
+      'trim',
+      'withAction',
+    ])
     expect(body).toContain("'CONFIRMED'")
+    for (const name of ['insertProduct', 'createProduct', 'upsertProduct', 'createMediaAsset']) {
+      expect(called).not.toContain(name)
+    }
   })
 })

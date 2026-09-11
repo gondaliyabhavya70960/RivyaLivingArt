@@ -150,6 +150,13 @@ const config = [
        * to upload one — and writes the new asset's hash, which has no session write policy.
        */
       'app/(studio)/studio/(shell)/media/actions.ts',
+      /*
+       * Phase 35: the one bridge. `startProductFromConfirmation` runs after `requirePermission(
+       * 'catalog.write')` and inserts the empty draft as the service role — the products insert
+       * policy is the catalogue's, and the claim on the confirmation (`created_product_id`) has no
+       * session write policy by design. The carve-out is enforced by the isolation guard, not here.
+       */
+      'app/(studio)/studio/(shell)/research/confirmed/actions.ts',
     ],
     rules: {
       'no-restricted-imports': [

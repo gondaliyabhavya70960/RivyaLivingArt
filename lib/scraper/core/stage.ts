@@ -64,8 +64,128 @@ export function isLegalMove(from: ResearchStage, to: ResearchStage): boolean {
   if (fromIndex === -1 || toIndex === -1) return false
   if (toIndex === fromIndex) return false
   if (toIndex < fromIndex) return true
-  return toIndex === fromIndex + 1
+  if (toIndex === fromIndex + 1) return true
+  // Phase 35: the one forward jump the movement table names — a MATCHED row may be shortlisted
+  // without first passing through REVIEW, because "review" is what a merchandiser does when
+  // shortlisting it.
+  return MOVEMENTS.some(
+    (movement) => movement.column === 'stage' && movement.from.includes(from) && movement.to === to,
+  )
 }
+
+/**
+ * THE MOVEMENT TABLE — Phase 35, cell for cell from PHASE-31-38 §Phase 35.
+ *
+ * `stage` is the ladder; `disposition` is the verdict; a row carries one of each and neither
+ * moves the other. `tests/unit/pipeline-transitions.test.ts` reads this table and asserts it
+ * matches the document. `reasonRequired` is enforced by the actions and the bulk operations —
+ * a reason becomes `research_shortlist_entries.closed_reason`, `research_confirmations.
+ * decision_note` or `research_confirmations.archived_reason` — and the pipeline event carries it.
+ */
+export interface Movement {
+  readonly column: 'stage' | 'disposition'
+  readonly from: readonly string[]
+  readonly to: string
+  readonly permission: 'research.confirm'
+  readonly reasonRequired: boolean
+  readonly note: string
+}
+
+export const MOVEMENTS: readonly Movement[] = [
+  {
+    column: 'stage',
+    from: ['MATCHED', 'REVIEW'],
+    to: 'SHORTLISTED',
+    permission: 'research.confirm',
+    reasonRequired: false,
+    note: "Phase 29's Shortlist action; opens a shortlist entry",
+  },
+  {
+    column: 'stage',
+    from: ['SHORTLISTED'],
+    to: 'CONFIRMED',
+    permission: 'research.confirm',
+    reasonRequired: true,
+    note: 'the reason becomes research_confirmations.decision_note; closes the entry',
+  },
+  {
+    column: 'stage',
+    from: ['SHORTLISTED'],
+    to: 'REVIEW',
+    permission: 'research.confirm',
+    reasonRequired: true,
+    note: 'closes the shortlist entry',
+  },
+  {
+    column: 'stage',
+    from: ['CONFIRMED'],
+    to: 'SHORTLISTED',
+    permission: 'research.confirm',
+    reasonRequired: true,
+    note: 'archives the confirmation and reopens the entry',
+  },
+  {
+    column: 'disposition',
+    from: ['NONE'],
+    to: 'IGNORED',
+    permission: 'research.confirm',
+    reasonRequired: false,
+    note: '',
+  },
+  {
+    column: 'disposition',
+    from: ['NONE'],
+    to: 'REJECTED',
+    permission: 'research.confirm',
+    reasonRequired: true,
+    note: '',
+  },
+  {
+    column: 'disposition',
+    from: ['NONE'],
+    to: 'DUPLICATE',
+    permission: 'research.confirm',
+    reasonRequired: true,
+    note: 'plus a surviving row for duplicate_of_id',
+  },
+  {
+    column: 'disposition',
+    from: ['IGNORED', 'REJECTED', 'DUPLICATE'],
+    to: 'NONE',
+    permission: 'research.confirm',
+    reasonRequired: true,
+    note: '',
+  },
+]
+
+/** The movement a change matches, or null when the table has no row for it. */
+export function movementFor(column: Movement['column'], from: string, to: string): Movement | null {
+  return (
+    MOVEMENTS.find(
+      (movement) =>
+        movement.column === column && movement.from.includes(from) && movement.to === to,
+    ) ?? null
+  )
+}
+
+/** Refuse a movement the table requires a reason for, when none was given. */
+export function requireMovementReason(movement: Movement | null, reason: string | null): void {
+  if (movement !== null && movement.reasonRequired && (reason === null || reason.trim() === '')) {
+    throw new MovementReasonError(movement)
+  }
+}
+
+export class MovementReasonError extends Error {
+  constructor(readonly movement: Movement) {
+    super(
+      `${movement.from.join('/')} → ${movement.to} needs a reason: ${movement.note || 'the table says so'}.`,
+    )
+    this.name = 'MovementReasonError'
+  }
+}
+
+/** The phase document's name for the same error. */
+export { StageTransitionError as InvalidStageTransitionError }
 
 export class StageTransitionError extends Error {
   constructor(

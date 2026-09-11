@@ -46,7 +46,15 @@ export interface ResearchTagChoice {
 
 /** Which extra field an operation needs. Derived from the kind, so a new operation is one case. */
 function fieldFor(kind: string): 'reason' | 'survivor' | 'tag' | 'none' {
-  if (kind === 'research.reject') return 'reason'
+  if (
+    kind === 'research.reject' ||
+    // Phase 35: the decision note, the closing reason and the archival reason.
+    kind === 'research.confirm' ||
+    kind === 'research.close_entry' ||
+    kind === 'research.archive_confirmation'
+  ) {
+    return 'reason'
+  }
   if (kind === 'research.mark_duplicate') return 'survivor'
   if (kind === 'research.set_tags') return 'tag'
   return 'none'

@@ -39,10 +39,13 @@ const QUEUE = 'app/(studio)/studio/(shell)/research/changes/page.tsx'
 const ACTIONS = 'app/(studio)/studio/(shell)/research/bulk-actions.ts'
 
 describe('the surface allowlist', () => {
-  it('accepts exactly the two screens that carry a selection', () => {
+  it('accepts exactly the four screens that carry a selection', () => {
+    // Phase 35 adds the shortlist and the confirmed list to Phase 29's two.
     expect([...RESEARCH_BULK_SURFACES]).toEqual([
       '/studio/research/large-format',
       '/studio/research/changes',
+      '/studio/research/shortlist',
+      '/studio/research/confirmed',
     ])
     for (const surface of RESEARCH_BULK_SURFACES) {
       expect(researchBulkSurface(surface)).toBe(surface)
@@ -129,8 +132,21 @@ describe('the parameters each operation collects', () => {
 
   it('sends an empty object for the operations that take no parameters', () => {
     // `noParams` is `.strict()`, so a stray field would be a refusal rather than an ignored value.
-    for (const kind of ['research.shortlist', 'research.confirm', 'anything.else']) {
+    for (const kind of ['research.shortlist', 'anything.else']) {
       expect(researchBulkParams(kind, form({ reason: 'ignored' })), kind).toEqual({})
+    }
+  })
+
+  it('collects the reason Phase 35’s movement table requires', () => {
+    // The decision note, the closing reason and the archival reason, respectively.
+    for (const kind of [
+      'research.confirm',
+      'research.close_entry',
+      'research.archive_confirmation',
+    ]) {
+      expect(researchBulkParams(kind, form({ reason: 'because' })), kind).toEqual({
+        reason: 'because',
+      })
     }
   })
 

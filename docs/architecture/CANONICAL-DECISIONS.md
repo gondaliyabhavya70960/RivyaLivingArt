@@ -186,6 +186,38 @@ Brand and editorial copy may be written; anything asserting business capability 
 
 ## Amendments
 
+**2026-09-11 · A35 (proposed; inert until the owner enables the flag) — Phase 35 narrows
+invariant I4 to "no automatic and no field-copying path" with one named carve-out, the
+hand-operated bridge `startProductFromConfirmation`; alters no enum and corrects DATA_MODEL §12's
+row for the phase; `0331` is its generated policy file (D5, DATA_MODEL §11.ab and §12, SCRAPER §26,
+BUSINESS_RULES BR-F2, PHASE-31-38 §Phase 35 open question 11).**
+
+- **The carve-out, exactly.** I4 as literally written ("no code path writes `products` from a
+  `research_*` read") would fail the bridge the phase document specifies, and asserting compliance
+  would be a lie. The narrowed rule: no AUTOMATIC and no FIELD-COPYING path from research to the
+  catalogue, with ONE carve-out — the symbol `startProductFromConfirmation`, defined in
+  `app/(studio)/studio/(shell)/research/confirmed/actions.ts` and nowhere else, reading
+  `getConfirmationForBridge(id) → { id, stage, archived_at }` and the two claim writers
+  `markProductStarted` / `releaseProductStart`, and inserting exactly `slug`, `title` (the slug's
+  title case), `category_id`, `status = 'DRAFT'`, `price_state = 'PRICE_ON_REQUEST'`. The guard is
+  the specification: `scripts/research/bridge-isolation.mjs` under `check-research-isolation.mjs`
+  fails the build on a second writer, a moved symbol or a wider projection, and
+  `check-no-autoimport.mjs` admits `insertProduct` in that file only.
+- **Proposed, not accepted.** The owner has not accepted the narrowing explicitly. The bridge
+  therefore ships behind `research_product_bridge = false`; `/studio/research/confirmed` renders
+  the button disabled with the reason, a direct POST is refused with the flag reason, and Phase 35
+  is reported COMPLETE-WITH-FLAG-OFF. Enabling the flag is the acceptance.
+- **No enum change.** DATA_MODEL §12's row for Phase 35 said `research_stage += ARCHIVED_DECISION`
+  and a `research_pipeline_transitions` table; the phase document says archival is a column on
+  the decision record and there is no second transition log, and the phase document wins. The row
+  is corrected to `0330`–`0331`, no enum change, no second log.
+- **The flag the trigger checks is carried by one function.** `guard_research_stage_writer()` is
+  verbatim from the phase document; because PostgREST gives the repository no transaction of its
+  own, `research_write_stage()` (SECURITY DEFINER, service role only) sets the transaction-local
+  flag and writes in one call. `stage.ts` stays the only writer; the trigger enforces it at a
+  second layer, as the document asks, and defines no transitions.
+- **`0331` is the generated policy file**, one past the document's `0330`, for A23's reason.
+
 **2026-09-11 · A34 — Phase 34 files a brief under a checked category slug and adds no third
 research→public reference (open question 13); `0321` is its generated policy file; approval is a
 trigger-held permission; direction briefs are a nested segment of the `opportunities` leaf (D4,
