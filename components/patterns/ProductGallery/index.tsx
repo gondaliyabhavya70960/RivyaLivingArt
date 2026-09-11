@@ -64,6 +64,8 @@ export function ProductGallery({
                 // Only the first is eager: it is the largest thing above the fold on this route,
                 // and making the rest eager would fight it for bandwidth on a phone.
                 eager={position === 0}
+                // Phase 40: the first frame is this route's LCP element.
+                priority={position === 0}
               />
             </li>
           ))}

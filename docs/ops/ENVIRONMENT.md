@@ -359,6 +359,8 @@ curl -sS -o /dev/null -w '%{http_code}\n' https://<deployment>/studio/media/all
 
 ### 5.1 Platform-injected variables
 
+**`NEXT_PUBLIC_VERCEL_ENV` — Phase 40, owner-set, not a secret.** Vercel injects `VERCEL_ENV` server-side automatically; the `NEXT_PUBLIC_` copy has to be added in the dashboard per environment (Production = `production`, Preview = `preview`) because only a `NEXT_PUBLIC_` variable is readable in a Client Component. `components/patterns/VitalsReporter` reports field Core Web Vitals only when it reads exactly `production`, so that a preview deployment's numbers cannot mix into the p75 the team reads as the site. Absent, nothing breaks: the reporter never reports and the Studio panel shows its empty state.
+
 `VERCEL_ENV`, `VERCEL_URL`, `VERCEL_GIT_COMMIT_SHA`, `VERCEL_GIT_COMMIT_REF` are injected by the
 platform, are not secrets, and are configured by nobody. They are read for the Environment page's
 build panel, the environment ribbon and `check-env.ts`. D8 does not list them because D8 lists

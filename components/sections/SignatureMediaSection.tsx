@@ -79,6 +79,8 @@ export function SignatureMediaSection({
               strings={strings}
               cloudName={cloudName}
               eager={isFirst}
+              // Phase 40: see HeroSection. Only one section on a page is first.
+              priority={isFirst}
             />
             {payload.is_video && film != null ? (
               <div className="absolute inset-0">

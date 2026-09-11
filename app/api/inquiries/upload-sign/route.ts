@@ -5,6 +5,7 @@ import { z } from 'zod'
 
 import { getMediaProvider } from '@/lib/media'
 import { inquiryFolder } from '@/lib/media/folders'
+import { isSameOrigin } from '@/lib/security/origin'
 import {
   INQUIRY_UPLOAD_WINDOWS,
   bucketKey,
@@ -91,32 +92,8 @@ const bodySchema = z.object({
   submissionId: z.uuid().optional(),
 })
 
-/**
- * Same-origin, checked from `Origin` and falling back to `Referer`.
- *
- * A REQUEST WITH NEITHER IS ALLOWED, and that is not a hole left open by accident: `curl` sends
- * neither, and the phase document's own verification step is a curl. Origin checking defends
- * against a BROWSER being used as a confused deputy — and a browser always sends one of the two on
- * a cross-origin POST. The rate limit is what defends against a script, and it does not care what
- * headers the script sends.
- */
-function sameOrigin(request: Request): boolean {
-  const site = process.env['NEXT_PUBLIC_SITE_URL']
-  const origin = request.headers.get('origin')
-  const referer = request.headers.get('referer')
-  const claimed = origin ?? referer
-  if (claimed === null || claimed === '') return true
-  if (site === undefined || site === '') return true
-
-  try {
-    return new URL(claimed).origin === new URL(site).origin
-  } catch {
-    return false
-  }
-}
-
 export async function POST(request: Request): Promise<NextResponse> {
-  if (!sameOrigin(request)) {
+  if (!isSameOrigin(request)) {
     return NextResponse.json({ error: 'forbidden' }, { status: 403 })
   }
 

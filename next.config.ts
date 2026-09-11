@@ -37,11 +37,25 @@ const nextConfig: NextConfig = {
    */
   headers() {
     const noindex = { key: 'X-Robots-Tag', value: 'noindex, nofollow' }
+    /*
+     * PHASE 40: `private, no-store` ON EVERY STUDIO RESPONSE.
+     *
+     * The caching contract asks for it and, before this phase, Studio answered with no
+     * `Cache-Control` header at all — which does not mean "do not cache". It means every
+     * intermediary applies its own heuristic, and the heuristic for a 200 with a `Last-Modified`
+     * is to keep a copy. A Studio page carries the enquirer names, the draft copy and the research
+     * corpus, so a shared cache holding one is a disclosure rather than a performance note.
+     *
+     * `private` is the half that speaks to proxies and `no-store` the half that speaks to the
+     * browser's own disk cache; both are wanted, because the page after a sign-out must not be in
+     * either.
+     */
+    const noStore = { key: 'Cache-Control', value: 'private, no-store' }
     const vercelEnv = process.env['VERCEL_ENV']
     const preview = vercelEnv !== undefined && vercelEnv !== 'production'
     return Promise.resolve([
-      { source: '/studio', headers: [noindex] },
-      { source: '/studio/:path*', headers: [noindex] },
+      { source: '/studio', headers: [noindex, noStore] },
+      { source: '/studio/:path*', headers: [noindex, noStore] },
       { source: '/api/:path*', headers: [noindex] },
       ...(preview ? [{ source: '/:path*', headers: [noindex] }] : []),
     ])

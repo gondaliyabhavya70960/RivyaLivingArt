@@ -52,6 +52,7 @@ import {
   PHASE_37_POLICIES,
   PHASE_38_POLICIES,
   PHASE_39_POLICIES,
+  PHASE_40_POLICIES,
   PHASE_19_POLICIES,
   TABLE_POLICY_MAP,
   type ManagedTable,
@@ -623,6 +624,18 @@ const GENERATED: Record<string, { title: string; preamble: string }> = {
 --
 -- \`seo_entries\` keeps its 0051 policies (content.write, the same three roles as seo.write); the
 -- Server Actions check seo.write. See the entry in lib/auth/table-permissions.ts.`,
+  },
+  [PHASE_40_POLICIES]: {
+    title: `-- ${PHASE_40_POLICIES} — Phase 40`,
+    preamble: `-- Policies for the one table migration 0380 creates. GENERATED from
+-- lib/auth/table-permissions.ts and rewritten whole, so it may hold nothing a human wrote.
+--
+--   \`web_vitals_samples\`  analytics.read select (every staff role). NO write policy of any kind
+--                          and NO anon leg. The row starts life as an anonymous browser beacon,
+--                          so an anon insert policy would be an unauthenticated write path into
+--                          the database; /api/vitals validates with Zod, rate-limits, and inserts
+--                          as the service role instead. A visitor contributes a sample and can
+--                          never read one back.`,
   },
   [PHASE_31_POLICIES]: {
     title: `-- ${PHASE_31_POLICIES} — Phase 31`,

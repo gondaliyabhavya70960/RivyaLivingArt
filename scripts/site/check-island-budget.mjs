@@ -104,6 +104,25 @@ const ALLOWED = new Map([
     'components/patterns/SearchCombobox/index.tsx',
     'the header search box: suggestions, arrow-key navigation and the ARIA combobox state',
   ],
+  /**
+   * THE SEVENTH, ADDED BY PHASE 40, AND THE ONLY ONE HERE THAT IS NOT INTERACTION.
+   *
+   * Every island above exists because a visitor does something to it. This one exists because the
+   * site needs to know what a visitor's browser actually measured — the lab numbers in
+   * `perf/budgets.json` are one throttled profile in a data centre, and the field data is the other
+   * half of the same question. `web-vitals` reports LCP, CLS, INP, TTFB and FCP from the browser's
+   * own performance timeline, which no Server Component can read.
+   *
+   * WHAT IT COSTS IS A HYDRATION BOUNDARY AND ALMOST NOTHING ELSE. It renders no DOM node; the
+   * library itself is behind a dynamic `import()` inside the effect, so it is not in the first load
+   * at all; and the effect returns immediately in every environment but production and for nine
+   * page views in ten. Counting it anyway is the point of this gate — a boundary is a boundary
+   * whether or not its body runs.
+   */
+  [
+    'components/patterns/VitalsReporter/index.tsx',
+    'reports Core Web Vitals from the browser timeline, which the server cannot read',
+  ],
 ])
 
 /**
@@ -113,11 +132,12 @@ const ALLOWED = new Map([
  * would raise the budget in the same edit and nothing would ever fail. Written out, a seventh
  * island fails this gate even if somebody remembered to list it.
  *
- * RAISED FROM FIVE TO SIX BY PHASE 23, which added the header search box. That is the edit this
- * comment describes and it is the only way the number is allowed to move: deliberately, with the
- * new island named above and a sentence saying why it cannot be a Server Component.
+ * RAISED FROM FIVE TO SIX BY PHASE 23, which added the header search box, and FROM SIX TO SEVEN BY
+ * PHASE 40, which added the vitals reporter. That is the edit this comment describes and it is the
+ * only way the number is allowed to move: deliberately, with the new island named above and a
+ * sentence saying why it cannot be a Server Component.
  */
-const BUDGET = 6
+const BUDGET = 7
 
 const EXTENSIONS = ['.tsx', '.ts', '.mjs', '.js', '.jsx']
 

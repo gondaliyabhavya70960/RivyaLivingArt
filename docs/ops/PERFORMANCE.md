@@ -83,25 +83,59 @@ Metric-compatible fallbacks are declared so a swap costs no layout shift.
 
 ## 3. Per-route budgets
 
-Asserted by Lighthouse CI against a production build. "First-load JS" is gzipped and excludes any
-dynamically imported chunk that is not requested on load. "Islands" counts distinct client-component
-roots.
+**`perf/budgets.json` is the source. The table below renders it and adds nothing.** Phase 40 moved
+these numbers into a file so that the Lighthouse assertions, the four guard scripts and this document
+cannot disagree about them; a number typed in two places is a number that will.
 
-| Route | LCP | First-load JS | Islands | Notes |
-|---|---|---|---|---|
-| `/` | 2.5 s | 180 kB | 3 | Video hero, merchandised selections |
-| `/about`, `/process`, `/large-format` | 2.5 s | 150 kB | 2 | Media-heavy, low interactivity |
-| `/collection`, `/collection/[category]` | 2.5 s | 175 kB | 3 | Filters, sort, mobile filter drawer |
-| `/product/[slug]` | 2.5 s | 190 kB | 4 | Gallery, lightbox, inquiry launcher, viewer mount |
-| `/collections/[slug]` | 2.5 s | 165 kB | 3 | Exhibition composition |
-| `/portfolio`, `/portfolio/[slug]` | 2.5 s | 150 kB | 2 | |
-| `/journal`, `/journal/[slug]`, `/journal/category/[slug]` | 2.0 s | 140 kB | 2 | Text-led |
-| `/custom-commissions` | 2.5 s | 200 kB | 4 | The configurator is the heaviest public client code |
-| `/contact` | 2.0 s | 160 kB | 2 | |
-| `/faq`, `/privacy`, `/terms` | 2.0 s | 120 kB | 1 | |
-| `/search` | 2.0 s | 170 kB | 3 | |
-| 3D viewer chunk | — | 350 kB | — | Measured separately; **never** in a first load |
-| `/studio/**` | — | 320 kB | — | Authenticated, not indexed; INP ≤ 300 ms, CLS ≤ 0.1 |
+"First-load JS" is gzipped and excludes any dynamically imported chunk that is not requested on load
+— `scripts/perf/measure-bundles.mjs` produces exactly that figure by asking a running production
+build for each page and totalling the scripts its HTML tells the browser to fetch. "Islands" counts
+distinct client-component roots (`scripts/perf/island-graph.mjs`).
+
+**Two columns, because a target and a measurement are different claims.** `Target` is what
+PHASE-39-46.md fixed. `Measured` is what the site weighed on the date in §8. Where they differ the gap
+is real and named in §4.5 — it is not quietly raised to whatever was measured. What stops further
+drift meanwhile is `perf/bundle-baseline.json`: CI fails on growth of more than 5% from the recorded
+figure.
+
+**The island budgets are set at the measured count, deliberately.** The phase document's island
+numbers (3 for `/`, 2 for `/about`, 1 for `/faq`) were written before Phase 10 gave the site a shell
+and Phase 23 put search in it. Every public route now inherits five islands it did not choose —
+`SiteErrorCopy`, `MegaMenu`, `MobileNav`, `SearchCombobox`, `VitalsReporter` — and a budget that was
+red from the day it was written would be a budget nobody looked at.
+
+| Route | LCP target | JS target | JS measured | Islands | LCP image |
+|---|---|---|---|---|---|
+| `/` | 2.5 s | 180 kB | 282.0 kB | 7 | yes |
+| `/about` | 2.5 s | 150 kB | 282.0 kB | 7 | yes |
+| `/process` | 2.5 s | 150 kB | 282.0 kB | 7 | yes |
+| `/large-format` | 2.5 s | 150 kB | 282.0 kB | 7 | yes |
+| `/collection` | 2.5 s | 175 kB | 280.8 kB | 7 | yes |
+| `/collection/[category]` | 2.5 s | 175 kB | 280.8 kB | 7 | yes |
+| `/product/[slug]` | 2.5 s | 190 kB | **190.5 kB** | 6 | yes |
+| `/collections/[slug]` | 2.5 s | 165 kB | not measurable | 7 | yes |
+| `/portfolio` | 2.5 s | 150 kB | 282.0 kB | 7 | yes |
+| `/portfolio/[slug]` | 2.5 s | 150 kB | not measurable | 7 | yes |
+| `/journal` | 2.0 s | 140 kB | 280.8 kB | 7 | yes |
+| `/journal/[slug]` | 2.0 s | 140 kB | 282.0 kB | 7 | yes |
+| `/journal/category/[slug]` | 2.0 s | 140 kB | **182.8 kB** | 5 | no — text-led |
+| `/custom-commissions` | 2.5 s | 200 kB | 280.8 kB | 7 | yes |
+| `/contact` | 2.0 s | 160 kB | 282.0 kB | 7 | yes |
+| `/faq` | 2.0 s | 120 kB | not measurable | 7 | yes |
+| `/privacy` | 2.0 s | 120 kB | not measurable | 7 | yes |
+| `/terms` | 2.0 s | 120 kB | not measurable | 7 | yes |
+| `/search` | 2.0 s | 170 kB | **182.8 kB** | 5 | no — text-led |
+| 3D viewer chunk | — | 350 kB | not in any first load | — | — |
+| `/studio/**` | — | 320 kB | not yet measured | ≤ 8 | — |
+
+Transferred bytes for the initial viewport: ≤ 1.6 MB desktop, ≤ 900 kB mobile, every public route.
+
+"Not measurable" means the local content fixture has no live row of that shape, so no page rendered
+to measure: the six seeded sections of `/faq`, `/privacy` and `/terms` are all
+`OWNER_VERIFICATION_REQUIRED` and stay unpublished, and no collection or portfolio project is
+published yet. Phase 42's `scripts/test/seed-fixture.ts` is chartered to produce a complete published
+fixture, and the baseline gains those rows when it exists. `node scripts/perf/check-bundle.mjs --base
+<url>` names every route it could not measure on every run, so the gap cannot go quiet.
 
 ---
 
@@ -164,6 +198,63 @@ The four surfaces where performance is hardest, with their own contracts.
 
 ---
 
+### 4.5 The three findings Phase 40's measurement produced
+
+Publishing a budget is only worth doing if somebody then reads the number. These are what the first
+reading found, both dated 2026-09-11 against a local production build.
+
+#### Finding 1 — every hero on the site was fetched at default priority. FIXED in this phase.
+
+`MediaImage` had a `loading` prop and no priority hint, and `MediaSlot` threaded `eager={isFirst}`
+through to it. So the largest image on every page was correctly un-deferred and then queued behind
+every stylesheet and script the parser had already found. `loading="eager"` stops the browser
+DEFERRING a request; it does nothing about its position in the queue.
+
+The fix is a `priority` prop on `MediaImage` that sets `fetchpriority="high"` as well as eager, and
+`priority={isFirst}` beside the existing `eager={isFirst}` in `HeroSection`, `SignatureMediaSection`
+and the product gallery's first frame. `ResponsiveMedia` passes it to the MOBILE half of a
+desktop/mobile pair only — two high-priority images demote each other, and the constrained device is
+the one the hint is for.
+
+`scripts/perf/check-priority-images.mjs` crawls the built site and fails on a route with none or with
+two. It found ten routes with none before the fix, which is how the defect was found in the first
+place.
+
+#### Finding 2 — the section registry puts ~98 kB gzipped on every CMS route. NOT fixed. Tracked here.
+
+The numbers in §3 fall into two clean groups: routes that render CMS sections weigh 280.8–282.0 kB,
+and routes that do not weigh 182.8–190.5 kB. `/product/[slug]` — a page with a gallery, a lightbox
+and an inquiry launcher — is 90 kB LIGHTER than `/privacy` would be. The one structural difference is
+`components/sections/registry.tsx`, which statically imports all twenty-nine section renderers so
+that any page rendering any section reaches all of them.
+
+The single largest component of the difference is **83.5 kB gzipped (374 kB raw) of Zod**, arriving as
+an eagerly-executed `<script>` on every CMS route and absent from `/product/[slug]`. It is reachable
+only through `lib/cms/forms.ts`, which the configurator and the enquiry form import for client-side
+field validation — and both of those are LAZY islands. Turbopack hoists the shared dependency of a
+lazy module into an eagerly-loaded chunk, so the `import()` boundary does not buy what it looks like
+it buys.
+
+**Why it is not fixed in Phase 40.** Both candidate fixes are architecture rather than tuning, which
+the phase document puts out of scope: making the registry's renderers dynamic changes how every CMS
+page streams, and removing Zod from the client means rewriting the validation of a
+conversion-critical form. Either deserves its own change, measured before and after with the harness
+this phase just built — which is the honest order to do them in.
+
+**What holds the line meanwhile.** `perf/bundle-baseline.json` records 282.0 kB, so nothing may add
+to it beyond 5% without a deliberate, reviewed edit; and `check-bundle.mjs` prints the over-target
+list on every run rather than staying quiet about it.
+
+#### Finding 3 — Studio answered with no `Cache-Control` at all. FIXED in this phase.
+
+The contract asks for `private, no-store` on every Studio response and none was set. An absent header
+does not mean "do not cache": every intermediary applies its own heuristic, and the heuristic for a
+200 with a `Last-Modified` is to keep a copy. A Studio page carries enquirer names, draft copy and the
+research corpus. `next.config.ts` now sets it alongside the Phase 39 `X-Robots-Tag`, and
+`scripts/perf/check-cache-headers.mjs` asserts it.
+
+---
+
 ## 5. The caching contract
 
 Written down once so it is not re-decided per route. `ARCHITECTURE.md` §6 owns the tag taxonomy.
@@ -172,9 +263,10 @@ Written down once so it is not re-decided per route. `ARCHITECTURE.md` §6 owns 
 |---|---|---|
 | CMS pages (13 static paths) | ISR, `revalidate = 3600` | `revalidateTag('page:<path>')` from the publish service |
 | `/product/[slug]` | ISR, `revalidate = 3600`, `generateStaticParams` over published products | `product:<slug>`, `category:<slug>` |
-| `/collection/[category]` unfiltered | ISR, `revalidate = 3600` | `category:<slug>` |
+| `/collection/[category]` unfiltered | **Dynamic, `no-store` — deviation, see below** | `category:<slug>` |
 | `/collection/[category]` filtered | Dynamic; the list is an `unstable_cache` read keyed by the filter tuple, TTL 300 s | `category:<slug>` |
-| `/collections/[slug]`, `/portfolio/**`, `/journal/**` | ISR, `revalidate = 3600` | Per-entity tags |
+| `/collection`, `/journal` (listings) | **Dynamic, `no-store` — deviation, see below** | Per-entity tags |
+| `/collections/[slug]`, `/portfolio/**`, `/journal/[slug]` | ISR, `revalidate = 3600` | Per-entity tags |
 | `/privacy`, `/terms` | ISR, `revalidate = 86400` | `page:<path>` |
 | `/search` | Dynamic, `no-store` | — |
 | `/api/search/suggest` | `public, s-maxage=60, stale-while-revalidate=300` | — |
@@ -188,6 +280,14 @@ server action `app/(site)/_actions/submit-inquiry.ts` — the only public write 
 header of its own; a server action response is never cached. The public API surface that exists is
 exactly the routes named above plus `app/api/search/suggest` and `app/api/auth/sign-out`
 (`ARCHITECTURE.md` §3, `SECURITY.md` §3).
+
+**Three listing routes are dynamic where this table asks for ISR, for one reason.** `/collection`,
+`/collection/[category]` and `/journal` each read `searchParams` — a page number, a filter tuple, a
+sort — and in Next 16 awaiting `searchParams` opts the whole route into dynamic rendering, including
+the request that carries none of them. Serving the unfiltered case from ISR would need a second route
+or a parallel route, which is an architecture change rather than tuning. Verified on 2026-09-11 with
+`scripts/perf/check-cache-headers.mjs`, which encodes what the site actually does — with the `why` on
+the row — so that a change to it is still caught rather than assumed.
 
 **The invalidation rule:** a mutation invalidates the narrowest tags that describe it, plus `chrome`
 only when chrome actually changed. Blanket `revalidatePath('/', 'layout')` is not used — it is how
@@ -239,9 +339,16 @@ mysterious.
 | `connection.effectiveType` | Any identifier of any kind |
 | `deviceMemory` bucket, coarse viewport bucket, nav type | Anything that could become a customer account by accident (D1) |
 
-Retention 90 days. Surfaced in `/studio` and the analytics panel as p75 per metric per route pattern
-over 28 days, **always captioned "sampled at 10 %; lab targets are measured separately"** so nobody
-reads it as complete data (FEAT §28: do not manufacture unavailable analytics).
+Retention 90 days, pruned by the Phase 38 cron at 04:15 UTC. Surfaced on the `/studio` Analytics tab
+(`components/studio/analytics/VitalsCard.tsx`) as p75 per metric per route pattern over 28 days, with
+n beside every figure, **always captioned with the sample rate and the window** so nobody reads it as
+complete data (FEAT §28: do not manufacture unavailable analytics). A route with no samples is absent
+rather than shown as zero.
+
+**The reporter runs in production only.** `web_vitals_samples` has no environment column — one more
+column is one more thing to segment by — so a preview deployment's numbers would mix silently into the
+p75 the team reads as "the site". The gate is a build-time constant (`NEXT_PUBLIC_VERCEL_ENV`), which
+makes the reporter dead code everywhere else.
 
 `tests/unit/vitals-payload.test.ts` asserts the Zod schema rejects `ip`, `userAgent`, `sessionId`,
 `userId` and `url`, and rejects any extra key.
@@ -259,10 +366,19 @@ PHASE-31-38 §Phase 37's open questions and left open here.
 
 ### 7.3 Bundle
 
-`perf/bundle-baseline.json` is committed. `scripts/perf/check-bundle.mjs` diffs the production build
-against it. Growth over 5 % on any route, or any new dependency entering a first-load graph, fails
-until the baseline is regenerated in the same PR with a stated reason a reviewer can see.
-`@next/bundle-analyzer` is wired behind `ANALYZE=1` for investigation.
+`perf/bundle-baseline.json` is committed. `scripts/perf/check-bundle.mjs --base <url>` measures each
+budgeted route against a running production build and diffs it. Growth over 5 % on any route fails
+until the baseline is regenerated in the same change with a stated reason a reviewer can see
+(`npm run perf:baseline`). Without `--base` the same script runs its module-graph half only — the 3D
+exclusion — which needs no build and so belongs in `npm run check`.
+
+**`@next/bundle-analyzer` is deliberately NOT wired, and the phase document's deliverable is recorded
+as a substitution rather than as done.** The analyzer is a webpack plugin; this project builds with
+Turbopack, which has no webpack plugin pipeline, so installing it would add a dependency that cannot
+run and a sentence here that is not true. What replaces it is
+`node scripts/perf/check-bundle.mjs --base <url> --explain <route>`: every chunk the page asks for,
+fetched, gzipped and labelled by marker heuristic, largest first. That is the command that produced
+Finding 2 in §4.5, and it is reproducible by anybody with the site running.
 
 ### 7.4 Headers and third parties
 
@@ -279,40 +395,44 @@ without updating its row is incomplete.
 
 ### 8.1 Public routes
 
-| Route | LCP (lab, p75) | CLS | INP | First-load JS | Islands | Date | Commit |
+**First measured 2026-09-11, Phase 40**, against a local production build (`next start`, seeded
+content, PostgREST shim) with `node scripts/perf/check-bundle.mjs --base http://127.0.0.1:3000`. The
+figures are gzipped bytes of every script the served HTML asks the browser to fetch, which is the
+definition in §3. `perf/bundle-baseline.json` holds the same numbers as data.
+
+**LCP, CLS and INP are still NOT YET MEASURED, and that is a cost decision rather than an oversight.**
+Lighthouse is `workflow_dispatch` only — three Chrome runs per route per push is the most expensive
+thing this repository could add, and the owner's standing instruction is to stay inside the free
+Actions tier. The run is one command against a deployed URL when somebody asks for it
+(`.github/workflows/lighthouse.yml`), and the field data in §7.2 is the other half of the answer.
+
+| Route | LCP (lab, p75) | CLS | INP | First-load JS | Islands | Date | Phase |
 |---|---|---|---|---|---|---|---|
-| `/` | NOT YET MEASURED | NOT YET MEASURED | NOT YET MEASURED | 171.7 kB gz | 5 | 2026-09-08 | Phase 11 |
-| `/about` | NOT YET MEASURED | — | — | — | — | — | — |
-| `/process` | NOT YET MEASURED | — | — | — | — | — | — |
-| `/large-format` | NOT YET MEASURED | — | — | — | — | — | — |
-| `/collection` | NOT YET MEASURED | — | — | — | — | — | — |
-| `/collection/[category]` | NOT YET MEASURED | — | — | — | — | — | — |
-| `/product/[slug]` | NOT YET MEASURED | — | — | — | — | — | — |
-| `/collections/[slug]` | NOT YET MEASURED | — | — | — | — | — | — |
-| `/custom-commissions` | NOT YET MEASURED | — | — | — | — | — | — |
-| `/portfolio` | NOT YET MEASURED | — | — | — | — | — | — |
-| `/portfolio/[slug]` | NOT YET MEASURED | — | — | — | — | — | — |
-| `/journal` | NOT YET MEASURED | — | — | — | — | — | — |
-| `/journal/[slug]` | NOT YET MEASURED | — | — | — | — | — | — |
-| `/journal/category/[slug]` | NOT YET MEASURED | — | — | — | — | — | — |
-| `/contact` | NOT YET MEASURED | — | — | — | — | — | — |
-| `/faq` | NOT YET MEASURED | — | — | — | — | — | — |
-| `/search` | NOT YET MEASURED | — | — | — | — | — | — |
-| `/privacy` | NOT YET MEASURED | — | — | — | — | — | — |
-| `/terms` | NOT YET MEASURED | — | — | — | — | — | — |
+| `/` | NOT YET MEASURED | NOT YET MEASURED | NOT YET MEASURED | 282.0 kB gz | 7 | 2026-09-11 | 40 |
+| `/about` | NOT YET MEASURED | — | — | 282.0 kB gz | 7 | 2026-09-11 | 40 |
+| `/process` | NOT YET MEASURED | — | — | 282.0 kB gz | 7 | 2026-09-11 | 40 |
+| `/large-format` | NOT YET MEASURED | — | — | 282.0 kB gz | 7 | 2026-09-11 | 40 |
+| `/collection` | NOT YET MEASURED | — | — | 280.8 kB gz | 7 | 2026-09-11 | 40 |
+| `/collection/[category]` | NOT YET MEASURED | — | — | 280.8 kB gz | 7 | 2026-09-11 | 40 |
+| `/product/[slug]` | NOT YET MEASURED | — | — | 190.5 kB gz | 6 | 2026-09-11 | 40 |
+| `/collections/[slug]` | NOT YET MEASURED | — | — | no published row to measure | 7 | 2026-09-11 | 40 |
+| `/custom-commissions` | NOT YET MEASURED | — | — | 280.8 kB gz | 7 | 2026-09-11 | 40 |
+| `/portfolio` | NOT YET MEASURED | — | — | 282.0 kB gz | 7 | 2026-09-11 | 40 |
+| `/portfolio/[slug]` | NOT YET MEASURED | — | — | no published row to measure | 7 | 2026-09-11 | 40 |
+| `/journal` | NOT YET MEASURED | — | — | 280.8 kB gz | 7 | 2026-09-11 | 40 |
+| `/journal/[slug]` | NOT YET MEASURED | — | — | 282.0 kB gz | 7 | 2026-09-11 | 40 |
+| `/journal/category/[slug]` | NOT YET MEASURED | — | — | 182.8 kB gz | 5 | 2026-09-11 | 40 |
+| `/contact` | NOT YET MEASURED | — | — | 282.0 kB gz | 7 | 2026-09-11 | 40 |
+| `/faq` | NOT YET MEASURED | — | — | no live section to render | 7 | 2026-09-11 | 40 |
+| `/privacy` | NOT YET MEASURED | — | — | no live section to render | 7 | 2026-09-11 | 40 |
+| `/terms` | NOT YET MEASURED | — | — | no live section to render | 7 | 2026-09-11 | 40 |
+| `/search` | NOT YET MEASURED | — | — | 182.8 kB gz | 5 | 2026-09-11 | 40 |
 
-**What the `/` row is and is not.** The two filled cells were measured, not estimated. **First-load
-JS** is the sum of every `/_next/static/**/*.js` the served HTML references, fetched with gzip from
-a production `next start`: 171.7 kB compressed, 556.6 kB raw — inside Phase 11's 180 kB budget with
-8 kB to spare. **Islands** is `scripts/site/check-island-budget.mjs`'s own count, which is the
-number the gate enforces rather than a reading of a bundle report.
-
-LCP, CLS and INP still read NOT YET MEASURED, and saying so is the point of an empty cell. Running
-Lighthouse against this build would measure a page whose every image is the SEED §47 "media
-unavailable" well — `media_assets` is empty until `npm run media:migrate:higgsfield` runs — so its
-LCP would be a text node and its CLS would be whatever a page with no images does. That number
-would be wrong in the flattering direction, which is worse than no number. The measurement belongs
-to the first deployment with media bound, and the workflow is there for it.
+The Phase 11 row for `/` recorded 171.7 kB against 5 islands on 2026-09-08. The difference is not a
+regression in the same code: that figure was taken a different way (Next 15's build table) before
+Phase 23 added the header search box, Phase 39 added structured data and Phase 40 added the vitals
+reporter, and before this repository had a reproducible definition of the number. The 2026-09-11
+figure is the first one produced by a method anybody can re-run.
 
 ### 8.2 Studio routes
 

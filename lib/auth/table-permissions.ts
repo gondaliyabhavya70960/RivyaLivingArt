@@ -174,6 +174,7 @@ export const PHASE_36_POLICIES = '0341_phase36_sheets_rls.sql'
 export const PHASE_37_POLICIES = '0351_phase37_analytics_rls.sql'
 export const PHASE_38_POLICIES = '0361_phase38_system_logs_rls.sql'
 export const PHASE_39_POLICIES = '0371_phase39_seo_rls.sql'
+export const PHASE_40_POLICIES = '0381_phase40_web_vitals_rls.sql'
 
 export const TABLE_POLICIES = {
   // --- Shape A: content tables ------------------------------------------------------------------
@@ -1894,6 +1895,30 @@ export const TABLE_POLICIES = {
     readPermission: 'content.read',
     writePermission: 'seo.write',
     deletePermission: 'seo.write',
+  },
+
+  /**
+   * `web_vitals_samples` — Phase 40. Field measurements, and the posture is `analytics_snapshots`'
+   * exactly: `analytics.read` to look, nothing to write with.
+   *
+   * NO SESSION WRITE POLICY, AND THE VISITOR WHO PRODUCES THE ROW IS THE REASON. The beacon comes
+   * from an anonymous browser, so the only way a session could insert would be an anon insert
+   * policy — which would hand anyone with the endpoint's shape an unauthenticated write into the
+   * database. Instead `/api/vitals` validates with Zod, rate-limits, and inserts as the service
+   * role, so the table's own policy set can stay empty of writes.
+   *
+   * AND NO ANON SELECT. The visitor contributes a sample and can never read one back; there is
+   * nothing here a public page renders.
+   */
+  web_vitals_samples: {
+    policiesIn: PHASE_40_POLICIES,
+    shape: 'C',
+    readPermission: 'analytics.read',
+    deviation:
+      'Written by the service role only — the row originates in an anonymous browser beacon, and ' +
+      'an anon insert policy would be an unauthenticated write path into the database; ' +
+      '/api/vitals validates, rate-limits and inserts instead. No anon select either: a visitor ' +
+      'contributes a sample and never reads one back.',
   },
 } as const satisfies Record<string, TablePolicy>
 

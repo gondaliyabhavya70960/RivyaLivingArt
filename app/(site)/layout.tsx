@@ -5,6 +5,7 @@ import { JsonLd } from '@/components/patterns/JsonLd'
 import { SiteFooter } from '@/components/patterns/SiteFooter'
 import { SiteErrorCopyProvider } from '@/components/patterns/SiteErrorCopy'
 import { SiteHeader } from '@/components/patterns/SiteHeader'
+import { VitalsReporter } from '@/components/patterns/VitalsReporter'
 import { siteString } from '@/lib/cms/strings'
 import { optionalEnv } from '@/lib/env'
 import { siteJsonLd } from '@/lib/seo/site-graph'
@@ -128,6 +129,15 @@ export default async function SiteLayout({
       </main>
 
       <SiteFooter chrome={chrome} />
+
+      {/*
+       * Phase 40: Core Web Vitals field data, one page view in ten, from production only. It
+       * renders no DOM node — the whole component is an effect — and it is the site's only
+       * unconditional client island that exists for measurement rather than interaction, which is
+       * why it is budgeted by name in `perf/budgets.json`. It sends the route PATTERN and four
+       * coarse buckets, and there is no identifier in the payload or a column for one in the table.
+       */}
+      <VitalsReporter />
     </>
   )
 }

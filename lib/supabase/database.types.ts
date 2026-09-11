@@ -7134,6 +7134,45 @@ export type Database = {
           },
         ]
       }
+      web_vitals_samples: {
+        Row: {
+          id: string
+          route_pattern: string
+          metric: string
+          value: number
+          rating: string
+          nav_type: string | null
+          effective_type: string | null
+          device_memory_bucket: string | null
+          viewport_bucket: string | null
+          occurred_at: string
+        }
+        Insert: {
+          id?: string
+          route_pattern: string
+          metric: string
+          value: number
+          rating: string
+          nav_type?: string | null
+          effective_type?: string | null
+          device_memory_bucket?: string | null
+          viewport_bucket?: string | null
+          occurred_at?: string
+        }
+        Update: {
+          id?: string
+          route_pattern?: string
+          metric?: string
+          value?: number
+          rating?: string
+          nav_type?: string | null
+          effective_type?: string | null
+          device_memory_bucket?: string | null
+          viewport_bucket?: string | null
+          occurred_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
