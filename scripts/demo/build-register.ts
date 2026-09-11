@@ -72,7 +72,7 @@ w()
 w('| Never | Why | What the rows carry instead |')
 w('|---|---|---|')
 w(
-  '| A price | A number would be a price the business never set, on a live site | `PRICE_ON_REQUEST` on all 30 |',
+  `| A price | A number would be a price the business never set, on a live site | \`PRICE_ON_REQUEST\` on all ${String(DEMO_PRODUCTS.length)} |`,
 )
 w(
   '| A dimension | A visitor reading `2400 × 1100 mm` has been told a fact | `dimensions` is null |',

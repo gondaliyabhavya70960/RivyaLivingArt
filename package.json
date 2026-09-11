@@ -34,6 +34,7 @@
     "demo:seed": "tsx scripts/demo/seed-demo.ts",
     "demo:purge": "tsx scripts/demo/purge-demo.ts",
     "demo:register": "tsx scripts/demo/build-register.ts",
+    "demo:sql": "tsx scripts/demo/build-sql.ts",
     "demo:check-register": "npm run demo:register && git diff --exit-code docs/content/DEMO_CONTENT.md",
     "db:check-schema": "node scripts/db/check-schema.mjs",
     "db:check-hosted-layout": "node scripts/db/check-hosted-layout.mjs",

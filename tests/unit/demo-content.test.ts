@@ -34,9 +34,18 @@ const ALL_TEXT = [
 ].join('\n')
 
 describe('demo products', () => {
-  it('are the thirty the register names, with unique slugs', () => {
-    expect(DEMO_PRODUCTS).toHaveLength(30)
-    expect(new Set(DEMO_PRODUCTS.map((p) => p.slug)).size).toBe(30)
+  it('are the thirty-five the register names, with unique slugs', () => {
+    // Thirty from Phase 21; five added in Phase 35b where a category was thin.
+    expect(DEMO_PRODUCTS).toHaveLength(35)
+    expect(new Set(DEMO_PRODUCTS.map((p) => p.slug)).size).toBe(35)
+  })
+
+  it('cover every seeded category with at least four pieces (Phase 35b)', () => {
+    const counts = new Map<string, number>()
+    for (const product of DEMO_PRODUCTS) {
+      counts.set(product.category, (counts.get(product.category) ?? 0) + 1)
+    }
+    for (const [category, count] of counts) expect(count, category).toBeGreaterThanOrEqual(4)
   })
 
   it('only ever use the seven seeded categories', () => {

@@ -6,6 +6,20 @@ Every phase adds an entry; see `docs/architecture/CANONICAL-DECISIONS.md` D9 for
 
 ## [Unreleased]
 
+### Phase 35b — Demo catalogue + image prompt book (content track)
+
+The owner-authorised placeholder catalogue grows from thirty to **thirty-five** pieces (one more
+collectible study, two decor pieces, two gifts — every category now holds at least four), still
+`is_demo`, still `PRICE_ON_REQUEST`, still no dimension, material, lead time or claim. Every demo
+row is now on the hosted project: 35 products, the 10 article bodies (7 published, 3 waiting for
+the owner), 6 DRAFT projects and 6 DRAFT testimonials. `npm run demo:sql` prints the seed (or the
+purge, `--purge`) as idempotent SQL for environments the seeder cannot connect to, which is how the
+hosted rows were written. `docs/ASSET_GENERATION_PROMPTS.md` (the D7 path amendment A31 added)
+carries one ChatGPT prompt per product hero and one room scene per furniture piece — 45 entries,
+each with its planned asset ID, dimensions, filename, exact slot and `Cloudinary Status:
+WAITING_FOR_UPLOAD` — under the transparency rule recorded as amendment A36: a generated product
+image is a concept visualisation, registered and labelled as one, never presented as a photograph.
+
 ### Phase 35 — Shortlist + Confirmation (COMPLETE-WITH-FLAG-OFF)
 
 The FEAT §23 pipeline gets its workspace and its gate. **No new stage, no enum change, no second

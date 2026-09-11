@@ -54,7 +54,9 @@ export interface DemoProduct {
 }
 
 /**
- * Thirty pieces across the seven seeded categories.
+ * Thirty-five pieces across the seven seeded categories (thirty from Phase 21, five added in
+ * Phase 35b where a category was thin, on the owner's instruction that the demo catalogue should
+ * hold around thirty pieces with an image prompt for each — see docs/ASSET_GENERATION_PROMPTS.md).
  *
  * The names describe a FORM, not a piece the studio has made — "Live-Edge Dining Table, River
  * Channel" says what kind of object a commission produces. That is the offering, which is real; the
@@ -302,7 +304,7 @@ export const DEMO_PRODUCTS: readonly DemoProduct[] = [
     isCustomizable: true,
   },
 
-  // --- collectible design (3) -------------------------------------------------------------------
+  // --- collectible design (4) -------------------------------------------------------------------
   {
     slug: 'collectible-form-study-one',
     title: 'Form Study I',
@@ -330,8 +332,17 @@ export const DEMO_PRODUCTS: readonly DemoProduct[] = [
       'Everything that gets lost at room distance — the movement inside the pour, the meeting of resin and timber, the finish — is what this panel is for.',
     category: 'collectible-design',
   },
+  {
+    slug: 'collectible-form-study-three',
+    title: 'Form Study III',
+    subtitle: 'A vertical reading of the same question',
+    summary: 'A third study, turned upright so the pour is read against gravity.',
+    description:
+      'The first two studies lie flat and are read from above. This one stands, so the movement inside the material is read top to bottom and the weight of the pour becomes part of what it says.',
+    category: 'collectible-design',
+  },
 
-  // --- decor (2) --------------------------------------------------------------------------------
+  // --- decor (4) --------------------------------------------------------------------------------
   {
     slug: 'decor-tray-serving',
     title: 'Serving Tray',
@@ -351,8 +362,28 @@ export const DEMO_PRODUCTS: readonly DemoProduct[] = [
       'Cut from what a larger commission leaves behind, so a set carries the same colour direction as the table it came from. Availability depends entirely on what has recently been made.',
     category: 'decor',
   },
+  {
+    slug: 'decor-catch-all-bowl',
+    title: 'Catch-All Bowl',
+    subtitle: 'A shallow bowl for the things a hallway collects',
+    summary: 'A shallow bowl developed for keys, post and whatever a day leaves by the door.',
+    description:
+      'A catch-all is filled and emptied every day, so the inside surface is the piece. The composition sits in the base where it is seen when the bowl is empty and half-hidden when it is not.',
+    category: 'decor',
+    isCustomizable: true,
+  },
+  {
+    slug: 'decor-bookends-pair',
+    title: 'Bookends, Matched Pair',
+    subtitle: 'Two weights cut from one pour',
+    summary: 'A pair of bookends cut from a single cast so the two halves belong together.',
+    description:
+      'Cut from one block, the pair carries one movement split in two, and a shelf reads it as a single piece interrupted by books. Weight does the work; the form stays quiet.',
+    category: 'decor',
+    isCustomizable: true,
+  },
 
-  // --- gifts (2) --------------------------------------------------------------------------------
+  // --- gifts (4) --------------------------------------------------------------------------------
   {
     slug: 'gift-desk-piece',
     title: 'Desk Piece',
@@ -370,5 +401,25 @@ export const DEMO_PRODUCTS: readonly DemoProduct[] = [
     description:
       'Solid, heavy and read from every side. The composition is entirely internal, which is the clearest demonstration of what depth does in resin.',
     category: 'gifts',
+  },
+  {
+    slug: 'gift-ring-dish',
+    title: 'Ring Dish',
+    subtitle: 'A small dish for one small thing',
+    summary: 'A shallow dish for a ring, a watch or a pair of earrings at the end of the day.',
+    description:
+      'Small enough to sit on a bedside table and read at arm’s length, so the surface is developed for close looking. One colour direction, one movement, nothing that competes with what is placed in it.',
+    category: 'gifts',
+    isCustomizable: true,
+  },
+  {
+    slug: 'gift-keepsake-box',
+    title: 'Keepsake Box',
+    subtitle: 'A lidded box with the composition in the lid',
+    summary: 'A small box whose lid carries the piece and whose body stays plain.',
+    description:
+      'The lid is the surface a box is judged by, so the composition lives there and the body is finished quiet. Made to be given, and to be opened often enough that the lid is handled more than it is looked at.',
+    category: 'gifts',
+    isCustomizable: true,
   },
 ]
