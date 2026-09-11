@@ -64,6 +64,10 @@ export const ACTIVITY_ACTIONS = [
   'research.product.started',
   /** Phase 35. A row was confirmed as a research reference, with a decision note. */
   'research.product.confirmed',
+  /** Phase 36. A Sheets export run wrote its tab. */
+  'sheets.run.succeeded',
+  /** Phase 36. A Sheets export run failed with a sanitised code; the definition may now be paused. */
+  'sheets.run.failed',
 ] as const
 
 export type ActivityAction = (typeof ACTIVITY_ACTIONS)[number]

@@ -16,6 +16,10 @@
     {
       "path": "/api/cron/research-score",
       "schedule": "15 3 * * *"
+    },
+    {
+      "path": "/api/cron/sheets-sync",
+      "schedule": "0 * * * *"
     }
   ]
 }

@@ -2114,19 +2114,50 @@ refused with a sentence. `research_confirmations.created_product_id` carries **n
 so no query can join research to the catalogue, and only `lib/supabase/repositories/research/`
 may resolve it (`checkCreatedProductResolution` in the isolation guard).
 
-### 12.14 `/studio/research/sheets`
+### 12.14 `/studio/research/sheets` — Phase 36, as built
 
-One-way export definitions to Google Sheets: a definitions table (name, entity, tab, schedule, PII flag,
-last run, status), the definition form, run history, and **Run now** · **Pause** · **Resume**. A banner
-states the flag state, the destination spreadsheet id and the service-account email — all identifiers,
-never a credential.
+**One-way, by construction.** Rivya writes a tab; the spreadsheet reads it. Nothing typed into a
+cell can change a research state, a product, a price or a piece of content — there is no read
+path, and `npm run sheets:check-no-read` fails the build if one appears.
 
-**Guardrails.** The integration is one-way: Rivya writes, the Sheet reads. Nothing is ever imported from
-a spreadsheet. The private key inside `GOOGLE_SERVICE_ACCOUNT_JSON` never reaches a column, a log, an
-error or a response. **That a Google Workspace account and a spreadsheet exist for Rivya, and that the
-service account has been shared onto it, are OWNER_VERIFICATION_REQUIRED.**
+**The banner** states three things and none of them is a credential: the `google_sheets` flag's
+state, the default spreadsheet id (an identifier), and the service-account email to share the
+spreadsheet with (an identity). When the two environment variables are absent it says so and points
+at ENVIRONMENT.md. The private key inside `GOOGLE_SERVICE_ACCOUNT_JSON` never reaches this page, a
+run row, a log line or an error.
 
----
+**Definitions.** The seven seeded ones (research products, comparison set, opportunity scores,
+shortlist, confirmed, direction briefs, enquiries) and any an admin adds: name, entity, tab,
+schedule (`MANUAL` or an hourly-or-slower cron expression in UTC), whether personal data is
+included, last run and status, with *Paused* and *Disabled* pills. **Run now** is for holders of
+`integrations.sheets.run` (owner, admin, merchandiser, researcher) — enquiries additionally need
+`inquiries.export`, and the action writes a DENIED audit row for anyone else. **Pause / Resume /
+Enable / Disable / Edit / New definition** are `integrations.sheets.manage` (owner, admin). With the
+flag off, Run now is disabled with the reason and the action refuses regardless.
+
+**The definition form** picks columns from the entity's allowlist only — no media, no secret,
+nothing from the audit or system logs — takes a filter in the same shape the Studio tables use, a
+tab name, a schedule and (enquiries, owner/admin only) the personal-data toggle. Every run of a
+definition that includes personal data writes an audit row naming who ran it, how many rows and
+which spreadsheet.
+
+**A run** writes into `<tab>__staging` in chunks of at most 5,000 cells and swaps it into place in
+one request, so a reader sees the previous complete tab or the new one, never a partial one. A 429
+or 5xx is retried (five attempts, base 500 ms, cap 30 s, `Retry-After` honoured); a 401/403 is not —
+it means credentials or sharing, and the run fails with `AUTH`. Three consecutive failures pause the
+definition until an admin resumes it. The header row ends with a fixed cell saying the tab is
+generated and edits are overwritten.
+
+**Run history** shows status, rows, cells, attempts, duration and a sanitised error code from a
+fixed vocabulary — never what Google said. A row count that moved more than half since the previous
+successful run carries a warning badge.
+
+`/studio/operations/exports` links here rather than growing a second exporter. `npm run sheets:sync
+-- --definition=<slug> [--dry-run]` and `--due` do the same from the command line; the hourly cron
+runs the scheduled definitions that are due.
+
+**That a Google Workspace account and a spreadsheet exist for Rivya, and that the service account
+has been shared onto it, are OWNER_VERIFICATION_REQUIRED.**
 
 ## 13. `/studio/operations/*` and `/studio/system/*`
 

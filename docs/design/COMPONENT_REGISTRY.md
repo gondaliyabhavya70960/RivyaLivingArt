@@ -357,6 +357,8 @@ implementation detail of RC-213.
 | RC-333 | `BriefStatusButton` | usability | 34 | PLANNED | index only — Client Component: dialog state only; Approve/Archive is a plain server-action form |
 | RC-334 | `PipelineBulkBar` | usability | 35 | PLANNED | index only — Phase 29's `ResearchBulkToolbar` with Phase 35's rules fixed: the 200-row cap, the kinds the screen offers, the reason field; no second selection machinery |
 | RC-335 | `StartProductDialog` | usability | 35 | PLANNED | index only — Client Component: the bridge's slug, category and seeded acknowledgement (unticked on open; the submit depends on it); disabled with the reason when the bridge cannot run |
+| RC-336 | `ExportDefinitionForm` | usability | 36 | PLANNED | index only — Client Component for one reason (the column checkboxes follow the entity select); allowlist columns, filter, tab, schedule, the enquiries-only PII toggle; the action validates everything again |
+| RC-337 | `SheetsRunHistory` | usability | 36 | PLANNED | index only — status, rows, cells, attempts, duration and a sanitised error code; the >50 % row-count warning badge; never what the upstream said |
 
 ### 6.4 Three — `components/three/`
 

@@ -94,6 +94,23 @@ describe('the no-auto-import guard', () => {
     expect(run(cwd).status).toBe(0)
   })
 
+  it('permits the Sheets definition writes Phase 36 places under the research route map (A37)', () => {
+    // An export definition is integration configuration, not the catalogue; its repository
+    // touches no product, media or CMS table. The screen lives at /studio/research/sheets.
+    const cwd = tree({
+      'app/(studio)/studio/(shell)/research/sheets/actions.ts':
+        "import { updateDefinition, setDefinitionPaused } from '@/lib/supabase/repositories/sheets'\nexport const go = [updateDefinition, setDefinitionPaused]\n",
+    })
+    expect(run(cwd).status).toBe(0)
+  })
+
+  it('still refuses a catalogue write imported beside a Sheets definition write', () => {
+    const cwd = tree({
+      'app/(studio)/studio/(shell)/research/sheets/actions.ts': `import { updateDefinition } from '@/lib/supabase/repositories/sheets'\n${IMPORTS_WRITE}\nexport const go = updateDefinition\n`,
+    })
+    expect(run(cwd).status).toBe(1)
+  })
+
   it('refuses a research Studio server action that writes media_assets', () => {
     const cwd = tree({
       'app/(studio)/studio/(shell)/research/changes/actions.ts': `export async function go(client) {\n  await client.from('media_assets').upsert({})\n}\n`,

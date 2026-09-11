@@ -6,6 +6,28 @@ Every phase adds an entry; see `docs/architecture/CANONICAL-DECISIONS.md` D9 for
 
 ## [Unreleased]
 
+### Phase 36 — Google Sheets (COMPLETE; flag off until the owner's setup)
+
+A one-way export from the research and enquiry tables to a Google Sheets tab, with **no new
+dependency, no stored credential and no read path**. Migrations `0340`–`0342`:
+`sheets_export_definitions` (entity, allowlisted columns, filter, tab, schedule, PII flag,
+circuit-breaker state — no credential column) and `sheets_sync_runs` (status, counts, attempts, a
+CHECKed error-code vocabulary, one RUNNING run per definition), the generated policies, and the seven
+default `MANUAL` definitions as structure.
+
+`lib/sheets/` (amendment A37 adds it to D2): a service-account JWT minted with `node:crypto` for the
+`spreadsheets` scope only; a staging-tab write in ≤ 5,000-cell chunks swapped into place by one
+`batchUpdate`; five retries with jitter and `Retry-After`, never on 401/403; three consecutive
+failures pause the definition; the per-entity column allowlist; a run engine that audits every run
+carrying personal data and records only a sanitised code, never what Google said.
+`/studio/research/sheets` (banner, definitions, form, run history), `npm run sheets:sync`, the hourly
+`/api/cron/sheets-sync` under `CRON_SECRET`, flag `google_sheets = false`, permissions
+`integrations.sheets.manage` (owner, admin) and `integrations.sheets.run` (+ `inquiries.export` for
+enquiries). `npm run sheets:check-no-read` fails the build on any Sheets read under `lib/sheets/`;
+`tests/unit/sheets-redaction.test.ts` injects a generated key and searches every surface for it.
+Environment: `GOOGLE_SERVICE_ACCOUNT_JSON`, `GOOGLE_SHEETS_SPREADSHEET_ID` (optional; the owner's
+five-step setup is ENVIRONMENT §4). Hosted level through `0342`.
+
 ### Phase 35b — Demo catalogue + image prompt book (content track)
 
 The owner-authorised placeholder catalogue grows from thirty to **thirty-five** pieces (one more

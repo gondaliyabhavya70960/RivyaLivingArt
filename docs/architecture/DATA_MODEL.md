@@ -2285,6 +2285,16 @@ the only caller of the repository writers that reach it.
 **Enums.** `research_stage` still holds seven values and `research_disposition` four; neither
 migration alters a type (the §12 row for Phase 35 is corrected accordingly, amendment A35).
 
+### 11.ac Google Sheets exports — Phase 36 · migrations `0340`–`0342`
+
+| Table | Posture | Written by | Key rule |
+|---|---|---|---|
+| `sheets_export_definitions` | RLS-STAFF (`analytics.read` select — the wider of the document's "research.read or analytics.read"; `integrations.sheets.manage` insert/update — owner, admin; no delete) | a person; the circuit-breaker columns by the service role | `entity` CHECKed to the seven; `columns` 1–40 names from the entity's allowlist (validated in code); `filter` an object; `schedule` `MANUAL` or an hourly-or-slower cron expression (validated in code); `includes_pii` only on `INQUIRIES` (CHECK); `paused_at`/`paused_reason` together; `consecutive_failures ≥ 0`; **no credential column** |
+| `sheets_sync_runs` | RLS-SERVICE (`analytics.read` select; no session write) | the run engine | `status` and `trigger` CHECKed; `(status = 'RUNNING') = (finished_at is null)`; `error_code` a CHECKed vocabulary, never a message or a body; one RUNNING run per definition (`sheets_sync_runs_one_running_idx`) |
+
+`0342` seeds the seven default definitions (`allow-insert`, structure): all `MANUAL`, all without
+PII, `comparison-set` without a scope until an admin chooses one.
+
 ## 12. Table register — Phase 03 versus later
 
 The spine an engineer builds in Phase 03 is small on purpose. Everything else is additive.

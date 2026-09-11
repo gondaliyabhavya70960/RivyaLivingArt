@@ -47,6 +47,7 @@ lib/
   auth/                      RBAC helpers, permission checks
   whatsapp/                  template rendering
   scraper/                   core · adapters · normalization · validation · workflows · analytics
+  sheets/                    one-way Google Sheets export (amendment A37)
   analytics/ · seo/ · logging/ · flags/
 supabase/migrations/         numbered SQL migrations
 scripts/                     seeding, media migration, maintenance
@@ -185,6 +186,40 @@ Brand and editorial copy may be written; anything asserting business capability 
 `OWNER_VERIFICATION_REQUIRED`. Empty states are used instead of invented projects.
 
 ## Amendments
+
+**2026-09-11 · A37 — Phase 36 adds `lib/sheets/` to D2's domain list (open question 4, the
+`lib/ops/` half deferred to Phase 38); the Sheets cron authenticates with `CRON_SECRET`; `0342`
+seeds the seven default export definitions as structure; the integration is one-way by
+construction and a build gate proves it (D2, D8, DATA_MODEL §11.ac and §12, STUDIO_GUIDE §12.14,
+ENVIRONMENT §4, DEPLOYMENT §3.1, PHASE-31-38 §Phase 36).**
+
+- **`lib/sheets/` is a D2 domain.** D2's `lib/` tree named no home for a third-party integration
+  that is neither `media/` nor `scraper/`. `lib/sheets/` holds the client (service-account JWT
+  minted with `node:crypto`, `spreadsheets` scope only, `import 'server-only'` first line), the
+  atomic writer, the retry policy, the schedule matcher, the column allowlists and the run engine.
+  The phase document raised this as open question 4 together with Phase 38's `lib/ops/`; that
+  half is recorded when Phase 38 lands.
+- **One-way, enforced.** No code under `lib/sheets/` reads cell values back; the one GET is of
+  sheet ids and titles for the atomic swap. `scripts/sheets/check-no-read.mjs` fails the build on
+  `values.get`, `batchGet`, grid data or a `/values/` GET (`npm run sheets:check-no-read`, in
+  `check` and CI), proved to refuse by `tests/unit/sheets-no-read.test.ts`.
+- **`CRON_SECRET`** for `app/api/cron/sheets-sync`, as A25 settled for every scheduled route; the
+  phase document's `REVALIDATE_SECRET` is superseded. DEPLOYMENT §3.1's row is corrected.
+- **`0342` is structure, not content.** The seven definitions name an entity, its default
+  columns and a tab — the shape of an export — all `MANUAL`, all `includes_pii = false`, inert
+  while `google_sheets` is off. Under the `allow-insert` marker with that reason, as `0302` was.
+- **The secret never becomes data.** No table carries a credential column; `spreadsheet_id` and
+  the service-account email are identifiers and are displayed; `sheets_sync_runs.error_code` is a
+  CHECKed vocabulary and never a response body. `tests/unit/sheets-redaction.test.ts` injects a
+  generated key and searches every surface for a fragment of it.
+- **Two isolation guards, read rather than bent.** I4 holds that no module imports both the
+  direction repository and a catalogue repository; the row builders are therefore five modules by
+  import (`lib/sheets/builders/`), the category read in `research.ts`, the direction read in
+  `direction.ts`, and the index importing neither. The no-auto-import guard, which matches
+  first-party write symbols under the research routes, exempts `repositories/sheets`: an export
+  definition is integration configuration, its repository touches no product, media or CMS table,
+  and two fixture cases prove a catalogue write imported beside it is still refused.
+- **`0341` is the generated policy file**, one past the document's `0340`, for A23's reason.
 
 **2026-09-11 · A36 (proposed; the owner's instruction is the authority) — AI-generated product
 imagery is a concept visualisation, registered as one and labelled as one; the demo catalogue grows

@@ -199,6 +199,17 @@ Never compiled into client JavaScript. Every module that reads one carries `impo
 | Blast radius if leaked | Everything that identity can reach in Google Cloud. Grant it access to exactly one spreadsheet and nothing else |
 | Rotation | **Owner**, 180 days: create the new key, set it, redeploy, verify a sync, then delete the old key in Google Cloud |
 
+**Setup (Phase 36, owner).** (1) In Google Cloud, create a project (or use an existing one), enable
+the *Google Sheets API*, and create a **service account** with no roles. (2) Create a JSON key for
+it and paste the whole file, as one line, into `GOOGLE_SERVICE_ACCOUNT_JSON`. (3) Create the
+spreadsheet in Google Sheets and **share it with the service account's email** (the `client_email`
+in the JSON; `/studio/research/sheets` shows it) as an editor — the integration requests the
+`spreadsheets` scope only and can reach nothing that is not shared with it. (4) Set
+`GOOGLE_SHEETS_SPREADSHEET_ID` to the id in the spreadsheet's URL. (5) Turn `google_sheets` on in
+`/studio/system/flags`. A run that fails with `AUTH` means step 3 was skipped or the key was
+rotated. **That a Google Workspace account and a spreadsheet exist for Rivya is
+OWNER_VERIFICATION_REQUIRED.**
+
 ### `GOOGLE_SHEETS_SPREADSHEET_ID`
 
 | | |
@@ -206,7 +217,7 @@ Never compiled into client JavaScript. Every module that reads one carries `impo
 | Class | Sensitive — not a credential, but it identifies a private document |
 | Purpose | The target spreadsheet for research exports |
 | Set in | Vercel (server scope) per environment; a **test** sheet outside production |
-| Read by | `lib/sheets/**` |
+| Read by | `lib/sheets/client.ts` (`defaultSpreadsheetId()`); a definition may override it with an id an admin types |
 | Without it | Sync is unavailable with a `NOT_CONFIGURED` state; nothing else changes |
 | Environment page shows | `configured` boolean only — never the id, because the id plus a leaked credential is a complete address |
 | Rotation | **Owner**, on change |

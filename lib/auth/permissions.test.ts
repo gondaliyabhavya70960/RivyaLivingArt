@@ -32,7 +32,7 @@ describe('the permission matrix', () => {
     // 25 at the end of Phase 04. Phase 05 adds four: `studio.access` and `activity.read` for its
     // own surfaces, and `system.environment.read` / `system.docs.read` because every D4 leaf needs
     // a real permission to be gated by, including the ones later phases fill.
-    expect(PERMISSIONS).toHaveLength(35)
+    expect(PERMISSIONS).toHaveLength(37)
   })
 
   it('names exactly the six D5 roles', () => {

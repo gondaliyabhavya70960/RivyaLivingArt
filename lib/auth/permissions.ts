@@ -137,6 +137,19 @@ export const PERMISSION_ROLES = {
    */
   'research.direction.approve': ['owner', 'admin', 'merchandiser'],
 
+  /**
+   * Phase 36. Creating, editing, pausing and resuming a Google Sheets export definition — and the
+   * only two roles that may flip `includes_pii`. Owner and admin: the definition is where a
+   * spreadsheet's contents are decided, and personal data leaves the building through it.
+   */
+  'integrations.sheets.manage': ['owner', 'admin'],
+  /**
+   * Phase 36. Pressing Run now. Everyone who operates or judges research; the INQUIRIES entity
+   * additionally needs `inquiries.export`, checked in the action, so a researcher can run every
+   * research export and no enquiry export.
+   */
+  'integrations.sheets.run': ['owner', 'admin', 'merchandiser', 'researcher'],
+
   'analytics.read': ALL,
 
   'bulk.execute': ['owner', 'admin', 'merchandiser'],

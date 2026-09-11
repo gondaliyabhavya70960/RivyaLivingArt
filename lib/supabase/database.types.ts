@@ -6487,6 +6487,153 @@ export type Database = {
           },
         ]
       }
+      sheets_export_definitions: {
+        Row: {
+          id: string
+          slug: string
+          name: string
+          entity: string
+          scope_id: string | null
+          columns: string[]
+          filter: Json
+          spreadsheet_id: string | null
+          tab_name: string
+          schedule: string
+          includes_pii: boolean
+          is_enabled: boolean
+          paused_at: string | null
+          paused_reason: string | null
+          consecutive_failures: number
+          last_run_at: string | null
+          last_status: string | null
+          created_at: string
+          created_by: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          slug: string
+          name: string
+          entity: string
+          scope_id?: string | null
+          columns: string[]
+          filter?: Json
+          spreadsheet_id?: string | null
+          tab_name: string
+          schedule?: string
+          includes_pii?: boolean
+          is_enabled?: boolean
+          paused_at?: string | null
+          paused_reason?: string | null
+          consecutive_failures?: number
+          last_run_at?: string | null
+          last_status?: string | null
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          slug?: string
+          name?: string
+          entity?: string
+          scope_id?: string | null
+          columns?: string[]
+          filter?: Json
+          spreadsheet_id?: string | null
+          tab_name?: string
+          schedule?: string
+          includes_pii?: boolean
+          is_enabled?: boolean
+          paused_at?: string | null
+          paused_reason?: string | null
+          consecutive_failures?: number
+          last_run_at?: string | null
+          last_status?: string | null
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'sheets_export_definitions_created_by_fkey'
+            columns: ['created_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'sheets_export_definitions_updated_by_fkey'
+            columns: ['updated_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      sheets_sync_runs: {
+        Row: {
+          id: string
+          definition_id: string
+          status: string
+          trigger: string
+          row_count: number
+          cell_count: number
+          attempts: number
+          error_code: string | null
+          duration_ms: number | null
+          started_at: string
+          finished_at: string | null
+          actor_id: string | null
+        }
+        Insert: {
+          id?: string
+          definition_id: string
+          status: string
+          trigger: string
+          row_count?: number
+          cell_count?: number
+          attempts?: number
+          error_code?: string | null
+          duration_ms?: number | null
+          started_at?: string
+          finished_at?: string | null
+          actor_id?: string | null
+        }
+        Update: {
+          id?: string
+          definition_id?: string
+          status?: string
+          trigger?: string
+          row_count?: number
+          cell_count?: number
+          attempts?: number
+          error_code?: string | null
+          duration_ms?: number | null
+          started_at?: string
+          finished_at?: string | null
+          actor_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'sheets_sync_runs_actor_id_fkey'
+            columns: ['actor_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'sheets_sync_runs_definition_id_fkey'
+            columns: ['definition_id']
+            isOneToOne: false
+            referencedRelation: 'sheets_export_definitions'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       staff_profiles: {
         Row: {
           user_id: string

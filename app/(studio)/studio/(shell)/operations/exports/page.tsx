@@ -1,5 +1,9 @@
+import type { Route } from 'next'
+import Link from 'next/link'
+
 import { Stack } from '@/components/primitives/Stack'
 import { Surface } from '@/components/primitives/Surface'
+import { Text } from '@/components/primitives/Text'
 import { PageHeader } from '@/components/studio/PageHeader'
 import { StudioPage, studioMetadata } from '@/components/studio/StudioPage'
 import { t } from '@/components/studio/strings'
@@ -35,6 +39,19 @@ export default async function Page() {
           <div className="mt-6">
             <ExportPanel canExportInquiries={canExportInquiries} />
           </div>
+        </Surface>
+
+        {/* PHASE 36 CROSS-LINKS RATHER THAN GROWING A SECOND EXPORTER. Sheets is a one-way
+            scheduled export with its own definitions and history; CSV stays here. */}
+        <Surface level={1} className="p-6" data-sheets-cross-link="">
+          <Text size="sm" tone="secondary">
+            <Link
+              href={'/studio/research/sheets' as Route}
+              className="underline underline-offset-4"
+            >
+              {t('studio.sheets.exportsLink')}
+            </Link>
+          </Text>
         </Surface>
       </Stack>
     </StudioPage>
