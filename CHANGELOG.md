@@ -6,6 +6,33 @@ Every phase adds an entry; see `docs/architecture/CANONICAL-DECISIONS.md` D9 for
 
 ## [Unreleased]
 
+### Phase 34 — Product Direction Tool
+
+Research becomes a written internal brief instead of a folder of tabs. A direction brief is a Rivya
+document a person writes — nine prose sections — with the evidence stapled to it; the tool
+assembles the evidence and writes not one sentence of prose, and **it has no path to the
+catalogue**: no `PUBLISHED` state (refused by CHECK and by the Zod schema), no price, dimension,
+material or lead-time column, and a build gate that fails on any module importing both the
+direction repository and the products repository (BR-F6).
+
+**Migrations `0320`–`0321`.** `research_direction_briefs` (`target_category_slug` a checked slug —
+the I1 allowlist stays at two, amendment A34), `research_direction_brief_evidence` (non-empty
+`rationale`; a volatile kind carries a captured value), `research_direction_brief_revisions`
+(written by a SECURITY DEFINER trigger after Phase 08's pattern; restore puts prose back and never
+the status); `guard_direction_brief_approval()` holds `research.direction.approve` at the row.
+
+**Evidence is captured by value where it is volatile** — a score's number, state and model
+version, a snapshot's observed figures with their coverage — and the rail marks *changed since
+attachment* beside the current value. **Observed is not intended**: figures copied from research
+render in their own panel with `CoverageBadge` and the words *observed in competitor research*, on
+screen, in the A4 print view and in the Markdown export.
+
+**`/studio/research/opportunities/direction`** and **`/[briefId]`**: the list and the two-column
+editor (intended prose left, evidence rail, observed figures and revisions right), a permanent
+internal-document banner, Approve and Archive behind the confirm dialog, `?view=print`;
+`npm run research:direction-export`. New permissions `research.direction.write` (owner, admin,
+merchandiser, researcher) and `research.direction.approve` (owner, admin, merchandiser).
+
 ### Phase 33 — Visual Similarity (the first-party half)
 
 **The owner decided: competitor images are referenced by URL only and never fetched** (amendment

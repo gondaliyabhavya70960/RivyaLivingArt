@@ -531,6 +531,10 @@ export const STUDIO_STRINGS = {
     value: 'Opportunities',
     contentKey: 'studio_help.nav_research_opportunities',
   },
+  'studio.nav.research.direction': {
+    value: 'Direction briefs',
+    contentKey: 'studio_help.nav_research_direction',
+  },
   'studio.nav.research.shortlist': {
     value: 'Shortlist',
     contentKey: 'studio_help.nav_research_shortlist',
@@ -6495,6 +6499,317 @@ export const STUDIO_STRINGS = {
   'studio.research.simColSkipped': {
     value: 'Skipped sources',
     contentKey: 'studio_help.research_sim_col_skipped',
+  },
+  'studio.research.dirHeading': {
+    value: 'Direction briefs',
+    contentKey: 'studio_help.research_dir_heading',
+  },
+  'studio.research.dirBody': {
+    value:
+      'A written internal brief: what kind of piece the studio might develop and why, with the evidence stapled to it. The tool assembles evidence and writes not one sentence of prose. A brief cannot become a product, cannot be published, and carries no Rivya price, dimension, material or lead time.',
+    contentKey: 'studio_help.research_dir_body',
+  },
+  'studio.research.dirBanner': {
+    value:
+      'Internal research document. Never published. APPROVED means the studio agrees this direction is worth exploring — it is not a capability claim, and whether Rivya can make anything described here is not asserted by this document.',
+    contentKey: 'studio_help.research_dir_banner',
+  },
+  'studio.research.dirNew': {
+    value: 'New brief',
+    contentKey: 'studio_help.research_dir_new',
+  },
+  'studio.research.dirTitle': {
+    value: 'Title',
+    contentKey: 'studio_help.research_dir_title',
+  },
+  'studio.research.dirSlug': {
+    value: 'Slug (optional)',
+    contentKey: 'studio_help.research_dir_slug',
+  },
+  'studio.research.dirCreate': {
+    value: 'Create brief',
+    contentKey: 'studio_help.research_dir_create',
+  },
+  'studio.research.dirEmpty': {
+    value: 'No direction brief yet.',
+    contentKey: 'studio_help.research_dir_empty',
+  },
+  'studio.research.dirEmptyBody': {
+    value:
+      'A brief starts as a title and nothing else; the nine sections are written by a person, never pre-filled.',
+    contentKey: 'studio_help.research_dir_empty_body',
+  },
+  'studio.research.dirColTitle': {
+    value: 'Brief',
+    contentKey: 'studio_help.research_dir_col_title',
+  },
+  'studio.research.dirColStatus': {
+    value: 'Status',
+    contentKey: 'studio_help.research_dir_col_status',
+  },
+  'studio.research.dirColCategory': {
+    value: 'Category',
+    contentKey: 'studio_help.research_dir_col_category',
+  },
+  'studio.research.dirColUpdated': {
+    value: 'Updated',
+    contentKey: 'studio_help.research_dir_col_updated',
+  },
+  'studio.research.dirColApproved': {
+    value: 'Approved',
+    contentKey: 'studio_help.research_dir_col_approved',
+  },
+  'studio.research.dirCategory': {
+    value: 'Filed under',
+    contentKey: 'studio_help.research_dir_category',
+  },
+  'studio.research.dirCategoryNone': {
+    value: 'Unfiled',
+    contentKey: 'studio_help.research_dir_category_none',
+  },
+  'studio.research.dirSave': {
+    value: 'Save brief',
+    contentKey: 'studio_help.research_dir_save',
+  },
+  'studio.research.dirSaved': {
+    value: 'Saved.',
+    contentKey: 'studio_help.research_dir_saved',
+  },
+  'studio.research.dirIntended': {
+    value: 'Intended — Rivya prose, not a specification',
+    contentKey: 'studio_help.research_dir_intended',
+  },
+  'studio.research.dirIntendedHelp': {
+    value:
+      'These nine sections are yours to write. They are never pre-filled and never suggested. Do not paste competitor text here, and do not write a dimension, price or material as if Rivya had settled it — a Rivya dimension exists when a maker makes one.',
+    contentKey: 'studio_help.research_dir_intended_help',
+  },
+  'studio.research.dirSecIntent': {
+    value: 'Intent — why now',
+    contentKey: 'studio_help.research_dir_sec_intent',
+  },
+  'studio.research.dirSecIntentHelp': {
+    value:
+      'What in the research prompted this brief, and why the studio should look at it now rather than later.',
+    contentKey: 'studio_help.research_dir_sec_intent_help',
+  },
+  'studio.research.dirSecScale': {
+    value: 'Scale intent',
+    contentKey: 'studio_help.research_dir_sec_scale',
+  },
+  'studio.research.dirSecScaleHelp': {
+    value:
+      'The scale the piece would sit at, in words — "dining-table scale, longest axis around two metres". Not a dimensions field.',
+    contentKey: 'studio_help.research_dir_sec_scale_help',
+  },
+  'studio.research.dirSecForm': {
+    value: 'Form language',
+    contentKey: 'studio_help.research_dir_sec_form',
+  },
+  'studio.research.dirSecFormHelp': {
+    value: 'The forms, proportions and gestures the direction points at.',
+    contentKey: 'studio_help.research_dir_sec_form_help',
+  },
+  'studio.research.dirSecMaterial': {
+    value: 'Material direction',
+    contentKey: 'studio_help.research_dir_sec_material',
+  },
+  'studio.research.dirSecMaterialHelp': {
+    value: 'The material family and how it would be used — a direction, not a bill of materials.',
+    contentKey: 'studio_help.research_dir_sec_material_help',
+  },
+  'studio.research.dirSecFinish': {
+    value: 'Finish direction',
+    contentKey: 'studio_help.research_dir_sec_finish',
+  },
+  'studio.research.dirSecFinishHelp': {
+    value: 'Surface, colour, texture and edge treatment the direction suggests.',
+    contentKey: 'studio_help.research_dir_sec_finish_help',
+  },
+  'studio.research.dirSecConstraints': {
+    value: 'Constraints',
+    contentKey: 'studio_help.research_dir_sec_constraints',
+  },
+  'studio.research.dirSecConstraintsHelp': {
+    value: 'What the studio knows it must work within — space, process, transport, time.',
+    contentKey: 'studio_help.research_dir_sec_constraints_help',
+  },
+  'studio.research.dirSecOpen': {
+    value: 'Open questions',
+    contentKey: 'studio_help.research_dir_sec_open',
+  },
+  'studio.research.dirSecOpenHelp': {
+    value: 'What the research could not answer and a maker must.',
+    contentKey: 'studio_help.research_dir_sec_open_help',
+  },
+  'studio.research.dirSecNotDoing': {
+    value: 'Not doing',
+    contentKey: 'studio_help.research_dir_sec_not_doing',
+  },
+  'studio.research.dirSecNotDoingHelp': {
+    value: 'What this direction deliberately leaves out.',
+    contentKey: 'studio_help.research_dir_sec_not_doing_help',
+  },
+  'studio.research.dirEvidenceHeading': {
+    value: 'Evidence',
+    contentKey: 'studio_help.research_dir_evidence_heading',
+  },
+  'studio.research.dirEvidenceHelp': {
+    value:
+      'Each attached item carries the reason it is here and, where the value moves, the value as it stood when attached. A changed value is marked, never silently replaced.',
+    contentKey: 'studio_help.research_dir_evidence_help',
+  },
+  'studio.research.dirEvidenceEmpty': {
+    value: 'No evidence attached yet.',
+    contentKey: 'studio_help.research_dir_evidence_empty',
+  },
+  'studio.research.dirAttach': {
+    value: 'Attach',
+    contentKey: 'studio_help.research_dir_attach',
+  },
+  'studio.research.dirAttachFromLists': {
+    value: 'From the lists',
+    contentKey: 'studio_help.research_dir_attach_from_lists',
+  },
+  'studio.research.dirAttachById': {
+    value: 'By id',
+    contentKey: 'studio_help.research_dir_attach_by_id',
+  },
+  'studio.research.dirAttachItem': {
+    value: 'Item',
+    contentKey: 'studio_help.research_dir_attach_item',
+  },
+  'studio.research.dirAttachType': {
+    value: 'Type',
+    contentKey: 'studio_help.research_dir_attach_type',
+  },
+  'studio.research.dirAttachId': {
+    value: 'Row id',
+    contentKey: 'studio_help.research_dir_attach_id',
+  },
+  'studio.research.dirRationale': {
+    value: 'Why this is here',
+    contentKey: 'studio_help.research_dir_rationale',
+  },
+  'studio.research.dirRationaleHelp': {
+    value:
+      'Required. Evidence attached without a stated reason is how a brief turns into a scrapbook.',
+    contentKey: 'studio_help.research_dir_rationale_help',
+  },
+  'studio.research.dirDetach': {
+    value: 'Remove',
+    contentKey: 'studio_help.research_dir_detach',
+  },
+  'studio.research.dirDrift': {
+    value: 'changed since attachment',
+    contentKey: 'studio_help.research_dir_drift',
+  },
+  'studio.research.dirCapturedAt': {
+    value: 'attached',
+    contentKey: 'studio_help.research_dir_captured_at',
+  },
+  'studio.research.dirNow': {
+    value: 'now',
+    contentKey: 'studio_help.research_dir_now',
+  },
+  'studio.research.dirObservedHeading': {
+    value: 'Observed figures',
+    contentKey: 'studio_help.research_dir_observed_heading',
+  },
+  'studio.research.dirObservedLabel': {
+    value: 'observed in competitor research',
+    contentKey: 'studio_help.research_dir_observed_label',
+  },
+  'studio.research.dirObservedHelp': {
+    value:
+      "Numbers copied from attached analytics snapshots, each with the coverage it rests on. They describe other people's listings. None of them is a Rivya figure.",
+    contentKey: 'studio_help.research_dir_observed_help',
+  },
+  'studio.research.dirObservedEmpty': {
+    value: 'Attach an analytics snapshot to see observed figures.',
+    contentKey: 'studio_help.research_dir_observed_empty',
+  },
+  'studio.research.dirRevisionsHeading': {
+    value: 'Revisions',
+    contentKey: 'studio_help.research_dir_revisions_heading',
+  },
+  'studio.research.dirRevisionsHelp': {
+    value:
+      'Every save is a snapshot. Restoring one puts its prose and category back; the status is a decision made at a time and is never restored.',
+    contentKey: 'studio_help.research_dir_revisions_help',
+  },
+  'studio.research.dirRestore': {
+    value: 'Restore',
+    contentKey: 'studio_help.research_dir_restore',
+  },
+  'studio.research.dirStatusReview': {
+    value: 'Send to review',
+    contentKey: 'studio_help.research_dir_status_review',
+  },
+  'studio.research.dirStatusDraft': {
+    value: 'Back to draft',
+    contentKey: 'studio_help.research_dir_status_draft',
+  },
+  'studio.research.dirApprove': {
+    value: 'Approve',
+    contentKey: 'studio_help.research_dir_approve',
+  },
+  'studio.research.dirApproveTitle': {
+    value: 'Approve this direction?',
+    contentKey: 'studio_help.research_dir_approve_title',
+  },
+  'studio.research.dirApproveBody': {
+    value:
+      'APPROVED records that the studio agrees this direction is worth exploring, with your name and the time. It is not a capability claim and does not create anything.',
+    contentKey: 'studio_help.research_dir_approve_body',
+  },
+  'studio.research.dirArchive': {
+    value: 'Archive',
+    contentKey: 'studio_help.research_dir_archive',
+  },
+  'studio.research.dirArchiveTitle': {
+    value: 'Archive this brief?',
+    contentKey: 'studio_help.research_dir_archive_title',
+  },
+  'studio.research.dirArchiveBody': {
+    value: 'An archived brief keeps its evidence and revisions and leaves the working list.',
+    contentKey: 'studio_help.research_dir_archive_body',
+  },
+  'studio.research.dirPrint': {
+    value: 'Print view',
+    contentKey: 'studio_help.research_dir_print',
+  },
+  'studio.research.dirBack': {
+    value: 'Back to the editor',
+    contentKey: 'studio_help.research_dir_back',
+  },
+  'studio.research.dirRefusalTitle': {
+    value: 'A brief needs a title.',
+    contentKey: 'studio_help.research_dir_refusal_title',
+  },
+  'studio.research.dirRefusalSlug': {
+    value: 'That slug is taken or malformed.',
+    contentKey: 'studio_help.research_dir_refusal_slug',
+  },
+  'studio.research.dirRefusalRationale': {
+    value: 'Write why this evidence is here before attaching it.',
+    contentKey: 'studio_help.research_dir_refusal_rationale',
+  },
+  'studio.research.dirRefusalTarget': {
+    value: 'That row could not be found, or is not something a brief may attach.',
+    contentKey: 'studio_help.research_dir_refusal_target',
+  },
+  'studio.research.dirRefusalApprove': {
+    value: 'Approving a brief requires research.direction.approve.',
+    contentKey: 'studio_help.research_dir_refusal_approve',
+  },
+  'studio.research.dirRefusalGeneric': {
+    value: 'The brief could not be saved.',
+    contentKey: 'studio_help.research_dir_refusal_generic',
+  },
+  'studio.research.dirNotWritten': {
+    value: 'not yet written',
+    contentKey: 'studio_help.research_dir_not_written',
   },
   'studio.research.oppHeading': {
     value: 'Opportunities',

@@ -679,6 +679,24 @@ site never renders one.
 | Enforced by | **Schema:** no `research_product_images` table exists; `research_image_extraction_mode` has no value that downloads (`NONE · URL_ONLY · URL_AND_DIMENSIONS`) |
 | Test | `tests/integration/forbidden-tables.test.ts`; a network assertion in the scraper suite that no image byte is fetched during a run |
 
+### BR-F6 — A direction brief has no path to the catalogue
+
+**Rule.** A Phase 34 direction brief is an internal research document. It cannot be published
+(`PUBLISHED` is refused by check constraint and by the Zod schema), it carries no Rivya price,
+dimension, material, lead time or tolerance (there is no column for one), and it cannot become a
+product: no module may import both the direction repository and the products repository, and the
+build fails on one (`scripts/research/direction-isolation.mjs`, under I4). `APPROVED` means a named
+person agreed the direction is worth exploring, at a time; it is not a capability claim, and whether
+Rivya can make anything a brief describes is `OWNER_VERIFICATION_REQUIRED`.
+
+**Why.** The button that "creates the product from the brief" is the obvious feature, and it is the
+one that turns competitor research into catalogue content with nobody having typed it (BR-F2). A
+brief is what a maker reads before sketching; product creation is a Phase 35 act, taken by hand.
+
+**Observed is not intended.** Figures copied from research render with their coverage and the words
+"observed in competitor research", on screen and in print. Competitor prose is never pasted into a
+brief's sections, and no competitor image is attached; mood reference is Rivya concept media only.
+
 ### BR-F5 — Scraped is not trusted
 
 **Rule.** The pipeline `RAW → NORMALIZED → VALIDATED → MATCHED → REVIEW → SHORTLISTED → CONFIRMED`

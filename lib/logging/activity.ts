@@ -58,6 +58,8 @@ export const ACTIVITY_ACTIONS = [
   'research.comparison.recomputed',
   /** Phase 32. Activating a scoring model changes which competitor rows sort first for everyone. */
   'research.scoring_model.activated',
+  /** Phase 34. A named person agreed a direction is worth exploring — the one brief act colleagues read. */
+  'research.direction.approved',
 ] as const
 
 export type ActivityAction = (typeof ACTIVITY_ACTIONS)[number]

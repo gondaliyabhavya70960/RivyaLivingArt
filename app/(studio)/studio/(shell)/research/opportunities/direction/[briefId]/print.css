@@ -1,0 +1,54 @@
+/*
+ * Phase 34 — the A4 print stylesheet for a direction brief (`?view=print`).
+ *
+ * The header "Internal research document — never published" and the observed-in-research label
+ * on every figure are content, not decoration, and print with the page. Colour is dropped; the
+ * page is prose and a table, which is what a maker reads before sketching.
+ */
+@page {
+  size: A4;
+  margin: 18mm 16mm;
+}
+
+.brief-print {
+  max-width: 72ch;
+  margin-inline: auto;
+  font-size: 12pt;
+  line-height: 1.5;
+}
+
+.brief-print__header {
+  border-bottom: 1px solid currentColor;
+  padding-bottom: 0.5rem;
+  margin-bottom: 1rem;
+  font-size: 10pt;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.brief-print__section {
+  break-inside: avoid;
+  margin-bottom: 1rem;
+}
+
+.brief-print__observed th,
+.brief-print__observed td {
+  border-top: 1px solid currentColor;
+  padding: 0.25rem 0.5rem 0.25rem 0;
+  text-align: left;
+  vertical-align: top;
+  font-size: 10.5pt;
+}
+
+.brief-print__footer {
+  margin-top: 2rem;
+  font-size: 9.5pt;
+  border-top: 1px solid currentColor;
+  padding-top: 0.5rem;
+}
+
+@media print {
+  .brief-print__no-print {
+    display: none;
+  }
+}

@@ -281,6 +281,7 @@ D4's map, leaf by leaf. This table is the index to sections 5–13.
 | `/studio/research/large-format` | `research.read` | `research.write` | 30 |
 | `/studio/research/compare` | `research.read` | `research.write` | 31 |
 | `/studio/research/similarity` | `research.read` | `research.write` | 33 |
+| `/studio/research/opportunities/direction` · `/[briefId]` | `research.read` | `research.direction.write` (`research.direction.approve` to approve) | 34 |
 | `/studio/research/opportunities` | `research.read` | `research.write` (activate model: owner/admin) | 32 · 34 |
 | `/studio/research/shortlist` | `research.read` | `research.confirm` | 35 |
 | `/studio/research/confirmed` | `research.read` | `research.confirm` | 35 |
@@ -304,7 +305,7 @@ Nested detail routes, which are not D4 leaves but are reached from them:
 `/studio/content/pages/global` · `/studio/content/portfolio/[projectId]` ·
 `/studio/content/journal/[articleId]` · `/studio/content/journal/categories` ·
 `/studio/inquiries/[inquiryId]` · `/studio/research/runs/[id]` · `/studio/research/compare/[setId]` ·
-`/studio/research/opportunities/direction[/briefId]` · `/studio/operations/audit/[operationId]` ·
+`/studio/research/opportunities/direction/[briefId]` · `/studio/operations/audit/[operationId]` ·
 `/studio/system/documentation/[docKey]`.
 
 **The stub policy.** Every D4 leaf resolves from Phase 05 onward. A leaf whose owning phase has not
@@ -2036,15 +2037,35 @@ not a finding.
 
 ### 12.11 `/studio/research/opportunities/direction` · `/[briefId]`
 
-The product-direction workspace: nine prose sections on the left with per-section helper copy from
-`global_content` group `STUDIO_HELP`, and an evidence rail with observed figures on the right. Approve
-and Archive sit behind `ConfirmDialog`.
+**A written internal brief, with the evidence stapled to it — and no path to the catalogue.** The
+list shows every brief with its status, category, last update and approval date; **New brief**
+takes a title (and an optional slug) and nothing else, because the nine sections are written by a
+person and never pre-filled.
 
-**Guardrails.** A brief's status vocabulary is `DRAFT · REVIEW · APPROVED · ARCHIVED`; **`PUBLISHED` is
-unreachable by check constraint**, and a permanent banner reads that the brief is an internal research
-document. Every evidence row requires a non-empty rationale. `APPROVED` means a named person agreed —
-it is not a capability claim, and **whether Rivya can produce anything a brief describes is
-OWNER_VERIFICATION_REQUIRED.**
+**The editor is two column types, visibly different.** On the left, **Intended — Rivya prose, not a
+specification**: the nine sections (intent, scale intent, form language, material direction, finish
+direction, constraints, open questions, not doing), each with helper copy that says what belongs
+there and that a dimension, price or material is never written as if Rivya had settled it. On the
+right, the **Evidence** rail (what is attached, why, when, and *changed since attachment* beside the
+current value when a score or snapshot has moved), the **Observed figures** panel (numbers copied
+from attached analytics snapshots, each with its coverage badge and the words *observed in
+competitor research*), and **Revisions** (every save is a snapshot; **Restore** puts the prose and
+category back and never the status).
+
+**Attaching evidence** takes a rationale, always — the database refuses an empty one. From the
+lists: comparison sets, recent analytics snapshots, recent scores, concept mood media (concept,
+AI-generated families only; no photograph and no competitor image). By id: any of the seven types.
+
+**Lifecycle.** *Send to review* and *Back to draft* are plain buttons; **Approve** (owner, admin,
+merchandiser — `research.direction.approve`) and **Archive** sit behind the confirm dialog. The
+status tooltip's wording is fixed: **APPROVED means the studio agrees this direction is worth
+exploring** — it is not a capability claim, and **whether Rivya can produce anything a brief
+describes is OWNER_VERIFICATION_REQUIRED.** `PUBLISHED` is unreachable by check constraint, and the
+permanent banner says the brief is an internal research document.
+
+**Print view** (`?view=print`) is the A4 page a maker reads: the internal-document header first, the
+nine sections, the observed figures with their coverage and label, the evidence with its rationale.
+`npm run research:direction-export -- --brief=<id> --format=md` writes the same document.
 
 ### 12.12 `/studio/research/shortlist`
 
@@ -2441,8 +2462,10 @@ Raised, not acted on. Nothing above knowingly diverges from `CANONICAL-DECISIONS
    where SEED §21 and §36 put them. One table, two surfaces, two permissions — deliberate, not a
    duplicate editor.)
 
-9. **`/studio/research/opportunities/direction` is not a D4 leaf either**, for the same reason and with
-   the same two options (already raised in `PHASE-31-38.md` open question 2).
+9. **`/studio/research/opportunities/direction` IS a D4 leaf — settled by amendment A34.** The Studio
+   manifest test governs every static route and refuses a static child the manifest does not name, so
+   the brief list is a research leaf (*Direction briefs*, `research.read`) and `/[briefId]` is
+   governed through it; the phase document's nested-segment placement is superseded.
 
 10. **`/studio/media/all` versus D4's `{all,images,videos,models,documents,higgsfield,brand}`.** FEAT §13
     names six Media Manager sections; D4 lists seven leaves. `all` is the seventh and is the surface that

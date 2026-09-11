@@ -29,6 +29,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join, relative } from 'node:path'
 
 import { stripCommentsAndStrings } from '../db/strip-code.mjs'
+import { findDirectionProductCouplings } from './direction-isolation.mjs'
 
 const ROOT = process.cwd()
 const problems = []
@@ -396,6 +397,20 @@ const CATALOG_FILES = [
   join(ROOT, 'lib', 'supabase', 'repositories', 'bulk-import.ts'),
 ]
 
+/**
+ * Phase 34: no module imports both the direction repository and the products repository. The
+ * "create product from brief" button that seems obvious would have to; it fails here.
+ */
+function checkDirectionCoupling() {
+  for (const file of findDirectionProductCouplings(ROOT)) {
+    problems.push(
+      `I4: ${file} imports the direction repository AND the products repository.\n` +
+        '      A direction brief has no path to the catalogue. Product creation is a Phase 35 act\n' +
+        '      taken by hand from the confirmed list, never from a brief.',
+    )
+  }
+}
+
 function checkCatalogImports() {
   for (const file of CATALOG_FILES) {
     if (!existsSync(file)) continue
@@ -489,6 +504,7 @@ checkAnonPolicies()
 checkPublicTrees()
 checkScraperImports()
 checkCatalogImports()
+checkDirectionCoupling()
 checkStageWriter()
 checkAdapterHosts()
 
@@ -508,7 +524,7 @@ const parts = [
     ? 'I2 no anon policy on any research table, in the migrations and in the database'
     : 'I2 no anon policy in the migrations (the database was not checked — see above)',
   'I3 no research identifier on a public surface',
-  'I4 no path from the scraper to a public write and no browser automation',
+  'I4 no path from the scraper to a public write, no direction↔products coupling, and no browser automation',
   'I3 no external host named under lib/scraper/adapters',
 ]
 

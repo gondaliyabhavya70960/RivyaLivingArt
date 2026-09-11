@@ -416,6 +416,19 @@ export const STUDIO_NAV: readonly StudioNavGroup[] = [
         writePermission: 'research.write',
         phases: [32, 34],
       },
+      /*
+       * Phase 34. The phase document mounts direction briefs as a nested segment of the
+       * opportunities leaf; the manifest test governs every static route and a static child of a
+       * static leaf must be named here, so the list is a leaf of its own (amendment A34). The
+       * `[briefId]` editor sits directly beneath it and is governed through it.
+       */
+      {
+        href: '/studio/research/opportunities/direction',
+        labelKey: 'studio.nav.research.direction',
+        permission: 'research.read',
+        writePermission: 'research.direction.write',
+        phases: [34],
+      },
       {
         href: '/studio/research/shortlist',
         labelKey: 'studio.nav.research.shortlist',

@@ -159,6 +159,7 @@ export const PHASE_30_POLICIES = '0281_phase30_large_format_rls.sql'
 export const PHASE_31_POLICIES = '0291_phase31_research_analytics_rls.sql'
 export const PHASE_32_POLICIES = '0301_phase32_opportunity_rls.sql'
 export const PHASE_33_POLICIES = '0313_phase33_similarity_rls.sql'
+export const PHASE_34_POLICIES = '0321_phase34_direction_rls.sql'
 
 export const TABLE_POLICIES = {
   // --- Shape A: content tables ------------------------------------------------------------------
@@ -1696,6 +1697,47 @@ export const TABLE_POLICIES = {
       "FIRST-PARTY, not research: the hashes of Rivya's own library, following the Phase 06 media " +
       'read policy. Service-role writes only (the upload path and media:hash). A hash is not ' +
       'published content, so no anon policy.',
+  },
+
+  /*
+   * Phase 34 — the direction brief, a person's document with evidence stapled to it.
+   *
+   * Read under research.read. The brief and its evidence are written under
+   * research.direction.write (owner, admin, merchandiser, researcher); moving a brief INTO
+   * APPROVED additionally requires research.direction.approve, held at the row by the
+   * guard_direction_brief_approval() trigger in 0320 because the generator writes one predicate
+   * per leg. A brief is never deleted — it is ARCHIVED — so no delete leg; evidence may be
+   * detached by whoever may attach it. Revisions are written by trigger only: no session leg.
+   * PUBLISHED is unreachable (CHECK); no anon policy (I2).
+   */
+  research_direction_briefs: {
+    policiesIn: PHASE_34_POLICIES,
+    shape: 'C',
+    readPermission: 'research.read',
+    writePermission: 'research.direction.write',
+    deviation:
+      'A human-written internal brief. research.direction.write inserts and edits; APPROVED is ' +
+      'additionally gated by trigger on research.direction.approve. Never deleted (ARCHIVED), never ' +
+      'PUBLISHED, no anon policy (I2).',
+  },
+  research_direction_brief_evidence: {
+    policiesIn: PHASE_34_POLICIES,
+    shape: 'C',
+    readPermission: 'research.read',
+    writePermission: 'research.direction.write',
+    deletePermission: 'research.direction.write',
+    deviation:
+      'Typed evidence with a captured value and a non-empty rationale. Attached and detached ' +
+      'under research.direction.write. No anon policy (I2).',
+  },
+  research_direction_brief_revisions: {
+    policiesIn: PHASE_34_POLICIES,
+    shape: 'C',
+    readPermission: 'research.read',
+    deviation:
+      'An immutable snapshot per save, written by write_direction_brief_revision() (SECURITY ' +
+      'DEFINER) and restored through research_restore_brief_revision(). No session write, update ' +
+      'or delete leg: history the people it records could edit is not an audit trail. No anon policy (I2).',
   },
 } as const satisfies Record<string, TablePolicy>
 

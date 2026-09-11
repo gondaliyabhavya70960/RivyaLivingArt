@@ -7,6 +7,50 @@
 ---
 
 ## Current Phase
+**Phase 34 — Product Direction Tool. COMPLETE.** Research becomes a written internal brief with the
+evidence stapled to it; the tool writes no prose, the brief cannot be published or become a product,
+and observed figures never render without their coverage and the words "observed in competitor
+research".
+
+### Phase 34: what is built
+
+**Migrations `0320`–`0321`.** The brief (four statuses, checked category slug, no price/dimension/
+material column, approval trigger), its evidence (rationale required, volatile kinds captured by
+value), its revisions (SECURITY DEFINER trigger, status-preserving restore RPC).
+
+**Code.** `lib/scraper/analytics/direction/{capture,export}.ts`, `lib/supabase/schemas/research-direction.ts`
+(`.strict()`, four statuses), `lib/supabase/repositories/research/direction.ts` (reads of every
+evidence target by select; no products import), the two routes and `actions.ts`, `EvidenceRail`,
+`ObservedFigures`, `BriefStatusButton`, `print.css`, `npm run research:direction-export`;
+`scripts/research/direction-isolation.mjs` under I4.
+
+### Phase 34: readings the repository forced
+
+1. **A checked slug, not a third key** (open question 13 → A34).
+2. **Approval as a trigger** — the policy generator writes one predicate per leg.
+3. **The harness rolls a session back**, so the RLS suite reads back inside the callback.
+4. **A leaf of its own, because the manifest test governs every static route** (A34).
+
+### Phase 34: verification, as actually run
+
+`npm run check`; unit project including `direction-{no-publish,isolation,evidence-capture}`; RLS
+project with `RLS_TESTS_REQUIRED=1` including `phase34.test.ts` (9 cases); production build through
+the local PostgREST shim; `security:check-bundle`.
+
+### Phase 34: hosted parity
+
+`0320`–`0321` applied to `ccvarsmzickdkryoakdg` with ledger rows; digest recorded in the PR.
+
+### The next exact action
+
+**Phase 35 — Shortlist + Confirmation.** `0330`–`0331`: `research_shortlist_entries`,
+`research_confirmations`, the stage-writer guard trigger, the two bulk operations, the manual bridge
+behind `research_product_bridge = false`.
+
+---
+
+### Superseded — Phase 33's state
+
 **Phase 33 — Visual Similarity, the first-party half. COMPLETE; competitor images are never fetched
 (owner decision, amendment A33).** Rivya's own library is hashed, a re-upload of one of its pictures
 is refused at the upload step by name, and the Studio page renders the band legend with its "does

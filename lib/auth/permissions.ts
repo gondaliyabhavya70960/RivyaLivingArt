@@ -126,6 +126,16 @@ export const PERMISSION_ROLES = {
    * amendment A33. Operators: the same three roles that may queue a research run.
    */
   'research.similarity.run': ['owner', 'admin', 'researcher'],
+  /**
+   * Phase 34. Writing a direction brief — the nine prose sections, the evidence rail. Everyone who
+   * reads research and may act on it; a viewer reads briefs and writes none.
+   */
+  'research.direction.write': ['owner', 'admin', 'merchandiser', 'researcher'],
+  /**
+   * Phase 34. Approving a brief: "the studio agrees this direction is worth exploring". The three
+   * roles that record verdicts (research.confirm), because approval is a judgement, not an edit.
+   */
+  'research.direction.approve': ['owner', 'admin', 'merchandiser'],
 
   'analytics.read': ALL,
 

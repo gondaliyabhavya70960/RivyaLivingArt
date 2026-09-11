@@ -46,6 +46,7 @@ import {
   PHASE_31_POLICIES,
   PHASE_32_POLICIES,
   PHASE_33_POLICIES,
+  PHASE_34_POLICIES,
   PHASE_19_POLICIES,
   TABLE_POLICY_MAP,
   type ManagedTable,
@@ -528,6 +529,29 @@ const GENERATED: Record<string, { title: string; preamble: string }> = {
 -- ISOLATION INVARIANT I2 IS UNCHANGED: not one \`anon\` leg appears below, on any of the five.
 -- I1 IS UNCHANGED TOO: the research tables reference research tables; media_asset_hashes
 -- references media_assets; neither names the other, in a constraint or a policy.`,
+  },
+  [PHASE_34_POLICIES]: {
+    title: `-- ${PHASE_34_POLICIES} — Phase 34`,
+    preamble: `-- Policies for the three tables migration 0320 creates. GENERATED from
+-- lib/auth/table-permissions.ts and rewritten whole, so it may hold nothing a human wrote.
+--
+--   \`research_direction_briefs\`           research.direction.write — owner, admin, merchandiser,
+--                                          researcher. A person's document. Moving it INTO
+--                                          APPROVED is gated again, on research.direction.approve,
+--                                          by guard_direction_brief_approval() in 0320. No delete
+--                                          leg: a brief is ARCHIVED, never removed.
+--
+--   \`research_direction_brief_evidence\`  research.direction.write attaches and detaches; every
+--                                          row carries a non-empty rationale by CHECK.
+--
+--   \`research_direction_brief_revisions\` NO SESSION WRITE OF ANY KIND. The trigger writes them
+--                                          as SECURITY DEFINER; restore goes through
+--                                          research_restore_brief_revision(), which re-checks the
+--                                          write permission inside.
+--
+-- PUBLISHED IS UNREACHABLE: the CHECK on research_direction_briefs.status admits four values and
+-- not that one, so no policy here could ever admit a public read. ISOLATION INVARIANT I2 IS
+-- UNCHANGED: not one \`anon\` leg appears below.`,
   },
   [PHASE_31_POLICIES]: {
     title: `-- ${PHASE_31_POLICIES} — Phase 31`,
