@@ -2380,7 +2380,7 @@ Ten documents, served from a **build-time allowlist** (`lib/cms/docs/allowlist.t
 the index is built, rendered without raw HTML: `ARCHITECTURE.md` · `STUDIO_GUIDE.md` ·
 `MEDIA_GUIDE.md` · `SCRAPER.md` · `DEPLOYMENT.md` · `ENVIRONMENT.md` · `BUSINESS_RULES.md` ·
 `CONTENT_GUIDE.md` · `COMPONENT_REGISTRY.md` · `HIGGSFIELD_GUIDE.md` (FEAT §30). Keys:
-`architecture` · `studio-guide` · `media-guide` · `scraper` · `deployment` · `environment` ·
+`architecture` · `studio-guide` · `media-guide` · `research` · `deployment` · `environment` ·
 `business-rules` · `content-guide` · `component-registry` · `higgsfield-guide`.
 
 **How it works.** `npm run docs:index` (the `prebuild` step) reads exactly the ten paths, runs each

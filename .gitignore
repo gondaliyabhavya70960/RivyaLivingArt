@@ -2,6 +2,9 @@ node_modules/
 .next/
 out/
 build/
+# `build/` above is the generic output folder; the build-info module Phase 38 keeps under
+# scripts/build/ is source, not output.
+!scripts/build/
 dist/
 .env
 .env.local

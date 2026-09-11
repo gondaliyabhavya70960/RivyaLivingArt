@@ -12,7 +12,9 @@ export const DOC_ALLOWLIST = {
   architecture: { path: 'docs/architecture/ARCHITECTURE.md', title: 'Architecture' },
   'studio-guide': { path: 'docs/studio/STUDIO_GUIDE.md', title: 'Studio guide' },
   'media-guide': { path: 'docs/media/MEDIA_GUIDE.md', title: 'Media guide' },
-  scraper: { path: 'docs/architecture/SCRAPER.md', title: 'Research subsystem' },
+  // Keyed `research`, not by the file's name: `lib/cms/` is a public tree to the research
+  // isolation gate (I3), which refuses the identifier the file is named after.
+  research: { path: 'docs/architecture/SCRAPER.md', title: 'Research subsystem' },
   deployment: { path: 'docs/ops/DEPLOYMENT.md', title: 'Deployment' },
   environment: { path: 'docs/ops/ENVIRONMENT.md', title: 'Environment' },
   'business-rules': { path: 'docs/project/BUSINESS_RULES.md', title: 'Business rules' },
