@@ -6,6 +6,70 @@ Every phase adds an entry; see `docs/architecture/CANONICAL-DECISIONS.md` D9 for
 
 ## [Unreleased]
 
+### Phase 44 — Vercel Deployment (DEVELOPMENT COMPLETE; drills and tests outstanding)
+
+The property this phase buys is not "it is deployed" — it is that a bad deploy can be undone
+without guessing. Most of it is a runbook and two scripts, and the most useful thing in it is the
+list of what is NOT true.
+
+**One Supabase project, not two, and the consequence is written down.** The phase document
+specifies `rivya-prod` and `rivya-staging` with the build failing if a preview points at
+production. The owner chose one project, so **a preview deployment reads and writes production
+data** — `DEPLOYMENT.md` §1.1 says exactly that, lists the four consequences and what reduces each,
+and names what a second project would buy. `check-env.ts` reports the posture as a warning on every
+preview rather than enforcing a comparison that would fail every build, because a gate that always
+fails is a gate somebody deletes. Amendment **A42**.
+
+**`scripts/ops/preflight.ts` runs thirteen named gates in one command.** "Run all the guard
+scripts" is how one of them stops being run: a person under time pressure runs the four they
+remember. Each gate prints its own row whether it passed, failed or skipped, failures sort first,
+and a **skipped gate says which phase owns it** — a preflight reporting twelve green gates as
+thirteen would be the failure it exists to prevent. Ten run today; gates 9 and 13 belong to Phases
+42 and 46, and gate 12 skips without `DATABASE_URL` with a reason that says to point it at a
+throwaway database. Gate 3 is spawned as `python3` rather than through npm, so a missing interpreter
+reads as a failed gate naming the interpreter rather than as a media check that quietly did not
+happen (D6 amendment A1).
+
+**`scripts/ops/check-env.ts` checks shape, not just presence**, per environment: a Supabase URL
+that is not https, a service-role key that is not a three-segment JWT (structure only — decoding it
+would put the payload in this process's memory), a site URL with a trailing slash that doubles every
+built URL, a WhatsApp number that is not E.164. It names the variable and the rule and never a
+value, a prefix or a length, which is what makes it safe in a build log. It carries one
+cross-variable rule: a preview must not use the production WhatsApp number, because a reviewer
+reaching the handoff would message the owner's real phone from a draft.
+
+**`scripts/docs/check-doc-contract.mjs` exists now.** Phase 01 named it and it was a filename in a
+runbook until this phase. It compares two sets in both directions — every declared variable
+documented, every variable the product reads declared — and joins `npm run check`.
+
+**The migrate workflow was extended, not duplicated.** `db-migrate.yml` already did dispatch-only
+invocation, a typed project-ref confirmation and plan/apply; it now takes a `pg_dump` snapshot before
+any apply and uploads it as a 30-day artefact, and carries a GitHub Environment on the apply path
+only. Two workflows applying migrations to one project is how they drift until somebody runs the
+wrong one. There is no `migrate-staging.yml`, because there is no staging database.
+
+**`vercel.json` gained** the framework, install and build commands, the `bom1` region, function
+memory and duration for the six cron routes and the two heavy media paths. `next.config.ts` gained a
+`www` → apex 308 derived from `NEXT_PUBLIC_SITE_URL` rather than hard-coded, and a one-host image
+allowlist.
+
+**The environment ribbon (RC-362)** sits above the announcement bar on every non-production
+deployment, naming the environment and the commit. It renders null only for the literal
+`production`, so a missing `VERCEL_ENV` shows it — the safe direction is to say which environment
+this is rather than assume it is the real one. **The build panel (RC-363)** replaced three inline
+lines on the environment page and added the migration-state row: `BEHIND` is a warning, `AHEAD` is
+`info` because it is the safe half of an expand/contract window.
+
+**Neither deployment drill has been run, and no elapsed time is claimed.** The rollback drill needs
+a production deployment with a previous one to fall back to; the forward-fix drill, with one
+project, would apply a migration to the production database. Both procedures are written out and
+both are marked NOT RUN in `DEPLOYMENT.md` §11.1. A number nobody measured is worse than no number.
+
+**Four owner actions were added to the backlog**: create the `production-database` GitHub
+Environment with a required reviewer (without it the approval gate is declared but does not wait),
+set both salts, disable public sign-up and create the first owner user, and decide whether a second
+Supabase project is worth its cost.
+
 ### Phase 43 — Media Coverage + Higgsfield Finalization (DEVELOPMENT COMPLETE; tests deferred to Phase 42)
 
 Phase 07 produced a projected gap list before most slots existed. Phases 09–22 then built the real

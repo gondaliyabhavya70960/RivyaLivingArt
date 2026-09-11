@@ -36,8 +36,19 @@ Adding a variable is a four-step act, in this order. A variable that skips any s
 | 3 | `lib/env.ts` | A Zod schema entry declaring required/optional per runtime, and whether it is public or server-only |
 | 4 | This document, §3 or §4 | Purpose, scope, where set, consumer, failure mode, rotation owner |
 
-`scripts/docs/check-doc-contract.mjs` enforces step 4: a PR touching `.env.example` or any `lib/**`
-file reading `process.env` must also touch this document.
+`scripts/docs/check-doc-contract.mjs` enforces steps 2 and 4, and it is **built and running** as of
+Phase 44 — it was named in Phase 01 and did not exist until then. It compares two sets in both
+directions: every name in `.env.example` must be mentioned somewhere in this document, and every
+variable the product actually reads must be declared in `.env.example`. Platform-injected names
+(`VERCEL_*`, `NODE_ENV`, `CI`) are exempt, because D8 lists what the PROJECT sets and asking the
+owner to declare a variable they cannot set would be asking for a lie. It runs in `npm run check`
+and as gate 5 of `scripts/ops/preflight.ts`.
+
+**`npx tsx scripts/ops/check-env.ts` is the runtime half** — presence AND shape, per environment: a
+Supabase URL that is not https, a service-role key that is not a three-segment JWT, a site URL with
+a trailing slash that would double every built URL, a WhatsApp number that is not E.164. It names
+the variable and the rule, never a value, a prefix or a length, which is what makes it safe to run
+in a build log.
 
 **Access rule.** No module reads `process.env` directly except `lib/env.ts` and
 `lib/ops/env-checks/**`. Everything else imports the parsed, typed object. A server-only variable is
@@ -364,6 +375,13 @@ served from a Rivya origin. See `docs/architecture/SCRAPER.md`.
 | `DATABASE_URL` | **The application never uses it.** Reads and writes go through PostgREST over HTTPS via `supabase-js`; only migrations and operations scripts open a direct connection, and those run in CI (§5's matrix says "CI only"). Putting it in Vercel adds the most powerful credential in the system to a place that has no use for it. |
 | `NEXT_PUBLIC_WHATSAPP_NUMBER` | It is the owner's real number, it is `OWNER_VERIFICATION_REQUIRED`, and no page renders it before Phase 10. A real number in a public preview build is a number that gets scraped. |
 | `GOOGLE_SERVICE_ACCOUNT_JSON`, `GOOGLE_SHEETS_SPREADSHEET_ID` | The Sheets export is Phase 36. No credential exists to paste. (`SCRAPER_USER_AGENT` used to be on this list and moved to §5.2's Phase 25 table when the fetcher shipped.) |
+
+**Phase 44 made the single-project posture a recorded decision rather than a temporary state**
+(amendment A42). `npx tsx scripts/ops/check-env.ts` prints a WARNING on every preview build saying
+so, and `DEPLOYMENT.md` §1.1 lists what it costs and exactly what a second project would buy. The
+warning is deliberately not an error: the phase document asks the script to FAIL a preview whose
+Supabase project ref equals production's, and with one project that check would fail every preview
+build — a gate that always fails is a gate somebody deletes.
 
 **One project, two Vercel environments, today.** §5's matrix anticipates `rivya-prod` and
 `rivya-staging`; only one Supabase project exists (`ccvarsmzickdkryoakdg`), so Production and

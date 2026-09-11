@@ -4,10 +4,11 @@ import { Surface } from '@/components/primitives/Surface'
 import { Text } from '@/components/primitives/Text'
 import { EnvironmentChecks } from '@/components/studio/ops/EnvironmentChecks'
 import { SecurityPostureSection } from '@/components/studio/ops/SecurityPosture'
+import { BuildPanel } from '@/components/studio/system/BuildPanel'
 import { StudioPage, studioMetadata } from '@/components/studio/StudioPage'
 import { t } from '@/components/studio/strings'
 import { requirePermission } from '@/lib/auth/require'
-import { readBuildInfo, shortSha } from '@/lib/ops/build-info'
+import { readBuildInfo } from '@/lib/ops/build-info'
 import { runEnvironmentChecks, worstStatus } from '@/lib/ops/environment'
 import { readSecurityPosture } from '@/lib/ops/security-posture'
 
@@ -27,6 +28,14 @@ export default async function Page() {
   const overall = worstStatus(results)
   const build = readBuildInfo()
   const posture = readSecurityPosture()
+
+  /*
+   * Read off the `migrations` check's own detail rather than queried again. The check reports
+   * `applied` as a number in its detail bag; anything else — an unreachable database, a check that
+   * was never configured — leaves it null.
+   */
+  const appliedRaw = results.find((result) => result.id === 'migrations')?.detail['applied']
+  const appliedMigrations = typeof appliedRaw === 'number' ? appliedRaw : null
 
   return (
     <StudioPage path="/studio/system/environment">
@@ -58,17 +67,15 @@ export default async function Page() {
         {/* Phase 41. State only, below the reachability table it complements. */}
         <SecurityPostureSection posture={posture} />
 
-        <Surface level={1} className="p-4" data-env-build="">
-          <Stack gap={1}>
-            <Text size="2xs" uppercase tone="tertiary">
-              {t('studio.env.buildHeading')}
-            </Text>
-            <Text size="sm">{`${t('studio.env.buildCommit')} ${shortSha(build.sha)} · ${t('studio.env.buildBranch')} ${build.branch}`}</Text>
-            <Text size="xs" tone="secondary">
-              {`${t('studio.env.buildAt')} ${build.builtAt} · ${t('studio.env.buildEnvironment')} ${build.environment} · ${t('studio.env.buildMigrations')} ${String(build.migrationsOnDisk)} (${build.latestMigrationFile ?? 'none'})`}
-            </Text>
-          </Stack>
-        </Surface>
+        {/*
+          PHASE 44 REPLACED THE INLINE BLOCK WITH `BuildPanel`. The five facts are the same; what is
+          new is the migration-state row, which compares what this build carries against what the
+          database records and says BEHIND, AHEAD or LEVEL. `appliedMigrations` comes from the
+          `migrations` check that has already run above, so the page makes no second query — and is
+          null when that check could not reach the database, because an unreachable database is not
+          a migration mismatch and reporting one would send somebody to look at the wrong thing.
+        */}
+        <BuildPanel build={build} appliedMigrations={appliedMigrations} />
       </Stack>
     </StudioPage>
   )

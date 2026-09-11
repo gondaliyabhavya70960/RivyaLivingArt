@@ -4,6 +4,7 @@ import { AnnouncementBar } from '@/components/patterns/AnnouncementBar'
 import { JsonLd } from '@/components/patterns/JsonLd'
 import { SiteFooter } from '@/components/patterns/SiteFooter'
 import { SiteErrorCopyProvider } from '@/components/patterns/SiteErrorCopy'
+import { EnvironmentRibbon } from '@/components/patterns/EnvironmentRibbon'
 import { SiteHeader } from '@/components/patterns/SiteHeader'
 import { VitalsReporter } from '@/components/patterns/VitalsReporter'
 import { siteString } from '@/lib/cms/strings'
@@ -99,6 +100,13 @@ export default async function SiteLayout({
           {skipLabel}
         </a>
       )}
+
+      {/*
+       * Phase 44. ABOVE THE ANNOUNCEMENT BAR AND THE HEADER, because the first thing a person needs
+       * to know about a preview is that it is one — before they read anything the studio is
+       * announcing. It renders null in production and costs no JavaScript anywhere.
+       */}
+      <EnvironmentRibbon />
 
       {chrome.announcement === null ? null : (
         <AnnouncementBar announcement={chrome.announcement} strings={chrome.strings} />

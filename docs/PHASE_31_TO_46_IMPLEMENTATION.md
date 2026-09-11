@@ -1963,7 +1963,132 @@ Hosted Supabase applies `0410`–`0411` with this phase. Nothing else changes at
 
 ## Phase 44 — Vercel Deployment
 
-**Status:** NOT STARTED
+**Status:** DEVELOPMENT COMPLETE — both deployment drills are **NOT RUN** (§11.1 of `DEPLOYMENT.md`
+says why), and `tests/unit/env-schema.test.ts` and `tests/e2e/deploy-smoke.spec.ts` are deferred to
+Phase 42 with the rest of the test track.
+
+### Objective
+Make a bad deploy undoable without guessing. Name every release gate in one command, check the
+environment by shape rather than by presence alone, separate migration from build, and write down
+what is NOT true as carefully as what is.
+
+### Requirements Found
+`docs/project/phases/PHASE-39-46.md` §Phase 44, `DEPLOYMENT.md` §1–§13, `ENVIRONMENT.md` §1 and
+§5.2, D8.
+
+### Implementation Completed
+
+**1. `scripts/ops/preflight.ts` — thirteen named gates, one command.** Each prints its own row
+whether it passed, failed or skipped; failures sort first; a skipped gate states **which phase owns
+it**. Ten run today. Gate 3 is spawned as `python3` rather than through npm so a missing interpreter
+reads as a FAILED gate naming the interpreter — D6 amendment A1 requires that check before any media
+migration, and a skipped media gate would be indistinguishable from a passed one.
+
+**2. `scripts/ops/check-env.ts` — presence AND shape, per environment.** A Supabase URL that is not
+https; a service-role key that is not a three-segment JWT, checked by structure and never decoded,
+because decoding would put the payload in this process's memory and one careless log line from
+escaping; a site URL with a trailing slash that doubles every built URL; a WhatsApp number that is
+not E.164. Every message names the variable and the rule, never a value, a prefix or a length.
+
+One cross-variable rule: a preview must not carry production's WhatsApp number, because a reviewer
+reaching the handoff would message the owner's real phone from a draft. It compares and does not
+print.
+
+**3. `scripts/docs/check-doc-contract.mjs` — created, minimally, and running.** Phase 01 named it;
+it was a filename in a runbook until now. Two sets, both directions: every name in `.env.example`
+documented in `ENVIRONMENT.md`, every variable the product reads declared in `.env.example`.
+Platform names are exempt because D8 lists what the project sets. In `npm run check` and preflight
+gate 5.
+
+**4. Platform configuration.** `vercel.json`: framework, `npm ci`, `npm run build`, the `bom1`
+region, and function memory and duration for the six cron routes and the two heavy media paths.
+`next.config.ts`: a `www` → apex 308 derived from `NEXT_PUBLIC_SITE_URL` rather than hard-coded (the
+domain is owner-supplied; a literal would be a second place it lives), and a one-host image
+allowlist matching the content security policy.
+
+**5. `db-migrate.yml` extended rather than duplicated.** It already did dispatch-only invocation, a
+typed project-ref confirmation and plan/apply. Added: a `pg_dump` snapshot before any apply,
+uploaded as a 30-day artefact, and a GitHub Environment on the apply path only. Two workflows
+applying migrations to one project is how they drift until somebody runs the wrong one.
+
+**6. `EnvironmentRibbon` (RC-362) and `BuildPanel` (RC-363).** The ribbon sits above the
+announcement bar — the first thing a person needs to know about a preview is that it is one. The
+panel replaced three inline lines on the environment page and added the migration-state row.
+
+### Files Added
+`scripts/ops/preflight.ts` · `scripts/ops/check-env.ts` · `scripts/docs/check-doc-contract.mjs` ·
+`components/patterns/EnvironmentRibbon/index.tsx` · `components/studio/system/BuildPanel.tsx`
+
+### Files Modified
+`vercel.json` · `next.config.ts` · `.github/workflows/db-migrate.yml` · `app/(site)/layout.tsx` ·
+`app/(studio)/studio/(shell)/system/environment/page.tsx` · `components/studio/strings.ts` ·
+`package.json` · `docs/ops/DEPLOYMENT.md` · `docs/ops/ENVIRONMENT.md` ·
+`docs/architecture/CANONICAL-DECISIONS.md` · `docs/design/COMPONENT_REGISTRY.md`
+
+### Database Changes
+**None.** Build metadata comes from platform-injected variables; migration state is read from
+Supabase's own ledger. A `deployments` table would duplicate Vercel and drift within a week.
+
+### Supabase Changes
+None. The hosted project is level `0411` from Phase 43.
+
+### Environment Variables
+No new ones. `check-env.ts` and `check-doc-contract.mjs` between them now enforce that every
+variable in `.env.example` is documented and every variable the code reads is declared — which is
+what makes the existing set trustworthy rather than merely long.
+
+### GitHub Actions Changes
+`db-migrate.yml` gained the snapshot, the artefact upload and the `production-database` environment
+on the apply path. No new workflow file: there is no staging database, so `migrate-staging.yml`
+would have nowhere to push, and a second production-migrate workflow is a drift hazard.
+
+### Tests Performed
+No new test files, by the owner's instruction. What was verified:
+
+- `npx tsx scripts/ops/preflight.ts` — 10 PASSED, 3 SKIPPED each naming its phase, 1 FAILED (gate 11,
+  because this container has no environment variables set, which is the gate working).
+- `npx tsx scripts/ops/check-env.ts` with nothing set — exits 1, names four variables and the rule
+  each broke, prints no value, prefix or length. Read the output to confirm.
+- `npm run docs:check-contract` — 18 declared variables all documented, 17 read all declared.
+- `.github/workflows/db-migrate.yml` parses as YAML with 11 steps.
+- `vercel.json` parses as JSON.
+- `npm run check` green; `tsc` clean.
+
+### Issues Found / Fixed
+
+1. **The phase document's environment model does not match this project.** It specifies two Supabase
+   projects and a `check-env.ts` that fails a preview pointing at production. The owner chose one
+   project. Rather than shipping a check that would fail every preview build — which is how a gate
+   gets deleted — the script reports the posture as a WARNING, and `DEPLOYMENT.md` §1.1 states the
+   four consequences and what a second project would buy. Amendment A42.
+2. **`DEPLOYMENT.md` §1 claimed "three environments, two Supabase projects" and that a preview
+   "never connects to production".** Both were false. Rewritten.
+3. **The release checklist had a staging step that cannot exist.** Steps 12–14 rewritten, including
+   an explicit "do not submit the enquiry form on a preview — it would write a real row".
+4. **The approval gate is declared, not guaranteed.** GitHub protects an environment only once
+   somebody configures a required reviewer; an unconfigured one does not fail a run, it just does
+   not wait. Added to the owner backlog rather than left implied by the workflow file.
+5. **Neither drill has been run.** Recorded as NOT RUN with the reason, rather than printing a
+   plausible elapsed time.
+
+### Build Status
+`npm run check` green; preflight as above.
+
+### Deployment Status
+Nothing was deployed by this phase. What it produces is the ability to deploy deliberately: the
+gates, the checker, the snapshot, the ribbon and the runbook.
+
+### Commit
+`feat(phase-44): Vercel Deployment`
+
+### Remaining Notes
+- **Four owner actions**, now in `DEPLOYMENT.md` §12: create `production-database` with a required
+  reviewer; set `IP_HASH_SALT` and `RATE_LIMIT_SALT`; disable public sign-up and create the first
+  owner user (`auth.users` is empty, so nobody can sign into the production Studio today); decide
+  whether a second Supabase project is worth its cost.
+- **Both drills are outstanding.** The rollback drill is safe the moment there is a production
+  deployment with a previous one; the forward-fix drill wants a second project.
+- `tests/unit/env-schema.test.ts` and `tests/e2e/deploy-smoke.spec.ts` are Phase 42's.
 
 ## Phase 45 — Final Creative Polish
 
