@@ -75,6 +75,9 @@ function refresh(): void {
   revalidatePath('/studio/research/changes')
   revalidatePath('/studio/research/explorer')
   revalidatePath('/studio/research/dashboard')
+  // Phase 30's workspace renders the same action bar over the same rows, so a decision taken there
+  // has to invalidate the screen it was taken on as well as the queue it came from.
+  revalidatePath('/studio/research/large-format')
 }
 
 /**

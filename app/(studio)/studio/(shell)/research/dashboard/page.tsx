@@ -1,5 +1,6 @@
 import { Badge } from '@/components/primitives/Badge'
 import { RelativeTime } from '@/components/studio/RelativeTime'
+import { coverage, tallyThreeValued } from '@/lib/scraper/analytics/coverage'
 import { Stack } from '@/components/primitives/Stack'
 import { Surface } from '@/components/primitives/Surface'
 import { Text } from '@/components/primitives/Text'
@@ -14,6 +15,7 @@ import { HealthPill } from '@/components/studio/research/HealthPill'
 import { countProductsByStage } from '@/lib/supabase/repositories/research/products'
 import { listResearchRuns } from '@/lib/supabase/repositories/research/runs'
 import { countUndecided, oldestUndecided } from '@/lib/supabase/repositories/research/changes'
+import { listScaleRows } from '@/lib/supabase/repositories/research/scale'
 import { latestDigest } from '@/lib/supabase/repositories/research/digests'
 import { countUnresolvedCategoryMappings } from '@/lib/supabase/repositories/research/source-config'
 import { listSourceHealth } from '@/lib/supabase/repositories/research/source-health'
@@ -50,19 +52,45 @@ export default async function Page() {
   await requirePermission('research.read')
 
   const client = await createClient()
-  const [sources, runs, pending, stages, researchOn, health, unmapped, digest, undecided, oldest] =
-    await Promise.all([
-      listResearchSources(client),
-      listResearchRuns(client, 10),
-      countPendingWorkItems(client),
-      countProductsByStage(client),
-      isEnabled('research_enabled'),
-      listSourceHealth(client),
-      countUnresolvedCategoryMappings(client),
-      latestDigest(client),
-      countUndecided(client),
-      oldestUndecided(client),
-    ])
+  const [
+    sources,
+    runs,
+    pending,
+    stages,
+    researchOn,
+    health,
+    unmapped,
+    digest,
+    undecided,
+    oldest,
+    scaleRows,
+  ] = await Promise.all([
+    listResearchSources(client),
+    listResearchRuns(client, 10),
+    countPendingWorkItems(client),
+    countProductsByStage(client),
+    isEnabled('research_enabled'),
+    listSourceHealth(client),
+    countUnresolvedCategoryMappings(client),
+    latestDigest(client),
+    countUndecided(client),
+    oldestUndecided(client),
+    listScaleRows(client, { limit: 5_000 }),
+  ])
+
+  /*
+   * PHASE 30'S TILES, AND THE UNKNOWN BUCKET IS ONE OF THREE RATHER THAN AN ERROR COUNT.
+   *
+   * A dashboard that showed "18 large" and "204 not large" would be read as a complete picture,
+   * and on a corpus of other people's web pages the third number is usually the biggest one.
+   * Coverage sits beside them for the same reason: every figure here is conditional on how many
+   * rows had measurements at all.
+   */
+  const largeTally = tallyThreeValued(scaleRows.map((row) => row.is_large_format))
+  const scaleCoverage = coverage(
+    scaleRows.length,
+    scaleRows.filter((row) => row.dimension_parse_state === 'PARSED').length,
+  )
 
   const stats = (digest?.stats ?? {}) as {
     productsDiscovered?: number
@@ -113,6 +141,30 @@ export default async function Page() {
               figure nobody learns to look for. */}
           <Text tone="secondary" className="mt-2" data-unmapped-categories={String(unmapped)}>
             {`${unmapped} ${t('studio.research.unmappedCount')}`}
+          </Text>
+        </Surface>
+
+        <Surface level={1} className="p-6" data-large-format-panel="">
+          <PageHeader level={2} title={t('studio.research.largeFormatHeading')} />
+          <div className="mt-4 flex flex-wrap gap-3">
+            <Badge tone="neutral" data-large-yes={String(largeTally.yes)}>
+              {`${String(largeTally.yes)} ${t('studio.research.tallyLarge')}`}
+            </Badge>
+            <Badge tone="neutral" data-large-no={String(largeTally.no)}>
+              {`${String(largeTally.no)} ${t('studio.research.tallyNotLarge')}`}
+            </Badge>
+            {/* THE THIRD VALUE, ALWAYS DRAWN. On a corpus of other people's pages it is usually
+                the biggest of the three, and a dashboard showing only two would be read as a
+                complete picture. */}
+            <Badge tone="warning" data-large-unknown={String(largeTally.unknown)}>
+              {`${String(largeTally.unknown)} ${t('studio.research.tallyUnknown')}`}
+            </Badge>
+            <Badge tone={scaleCoverage.pct < 50 ? 'warning' : 'neutral'} data-scale-coverage="">
+              {`${String(scaleCoverage.pct)}% ${t('studio.research.coverageMeasured')}`}
+            </Badge>
+          </div>
+          <Text tone="secondary" className="mt-3">
+            {t('studio.research.tallyNote')}
           </Text>
         </Surface>
 

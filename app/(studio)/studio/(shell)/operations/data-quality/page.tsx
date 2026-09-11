@@ -9,19 +9,26 @@ import { EmptyState } from '@/components/studio/EmptyState'
 import { PageHeader } from '@/components/studio/PageHeader'
 import { StudioPage, studioMetadata } from '@/components/studio/StudioPage'
 import { ChangeRuleEditor } from '@/components/studio/research/ChangeRuleEditor'
+import { ScaleRuleEditor } from '@/components/studio/research/ScaleRuleEditor'
 import { LexiconEditor } from '@/components/studio/research/LexiconEditor'
 import { t } from '@/components/studio/strings'
 import { roleHasPermission } from '@/lib/auth/permissions'
 import { requirePermission } from '@/lib/auth/require'
 import { parseCoverage } from '@/lib/supabase/repositories/research/explorer'
 import { listChangeRules } from '@/lib/supabase/repositories/research/change-rules'
+import { listScaleRules } from '@/lib/supabase/repositories/research/scale'
 import { listLexicon } from '@/lib/supabase/repositories/research/lexicon'
 import { countUnresolvedCategoryMappings } from '@/lib/supabase/repositories/research/source-config'
 import { listResearchSources } from '@/lib/supabase/repositories/research/sources'
 import { tallyIssues } from '@/lib/supabase/repositories/research/validation-issues'
 import { createClient } from '@/lib/supabase/server'
 
-import { deleteLexiconEntryAction, saveChangeRuleAction, saveLexiconEntryAction } from './actions'
+import {
+  deleteLexiconEntryAction,
+  saveChangeRuleAction,
+  saveLexiconEntryAction,
+  saveScaleRuleAction,
+} from './actions'
 
 /**
  * /studio/operations/data-quality — what the checks are finding, and where the parser is not
@@ -79,14 +86,16 @@ async function ResearchTab({
   readonly canDelete: boolean
 }) {
   const client = await createClient()
-  const [tallies, coverage, sources, lexicon, unmapped, changeRules] = await Promise.all([
-    tallyIssues(client),
-    parseCoverage(client),
-    listResearchSources(client),
-    listLexicon(client),
-    countUnresolvedCategoryMappings(client),
-    listChangeRules(client),
-  ])
+  const [tallies, coverage, sources, lexicon, unmapped, changeRules, scaleRules] =
+    await Promise.all([
+      tallyIssues(client),
+      parseCoverage(client),
+      listResearchSources(client),
+      listLexicon(client),
+      countUnresolvedCategoryMappings(client),
+      listChangeRules(client),
+      listScaleRules(client),
+    ])
 
   const sourceNames = new Map(sources.map((source) => [source.id, source.name]))
   const errors = tallies
@@ -239,6 +248,11 @@ async function ResearchTab({
        * configuration about somebody else's pages, both are `research.write`, and a person tuning
        * one is usually there because of the other.
        */}
+      {/* PHASE 30'S SCALE RULES SIT BESIDE PHASE 29'S THRESHOLDS AND PHASE 28'S LEXICON, for the
+          same reason: all three are parsing configuration about other people's pages, all three
+          are `research.write`, and a person tuning one is usually here because of another. */}
+      <ScaleRuleEditor rules={scaleRules} canWrite={canWrite} saveAction={saveScaleRuleAction} />
+
       <ChangeRuleEditor
         rules={changeRules}
         sources={sources.map((source) => ({ value: source.id, label: source.name }))}

@@ -564,6 +564,38 @@ const EXPECTED = {
   research_product_tags: ['research_product_id', 'tag_id', 'assigned_at'],
   research_change_digests: ['digest_date', 'stats', 'generated_at'],
 
+  /*
+   * Phase 30 — two tables, both carrying the full common set, and for once the reason is the same
+   * for both: a person creates the row and is accountable for it, which is what §1.2 means by
+   * content-bearing.
+   *
+   * `research_large_format_rules` is configuration, exactly as `research_change_rules` and
+   * `research_material_lexicon` are. `research_saved_views` is the one research table whose rows
+   * belong to individual PEOPLE — it additionally carries `owner_user_id`, which is not a tier
+   * column but is the row's whole identity, and its `status` defaults to PUBLISHED rather than
+   * DRAFT because a view somebody just saved is one they mean to use.
+   */
+  research_large_format_rules: [
+    'priority',
+    'predicate',
+    'is_enabled',
+    'status',
+    'created_at',
+    'updated_at',
+    'updated_by',
+  ],
+  research_saved_views: [
+    'surface',
+    'name',
+    'filters',
+    'is_shared',
+    'owner_user_id',
+    'status',
+    'created_at',
+    'updated_at',
+    'updated_by',
+  ],
+
   bulk_operations: [
     'kind',
     'target_entity',

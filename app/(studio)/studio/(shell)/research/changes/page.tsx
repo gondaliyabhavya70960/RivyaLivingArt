@@ -7,7 +7,8 @@ import { Stack } from '@/components/primitives/Stack'
 import { Text } from '@/components/primitives/Text'
 import { DataTable, type Column } from '@/components/studio/DataTable'
 import { StudioPage, studioMetadata } from '@/components/studio/StudioPage'
-import { UnavailableBulkToolbar } from '@/components/studio/bulk/UnavailableToolbar'
+import { ResearchBulkPreview } from '@/components/studio/research/BulkPreview'
+import { ResearchBulkToolbar } from '@/components/studio/research/BulkToolbar'
 import { ChangeDrawer, readable } from '@/components/studio/research/ChangeDrawer'
 import { ChangeFilters } from '@/components/studio/research/ChangeFilters'
 import { QueueShortcuts } from '@/components/studio/research/QueueShortcuts'
@@ -15,6 +16,9 @@ import { RelativeTime } from '@/components/studio/RelativeTime'
 import { t } from '@/components/studio/strings'
 import { roleHasPermission } from '@/lib/auth/permissions'
 import { requirePermission } from '@/lib/auth/require'
+import { loadBulkOperations, operationsFor } from '@/lib/bulk/registry'
+import { readBulkPreview } from '@/lib/bulk/run'
+import { MAX_SELECTION } from '@/lib/bulk/types'
 import { CHANGE_FIELDS, MATERIALITIES, type ChangeField } from '@/lib/scraper/analytics/materiality'
 import {
   getChange,
@@ -26,6 +30,7 @@ import { listNotes, listProductTags, listTags } from '@/lib/supabase/repositorie
 import { listResearchSources } from '@/lib/supabase/repositories/research/sources'
 import { createClient } from '@/lib/supabase/server'
 
+import { applyResearchBulkAction, previewResearchBulkAction } from '../bulk-actions'
 import {
   addNoteAction,
   confirmAction,
@@ -51,9 +56,16 @@ import {
  * is a surface somebody works through a hundred rows at a time and reaching for the mouse between
  * each one is the difference between a queue that gets cleared and one that does not.
  *
- * THE BULK TOOLBAR IS THE PHASE 24 ONE, NOW AVAILABLE. Phase 24 registered five research operations
- * against the single bulk engine with `available: false` exactly so that this phase would fill in a
- * `preview` and an `applyItem` rather than building a second bulk system. It did.
+ * THE BULK TOOLBAR IS THE PHASE 24 ONE, AND THE SELECTION IT ACTS ON IS PHASE 30'S. Phase 24
+ * registered five research operations against the single bulk engine with `available: false`
+ * exactly so that a later phase would fill in a `preview` and an `applyItem` rather than build a
+ * second bulk system; Phase 29 did that, and this screen carried the named unavailable state until
+ * there were checkboxes to act with. There are now.
+ *
+ * **THE CHECKBOX CARRIES THE PRODUCT ID, NOT THE CHANGE ID.** The five operations target a research
+ * PRODUCT — shortlist it, reject it, confirm it — and a queue row is one field's movement on one of
+ * them. Two changes on the same product select that product once, which the engine's own
+ * de-duplication makes true rather than this screen pretending to.
  */
 export const metadata = studioMetadata('/studio/research/changes')
 
@@ -66,6 +78,11 @@ function oneOf<T extends string>(value: string | string[] | undefined, allowed: 
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/iu
+
+const BASE_PATH = '/studio/research/changes'
+
+/** The filter keys this screen reads, named once so the row link and the toolbar carry the same set. */
+const FILTER_KEYS = ['source', 'field', 'materiality', 'decided', 'age'] as const
 
 /** The `?change=` parameter, refused before it reaches a uuid column. */
 function changeParam(value: string | string[] | undefined): string | null {
@@ -108,6 +125,8 @@ export default async function Page({
     ...(age === undefined ? {} : { withinDays: age }),
   }
 
+  await loadBulkOperations()
+
   const [rows, sources, tags] = await Promise.all([
     listChanges(client, filter),
     listResearchSources(client),
@@ -144,8 +163,76 @@ export default async function Page({
   }
 
   const canConfirm = roleHasPermission(session.role, 'research.confirm')
+  const canDestroy = roleHasPermission(session.role, 'destructive.execute')
+  // Both permissions, for the reason the engine states: every research operation declares
+  // `extraPermission: 'research.confirm'` on top of the `bulk.execute` its Server Action checks.
+  const canBulk = roleHasPermission(session.role, 'bulk.execute') && canConfirm
+
+  const filtersQuery = (() => {
+    const search = new URLSearchParams()
+    for (const key of FILTER_KEYS) {
+      const value = one(params[key])
+      if (value !== '') search.set(key, value)
+    }
+    return search.toString()
+  })()
+
+  const operationId = one(params.operation)
+  const preview =
+    canBulk && operationId !== ''
+      ? await readBulkPreview(operationId, { userId: session.userId, role: session.role })
+      : null
+
+  if (preview !== null) {
+    return (
+      <StudioPage path={BASE_PATH}>
+        <ResearchBulkPreview
+          kind={preview.kind}
+          operationId={preview.operationId}
+          confirmationToken={preview.confirmationToken}
+          isDestructive={preview.isDestructive}
+          rows={preview.items.map((item) => ({
+            entityId: item.entityId,
+            outcome: item.outcome,
+            ...(item.reason === undefined ? {} : { reason: item.reason }),
+            ...(item.rule === undefined ? {} : { rule: item.rule }),
+            ...(item.label === undefined ? {} : { label: item.label }),
+          }))}
+          willApply={preview.counts.willApply}
+          surface={BASE_PATH}
+          backHref={filtersQuery === '' ? BASE_PATH : `${BASE_PATH}?${filtersQuery}`}
+          applyAction={applyResearchBulkAction}
+        />
+      </StudioPage>
+    )
+  }
+
+  const operations = operationsFor('research_product').map((operation) => ({
+    kind: operation.kind,
+    isDestructive: typeof operation.isDestructive === 'function' ? true : operation.isDestructive,
+    available: operation.available !== false,
+  }))
 
   const columns: readonly Column<ChangeRow>[] = [
+    ...(canBulk
+      ? [
+          {
+            id: 'select',
+            header: t('studio.research.selectRow'),
+            // THE PRODUCT, NOT THE CHANGE — see the header. The engine de-duplicates, so two
+            // changes on one product submit that product once.
+            cell: (row: ChangeRow) => (
+              <input
+                type="checkbox"
+                name="selection"
+                value={row.research_product_id}
+                aria-label={`${row.field} — ${row.materiality}`}
+                data-select-row={row.research_product_id}
+              />
+            ),
+          },
+        ]
+      : []),
     {
       id: 'field',
       header: t('studio.research.filterField'),
@@ -208,8 +295,24 @@ export default async function Page({
     },
   ]
 
+  // Built once and handed to whichever wrapper applies: a client component cannot render a Server
+  // Component, but it can render one it is handed.
+  const table = (
+    <DataTable
+      caption={t('studio.research.changesHeading')}
+      columns={columns}
+      rows={rows}
+      rowKey={(row) => row.id}
+      empty={{
+        reason: 'empty',
+        heading: t('studio.research.changesEmpty'),
+        body: t('studio.research.changesEmptyBody'),
+      }}
+    />
+  )
+
   return (
-    <StudioPage path="/studio/research/changes">
+    <StudioPage path={BASE_PATH}>
       <Stack gap={5}>
         <ChangeFilters
           values={{
@@ -225,12 +328,6 @@ export default async function Page({
 
         <Cluster gap={3} justify="between">
           <QueueShortcuts />
-          {/* THE TOOLBAR STAYS IN ITS NAMED UNAVAILABLE STATE UNTIL A SELECTION EXISTS ON THIS
-              SCREEN. The five operations are implemented and available in the engine; what this
-              surface does not yet carry is row selection, which is Phase 30's workspace work. A
-              toolbar that offered to act on nothing would be the broken control Phase 24's
-              unavailable state exists to avoid. */}
-          <UnavailableBulkToolbar />
         </Cluster>
 
         {drawer === null ? null : (
@@ -255,17 +352,26 @@ export default async function Page({
           />
         )}
 
-        <DataTable
-          caption={t('studio.research.changesHeading')}
-          columns={columns}
-          rows={rows}
-          rowKey={(row) => row.id}
-          empty={{
-            reason: 'empty',
-            heading: t('studio.research.changesEmpty'),
-            body: t('studio.research.changesEmptyBody'),
-          }}
-        />
+        {canBulk ? (
+          <ResearchBulkToolbar
+            surface={BASE_PATH}
+            filters={filtersQuery}
+            operations={operations}
+            tags={tags.map((tag) => ({ id: tag.id, name: tag.label }))}
+            canDestroy={canDestroy}
+            maxSelection={MAX_SELECTION}
+            previewAction={previewResearchBulkAction}
+          >
+            {table}
+          </ResearchBulkToolbar>
+        ) : (
+          <Stack gap={2}>
+            {table}
+            <Text size="xs" tone="secondary">
+              {t('studio.research.bulkNeedsPermission')}
+            </Text>
+          </Stack>
+        )}
       </Stack>
     </StudioPage>
   )
@@ -279,10 +385,10 @@ export default async function Page({
  */
 function rowHref(params: Record<string, string | string[] | undefined>, changeId: string): Route {
   const search = new URLSearchParams()
-  for (const key of ['source', 'field', 'materiality', 'decided', 'age']) {
+  for (const key of FILTER_KEYS) {
     const value = one(params[key])
     if (value !== '') search.set(key, value)
   }
   search.set('change', changeId)
-  return `/studio/research/changes?${search.toString()}` as Route
+  return `${BASE_PATH}?${search.toString()}` as Route
 }

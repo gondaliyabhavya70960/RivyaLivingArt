@@ -3908,6 +3908,56 @@ export type Database = {
           },
         ]
       }
+      research_large_format_rules: {
+        Row: {
+          id: string
+          priority: number
+          predicate: Json
+          result_band: string | null
+          result_is_large: boolean | null
+          is_enabled: boolean
+          notes: string | null
+          status: Database['public']['Enums']['content_status']
+          created_at: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          priority: number
+          predicate: Json
+          result_band?: string | null
+          result_is_large?: boolean | null
+          is_enabled?: boolean
+          notes?: string | null
+          status?: Database['public']['Enums']['content_status']
+          created_at?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          priority?: number
+          predicate?: Json
+          result_band?: string | null
+          result_is_large?: boolean | null
+          is_enabled?: boolean
+          notes?: string | null
+          status?: Database['public']['Enums']['content_status']
+          created_at?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'research_large_format_rules_updated_by_fkey'
+            columns: ['updated_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       research_match_candidates: {
         Row: {
           id: string
@@ -4255,6 +4305,12 @@ export type Database = {
           normalized_overrides: Json
           override_by: string | null
           override_at: string | null
+          scale_band: string | null
+          is_large_format: boolean | null
+          longest_axis_mm: number | null
+          large_format_source: string | null
+          classified_at: string | null
+          classified_rule_id: string | null
         }
         Insert: {
           id?: string
@@ -4294,6 +4350,12 @@ export type Database = {
           normalized_overrides?: Json
           override_by?: string | null
           override_at?: string | null
+          scale_band?: string | null
+          is_large_format?: boolean | null
+          longest_axis_mm?: number | null
+          large_format_source?: string | null
+          classified_at?: string | null
+          classified_rule_id?: string | null
         }
         Update: {
           id?: string
@@ -4333,6 +4395,12 @@ export type Database = {
           normalized_overrides?: Json
           override_by?: string | null
           override_at?: string | null
+          scale_band?: string | null
+          is_large_format?: boolean | null
+          longest_axis_mm?: number | null
+          large_format_source?: string | null
+          classified_at?: string | null
+          classified_rule_id?: string | null
         }
         Relationships: [
           {
@@ -4612,6 +4680,66 @@ export type Database = {
             columns: ['source_id']
             isOneToOne: false
             referencedRelation: 'research_sources'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      research_saved_views: {
+        Row: {
+          id: string
+          surface: string
+          name: string
+          filters: Json
+          sort: Json | null
+          columns: string[] | null
+          is_shared: boolean
+          owner_user_id: string
+          status: Database['public']['Enums']['content_status']
+          created_at: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          surface: string
+          name: string
+          filters: Json
+          sort?: Json | null
+          columns?: string[] | null
+          is_shared?: boolean
+          owner_user_id: string
+          status?: Database['public']['Enums']['content_status']
+          created_at?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          surface?: string
+          name?: string
+          filters?: Json
+          sort?: Json | null
+          columns?: string[] | null
+          is_shared?: boolean
+          owner_user_id?: string
+          status?: Database['public']['Enums']['content_status']
+          created_at?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'research_saved_views_owner_user_id_fkey'
+            columns: ['owner_user_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'research_saved_views_updated_by_fkey'
+            columns: ['updated_by']
+            isOneToOne: false
+            referencedRelation: 'users'
             referencedColumns: ['id']
           },
         ]

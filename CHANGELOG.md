@@ -6,6 +6,61 @@ Every phase adds an entry; see `docs/architecture/CANONICAL-DECISIONS.md` D9 for
 
 ## [Unreleased]
 
+### Phase 30 — Large-Format Research Workspace
+
+SEED §56 puts large-format furniture first in the content hierarchy; this gives the same priority to
+research. `/studio/research/large-format` is a workspace over the rows that are large by a stated,
+editable rule — with honest coverage figures for the rows whose dimensions could not be read.
+
+What it is **not** is a market analysis. Rivya has no published products, so a comparison against
+its own catalogue would be an artefact of an empty catalogue wearing the clothes of a finding. This
+screen describes what has been observed; opportunity scoring is Phase 32.
+
+**Migrations `0280`–`0281`.** Six columns on `research_products`, `research_large_format_rules`
+(five ordered rules seeded as configuration, first match wins) and `research_saved_views`.
+
+**`is_large_format` is three-valued, and the null means "we have no measurement"** — not "we could
+not place it". A boolean would force a row whose dimensions could not be parsed to `false`, and
+every distribution built on the column would then under-report large work in proportion to how badly
+a source writes its pages: a failure that looks exactly like a finding. The first draft of this
+phase tied the null verdict to the BAND instead, and the phase document's own four verification rows
+caught it — a well-measured 1 150 mm piece whose proportions match no band signature is banded
+`UNKNOWN` and its size is perfectly well known (amendment A30).
+
+**Coverage is stated before anything is drawn from it.** The banner renders above every panel, each
+panel takes a required coverage prop, and zero rows in scope reads as 0 % rather than 100 %. No
+panel drops the unknown bucket or an empty band to look tidy. Price panels group by currency and
+produce no combined total — the summary type has no field for one, a shape that cannot express the
+wrong answer — and quote-only rows are counted rather than dropped.
+
+**An editor override is permanent.** `large_format_source = 'EDITOR'` freezes the row;
+`research:reclassify-scale` skips it and **reports** the skip, because somebody editing the rules
+needs to know how many rows their edit did not reach. Proved end to end against a live fixture: a
+2 100 mm piece banded DINING and large, a 900 mm piece COFFEE and not large, an unmeasured row
+UNKNOWN with no verdict, and an overridden row surviving a threshold raised past it.
+
+**`research_saved_views` is the first owner-scoped research table.** Five of the six roles hold
+`research.read`, so the scope carries the security rather than the permission; sharing is a second
+SELECT policy rather than a widened scope, because it widens who may READ a row and must not widen
+who may edit it.
+
+**The gap panel reports research coverage and says so in its heading** — no comparison with Rivya's
+catalogue, no score, and no opportunity language, which a test asserts by reading the component.
+
+**The workspace acts, not only reports.** Row selection arrived here and on the change queue, so the
+Phase 24 bulk toolbar and the Phase 29 action bar both work from the screen where a piece was found.
+Nothing new was built to carry them: the preview, the typed-count confirmation, the per-item snapshot
+and the 24-hour undo are the engine's, and the single-row controls call the same Server Actions the
+queue calls — Phase 29 wrote them to accept a bare product id for exactly this case. On the queue the
+checkbox carries the PRODUCT id, because the five operations target a product and a queue row is one
+field's movement on one of them. `/studio/research/explorer` keeps the named unavailable state, which
+is still true there.
+
+**I3 now bans the scale identifiers rather than the words.** `scale_band`, `scaleBand`,
+`large_format_source` and `largeFormatSource` may not appear on a public surface; "dining" and
+"console" obviously may, and `products.is_large_format` is a first-party column the public Large
+Format page reads.
+
 ### Phase 29 — Change Detection + Review
 
 The research subsystem becomes useful **over time** rather than at a point in time. A page Rivya has
