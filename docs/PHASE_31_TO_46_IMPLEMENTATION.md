@@ -1900,7 +1900,17 @@ catalogue baseline was 673px taller than the fixture's four products can make it
 regenerated from `db:reset` → `seed:content` → `seed-fixture --publish-seeded` and hold across two
 consecutive runs.
 
-**And one about the fixture, which had been passing on a dirty database.** `seed-idempotency`'s
+**Two suites had been passing on a dirty database, and CI is where that showed.** `publish-gates`
+ends with a deliberately LEGITIMATE write — a product pointing at the fixture's first media asset
+and its owner — because every refusal above it would also pass on a connection that refused
+everything. It never seeded the fixture: it passed because `seed-idempotency` seeds in its own
+`beforeAll` and vitest happened to run that file first, or because the developer's database already
+carried the rows. `ci.yml` does not seed the fixture at all — that is `e2e.yml`'s step — so on a
+runner the insert failed on `products_hero_media_id_fkey` and the suite reported the database
+refusing a write it should accept, which is the exact opposite of what the file is for. It seeds its
+own fixture now; `seedFixture` is idempotent, so it owes nothing to the order vitest picks.
+
+**And one more about the fixture.** `seed-idempotency`'s
 "leaves nothing behind after `--reset`" deletes the fixture's six staff rows, and
 `enforce_last_owner` refuses any statement that leaves the project with no ACTIVE owner. On a
 database built the way `e2e.yml` builds one — `db:reset`, `seed:content`, then the fixture — the

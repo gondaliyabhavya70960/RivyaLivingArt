@@ -1,7 +1,8 @@
-import { afterAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { FIXTURE_MEDIA, FIXTURE_STAFF, fixtureId } from '../fixtures/ids'
 import { connect, disconnect } from '../unit/rls/harness'
+import { seedFixture } from '../../scripts/test/seed-fixture'
 
 /**
  * THE GATES THAT STOP A CLAIM REACHING THE PUBLIC SITE — Phase 42.
@@ -50,6 +51,28 @@ async function attempt(
 const probe = (n: number): string => fixtureId('media', 800 + n)
 
 describeDb('the database refuses a fabricated business fact', () => {
+  /*
+   * THIS SUITE SEEDS ITS OWN FIXTURE, AND USED TO BORROW SOMEBODY ELSE'S — Phase 42.
+   *
+   * The last test below writes a LEGITIMATE product, pointing `hero_media_id` at `FIXTURE_MEDIA[0]`
+   * and `updated_by` at the fixture owner. Neither row exists until the fixture is seeded, and this
+   * file never seeded it: it passed only because `seed-idempotency.test.ts` happens to seed in its
+   * own `beforeAll` and vitest happened to run that file first, or because the developer's database
+   * already carried the rows from an earlier run.
+   *
+   * `ci.yml` does not seed the fixture at all — that is `e2e.yml`'s step — so on a runner the
+   * insert failed on `products_hero_media_id_fkey` and the suite reported the database refusing a
+   * write it should accept, which is the exact opposite of what this file is for. A suite that
+   * depends on another suite's side effects is a suite that passes by luck.
+   *
+   * `seedFixture` is idempotent by construction, so seeding here costs a second and owes nothing to
+   * the order vitest picks.
+   */
+  beforeAll(async () => {
+    const db = await connect()
+    await seedFixture(db, { reset: false, allowRemote: true, publishSeeded: false })
+  })
+
   afterAll(async () => {
     await disconnect()
   })

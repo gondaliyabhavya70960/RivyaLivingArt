@@ -72,6 +72,10 @@ inline search field will not fit beside a nine-item nav.
   server to `next start`, and `e2e.yml` builds first). A dev server answers
   `no-cache, must-revalidate` to everything, so four caching assertions could never pass in one, and
   two specs counted module-graph requests a production bundle never makes
+- `tests/integration/publish-gates.test.ts` seeds its own fixture. Its one legitimate write points
+  at the fixture's media and owner, and the file never seeded them — it passed only when another
+  suite had seeded first. `ci.yml` does not seed the fixture, so on a runner it reported the
+  database refusing a write it should accept
 - `tests/integration/seed-idempotency.test.ts` creates a caretaker owner around its `--reset` check.
   `enforce_last_owner` refuses to leave the project with no active owner, and on a database built
   the way CI builds one the fixture's owner is the only one — the test had been passing only on
