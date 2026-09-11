@@ -74,9 +74,9 @@ jobs:
       # from a committed derivative. The cloud name above exists only so URL construction succeeds.
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
@@ -173,7 +173,7 @@ jobs:
       # produced it; after a fortnight nobody opens one, and the storage is not free.
       - name: Keep the report and the traces
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: playwright-report-shard-${{ matrix.shard }}
           path: |
@@ -185,7 +185,7 @@ jobs:
       # visual regression committing itself.
       - name: Upload the rewritten baselines
         if: ${{ inputs.update_snapshots }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: visual-baselines-shard-${{ matrix.shard }}
           path: tests/visual/**/*.png

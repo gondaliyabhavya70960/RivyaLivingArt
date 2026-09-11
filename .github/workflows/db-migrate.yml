@@ -80,7 +80,7 @@ jobs:
       DATABASE_URL: ${{ secrets.SUPABASE_DB_URL }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # Before anything else, and before npm ci spends a minute, so a missing secret fails in
       # seconds rather than at the end.
@@ -124,7 +124,7 @@ jobs:
           fi
           echo "Confirmed: the typed ref matches the configured project."
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
@@ -164,7 +164,7 @@ jobs:
       # short enough that a database dump is not sitting in an artefact store for a year.
       - name: Keep the snapshot
         if: ${{ inputs.mode == 'apply' }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ env.SNAPSHOT_NAME }}
           path: /tmp/snapshot/
