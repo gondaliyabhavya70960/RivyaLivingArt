@@ -105,8 +105,13 @@ export function ProductInquiryRail({
   // No actions means no rail. An empty <nav> with an accessible name is a promise of controls.
   if (actions.length === 0) return null
 
+  /*
+   * STICKY ON A PHONE (§7.10). At 390px these two sat at y = 997 and 1053 of a 1928px document —
+   * below the fold and outside the thumb zone, which is what §19.1 question 7 measured. The class
+   * releases at 768px, where a call to action beside the piece is already in view.
+   */
   return (
-    <Cluster gap={3} data-inquiry-rail="">
+    <Cluster gap={3} data-inquiry-rail="" className="rv-sticky-actions">
       {actions.map((action, index) => (
         // The same two class strings SectionActions uses, so a CTA looks like a CTA wherever it is.
         // No `target="_blank"`: every destination here is this site's own.
