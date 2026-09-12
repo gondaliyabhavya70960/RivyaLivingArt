@@ -102,6 +102,14 @@ export type MediaBinding = {
  * Studio's focal points should be pointed at. That list is the crop pass's target, in order of how
  * far the source is from the box.
  *
+ * THESE DO NOT CHANGE THE TEST SUITE, AND THAT IS WORTH KNOWING BEFORE ANYONE LOOKS FOR A DIFF.
+ * The e2e and visual harness seeds `db:reset` + `seed:content` + `seed-fixture`, and the fixture
+ * inserts eleven `media_assets` rows of its own — not the 250 Higgsfield ones. So every binding
+ * below resolves to a GAP there, `media_desktop_id` stays null, and the pages render the same
+ * fallback wells they did before. Verified against a local cluster: 54 sections, 10 with a
+ * `media_slot_key`, 0 with a desktop asset. The bindings take effect where the migrated library
+ * exists — production and any database the Higgsfield migration has run against.
+ *
  * WHAT IS DELIBERATELY NOT HERE:
  *
  *   · THE HOMEPAGE HERO. `home.hero.video` and `home.hero.poster` are the two `GENERATE_NEW` slots

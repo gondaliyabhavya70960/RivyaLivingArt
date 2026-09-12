@@ -6,6 +6,72 @@ Every phase adds an entry; see `docs/architecture/CANONICAL-DECISIONS.md` D9 for
 
 ## [Unreleased]
 
+### Phase 45 — the polish pass, and the two gates it was specified to leave behind (2026-09-12)
+
+The owner asked for a complete redesign with the content and the colour untouched. Phase 45 already
+held four measured `FAIL` verdicts and a deferral list; this is that list, worked through. No block
+type, no dependency, no migration, no colour token changed.
+
+**The hero is a hero again.** `--rv-hero-min-h: 76svh` is a FLOOR on the first band, not a height:
+`AspectBox` gained `minBlockSize`, so the aspect ratio still drives the box and the floor only lifts
+it when the ratio would have left it short. `svh` rather than `vh` because phone chrome makes `vh`
+overflow. Measured in a browser at the eight QA widths: viewport share on `/` and `/large-format`
+went from `91·69·61·49·37·91·82·76%` to `91·76·76·76·76·91·82·76%` — worst case 37% → 76%.
+
+**Section rhythm stopped being one number.** `SECTION_RHYTHM` maps all 34 block types to four steps,
+exhaustively, so the compiler refuses a new block type with no rhythm. Before: 26 of 28 renderers at
+`lg`.
+
+**Every band now arrives.** `app/styles/motion.css` is a scroll-driven reveal layer built on
+`animation-timeline: view()` behind `@supports`, at **zero island cost** — the Phase 02 `Reveal`
+component (RC-207) had been imported by zero sections for two years, because a client component in a
+renderer is an island on all sixteen CMS routes. The unanimated state is the finished state, the
+first band is exempt, and reduced motion is honoured in the layer's own media query.
+
+**Two islands left every public route.** `HeroMotion` and `MaterialSequence` became `next/dynamic`
+imports; the section registry imports every renderer, so one static import was an island everywhere.
+The budget in `scripts/site/check-island-budget.mjs` came down 7 → 5 to hold it.
+
+**Conversion.** The sticky submit row (§7.10, specified in Phase 02 and never built), the enquiry
+form reading `?type=` so a quote request arrives as a quote, and typed destinations on
+`ProductInquiryRail`. A category can now be published from the Studio: six of the seven do, and
+`3d-resin` is refused by `categories_verified_before_publish` — which is the trigger working.
+
+**Crops reach a visitor.** `cropsForAssets` had existed with no callers anywhere: both ends built,
+the middle missing. `loadPageMedia` now resolves crops in ONE query per page and threads them to
+`MediaSlot`, `MediaImage`'s `src` **and every `srcSet` rung** — the rung is the bug this would
+otherwise have had. Ten media slots are bound following the documented family map; an unbound slot
+stays a gap, never a nearest-match substitute.
+
+**Two gates §45 named and nobody wrote.**
+
+- `scripts/design/check-token-usage.mjs`, now the 44th gate in `npm run check`. It is keyed on the
+  PROPERTY, not the value: `--rv-space-*` governs `padding-block`, so `padding-block: 13px` fails
+  whether or not any token carries 13px. A value-equality check would have told a margin to use a
+  font-size token. It reads stylesheets and `style={{ }}` objects — the two places an override goes
+  once `check-tokens.mjs` has blocked the class form. `env()` and its fallback count as indirection;
+  a print stylesheet is exempt as a different medium, and the exemption is printed on every run.
+  Found one: `text-decoration-thickness: 1px`, now `var(--rv-border-hairline)`.
+- `scripts/content/classify-copy-diff.ts` (`npm run content:classify-copy`). It classifies every
+  sentence in `content/seed/**` against D10's list and reports a claim that is PUBLISHED with
+  `owner_verification: NOT_REQUIRED`. It reads the evaluated modules rather than a text diff,
+  because the verdict lives in two columns that helpers set — a regex over a hunk sees the sentence
+  and never the flag. 710 sentences, 13 capability claims, and it fails on the two
+  `seo:global.*` rows `ROADMAP.md` had already recorded as the owner's. **Deliberately not in
+  `npm run check`:** it would fail every build on a fact only the owner can supply.
+
+**Corrections made in the open.** A reported "four bands stranded at opacity 0" was my own probe —
+`base.css` sets `scroll-behavior: smooth`, so measuring two frames after `scrollIntoView` measures a
+page still moving; every band reads 1.00 once the scroll settles, in both motion modes, and the
+change I had made to `animation-range` was reverted. A claim that the media bindings move visual
+baselines was wrong in the other direction: `scripts/test/seed-fixture.ts` inserts eleven fixture
+rows, not the 250 Higgsfield assets, so every binding resolves to a gap in the test database and the
+baselines move on no route at all.
+
+**Still outstanding, and not ours:** audit questions 1, 5 and 8 (`DESIGN_SYSTEM.md` §19.2), legal
+copy for `/privacy` and `/terms`, the ten FAQ answers, and the two `seo:global.*` sentences the new
+classifier reports.
+
 ### Post-launch — the Vercel dashboard becomes the owner's Studio login (amendment A44, 2026-09-12)
 
 The owner asked for the admin id and password to come from Vercel rather than from Supabase. This is
