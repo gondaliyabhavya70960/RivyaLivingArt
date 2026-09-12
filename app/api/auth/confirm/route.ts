@@ -35,8 +35,10 @@ import { createClient } from '@/lib/supabase/server'
  *
  * Supporting both is not indecision. The template is configured in the Supabase dashboard and this
  * repository cannot assert what it says; handling only the shape we prefer would mean a flow that
- * is correct in the code and broken on the deployment. `ENVIRONMENT.md` §4 names the template
- * change as an owner action and says what it buys.
+ * is correct in the code and broken on the deployment. `STUDIO_GUIDE.md` §2.1.2 names the template
+ * change as an owner action and says what it buys. (This comment used to cite `ENVIRONMENT.md` §4,
+ * which is the server-only variable list and says nothing about templates — a reference that sent
+ * the one reader who followed it to the wrong document.)
  *
  * IT DECIDES NOTHING ABOUT ACCESS. A verified token produces an auth session and nothing else: no
  * staff profile is read, no role is resolved, no permission is granted. `/studio/reset-password`
@@ -79,6 +81,38 @@ function see(path: string): Response {
   return new Response(null, { status: 303, headers: { Location: path } })
 }
 
+/**
+ * The auth service said nothing was wrong and handed back no session.
+ *
+ * THIS IS A REAL OUTCOME, NOT A DEFENSIVE BRANCH, and the first version of this file called it
+ * success. `verifyOtp` saves a session only when one comes back carrying an access token
+ * (`@supabase/auth-js`), and it reports `error: null` regardless — so a response with no session
+ * left no cookie, and this route cheerfully redirected to `/studio/reset-password`, where the page
+ * found no user and rendered "This reset link is no longer valid." about a link that had just been
+ * accepted. No log row, no error, and a person going round the loop forever.
+ *
+ * THE CONFIGURATION THAT PRODUCES IT. `@supabase/ssr` builds a PKCE client, so
+ * `resetPasswordForEmail` always sends a code challenge — which means a recovery begun by this
+ * application and completed through a `{{ .TokenHash }}` template mixes the two flows, and that is
+ * the combination in which the auth server may answer `/verify` with an auth code rather than a
+ * session. It is therefore exactly the shape the recommended template change produces, which is why
+ * it must be diagnosable rather than silent.
+ *
+ * WARNING, not INFO: an expired link is somebody being slow, and this is a deployment whose two
+ * halves disagree. The remedy is in STUDIO_GUIDE §2.1.2 — revert to the default
+ * `{{ .ConfirmationURL }}` template, whose `?code=` link is what a PKCE recovery expects.
+ */
+async function noSession(shape: 'token_hash' | 'code'): Promise<Response> {
+  await logSystem({
+    level: 'WARNING',
+    channel: 'AUTH',
+    event: 'auth.recovery.no_session',
+    message: 'The auth service accepted the recovery link but returned no session',
+    context: { shape },
+  })
+  return see(DESTINATION.expired)
+}
+
 export async function GET(request: Request): Promise<Response> {
   const url = new URL(request.url)
 
@@ -112,10 +146,11 @@ export async function GET(request: Request): Promise<Response> {
   const code = codeSchema.safeParse(url.searchParams.get('code'))
 
   if (tokenHash.success && type.success) {
-    const { error } = await supabase.auth.verifyOtp({
+    const { data, error } = await supabase.auth.verifyOtp({
       type: type.data,
       token_hash: tokenHash.data,
     })
+    if (!error && !data.session) return await noSession('token_hash')
     if (error) {
       /*
        * INFO, not SECURITY. An expired or already-used recovery link is the ordinary end of a
@@ -136,7 +171,8 @@ export async function GET(request: Request): Promise<Response> {
   }
 
   if (code.success) {
-    const { error } = await supabase.auth.exchangeCodeForSession(code.data)
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code.data)
+    if (!error && !data.session) return await noSession('code')
     if (error) {
       await logSystem({
         level: 'INFO',

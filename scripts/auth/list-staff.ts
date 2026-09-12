@@ -1,4 +1,5 @@
 #!/usr/bin/env tsx
+import { existsSync } from 'node:fs'
 import { pathToFileURL } from 'node:url'
 
 import { createClient } from '@supabase/supabase-js'
@@ -26,14 +27,44 @@ import { listStaffProfiles, type StaffProfile } from '../../lib/supabase/reposit
  * there is none to print: GoTrue stores a bcrypt hash and this script never reads `auth.users`.
  */
 
+/** Same file, same rule, as `scripts/auth/bootstrap-admin.ts` and seventeen others: read
+ *  `.env.local` if it is there, and let anything already in the shell win. */
+const ENV_PATH = '.env.local'
+
+function loadEnvFile(): void {
+  if (!existsSync(ENV_PATH)) return
+  try {
+    process.loadEnvFile(ENV_PATH)
+  } catch (error) {
+    console.error(
+      `Could not read ${ENV_PATH}: ${error instanceof Error ? error.message : 'unknown'}`,
+    )
+    process.exit(1)
+  }
+}
+
+/**
+ * THIS NO LONGER PRINTS `last_seen_at`, AND THE REASON IS THAT NOTHING WRITES IT.
+ *
+ * The column exists (migration 0009) and is read in two places — here, and the Studio's user list —
+ * and is written by no code path and no trigger anywhere in the repository or the database. So the
+ * first version of this script printed "never signed in" beside every account, forever, including
+ * accounts signing in daily. That is worse than printing nothing: the operator asking "has anyone
+ * ever got into this Studio?" would have been told "no" by a column that can only ever say no.
+ *
+ * The honest answer to that question is an `audit_logs` row — `app/(studio)/studio/login/page.tsx`
+ * writes `auth.signin` / SUCCESS once a staff session resolves — so the footer points there instead
+ * of inventing a second unreliable signal. Populating the column is a separate change with its own
+ * write path and its own audit consequences; leaving it unread is this script's business.
+ */
 function formatRow(profile: StaffProfile): string {
-  const lastSeen =
-    profile.last_seen_at === null ? 'never signed in' : `last seen ${profile.last_seen_at}`
   const name = profile.display_name === null ? '' : ` (${profile.display_name})`
-  return `  ${(profile.email ?? '— no address —').padEnd(36)} ${profile.role.padEnd(14)} ${profile.status.padEnd(10)} ${lastSeen}${name}`
+  return `  ${(profile.email ?? '— no address —').padEnd(36)} ${profile.role.padEnd(14)} ${profile.status.padEnd(10)}${name}`
 }
 
 async function main(): Promise<void> {
+  loadEnvFile()
+
   const admin = createClient<Database>(publicEnv.supabaseUrl, serverEnv.supabaseServiceRoleKey, {
     auth: { persistSession: false },
   })
@@ -56,7 +87,10 @@ async function main(): Promise<void> {
   })
   for (const profile of ordered) console.log(formatRow(profile))
   console.log(
-    '\nOnly an ACTIVE profile can sign in. A forgotten password is reset at /studio/forgot-password.',
+    '\nOnly an ACTIVE profile can sign in. A forgotten password is reset at /studio/forgot-password.\n' +
+      'Whether anyone HAS signed in is not shown here and cannot be: `staff_profiles.last_seen_at`\n' +
+      'is never written by anything. The record of a successful sign-in is an `audit_logs` row with\n' +
+      "action 'auth.signin'.",
   )
 }
 

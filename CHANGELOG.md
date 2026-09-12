@@ -6,6 +6,52 @@ Every phase adds an entry; see `docs/architecture/CANONICAL-DECISIONS.md` D9 for
 
 ## [Unreleased]
 
+### Post-launch — four defects in the account/reset work, found by reading it back against the live project (2026-09-12)
+
+The flow below shipped and merged an hour earlier. Checking each of its operational claims against
+the live Supabase project and the installed libraries — rather than against the documents — found
+four things wrong, three of them in the exact path the owner was about to walk.
+
+- **`auth:bootstrap` and `auth:list-users` ignored `.env.local`, and said "Nothing done" while doing
+  so.** `tsx` loads no dotenv file and `npm run` cannot pass `--env-file` (Node refuses that flag
+  inside `NODE_OPTIONS`), so `vercel env pull && npm run auth:bootstrap` — the incantation
+  `STUDIO_GUIDE.md` itself recommends — printed `· STUDIO_ADMIN_EMAIL is not set … Nothing done.` and
+  exited **0** with a correctly filled file beside it. Seventeen other operator scripts call
+  `process.loadEnvFile`; these two did not. They do now, and the shell still beats the file. **A
+  success-shaped no-op is the worst failure a bootstrap can have**: the operator concludes the
+  account exists.
+- **`/api/auth/confirm` treated "no error, no session" as success.** `verifyOtp` saves a session only
+  when one comes back carrying an access token and reports `error: null` regardless, so a response
+  with no session left no cookie and the route redirected cheerfully to `/studio/reset-password`,
+  where the page found no user and said *"This reset link is no longer valid"* about a link that had
+  just been accepted — no log row, no error, and a person going round the loop forever. It is not a
+  hypothetical branch: `@supabase/ssr` builds a PKCE client, so `resetPasswordForEmail` always sends
+  a code challenge, and the recommended `{{ .TokenHash }}` template completes a PKCE-initiated
+  recovery. The route now checks the session and writes `auth.recovery.no_session` at WARNING;
+  `STUDIO_GUIDE.md` §2.1.2 gains the fourth outcome and its remedy.
+- **`auth:list-users` printed "never signed in" beside every account, forever.**
+  `staff_profiles.last_seen_at` is declared in migration 0009, read here and in the Studio's user
+  list, and **written by no code path and no trigger anywhere**. The one question an operator asks
+  that script after a sign-in attempt was being answered by a column that can only ever say no. It no
+  longer reads the column and points at the `audit_logs` row (`auth.signin`) that is the real record.
+  The Studio's user list has the same blank column and is Phase 05's to fix.
+- **`app/api/auth/confirm/route.ts` cited a document that says nothing on the subject.** The comment
+  sent readers to `ENVIRONMENT.md` §4 for the email-template change; §4 is the server-only variable
+  list, and the file contains no occurrence of "template", "SMTP" or "Site URL". Corrected to
+  `STUDIO_GUIDE.md` §2.1.2, which is where those four dashboard preconditions actually live.
+
+Three regression tests in `lib/auth/bootstrap.test.ts` pin the two that are invisible on inspection.
+`npm run check` — 42 gates — green; 2 968 unit tests green.
+
+**Also established, and none of it is a code change.** The GitHub checks on the merge commit were all
+seven green, but the **Vercel production build failed** (`Gateway Timeout` prerendering
+`/custom-commissions` — ROADMAP **E9** again, the third time), so production still serves PR #57 and
+**the reset flow is not deployed**. The project has **no custom domain**, and Vercel deployment
+protection is on for every `*.vercel.app` host, so the only reachable production address sits behind
+an SSO wall. And the hosted database already holds **one ACTIVE owner** —
+`staff_profiles` has a single row — that has **never signed in**: `auth.sessions`, `auth.refresh_tokens`
+and `audit_logs` are all empty. `DEPLOYMENT.md` §12 row 10 still says `auth.users` is empty; it is not.
+
 ### Post-launch — a password reset the owner can run alone, and a first account made from the environment (amendment A43, 2026-09-12)
 
 Two gaps that the launch entry below left behind, and both had the same shape: a thing the owner

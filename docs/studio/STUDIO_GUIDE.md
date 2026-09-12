@@ -163,6 +163,20 @@ STUDIO_ADMIN_EMAIL=owner@example.com STUDIO_ADMIN_PASSWORD=… npm run auth:boot
 the difference, and it is the difference between a person at a keyboard and a CI step, a container
 entrypoint, or `vercel env pull && npm run auth:bootstrap`.
 
+**It needs two more variables than the four above, and they are not optional**:
+`NEXT_PUBLIC_SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`. Writing `auth.users` is possible only
+through GoTrue's admin API, and that authenticates with the service-role key. A missing one exits 1
+naming the variable.
+
+**It reads `.env.local` if there is one**, like the seventeen other operator scripts that call
+`process.loadEnvFile` — so `vercel env pull && npm run auth:bootstrap` works as written. Anything
+already exported in the shell takes precedence over the file, so the inline form above still wins.
+This was **not** true when the script first shipped: `tsx` loads no dotenv file, `npm run` cannot
+pass `--env-file` (Node refuses that flag inside `NODE_OPTIONS`), and the result was the worst
+possible answer to *"create my administrator account"* — `· STUDIO_ADMIN_EMAIL is not set … Nothing
+done.` and **exit 0**, with a correctly filled `.env.local` sitting beside it. A success-shaped
+no-op reads as "the account exists".
+
 Three properties make it safe to wire into a deploy:
 
 | Property | What it means |
@@ -249,6 +263,15 @@ devices and costs an intruder everything.
 > 3. Add `<site>/api/auth/confirm` to Supabase → Authentication → URL Configuration → Redirect URLs,
 >    and set `NEXT_PUBLIC_SITE_URL`. Without the variable the link falls back to the project's Site
 >    URL, which on a correctly configured deployment is the same address.
+
+**Four outcomes, and the fourth is the one that looks like a bug.** After clicking the link:
+
+| What you see | What it means | What to do |
+|---|---|---|
+| `/studio/reset-password` with two password fields | It worked | Set the password |
+| `/studio/forgot-password` with *"That reset link is no longer valid"* | Expired, already used, or mangled by a mail scanner — recovery links are **single-use**, and Defender/Safe-Links style scanners burn them by prefetching | Request another; if a scanner is eating them, send to a mailbox without link-rewriting |
+| The site's **homepage** | Supabase silently substituted its **Site URL** for a `redirectTo` that is not on the allowlist — it does not raise an error | Fix Site URL / Redirect URLs (step 2 below) |
+| `/studio/reset-password` showing *"This reset link is no longer valid"* | **The auth service accepted the link and returned no session.** `@supabase/ssr` is a PKCE client, so `resetPasswordForEmail` always sends a code challenge; a `{{ .TokenHash }}` template completes a PKCE-initiated recovery, and that combination can answer with an auth code rather than a session | Read `/studio/operations/logs` for `auth.recovery.no_session` at WARNING. Remedy: **revert the template to the default `{{ .ConfirmationURL }}`**, whose `?code=` link is what a PKCE recovery expects — the confirm route accepts it, at the cost of the link only working in the browser that asked |
 
 **When the email cannot be received at all** — a departed colleague's mailbox, a domain mid-migration
 — the fallbacks are unchanged and both need an existing credential:
