@@ -15,7 +15,7 @@ SEED §54’s audit of what the content seed actually put in the database, read 
 database rather than from the seed modules. Its target is §54’s: **100% of intended launch
 copy mapped to a Studio editing control.**
 
-- **583** rows audited
+- **588** rows audited
 - **70** await owner verification and cannot be published until it is given
 - **0** are authored and deferred to a later phase’s tables
 - **0** carry a bound media asset
@@ -125,6 +125,7 @@ the phase that creates its table.
 | /custom-commissions | commissions.05.how-it-works | heading | Yes | Yes | `/studio/content/pages/custom-commissions` | Yes | — | — | DRAFT |
 | /custom-commissions | commissions.06.cta | heading | Yes | Yes | `/studio/content/pages/custom-commissions` | No | — | — | DRAFT |
 | /custom-commissions | commissions.06.cta | cta_label | Yes | Yes | `/studio/content/pages/custom-commissions` | No | — | — | DRAFT |
+| /faq | faq.01.list | (no copy fields) | Yes | Yes | `/studio/content/pages/faq` | No | — | — | DRAFT |
 | /journal | journal.01.hero | body | Yes | Yes | `/studio/content/pages/journal` | No | — | — | DRAFT |
 | /journal | journal.01.hero | eyebrow | Yes | Yes | `/studio/content/pages/journal` | No | — | — | DRAFT |
 | /journal | journal.01.hero | heading | Yes | Yes | `/studio/content/pages/journal` | No | — | — | DRAFT |
@@ -222,6 +223,8 @@ the phase that creates its table.
 | Global content | chrome:ui_label.search.label | UI_LABEL.search.label | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | chrome:whatsapp_template.direct | WHATSAPP_TEMPLATE.direct | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | global:ACTION_LABEL.ask_about_this_piece | ACTION_LABEL.ask_about_this_piece | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:ACTION_LABEL.carousel.next | ACTION_LABEL.carousel.next | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:ACTION_LABEL.carousel.previous | ACTION_LABEL.carousel.previous | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | global:ACTION_LABEL.customize_this_piece | ACTION_LABEL.customize_this_piece | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | global:ACTION_LABEL.discuss_on_whatsapp | ACTION_LABEL.discuss_on_whatsapp | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | global:ACTION_LABEL.explore_similar_work | ACTION_LABEL.explore_similar_work | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
@@ -330,6 +333,8 @@ the phase that creates its table.
 | Global content | global:STUDIO_HELP.verification.process.06.resin-work | STUDIO_HELP.verification.process.06.resin-work | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | global:STUDIO_HELP.verification.process.07.finishing | STUDIO_HELP.verification.process.07.finishing | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | global:STUDIO_HELP.verification.process.08.final-review | STUDIO_HELP.verification.process.08.final-review | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.carousel.item_position | UI_LABEL.carousel.item_position | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.carousel.roledescription | UI_LABEL.carousel.roledescription | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | global:UI_LABEL.configurator.back | UI_LABEL.configurator.back | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | global:UI_LABEL.configurator.next | UI_LABEL.configurator.next | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | global:UI_LABEL.configurator.optional | UI_LABEL.configurator.optional | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
