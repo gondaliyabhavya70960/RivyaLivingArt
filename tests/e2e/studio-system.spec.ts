@@ -216,6 +216,11 @@ test.describe('the /studio overview, signed in', () => {
 
   test('shows outstanding owner verifications, sourced or explained', async ({ page }) => {
     await page.goto('/studio')
+    // ESTABLISH THAT THE PAGE RENDERED BEFORE DECIDING ANYTHING FROM THE CARD'S ABSENCE. Without
+    // this, an overview that failed to render would look exactly like an overview whose signed-in
+    // role is not allowed the card, and the skip below would swallow a real failure.
+    await expect(page.locator('h1')).toBeVisible()
+
     const card = page.locator('[data-outstanding-verifications]')
 
     // The card is behind `content.verify` — owner and admin — because those are the only roles that
