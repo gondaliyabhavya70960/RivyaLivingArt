@@ -90,7 +90,9 @@ Seeded categories, in priority order:
 
 ```
 /studio                                     overview · analytics · activity
-/studio/login                               sign-in; the only unauthenticated Studio route
+/studio/login                               sign-in; one of three unauthenticated Studio routes
+/studio/forgot-password                     request a password-reset link (amendment A43)
+/studio/reset-password                      set a new password from that link (amendment A43)
 /studio/catalog/{products,categories,collections,materials,relationships,
                  customization-forms,bulk}
 /studio/merchandising/{homepage,store,featured,scheduling}
@@ -177,7 +179,9 @@ Public: `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABAS
 Server-only: `SUPABASE_SERVICE_ROLE_KEY`, `DATABASE_URL`, `CLOUDINARY_API_KEY`,
 `CLOUDINARY_API_SECRET`, `GOOGLE_SERVICE_ACCOUNT_JSON`, `GOOGLE_SHEETS_SPREADSHEET_ID`,
 `SCRAPER_USER_AGENT`, `REVALIDATE_SECRET`, `CRON_SECRET` (added by amendment A25 — see below),
-`IP_HASH_SALT`, `RATE_LIMIT_SALT`, `CSP_ENFORCE` (added by amendment A41 — see below).
+`IP_HASH_SALT`, `RATE_LIMIT_SALT`, `CSP_ENFORCE` (added by amendment A41 — see below),
+`STUDIO_ADMIN_EMAIL`, `STUDIO_ADMIN_PASSWORD`, `STUDIO_ADMIN_ROLE`, `STUDIO_ADMIN_NAME`
+(added by amendment A43 — see below).
 
 The Environment page reports *reachability only* — never a value, prefix or length.
 
@@ -196,6 +200,68 @@ Brand and editorial copy may be written; anything asserting business capability 
 `OWNER_VERIFICATION_REQUIRED`. Empty states are used instead of invented projects.
 
 ## Amendments
+
+**2026-09-12 · A43 — the Studio gains a password-reset flow of its own and an environment-driven
+account bootstrap; D4 gains two unauthenticated routes and D8 gains four server-only variables (D4,
+D8, STUDIO_GUIDE §2.1.1–§2.1.3, ENVIRONMENT §4–§5, SECURITY §6.1, §8).**
+
+- **Two more unauthenticated Studio routes, and D4 said there was one.** `/studio/forgot-password`
+  takes an address and asks the auth service to email a link; `/studio/reset-password` sets the
+  password behind that link. `proxy.ts` excludes both, alongside `/studio/login`. The exclusion is
+  not a hole: `/studio/reset-password` does nothing without a session, because
+  `setPasswordForCurrentSession()` acts on the caller's own account and can act on no other. What
+  the exclusion buys is an honest error message — somebody who followed a spent link is told the
+  link expired, rather than bounced to a sign-in form that explains nothing.
+- **A recovery session is not a Studio session, and this is the property the whole flow rests on.**
+  Verifying a recovery token produces an auth session and nothing else. No staff profile is read, no
+  role is resolved, no permission is granted; every Studio page still resolves `getStaffSession()`
+  for itself and that admits only an `ACTIVE` profile. A recovery link is therefore not a way into
+  the Studio even when it works, which is why the eslint rule requiring `requirePermission()` in
+  every Studio page body exempts these two files rather than being satisfied by them. Requiring a
+  permission on the reset page would in fact be the WRONG check: it asks what a staff profile may
+  do, and setting your own password is not a staff capability — a SUSPENDED person must still be
+  able to change their own password, and gains nothing by doing so.
+- **The page never says whether an account exists.** One notice for an address with an account, an
+  address without one, and an address the auth service refused. The temptation to be helpful here is
+  real and the cost is an account-enumeration oracle on a public page — staff addresses being the
+  first half of a credential-stuffing list. The throttle is the one outcome reported differently,
+  and it is a fact about the requester rather than about the address.
+- **Two new rate-limit windows, and the reset one is TIGHTER than sign-in.** Five requests per hour
+  against `/studio/forgot-password`, keyed by address and by email hash; twenty per hour against
+  `/api/auth/confirm`, keyed by address alone. A refused sign-in costs the person a retry; a reset
+  request sends mail to an address the requester merely typed, so an unthrottled form is a way to
+  fill somebody's inbox in Rivya's name from a page that needs no account. The confirm route is
+  keyed by address and NOT by the token, because keying on the token would hand every guess a fresh
+  allowance.
+- **`/api/auth/confirm` accepts two link shapes because Supabase sends one of two.** `token_hash` +
+  `type` is verified with `verifyOtp` and works in ANY browser; `code` is exchanged with
+  `exchangeCodeForSession` and works only in the browser that asked, because the code verifier is a
+  cookie. Which one arrives is decided by the project's email template, in a dashboard this
+  repository cannot assert the contents of. Handling only the preferred shape would mean a flow that
+  is correct in the code and broken on the deployment. ENVIRONMENT §4 names the template change as
+  an owner action and says what it buys.
+- **Four environment variables create the first owner, and the default role is `owner`.**
+  `STUDIO_ADMIN_EMAIL`, `STUDIO_ADMIN_PASSWORD`, `STUDIO_ADMIN_ROLE` and `STUDIO_ADMIN_NAME` are
+  read by `npm run auth:bootstrap`. The account they create is the ONE the Studio cannot create for
+  itself — `/studio/system/users` needs a signed-in owner or admin — so defaulting the role to
+  `admin` would leave a deployment whose bootstrap succeeded still unable to make an owner. Unset,
+  the script exits 0 having done nothing; half-set, it exits 1 naming the missing variables, because
+  a half-set environment is somebody midway through configuring this and a silent skip would hide it
+  until nobody could sign in.
+- **It reconciles rather than recreates, and it never touches an existing password without
+  `--reset-password`.** A bootstrap wired into a deploy runs on every deploy. One that reset the
+  password each time would silently undo every password change made since, on the deploy's schedule
+  rather than on a decision's. `STUDIO_ADMIN_PASSWORD` is in `SERVER_ONLY_VARIABLES` so the
+  redactor strips its value from any log; `--password=` is refused rather than ignored, as
+  `auth:create-user` refuses it.
+- **There is no "forgotten ID" form, and there cannot be one.** The sign-in ID *is* the email
+  address — `staff_profiles` holds no username — so a self-service recovery would have to take some
+  other identifier and answer with an address, which is the enumeration oracle wearing a different
+  hat. It is answered behind an existing credential instead: an owner or admin at
+  `/studio/system/users`, or `npm run auth:list-users` for whoever holds the service-role key. The
+  forgot-password page says so rather than leaving the absence to look like an oversight.
+- **This is post-launch work and is labelled as such.** `ROADMAP.md` says "there is no Phase 47";
+  nothing here claims a phase number.
 
 **2026-09-11 · A42 — Phase 44 deploys against ONE Supabase project, not two, by the owner's
 decision; the production migrate workflow is the existing `db-migrate.yml` extended rather than a

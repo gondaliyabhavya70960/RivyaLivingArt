@@ -44,6 +44,15 @@ export const SERVER_ONLY_VARIABLES = [
    */
   'IP_HASH_SALT',
   'RATE_LIMIT_SALT',
+  /*
+   * AMENDMENT A43 ADDED THE BOOTSTRAP PASSWORD. It is the credential to the one account that can
+   * do everything the Studio can do, and it lives in an environment that a deploy log, a CI job and
+   * a local shell all have in scope — which is precisely the set of places a stray `context: { env }`
+   * would carry it into `system_logs`. The other three bootstrap variables are NOT here: an address,
+   * a role name and a display name are not secrets, and stripping the role would make the
+   * environment page unable to say what it is configured to create.
+   */
+  'STUDIO_ADMIN_PASSWORD',
 ] as const
 
 /**

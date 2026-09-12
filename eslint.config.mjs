@@ -345,20 +345,36 @@ const config = [
           message:
             'A Studio page must authorise server-side: call requirePermission() (preferred) or ' +
             'requireRole() from @/lib/auth/require in the page body. proxy.ts and RLS are the ' +
-            'other two layers, not a substitute for this one. The sole exemption is ' +
-            'app/(studio)/studio/login/page.tsx, which is listed in eslint.config.mjs.',
+            'other two layers, not a substitute for this one. The only exemptions are the three ' +
+            'unauthenticated routes — login, forgot-password and reset-password — each listed ' +
+            'in eslint.config.mjs.',
         },
       ],
     },
   },
 
   /**
-   * The one unauthenticated Studio route (D4, amendment A2·b). It renders the sign-in form, so it
-   * cannot demand a session it exists to create. Every other route under `app/(studio)/studio/**`
-   * is covered by the rule above.
+   * The three unauthenticated Studio routes (D4, amendments A2·b and A43). Each exists FOR somebody
+   * who has no session, so none of them can demand one:
+   *
+   *   `login`            renders the sign-in form — it cannot require the session it creates.
+   *   `forgot-password`  asks for an address and sends a link. Requiring a session would mean only
+   *                      people who can already sign in could ask for help signing in.
+   *   `reset-password`   is reached from a link in an email. It is not unguarded: the recovery
+   *                      session IS its authorisation, and `setPasswordForCurrentSession()` acts on
+   *                      the caller's own account and can act on no other. `requirePermission()`
+   *                      there would be the WRONG check — it asks what a STAFF profile may do, and
+   *                      setting your own password is not a staff capability. A suspended person
+   *                      must still be able to change their own password.
+   *
+   * Every other route under `app/(studio)/studio/**` is covered by the rule above.
    */
   {
-    files: ['app/(studio)/studio/login/page.tsx'],
+    files: [
+      'app/(studio)/studio/login/page.tsx',
+      'app/(studio)/studio/forgot-password/page.tsx',
+      'app/(studio)/studio/reset-password/page.tsx',
+    ],
     rules: {
       'no-restricted-syntax': 'off',
     },

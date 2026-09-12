@@ -114,6 +114,156 @@ export const STUDIO_STRINGS = {
     value: 'Sign Out',
     contentKey: 'studio_help.login_sign_out_button',
   },
+  /**
+   * The link to the reset flow, on the sign-in form. It names the failure a person is having
+   * ("forgotten") rather than the mechanism ("reset"), because somebody who cannot get in is
+   * scanning the page for their own situation and not for a verb.
+   */
+  'studio.login.forgotPasswordLink': {
+    value: 'Forgotten your password?',
+    contentKey: 'studio_help.login_forgot_password_link',
+  },
+  /** After a password has actually been changed. Says what to do, not that something happened. */
+  'studio.login.noticePasswordReset': {
+    value: 'Your password has been changed. Sign in with the new one.',
+    contentKey: 'studio_help.login_notice_password_reset',
+  },
+
+  // ---------------------------------------------------------------------------------------------
+  // studio.forgotPassword.* — /studio/forgot-password
+  // ---------------------------------------------------------------------------------------------
+  // EVERY OUTCOME READS THE SAME. There is one notice for "we have done what we can with that
+  // address", and it is shown whether or not an account exists, because the alternative is a form
+  // any stranger can use to find out which addresses belong to Rivya staff. The throttle message is
+  // the one exception, and it says nothing about the address either.
+
+  'studio.forgotPassword.pageTitle': {
+    value: 'Reset your password',
+    contentKey: 'studio_help.forgot_password_page_title',
+  },
+  'studio.forgotPassword.heading': {
+    value: 'Reset your password',
+    contentKey: 'studio_help.forgot_password_heading',
+  },
+  'studio.forgotPassword.body': {
+    value:
+      'Enter the email address you sign in with and we will send a link for setting a new password. The link can be used once and expires.',
+    contentKey: 'studio_help.forgot_password_body',
+  },
+  'studio.forgotPassword.emailLabel': {
+    value: 'Email',
+    contentKey: 'studio_help.forgot_password_email_label',
+  },
+  'studio.forgotPassword.requiredLabel': {
+    value: 'required',
+    contentKey: 'studio_help.forgot_password_required_label',
+  },
+  'studio.forgotPassword.submitButton': {
+    value: 'Send Reset Link',
+    contentKey: 'studio_help.forgot_password_submit_button',
+  },
+  /** The one success notice, shown for an address with an account and for one without. */
+  'studio.forgotPassword.noticeSent': {
+    value:
+      'If that address has a Studio account, a reset link is on its way. Check the inbox, and the spam folder if it has not arrived in a few minutes.',
+    contentKey: 'studio_help.forgot_password_notice_sent',
+  },
+  'studio.forgotPassword.errorFields': {
+    value: 'Please enter the email address you sign in with.',
+    contentKey: 'studio_help.forgot_password_error_fields',
+  },
+  'studio.forgotPassword.errorThrottled': {
+    value:
+      'Too many reset requests. Wait an hour and try again, or ask an owner or admin to reset the password from the Supabase dashboard.',
+    contentKey: 'studio_help.forgot_password_error_throttled',
+  },
+  /** Shown when a recovery link did not work — expired, already used, or truncated by a mail client. */
+  'studio.forgotPassword.errorLink': {
+    value:
+      'That reset link is no longer valid. Links expire and can be used once — request a new one below.',
+    contentKey: 'studio_help.forgot_password_error_link',
+  },
+  /** The sign-in ID is the email address; there is no separate username to recover. */
+  'studio.forgotPassword.identityNote': {
+    value:
+      'Your sign-in ID is your email address — there is no separate username. If you are not sure which address the account uses, an owner or admin can see the list at System → Users.',
+    contentKey: 'studio_help.forgot_password_identity_note',
+  },
+  'studio.forgotPassword.backLink': {
+    value: 'Back to sign in',
+    contentKey: 'studio_help.forgot_password_back_link',
+  },
+
+  // ---------------------------------------------------------------------------------------------
+  // studio.resetPassword.* — /studio/reset-password
+  // ---------------------------------------------------------------------------------------------
+  // Reached only from a recovery link, which is why this surface has an expired state as a
+  // first-class rendering rather than a redirect: somebody who followed a link that no longer works
+  // needs to be told that is what happened, and given the one control that helps.
+
+  'studio.resetPassword.pageTitle': {
+    value: 'Choose a new password',
+    contentKey: 'studio_help.reset_password_page_title',
+  },
+  'studio.resetPassword.heading': {
+    value: 'Choose a new password',
+    contentKey: 'studio_help.reset_password_heading',
+  },
+  'studio.resetPassword.body': {
+    value:
+      'Set the password for this account. Every other signed-in device will be signed out when you save it.',
+    contentKey: 'studio_help.reset_password_body',
+  },
+  'studio.resetPassword.passwordLabel': {
+    value: 'New password',
+    contentKey: 'studio_help.reset_password_password_label',
+  },
+  'studio.resetPassword.confirmLabel': {
+    value: 'Repeat the new password',
+    contentKey: 'studio_help.reset_password_confirm_label',
+  },
+  'studio.resetPassword.requiredLabel': {
+    value: 'required',
+    contentKey: 'studio_help.reset_password_required_label',
+  },
+  'studio.resetPassword.submitButton': {
+    value: 'Save Password',
+    contentKey: 'studio_help.reset_password_submit_button',
+  },
+  'studio.resetPassword.errorFields': {
+    value: 'Please check the highlighted fields and try again.',
+    contentKey: 'studio_help.reset_password_error_fields',
+  },
+  'studio.resetPassword.errorMismatch': {
+    value: 'The two passwords do not match.',
+    contentKey: 'studio_help.reset_password_error_mismatch',
+  },
+  /**
+   * The auth server owns the password policy, so this says the refusal rather than the rule — a
+   * length quoted here would be wrong the day the project's own setting changes.
+   */
+  'studio.resetPassword.errorWeak': {
+    value:
+      'That password was refused as too easy to guess. Choose a longer one, or a passphrase of several words.',
+    contentKey: 'studio_help.reset_password_error_weak',
+  },
+  'studio.resetPassword.errorSame': {
+    value: 'That is already the password on this account. Choose a different one.',
+    contentKey: 'studio_help.reset_password_error_same',
+  },
+  'studio.resetPassword.expiredHeading': {
+    value: 'This reset link is no longer valid.',
+    contentKey: 'studio_help.reset_password_expired_heading',
+  },
+  'studio.resetPassword.expiredBody': {
+    value:
+      'Reset links expire and can only be used once. Request a new one and open it in the same browser.',
+    contentKey: 'studio_help.reset_password_expired_body',
+  },
+  'studio.resetPassword.requestNewLink': {
+    value: 'Request a new link',
+    contentKey: 'studio_help.reset_password_request_new_link',
+  },
   // ---------------------------------------------------------------------------------------------
   // studio.users.* — /studio/system/users
   // ---------------------------------------------------------------------------------------------

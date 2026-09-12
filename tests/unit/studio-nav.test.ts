@@ -110,11 +110,30 @@ describe('the Studio navigation manifest', () => {
     expect(d4).toContain('/studio/research/large-format')
   })
 
+  /**
+   * The D4 routes that are in the contract but not in the shell: the three unauthenticated ones.
+   *
+   * Each exists FOR somebody with no session (amendments A2·b and A43), so none of them can sit
+   * inside the authenticated group or appear in a sidebar that is only rendered to staff. Named
+   * here rather than filtered by a pattern, because "every route with `password` in it is exempt"
+   * is the shape that would one day exempt a route somebody meant to govern.
+   */
+  const UNAUTHENTICATED = ['/studio/login', '/studio/forgot-password', '/studio/reset-password']
+
   it('covers every D4 leaf, and invents none', () => {
-    // `/studio/login` is in D4 but is not a shell route: it is the unauthenticated redirect target
-    // (amendment A2·b) and deliberately sits outside the authenticated group.
-    const expected = d4.filter((route) => route !== '/studio/login').sort()
+    const expected = d4.filter((route) => !UNAUTHENTICATED.includes(route)).sort()
     expect([...manifest].sort()).toEqual(expected)
+  })
+
+  it('keeps every unauthenticated route out of the shell group and in the contract', () => {
+    // Both directions. In D4, because a route the contract does not name is one nobody agreed to;
+    // outside `(shell)`, because the shell's layout is the signed-in Studio chrome and a sign-in
+    // page rendered inside it would be a page that assumes the session it exists to obtain.
+    for (const route of UNAUTHENTICATED) {
+      expect(d4, `${route} is missing from D4`).toContain(route)
+      expect(disk, `${route} must not be a (shell) route`).not.toContain(route)
+      expect(manifest, `${route} must not be a sidebar leaf`).not.toContain(route)
+    }
   })
 
   it('has a page.tsx on disk for every leaf', () => {

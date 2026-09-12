@@ -154,7 +154,7 @@ export async function consume(
 }
 
 /**
- * THE EIGHT SURFACES — Phase 41, FEAT §47.
+ * THE TEN SURFACES — Phase 41, FEAT §47; amendment A43 added the last two.
  *
  * Every limit in the product lives here, as data, so that SECURITY.md §6 describes one table and the
  * Studio's Security section reads the same one. A limit written at its call site is a limit nobody
@@ -237,6 +237,32 @@ export const REVALIDATE_WINDOWS: readonly RateWindow[] = [{ seconds: 60, limit: 
  * would miss one of them whichever one it was.
  */
 export const SIGN_IN_WINDOWS: readonly RateWindow[] = [{ seconds: 900, limit: 10 }]
+
+/**
+ * Studio password reset: five requests per hour, keyed by email hash AND address.
+ *
+ * TIGHTER THAN SIGN-IN, AND THE REASON IS THE SIDE EFFECT. A refused sign-in costs the person
+ * nothing but a retry; a request here SENDS AN EMAIL to an address the requester has merely typed.
+ * An unthrottled form is therefore a way to post mail to somebody else’s inbox in Rivya’s name,
+ * over and over, from a page that requires no account — and the volume is the harassment, not the
+ * content of any one message. Five is above what a person who has genuinely lost their password
+ * needs in an hour and far below what makes a mailbox unusable.
+ *
+ * KEYED THE SAME TWO WAYS AS SIGN-IN, for the same reason: by address catches one sender working
+ * through a list of staff addresses, by email hash catches a list of senders working on one.
+ */
+export const PASSWORD_RESET_WINDOWS: readonly RateWindow[] = [{ seconds: 3600, limit: 5 }]
+
+/**
+ * Consuming a recovery link: twenty per hour by address.
+ *
+ * KEYED BY ADDRESS ALONE, because there is nothing else to key on — the caller presents a token and
+ * no identity, and the token is exactly what must not be used as a bucket key: a distinct key per
+ * token gives an attacker a fresh allowance for every guess, which is the opposite of a limit.
+ * Twenty is generous for a person clicking a link in an email (the same link opened twice, a
+ * prefetching mail client, a retry) and is a wall in front of anybody grinding token hashes.
+ */
+export const RECOVERY_CONFIRM_WINDOWS: readonly RateWindow[] = [{ seconds: 3600, limit: 20 }]
 
 /**
  * How long to tell a refused caller to wait.

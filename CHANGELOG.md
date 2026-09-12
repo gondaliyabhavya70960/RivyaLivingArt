@@ -6,6 +6,68 @@ Every phase adds an entry; see `docs/architecture/CANONICAL-DECISIONS.md` D9 for
 
 ## [Unreleased]
 
+### Post-launch — a password reset the owner can run alone, and a first account made from the environment (amendment A43, 2026-09-12)
+
+Two gaps that the launch entry below left behind, and both had the same shape: a thing the owner
+needed was an engineer's errand.
+
+**A forgotten password was a dashboard visit.** `STUDIO_GUIDE.md` §2.1.1's job table said so in as
+many words — *"Password reset | Supabase dashboard → Authentication → Users"* — which means the
+person who cannot sign in waits for somebody who can. There is now a flow, and it is three surfaces:
+
+- **`/studio/forgot-password`** takes an address, rate-limits it at five per hour by address AND by
+  email hash, and asks the auth service to send a link. **It reports the same notice whatever
+  happened** — an address with an account, one without, one the auth service refused. That is not
+  timidity: a form that distinguishes them is an account-enumeration oracle anybody can query, and
+  staff addresses are the first half of a credential-stuffing list.
+- **`app/api/auth/confirm/route.ts`** is where the link lands. It accepts both shapes Supabase can
+  send — `token_hash`+`type` verified with `verifyOtp`, which works in any browser, and `?code=`
+  exchanged for a session, which works only in the browser that asked — because which one arrives is
+  decided by an email template in a dashboard this repository cannot assert the contents of.
+  Handling only the better shape would be a flow that is correct in the code and broken on the
+  deployment. Twenty per hour, keyed on the address and never on the token: keying on the token
+  would give every guess its own allowance.
+- **`/studio/reset-password`** sets the password on the account that session belongs to, then signs
+  out **globally**. A reset is what somebody reaches for when they think an account has been reached
+  by someone else, and one that leaves the other party's session alive does not answer that.
+
+**A recovery session is not a Studio session**, and the whole design rests on it: verifying a token
+produces an auth session and nothing else — no profile read, no role, no permission — so a
+`SUSPENDED` colleague can complete the flow and still open nothing. That is why the three
+unauthenticated routes are *exempted* from the "every Studio page calls `requirePermission()`"
+eslint rule rather than satisfied by it: on the reset page that check would be the wrong question.
+Setting your own password is not a staff capability.
+
+**There is no "forgotten ID" form, and the reason is written down rather than left as an absence.**
+The sign-in ID *is* the email address — `staff_profiles` holds no username — so such a form would
+take some identifier and answer with an address, which is the enumeration oracle in a hat. It is
+answered behind a credential instead: `/studio/system/users`, or the new `npm run auth:list-users`.
+The forgot-password page says so beneath the form.
+
+**The first owner can now come from the environment.** `npm run auth:bootstrap`
+(`scripts/auth/bootstrap-admin.ts`) reads `STUDIO_ADMIN_EMAIL`, `STUDIO_ADMIN_PASSWORD`,
+`STUDIO_ADMIN_ROLE` (defaults to `owner`) and `STUDIO_ADMIN_NAME` — the same job
+`npm run auth:create-user` does with flags and a prompt, for the caller that has an environment and
+no terminal. Three properties make it safe in a deploy step: **unset is a no-op** exiting 0,
+**half-set is loud** exiting 1 naming the missing variable, and **it never changes an existing
+account's password** without `--reset-password`, because a step that runs on every deploy and reset
+the password each time would undo every password change made since. `--dry-run` says what it would
+do. `--password=` is refused rather than ignored, as `auth:create-user` refuses it, and
+`STUDIO_ADMIN_PASSWORD` joined `SERVER_ONLY_VARIABLES` so the redactor strips its value everywhere.
+
+**What the owner still has to do**, and neither can be done from here: SMTP must be configured in
+Supabase or no link is ever delivered — and the page cannot say so without becoming the oracle — and
+the *Reset Password* email template is worth changing to the `{{ .TokenHash }}` form so a link
+opened on a phone works on a laptop. Both are written out in `STUDIO_GUIDE.md` §2.1.2.
+
+**Contract, gates and tests.** Amendment A43 adds two routes to D4 and four variables to D8.
+`docs:check-contract` refused the variables until `ENVIRONMENT.md` §4 documented them, which is the
+gate doing its job. `studio-nav.test.ts` gained a test that each unauthenticated route is in D4 and
+out of the shell group, in both directions; `lib/auth/bootstrap.test.ts` is nine cases, one of which
+asserts that no refusal message contains the password, the address, the display name or a length;
+`studio-access.spec.ts` gained seven end-to-end cases covering everything that does not need an auth
+server. `npm run check` — 42 gates — green; 2 964 unit tests green.
+
 ### Launch — Studio sign-in, and the site actually serving content (2026-09-12)
 
 **Studio sign-in was broken by the way its first account was created, not by its password.** The

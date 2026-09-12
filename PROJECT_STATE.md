@@ -328,6 +328,26 @@ ran, all fixed (`CHANGELOG.md`, "CI runs again"); the `verify` job now migrates,
 against `scripts/db/local-rest.mjs` and runs the RLS suites on every push. Playwright is still
 local only, so every browser figure in this document is from a local run.
 
+**Losing a Studio password is no longer an engineer's errand (amendment A43, 2026-09-12).** Three
+routes: `/studio/forgot-password` requests a link at five per hour by address and email hash;
+`app/api/auth/confirm/route.ts` exchanges the token, accepting BOTH shapes Supabase's email
+templates can produce, because which one arrives is a dashboard setting this repository cannot
+assert; `/studio/reset-password` sets the password and then signs out **globally**. The request page
+answers identically for an address with an account and one without — the alternative is an
+enumeration oracle on a public page. A recovery session authenticates an auth account and grants no
+Studio access at all, because every page still resolves `getStaffSession()` for itself. **There is
+no forgotten-ID form and there cannot be one**: the ID is the email address, so `/studio/system/users`
+and `npm run auth:list-users` answer it behind a credential instead. **Two owner actions remain and
+neither is code**: SMTP must be configured in Supabase or no link is delivered, and the *Reset
+Password* template is worth moving to the `{{ .TokenHash }}` form so a link opened on a phone works
+on a laptop (`STUDIO_GUIDE.md` §2.1.2).
+
+**The first owner can be created from an environment.** `npm run auth:bootstrap`
+(`scripts/auth/bootstrap-admin.ts`) reads four D8 variables and does what `auth:create-user` does
+with flags and a prompt. Unset it exits 0 having done nothing; half-set it exits 1 naming the missing
+variable; and it never changes an existing account's password without `--reset-password`, so wiring
+it into a deploy does not undo a password change on the next deploy.
+
 ## Phase status
 
 | Phase | Title | Status | Evidence |
