@@ -9,7 +9,7 @@
   "scripts": {
     "dev": "next dev",
     "prebuild": "npm run docs:index",
-    "build": "next build",
+    "build": "tsx scripts/auth/sync-admin.ts && next build",
     "start": "next start",
     "lint": "eslint .",
     "format:check": "prettier --check .",
@@ -46,6 +46,7 @@
     "auth:create-user": "tsx scripts/auth/create-staff-user.ts",
     "auth:bootstrap": "tsx scripts/auth/bootstrap-admin.ts",
     "auth:list-users": "tsx scripts/auth/list-staff.ts",
+    "auth:sync-admin": "tsx scripts/auth/sync-admin.ts",
     "cms:gen-transitions": "tsx scripts/cms/gen-transition-sql.ts",
     "cms:check-transitions": "tsx scripts/cms/gen-transition-sql.ts --check",
     "cms:check-copy": "tsx scripts/cms/check-section-copy.ts",

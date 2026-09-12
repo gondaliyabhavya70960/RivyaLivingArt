@@ -181,7 +181,8 @@ Server-only: `SUPABASE_SERVICE_ROLE_KEY`, `DATABASE_URL`, `CLOUDINARY_API_KEY`,
 `SCRAPER_USER_AGENT`, `REVALIDATE_SECRET`, `CRON_SECRET` (added by amendment A25 — see below),
 `IP_HASH_SALT`, `RATE_LIMIT_SALT`, `CSP_ENFORCE` (added by amendment A41 — see below),
 `STUDIO_ADMIN_EMAIL`, `STUDIO_ADMIN_PASSWORD`, `STUDIO_ADMIN_ROLE`, `STUDIO_ADMIN_NAME`
-(added by amendment A43 — see below).
+(added by amendment A43; **amendment A44 makes them the source of truth for the owner account on a
+production deployment rather than a one-time input** — see below).
 
 The Environment page reports *reachability only* — never a value, prefix or length.
 
@@ -200,6 +201,41 @@ Brand and editorial copy may be written; anything asserting business capability 
 `OWNER_VERIFICATION_REQUIRED`. Empty states are used instead of invented projects.
 
 ## Amendments
+
+**2026-09-12 · A44 — the `STUDIO_ADMIN_*` variables become the SOURCE OF TRUTH for the owner
+account rather than a one-time bootstrap input, applied by a step inside `next build` on production
+deployments only (D1, D8, STUDIO_GUIDE §2.1.1, ENVIRONMENT §4).**
+
+- **The owner asked for the Vercel dashboard to be the Studio's login, and this is that, without
+  touching authorisation.** Supabase Auth stays the provider: `auth.uid()` still comes from a
+  Supabase-issued JWT, `public.current_staff_role()` still resolves the role from
+  `staff_profiles.user_id = auth.uid()`, and **292 of the 327 RLS policies** still decide every read
+  and write through it. Replacing the provider was the alternative and it was refused on the numbers:
+  a session without `auth.uid()` resolves no role, so every one of those policies denies, and the
+  Studio would authenticate somebody into a surface that can read nothing and save nothing.
+- **`npm run auth:sync-admin` runs first in the build command**, and `scripts/auth/admin-sync.ts`
+  holds the decision as a pure function so it can be attacked in a test rather than only in a deploy.
+  Production scope only — this deployment has ONE Supabase project (A42), so a preview build applying
+  its own `STUDIO_ADMIN_PASSWORD` would be rewriting the live owner's password from a branch.
+- **It never fails a deployment.** Every path exits 0: a missing variable, an unreachable auth
+  service, a refusal, an unanticipated error. A site that does not deploy because an account setting
+  was wrong is a worse outcome than an owner whose password did not change, and the build log carries
+  the reason either way.
+- **THE COST, AND IT IS NOT REVERSIBLE BY ACCIDENT: a password set any other way does not survive the
+  next production deploy.** `/studio/forgot-password` still works end to end and still leaves a
+  usable session, but for the account named in `STUDIO_ADMIN_EMAIL` the new password lasts until the
+  next deployment overwrites it. Changing the owner's password now means changing the Vercel variable
+  and redeploying. Every other account is unaffected.
+- **`auth:bootstrap` keeps the opposite default and the two scripts stay separate.** Bootstrap never
+  touches an existing password without `--reset-password`; sync always does. One script with a flag
+  would put two opposite defaults one typo apart, and the safe one has to stay safe.
+- **A build never mints a second owner.** An ACTIVE owner at a different address makes the sync
+  decline and say so. Deciding the business has a new owner is `/studio/system/users`' job, where the
+  act is permission-checked and audited.
+- **`STUDIO_ADMIN_PASSWORD` now lives in the Vercel dashboard permanently**, which A43's advice to
+  clear it after first sign-in no longer allows. It must be marked **Sensitive** there — write-only,
+  unreadable afterwards by anyone including the account owner — and that is now the whole of its
+  protection.
 
 **2026-09-12 · A43 — the Studio gains a password-reset flow of its own and an environment-driven
 account bootstrap; D4 gains two unauthenticated routes and D8 gains four server-only variables (D4,

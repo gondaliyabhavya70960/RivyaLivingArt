@@ -6,6 +6,51 @@ Every phase adds an entry; see `docs/architecture/CANONICAL-DECISIONS.md` D9 for
 
 ## [Unreleased]
 
+### Post-launch — the Vercel dashboard becomes the owner's Studio login (amendment A44, 2026-09-12)
+
+The owner asked for the admin id and password to come from Vercel rather than from Supabase. This is
+that request, granted in the only way that does not break the database.
+
+**What was refused, and why it is not a preference.** Replacing Supabase Auth with credentials
+compared in application code was the literal reading. `public.current_staff_role()` resolves a role
+with `select role from staff_profiles where user_id = auth.uid()`, and `auth.uid()` is a claim in a
+Supabase-issued JWT — **292 of the 327 RLS policies** decide every read and write through it. A
+session that is not a Supabase session has no `auth.uid()`, so all 292 deny: the Studio would
+authenticate somebody into a surface that shows empty tables and refuses to save. Making that work is
+a rewrite of the authorisation model across 105 tables, plus `audit_logs.actor_user_id`,
+`activity_events`, and the `updated_by` column on every content-bearing table.
+
+**What shipped instead gives the same control without touching the session.** `npm run
+auth:sync-admin` is now the first command in the `build` script. On a **production** deployment it
+reads the four `STUDIO_ADMIN_*` variables and reconciles the owner account to match — **setting the
+password every time**. Change it in the Vercel dashboard, redeploy, and that is the Studio password.
+Supabase Auth still issues the session, so every policy resolves exactly as before.
+
+- **Production only.** Preview and local builds decline. There is one Supabase project (A42), so a
+  preview applying its own `STUDIO_ADMIN_PASSWORD` would be rewriting the live owner's password from
+  a branch.
+- **It never fails a deployment.** Every path exits 0 — missing variable, unreachable auth service,
+  refusal, unanticipated error — and the reason goes to the build log. Verified by running it against
+  an unreachable Supabase: `EXIT=0`, with `failed, and the deployment continues`.
+- **It never mints a second owner.** An ACTIVE owner at a different address makes it decline and say
+  so. A build step is the wrong place to decide the business has a new owner.
+- **The decision is a pure function** (`scripts/auth/admin-sync.ts`) with ten tests, because it is
+  severe in both directions: run when it should not and a branch rewrites production; decline when it
+  should not and the owner's dashboard edit silently does nothing. One test asserts no declining
+  branch can put the password, or its length, into a build log.
+
+**THE COST, AND IT IS THE REASON THIS IS AN AMENDMENT RATHER THAN A COMMIT: a password set any other
+way does not survive the next production deploy.** The §2.1.2 reset flow still works end to end and
+still leaves a usable session, but for the account named in `STUDIO_ADMIN_EMAIL` the new password
+lasts until the next deployment overwrites it. Changing the owner's password now means changing the
+Vercel variable. Every other account is untouched, and `auth:bootstrap` keeps the opposite, safer
+default — the two scripts stay separate rather than becoming one with a flag, because their defaults
+are opposites and the safe one has to stay safe.
+
+`STUDIO_ADMIN_PASSWORD` consequently lives in the Vercel dashboard permanently, which A43's advice to
+clear it after first sign-in no longer allows. Mark it **Sensitive** there; that is now the whole of
+its protection.
+
 ### Post-launch — four defects in the account/reset work, found by reading it back against the live project (2026-09-12)
 
 The flow below shipped and merged an hour earlier. Checking each of its operational claims against

@@ -280,7 +280,22 @@ environment and nobody is watching the output.
 | Read by | `lib/auth/bootstrap.ts` (`readBootstrapConfig`, a pure function that is handed an environment) and `scripts/auth/bootstrap-admin.ts`. Nothing under `app/**` |
 | Without them | `npm run auth:bootstrap` prints one line saying there is nothing to do and **exits 0**. A deployment that created its owner another way has not misconfigured anything. Set *some* but not all and it exits 1 naming the missing variables — a half-set environment is somebody midway through configuring this, and a silent skip would hide it until nobody could sign in |
 | Blast radius if leaked | `STUDIO_ADMIN_PASSWORD` is sign-in as that account. If the account is the owner, that is every Studio capability including `system.owner.transfer`. Rotate by changing the password at `/studio/reset-password` (or with `--reset-password`, below) and clearing the variable |
-| Rotation | **Owner.** Treat the variable as a one-time bootstrap value, not a stored credential: once the account exists and the owner has signed in, the right move is to **clear `STUDIO_ADMIN_PASSWORD` from wherever it is stored**. Leaving it set is a live password in a dashboard |
+| Rotation | **Owner.** Under **amendment A44** this is no longer a one-time value to clear: it is the owner's live Studio password, stored in Vercel for the life of the deployment. Rotate it by editing the variable and redeploying. Mark it **Sensitive** in Vercel — write-only, unreadable afterwards by anyone — because that is now the whole of its protection |
+
+**Amendment A44 — these are the source of truth, applied at build time.** `npm run auth:sync-admin`
+is the first command in `package.json`'s `build` script. On a **production** deployment it reads
+these four and applies them to the owner account, **setting the password every time**; on preview and
+local builds it declines, because one Supabase project (A42) means a preview's password would land on
+production. It **never fails a deployment**: every path exits 0 and the reason goes to the build log.
+
+**The consequence is the one to read twice: a password set any other way does not survive the next
+production deploy.** `/studio/forgot-password` still works end to end, but for the account named in
+`STUDIO_ADMIN_EMAIL` the new password lasts until the next deployment overwrites it. Changing the
+owner's password now means changing the variable and redeploying. Every other account is unaffected,
+and `auth:bootstrap` keeps the opposite, safer default for one-off use.
+
+A build also **never mints a second owner**: an ACTIVE owner at a different address makes the sync
+decline and say so in the log.
 
 **Re-running is safe, and that is the point.** The script reconciles rather than recreates: an
 account that already exists in the right role and status is reported and left alone; a wrong role is
