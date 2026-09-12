@@ -93,6 +93,16 @@ export interface MediaImageProps extends Omit<
    * somebody remembering. A product page passes it to the gallery's first frame for the same
    * reason.
    */
+  /**
+   * The `c_crop` component for the editor's focal point at this ratio, from `lib/media/crop.ts`.
+   *
+   * IT GOES ON EVERY RUNG AS WELL AS THE `src`, and that is the whole bug this prop exists to not
+   * have: a srcset whose candidates crop differently is a picture that changes subject as the
+   * browser picks a width. `imageUrl` places it before the preset, so the crop selects the region
+   * and the preset then scales it.
+   */
+  cropSegment?: string | null
+
   priority?: boolean
 }
 
@@ -106,6 +116,7 @@ export function MediaImage({
   ratio,
   spec,
   loading = 'lazy',
+  cropSegment = null,
   priority = false,
   className,
   ...rest
@@ -143,7 +154,7 @@ export function MediaImage({
     ? []
     : srcSet(base).map((width) => {
         const { height: _fixed, ...scalable } = resolved
-        return `${imageUrl(cloudName, media, { ...scalable, width })} ${width}w`
+        return `${imageUrl(cloudName, media, { ...scalable, width }, cropSegment)} ${width}w`
       })
 
   return (
@@ -156,7 +167,7 @@ export function MediaImage({
     <img
       // The `src` is the preset's own width, not the smallest rung: it is what a browser without
       // srcset support gets, and what the srcset falls back to.
-      src={imageUrl(cloudName, media, resolved)}
+      src={imageUrl(cloudName, media, resolved, cropSegment)}
       srcSet={candidates.length > 0 ? candidates.join(', ') : undefined}
       sizes={sizes === '' ? undefined : sizes}
       alt={decorative ? '' : alt}
