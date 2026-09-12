@@ -284,7 +284,7 @@ capability.
 Run top to bottom. **`npx tsx scripts/ops/preflight.ts` runs thirteen named gates in one command**
 and prints one summary table ordered failures-first; the rest are human acts.
 
-### 7.0 The thirteen gates, by name
+### 7.0 The fourteen gates, by name
 
 A gate that is skipped reports `SKIPPED` **with its reason** rather than being silently absent —
 because a preflight that reports twelve green gates as thirteen is worse than one that reports
@@ -305,8 +305,25 @@ twelve.
 | 11 | `npx tsx scripts/ops/check-env.ts` | 44 | Every required variable present and well-formed; **no value printed** |
 | 12 | `npm run db:reset` | 03 · 44 | **Skips without `DATABASE_URL`**, and the reason says to point it at a THROWAWAY database — this gate drops every table |
 | 13 | `npm run content:verification-report` | 08 · 46 | **Skips today** — Phase 46 has not run |
+| 14 | `npx tsx scripts/ops/check-canonical-host.ts` | 44 · 45 | The canonical host answers 200 and does not redirect in a circle. **Skips without `NEXT_PUBLIC_SITE_URL`** — there is no deployed host to ask about |
 
-Ten of thirteen run today. The three that skip say which phase owns them.
+Eleven of fourteen run today. The three that skip say which phase owns them.
+
+**Gate 14 is the only one that asks the internet, and it has to.** Every other gate reads this
+repository, and the defect this one exists for is not in the repository at all: it is in the
+composition of a platform dashboard setting with a compiled-in rule. On 2026-09-12 the two
+disagreed — the platform named `www` as the primary host and redirected the apex to it, while
+`next.config.ts` redirects `www` to the apex because `NEXT_PUBLIC_SITE_URL` names the apex — and the
+live site was unreachable on **both** of its addresses, every page, `ERR_TOO_MANY_REDIRECTS`. The
+build was green, the test suite was green, and nothing in this repository could have known, because
+half of the cause is a setting the repository cannot see.
+
+The gate follows redirects by hand (`redirect: 'manual'`, at most five hops) and fails three ways:
+a host seen twice is the loop, and it prints the cycle; a chain that terminates at a different host
+is an SEO defect rather than an outage, because every canonical tag and sitemap entry then names a
+URL that redirects; and a non-200 at the canonical host is a non-200. It never follows redirects
+automatically — a fetch that did would report the same `ERR_TOO_MANY_REDIRECTS` a browser does, with
+none of the detail that makes it fixable.
 
 ### 7.1 Before merge
 

@@ -119,7 +119,8 @@
     "test:build-fixture-media": "tsx scripts/test/build-fixture-media.ts",
     "test:check-fixture-media": "tsx scripts/test/build-fixture-media.ts --check",
     "test:check-flaky": "node scripts/test/check-flaky.mjs",
-    "test:visual": "npm run build && E2E_PRODUCTION=1 playwright test --project=visual-w1440 --project=visual-w768 --project=visual-w390"
+    "test:visual": "npm run build && E2E_PRODUCTION=1 playwright test --project=visual-w1440 --project=visual-w768 --project=visual-w390",
+    "ops:check-canonical-host": "tsx scripts/ops/check-canonical-host.ts"
   },
   "dependencies": {
     "@gltf-transform/core": "4.5.0",
