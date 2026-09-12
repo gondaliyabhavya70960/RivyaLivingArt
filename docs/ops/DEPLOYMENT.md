@@ -430,6 +430,88 @@ There is **no on-call rotation**, no paging, no third-party APM, RUM or uptime v
 deliberate scope decision, stated plainly here so nobody assumes coverage that does not exist. If
 the owner wants monitoring, it is an amendment with a named provider and its variables added to D8.
 
+### 10.1 There is no SLA
+
+**Said in as many words, because §10 above did not say it: there is no SLA.** No service-level
+agreement, no service-level objective, no uptime target, no response time, no coverage hours and no
+escalation rota. Nothing in this repository and nothing configured on the platform measures
+availability, and nothing tells anybody when the site stops answering. **Detection is a person
+looking.** Every source in §10's table is something to consult *after* somebody has noticed; not one
+of them is a watcher.
+
+No figure appears in this section because none has been measured — the same refusal §11.1 makes
+about the two drills. A support contract, an availability figure or an hours-of-cover commitment is a
+commercial undertaking rather than a technical one and is out of scope (§11); nothing here is
+guaranteed, promised or implied to be, and reading a number into this document's silence would be
+reading something that is not there.
+
+The honest consequence, written down rather than discovered: an outage beginning at 02:00 is
+discovered when the owner or a visitor next opens the site. **The one outage this project has
+actually had is the proof.** On 2026-09-12 both addresses served nothing — every page,
+`ERR_TOO_MANY_REDIRECTS` — while the build was green and the whole test suite was green (§7.0, gate
+14). No alert existed to fire, and none exists now.
+
+What does exist is smaller and real: a written procedure (§10.2), a rollback lever that takes under
+two minutes (§6.1), a build record and a log at `/studio/system/environment` and
+`/studio/operations/logs`, and one engineer contact **the owner supplies** — a fact about the world,
+so it is **OWNER_VERIFICATION_REQUIRED** (§12, item 12) rather than a name invented here.
+
+### 10.2 The incident path
+
+Nobody is paged, so the path starts where the knowledge does: with the person who noticed. Work
+downwards and stop at the first step that matches. Each step names the lever and where it lives; none
+of them needs an engineer until step 9, and every step is written to be performed by the owner.
+
+1. **Decide whether the site answers at all, from outside.** Open the apex address, then the same
+   address with `www.` in front of it, in a private window or on a phone away from the studio
+   Wi-Fi, and write down
+   what the browser says *verbatim* — a redirect error, a certificate warning, a 404, a 500, a blank
+   page, or correct-but-slow. **Try both addresses.** This is step one, and it is deliberately not
+   "open the Studio": the Studio is served from the same host as the public site, so in the failure
+   of 2026-09-12 `/studio/system/environment` was unreachable in exactly the same way. A first step
+   that depends on the site being reachable cannot detect the only outage this project has had.
+2. **If the browser reports too many redirects, or neither address ever loads, it is the redirect
+   loop and it has a known cause and a dashboard-sized fix.** The apex and `www` are each
+   redirecting to the other: the platform's domain setting names one as primary while
+   `next.config.ts`'s `redirects()` sends `www` to the apex because `NEXT_PUBLIC_SITE_URL` names the
+   apex. Neither rule is wrong alone. In the Vercel project's Domains settings, make the **apex** the
+   primary domain so that `www` redirects to it and not the reverse (§8, step 4). No deploy and no
+   code change is needed. An engineer confirms it with
+   `npx tsx scripts/ops/check-canonical-host.ts` (gate 14), which follows the hops by hand and
+   prints the cycle it found.
+3. **If the site loads but a page shows the wrong or an old version of something,** re-publish the
+   entity from its Studio screen; if that does not settle it, the cache lever is the
+   `/api/revalidate` row of §6.1.
+4. **If the site loads but a page errors or a form refuses,** read `/studio/operations/logs`
+   (`system_logs`, with the `request_id` and the commit SHA), then `/studio/system/environment` for
+   what is deployed and which migration is applied, then the Vercel runtime logs for anything the
+   application never saw. Note the `request_id`: it is what makes the report in step 9 actionable.
+5. **If it started immediately after a deployment,** roll back — promote the previous deployment in
+   Vercel. Under two minutes, no data loss, first row of §6.1. Do this before diagnosing; the
+   diagnosis is easier with the site up.
+6. **If it started immediately after a bulk Studio action,** open that operation at
+   `/studio/operations/audit` and use the undo panel. It is available until `undo_deadline_at`, 24
+   hours after the action.
+7. **If content or data is wrong rather than missing, and no deploy or bulk action explains it,**
+   stop changing things and read `/studio/operations/audit` for who did what. Restoring the database
+   to a point in time is the Supabase lever in §6.1 and its window is plan-dependent
+   (**OWNER_VERIFICATION_REQUIRED**, §12 item 2).
+8. **If a secret may have been exposed,** this is not an outage procedure: follow `SECURITY.md` §11
+   and rotate per §9, in that order. Never revoke first.
+9. **If none of the above matches, or the lever did not work: contact the engineer.** The contact is
+   the owner's to supply (**OWNER_VERIFICATION_REQUIRED**, §12 item 12). No response time is
+   promised by this document, because none has been agreed. Send, in one message: the exact address
+   tried and whether `www` behaved differently; the browser's verbatim error; the time it started and
+   how it was noticed; the commit SHA and migration from `/studio/system/environment` if it is
+   reachable; the `request_id` of a failing request from `/studio/operations/logs`; whether a deploy,
+   a publish or a bulk action happened just before; and which steps above were already tried and what
+   each one did. A report with the SHA and the `request_id` is a fix; a report that says "the site is
+   down" is a conversation.
+
+**Two things this path deliberately does not do.** It does not ask the owner to read a log before
+establishing that the site answers, because the log is behind the site. And it does not begin with a
+monitoring dashboard, because there is not one — see §10.1.
+
 ---
 
 ## 11. Out of scope
@@ -438,7 +520,9 @@ Multi-region deployment, edge replicas, active-active topology · blue/green or 
 (Vercel's atomic deploy plus instant rollback covers the risk at this scale) · infrastructure as code
 for Supabase or Cloudinary (both are dashboard-configured and documented here) · automated production
 migration on merge (a production schema change requires a human) · a staging copy of production data
-(forbidden by BR-I3) · uptime vendors, status pages and on-call tooling.
+(forbidden by BR-I3) · uptime vendors, status pages and on-call tooling · a service-level
+agreement, a maintenance contract or any commitment to a response time or an availability figure —
+commercial undertakings rather than technical ones, and §10.1 says so plainly.
 
 ---
 
@@ -479,6 +563,7 @@ somebody discovers the runbook was aspirational. The procedures above are correc
 | 9 | **Set `IP_HASH_SALT` and `RATE_LIMIT_SALT`** in every Vercel environment. Without them `salt()` falls back to a public literal | `ENVIRONMENT.md` §5.2, `SECURITY.md` §15 |
 | 10 | **Disable public sign-up** in Supabase Auth, and create the first owner user — `auth.users` is empty, so nobody can sign into the Studio on production today | §5 |
 | 11 | **Decide whether a second Supabase project is worth its cost.** Today a preview deployment reads and writes production data | §1.1 |
+| 12 | **The engineer contact of record: who to call, on what channel, and by what arrangement.** Step 9 of the incident path ends at a person, and this document will not invent one. Until the owner supplies it, §10.2 step 9 has no destination, and this row says so rather than printing a plausible name | §10.2 |
 
 ---
 

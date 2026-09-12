@@ -38,6 +38,32 @@ const CITED =
   /`((?:tests|scripts|lib|app|components|content|supabase)\/[^`\s]+\.(?:ts|tsx|mjs|py|sql))`/g
 const PLACEHOLDER = /[<>…*]/
 
+/**
+ * A CITATION INSIDE A SENTENCE THAT SAYS IT IS MISSING IS A REPORT, NOT A CLAIM — and getting this
+ * wrong inverts the whole measure.
+ *
+ * The first version of this script lacked it, and the count went UP, 84 to 86, the moment
+ * `BUSINESS_RULES.md` was corrected to say "`tests/integration/forbidden-tables.test.ts` does not
+ * exist" — because naming a file in order to report its absence looks exactly like naming it as
+ * enforcement. **A number that rises when somebody documents the truth is worse than no number**: it
+ * penalises the fix and rewards leaving the false citation in place. It would also have made this
+ * phase's own corrections look like regressions.
+ *
+ * So the block around each hit is read, the same way `audit-docs.mjs --claims` reads the block around
+ * a vocabulary hit, and a hit whose block says the file is absent is counted separately.
+ */
+const ABSENCE =
+  /does not exist|do not exist|NOT WRITTEN|not written|is missing|are missing|never written|no longer exists|not in the repository|neither/i
+
+/** The contiguous run of non-blank lines around a line — a paragraph, or a table row with its header. */
+function blockAround(lines, index) {
+  let start = index
+  let end = index
+  while (start > 0 && (lines[start - 1] ?? '').trim() !== '') start -= 1
+  while (end < lines.length - 1 && (lines[end + 1] ?? '').trim() !== '') end += 1
+  return lines.slice(start, end + 1).join('\n')
+}
+
 /** Expand `{a,b}` one group at a time — the shorthand these documents actually use. */
 export function expandBraceGroups(path) {
   const match = /\{([^{}]*)\}/.exec(path)
@@ -68,27 +94,34 @@ export function auditDocumentPaths(root = process.cwd()) {
   const plan = []
   const descriptive = []
   let checked = 0
+  let reported = 0
 
   for (const doc of markdownFiles(join(root, 'docs'))) {
     const relative = doc.slice(root.length + 1)
     const isPlan = relative.startsWith('docs/project/phases/')
-    const text = readFileSync(doc, 'utf8')
+    const lines = readFileSync(doc, 'utf8').split('\n')
 
-    for (const [, cited] of text.matchAll(CITED)) {
-      if (PLACEHOLDER.test(cited)) continue
-      for (const path of expandBraceGroups(cited)) {
-        checked += 1
-        if (existsSync(join(root, path))) continue
-        ;(isPlan ? plan : descriptive).push({ doc: relative, path })
+    for (const [index, line] of lines.entries()) {
+      for (const [, cited] of line.matchAll(CITED)) {
+        if (PLACEHOLDER.test(cited)) continue
+        for (const path of expandBraceGroups(cited)) {
+          checked += 1
+          if (existsSync(join(root, path))) continue
+          if (ABSENCE.test(blockAround(lines, index))) {
+            reported += 1
+            continue
+          }
+          ;(isPlan ? plan : descriptive).push({ doc: relative, path })
+        }
       }
     }
   }
-  return { checked, plan, descriptive }
+  return { checked, reported, plan, descriptive }
 }
 
 function main() {
   const strict = process.argv.includes('--strict')
-  const { checked, plan, descriptive } = auditDocumentPaths()
+  const { checked, reported, plan, descriptive } = auditDocumentPaths()
 
   const byDoc = new Map()
   for (const miss of descriptive) {
@@ -102,6 +135,10 @@ function main() {
   console.log(
     `  plan documents   : ${String(plan.length)} not present — docs/project/phases/*.md are written ` +
       `before the code, so this is drift rather than a false claim`,
+  )
+  console.log(
+    `  reported absent  : ${String(reported)} named inside a sentence saying they do not exist — ` +
+      `a report, not a claim`,
   )
   console.log(
     `  descriptive docs : ${String(descriptive.length)} not present, in ${String(byDoc.size)} document(s)`,
