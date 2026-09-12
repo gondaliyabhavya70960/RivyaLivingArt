@@ -13,6 +13,7 @@ import { createPublicClient } from '@/lib/supabase/public'
 import { NotFoundError } from '@/lib/supabase/errors'
 import { getCategoryBySlug, listCategories } from '@/lib/supabase/repositories/journal'
 import { Container } from '@/components/primitives/Container'
+import { prerenderParams } from '@/lib/site/prerender'
 
 /**
  * `/journal/category/[slug]` — one category's articles.
@@ -51,8 +52,10 @@ const pathFor = (slug: string) => `${BASE}/${slug.toLowerCase()}`
  * correct state rather than a reason to hide the category.
  */
 export async function generateStaticParams(): Promise<Params[]> {
-  const categories = await listCategories(createPublicClient())
-  return categories.map((category) => ({ slug: category.slug.toLowerCase() }))
+  return prerenderParams('/journal/category/[slug]', async () => {
+    const categories = await listCategories(createPublicClient())
+    return categories.map((category) => ({ slug: category.slug.toLowerCase() }))
+  })
 }
 
 async function categoryFor(slug: string) {

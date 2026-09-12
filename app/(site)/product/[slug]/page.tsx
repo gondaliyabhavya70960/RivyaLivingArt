@@ -41,6 +41,7 @@ import { listProductSpecs } from '@/lib/supabase/repositories/product-specs'
 import { RELATION_TARGET } from '@/lib/supabase/repositories/product-edges'
 import { listRelationsForProduct } from '@/lib/supabase/repositories/relations'
 import { NotFoundError } from '@/lib/supabase/errors'
+import { prerenderParams } from '@/lib/site/prerender'
 
 /**
  * `/product/[slug]` — the page where a visitor understands an object rather than a listing.
@@ -75,14 +76,17 @@ const BASE = '/product'
  * visibility rule applies at request time it is not reachable either. Two gates, one predicate.
  */
 export async function generateStaticParams(): Promise<Params[]> {
-  const client = createPublicClient()
-  const categories = await listCategories(client)
-  const lists = await Promise.all(
-    categories.map(async (category) => listProductsByCategory(client, category.id)),
-  )
   // A product with no category is legitimately unreachable this way; `dynamicParams` still renders
-  // it on request. Pre-rendering is an optimisation, not the visibility rule.
-  return [...new Set(lists.flat().map((product) => product.slug))].map((slug) => ({ slug }))
+  // it on request. Pre-rendering is an optimisation, not the visibility rule — which is exactly why
+  // `prerenderParams` may answer with none of them rather than fail the build (ROADMAP E9).
+  return prerenderParams(`${BASE}/[slug]`, async () => {
+    const client = createPublicClient()
+    const categories = await listCategories(client)
+    const lists = await Promise.all(
+      categories.map(async (category) => listProductsByCategory(client, category.id)),
+    )
+    return [...new Set(lists.flat().map((product) => product.slug))].map((slug) => ({ slug }))
+  })
 }
 
 /** The product, or null. One read, shared by `generateMetadata` and the render. */
