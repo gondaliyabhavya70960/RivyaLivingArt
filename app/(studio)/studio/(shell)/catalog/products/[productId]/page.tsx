@@ -69,7 +69,7 @@ export default async function Page({ params }: { params: Promise<{ productId: st
       <ReadinessChecklist checklist={checklist} />
 
       <PublishControls
-        productId={product.id}
+        entityId={product.id}
         isPublished={product.status === 'PUBLISHED'}
         publishAction={publishProductAction}
         unpublishAction={unpublishProductAction}

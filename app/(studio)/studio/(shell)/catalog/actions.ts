@@ -17,6 +17,7 @@ import { currencyExponent } from '@/lib/catalog/price'
 import { createClient } from '@/lib/supabase/server'
 import { productDraft } from './product-values'
 import {
+  getCategoryByIdForStudio,
   getProductById,
   insertCollection,
   insertMaterial,
@@ -319,6 +320,20 @@ function revalidateCatalog(path: string | null): void {
   if (path !== null) revalidatePath(path)
 }
 
+/**
+ * What a category's publication state changes.
+ *
+ * THE CATEGORY'S OWN ROUTE IS THE POINT, and it is the one `revalidateCatalog` cannot name: a
+ * publish is precisely the moment `/collection/<slug>` stops being a 404, so a cache entry holding
+ * that 404 has to go. `/collection` goes too because its listing reads the same rows, and the
+ * chrome's mega menu is built from `livePaths`, which is derived from them.
+ */
+function revalidateCategory(slug: string): void {
+  revalidatePath('/studio/catalog/categories')
+  revalidatePath('/collection')
+  revalidatePath(`/collection/${slug}`)
+}
+
 // --- products ----------------------------------------------------------------------------------
 
 export async function saveProductAction(
@@ -604,6 +619,137 @@ export async function saveCategoryAction(
 
     revalidatePath('/studio/catalog/categories')
     revalidatePath('/collection')
+    return { status: 'saved', id }
+  } catch (error) {
+    return formIssue(refusalMessage(error))
+  }
+}
+
+/**
+ * Publishing a category is what makes `/collection/<slug>` exist.
+ *
+ * THE GAP THIS CLOSES. `saveCategoryAction` above writes the wording, the order, the hero and the
+ * two SEO fields — and never `status`. There was no other writer either: no `publishCategoryAction`
+ * existed anywhere in the repository, so all seven rows stayed DRAFT from the moment
+ * `content/seed/taxonomy.ts` inserted them, every `/collection/<slug>` route 404'd, and
+ * `livePathsFrom` correctly omitted them from the chrome. The catalogue was reachable only through
+ * `/collection` itself. That is a missing verb, not a policy: the phase that built the editor did
+ * not build the control, and the audit in `docs/design/DESIGN_SYSTEM.md` §19 recorded it.
+ *
+ * SIX OF THE SEVEN, AND THE SEVENTH IS THE DATABASE'S CALL. `3d-resin` is seeded
+ * OWNER_VERIFICATION_REQUIRED because the name asserts a fabrication capability nobody has
+ * confirmed, and `categories_verified_before_publish` in `0004_taxonomy.sql` makes PUBLISHED
+ * unreachable for it. This action checks the same fact BEFORE the write, for the reason
+ * `publishProductAction` checks READY_STOCK before its own constraint fires: the editor's only
+ * feedback would otherwise be a raw constraint name, and what they need to be told is that the
+ * claim is the owner's to confirm. The check is a translation of the rule, never a second copy of
+ * it — the trigger still refuses if this is ever wrong.
+ *
+ * NO READINESS CHECKLIST, DELIBERATELY. A product has one because a product page with no price
+ * state, no specification and no image is a broken shop. A category is a heading and a list, and
+ * two of the seven legitimately have no hero image — Phase 09 recorded both as gaps rather than
+ * defects. Inventing a gate that refuses those two would be this file asserting an editorial
+ * standard the design system does not hold.
+ */
+export async function publishCategoryAction(
+  _previous: CatalogActionState,
+  form: FormData,
+): Promise<CatalogActionState> {
+  try {
+    const session = await requirePermission('catalog.publish')
+    const client = await createClient()
+
+    const id = text(form, 'id')
+    if (id === null) return formIssue('That category could not be found.', 'missing_id')
+
+    const category = await getCategoryByIdForStudio(client, id)
+
+    if (category.owner_verification === 'OWNER_VERIFICATION_REQUIRED') {
+      await writeAudit({
+        action: 'catalog.category.publish',
+        result: 'DENIED',
+        actorUserId: session.userId,
+        actorRole: session.role,
+        entityType: 'categories',
+        entityId: id,
+        summary: 'Publication refused: category awaits owner verification',
+      })
+      return {
+        status: 'error',
+        issues: [
+          {
+            field: 'owner_verification',
+            code: 'verification_required',
+            message:
+              'This category names a capability only the owner can confirm. Clear its owner verification before publishing it.',
+          },
+        ],
+      }
+    }
+
+    await withAudit(
+      {
+        action: 'catalog.category.publish',
+        actorUserId: session.userId,
+        actorRole: session.role,
+        entityType: 'categories',
+        entityId: id,
+        summary: `Published category ${category.slug}`,
+      },
+      async () =>
+        updateCategoryRow(client, id, {
+          status: 'PUBLISHED',
+          published_at: new Date().toISOString(),
+          published_by: session.userId,
+          updated_by: session.userId,
+        }),
+    )
+
+    revalidateCategory(category.slug)
+    return { status: 'saved', id }
+  } catch (error) {
+    return formIssue(refusalMessage(error))
+  }
+}
+
+/**
+ * Taking a category back to DRAFT, which takes its route back to 404.
+ *
+ * NO VERIFICATION CHECK ON THE WAY DOWN. Unpublishing is how an owner corrects a mistake, and a
+ * gate that could refuse it would be a gate that strands a wrong page in public.
+ */
+export async function unpublishCategoryAction(
+  _previous: CatalogActionState,
+  form: FormData,
+): Promise<CatalogActionState> {
+  try {
+    const session = await requirePermission('catalog.publish')
+    const client = await createClient()
+
+    const id = text(form, 'id')
+    if (id === null) return formIssue('That category could not be found.', 'missing_id')
+
+    const category = await getCategoryByIdForStudio(client, id)
+
+    await withAudit(
+      {
+        action: 'catalog.category.unpublish',
+        actorUserId: session.userId,
+        actorRole: session.role,
+        entityType: 'categories',
+        entityId: id,
+        summary: `Unpublished category ${category.slug}`,
+      },
+      async () =>
+        updateCategoryRow(client, id, {
+          status: 'DRAFT',
+          published_at: null,
+          published_by: null,
+          updated_by: session.userId,
+        }),
+    )
+
+    revalidateCategory(category.slug)
     return { status: 'saved', id }
   } catch (error) {
     return formIssue(refusalMessage(error))
