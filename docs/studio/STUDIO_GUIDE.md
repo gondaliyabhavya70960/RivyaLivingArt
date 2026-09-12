@@ -2821,6 +2821,23 @@ Each of the three is the designed surface described in §13.8 and §9.3 under th
 the boundary **as designed** rather than **as shipped**. Runbook 13 is how the owner asks for the
 difference to be closed.
 
+**A fourth row was not a stub but simply wrong, and has been corrected in place.** The feature-flags
+row read *"3D viewer, configurator, research, Sheets, advanced analytics, advanced similarity,
+newsletter"*. **There is no newsletter flag.** `lib/flags/flags.ts` declares eight — `three_d_viewer`,
+`commission_configurator`, `research_enabled`, `research_image_hashing`, `advanced_similarity`,
+`research_product_bridge`, `google_sheets`, `advanced_analytics` — and no source file in the
+repository contains a `newsletter` flag of any kind. The row now names the eight by their real keys, so
+a reader can check it against `flags.ts` in one step instead of trusting a prose list.
+
+This one is worth naming rather than quietly fixing, because of HOW it survived. It is not a stub and
+not a design decision: it is a capability that was never built appearing in the table whose job is to
+say what exists, and neither `docs:check-claims` nor `docs:audit --claims` could catch it. The first
+asks whether a documented capability names an implementing artefact, and this row names
+`/studio/system/flags`, which exists. The second scans a fabrication vocabulary about the BUSINESS —
+awards, testimonials, delivered projects — and a non-existent feature flag is not in it. **A mechanical
+gate covers the failures somebody has already thought of.** Reading the list against `flags.ts` is what
+found this, and §19's own rule is the standing instruction: a row that stops being true is a defect.
+
 | The owner can change… | Where | Effect |
 |---|---|---|
 | Any page's eyebrow, heading, highlighted fragment, body, supporting copy, CTA labels and CTA links | `/studio/content/pages` | Live after publish |
@@ -2842,7 +2859,7 @@ difference to be closed.
 | What a visitor sees when a curated slot is empty | `/studio/merchandising/*` → fallback mode | Live after publish |
 | Enquiry handling: pipeline status, internal notes, assignment, export, and a per-enquirer data request | `/studio/inquiries/*` | Immediate |
 | Media: upload, tag, crop, alt text, folder, archive; and the 3D viewer settings and variant labels | `/studio/media/*` | Live after publish |
-| Feature flags: 3D viewer, configurator, research, Sheets, advanced analytics, advanced similarity, newsletter | `/studio/system/flags` | Immediate |
+| Feature flags — the eight `lib/flags/flags.ts` declares: `three_d_viewer`, `commission_configurator`, `research_enabled`, `research_image_hashing`, `advanced_similarity`, `research_product_bridge`, `google_sheets`, `advanced_analytics` | `/studio/system/flags` | Immediate |
 | Staff users, their roles and their access | `/studio/system/users` | Immediate |
 | Research: sources, policy approval, schedules, jobs, review dispositions, tags, shortlists, direction briefs, Sheets exports | `/studio/research/*` | Internal only — never public |
 | Bulk changes to up to 500 products or assets, with a preview and a 24-hour undo | `/studio/catalog/bulk`, `/studio/operations/imports` | Live after publish |
