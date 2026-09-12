@@ -745,6 +745,23 @@ export function verificationBacklogMarkdown(backlog: VerificationBacklog): strin
     '- Counted in ROWS, which is what the `/studio` card counts. The field-level figure earlier in',
     '  this document is larger because it counts every heading, body and CTA label separately,',
     '  while the flag itself lives on the row.',
+    /*
+     * WHICH DATABASE THIS FIGURE CAME FROM, STATED — added after CI rejected a copy of this
+     * document generated against a developer's own database.
+     *
+     * `npm run content:check-inventory` regenerates this file and fails on a diff, and CI runs it
+     * against a database that has had exactly `db:reset` and `seed:content`. A developer's database
+     * has usually also had the Phase 42 fixture applied, which publishes the seeded sections and
+     * adds a portfolio project — so it reports one more row across one more surface, and a document
+     * committed from it fails the gate with a 200-line diff about `PUBLISHED` versus `DRAFT`. The
+     * numbers are all correct; they answer the question about different databases. Saying so here
+     * costs two lines and saves the next person the twenty minutes it cost to work out.
+     */
+    '- Generated from the **canonical seeded database** — what `npm run db:reset && npm run',
+    '  seed:content` produces, with nothing published and no test fixture. That is the state',
+    '  `npm run content:check-inventory` enforces, so this is the committed figure. A database',
+    '  carrying the Phase 42 test fixture, or real content, will legitimately report a different',
+    '  one; `/studio` always shows what the live database holds.',
   ]
 
   if (backlog.unpublished > 0) {

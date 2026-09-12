@@ -46,10 +46,13 @@ enough — it needs a reachable PostgREST whose anon key is the one that shim mi
 - `scripts/docs/check-doc-contract.mjs --claims` — a documented capability must name the file or
   route that implements it. 53 claims across 34 documents, resolved against 126 routes and 1090
   source files. Proved by counter-example: a fabricated "as built" section makes it exit 1
-- `scripts/content/build-verification-report.ts` — the generated owner-verification backlog: **42
-  rows across 16 surfaces**, each with the Studio path that clears it and one sentence saying what
-  the owner must confirm. It also fills preflight **gate 13**, which until now reported SKIPPED
-  naming this phase
+- `scripts/content/build-verification-report.ts` — the generated owner-verification backlog: **41
+  rows across 15 surfaces** on the canonical seeded database, each with the Studio path that clears
+  it and one sentence saying what the owner must confirm. It also fills preflight **gate 13**, which
+  until now reported SKIPPED naming this phase. The document names the database it was generated
+  from, because the figure legitimately differs on one that carries the Phase 42 test fixture (42
+  rows across 16 — the fixture adds a portfolio project) and a copy committed from the wrong one
+  fails `content:check-inventory`
 - `lib/cms/verification-backlog.ts` — the 22 flagged surfaces as data and pure functions with no
   database client, so a script, a Server Component and a unit test can all read one declaration;
   `lib/supabase/repositories/verifications.ts` counts them for the Studio
@@ -79,7 +82,7 @@ enough — it needs a reachable PostgREST whose anon key is the one that shim mi
 
 The capability-boundary dry run (Phase 45's question 8), the handover session, the runbook
 screenshots (which cannot be captured here: the local harness has no auth server, so the Studio is
-unreachable by a browser and ~156 specs skip for that reason), and the 42-row verification backlog
+unreachable by a browser and ~156 specs skip for that reason), and the 41-row verification backlog
 itself. Each is a fact about the world, so none is asserted anywhere — D10.
 
 
