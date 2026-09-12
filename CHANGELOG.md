@@ -6,6 +6,83 @@ Every phase adds an entry; see `docs/architecture/CANONICAL-DECISIONS.md` D9 for
 
 ## [Unreleased]
 
+### Phase 46 — Documentation + Handoff (PARTIAL — 2026-09-12)
+
+The handoff phase, run as an audit rather than a writing exercise, because its own goal statement
+says the thing that matters: *a document that claims a capability the code does not have is worse
+than no document.*
+
+**It found four defects in the documentation set, three of them sitting in plain sight since Phase 01
+and Phase 38.**
+
+**Nineteen documents under `docs/` carried no front matter.** Phase 01's scope says "add front matter
+to every document under `docs/`", and its verification step 4 names sixteen files that lacked it,
+adding that "every one of which must gain front matter before this phase's exit criterion can be
+ticked". The criterion was ticked; the sixteen were still there and three more had joined. Among
+them the binding contract itself, all six later phase documents, and **six of the ten documents the
+Studio's documentation viewer serves**.
+
+**The viewer rendered that block as page content.** Phase 38's parser has no front-matter branch, so
+it read the opening `---` as a horizontal rule and the five `key: value` lines as a paragraph — the
+Studio guide opened on a rule and the words `doc: STUDIO_GUIDE status: CURRENT owning_phase: 05 …`.
+Already true of the seven allowlisted documents that had front matter, so giving the other three
+theirs would have made it ten out of ten.
+
+**`ROADMAP.md` had no `Status` column**, which Phase 01 specified as `Phase · Title · Status · Owning
+document · Blocking dependencies` — so the one document indexing all 47 phases could not say which
+were done.
+
+**And the recoverability sequence did not work as written.** Nothing in it creates the environment
+`next build` reads, and the build queries the database while building, so `DATABASE_URL` alone is not
+enough — it needs a reachable PostgREST whose anon key is the one that shim minted for that run.
+
+#### Added
+
+- `scripts/docs/audit-docs.mjs` — D7 completeness, front matter, stub ownership, the D8 secret scan
+  and phase honesty, plus `--claims`: the fabrication vocabulary classified by prohibition marker.
+  **The D7 path list and the D8 name list are parsed out of the binding contract at runtime**, never
+  copied, because a copied list is how the contract and the gate drift apart while both look green.
+  424 vocabulary hits inside prohibitions, 22 naming schema objects, **0 assertions**
+- `scripts/docs/check-doc-contract.mjs --claims` — a documented capability must name the file or
+  route that implements it. 53 claims across 34 documents, resolved against 126 routes and 1090
+  source files. Proved by counter-example: a fabricated "as built" section makes it exit 1
+- `scripts/content/build-verification-report.ts` — the generated owner-verification backlog: **42
+  rows across 16 surfaces**, each with the Studio path that clears it and one sentence saying what
+  the owner must confirm. It also fills preflight **gate 13**, which until now reported SKIPPED
+  naming this phase
+- `lib/cms/verification-backlog.ts` — the 22 flagged surfaces as data and pure functions with no
+  database client, so a script, a Server Component and a unit test can all read one declaration;
+  `lib/supabase/repositories/verifications.ts` counts them for the Studio
+- `tests/unit/docs-audit.test.ts` (22 tests) and `tests/unit/docs-render.test.ts` (5)
+- `docs:audit`, `docs:audit-claims` and `docs:check-claims` in `npm run check` — **39 gates**
+- `README.md` → *From a clean clone*: the sequence executed and timed at about six minutes, the two
+  setup steps it omitted, and what could not run here (`nvm use` has no `.nvmrc`; there is no
+  Supabase CLI for `supabase start`)
+
+#### Fixed
+
+- Front matter on all 34 documents under `docs/`. Two are generated wholesale, so **their generators
+  emit it** — a block added by hand to `DEMO_CONTENT.md` or `INITIAL_CONTENT_INVENTORY.md` would have
+  survived until the next run and no further
+- `lib/cms/docs/render.ts` drops a leading front-matter block, narrowly: only a fence on the very
+  first line opens one, and an unterminated fence is left alone rather than swallowing the document
+- `ROADMAP.md` carries a status for all 47 phases, derived from `PROJECT_STATE.md` so the two cannot
+  disagree on arrival
+- `PROJECT_STATE.md` said **33 gates**; there are 39. Phase 01's row now records the two of its own
+  exit criteria that Phase 46 had to close
+- The secret-scanner's own test fixtures are **minted at run time**. Written out, they failed
+  `gitleaks` — correctly: a 40-character literal at entropy 5.18 beside `SUPABASE_SERVICE_ROLE_KEY`
+  is indistinguishable from a real leak. `.gitleaks.toml` forbids the alternative in as many words —
+  "never a path, because 'ignore this file' is how the one real finding gets ignored with it"
+
+#### Outstanding — and only the owner can close these
+
+The capability-boundary dry run (Phase 45's question 8), the handover session, the runbook
+screenshots (which cannot be captured here: the local harness has no auth server, so the Studio is
+unreachable by a browser and ~156 specs skip for that reason), and the 42-row verification backlog
+itself. Each is a fact about the world, so none is asserted anywhere — D10.
+
+
 ### Phase 45 — Final Creative Polish (PARTIAL — 2026-09-12)
 
 The audit FEAT §49 asks for, run properly and recorded where it can be read. Nine dimensions
