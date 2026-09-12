@@ -46,6 +46,17 @@ export function ProjectGallerySection({
 
   const regionName = siteString(strings, REGION_KEY)
   const bandCaption = siteString(strings, CAPTION_KEY)
+  /*
+   * `grid` IS TWO-UP AND `stacked` IS ONE PHOTOGRAPH PER ROW AT FULL WIDTH, which is the shape a
+   * gallery of INTERIORS wants: a 4:5 crop at half the column is a picture of a corner, and a room
+   * needs the width to read as a room. The block declared both from Phase 17 and branched on
+   * neither. `grid` is the first declared variant, so an unknown value falls through to it.
+   *
+   * THE RATIO CHANGES WITH THE COLUMN, not just the number of columns. A full-width 4:5 is a tower;
+   * 3:2 is what a photograph of a space is usually taken at, and it is what `PortfolioCard` already
+   * holds at every width for the same reason.
+   */
+  const stacked = section.layout_variant === 'stacked'
 
   return (
     <SectionShell section={section}>
@@ -59,15 +70,19 @@ export function ProjectGallerySection({
           <Stack gap={4}>
             {regionName === null ? null : <VisuallyHidden>{regionName}</VisuallyHidden>}
 
-            <ul role="list" className="grid gap-4 sm:grid-cols-2" data-project-gallery-items="">
+            <ul
+              role="list"
+              className={stacked ? 'grid list-none gap-8' : 'grid gap-4 sm:grid-cols-2'}
+              data-project-gallery-items=""
+            >
               {media.map((item) => (
                 <li key={item.asset.id}>
                   <figure className="m-0">
                     <BlockImage
                       asset={item.asset}
-                      ratio="4:5"
+                      ratio={stacked ? '3:2' : '4:5'}
                       preset="hero"
-                      sizes="(min-width: 430px) 50vw, 100vw"
+                      sizes={stacked ? '100vw' : '(min-width: 430px) 50vw, 100vw'}
                       altOverride={item.altOverride}
                       strings={strings}
                       cloudName={cloudName}

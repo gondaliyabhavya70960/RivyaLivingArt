@@ -105,6 +105,38 @@ could not see it while `numbered-steps` declared no `entryArrays` — and both c
 held plain strings where the block's items are objects, so they would have parsed as failure and
 rendered nothing.
 
+**The twelve declared-but-unbuilt layout variants, and `ContentCarousel` (RC-222).** Eleven blocks
+shipped two `layoutVariants` each and branched on **neither** — every one rendered its first-listed
+variant unconditionally, so the Studio's picker offered a choice that changed nothing, and `hero`'s
+`contained` and `split` produced byte-identical output. All of them branch now, and
+`tests/unit/layout-variants.test.tsx` asserts that the two arrangements **differ**, which is the only
+claim the picker actually makes.
+
+- **`ContentCarousel` is a scrollable list, not a transform track.** The DOM is complete, so a
+  crawler reads all the cards rather than the one on screen, a printer prints them and find-in-page
+  finds them. The scroller is a **Server Component**; `Controls.tsx` is the only client code and
+  arrives through `next/dynamic`, so the public island budget is unchanged at 5 and
+  `site:check-islands` lists it among the eight loaded on demand. Keyboard movement is the
+  platform's — a focusable overflow container scrolls on arrows, Home and End — so there is no key
+  handler to get wrong, and each card keeps its own tab stop.
+- **Auto-advance is not implemented, deliberately.** §7.18 required it off by default, pausing on
+  hover, focus and `document.hidden`, with a pause control exposed first and never running under
+  reduced motion. No block enables it, so the correct amount of code for it is none.
+- **One chooser, six blocks.** `components/sections/CardLayout.tsx` is where `grid`, `carousel` and
+  `strip` are decided, and `mode` is the only difference between a carousel and a strip — so the two
+  cannot drift apart in what a scroll row is. An unknown `layout_variant` falls through to the
+  block's **first declared** variant, as `schemeOf` does for an unknown theme.
+- **`hero` `split`** puts the copy beside the picture from `lg` — 4:5 rather than 21:9, because a
+  21:9 still at half the width is a letterbox — and keeps the §5.1 hero floor, so FEAT §49 question
+  2's ≥70% viewport height still holds in the new shape. `material-story` `stacked` drops the
+  sticky column **and its island**, so a page that wants the pictures without the mechanism now
+  loads no JavaScript for that band. `project-gallery` `stacked` is one photograph per row at 3:2,
+  because a 4:5 crop at half a column is a picture of a corner and a room needs the width.
+- **Four new `global_content` rows** (`content/seed/carousel-ui.ts`): the role description, the
+  `{{index}} of {{total}}` position and the two arrow names. All four are read aloud and nothing
+  else, and `check-section-copy.ts` refuses a literal in `aria-roledescription` — which is the rule
+  doing its job. A string that does not resolve means the attribute is omitted, never invented.
+
 **Still outstanding, and not ours:** audit questions 1, 5 and 8 (`DESIGN_SYSTEM.md` §19.2), legal
 copy for `/privacy` and `/terms`, **a heading for `/faq`** (it has no `h1` without one, and
 `SectionList` gives the first section level 1, so one sentence on the band is enough), the ten FAQ

@@ -2,12 +2,13 @@ import * as React from 'react'
 
 import { BlockImage } from '@/components/patterns/MediaSlot'
 import { Eyebrow } from '@/components/primitives/Eyebrow'
+import { ContentCarousel } from '@/components/patterns/ContentCarousel'
 import { Grid } from '@/components/primitives/Grid'
 import { Heading } from '@/components/primitives/Heading'
 import { Stack } from '@/components/primitives/Stack'
 import { Text } from '@/components/primitives/Text'
 import type { EntityCard } from '@/lib/cms/selectors'
-import type { SiteStrings } from '@/lib/cms/strings'
+import { carouselLabels, type SiteStrings } from '@/lib/cms/strings'
 import type { MediaAsset } from '@/lib/supabase/schemas'
 
 /**
@@ -95,27 +96,47 @@ export function PortfolioCardGrid({
   sizes,
   strings,
   cloudName,
+  layout = 'grid',
+  label = null,
 }: {
   readonly cards: readonly EntityCard[]
   readonly assets: ReadonlyMap<string, MediaAsset>
   readonly sizes: string
   readonly strings: SiteStrings
   readonly cloudName: string
+  /**
+   * `strip` is the block's FIRST declared variant and `grid` its second — `portfolio-strip` is
+   * called a strip. It branched on neither until Phase 45, so the Studio's picker changed nothing.
+   */
+  readonly layout?: 'grid' | 'strip'
+  /** The row's accessible name — the section's own heading. Ignored by the grid. */
+  readonly label?: string | null
 }): React.ReactElement | null {
   if (cards.length === 0) return null
 
-  return (
-    <Grid gap={6} className="grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-      {cards.map((card) => (
-        <PortfolioCard
-          key={card.id}
-          card={card}
-          asset={card.mediaId === null ? null : (assets.get(card.mediaId) ?? null)}
-          sizes={sizes}
-          strings={strings}
-          cloudName={cloudName}
-        />
-      ))}
-    </Grid>
-  )
+  const rendered = cards.map((card) => (
+    <PortfolioCard
+      key={card.id}
+      card={card}
+      asset={card.mediaId === null ? null : (assets.get(card.mediaId) ?? null)}
+      sizes={sizes}
+      strings={strings}
+      cloudName={cloudName}
+    />
+  ))
+
+  if (layout === 'grid') {
+    return (
+      <Grid gap={6} className="grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+        {rendered}
+      </Grid>
+    )
+  }
+
+  /*
+   * `mode="free"` — a strip scrolls, a carousel snaps and offers arrows, and `portfolio-strip`
+   * declares only the first. `ContentCarousel` is one component for both so the two cannot drift
+   * apart in what a scroll row is.
+   */
+  return <ContentCarousel items={rendered} mode="free" label={label} {...carouselLabels(strings)} />
 }

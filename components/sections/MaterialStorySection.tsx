@@ -82,30 +82,69 @@ export function MaterialStorySection({
   const payload = parseBlockPayload(materialStoryBlock, section.payload)
   const assets = media.slot('stages')
   const stages = payload.stages
+  /*
+   * TWO SHAPES, AND `stacked` IS NOT A SIMPLER SKIN — IT IS A CHEAPER PAGE. `sequence` is the
+   * sticky two-column reading experience: the copy holds still while the stages scroll past it, and
+   * `MaterialSequence` is the island that marks which stage is level with the reader. `stacked` is
+   * the same content with neither — copy, then the stages in order at full width — and it therefore
+   * loads NO JAVASCRIPT AT ALL for this band. A page that wants the pictures without the mechanism
+   * now has a way to say so, which is what the block declared from Phase 08 and branched on never.
+   *
+   * `sequence` is the first declared variant, so an unknown value falls through to it.
+   */
+  const stacked = section.layout_variant === 'stacked'
+
+  const pictures = stages.map((stage) => (
+    <BlockImage
+      key={stage.key}
+      asset={stage.media_index === null ? null : (assets[stage.media_index] ?? null)}
+      ratio="1:1"
+      preset="grid"
+      sizes={stacked ? '(min-width: 768px) 50vw, 100vw' : '(min-width: 1024px) 45vw, 100vw'}
+      strings={strings}
+      cloudName={cloudName}
+    />
+  ))
+
+  const copy = (
+    <Stack gap={6} className={stacked ? '' : 'lg:sticky lg:top-24'}>
+      <SectionCopy section={section} size="display-lg" />
+      <SectionActions section={section} livePaths={livePaths} />
+    </Stack>
+  )
+
+  if (stacked) {
+    return (
+      <SectionShell section={section}>
+        <Stack gap={10}>
+          {copy}
+          {stages.length === 0 ? null : (
+            <ul className="rv-reveal-group grid list-none gap-6 sm:grid-cols-2">
+              {stages.map((stage, index) => (
+                <li key={stage.key} data-entry-key={stage.key}>
+                  {pictures[index]}
+                </li>
+              ))}
+            </ul>
+          )}
+        </Stack>
+      </SectionShell>
+    )
+  }
 
   return (
     <SectionShell section={section}>
       <div className="grid gap-10 lg:grid-cols-2 lg:items-start lg:gap-16">
-        <Stack gap={6} className="lg:sticky lg:top-24">
-          <SectionCopy section={section} size="display-lg" />
-          <SectionActions section={section} livePaths={livePaths} />
-        </Stack>
+        {copy}
         {stages.length === 0 ? null : (
           <MaterialSequence>
-            {stages.map((stage) => (
+            {stages.map((stage, index) => (
               <li
                 key={stage.key}
                 data-entry-key={stage.key}
                 className="[&_img]:transition-opacity [&_img]:duration-500 data-[active=false]:[&_img]:opacity-40 motion-reduce:[&_img]:transition-none"
               >
-                <BlockImage
-                  asset={stage.media_index === null ? null : (assets[stage.media_index] ?? null)}
-                  ratio="1:1"
-                  preset="grid"
-                  sizes="(min-width: 1024px) 45vw, 100vw"
-                  strings={strings}
-                  cloudName={cloudName}
-                />
+                {pictures[index]}
               </li>
             ))}
           </MaterialSequence>

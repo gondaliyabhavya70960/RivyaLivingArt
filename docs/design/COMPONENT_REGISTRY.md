@@ -294,7 +294,7 @@ and Phase 10's site shell then reuses it.
 | RC-219 | `PortfolioCard` | storytelling | 17 | BUILT | §7.15 |
 | RC-220 | `ArticleCard` | storytelling | 18 | BUILT | §7.16 |
 | RC-221 | `ProductGallery` + `Lightbox` | product understanding | 15 | PLANNED | §7.17 |
-| RC-222 | `ContentCarousel` | navigation | 16 | PLANNED | §7.18 |
+| RC-222 | `ContentCarousel` | navigation | 16 → 45 | BUILT | §7.18 |
 | RC-223 | `FilterRail` | navigation | 14 | BUILT | §7.19 — renamed from `FilterBar` (public) when built, to stop it reading as a variant of the Studio's `FilterBar`; same ID, same row |
 | RC-224 | `SearchCombobox` | navigation | 23 | PLANNED | §7.20 |
 | RC-225 | `RelatedContent` | storytelling | 15 | PLANNED | index only — server, composes cards |
@@ -838,11 +838,11 @@ is part of what the card is, and a section free to lay these out itself is free 
 | Dependencies | none — CSS scroll-snap, no carousel library |
 | Page | `/`, `/collections/[slug]`, `/portfolio`, `/journal`, related-content rails |
 | Purpose | navigation |
-| Adaptation | A scrollable list, not a transform track: the DOM is complete, crawlable and printable. Controls are progressive enhancement |
+| Adaptation | A scrollable list, not a transform track: the DOM is complete, crawlable and printable. Controls are progressive enhancement. **Built in Phase 45** to close the twelve declared-but-unbuilt `layoutVariants`; `components/sections/CardLayout.tsx` is the one chooser six blocks share, and `mode` is what separates a `carousel` (snap + arrows) from a `strip` (neither) — one component, so the two cannot drift apart in what a scroll row is |
 | Mobile behaviour | Free scroll with snap and a one-and-a-peek offset so a second card edge shows the list continues; no arrows below 768px |
-| Performance | budget ≤ 1.5 kB gz, client (unmeasured — PLANNED) — controls and the disabled-state observer only |
-| Accessibility | `role="group"` `aria-roledescription="carousel"`, items labelled `n of m`; the scroller is focusable with arrow-key movement; each item's own link is separately tabbable; auto-advance is off by default and, where a block enables it, pauses on hover/focus/`document.hidden`, exposes a pause control first, and never runs under reduced motion (WCAG 2.2.2) |
-| Reviewed on | — |
+| Performance | **0 kB in the initial bundle of any route.** The scroller is a Server Component; `Controls.tsx` is the only client code and arrives through `next/dynamic`, so `site:check-islands` lists `ContentCarousel` among the eight loaded on demand and the public budget is unchanged at 5. The on-demand chunk it lands in is 8.2 kB gz and is SHARED with the other lazy islands, so no isolated figure for the controls alone is measurable from the build output — stated as what was measured rather than estimated against the 1.5 kB budget this row used to carry |
+| Accessibility | `role="group"` `aria-roledescription="carousel"`, items labelled `n of m`; the scroller is focusable with arrow-key movement; each item's own link is separately tabbable. **Every one of those words comes from `global_content`** (`UI_LABEL.carousel.*`, `ACTION_LABEL.carousel.*`) — `check-section-copy.ts` refuses a literal in `aria-roledescription`, which is the rule working — and a string that does not resolve means the attribute is omitted rather than invented. **Auto-advance is NOT IMPLEMENTED and that is deliberate**: this row required it to be off by default, to pause on hover/focus/`document.hidden`, to expose a pause control first and never to run under reduced motion (WCAG 2.2.2). No block enables it, so the correct amount of code for it is none — a movement nobody asked for that steals the row out from under a reader mid-sentence is the failure that clause exists to prevent, and the way never to ship it is never to write it |
+| Reviewed on | Phase 45 |
 | Reviewer | UNASSIGNED |
 | Verdict | FIRST_PARTY |
 

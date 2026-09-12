@@ -85,6 +85,8 @@ export function PortfolioStripSection({
             sizes="(min-width: 1024px) 33vw, (min-width: 430px) 50vw, 100vw"
             strings={strings}
             cloudName={cloudName}
+            layout={section.layout_variant === 'grid' ? 'grid' : 'strip'}
+            label={section.heading}
           />
         )}
         <SectionActions section={section} livePaths={livePaths} />

@@ -49,6 +49,14 @@ unchanged. Phase 45 had already been run and recorded: `DESIGN_SYSTEM.md` §19 h
   routes). `/faq` gained the band that draws the questions — it had a page row, ten `faqs` rows and
   no sections at all. `contact-details` and the footer now share `ContactChannels` (RC-244).
 
+- **The twelve declared-but-unbuilt layout variants, and `ContentCarousel` (RC-222).** Eleven blocks
+  declared two `layoutVariants` each and branched on NEITHER; `hero`'s `contained` and `split` were
+  byte-identical. All branch now, and the tests assert the two arrangements DIFFER, which is the only
+  claim the Studio's picker makes. The carousel's scroller is a Server Component and its arrows come
+  through `next/dynamic`, so the public island budget is unchanged at 5 and `site:check-islands`
+  lists it among the eight loaded on demand. Auto-advance is deliberately not implemented (§7.18's
+  WCAG 2.2.2 clause). Four new `global_content` rows carry the names it reads aloud.
+
 **A site-wide outage, found by publishing a section rather than by reading code.**
 `buildDirectContactUrl` read `NEXT_PUBLIC_WHATSAPP_NUMBER` through `requiredEnv`, which THROWS, and
 the footer calls it on every page as soon as the `contact-details` section is published. In any
@@ -89,7 +97,7 @@ Higgsfield assets, so every binding resolves to a gap there.
 
 **Database Changes** — **None.**
 
-**Tests Run / Results** — `npm run check` (**44 gates**) exit 0 · 204 files, **3 050** unit tests,
+**Tests Run / Results** — `npm run check` (**44 gates**) exit 0 · 205 files, **3 067** unit tests,
 all green · `tests/e2e/a11y/` against the local harness: **89 passed, 0 failed**, 85 skipped
 (unpublished routes) · the six specs that failed locally re-run green under `E2E_PRODUCTION=1` ·
 both new gates negative-tested: a bespoke `cubic-bezier` fails the motion gate, and `padding-block:
@@ -99,13 +107,21 @@ the seven promoted blocks verified in a real browser against the local harness, 
 published there: `/custom-commissions`, `/contact` and `/faq` all 200, **zero axe violations on each**,
 and the FAQ band measured for the things `<details>` gets wrong — the native marker gone in both
 engines (`display: flex` and `list-style: none`), a collapsed answer out of the tree, Enter toggling
-from the summary, and the chevron animating on Tailwind v4's standalone `rotate` property.
+from the summary, and the chevron animating on Tailwind v4's standalone `rotate` property · the carousel driven in a
+browser at 820px: the row overflows, the back arrow is disabled at rest, Next moves it one card
+(0 → 323px) and enables the back arrow, a second click reaches the end and disables Next, the
+scroller takes focus and ArrowRight/End move it natively, each card keeps its own link, and axe
+reports zero serious or critical violations on a homepage carrying a carousel, a strip and a split
+hero at once.
 
-**Next exact action** — PR 6 of the plan: the twelve declared-but-unbuilt layout variants and
-`ContentCarousel` (RC-222, §7.18 — CSS scroll-snap, controls through `next/dynamic` so the scroller
-stays a Server Component). `ReferenceCards` takes no section, so the four blocks that share it need
-the variant threaded in as a prop. Every branch keeps the `section.layout_variant ?? '<default>'`
-shape: an unknown value from the database must fall through, as `schemeOf` does for an unknown theme.
+**Next exact action** — PR 7 of the plan: `MobileNav` to §8.3. Three named gaps — children are a
+permanently-expanded nested `<ul>` (no button, no `aria-expanded`); rows are `py-1` on 18px text,
+nowhere near the specified 56px; and there is no pinned primary action and no safe-area handling.
+`components/patterns/Disclosure` (RC-206) exists, is APG-correct and is used nowhere on the public
+site. MobileNav is already an island, so the rebuild costs no budget. The CTA label is a new prop
+from `global_content` — `check-section-copy` scans all of `components/patterns`, so it cannot be a
+literal. Then PRs 8–10, the Studio: `ToastRegion` (RC-317) + the §15 shell, the §13 data surfaces,
+and the two stub routes.
 
 **Still the owner's** — audit questions 1, 5 and 8 (§19.2); legal copy for `/privacy` and `/terms`;
 **a heading for `/faq`**, which has no `h1` without one (`SectionList` gives the first section level
