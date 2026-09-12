@@ -3,6 +3,7 @@ import * as React from 'react'
 import { EditorialFallback } from '@/components/patterns/EditorialFallback'
 import { Stack } from '@/components/primitives/Stack'
 
+import { cardLayoutOf } from './CardLayout'
 import { ReferenceCards } from './ReferenceCards'
 import { SectionActions } from './SectionActions'
 import { SectionCopy, cardHeadingLevel } from './SectionCopy'
@@ -56,6 +57,8 @@ export function JournalStripSection({
         ) : (
           <ReferenceCards
             headingLevel={cardHeadingLevel(section)}
+            layout={cardLayoutOf(section, 'strip')}
+            label={section.heading}
             cards={cards}
             assets={reference?.assets ?? new Map()}
             marker="data-article-card"

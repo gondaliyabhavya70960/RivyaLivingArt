@@ -12,7 +12,7 @@ import {
   parseBlockPayload,
 } from '@/lib/cms/registry'
 import { heroBlock } from '@/content/blocks/hero'
-import { PLANNED_BLOCKS } from '@/content/blocks/planned'
+import { planned, PLANNED_BLOCKS } from '@/content/blocks/planned'
 import { categoryGridBlock } from '@/content/blocks/category-grid'
 import { dividerBlock } from '@/content/blocks/divider'
 
@@ -157,7 +157,7 @@ describe('built and planned', () => {
    * `components/sections/registry.ts` — which `tests/unit/cms-sections.test.tsx` asserts agrees
    * with this list in both directions.
    */
-  it('reports the twenty-six built blocks', () => {
+  it('reports all thirty-four blocks as built', () => {
     expect(BUILT_BLOCK_TYPES).toEqual([
       'hero',
       'manifesto',
@@ -178,15 +178,25 @@ describe('built and planned', () => {
       'category-intro',
       'category-list',
       'customization-note',
+      'checklist',
+      'numbered-steps',
       'signature-media',
       'collection-products',
       'project-gallery',
       'testimonial-strip',
       'commission-configurator',
+      'faq-list',
+      'contact-details',
       // Phase 20. Its position is the catalogue's, not this list's: `contact-form` sits beside
       // `contact-details` among the query-backed blocks in `BLOCK_TYPES`.
       'contact-form',
+      // Phase 45 promoted the last seven. Every position here is the catalogue's own:
+      // `checklist` and `numbered-steps` sit beside `customization-note`, `faq-list` and
+      // `contact-details` beside `contact-form`, and the last three after `empty-state`.
       'empty-state',
+      'rich-text',
+      'media-split',
+      'quote',
       'divider',
     ])
   })
@@ -198,27 +208,37 @@ describe('built and planned', () => {
     }
   })
 
-  it('reports the rest as planned', () => {
+  /**
+   * NOTHING IS PLANNED, AND THE ASSERTION IS STILL WORTH MAKING. Phase 13 moved the three
+   * `/large-format` blocks out of the planned list; Phases 16, 17 and 19 added five more that were
+   * built on arrival; Phase 20 promoted `contact-form`, the first to move from planned to built
+   * rather than to arrive built; Phase 45 promoted the last seven. An empty list is the claim —
+   * a block that regresses to PLANNED without anybody noticing fails here.
+   */
+  it('reports nothing as planned', () => {
     const planned = BLOCK_TYPES.filter((type) => !isBuilt(type))
-    // 33 declared, 26 built. Phase 13 moved the three `/large-format` blocks out of this list;
-    // Phases 16, 17 and 19 added five more that were built on arrival, so the count held at 8 until
-    // Phase 20 PROMOTED one: `contact-form` was declared in Phase 08 and seeded in Phase 09, and is
-    // the first block in this repository to move from planned to built rather than to arrive built.
-    expect(planned).toHaveLength(7)
-    for (const type of planned) {
-      expect(blockModule(type).state, type).toBe('PLANNED')
+    expect(planned).toEqual([])
+    for (const type of BLOCK_TYPES) {
+      expect(blockModule(type).state, type).toBe('BUILT')
     }
   })
 
-  /** A planned block declares nothing it cannot honour: no copy fields, no media, no variants. */
+  /**
+   * A planned block declares nothing it cannot honour: no copy fields, no media, no variants.
+   *
+   * ASSERTED AGAINST THE HELPER RATHER THAN THE LIST, because the list is empty and a loop over it
+   * would pass without testing anything — the shape of assertion that keeps reporting green after
+   * the thing it was written for has gone. `planned()` is the mechanism the next unbuilt block will
+   * use, so the mechanism is what this holds.
+   */
   it('leaves planned blocks inert', () => {
-    for (const type of BLOCK_TYPES.filter((t) => !isBuilt(t))) {
-      const block = blockModule(type)
-      expect(block.sharedFields, type).toEqual([])
-      expect(block.payloadFields, type).toEqual([])
-      expect(block.mediaSlots, type).toEqual([])
-      expect(block.layoutVariants, type).toEqual([])
-    }
+    const block = planned('quote', 'Quote', 'A pulled quotation with an attribution.')
+    expect(block.state).toBe('PLANNED')
+    expect(block.sharedFields).toEqual([])
+    expect(block.payloadFields).toEqual([])
+    expect(block.mediaSlots).toEqual([])
+    expect(block.layoutVariants).toEqual([])
+    expect(block.entryArrays).toEqual([])
   })
 
   /**
@@ -320,9 +340,16 @@ describe('parseBlockPayload', () => {
     expect(parsed).toEqual(categoryGridBlock.defaults)
   })
 
-  /** `.loose()` on the planned schema keeps payload seeded before a renderer exists. */
+  /**
+   * `.loose()` on the planned schema keeps payload seeded before a renderer exists.
+   *
+   * Asserted against `planned()` rather than a block from the registry: every block in the
+   * catalogue is BUILT since Phase 45, and a built block's schema is strict on purpose — `quote`
+   * now discards `text` and keeps its own four fields, which is the behaviour the test two above
+   * this one covers. The loose rule belongs to the planned MECHANISM, which is what this reads.
+   */
   it('preserves unknown keys on a planned block', () => {
-    const parsed = parseBlockPayload(blockModule('quote'), {
+    const parsed = parseBlockPayload(planned('quote', 'Quote', 'A pulled quotation.'), {
       text: 'A line',
       attribution: 'A name',
     })

@@ -29,6 +29,14 @@ import { StatementSection } from './StatementSection'
 import { ThreeDResinSection } from './ThreeDResinSection'
 import type { SectionRenderer } from './types'
 
+import { ChecklistSection } from './ChecklistSection'
+import { ContactDetailsSection } from './ContactDetailsSection'
+import { FaqListSection } from './FaqListSection'
+import { MediaSplitSection } from './MediaSplitSection'
+import { NumberedStepsSection } from './NumberedStepsSection'
+import { QuoteSection } from './QuoteSection'
+import { RichTextSection } from './RichTextSection'
+
 /**
  * Block type to renderer.
  *
@@ -41,6 +49,10 @@ import type { SectionRenderer } from './types'
  * for every one of the 34. A block cannot be forgotten here — only explicitly declared as having
  * no renderer yet. `tests/unit/cms-sections.test.tsx` asserts the two registries agree: every
  * block the module registry calls BUILT has a renderer, and every PLANNED one has null.
+ *
+ * **THERE ARE NO NULLS. All 34 are built** — Phase 45 promoted the last seven. The union keeps the
+ * `| null` because the mechanism is what matters: the next block declared ahead of its renderer
+ * goes in as `null` here, and `content/blocks/planned.ts` still holds the other half of it.
  */
 export const SECTION_RENDERERS = {
   hero: HeroSection,
@@ -67,15 +79,15 @@ export const SECTION_RENDERERS = {
   'project-gallery': ProjectGallerySection,
   'testimonial-strip': TestimonialStripSection,
   'commission-configurator': CommissionConfiguratorSection,
-  checklist: null,
-  'numbered-steps': null,
-  'faq-list': null,
-  'contact-details': null,
+  checklist: ChecklistSection,
+  'numbered-steps': NumberedStepsSection,
+  'faq-list': FaqListSection,
+  'contact-details': ContactDetailsSection,
   'contact-form': ContactFormSection,
   'empty-state': EmptyStateSection,
-  'rich-text': null,
-  'media-split': null,
-  quote: null,
+  'rich-text': RichTextSection,
+  'media-split': MediaSplitSection,
+  quote: QuoteSection,
   divider: DividerSection,
 } satisfies Record<BlockType, SectionRenderer | null>
 

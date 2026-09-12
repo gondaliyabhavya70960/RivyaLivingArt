@@ -202,6 +202,52 @@ Brand and editorial copy may be written; anything asserting business capability 
 
 ## Amendments
 
+**2026-09-12 · A45 — the block catalogue is 34 BUILT and 0 PLANNED, and the exhibition template is
+eleven elements again (supersedes A14's element-9 clause; PHASE-39-46 §Phase 45).**
+
+*All 34 blocks have renderers.* Phase 45 promoted the last seven — `checklist`, `numbered-steps`,
+`faq-list`, `contact-details`, `rich-text`, `media-split` and `quote`. `content/blocks/planned.ts`
+stays, with `PLANNED_BLOCKS` empty and the `planned()` helper exported, because the MECHANISM is
+what is worth keeping: the next block declared ahead of its renderer is one entry there, a `null`
+in `components/sections/registry.ts`, and a compiler that refuses to let the two drift.
+`tests/unit/cms-registry.test.ts` now exercises that helper directly rather than iterating an empty
+list, so the rule is still asserted after the list it used to describe emptied out.
+
+*What `rich-text` is, and what it is still not.* A14 declined to build it in Phase 16 with a precise
+reason: "a rich-text document needs a sanitiser, an allow-list of elements, a decision about
+embedded media and a Studio editor that is not a JSON textarea." Every one of those costs belongs to
+a block whose payload holds MARKUP. What shipped has no payload at all — `body` is the same
+plain-text field every other band uses, split on blank lines into paragraphs by the same
+`SectionCopy`. There is no markup to allow, so there is nothing to sanitise and no editor to build.
+**A markup block remains refused, on A14's reasoning, which this amendment does not disturb.** What
+distinguishes the band from `statement` is scale and intent: a heading at `display-sm` rather than
+`display-lg`, reading measure, and no call to action, because `/privacy` is a dozen clauses in a row
+and a terms page has no next step.
+
+*The exhibition template inserts eleven, not ten.* A14's arithmetic was downstream of the renderer:
+element 9 was omitted because inserting a band that renders nothing would let an editor apply the
+template, count ten bands and have no way to tell that the eleventh was missing rather than empty.
+The band renders now, so the element returns to the position FEAT §8 gives it, and Phase 16's own
+exit criterion — all eleven available as blocks — is satisfied for the first time.
+
+*`faq-list` is a reference block, not a payload one.* It resolves through `lib/cms/references.ts`
+beside `project-gallery` and the model slot, because the ten questions live in `faqs` — where they
+are edited, where they appear in search, and where each carries its own `owner_verification`.
+Copying them into a section payload would make `/faq` and the FAQ table two different answers to the
+same question. It renders `<details>` rather than the `Disclosure` pattern (RC-206): that component
+is a Client Component, and `components/sections/registry.ts` imports every renderer, so a static
+island there is an island on all sixteen CMS routes.
+
+*`contact-details` and the footer share one renderer.* `ContactChannels` (RC-244) is the footer's
+contact column extracted, because the block needed the identical rules — how a number becomes a
+`tel:` href, which strings must resolve before a WhatsApp link may exist, when a location renders.
+§21 forbids hardcoding the NUMBER in several components; a second copy of the behaviour is the same
+mistake one level up. `'contact-page'` was already a member of `DirectContactSource`, which is what
+that closed union was written for.
+
+*No copy ships with any of them.* `/privacy` and `/terms` stay 404 until somebody writes the legal
+text, and the ten FAQ answers stay DRAFT until the owner verifies them. Both are D10's, not ours.
+
 **2026-09-12 · A44 — the `STUDIO_ADMIN_*` variables become the SOURCE OF TRUTH for the owner
 account rather than a one-time bootstrap input, applied by a step inside `next build` on production
 deployments only (D1, D8, STUDIO_GUIDE §2.1.1, ENVIRONMENT §4).**

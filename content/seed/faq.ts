@@ -1,3 +1,4 @@
+import { section } from './section'
 import type { SeedModule, SeedRecord } from './types'
 
 /**
@@ -95,8 +96,44 @@ const faqRecord = (f: (typeof FAQS)[number], i: number): SeedRecord => ({
   },
 })
 
+/**
+ * THE BAND THAT DRAWS THEM — Phase 45.
+ *
+ * Until this existed, `/faq` had a page row, ten `faqs` rows and NO SECTIONS AT ALL, so the route
+ * answered 404 and the ten answers had nowhere to appear. That is the same shape of gap
+ * `cropsForAssets` had — both ends built, the middle missing — and it was invisible because every
+ * CMS route 404s until an editor publishes, so an empty page and an unpublished one look identical.
+ *
+ * IT CARRIES NO COPY OF ITS OWN, and that is deliberate rather than an omission. A heading here
+ * would be a sentence this repository wrote for the top of a page, which is what D2 forbids.
+ * `content/seed/pages.ts` says the same thing from the other side: "`title` IS THE ROUTE'S NAME,
+ * NOT A HEADLINE … the page's actual heading is a `hero` or `statement` section an editor writes."
+ * So the title is not borrowed for it either. `category: ''` means every question, in
+ * `faqs.position` order.
+ *
+ * **WHICH LEAVES ONE THING FOR A PERSON, AND IT IS WRITTEN HERE RATHER THAN DISCOVERED LATER:**
+ * `/faq` has no heading section of any kind seeded, so a page published with only this band has no
+ * `h1`. `SectionList` gives the FIRST section level 1, so typing a heading on this band is enough —
+ * or adding a `statement` above it. `tests/e2e/a11y/headings.spec.ts` catches the omission once the
+ * route is reachable, which it is not while every section is DRAFT. Whoever publishes `/faq` writes
+ * that sentence; nobody here can, because it is copy.
+ *
+ * DRAFT, like every seeded section, so `/faq` stays 404 until somebody publishes it — and the ten
+ * answers stay `OWNER_VERIFICATION_REQUIRED` until the owner clears them, which is a second gate
+ * and the one that matters.
+ */
+const faqListSection = section({
+  page: 'page:faq',
+  key: 'faq.01.list',
+  blockType: 'faq-list',
+  position: 1,
+  fact: 'EDITORIAL_COPY',
+  payload: { category: '' },
+})
+
 export const faqSeed: SeedModule = {
   name: 'faq',
-  description: 'The ten FAQ entries from SEED §23. All flagged for owner verification.',
-  records: FAQS.map(faqRecord),
+  description:
+    'The ten FAQ entries from SEED §23, all flagged for owner verification, and the band that draws them.',
+  records: [...FAQS.map(faqRecord), faqListSection],
 }

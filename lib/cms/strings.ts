@@ -72,5 +72,41 @@ export function interpolate(value: string, tokens: Readonly<Record<string, strin
 export const MEDIA_FALLBACK_LABEL_KEY = 'ERROR.media_unavailable.label'
 export const MEDIA_PLAY_LABEL_KEY = 'ACTION_LABEL.media.play'
 
+/**
+ * The four names `ContentCarousel` (RC-222) reads aloud, named once for the reason above.
+ *
+ * NOT IN `REQUIRED_SITE_STRINGS`, deliberately. That list is what a renderer cannot do without —
+ * a media fallback and a play label, both of which leave a control unlabelled if absent. A carousel
+ * degrades instead: no role description is an ordinary group, no arrow labels are no arrows, and
+ * the row still scrolls with a finger, a trackpad and the arrow keys. Listing them as required
+ * would make a missing label look like a defect rather than a smaller carousel.
+ */
+export const CAROUSEL_ROLE_KEY = 'UI_LABEL.carousel.roledescription'
+export const CAROUSEL_POSITION_KEY = 'UI_LABEL.carousel.item_position'
+export const CAROUSEL_PREVIOUS_KEY = 'ACTION_LABEL.carousel.previous'
+export const CAROUSEL_NEXT_KEY = 'ACTION_LABEL.carousel.next'
+
+/**
+ * The four carousel names, resolved together.
+ *
+ * TWO CALLERS AND COUNTING — `CardLayout` (six blocks) and `PortfolioCardGrid` (RC-219, which draws
+ * its own cards rather than `ReferenceCards`') — and four `siteString` calls at each is four chances
+ * to mistype a key into a silently unlabelled control. Same reasoning as `MEDIA_PLAY_LABEL_KEY`
+ * being a constant rather than a literal at three call sites.
+ */
+export function carouselLabels(strings: SiteStrings): {
+  readonly roleDescription: string | null
+  readonly itemPosition: string | null
+  readonly previousLabel: string | null
+  readonly nextLabel: string | null
+} {
+  return {
+    roleDescription: siteString(strings, CAROUSEL_ROLE_KEY),
+    itemPosition: siteString(strings, CAROUSEL_POSITION_KEY),
+    previousLabel: siteString(strings, CAROUSEL_PREVIOUS_KEY),
+    nextLabel: siteString(strings, CAROUSEL_NEXT_KEY),
+  }
+}
+
 /** The `global_content` keys the section renderers ask for. Studio lists these as expected keys. */
 export const REQUIRED_SITE_STRINGS = [MEDIA_FALLBACK_LABEL_KEY, MEDIA_PLAY_LABEL_KEY] as const

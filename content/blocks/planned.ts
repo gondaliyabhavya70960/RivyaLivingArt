@@ -4,17 +4,23 @@ import type { BlockModule } from '@/lib/cms/block-module'
 import type { BlockType } from '@/lib/cms/block-types'
 
 /**
- * The 22 catalogue blocks that are declared but not yet built.
+ * The mechanism for declaring a block that exists in the catalogue and has no renderer.
  *
- * WHY THEY EXIST AT ALL, rather than the registry simply omitting them. Three reasons, in
- * increasing order of importance:
+ * **THE LIST IS EMPTY. Every one of the 34 block types is BUILT.** Phase 45 promoted the last
+ * seven — `checklist`, `numbered-steps`, `faq-list`, `contact-details`, `rich-text`, `media-split`
+ * and `quote` — and the file stays because the mechanism is what is worth keeping, not the list.
+ * The next block declared ahead of its renderer is one entry below and three lines of change.
+ *
+ * WHY A PLANNED BLOCK EXISTS AT ALL, rather than the registry simply omitting it. Three reasons,
+ * in increasing order of importance:
  *
  * 1. `Record<BlockType, BlockModule>` is only exhaustive if every key is present. A partial
- *    registry would compile, and the missing 22 would surface as `undefined` at render time.
+ *    registry would compile, and the missing types would surface as `undefined` at render time.
  * 2. The Studio's block picker can show the whole catalogue with the unbuilt ones disabled, which
  *    is honest about scope in the one place an editor will ask the question.
  * 3. Promoting one to BUILT is a deletion from this file and an addition of a real module — the
- *    compiler then requires the registry entry to change, so the two cannot drift.
+ *    compiler then requires the registry entry to change, so the two cannot drift. That is the
+ *    path all seven have now taken.
  *
  * A PLANNED BLOCK RENDERS NOTHING ON THE PUBLIC SITE. It is not a placeholder card, not a
  * "coming soon", not a grey box: a section whose block is unbuilt is skipped entirely by the
@@ -29,7 +35,11 @@ const plannedSchema = z.object({}).loose()
 
 export type PlannedPayload = z.infer<typeof plannedSchema>
 
-function planned(type: BlockType, label: string, description: string): BlockModule<PlannedPayload> {
+export function planned(
+  type: BlockType,
+  label: string,
+  description: string,
+): BlockModule<PlannedPayload> {
   return {
     type,
     state: 'PLANNED',
@@ -55,23 +65,11 @@ function planned(type: BlockType, label: string, description: string): BlockModu
  * array via a `Record<string, …>` helper, every key would widen to `string` and the check would
  * pass with blocks missing.
  *
- * Ordered as `BLOCK_TYPES` orders them, so a reader can diff the two lists by eye. Labels and
- * descriptions are the catalogue's own, so they are already right when a block ships.
+ * EMPTY, AND IT TYPE-CHECKS EMPTY. `Partial<Record<…>>` admits `{}`, and the registry's own
+ * `satisfies Record<BlockType, …>` over the spread is what now requires `BUILT_BLOCKS` to cover
+ * all 34 on its own — so deleting this object would remove nothing the compiler is relying on,
+ * and keeping it costs a line.
  */
-export const PLANNED_BLOCKS = {
-  checklist: planned('checklist', 'Checklist', 'A list of points, each with a mark.'),
-  'numbered-steps': planned(
-    'numbered-steps',
-    'Numbered steps',
-    'Steps without media — the lighter sibling of process steps.',
-  ),
-  'faq-list': planned('faq-list', 'FAQ list', 'Questions and answers drawn from the FAQ table.'),
-  'contact-details': planned(
-    'contact-details',
-    'Contact details',
-    'Address, hours and channels from global content.',
-  ),
-  'rich-text': planned('rich-text', 'Rich text', 'A long-form prose band.'),
-  'media-split': planned('media-split', 'Media split', 'An image beside copy, either way round.'),
-  quote: planned('quote', 'Quote', 'A pulled quotation with an attribution.'),
-} as const satisfies Partial<Record<BlockType, BlockModule<PlannedPayload>>>
+export const PLANNED_BLOCKS = {} as const satisfies Partial<
+  Record<BlockType, BlockModule<PlannedPayload>>
+>

@@ -206,13 +206,48 @@ describe('buildHandoffUrl', () => {
 describe('buildDirectContactUrl', () => {
   it('carries the greeting and no enquiry data', () => {
     const url = buildDirectContactUrl({ source: 'footer', greeting: 'Hello Rivya Living Art,' })
-    expect(decodeURIComponent(url)).toContain('Hello Rivya Living Art,')
+    expect(decodeURIComponent(url ?? '')).toContain('Hello Rivya Living Art,')
     expect(url).not.toContain('inquiry')
   })
 
   it('does not put the source in the message', () => {
     // `source` constrains the call sites; a customer must never receive an internal identifier.
     const url = buildDirectContactUrl({ source: 'announcement', greeting: 'Hello,' })
-    expect(decodeURIComponent(url)).not.toContain('announcement')
+    expect(decodeURIComponent(url ?? '')).not.toContain('announcement')
+  })
+
+  it('prefers the number it is given over the environment', () => {
+    const url = buildDirectContactUrl({
+      source: 'contact-page',
+      greeting: 'Hello,',
+      number: '+91 90000 00000',
+    })
+    expect(url).toContain('wa.me/919000000000')
+  })
+
+  /**
+   * THE ONE THAT MATTERS, AND IT IS ABOUT AN OUTAGE RATHER THAN A LINK.
+   *
+   * This used to read the variable through `requiredEnv` and THROW. The footer renders a direct
+   * contact link on every page as soon as the `contact-details` section is published, so in an
+   * environment with no number the first publication of that section turned every route into a 500
+   * — a content action taking the whole site down. Phase 45 found it by publishing the section in a
+   * local harness. Null is now the answer, and the caller renders no link.
+   */
+  it('returns null rather than throwing when no number resolves anywhere', () => {
+    const saved = process.env['NEXT_PUBLIC_WHATSAPP_NUMBER']
+    delete process.env['NEXT_PUBLIC_WHATSAPP_NUMBER']
+    try {
+      expect(buildDirectContactUrl({ source: 'footer', greeting: 'Hello,' })).toBeNull()
+    } finally {
+      process.env['NEXT_PUBLIC_WHATSAPP_NUMBER'] = saved
+    }
+  })
+
+  /** A number too short to be an international one is not a number somebody can be reached on. */
+  it('returns null for a number E.164 refuses', () => {
+    expect(
+      buildDirectContactUrl({ source: 'footer', greeting: 'Hello,', number: '12345' }),
+    ).toBeNull()
   })
 })

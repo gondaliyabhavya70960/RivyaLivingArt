@@ -2,13 +2,14 @@ import * as React from 'react'
 
 import { BlockImage } from '@/components/patterns/MediaSlot'
 import type { AspectRatio } from '@/components/primitives/AspectBox'
-import { Grid } from '@/components/primitives/Grid'
 import { Heading } from '@/components/primitives/Heading'
 import { Stack } from '@/components/primitives/Stack'
 import { Text } from '@/components/primitives/Text'
 import type { EntityCard } from '@/lib/cms/selectors'
 import type { SiteStrings } from '@/lib/cms/strings'
 import type { MediaAsset } from '@/lib/supabase/schemas'
+
+import { CardLayout, type CardLayoutMode } from './CardLayout'
 
 /**
  * The cards a reference block draws when its selector found something.
@@ -61,6 +62,20 @@ export type ReferenceCardsProps = {
    * call `cardHeadingLevel` itself. The caller passes what its own section resolves to.
    */
   readonly headingLevel?: 2 | 3
+  /**
+   * How the cards are arranged — the `layout_variant` its section resolved, threaded in as a prop.
+   *
+   * IT ARRIVES AS A PROP FOR THE SAME REASON `headingLevel` DOES: this component takes no section,
+   * by design, because four blocks share it. The alternative — passing the whole section so it
+   * could read `layout_variant` itself — would give a shared grid an opinion about which block it
+   * is inside, which is the coupling the component was written to avoid.
+   *
+   * `grid` is three columns that wrap; `carousel` is a snap row with arrows; `strip` is the same
+   * row without either. An unknown value falls through to `grid`, as `schemeOf` does for a theme.
+   */
+  readonly layout?: CardLayoutMode
+  /** The group's accessible name in a carousel — the section's own heading. Ignored in a grid. */
+  readonly label?: string | null
 }
 
 export function ReferenceCards({
@@ -73,47 +88,56 @@ export function ReferenceCards({
   strings,
   cloudName,
   headingLevel = 3,
+  layout = 'grid',
+  label = null,
 }: ReferenceCardsProps): React.ReactElement | null {
   if (cards.length === 0) return null
 
-  return (
-    <Grid gap={6} className="rv-reveal-group grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-      {cards.map((card) => {
-        const asset = card.mediaId === null ? null : (assets.get(card.mediaId) ?? null)
-        // The marker is a data attribute rather than a class: a class is styling and gets
-        // renamed, and the assertion that no fabricated card renders must not depend on CSS.
-        const markerAttribute: Record<string, string> = { [marker]: '' }
+  const rendered = cards.map((card) => {
+    const asset = card.mediaId === null ? null : (assets.get(card.mediaId) ?? null)
+    // The marker is a data attribute rather than a class: a class is styling and gets
+    // renamed, and the assertion that no fabricated card renders must not depend on CSS.
+    const markerAttribute: Record<string, string> = { [marker]: '' }
 
-        return (
-          <a
-            key={card.id}
-            href={card.href}
-            data-entry-key={card.key}
-            {...markerAttribute}
-            className="group block focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-(--rv-ink-accent)"
-          >
-            <Stack gap={3}>
-              <BlockImage
-                asset={asset}
-                ratio={ratio}
-                mobileRatio={mobileRatio}
-                preset="card"
-                sizes={sizes}
-                strings={strings}
-                cloudName={cloudName}
-              />
-              <Heading level={headingLevel} size="display-xs">
-                {card.title}
-              </Heading>
-              {card.summary === null ? null : (
-                <Text size="base" tone="secondary">
-                  {card.summary}
-                </Text>
-              )}
-            </Stack>
-          </a>
-        )
-      })}
-    </Grid>
+    return (
+      <a
+        key={card.id}
+        href={card.href}
+        data-entry-key={card.key}
+        {...markerAttribute}
+        className="group block focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-(--rv-ink-accent)"
+      >
+        <Stack gap={3}>
+          <BlockImage
+            asset={asset}
+            ratio={ratio}
+            mobileRatio={mobileRatio}
+            preset="card"
+            sizes={sizes}
+            strings={strings}
+            cloudName={cloudName}
+          />
+          <Heading level={headingLevel} size="display-xs">
+            {card.title}
+          </Heading>
+          {card.summary === null ? null : (
+            <Text size="base" tone="secondary">
+              {card.summary}
+            </Text>
+          )}
+        </Stack>
+      </a>
+    )
+  })
+
+  return (
+    <CardLayout
+      layout={layout}
+      gridClassName="grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
+      strings={strings}
+      label={label}
+    >
+      {rendered}
+    </CardLayout>
   )
 }

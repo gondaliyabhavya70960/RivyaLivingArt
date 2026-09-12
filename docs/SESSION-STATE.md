@@ -41,6 +41,31 @@ unchanged. Phase 45 had already been run and recorded: `DESIGN_SYSTEM.md` §19 h
 - **The two §45 gates.** `scripts/design/check-token-usage.mjs` (44th gate in `npm run check`) and
   `scripts/content/classify-copy-diff.ts` (`npm run content:classify-copy`, deliberately not in
   `check`).
+- **The seven `null` renderers; the catalogue is 34 BUILT / 0 PLANNED** (amendment A45).
+  `checklist`, `numbered-steps`, `faq-list`, `contact-details`, `rich-text`, `media-split`, `quote`.
+  `rich-text` is PLAIN TEXT, so A14's objection to a markup block stands unaltered; the exhibition
+  template regains FEAT §8 element 9. `faq-list` resolves through `lib/cms/references.ts` and renders
+  native `<details>` rather than RC-206 (a Client Component there is an island on all sixteen CMS
+  routes). `/faq` gained the band that draws the questions — it had a page row, ten `faqs` rows and
+  no sections at all. `contact-details` and the footer now share `ContactChannels` (RC-244).
+
+- **The twelve declared-but-unbuilt layout variants, and `ContentCarousel` (RC-222).** Eleven blocks
+  declared two `layoutVariants` each and branched on NEITHER; `hero`'s `contained` and `split` were
+  byte-identical. All branch now, and the tests assert the two arrangements DIFFER, which is the only
+  claim the Studio's picker makes. The carousel's scroller is a Server Component and its arrows come
+  through `next/dynamic`, so the public island budget is unchanged at 5 and `site:check-islands`
+  lists it among the eight loaded on demand. Auto-advance is deliberately not implemented (§7.18's
+  WCAG 2.2.2 clause). Four new `global_content` rows carry the names it reads aloud.
+
+**A site-wide outage, found by publishing a section rather than by reading code.**
+`buildDirectContactUrl` read `NEXT_PUBLIC_WHATSAPP_NUMBER` through `requiredEnv`, which THROWS, and
+the footer calls it on every page as soon as the `contact-details` section is published. In any
+environment without that variable, the first time the owner does what they are asked to do — verify
+the studio's number and publish it — **every route answers 500.** It had never fired because the
+section had never been published; publishing it in the local harness turned every page red at once.
+It returns null now, and a missing number means no link, like a missing label and a missing greeting
+already did. Both surfaces also pass the VERIFIED section's number (A20), which the direct contact
+links had never used.
 
 **The local harness, at last.** Postgres 16 + PostgREST 13.0.4 + `scripts/db/local-rest.mjs` +
 `next dev`, which is what made the hero measurement and the a11y sweep real rather than reasoned.
@@ -72,20 +97,35 @@ Higgsfield assets, so every binding resolves to a gap there.
 
 **Database Changes** — **None.**
 
-**Tests Run / Results** — `npm run check` (**44 gates**) exit 0 · 203 files, **3 021** unit tests,
+**Tests Run / Results** — `npm run check` (**44 gates**) exit 0 · 205 files, **3 067** unit tests,
 all green · `tests/e2e/a11y/` against the local harness: **89 passed, 0 failed**, 85 skipped
 (unpublished routes) · the six specs that failed locally re-run green under `E2E_PRODUCTION=1` ·
 both new gates negative-tested: a bespoke `cubic-bezier` fails the motion gate, and `padding-block:
 13px`, `font-weight: 600`, `line-height: 1.5` and `z-index: 40` fail the usage gate while
-`calc(var(--rv-space-3) + env(safe-area-inset-bottom, 0px))` and `clamp(var(…), 2vw, var(…))` pass.
+`calc(var(--rv-space-3) + env(safe-area-inset-bottom, 0px))` and `clamp(var(…), 2vw, var(…))` pass ·
+the seven promoted blocks verified in a real browser against the local harness, with their sections
+published there: `/custom-commissions`, `/contact` and `/faq` all 200, **zero axe violations on each**,
+and the FAQ band measured for the things `<details>` gets wrong — the native marker gone in both
+engines (`display: flex` and `list-style: none`), a collapsed answer out of the tree, Enter toggling
+from the summary, and the chevron animating on Tailwind v4's standalone `rotate` property · the carousel driven in a
+browser at 820px: the row overflows, the back arrow is disabled at rest, Next moves it one card
+(0 → 323px) and enables the back arrow, a second click reaches the end and disables Next, the
+scroller takes focus and ArrowRight/End move it natively, each card keeps its own link, and axe
+reports zero serious or critical violations on a homepage carrying a carousel, a strip and a split
+hero at once.
 
-**Next exact action** — PR 5 of the plan: the seven `null` renderers in `components/sections/registry.ts`
-(`rich-text`, `quote`, `checklist`, `numbered-steps`, `media-split` are payload-only; `contact-details`
-is a pure function over its own section; `faq-list` needs a `SectionReference.faqs` branch beside the
-`project-gallery` `media` one). Then PR 6, the twelve declared-but-unbuilt layout variants and
-`ContentCarousel` (RC-222).
+**Next exact action** — PR 7 of the plan: `MobileNav` to §8.3. Three named gaps — children are a
+permanently-expanded nested `<ul>` (no button, no `aria-expanded`); rows are `py-1` on 18px text,
+nowhere near the specified 56px; and there is no pinned primary action and no safe-area handling.
+`components/patterns/Disclosure` (RC-206) exists, is APG-correct and is used nowhere on the public
+site. MobileNav is already an island, so the rebuild costs no budget. The CTA label is a new prop
+from `global_content` — `check-section-copy` scans all of `components/patterns`, so it cannot be a
+literal. Then PRs 8–10, the Studio: `ToastRegion` (RC-317) + the §15 shell, the §13 data surfaces,
+and the two stub routes.
 
 **Still the owner's** — audit questions 1, 5 and 8 (§19.2); legal copy for `/privacy` and `/terms`;
+**a heading for `/faq`**, which has no `h1` without one (`SectionList` gives the first section level
+1, so one sentence typed on the band is enough, and `content/seed/faq.ts` says so beside the record);
 the ten FAQ answers; and the two `seo:global.*` sentences the new classifier reports.
 
 ---

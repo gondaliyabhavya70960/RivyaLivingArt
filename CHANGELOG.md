@@ -68,9 +68,79 @@ baselines was wrong in the other direction: `scripts/test/seed-fixture.ts` inser
 rows, not the 250 Higgsfield assets, so every binding resolves to a gap in the test database and the
 baselines move on no route at all.
 
+**The seven `null` renderers, and the block catalogue is now 34 BUILT / 0 PLANNED** (amendment
+A45). `checklist`, `numbered-steps`, `faq-list`, `contact-details`, `rich-text`, `media-split` and
+`quote`. `content/blocks/planned.ts` stays with an empty list and an exported `planned()` helper,
+because the mechanism is what is worth keeping; `tests/unit/cms-registry.test.ts` now exercises that
+helper directly rather than looping over nothing.
+
+- **`rich-text` is plain text, and A14's objection still stands.** A14 declined it in Phase 16
+  because "a rich-text document needs a sanitiser, an allow-list of elements, a decision about
+  embedded media and a Studio editor that is not a JSON textarea". All of that belongs to a MARKUP
+  block. This one has no payload: `body` is the same plain-text field every band uses. A markup
+  block remains refused. The exhibition template regains FEAT §8 element 9, and the test that
+  asserted its absence is inverted rather than deleted, so the two stay tied together.
+- **`faq-list` resolves through `lib/cms/references.ts`**, beside `project-gallery`, because the ten
+  questions live in `faqs` — where they are edited, searched, and individually verified. It renders
+  native `<details>`: RC-206 `Disclosure` is a Client Component, and the section registry imports
+  every renderer, so one static island here is an island on all sixteen CMS routes.
+  `/faq` also gained the band that draws them — it had a page row, ten `faqs` rows and **no sections
+  at all**, so the route answered 404 with nowhere for the answers to appear.
+- **`contact-details` and the footer now share one renderer**, `ContactChannels` (RC-244). §21
+  forbids hardcoding the number in several components; two copies of the RULES for turning it into a
+  `tel:` href is the same mistake one level up.
+
+**A site-wide outage found by publishing a section.** `buildDirectContactUrl` read
+`NEXT_PUBLIC_WHATSAPP_NUMBER` through `requiredEnv`, which throws; the footer calls it on every
+page as soon as the `contact-details` section is published. So in any environment without that
+variable, the first time the owner did what they are asked to do — verify the studio's number and
+publish it — **every route answered 500**, including pages with nothing WhatsApp-shaped on them. It
+had never fired because the section had never been published. It now returns null, and a missing
+number means no link, exactly as a missing label and a missing greeting already did. Both surfaces
+also pass the VERIFIED section's number (A20), which the direct links had never used.
+
+**Two defects the promotion surfaced in seeded content**, both invisible while the blocks were
+unbuilt: `commissions.05.how-it-works` had a step with no `key` — `tests/unit/entry-verification.test.ts`
+could not see it while `numbered-steps` declared no `entryArrays` — and both commission checklists
+held plain strings where the block's items are objects, so they would have parsed as failure and
+rendered nothing.
+
+**The twelve declared-but-unbuilt layout variants, and `ContentCarousel` (RC-222).** Eleven blocks
+shipped two `layoutVariants` each and branched on **neither** — every one rendered its first-listed
+variant unconditionally, so the Studio's picker offered a choice that changed nothing, and `hero`'s
+`contained` and `split` produced byte-identical output. All of them branch now, and
+`tests/unit/layout-variants.test.tsx` asserts that the two arrangements **differ**, which is the only
+claim the picker actually makes.
+
+- **`ContentCarousel` is a scrollable list, not a transform track.** The DOM is complete, so a
+  crawler reads all the cards rather than the one on screen, a printer prints them and find-in-page
+  finds them. The scroller is a **Server Component**; `Controls.tsx` is the only client code and
+  arrives through `next/dynamic`, so the public island budget is unchanged at 5 and
+  `site:check-islands` lists it among the eight loaded on demand. Keyboard movement is the
+  platform's — a focusable overflow container scrolls on arrows, Home and End — so there is no key
+  handler to get wrong, and each card keeps its own tab stop.
+- **Auto-advance is not implemented, deliberately.** §7.18 required it off by default, pausing on
+  hover, focus and `document.hidden`, with a pause control exposed first and never running under
+  reduced motion. No block enables it, so the correct amount of code for it is none.
+- **One chooser, six blocks.** `components/sections/CardLayout.tsx` is where `grid`, `carousel` and
+  `strip` are decided, and `mode` is the only difference between a carousel and a strip — so the two
+  cannot drift apart in what a scroll row is. An unknown `layout_variant` falls through to the
+  block's **first declared** variant, as `schemeOf` does for an unknown theme.
+- **`hero` `split`** puts the copy beside the picture from `lg` — 4:5 rather than 21:9, because a
+  21:9 still at half the width is a letterbox — and keeps the §5.1 hero floor, so FEAT §49 question
+  2's ≥70% viewport height still holds in the new shape. `material-story` `stacked` drops the
+  sticky column **and its island**, so a page that wants the pictures without the mechanism now
+  loads no JavaScript for that band. `project-gallery` `stacked` is one photograph per row at 3:2,
+  because a 4:5 crop at half a column is a picture of a corner and a room needs the width.
+- **Four new `global_content` rows** (`content/seed/carousel-ui.ts`): the role description, the
+  `{{index}} of {{total}}` position and the two arrow names. All four are read aloud and nothing
+  else, and `check-section-copy.ts` refuses a literal in `aria-roledescription` — which is the rule
+  doing its job. A string that does not resolve means the attribute is omitted, never invented.
+
 **Still outstanding, and not ours:** audit questions 1, 5 and 8 (`DESIGN_SYSTEM.md` §19.2), legal
-copy for `/privacy` and `/terms`, the ten FAQ answers, and the two `seo:global.*` sentences the new
-classifier reports.
+copy for `/privacy` and `/terms`, **a heading for `/faq`** (it has no `h1` without one, and
+`SectionList` gives the first section level 1, so one sentence on the band is enough), the ten FAQ
+answers, and the two `seo:global.*` sentences the new classifier reports.
 
 ### Post-launch — the Vercel dashboard becomes the owner's Studio login (amendment A44, 2026-09-12)
 

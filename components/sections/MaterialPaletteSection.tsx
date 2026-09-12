@@ -1,13 +1,14 @@
 import * as React from 'react'
 
 import { BlockImage } from '@/components/patterns/MediaSlot'
-import { Grid } from '@/components/primitives/Grid'
 import { Heading } from '@/components/primitives/Heading'
 import { Stack } from '@/components/primitives/Stack'
 import { Text } from '@/components/primitives/Text'
 import { materialPaletteBlock } from '@/content/blocks/material-palette'
 import { visibleEntries } from '@/lib/cms/entry-visibility'
 import { parseBlockPayload } from '@/lib/cms/registry'
+
+import { CardLayout, cardLayoutOf } from './CardLayout'
 
 import { SectionCopy, cardHeadingLevel } from './SectionCopy'
 import { SectionShell } from './SectionShell'
@@ -54,7 +55,12 @@ export function MaterialPaletteSection({
     <SectionShell section={section}>
       <Stack gap={10}>
         <SectionCopy section={section} />
-        <Grid gap={6} className={`rv-reveal-group grid-cols-1 sm:grid-cols-2 ${columns}`}>
+        <CardLayout
+          layout={cardLayoutOf(section, 'grid')}
+          gridClassName={`grid-cols-1 sm:grid-cols-2 ${columns}`}
+          strings={strings}
+          label={section.heading}
+        >
           {materials.map((material) => {
             const index = material.media_index ?? null
             return (
@@ -79,7 +85,7 @@ export function MaterialPaletteSection({
               </Stack>
             )
           })}
-        </Grid>
+        </CardLayout>
       </Stack>
     </SectionShell>
   )

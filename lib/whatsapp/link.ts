@@ -1,5 +1,6 @@
-import { requiredEnv } from '@/lib/env'
+import { optionalEnv, requiredEnv } from '@/lib/env'
 
+import { normaliseE164 } from './number'
 import { shorten, type ShortenResult } from './shorten'
 import { renderTemplate, type TemplateName, type TokenValues } from './templates'
 
@@ -139,16 +140,40 @@ export type DirectContactInput = {
    * rather than a link to a chat that opens with a sentence a developer wrote.
    */
   readonly greeting: string
+  /**
+   * The studio's number, already resolved by `resolveWhatsAppNumber` — the verified section's, or
+   * the environment's. Omitted, the environment is read here, and an absent one returns null.
+   *
+   * PASSED RATHER THAN READ, FOR THE REASON THE GREETING IS, and because of a site-wide failure
+   * Phase 45 walked into. The footer renders these links on EVERY page, and `requiredEnv` throws:
+   * so the first time the owner verified and published the `contact-details` section in an
+   * environment with no `NEXT_PUBLIC_WHATSAPP_NUMBER`, every route answered 500 — a content action
+   * taking the whole site down, including pages with nothing WhatsApp-shaped on them. A11y sweep,
+   * FAQ page, homepage, all of it. Failing loudly is right for a server that cannot function; a
+   * missing optional link is not that, and `scripts/ops/check-env.ts` is what keeps the variable
+   * honest at deployment.
+   *
+   * NULL IS A STATE, NOT AN ERROR — the same rule `lib/whatsapp/number.ts` states for the handoff:
+   * "losing an enquiry because a link could not be built is the one outcome that is never
+   * acceptable." Here the equivalent is losing the page.
+   */
+  readonly number?: string | null
 }
 
 /**
  * A chat with a greeting and nothing else.
+ *
+ * NULL WHEN NO NUMBER RESOLVES. The caller renders no link rather than an anonymous one — the same
+ * rule it already applies to a missing label and a missing greeting, extended to the third thing
+ * that must exist before a chat link means anything.
  *
  * `source` DOES NOT APPEAR IN THE MESSAGE. It exists to constrain the call sites and to give a
  * later analytics phase something to attribute; putting it in the text would send the customer a
  * message containing an internal identifier, which is precisely what the template allowlist exists
  * to prevent one line up.
  */
-export function buildDirectContactUrl(input: DirectContactInput): string {
-  return urlFor(input.greeting)
+export function buildDirectContactUrl(input: DirectContactInput): string | null {
+  const number = normaliseE164(input.number ?? optionalEnv('NEXT_PUBLIC_WHATSAPP_NUMBER'))
+  if (number === null) return null
+  return urlFor(input.greeting, number)
 }

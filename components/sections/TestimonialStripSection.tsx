@@ -1,8 +1,9 @@
 import * as React from 'react'
 
+import { ContentCarousel } from '@/components/patterns/ContentCarousel'
 import { Stack } from '@/components/primitives/Stack'
 import { Text } from '@/components/primitives/Text'
-import { interpolate, siteString } from '@/lib/cms/strings'
+import { carouselLabels, interpolate, siteString } from '@/lib/cms/strings'
 
 import { SectionCopy } from './SectionCopy'
 import { SectionShell } from './SectionShell'
@@ -41,6 +42,36 @@ export function TestimonialStripSection({
 
   const heading = siteString(strings, HEADING_KEY)
   const attribution = siteString(strings, ATTRIBUTION_KEY)
+  /*
+   * `row` IS THE FIRST DECLARED VARIANT AND THE BLOCK IS CALLED A STRIP, so that is the default and
+   * an unknown value falls through to it. `stacked` is one quotation per row at full width, which
+   * is what a long testimonial needs — a two-column grid, which is what this rendered before Phase
+   * 45 branched on anything, gives a paragraph forty characters to work with and belongs to neither
+   * variant the block declares.
+   *
+   * `mode="free"` rather than `"snap"`: a quotation is read, not flicked through, and snap points
+   * fight a reader who is scrolling to finish a sentence. The row still scrolls with a finger, a
+   * trackpad and the arrow keys.
+   */
+  const row = section.layout_variant !== 'stacked'
+
+  const figures = quotes.map((quote) => (
+    <figure key={quote.id} className="m-0">
+      <blockquote className="m-0">
+        <Text>{quote.title}</Text>
+      </blockquote>
+      {/*
+        `summary` carries the attribution the selector already assembled from the row's
+        consent-gated columns. Absent when the quote is unattributed, which is a choice its author
+        made rather than a missing field.
+      */}
+      {quote.summary === null || attribution === null ? null : (
+        <figcaption data-testimonial-attribution="" className="text-ink-secondary mt-2 text-sm">
+          {interpolate(attribution, { name: quote.summary, role: quote.key })}
+        </figcaption>
+      )}
+    </figure>
+  ))
 
   return (
     <SectionShell section={section}>
@@ -52,30 +83,22 @@ export function TestimonialStripSection({
         )}
         <SectionCopy section={section} />
 
-        <ul role="list" data-testimonial-strip="" className="grid gap-6 sm:grid-cols-2">
-          {quotes.map((quote) => (
-            <li key={quote.id}>
-              <figure className="m-0">
-                <blockquote className="m-0">
-                  <Text>{quote.title}</Text>
-                </blockquote>
-                {/*
-                  `summary` carries the attribution the selector already assembled from the row's
-                  consent-gated columns. Absent when the quote is unattributed, which is a choice
-                  its author made rather than a missing field.
-                */}
-                {quote.summary === null || attribution === null ? null : (
-                  <figcaption
-                    data-testimonial-attribution=""
-                    className="text-ink-secondary mt-2 text-sm"
-                  >
-                    {interpolate(attribution, { name: quote.summary, role: quote.key })}
-                  </figcaption>
-                )}
-              </figure>
-            </li>
-          ))}
-        </ul>
+        {row ? (
+          <div data-testimonial-strip="">
+            <ContentCarousel
+              items={figures}
+              mode="free"
+              label={section.heading}
+              {...carouselLabels(strings)}
+            />
+          </div>
+        ) : (
+          <ul role="list" data-testimonial-strip="" className="grid list-none gap-8">
+            {quotes.map((quote, index) => (
+              <li key={quote.id}>{figures[index]}</li>
+            ))}
+          </ul>
+        )}
       </Stack>
     </SectionShell>
   )

@@ -1,4 +1,5 @@
 import { aboutSeed } from './about'
+import { carouselUiSeed } from './carousel-ui'
 import { catalogUiSeed } from './catalog-ui'
 import { productDetailUiSeed } from './product-detail-ui'
 import { collectionConceptsSeed } from './collection-concepts'
@@ -70,6 +71,8 @@ export const seedModules: readonly SeedModule[] = [
   catalogUiSeed,
   // Phase 15's product-page words, for the same reason.
   productDetailUiSeed,
+  // Phase 45's carousel names — four accessible names, referencing nothing.
+  carouselUiSeed,
   // Phase 17's project-gallery and testimonial words, for the same reason again.
   portfolioUiSeed,
   // Phase 21's viewer words. Reference nothing; every one is an accessible name or a notice.

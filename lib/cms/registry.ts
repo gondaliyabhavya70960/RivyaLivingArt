@@ -1,6 +1,13 @@
+import { checklistBlock } from '@/content/blocks/checklist'
 import { collectionProductsBlock } from '@/content/blocks/collection-products'
 import { commissionConfiguratorBlock } from '@/content/blocks/commission-configurator'
+import { contactDetailsBlock } from '@/content/blocks/contact-details'
 import { contactFormBlock } from '@/content/blocks/contact-form'
+import { faqListBlock } from '@/content/blocks/faq-list'
+import { mediaSplitBlock } from '@/content/blocks/media-split'
+import { numberedStepsBlock } from '@/content/blocks/numbered-steps'
+import { quoteBlock } from '@/content/blocks/quote'
+import { richTextBlock } from '@/content/blocks/rich-text'
 import { projectGalleryBlock } from '@/content/blocks/project-gallery'
 import { testimonialStripBlock } from '@/content/blocks/testimonial-strip'
 import { categoryGridBlock } from '@/content/blocks/category-grid'
@@ -67,7 +74,14 @@ const BUILT_BLOCKS = {
   'commission-configurator': commissionConfiguratorBlock,
   'contact-form': contactFormBlock,
   'testimonial-strip': testimonialStripBlock,
+  checklist: checklistBlock,
+  'numbered-steps': numberedStepsBlock,
+  'faq-list': faqListBlock,
+  'contact-details': contactDetailsBlock,
   'empty-state': emptyStateBlock,
+  'rich-text': richTextBlock,
+  'media-split': mediaSplitBlock,
+  quote: quoteBlock,
   divider: dividerBlock,
 } as const satisfies Partial<Record<BlockType, AnyBlockModule>>
 
