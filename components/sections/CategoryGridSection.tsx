@@ -70,11 +70,11 @@ export function CategoryGridSection({
   const columns = payload.columns
 
   return (
-    <SectionShell section={section} spacing="lg">
+    <SectionShell section={section}>
       <Stack gap={10}>
         <SectionCopy section={section} />
         {cards.length === 0 ? null : (
-          <Grid gap={6} className={COLUMN_CLASS[columns]}>
+          <Grid gap={6} className={`rv-reveal-group ${COLUMN_CLASS[columns]}`}>
             {cards.map((card, index) => {
               const asset = card.media_index === null ? null : (assets[card.media_index] ?? null)
               const body = (

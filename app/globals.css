@@ -24,6 +24,7 @@
 @import './styles/tokens.css';
 @import './styles/scheme.css';
 @import './styles/base.css' layer(base);
+@import './styles/motion.css' layer(base);
 
 @theme inline {
   --color-surface: var(--rv-surface-ground);

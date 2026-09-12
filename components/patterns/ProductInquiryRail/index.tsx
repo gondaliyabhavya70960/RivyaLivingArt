@@ -61,15 +61,30 @@ export interface ProductInquiryRailProps {
 /**
  * Where each action goes.
  *
- * Both targets carry `product=<slug>`, and that parameter is a CONTRACT rather than a convenience:
- * Phase 19's configurator and Phase 20's inquiry form both read it to know which piece the visitor
- * was looking at. Phase 15 guarantees the parameter and nothing more.
+ * Every target carries `product=<slug>`, and that parameter is a CONTRACT rather than a
+ * convenience: Phase 19's configurator and Phase 20's inquiry form both read it to know which piece
+ * the visitor was looking at.
+ *
+ * `type` IS NOW A CONTRACT TOO, AND THE EDITORIAL REDESIGN IS WHY. Phase 15 wrote the parameter and
+ * nothing read it, so "Ask About This Piece" and "Request a Quote" returned the identical URL and
+ * both filed `kind = 'PRODUCT'` — two labelled affordances, one destination, and FEAT §49 question
+ * 6 recorded a `FAIL` for it. `QUOTE` was a real enum value with a real schema, a real WhatsApp
+ * template and a Studio inbox view that could never receive a row.
+ *
+ * The map is separate from the labels on purpose: a label is copy and lives in `global_content`,
+ * while the enquiry kind a button files is a business fact and belongs in the code that routes it.
+ * `InquiryForm` reads the value back through its own closed allowlist — this end writing a string
+ * the other end does not accept would be a silent downgrade to the general form.
  */
+const TYPE_BY_KEY: Readonly<Record<Exclude<RailKey, 'customize_this_piece'>, string>> = {
+  ask_about_this_piece: 'product',
+  request_a_quote: 'quote',
+}
+
 function hrefFor(key: RailKey, slug: string): string {
   const product = encodeURIComponent(slug)
-  return key === 'customize_this_piece'
-    ? `/custom-commissions?product=${product}`
-    : `/contact?product=${product}&type=product`
+  if (key === 'customize_this_piece') return `/custom-commissions?product=${product}`
+  return `/contact?product=${product}&type=${TYPE_BY_KEY[key]}`
 }
 
 export function ProductInquiryRail({

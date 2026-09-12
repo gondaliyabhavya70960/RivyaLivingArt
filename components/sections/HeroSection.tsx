@@ -84,7 +84,17 @@ export function HeroSection({
   )
 
   return (
-    <SectionShell section={section} spacing="lg" container={overlaid ? 'none' : 'default'}>
+    <SectionShell
+      section={section}
+      /*
+       * THE VARIANT DECIDES, WHICH IS WHY THIS OVERRIDES `SECTION_RHYTHM`. A full-bleed hero is
+       * meant to meet the header — a band of padding above the opening image is the site clearing
+       * its throat, and it costs the hero exactly the height the §5.1 floor just gave it. A
+       * contained hero is a picture on the page and takes the ordinary working rhythm.
+       */
+      spacing={overlaid ? 'sm' : 'lg'}
+      container={overlaid ? 'none' : 'default'}
+    >
       <div className="relative">
         <ResponsiveMedia
           desktop={media.desktop}
@@ -99,6 +109,14 @@ export function HeroSection({
           // Phase 40: the first section of a page owns the route's one LCP hint.
           priority={isFirst}
           veil={overlaid}
+          /*
+           * THE FLOOR APPLIES TO THE OPENING HERO AND TO NO OTHER, which is why it reads `isFirst`
+           * rather than the block type. A hero at the top of a page is the first thing anyone sees
+           * and FEAT §49 question 2 asks it to hold the screen; a hero placed halfway down is a
+           * band among bands, and giving that one three quarters of the viewport would push the
+           * section above it off the screen to no purpose.
+           */
+          minBlockSize={isFirst ? 'var(--rv-hero-min-h)' : undefined}
         />
         {payload.is_video && payload.autoplay && motion != null ? (
           <HeroMotion

@@ -604,3 +604,33 @@ describe('sectionMediaFor', () => {
     expect(media.slot('steps').map((a) => a?.id)).toEqual([M2])
   })
 })
+
+/**
+ * THE HERO FLOOR REACHES THE DOM (FEAT §49 question 2).
+ *
+ * The floor is a token threaded through four components — `HeroSection` → `ResponsiveMedia` →
+ * `BlockImage` → `MediaFrame` → `AspectBox` — and a break anywhere in that chain looks exactly
+ * like no floor at all: the page still renders, the hero is simply short again. The unit tests on
+ * `AspectBox` prove the last link; this proves the chain.
+ */
+describe('the hero floor', () => {
+  it('is applied to the first section on a page', () => {
+    const { container } = renderSections([section({ block_type: 'hero', heading: 'Opening' })])
+    const floored = container.querySelectorAll('[style*="min-block-size"]')
+    expect(floored.length).toBeGreaterThan(0)
+  })
+
+  it('is not applied to a hero further down the page', () => {
+    // `isFirst` comes from the list, not the block type: a hero halfway down is a band among
+    // bands, and giving it three quarters of the viewport would push its neighbour off the screen.
+    const { container } = renderSections([
+      section({
+        id: '00000000-0000-4000-8000-00000000000a',
+        block_type: 'statement',
+        heading: 'A',
+      }),
+      section({ id: '00000000-0000-4000-8000-00000000000b', block_type: 'hero', heading: 'B' }),
+    ])
+    expect(container.querySelectorAll('[style*="min-block-size"]').length).toBe(0)
+  })
+})

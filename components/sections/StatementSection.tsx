@@ -24,7 +24,7 @@ export function StatementSection({
   const centred = section.layout_variant === 'centred'
 
   return (
-    <SectionShell section={section} spacing="md" container="prose">
+    <SectionShell section={section} container="prose">
       <Stack gap={6} className={centred ? 'items-center' : ''}>
         <SectionCopy section={section} size="display-lg" align={centred ? 'centre' : 'start'} />
         <SectionActions

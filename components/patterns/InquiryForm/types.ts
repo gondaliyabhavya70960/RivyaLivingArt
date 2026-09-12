@@ -28,5 +28,13 @@ export interface InquiryCopy {
   readonly errorTooMany: string
 }
 
-/** The five kinds a public surface may submit. `CONSULTATION` has no surface yet. */
+/**
+ * The five kinds a public surface may submit.
+ *
+ * FOUR OF THEM ARE REACHABLE BY URL — `/contact?type=product|quote|consultation|commission`, read
+ * through `KIND_BY_QUERY` in `InquiryForm`. `CONSULTATION` still has no BUTTON: SEED §31 fixes the
+ * seven action labels and none of them names a consultation, so an affordance for it would need
+ * copy nobody has written. That is an owner's decision rather than an engineer's, and inventing the
+ * sentence here is what D2 and D10 forbid. The path is open the moment a label exists.
+ */
 export type InquiryFormKind = 'GENERAL' | 'PRODUCT' | 'QUOTE' | 'COMMISSION' | 'CONSULTATION'

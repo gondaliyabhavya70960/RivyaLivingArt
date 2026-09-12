@@ -43,7 +43,7 @@ export function PortfolioStripSection({
     parseBlockPayload(portfolioStripBlock, section.payload).show_empty_state ?? true
 
   return (
-    <SectionShell section={section} spacing="lg">
+    <SectionShell section={section}>
       <Stack gap={10}>
         <SectionCopy section={section} />
         {media.desktop === null && media.mobile === null ? null : (

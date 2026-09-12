@@ -53,7 +53,7 @@ export function CategoryListSection({
   const rows = (section.layout_variant ?? 'grid') === 'rows'
 
   return (
-    <SectionShell section={section} spacing="lg" container="wide">
+    <SectionShell section={section} container="wide">
       <Stack gap={10}>
         <SectionCopy section={section} size="display-lg" />
         {entries.length === 0 ? null : (

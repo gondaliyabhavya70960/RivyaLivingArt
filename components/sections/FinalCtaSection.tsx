@@ -54,7 +54,7 @@ export function FinalCtaSection({
 
   if (centred || !hasMedia) {
     return (
-      <SectionShell section={section} spacing="lg" container="prose">
+      <SectionShell section={section} container="prose">
         <Stack gap={10}>
           {copy}
           {hasMedia ? (
@@ -76,7 +76,7 @@ export function FinalCtaSection({
   }
 
   return (
-    <SectionShell section={section} spacing="lg" container="none">
+    <SectionShell section={section} container="none">
       <div className="relative">
         <ResponsiveMedia
           desktop={media.desktop}

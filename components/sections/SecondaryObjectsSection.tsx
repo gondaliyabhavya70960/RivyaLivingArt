@@ -50,10 +50,10 @@ export function SecondaryObjectsSection({
   const columns = COLUMN_CLASS[Math.min(cards.length, 4)] ?? ''
 
   return (
-    <SectionShell section={section} spacing="lg">
+    <SectionShell section={section}>
       <Stack gap={10}>
         <SectionCopy section={section} />
-        <Grid gap={6} className={`grid-cols-1 sm:grid-cols-2 ${columns}`}>
+        <Grid gap={6} className={`rv-reveal-group grid-cols-1 sm:grid-cols-2 ${columns}`}>
           {cards.map((card) => {
             const index = card.media_index ?? null
             const description = card.description ?? ''

@@ -61,7 +61,7 @@ export function SelectedWorksSection({
   if (mode === 'HIDE_SECTION') return null
 
   return (
-    <SectionShell section={section} spacing="lg">
+    <SectionShell section={section}>
       <Stack gap={10} data-provenance={outcome?.provenance} data-slot={outcome?.slotKey}>
         <SectionCopy section={section} />
         {media.desktop === null && media.mobile === null ? null : (

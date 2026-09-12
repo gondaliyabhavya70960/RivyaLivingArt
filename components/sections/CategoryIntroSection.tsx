@@ -12,8 +12,8 @@ import type { SectionRenderProps } from './types'
  *
  * IT SITS TIGHT TO WHAT FOLLOWS, which is the only thing separating it from `statement`. A
  * category introduction is not a band in its own right — it is the sentence above a list, and the
- * space beneath it belongs to the list. `spacing="md"` and no bottom emphasis; `StatementSection`
- * takes the full rhythm because nothing is depending on it.
+ * space beneath it belongs to the list. `SECTION_RHYTHM` gives it `md` and no bottom emphasis;
+ * `statement` takes `xl` because nothing is depending on it.
  *
  * NO CALL TO ACTION, and the block declares none. The destination is the list underneath.
  */
@@ -29,7 +29,7 @@ export function CategoryIntroSection({
   const centred = section.layout_variant === 'centred'
 
   return (
-    <SectionShell section={section} spacing="md" container={centred ? 'prose' : 'default'}>
+    <SectionShell section={section} container={centred ? 'prose' : 'default'}>
       <Stack gap={8}>
         <SectionCopy
           section={section}

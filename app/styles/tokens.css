@@ -165,6 +165,32 @@
   --rv-section-y-lg: clamp(6rem, 4.667rem + 5.926vw, 10rem);
   --rv-section-y-xl: clamp(8rem, 6.5rem + 6.667vw, 12.5rem);
 
+  /* ---- space: the hero floor (§5.1, FEAT §49 question 2) ---- */
+  /*
+   * A HERO'S HEIGHT MUST BE A FUNCTION OF THE VIEWPORT, NOT ONLY OF ITS WIDTH.
+   *
+   * The hero is an `AspectBox`, so before this token its height was width ÷ ratio and nothing
+   * else. Measured across the eight QA widths its share of the viewport ran
+   * 91 · 69 · 61 · 49 · 37 · 91 · 82 · 76 % — at 768 the opening image of the site held barely a
+   * third of the screen, and the ≥ 70 % the audit asks for was met or missed by accident of
+   * viewport aspect. `DESIGN_SYSTEM.md` §19.1 question 2 records that as the finding rather than
+   * the one missing point.
+   *
+   * A FLOOR, NOT A HEIGHT. The box still takes its aspect ratio; this is the minimum it may
+   * collapse to, so the wide viewports that already give a commanding 21:9 keep it — 1920 stays at
+   * 91 % — and only the middle band is lifted. One number does that at every width: 76 % clears
+   * the threshold at 768, 1024 and 1280 and binds nowhere else.
+   *
+   * `svh` RATHER THAN `vh`, deliberately. `vh` on a phone is the height with the browser chrome
+   * retracted, so a `vh` floor is taller than the screen until the visitor scrolls — the hero would
+   * push its own copy under the address bar on first paint. `svh` is the small viewport: the height
+   * while the chrome is showing, which is the height the hero is first seen at.
+   *
+   * IT COSTS NO LAYOUT SHIFT. Both the ratio and the floor are known before any byte of the image
+   * arrives, so the box reserves its final size on the server exactly as it did before.
+   */
+  --rv-hero-min-h: 76svh;
+
   /* ---- layout: breakpoints (§5.2) and containers (§5.3) ---- */
   --rv-bp-sm: 430px;
   --rv-bp-md: 768px;

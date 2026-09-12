@@ -101,12 +101,19 @@ export function ArticleCard({
 
         <Stack gap={2} className="min-w-0 sm:mt-3">
           {categoryName === null ? null : <Eyebrow>{categoryName}</Eyebrow>}
-          {/* Three lines on a phone, where the card is a row and the title is most of it. */}
-          <Heading
-            level={headingLevel}
-            size="display-xs"
-            className="line-clamp-3 sm:line-clamp-none"
-          >
+          {/*
+            NO CLAMP ON THE HEADING, AT ANY WIDTH.
+
+            It was `line-clamp-3` below 430px, to keep the rows on a phone the same height — and
+            `DESIGN_SYSTEM.md` §19.1 question 7 found the result: the journal card's `h2` was the
+            ONLY truncated heading anywhere in the product, at 390 and at 360. An article's title
+            is the whole of what the card offers, and the excerpt is already `hidden sm:block`, so
+            a clipped title left a visitor choosing between three-dots and a date.
+
+            Even rows are worth less than a legible one. The media beside it is a fixed 96px, so a
+            title that runs to four lines makes its own row taller and costs nothing else.
+          */}
+          <Heading level={headingLevel} size="display-xs">
             {article.title}
           </Heading>
           {article.excerpt === null ? null : (
