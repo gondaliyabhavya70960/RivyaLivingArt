@@ -7,7 +7,7 @@ import { pathToFileURL } from 'node:url'
  * `npx tsx scripts/ops/preflight.ts` — every release gate in one command — Phase 44.
  *
  * WHY A SCRIPT RATHER THAN A CHECKLIST. "Run all the guard scripts" is how one of them stops being
- * run: a person under time pressure runs the four they remember. Thirteen gates are NAMED here, each
+ * run: a person under time pressure runs the four they remember. Fourteen gates are NAMED here, each
  * one prints its own line in a summary table whether it passed or failed, and the exit code is
  * non-zero if any failed. A gate that is skipped says SKIPPED with a reason rather than being
  * silently absent — a preflight that reports success because it could not find a checker is worse
@@ -124,6 +124,24 @@ export const GATES: readonly Gate[] = [
       existsSync('scripts/content/build-verification-report.ts')
         ? null
         : 'Phase 46 has not run yet — scripts/content/build-verification-report.ts does not exist',
+  },
+  {
+    n: 14,
+    name: 'the canonical host serves, and does not redirect in a circle',
+    command: ['npx', 'tsx', 'scripts/ops/check-canonical-host.ts'],
+    owningPhase: '44 · 45',
+    /*
+     * THE ONLY GATE HERE THAT ASKS THE INTERNET, and it has to. The defect it exists for lives in
+     * the composition of a platform dashboard setting with a compiled-in rule, and no amount of
+     * reading this repository can see the first half. On 2026-09-12 the two disagreed and the live
+     * site was unreachable on BOTH of its hosts, with a green build and a green test suite behind
+     * it — every page, every address, ERR_TOO_MANY_REDIRECTS.
+     */
+    skipUnless: () =>
+      process.env['NEXT_PUBLIC_SITE_URL'] === undefined ||
+      process.env['NEXT_PUBLIC_SITE_URL'] === ''
+        ? 'NEXT_PUBLIC_SITE_URL is not set — there is no deployed host to ask about'
+        : null,
   },
 ]
 
