@@ -153,10 +153,19 @@ the owner verifies it in the Media Manager. This is working as designed — the 
 AI-generated and assert things about Rivya's work that only the owner can confirm.
 
 > **On the production project, the owner cleared this on 2026-09-12.** All 250 are now `VERIFIED`
-> and `PUBLISHED`, so RV006 no longer fires there and the public site renders Higgsfield media
-> rather than the "media unavailable" well. The decision is recorded in `BUSINESS_RULES.md` §N.
-> It applies to that database only: a fresh seed still lands `OWNER_VERIFICATION_REQUIRED`, because
-> the gate is right and the next person to import an asset should still meet it.
+> and `PUBLISHED`, so RV006 no longer fires there. The decision is recorded as **BR-H4** in
+> [`../project/BUSINESS_RULES.md`](../project/BUSINESS_RULES.md) §H. It applies to that database
+> only: a fresh seed still lands `OWNER_VERIFICATION_REQUIRED`, because the gate is right and the
+> next person to import an asset should still meet it.
+>
+> **This did not put pictures on the site, and it was never going to.** RV006 was the *second*
+> lock; the first is that almost nothing is bound. `media_usages` holds **0** rows, and
+> `page_sections.media_slot_key` is null on all 53 — so every section still renders the SEED §47
+> fallback. The only thing the verification actually released is the **7 published journal article
+> covers**, which are bound through `journal_articles.cover_media_id` rather than through a slot.
+> Products, categories, collections, portfolio projects and `seo_entries.og_media_id` are all at
+> zero too. Binding is the curation pass described in `content/seed/media-bindings.ts`, and it is
+> roadmap **E12**.
 
 The picker says so at the moment of choosing, rather than letting an editor build a whole page and
 discover it at the last step.

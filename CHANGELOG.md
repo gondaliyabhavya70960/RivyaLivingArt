@@ -29,11 +29,17 @@ because production's static build predated the publish; after a redeploy it serv
 then showed every *other* route still 404ing with all sections DRAFT, and not one real image
 anywhere.
 
-- **250 Higgsfield assets published.** Pre-flighted rather than assumed: all 250 confirmed present
-  and active in Cloudinary (224 images, 26 video), one spot-checked byte-for-byte, **0 of 250
-  missing alt text**. The owner cleared `OWNER_VERIFICATION_REQUIRED` explicitly — recorded as
-  **BR-H4**, a new register in `BUSINESS_RULES.md` §H, including the honest note that applying it by
-  `UPDATE` wrote no `audit_logs` row where BR-H3 requires one.
+- **250 Higgsfield assets published** — and, checked afterwards, **this put almost no pictures on
+  the site**. Verification was the second lock; the first is that nothing is bound. `media_usages`
+  holds 0 rows and `page_sections.media_slot_key` is null on all 53, so every section still renders
+  the SEED §47 fallback. What the publish actually released is the **7 published journal article
+  covers**, bound through `journal_articles.cover_media_id` rather than a slot. Products,
+  categories, collections, projects and OG images are all unbound too. The binding curation is
+  roadmap **E12**. Pre-flighted rather than assumed: all 250 confirmed present and active in
+  Cloudinary (224 images, 26 video), one spot-checked byte-for-byte, **0 of 250 missing alt text**.
+  The owner cleared `OWNER_VERIFICATION_REQUIRED` explicitly — recorded as **BR-H4**, a new register
+  in `BUSINESS_RULES.md` §H, including the honest note that applying it by `UPDATE` wrote no
+  `audit_logs` row where BR-H3 requires one.
 - **19 sections published across 10 routes** — `/about`, `/collection`, four `/collection/*`,
   `/contact`, `/journal`, `/large-format`, `/portfolio` — by the legal `DRAFT → REVIEW → APPROVED →
   PUBLISHED` walk, scoped so no owner-flagged row could move.
