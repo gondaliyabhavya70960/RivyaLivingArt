@@ -1,3 +1,11 @@
+---
+doc: SESSION-STATE
+status: CURRENT
+owning_phase: 01
+last_reviewed: 2026-09-12
+owner_verification: NOT_REQUIRED
+---
+
 # SESSION-STATE
 
 > Updated at the end of every phase, per requirement FEAT §40. Read this second, after

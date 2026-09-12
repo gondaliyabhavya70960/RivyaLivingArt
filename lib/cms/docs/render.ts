@@ -131,8 +131,31 @@ function listMarker(line: string): { indent: number; ordered: boolean; text: str
   return { indent: (match[1] ?? '').length, ordered: match[3] !== undefined, text: match[4] ?? '' }
 }
 
+/**
+ * Strip the Phase 01 front-matter block, if the document opens with one — Phase 46.
+ *
+ * WITHOUT THIS THE VIEWER SHOWS THE METADATA AS THE FIRST THING ON THE PAGE. The block is a `---`
+ * fence, which this parser reads as a horizontal rule, followed by five `key: value` lines, which it
+ * reads as a paragraph. So `/studio/system/documentation` opened the Studio guide on a rule and the
+ * words "doc: STUDIO_GUIDE status: CURRENT owning_phase: 05 …" — true, and not what anybody came to
+ * read. It was already happening on seven of the ten allowlisted documents when Phase 46 found it;
+ * that phase gave front matter to the other three, which would have made it ten.
+ *
+ * IT IS DELIBERATELY NARROW. Only a fence on the VERY FIRST line opens front matter, and only the
+ * next `---` closes it. A document whose body happens to start with a rule keeps that rule, and a
+ * lone opening fence with no closer is left entirely alone rather than swallowing the document —
+ * the failure mode of a greedy version of this function is a blank page, which is worse than a
+ * visible metadata block.
+ */
+function withoutFrontMatter(lines: readonly string[]): readonly string[] {
+  if ((lines[0] ?? '').trim() !== '---') return lines
+  const close = lines.findIndex((line, index) => index > 0 && line.trim() === '---')
+  if (close === -1) return lines
+  return lines.slice(close + 1)
+}
+
 export function parseMarkdown(markdown: string): Block[] {
-  const lines = markdown.replace(/\r\n?/gu, '\n').split('\n')
+  const lines = withoutFrontMatter(markdown.replace(/\r\n?/gu, '\n').split('\n'))
   const blocks: Block[] = []
   const seenIds = new Map<string, number>()
   let i = 0

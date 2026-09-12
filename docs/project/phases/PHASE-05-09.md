@@ -1,3 +1,11 @@
+---
+doc: PHASE-05-09
+status: CURRENT
+owning_phase: 01
+last_reviewed: 2026-09-12
+owner_verification: NOT_REQUIRED
+---
+
 # PHASES 05–09 — Studio, Media, Assets, CMS, Content Seed
 
 > Binding parent: `docs/architecture/CANONICAL-DECISIONS.md`. Where this document and the

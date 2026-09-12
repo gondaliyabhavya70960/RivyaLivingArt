@@ -1,3 +1,11 @@
+---
+doc: DEMO_CONTENT
+status: CURRENT
+owning_phase: 35
+last_reviewed: 2026-09-12
+owner_verification: OWNER_VERIFICATION_REQUIRED
+---
+
 # Demo content register
 
 **GENERATED — do not edit.** `npm run demo:register` rewrites this file from

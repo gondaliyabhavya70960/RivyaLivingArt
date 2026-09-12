@@ -1,3 +1,11 @@
+---
+doc: MEDIA_GUIDE
+status: CURRENT
+owning_phase: 06
+last_reviewed: 2026-09-12
+owner_verification: NOT_REQUIRED
+---
+
 # MEDIA GUIDE — the media model, end to end
 
 > **Standing.** Hand-written. Binding contract: `CANONICAL-DECISIONS.md` §D1, §D6.

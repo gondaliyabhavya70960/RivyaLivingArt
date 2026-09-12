@@ -1,3 +1,11 @@
+---
+doc: HIGGSFIELD_ASSET_STATUS
+status: CURRENT
+owning_phase: 07
+last_reviewed: 2026-09-12
+owner_verification: NOT_REQUIRED
+---
+
 # HIGGSFIELD ASSET STATUS — live inventory ledger
 
 > **Standing.** The per-asset rows in §4 are **generated, never hand-edited**.

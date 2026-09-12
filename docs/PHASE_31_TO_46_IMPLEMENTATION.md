@@ -1,3 +1,11 @@
+---
+doc: PHASE_31_TO_46_IMPLEMENTATION
+status: CURRENT
+owning_phase: 31
+last_reviewed: 2026-09-12
+owner_verification: NOT_REQUIRED
+---
+
 # Phases 31 → 46 — implementation record
 
 > Owned by the block that runs Phases 31–46 (amendment A31 adds this path to D7). One section per

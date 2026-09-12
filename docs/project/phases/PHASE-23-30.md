@@ -1,3 +1,11 @@
+---
+doc: PHASE-23-30
+status: CURRENT
+owning_phase: 01
+last_reviewed: 2026-09-12
+owner_verification: NOT_REQUIRED
+---
+
 # PHASES 23–30 — Search, Relationships, Bulk Management and the Research Pipeline
 
 > Binding parent: `docs/architecture/CANONICAL-DECISIONS.md`. Where this document and the canonical

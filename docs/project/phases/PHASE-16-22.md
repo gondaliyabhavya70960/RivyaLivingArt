@@ -1,3 +1,11 @@
+---
+doc: PHASE-16-22
+status: CURRENT
+owning_phase: 01
+last_reviewed: 2026-09-12
+owner_verification: NOT_REQUIRED
+---
+
 # PHASES 16–22 — Collections, Portfolio, Journal, Commissions, Inquiry, 3D, Merchandising
 
 > Binding parent: `docs/architecture/CANONICAL-DECISIONS.md`. Where this document and the

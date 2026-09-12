@@ -29,6 +29,23 @@ for (const product of DEMO_PRODUCTS) {
 const lines: string[] = []
 const w = (line = '') => lines.push(line)
 
+/*
+ * FRONT MATTER FIRST, AND EMITTED RATHER THAN HAND-WRITTEN — Phase 46.
+ *
+ * Every document under `docs/` outside `docs/requirements/**` carries the Phase 01 front-matter
+ * block so its status is machine-readable, and `scripts/docs/audit-docs.mjs` fails the build on one
+ * that does not. This file is rewritten wholesale on every `npm run demo:register`, so a block added
+ * by hand would survive exactly until the next run — which is the failure mode that leaves a
+ * generated document quietly outside the contract. It is written here instead.
+ */
+w('---')
+w('doc: DEMO_CONTENT')
+w('status: CURRENT')
+w('owning_phase: 35')
+w('last_reviewed: 2026-09-12')
+w('owner_verification: OWNER_VERIFICATION_REQUIRED')
+w('---')
+w()
 w('# Demo content register')
 w()
 w('**GENERATED — do not edit.** `npm run demo:register` rewrites this file from')

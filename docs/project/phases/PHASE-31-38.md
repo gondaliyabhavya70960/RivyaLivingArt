@@ -1,3 +1,11 @@
+---
+doc: PHASE-31-38
+status: CURRENT
+owning_phase: 01
+last_reviewed: 2026-09-12
+owner_verification: NOT_REQUIRED
+---
+
 # PHASES 31–38 — Research Analytics, Opportunity, Similarity, Direction, Confirmation, Sheets, Studio Analytics, System
 
 > Binding parent: `docs/architecture/CANONICAL-DECISIONS.md`. Where this document and the
