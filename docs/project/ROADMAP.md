@@ -136,6 +136,98 @@ public site. If time is short it can be deferred wholesale without touching a si
 None of these blocks phase 02, and none blocks writing the code that phases 03–09 will run against
 once credentials exist.
 
+## Phase 45 backlog — what the creative audit found and deliberately deferred
+
+The audit is `docs/design/DESIGN_SYSTEM.md` §19; the walkthrough it depends on is `docs/ops/TESTING.md`
+§14. Nine dimensions were examined and every one returned `FAIL`. The five-condition remit in
+`docs/project/phases/PHASE-39-46.md` §45 admits a change only if it fixes one of those findings,
+adds no CMS block type, adds no dependency, keeps the Phase 40 budgets green and keeps the a11y
+sweep at zero critical and zero serious. Everything below failed one of those conditions, or is a
+composition change large enough to deserve its own reviewable diff, and each carries the reason.
+
+### Capability gaps the owner cannot close, and neither can polish
+
+| Item | Why it is not a polish change | Consequence today |
+|---|---|---|
+| **No control publishes a category.** `saveCategoryAction` writes name, subtitle, description, order, hero image and the two SEO fields and never `status`; there is no `publishCategoryAction` anywhere in the repository | Adding a publish action is a Studio surface, which §45 puts out of scope | All seven `categories` rows stay `DRAFT`, so all seven `/collection/<slug>` routes 404 and the chrome now omits them (§8.1). The catalogue is reachable only through `/collection` itself |
+| **`/faq`, `/privacy` and `/terms` cannot be filled by an editor.** `faq-list` and `rich-text` are PLANNED block types with no renderer, so a published page would render nothing | Building a renderer adds a block type, which the remit forbids outright | Three published `pages` rows with no published sections, so three 404s. Now omitted from the footer rather than linked |
+| **`/studio/content/faqs` and `/studio/system/settings` are route stubs**, their own comments naming Phases 08 and 20 as the owners | Same reason | The WhatsApp number and the message templates are an engineer change today. `TESTING.md` §14.3 records this as part of audit question 8's verdict rather than as an omission from it |
+| **`'contact-details': null` in the section registry** — the block has no renderer, so `chrome.contact` is always null | Same reason | The footer's WhatsApp affordance never renders on any page, and the studio's address and hours appear nowhere |
+
+### Conversion — four of the six affordances do not exist
+
+FEAT §49 question 6 names six. `ProductInquiryRail` returns the same
+`/contact?product=<slug>&type=product` for two of them and the `type` parameter is read by nothing;
+`QUOTE` and `CONSULTATION` are real enum values with real schemas, real WhatsApp templates and two
+Studio inbox views that can never receive a row; `Customize` is gated on a flag that ships off,
+behind a block type nothing seeds.
+
+Giving each of the six a distinct affordance is wiring and composition, not new copy — the labels
+and the enquiry types already exist in `global_content` and in the enum — but it changes the
+conversion path, which is the one business rule this project has, and it belongs in a diff a
+reviewer reads on its own rather than inside a polish PR. **Deferred, with the enum values and the
+string keys named in the audit's evidence.**
+
+The pass condition's own "within two clicks" is unsatisfiable for "Continue to WhatsApp", because
+D1 requires the enquiry to be persisted first and `buildHandoffUrl` takes a non-optional inquiry id.
+`DESIGN_SYSTEM.md` §19.1 records the condition as wrong rather than the code, and FEAT §49 should be
+amended to "within two clicks of the surface that files it".
+
+### Composition changes held for their own diff
+
+| Item | Finding | Why deferred |
+|---|---|---|
+| **Hero dominance** | The hero is a 21:9 `AspectBox`, so its share of the viewport runs 91 · 69 · 61 · 49 · 37 · 91 · 82 · 76 % across the eight QA widths and the ≥ 70 % condition is met or missed by accident. At 768 the hero holds barely a third of the screen | The fix is a viewport-relative floor in a token, and it moves every tier-A visual baseline. One change, one diff, its own re-baseline |
+| **Section rhythm is uniform** | Four steps are declared and 26 of the 28 renderers use `lg`; `sm` and `xl` are dead, so ten consecutive bands on `/` are spaced identically and §50's "deliberate negative space" is not expressed | Assigning a weight per block type is a judgement about each band, and it moves every baseline. Same reason |
+| **No sticky conversion affordance** | On `/product/<slug>` at 390 the two calls to action sit at y = 997 and 1053 of a 1928 px document, outside the thumb zone on every phone | §7.10 specifies a sticky submit row that was never built. It is a new pattern, not a tuned one |
+| **`media_crops` is written and never read** | The Studio writes focal points and no public renderer consults one, so the owner's crop work has no effect. `TESTING.md` §14.3 leaves operation O10 in the owner's ten deliberately, so question 8 discovers it | Threading crops through the delivery layer is a media-pipeline change |
+| **`MobileNav` does not meet §8.3** | Disclosure children, 56 px rows and a pinned primary action are specified and absent | A pattern rebuild |
+| **The journal card's `h2` truncates at 390 and 360** | The only truncated heading at any width | Small, but it belongs with the card's mobile composition rather than alone |
+
+### Technical refinement
+
+**A cold, throttled load paints unstyled.** At 1.6 Mbps with 4× CPU throttling, `/collection` paints
+at ~250 ms with zero stylesheets, in Times New Roman, with the default 8 px body margin and a body
+13877 px tall; the sheet lands at ~500 ms and it reflows to 4526 px. Measured CLS is **0.98 at 1440
+and 1.00 at 390**, against a "good" threshold of 0.1. `/large-format` measures 0.66; `/`, `/about`
+and `/product/<slug>` are all under 0.04.
+
+This is recorded rather than fixed because the measurement is of `next start` behind a throttled
+link, and whether Vercel's transport (HTTP/2, CDN, early hints) paints the same way is unverified.
+**The next action is to measure the deployed preview, not to change the code.** If it reproduces, it
+is the largest single technical-refinement defect in the product and it is a Phase 40 concern as
+much as a Phase 45 one.
+
+A second, much smaller shift follows at ~1.4 s on every route: the Inter fallback swapping to Inter
+(`130×20 → 120×20` on a paragraph). `next/font`'s `adjustFontFallback` is the mechanism; it is worth
+one line when somebody is already in that file.
+
+### The same capability claim is held back in one table and published in another
+
+`global:BRAND.brand.introduction` (`content/seed/global.ts:103`) is seeded `DRAFT` and
+`OWNER_VERIFICATION_REQUIRED`, and its own seed note says why: "it enumerates fabrication
+capabilities — resin work, digital design, 3D fabrication, hand-finishing — that only the owner can
+confirm Rivya has."
+
+Two rows make the same kind of claim and ship `PUBLISHED` with `NOT_REQUIRED`:
+
+* `seo:global.description` (`content/seed/seo.ts:196`) — "Rivya Living Art **creates** resin
+  furniture, collectible objects, statement art and bespoke pieces shaped through material craft and
+  contemporary form."
+* `seo:global.social_description` (`content/seed/seo.ts:198`) — "Explore resin furniture, sculptural
+  objects, large-format art and bespoke commissions."
+
+Both are visitor-facing: the first is the meta description on every page without an override, the
+second is what a shared link shows. Whether they are true is a fact about the business, so they are
+recorded here for the owner rather than edited by us — a sentence is either true, in which case the
+owner clears it, or it is not, in which case the owner rewrites it. Neither is an engineer's call.
+
+The mechanism that should have caught it does not exist yet: `scripts/content/classify-copy-diff.ts`
+is a Phase 45 deliverable and the repository's only fabrication scan today is a five-token regex
+duplicated in `tests/e2e/about.spec.ts` and `process.spec.ts`, both of which skip when the route has
+no published sections — which has been the state of every route, so it has never executed. The
+specification for the classifier is written and deferred with the rest of the script work.
+
 ## Media position
 
 250 Higgsfield assets already exist and are catalogued in

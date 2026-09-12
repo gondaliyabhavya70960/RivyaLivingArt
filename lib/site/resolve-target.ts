@@ -10,11 +10,20 @@ import { resolveHref } from './href-resolution'
  * row and answers 404, so it is a real path and not a live one, and an anchor to it is a dead link
  * inside a page body.
  *
- * THAT DISTINCTION IS THE WHOLE PHASE-13 PROBLEM. `/large-format` links to `/custom-commissions`
- * twice, and Phase 19 builds that page: today the route file exists, the `pages` row exists, and
- * every section on it is DRAFT. `resolveHref` says RESOLVED; a visitor gets a 404. So the live set
- * passed in here is `listPublicPagePaths` — pages with at least one section the anonymous client
- * can see — rather than every path in the route map.
+ * THAT DISTINCTION IS THE WHOLE PHASE-13 PROBLEM. The live set passed in here is built from
+ * `listPublicPagePaths` — pages with at least one section the anonymous client can see — rather
+ * than from every path in the route map, because a page whose sections are all DRAFT has a row and
+ * answers 404. `/custom-commissions` was the original example and is no longer one: its sections
+ * are published now, and `/faq`, `/privacy` and `/terms` are the three that hold the shape today.
+ *
+ * THE LIVE SET IS NO LONGER JUST `pages` — Phase 45. A `/collection/<slug>` listing is gated on the
+ * `categories` table BEFORE any section is looked at, so a published `pages` row was not enough to
+ * make one render and this function was being handed an oracle that was wrong about the seven most
+ * important destinations on the site. `lib/site/live-paths.ts` composes both gates; a caller that
+ * builds the set itself from `pages` alone will get the old, wrong answer.
+ *
+ * THE CHROME DOES NOT TAKE THE TEXT BRANCH. §8.1 of the design system records why: a navigation
+ * item's entire payload is its destination, so `lib/site/menu.ts` omits it instead.
  *
  * NULL MEANS "RENDER IT, BUT NOT AS A LINK". The copy an editor wrote is still true and still
  * belongs on the page; what cannot be honoured is the destination. A card whose target is not live

@@ -173,6 +173,18 @@ export function MegaMenu({
   return (
     <div
       ref={wrapperRef}
+      /*
+       * AN ASSERTION HOOK, BECAUSE `aria-expanded` IS NOT UNIQUE IN THE MASTHEAD — Phase 45.
+       *
+       * `SearchCombobox` also carries `aria-expanded` and is also visible in the header from `xl`
+       * up, so `header button[aria-expanded]:visible` matches whichever comes first in the DOM.
+       * That was harmless while the mega menu always rendered. It stopped being harmless when
+       * Phase 45 made the chrome omit a destination that is not live: with every `categories` row
+       * DRAFT, Collection loses its children and `SiteHeader` renders it as a plain link, so the
+       * mega menu is absent and the old locator would have quietly asserted the mega menu's entire
+       * keyboard model against the search box — passing, and proving nothing.
+       */
+      data-megamenu=""
       className={cn('relative', className)}
       onKeyDown={onKeyDown}
       onBlur={onBlur}

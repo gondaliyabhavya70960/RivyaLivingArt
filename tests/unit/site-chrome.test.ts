@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { announcementFrom } from '@/lib/site/announcement'
 import { contactDetailsOf } from '@/lib/site/contact-details'
 import { resolveHref } from '@/lib/site/href-resolution'
+import { livePathsFrom } from '@/lib/site/live-paths'
 import { buildMenu, footerColumns } from '@/lib/site/menu'
 import type { GlobalContent, NavigationItem, PageSection } from '@/lib/supabase/schemas'
 
@@ -291,5 +292,119 @@ describe('resolveHref', () => {
   it('accepts a trailing slash, which Next resolves too', () => {
     expect(resolveHref('/about/', pages)).toBe('RESOLVED')
     expect(resolveHref('/', pages)).toBe('RESOLVED')
+  })
+})
+
+describe('the live-path oracle, and the chrome that consults it', () => {
+  /*
+   * THE DEFECT THESE PIN — Phase 45.
+   *
+   * Ten destinations in the published menus answered 404: the seven `/collection/<slug>` routes,
+   * whose `categories` rows are all DRAFT, and `/faq`, `/privacy` and `/terms`, whose `pages` rows
+   * are published with no published sections. Every one of the four chrome surfaces rendered them
+   * as anchors. `livePaths` said they were live because it was built from `pages` alone, and the
+   * category route is gated on `categories` before a section is ever looked at.
+   */
+
+  it('drops a category path whose category is not visible, and keeps one whose is', () => {
+    const live = livePathsFrom(
+      ['/', '/collection', '/collection/furniture', '/collection/decor'],
+      ['furniture'],
+    )
+    expect([...live].sort()).toEqual(['/', '/collection', '/collection/furniture'])
+  })
+
+  it('normalises case and a trailing slash on both sides, because the column is citext', () => {
+    const live = livePathsFrom(['/collection/Furniture/'], ['FURNITURE'])
+    expect(live.has('/collection/Furniture/')).toBe(true)
+  })
+
+  it('leaves every non-category path to the pages gate alone', () => {
+    // `/faq` is absent from publicPaths because it has no visible section; nothing here adds it.
+    const live = livePathsFrom(['/', '/about'], [])
+    expect(live.has('/about')).toBe(true)
+    expect(live.has('/faq')).toBe(false)
+  })
+
+  it('omits a menu item whose destination is not live, and keeps the rest', () => {
+    const rows = [
+      nav({ menu: 'HEADER', label: 'Home', href: '/', position: 10 }),
+      nav({ menu: 'HEADER', label: 'FAQ', href: '/faq', position: 20 }),
+      nav({ menu: 'HEADER', label: 'About', href: '/about', position: 30 }),
+    ]
+    const menu = buildMenu(rows, 'HEADER', new Set(['/', '/about']))
+    expect(menu.map((item) => item.label)).toEqual(['Home', 'About'])
+  })
+
+  it('takes a dropped parent’s children with it', () => {
+    const parent = nav({ menu: 'HEADER', label: 'Collection', href: '/collection', position: 10 })
+    const rows = [
+      parent,
+      nav({
+        menu: 'HEADER',
+        label: 'Furniture',
+        href: '/collection/furniture',
+        position: 20,
+        parent_id: parent.id,
+      }),
+    ]
+    expect(buildMenu(rows, 'HEADER', new Set<string>()).length).toBe(0)
+  })
+
+  it('keeps a live parent and drops only its dead children', () => {
+    const parent = nav({ menu: 'HEADER', label: 'Collection', href: '/collection', position: 10 })
+    const rows = [
+      parent,
+      nav({
+        menu: 'HEADER',
+        label: 'Furniture',
+        href: '/collection/furniture',
+        position: 20,
+        parent_id: parent.id,
+      }),
+    ]
+    const menu = buildMenu(rows, 'HEADER', new Set(['/collection']))
+    expect(menu.map((item) => item.label)).toEqual(['Collection'])
+    expect(menu[0]?.children).toEqual([])
+  })
+
+  it('omitting the oracle means do not check, so an unfiltered caller is unaffected', () => {
+    const rows = [nav({ menu: 'HEADER', label: 'FAQ', href: '/faq', position: 10 })]
+    expect(buildMenu(rows, 'HEADER').map((item) => item.label)).toEqual(['FAQ'])
+  })
+
+  it('keeps an inert footer heading, which is not a dead link', () => {
+    const heading = nav({ menu: 'FOOTER', label: 'Information', href: '#', position: 10 })
+    const rows = [
+      heading,
+      nav({
+        menu: 'FOOTER',
+        label: 'About',
+        href: '/about',
+        position: 20,
+        parent_id: heading.id,
+      }),
+    ]
+    const columns = footerColumns(rows, new Set(['/about']))
+    expect(columns.map((column) => column.heading)).toEqual(['Information'])
+    expect(columns[0]?.href).toBeNull()
+  })
+
+  it('drops a footer column that HAD links and lost all of them', () => {
+    const heading = nav({ menu: 'FOOTER', label: 'Information', href: '#', position: 10 })
+    const rows = [
+      heading,
+      nav({ menu: 'FOOTER', label: 'FAQ', href: '/faq', position: 20, parent_id: heading.id }),
+    ]
+    expect(footerColumns(rows, new Set<string>())).toEqual([])
+  })
+
+  it('keeps a column that never had links — the contact column is exactly that', () => {
+    // `SiteFooter` identifies the contact column as "the column with no links"; a rule phrased as
+    // "drop empty columns" would delete it and take the studio's address off every page.
+    const rows = [nav({ menu: 'FOOTER', label: 'Contact', href: '#', position: 40 })]
+    expect(footerColumns(rows, new Set<string>()).map((column) => column.heading)).toEqual([
+      'Contact',
+    ])
   })
 })

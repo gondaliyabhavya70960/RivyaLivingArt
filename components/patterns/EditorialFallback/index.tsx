@@ -86,7 +86,7 @@ export function EditorialFallback({
                       asset={tile.asset}
                       ratio="4:5"
                       preset="card"
-                      sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                      sizes="(min-width: 1024px) 33vw, (min-width: 430px) 50vw, 100vw"
                       altOverride={tile.altOverride}
                       strings={strings}
                       cloudName={cloudName}

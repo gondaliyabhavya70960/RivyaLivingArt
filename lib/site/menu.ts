@@ -1,5 +1,7 @@
 import type { NavigationItem } from '@/lib/supabase/schemas'
 
+import { resolveInternalTarget } from './resolve-target'
+
 /**
  * `navigation_items` rows into the two shapes the chrome renders.
  *
@@ -76,8 +78,12 @@ function toItem(row: NavigationItem, children: readonly MenuItem[]): MenuItem {
  * renderer can display, and the failure would appear as a silently missing third level rather than
  * as an error. A grandchild is dropped, which is visible in Studio's navigation screen.
  */
-export function buildMenu(rows: readonly NavigationItem[], menu: string): readonly MenuItem[] {
-  const items = visible(rows, menu)
+export function buildMenu(
+  rows: readonly NavigationItem[],
+  menu: string,
+  livePaths?: ReadonlySet<string>,
+): readonly MenuItem[] {
+  const items = visible(rows, menu).filter((row) => reachable(row, livePaths))
   const byParent = new Map<string, NavigationItem[]>()
   for (const row of items) {
     if (row.parent_id === null) continue
@@ -97,6 +103,46 @@ export function buildMenu(rows: readonly NavigationItem[], menu: string): readon
 }
 
 /**
+ * May this row be offered to a visitor?
+ *
+ * A SIGNPOST TO NOWHERE IS WORSE THAN NO SIGNPOST — Phase 45, and this is the one place in the
+ * product where the rule differs from the rule for a page body.
+ *
+ * `resolveInternalTarget` renders a card or a call to action whose destination is not live as TEXT,
+ * because that content has copy of its own — a title, a description, sometimes a picture — which is
+ * still true when the destination is not ready, and deleting an editor's words over a URL would be
+ * the worse failure. A navigation item has no copy: its entire payload IS the destination.
+ * "Furniture" as an inert span in a mega menu informs nobody, is correctly not focusable and so
+ * cannot be reached by keyboard at all, and reads as a disabled control with no explanation of what
+ * would enable it. So the chrome omits it. The `navigation_items` row is untouched and the item
+ * returns the moment its destination is live, exactly as a call to action does.
+ *
+ * WHAT THIS FIXES. Ten destinations in the published menus answered 404: the seven
+ * `/collection/<slug>` routes, whose `categories` rows are all DRAFT, and `/faq`, `/privacy` and
+ * `/terms`, whose `pages` rows are published with no published sections. The header, the mega menu,
+ * the mobile drawer and the footer all rendered them as anchors, because none of the four consulted
+ * the live set the chrome had already computed.
+ *
+ * WHY HERE AND NOT IN THE FOUR RENDERERS. `buildMenu` and `footerColumns` are the single pure
+ * transformation every chrome surface reads, so one filter covers all four and cannot be forgotten
+ * by a fifth surface added later. `NavLink` was the other candidate and is wrong: its own contract
+ * is that it carries no default styling and is never where menu appearance is decided, and a
+ * component that sometimes returns a `span` would silently change three call sites' layout.
+ *
+ * THE INERT HEADING IS DECIDED BEFORE THE LIVE CHECK. The seed writes `#` for a footer column
+ * heading that is not a destination; it is not a dead link and must survive, or all four footer
+ * headings vanish.
+ *
+ * OMITTING `livePaths` MEANS "DO NOT CHECK", which matches `SectionActions`. A caller with no
+ * oracle — a unit test, a Studio preview — gets the unfiltered menu rather than an empty one.
+ */
+function reachable(row: NavigationItem, livePaths?: ReadonlySet<string>): boolean {
+  if (livePaths === undefined) return true
+  if (row.href.trim() === INERT_HREF) return true
+  return resolveInternalTarget(row.href, livePaths) !== null
+}
+
+/**
  * The footer's columns (SEED §24).
  *
  * A column is a top-level FOOTER row; its links are that row's children. A top-level row with a
@@ -104,11 +150,28 @@ export function buildMenu(rows: readonly NavigationItem[], menu: string): readon
  * produce one, but an editor can, and dropping it would make an item they added disappear with no
  * explanation.
  */
-export function footerColumns(rows: readonly NavigationItem[]): readonly FooterColumn[] {
-  return buildMenu(rows, 'FOOTER').map((item) => ({
-    id: item.id,
-    heading: item.label,
-    href: item.href.trim() === INERT_HREF ? null : item.href,
-    links: item.children,
-  }))
+export function footerColumns(
+  rows: readonly NavigationItem[],
+  livePaths?: ReadonlySet<string>,
+): readonly FooterColumn[] {
+  /*
+   * A COLUMN THAT HAD LINKS AND LOST ALL OF THEM RENDERS NOTHING — but a column that never had any
+   * is kept, and the distinction is load-bearing. `SiteFooter` identifies the contact column as
+   * "the column with no links": its heading is a `navigation_items` row, its content comes from
+   * `chrome.contact`, and a rule phrased as "drop empty columns" would delete it.
+   */
+  const hadLinks = new Set(
+    buildMenu(rows, 'FOOTER')
+      .filter((item) => item.children.length > 0)
+      .map((item) => item.id),
+  )
+
+  return buildMenu(rows, 'FOOTER', livePaths)
+    .filter((item) => item.children.length > 0 || !hadLinks.has(item.id))
+    .map((item) => ({
+      id: item.id,
+      heading: item.label,
+      href: item.href.trim() === INERT_HREF ? null : item.href,
+      links: item.children,
+    }))
 }

@@ -2,8 +2,8 @@
 doc: TESTING
 status: CURRENT
 owning_phase: 42
-last_reviewed: 2026-09-11
-owner_verification: NOT_REQUIRED
+last_reviewed: 2026-09-12
+owner_verification: OWNER_VERIFICATION_REQUIRED
 ---
 
 # TESTING — the QA system
@@ -500,3 +500,186 @@ is 33 rather than 45.
 **Neither deployment drill has been run.** `docs/ops/DEPLOYMENT.md` §11.1 says so and says why.
 
 **No load test, no cross-browser run beyond Chromium.** Out of scope above, and still true.
+
+---
+
+## 14. The unaided walkthrough
+
+§13 lists what this suite cannot see. This section is what is done about the part of that list no
+suite ever reaches: whether a person who has never been told anything can use the site, and whether
+the owner can run it without us. Phase 42 owns this document; Phase 45 owns this section
+(`docs/project/phases/PHASE-39-46.md` §45) and it answers FEAT §49 questions 5 and 8, whose verdict
+rows live in `docs/design/DESIGN_SYSTEM.md` §19.1.
+
+**It is one instrument used twice.** A person who has not been briefed, a fixed list of tasks read
+verbatim, a completion count, a clock, and their own words written down. §14.2 points it at a
+visitor and §14.3 points it at the owner. Both are recorded in the same shape in §14.4, because the
+two failures they detect are the same failure: something obvious to the people who built it and
+invisible to everybody else.
+
+**Nobody who has seen this site may be a participant**, and that includes everyone who has read a
+line of this repository. There are three or four such people available to this project in total and
+each is usable exactly once, which is why §14.1 refuses to run a session the site cannot yet
+support: a wasted participant cannot be recovered.
+
+### 14.1 What "unaided" means, and what must be true before a session runs
+
+**The facilitator may say four things and nothing else.** The task, read verbatim. The task again,
+read verbatim, if asked. "Whatever you'd normally do." And "That's the end of that one." Any fifth
+utterance — a nudge, a hint, a confirming noise at the moment the participant hovers the right
+thing — ends the task as **aided**, and aided is recorded as not completed. Write down the fifth
+utterance; a facilitator who cannot stop themselves is data about the task's wording.
+
+**Think aloud, but no interview during the task.** Ask the participant to say what they are looking
+for as they go. Questions come afterwards, because a question asked mid-task is a hint.
+
+**Never change anything during a session**, including the obvious one-word copy fix that would
+plainly have saved the participant. It goes on the list; the next participant meets the same site,
+or the three sessions cannot be compared with each other.
+
+**Preconditions, checked before the participant arrives.** A session run against a site that cannot
+support a task measures a content gap and burns a participant.
+
+| Must be true | Checked by |
+|---|---|
+| The site is the deployed one, not a development server | The absence of the dev-tools indicator; `EnvironmentRibbon` names the environment and renders nothing on production |
+| The database is the real one, never the test fixture | No title beginning "Fixture"; §2 explains why the fixture's invented prices and enquirer names may not be shown to a stranger |
+| At least one product is published and reachable from a page a visitor can land on | Open `/` and the site's own search; a product reachable only by typing its URL does not satisfy task W2 |
+| The conversion path saves | `npx playwright test tests/e2e/inquiry-conversion.spec.ts` green in both directions on the deployed revision |
+| The enquiry hygiene rules below are in place | A designated test identity and the studio's **test** WhatsApp number; a named person who will erase the rows afterwards |
+
+**A preview deployment reads and writes production data** (`docs/ops/DEPLOYMENT.md` §1.1: there is
+no technical stop). Every enquiry a participant submits is a real row in `inquiries`. So: the
+participant never types their own telephone number or email, the designated test identity is written
+on the task card, and the rows are erased at `/studio/inquiries/all/<id>` by the named person on the
+same day. This is the rule §10's release checklist states for the WhatsApp handoff, applied to a
+room with strangers in it.
+
+**Run §14.3 before §14.2.** The owner's ten operations publish and correct the content the
+walkthrough needs; running the walkthrough first tests a site the owner was about to change.
+
+### 14.2 Question 5 — the five tasks
+
+Each task is read to the participant **exactly as written**. A task names an intention and never a
+route, a menu label or a button, because naming the thing is the instruction the task exists to
+manage without. The success condition is what the facilitator watches for; the participant is never
+told it.
+
+| # | Read this, verbatim | Completed when | Cap | What it is really testing |
+|---|---|---|---|---|
+| W1 | "Show me the biggest thing this studio makes." | They reach the large-format surface and describe, in their own words, one thing that makes those pieces different from the rest | 3 min | Whether scale is the site's first idea or a page you have to look for |
+| W2 | "Pick one piece you like, and tell me what it's made of and roughly how big it is." | They reach one piece's own page and read a material and one dimension off it without being shown where | 3 min | Whether a single piece is discoverable at all, and whether its specification is legible once found |
+| W3 | "You want something made to your own brief. Start that conversation with the studio." | They submit an enquiry and the confirmation shows them a reference code. They are **not** asked to send a WhatsApp message from their own number | 5 min | The conversion path from a cold start — the one business rule this project has |
+| W4 | "How would a piece like that actually get made? Tell me two of the steps, in order." | They reach the process surface and name two steps in the right order | 3 min | Whether the making is communicated or merely illustrated |
+| W5 | "Has this studio made anything for anyone before? Tell me what you found." | They reach the portfolio surface **and** read its empty state as "not published yet" rather than as "they have never made anything" | 3 min | The dignity of an empty state (SEED §28) — the one place where a polish failure becomes a business claim |
+
+**The threshold. A participant passes when four of the five tasks are completed unaided, and
+question 5 passes when at least three first-time participants each pass.** This sentence is the only
+place that number appears; `DESIGN_SYSTEM.md` §19.1 cites this section rather than restating it, for
+the same reason a token has one home. Three participants is a floor and not a sample: it is enough
+to tell a task nobody can do from a task one person found hard, and no more than that is claimed.
+
+**Five minutes for W3 and three for the rest**, because W3 includes typing into a form and the
+others are navigation. A task still running at its cap is stopped and recorded `ABANDONED`, which
+counts as not completed. Stop it: letting it run to seven minutes to be kind produces a number that
+means nothing and a participant who feels tested.
+
+**One device per participant, not two.** Five tasks on a laptop and then the same five on a phone is
+a second walkthrough by someone who is no longer a first-time visitor. Across the three
+participants, at least one session is on a phone at 430 px or narrower and at least one on a desktop
+at 1280 px or wider, and §14.4 records each session's viewport width.
+
+**W2 is the fragile one, for a reason outside this document.** A visitor's routes into a single
+piece today are the home page's own selections and the site's search, because the seven category
+routes return "not found" (`DESIGN_SYSTEM.md` §19.5). If the precondition in §14.1 cannot be met the
+walkthrough is not run at all, and question 5 keeps its `OWNER_VERIFICATION_REQUIRED` verdict with
+the blocker named in its Evidence cell. Running four tasks and reporting "4 of 4" would be the most
+flattering number in this document and the least true.
+
+### 14.3 Question 8 — the owner's ten operations
+
+The owner performs these alone, observed and timed, with nobody touching the keyboard and nobody
+narrating. Every one is a thing the owner will actually do in a normal month; each names the Studio
+path, the field it touches, how to confirm it worked on the public site, and how to put it back.
+**The confirmation column is the operation.** An edit saved in the Studio that nobody checked on the
+site is a Studio test, not a capability test.
+
+Two standing warnings. **This writes to real data** — `docs/ops/DEPLOYMENT.md` §1.1 again — so the
+reversal column is not optional and the owner writes down what they reversed. And a copy change made
+here is subject to the same rules as any other: a new sentence asserting a capability is flagged
+`OWNER_VERIFICATION_REQUIRED` and cannot publish until the owner clears it, which is itself worth
+discovering during this exercise.
+
+| # | Operation | Studio path | Field it touches | Confirm | Put it back |
+|---|---|---|---|---|---|
+| O1 | Change a headline and a button label on the home page, and publish them | `/studio/content/pages` → Home → the hero section | `heading`, `cta_label`, then the ladder DRAFT → REVIEW → APPROVED → PUBLISHED | The new words on `/` | Edit and publish again |
+| O2 | Replace the phone image in that hero and write its alternative text | the same section | `media_mobile_id`, `media_alt_override` | `/` on a phone, or a 390 px window | Re-pick the previous asset |
+| O3 | Rearrange a page: move one section above another, hide a third, then restore it | `/studio/content/pages` → Large Format → the section board | section order and `is_visible` | The order and the missing band on `/large-format` | The same two controls |
+| O4 | Create a piece and publish it | `/studio/catalog/products/new`, then its Specifications, Materials and Media tabs | `title`, `slug`, `price_state`, specifications, bound media, then Publish once the readiness checklist is clear | `/product/<slug>` opens and shows what you entered | Unpublish |
+| O5 | Rename a navigation item and hide another | `/studio/content/navigation` | `label`, `is_visible` | The header and the mega menu at 1440 and at 390 | The same two fields |
+| O6 | Schedule a journal article for next week, then bring it forward to today | `/studio/content/journal/<id>` | `published_at` | Absent from `/journal`, then present | Set the date back |
+| O7 | Change one route's search-result title and description | `/studio/content/seo` → Pages → that route | `title`, `description`, then the entry's `status` | The preview panel, then the browser tab on the live route | Clear the override |
+| O8 | Answer an enquiry: set its stage, assign it, add a note, open the WhatsApp handoff | `/studio/inquiries/all/<id>` | `pipeline_status`, `assigned_to`, `note` | The enquiry has moved column in the inbox | Set the stage back; a note is permanent by design |
+| O9 | Fix an image's alternative text from the queue | `/studio/media/all` → the alt-text queue → `/studio/media/all/<id>` | `alt_text`, or `is_decorative` where the image carries no meaning | The `alt` on the page that uses it | Re-edit |
+| O10 | Give a hero image a phone crop | `/studio/media/all/<id>` → the crop panel | crop ratio, focal gravity, and the note saying why | The tighter crop on `/` at 390 px — **see the note below; this one is expected to fail its confirmation** | Delete the crop |
+
+**Three things the capability table promises that are not among these ten, because no control
+exists today.** They are part of question 8's verdict, not an omission from it, and ten of ten does
+not mean the capability boundary is true.
+
+| Promised | The truth today | Consequence |
+|---|---|---|
+| Publish a category, so its route exists | `saveCategoryAction` writes name, subtitle, description, order, hero image and the two SEO fields, and never `status`. There is no `publishCategoryAction` in the repository | All seven categories stay `DRAFT` and their routes 404 until an engineer adds the control |
+| Edit FAQs, empty-state copy and form error messages | `/studio/content/faqs` is a route stub whose own comment says Phase 08 replaces it, and `faq-list` is a PLANNED block, so a published FAQ page would render nothing | `/faq` cannot be fixed by an editor |
+| Change contact details, the WhatsApp number and the message templates | `/studio/system/settings` is a route stub whose own comment says Phase 20 replaces it | The WhatsApp number is an engineer change today, which is the single most surprising thing on this list for an owner |
+
+**O10 will save and will not show.** The crop panel writes a `media_crops` row and no public
+renderer reads one, so the owner will do everything right and see nothing change. It is left in the
+ten deliberately: an operation that appears to work and does not is the most expensive kind of
+capability gap, and question 8 should discover it rather than have it explained away beforehand.
+
+Feature flags and staff users are absent from the ten for the opposite reason: they work, but they
+change nothing a visitor can see, so they belong in the runbooks rather than in a test of whether
+the site can be run without us.
+
+### 14.4 The record
+
+One block per session, appended below, oldest first. Nothing is summarised away and nothing is
+tidied: this is the only place in the repository where a stranger's words about this site are
+written down.
+
+**No example row is provided.** An illustrative participant and an invented quote, in a record whose
+whole value is that its quotes are real, become indistinguishable from a real one the moment
+somebody deletes the brackets — so the form is described and the table starts empty.
+
+**Participants.** `P1`, `P2`, `P3`, in the order they sat down. No name, no email, no telephone
+number, ever — the rule the rest of this project applies to an enquirer, applied to a volunteer. One
+line each: whether they have ever bought furniture of this kind, their device and its viewport width
+in pixels, and the date. Nothing else about them is relevant and nothing else is recorded.
+
+**Results.** One row per participant, one column per task, each cell exactly one of `DONE`, `AIDED`,
+`ABANDONED` or `—` (not attempted), plus the seconds elapsed from the end of the task being read to
+the success condition or the cap.
+
+| Participant | Device · width | W1 | W2 | W3 | W4 | W5 | Passed (of 5) |
+|---|---|---|---|---|---|---|---|
+
+**Times.** Whole seconds. A slow success is a finding and a fast abandonment is a worse one, so the
+number is kept even where the outcome is `DONE`.
+
+**Verbatim quotes.** Transcribed as said, including the hesitations, the wrong word for the thing,
+and the sentence that is unflattering. Never paraphrased, never tidied, never shortened to the half
+that agrees with the reviewer. Attributed to `P1`/`P2`/`P3` and to the task they were said during. A
+quote naming a person, a price, or anything identifying the participant is not recorded at all.
+Where three participants said close to the same thing, all three are written down: the repetition is
+the evidence.
+
+**The owner's ten.** One block in the same place: the date, ten of ten or the count, and for each
+operation not completed, precisely where it stopped and what it needed — a field that was not there,
+a control that refused, a word in the Studio that meant something else to the owner than it does to
+us. An operation completed only after a question was answered is recorded as needing help, with the
+question written down verbatim, because the question is the documentation defect.
+
+**Then the two verdicts go home.** `DESIGN_SYSTEM.md` §19.1 rows 5 and 8 are filled by the owner
+from this record, with their name and the date, and this document's front-matter
+`owner_verification` returns to `NOT_REQUIRED` only when no row here is outstanding.

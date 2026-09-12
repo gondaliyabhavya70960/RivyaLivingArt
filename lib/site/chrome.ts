@@ -17,6 +17,7 @@ import type { Category, MediaAsset } from '@/lib/supabase/schemas'
 import { contactDetailsOf, type ContactDetails } from './contact-details'
 import { announcementFrom, type Announcement } from './announcement'
 import { buildMenu, footerColumns, type FooterColumn, type MenuItem } from './menu'
+import { livePathsFrom } from './live-paths'
 
 /**
  * Everything the site chrome needs, fetched once per request.
@@ -106,17 +107,29 @@ async function loadSiteChrome(): Promise<SiteChrome> {
 
   const strings = siteStrings(globalRows)
 
+  /*
+   * THE ORACLE IS COMPOSED BEFORE THE MENUS ARE BUILT, because the menus now consult it — Phase 45.
+   *
+   * `publicPaths` alone was wrong for the seven `/collection/<slug>` paths: each has a published
+   * `pages` row, and the route still 404s while its `categories` row is DRAFT. See
+   * `lib/site/live-paths.ts` for why the two gates cannot be one query.
+   */
+  const livePaths = livePathsFrom(
+    publicPaths.map((page) => page.path),
+    categories.map((category) => category.slug),
+  )
+
   return {
     announcement: announcementFrom(globalRows),
-    header: buildMenu(navRows, 'HEADER'),
-    mobile: buildMenu(navRows, 'MOBILE'),
-    footer: footerColumns(navRows),
+    header: buildMenu(navRows, 'HEADER', livePaths),
+    mobile: buildMenu(navRows, 'MOBILE', livePaths),
+    footer: footerColumns(navRows, livePaths),
     strings,
     categories,
     categoryMedia,
     contact: contactDetailsOf(contactSection),
     contactVerified: contactSection?.owner_verification === 'VERIFIED',
-    livePaths: new Set(publicPaths.map((page) => page.path)),
+    livePaths,
   }
 }
 
