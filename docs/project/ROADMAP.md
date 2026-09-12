@@ -93,7 +93,7 @@ Update CHANGELOG · PROJECT_STATE · SESSION-STATE · the domain docs the change
 | **43** | Media Coverage + Higgsfield Finalization | **DEVELOPMENT COMPLETE** — tests deferred to Phase 42 | Phase 06, 07`, `content/media-slots.ts`… | [`PHASE-39-46.md`](phases/PHASE-39-46.md) |
 | **44** | Vercel Deployment | **DEVELOPMENT COMPLETE** — drills NOT RUN, tests deferred to Phase 42 | Phase 00, 01, 03, 04, 25, 38, 39–43, 41, 42 | [`PHASE-39-46.md`](phases/PHASE-39-46.md) |
 | **45** | Final Creative Polish | **PARTIAL** — the audit is run and recorded; three questions are the owner's and are outstanding | Phase 02, 11–22, 39, 40, 41, 42, 43, 44 | [`PHASE-39-46.md`](phases/PHASE-39-46.md) |
-| **46** | Documentation + Handoff | **PLANNED** | Phase 01, 38, 39–45, 44… | [`PHASE-39-46.md`](phases/PHASE-39-46.md) |
+| **46** | Documentation + Handoff | **PARTIAL** — the gates, the generated verification backlog and the documentation set are done; the capability-boundary dry run, the handover session, the runbook screenshots and the 42-row backlog are the owner’s | Phase 01, 38, 39–45, 44… | [`PHASE-39-46.md`](phases/PHASE-39-46.md) |
 
 ## Execution order
 
