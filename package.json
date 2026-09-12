@@ -43,6 +43,7 @@
     "auth:gen-policies": "tsx scripts/auth/gen-role-sql.ts",
     "auth:check-policies": "tsx scripts/auth/gen-role-sql.ts --check",
     "auth:check-rls": "tsx scripts/auth/check-rls.ts",
+    "auth:create-user": "tsx scripts/auth/create-staff-user.ts",
     "cms:gen-transitions": "tsx scripts/cms/gen-transition-sql.ts",
     "cms:check-transitions": "tsx scripts/cms/gen-transition-sql.ts --check",
     "cms:check-copy": "tsx scripts/cms/check-section-copy.ts",

@@ -101,6 +101,73 @@ Because the login page renders before a session exists, its three strings are re
 anonymous `global_content` policy (`status = 'PUBLISHED'` and `is_enabled`). They are Studio chrome,
 not business facts, and carry `fact_classification = 'BRAND_COPY'`.
 
+### 2.1.1 Creating accounts — the bootstrap, and the one failure to recognise
+
+§2.1 describes the steady state: staff exist because an owner or admin invited them at
+`/studio/system/users`. That leaves one account with nowhere to come from — **the first owner**,
+because the invite path needs a signed-in owner or admin to walk it. This is how that account is
+made, and it is the only account made this way.
+
+**Never write `auth.users` by hand.** GoTrue owns that table. It scans `confirmation_token`,
+`recovery_token`, `email_change` and `email_change_token_new` into non-nullable Go strings, so a row
+that leaves any of them `NULL` fails the scan and the auth service errors **before it compares a
+password**. The login form renders that as *"Those sign-in details were not accepted."* — bad
+credentials, about an account whose credentials are perfectly good. This cost hours on 2026-09-12: the
+bcrypt hash was correct and verified, and the account still could not sign in. If sign-in is refused
+for an account that looks complete, check for `NULL` in those four columns first; the repair is to set
+them to the empty string, never to `NULL`.
+
+#### The supported paths
+
+**A — the script** (preferred, and reproducible for a fresh environment):
+
+```
+STAFF_PASSWORD=… npm run auth:create-user -- --email=<address> --role=owner
+```
+
+`scripts/auth/create-staff-user.ts` calls `auth.admin.createUser({ email_confirm: true })`, which is
+the only API that sets every column GoTrue expects. It then moves the profile the
+`on_auth_user_created` trigger already created — `INVITED` / `viewer` — to the requested role and to
+`ACTIVE`, through the staff repository like every other write. It refuses to mint a second owner when
+an `ACTIVE` one exists unless given `--force`, and it **refuses a password passed as `--password=`**:
+a secret in `argv` is in the shell history and in the process table. Pass it in `STAFF_PASSWORD` or
+let the script prompt.
+
+**B — the Supabase dashboard**, when there is no checkout to run the script from:
+
+1. **Authentication → Users → Add user → Create new user.**
+2. Tick **Auto Confirm User**. Without it `email_confirmed_at` stays null and sign-in refuses.
+3. The trigger creates the profile as `INVITED` / `viewer`. Elevate it — the one step the dashboard
+   cannot do:
+
+```sql
+update public.staff_profiles
+   set role = 'owner',     -- owner · admin · editor · merchandiser · researcher · viewer
+       status = 'ACTIVE'   -- getStaffSession() admits ACTIVE only
+ where email = '<address>';
+```
+
+Both fields are required: `lib/auth/session.ts` resolves any non-`ACTIVE` profile to `null`, and so
+does every database policy.
+
+#### Where each job belongs
+
+| Job | Where |
+|---|---|
+| The first owner | This section — script A, or dashboard B |
+| Every subsequent account | `/studio/system/users` — permission-checked and audited |
+| Role change, suspend, reactivate | `/studio/system/users` |
+| Password reset | Supabase dashboard → Authentication → Users |
+
+`enforce_last_owner` (migration 0009) refuses to demote, suspend or delete the final owner, at the
+database rather than in the server action — so a script, a `psql` session and the service-role client
+are all held to it too. You cannot lock yourself out of the project by mistake.
+
+> **Deployment note.** Public sign-up must be **off** — Supabase → Authentication → Providers → Email
+> → *Enable sign ups*. Migration 0009's comment states that invitation is the only route to an
+> account; that claim is only true of a deployment where this is actually disabled, and it cannot be
+> set from SQL.
+
 ### 2.2 The six roles
 
 D5 fixes the role list. One role per user, stored on `staff_profiles.role`.
