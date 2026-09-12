@@ -22,20 +22,34 @@ const DESKTOP = ['w1920', 'w1440', 'w1280']
 const MOBILE = ['w430', 'w390', 'w360']
 
 test.describe('the mega menu', () => {
+  /*
+   * THE PANEL EXISTS ONLY WHILE A CATEGORY IS LIVE — Phase 45.
+   *
+   * `SiteHeader` renders a nav item with no children as a plain link rather than a mega-menu
+   * trigger, and Phase 45 made the chrome omit a destination that does not resolve. Every
+   * `categories` row is DRAFT today, so Collection has no children and there is no panel to drive.
+   * That is the correct rendering — a signpost to nowhere is worse than no signpost — and the
+   * honest thing for this block is to skip with the reason stated rather than to find some other
+   * control carrying `aria-expanded` and assert the keyboard model against that.
+   */
   test.beforeEach(async ({ page }, testInfo) => {
     test.skip(!DESKTOP.includes(testInfo.project.name), 'desktop widths only')
     await page.goto(PAGE)
+    test.skip(
+      (await page.locator('[data-megamenu] button[aria-expanded]').count()) === 0,
+      'no category is live, so the header renders Collection as a plain link and no panel exists',
+    )
   })
 
   test('the trigger is a button with aria-expanded', async ({ page }) => {
-    const trigger = page.locator('header button[aria-expanded]:visible').first()
+    const trigger = page.locator('[data-megamenu] button[aria-expanded]:visible').first()
     await expect(trigger).toBeVisible()
     await expect(trigger).toHaveAttribute('aria-expanded', 'false')
     await expect(trigger).toHaveAttribute('aria-controls', /.+/u)
   })
 
   test('Enter opens the panel', async ({ page }) => {
-    const trigger = page.locator('header button[aria-expanded]:visible').first()
+    const trigger = page.locator('[data-megamenu] button[aria-expanded]:visible').first()
     await trigger.focus()
     await page.keyboard.press('Enter')
     await expect(trigger).toHaveAttribute('aria-expanded', 'true')
@@ -45,7 +59,7 @@ test.describe('the mega menu', () => {
   })
 
   test('ArrowDown opens the panel and moves focus into it', async ({ page }) => {
-    const trigger = page.locator('header button[aria-expanded]:visible').first()
+    const trigger = page.locator('[data-megamenu] button[aria-expanded]:visible').first()
     await trigger.focus()
     await page.keyboard.press('ArrowDown')
 
@@ -60,7 +74,7 @@ test.describe('the mega menu', () => {
   })
 
   test('Escape closes the panel and returns focus to the trigger', async ({ page }) => {
-    const trigger = page.locator('header button[aria-expanded]:visible').first()
+    const trigger = page.locator('[data-megamenu] button[aria-expanded]:visible').first()
     await trigger.focus()
     await page.keyboard.press('ArrowDown')
     await page.keyboard.press('Escape')
@@ -89,7 +103,7 @@ test.describe('the mega menu', () => {
      * panel that fetched its categories would ask for a route handler, an API path or its own
      * page's payload, and none of those is a link on the page.
      */
-    const trigger = page.locator('header button[aria-expanded]:visible').first()
+    const trigger = page.locator('[data-megamenu] button[aria-expanded]:visible').first()
     const requests: string[] = []
     page.on('request', (request) => {
       if (request.resourceType() === 'fetch' || request.resourceType() === 'xhr') {
@@ -119,10 +133,56 @@ test.describe('the mega menu', () => {
   })
 
   test('the panel is a named landmark', async ({ page }) => {
-    const trigger = page.locator('header button[aria-expanded]:visible').first()
+    const trigger = page.locator('[data-megamenu] button[aria-expanded]:visible').first()
     const panelId = await trigger.getAttribute('aria-controls')
     // `aria-label` on a plain div does nothing; the panel is a <nav> so the name is real.
     await expect(page.locator(`nav#${panelId}`)).toHaveCount(1)
+  })
+})
+
+test.describe('the chrome offers no dead link', () => {
+  /*
+   * THE HOLE THIS CLOSES — Phase 45.
+   *
+   * Ten destinations in the published menus answered 404: the seven `/collection/<slug>` routes,
+   * whose `categories` rows are all DRAFT, and `/faq`, `/privacy` and `/terms`, whose `pages` rows
+   * are published with no published sections. The header, the mega menu, the mobile drawer and the
+   * footer rendered every one of them as an anchor, on every page of the site.
+   *
+   * Nothing could have caught it. The block above counts seven category links in the panel and
+   * asserts nothing about whether they resolve; `resolveInternalTarget` existed to prevent exactly
+   * this and the chrome never called it; and `livePaths`, the oracle it consults, was built from
+   * `pages` alone and so was wrong about the seven most important destinations on the site.
+   *
+   * IT ASSERTS ON THE CHROME AND NOT ON A PAGE BODY, because the two have different rules: a card
+   * whose destination is not live renders as text and keeps the editor's words, while a navigation
+   * item — whose entire payload IS the destination — is omitted. This is the chrome's rule, tested
+   * where the chrome is tested, once, rather than on each of a dozen routes that all carry it.
+   */
+  test('every destination it offers resolves', async ({ page }) => {
+    await page.goto(PAGE)
+
+    // Open the panel if there is one: its links are in the document either way, but reading them
+    // after opening keeps this correct if the panel ever becomes an unmount rather than `hidden`.
+    const trigger = page.locator('[data-megamenu] button[aria-expanded]:visible').first()
+    if ((await trigger.count()) > 0) await trigger.click()
+
+    const hrefs = [
+      ...new Set(
+        await page
+          .locator('header a[href^="/"], footer a[href^="/"], [role="dialog"] a[href^="/"]')
+          .evaluateAll((nodes) => nodes.map((node) => node.getAttribute('href') ?? '')),
+      ),
+    ].filter((href) => href !== '' && !href.startsWith('/#'))
+
+    expect(hrefs.length, 'the chrome offers no internal links at all').toBeGreaterThan(0)
+
+    const dead: string[] = []
+    for (const href of hrefs) {
+      const response = await page.request.get(href)
+      if (response.status() !== 200) dead.push(`${href} → ${String(response.status())}`)
+    }
+    expect(dead, 'the chrome links to a destination that does not render').toEqual([])
   })
 })
 
@@ -179,8 +239,18 @@ test.describe('axe', () => {
      * width — the desktop nav is `hidden lg:block`, the drawer trigger is `lg:hidden` — so a plain
      * `.first()` picks the desktop one in DOM order and then waits five seconds for an element CSS
      * has hidden. The visible one is the one this width actually offers.
+     *
+     * NOT SCOPED TO `[data-megamenu]`, unlike every other locator in this file, and deliberately:
+     * this test wants whichever disclosure the width offers, and at 390 that is the drawer, which
+     * is not a mega menu. It skips rather than retargets when the width offers neither — with every
+     * category DRAFT the desktop header has no panel at all (Phase 45), and clicking some other
+     * control carrying `aria-expanded` would sweep a page this test was never pointed at.
      */
     const trigger = page.locator('header button[aria-expanded]:visible').first()
+    test.skip(
+      (await trigger.count()) === 0,
+      'this width offers no chrome disclosure to open — see the mega menu block',
+    )
     await trigger.click()
 
     const results = await new AxeBuilder({ page })

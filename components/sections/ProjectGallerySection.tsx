@@ -67,7 +67,7 @@ export function ProjectGallerySection({
                       asset={item.asset}
                       ratio="4:5"
                       preset="hero"
-                      sizes="(min-width: 640px) 50vw, 100vw"
+                      sizes="(min-width: 430px) 50vw, 100vw"
                       altOverride={item.altOverride}
                       strings={strings}
                       cloudName={cloudName}

@@ -12,6 +12,7 @@ import { deriveEntitySeo } from '@/lib/seo/resolve'
 import { createPublicClient } from '@/lib/supabase/public'
 import { NotFoundError } from '@/lib/supabase/errors'
 import { getCategoryBySlug, listCategories } from '@/lib/supabase/repositories/journal'
+import { Container } from '@/components/primitives/Container'
 
 /**
  * `/journal/category/[slug]` — one category's articles.
@@ -101,18 +102,27 @@ export default async function JournalCategoryPage({
     categoryId: category.id,
   })
 
+  /*
+   * `rv-container` WAS NOT A CLASS — Phase 45, found by the token-usage audit. It looked like a
+   * utility, matched nothing in the `@theme` bridge and produced NO CSS, so this surface rendered
+   * full-bleed with no gutter and no measure at every width. `check-utilities.mjs` catches a
+   * Tailwind candidate that resolves to nothing; a bare class name is not a candidate, so nothing
+   * caught it. §5.3 keeps the measure and the gutter in `Container`, and this asks for them there.
+   */
   return (
     <>
-      <Stack gap={4} className="rv-container pt-16">
-        <Heading level={1} size="display-md">
-          {category.intro_heading ?? category.name}
-        </Heading>
-        {category.description === null ? null : (
-          <Text size="lg" tone="secondary">
-            {category.description}
-          </Text>
-        )}
-      </Stack>
+      <Container>
+        <Stack gap={4} className="pt-16">
+          <Heading level={1} size="display-md">
+            {category.intro_heading ?? category.name}
+          </Heading>
+          {category.description === null ? null : (
+            <Text size="lg" tone="secondary">
+              {category.description}
+            </Text>
+          )}
+        </Stack>
+      </Container>
       <JournalListingView
         listing={listing}
         basePath={pathFor(slug)}

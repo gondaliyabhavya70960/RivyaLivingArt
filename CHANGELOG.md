@@ -6,6 +6,66 @@ Every phase adds an entry; see `docs/architecture/CANONICAL-DECISIONS.md` D9 for
 
 ## [Unreleased]
 
+### Phase 45 — Final Creative Polish (PARTIAL — 2026-09-12)
+
+The audit FEAT §49 asks for, run properly and recorded where it can be read. Nine dimensions
+examined; **every one returned FAIL**. Three of the eight questions are the owner's and are left
+visibly outstanding rather than answered by the people who built the thing.
+
+**It found two outright bugs nobody could have seen.** Every product card's hover transition had no
+duration — `duration-(--rv-motion-medium)` names a token that does not exist, and `duration-(--var)`
+is valid syntax whatever the variable resolves to, so both design gates passed it. And three journal
+surfaces had no container at all: `className="rv-container"` is not a utility and produced no CSS,
+so they rendered full-bleed at every width.
+
+**And one systemic one.** Seventeen `sizes` strings across fifteen files declared a
+`(min-width: 640px)` switch this design system does not have — `sm` is 430px here — so the browser
+was told the layout changes 210px from where it does, and fetched the wrong derivative on the
+catalogue card, the article card, the category grid and twelve more.
+
+**The chrome offered ten destinations that answered 404**: the seven `/collection/<slug>` routes,
+whose `categories` rows are all DRAFT, and `/faq`, `/privacy` and `/terms`, whose published `pages`
+rows have no published sections. `resolveInternalTarget` exists to prevent exactly that and the
+chrome never called it — and `livePaths`, the oracle it consults, was built from `pages` alone and
+so was wrong about the seven most important destinations on the site.
+
+#### Added
+
+- `docs/design/DESIGN_SYSTEM.md` §19 — the eight audit questions, their evidence, the verdict
+  vocabulary, who may write in which column, and the standing instruction to the owner for question 1
+- `docs/ops/TESTING.md` §14 — the five-task unaided walkthrough, the owner's ten Studio operations,
+  and the record's shape. Both documents' front matter now reads
+  `owner_verification: OWNER_VERIFICATION_REQUIRED`, which is the interlock that keeps the three
+  outstanding rows visible from outside the section
+- `lib/site/live-paths.ts` — composes the two gates a category listing passes, which one PostgREST
+  query cannot
+- `scripts/design/check-sizes-breakpoints.mjs` — every `(min-width: N)` in a `sizes` attribute must
+  name a declared breakpoint. In `npm run check`
+- Ten unit tests for the oracle and the menu filter, and an e2e assertion that every destination the
+  chrome offers resolves
+
+#### Fixed
+
+- `ProductCard`'s hover transition names a real duration, declares its easing, and has a
+  reduced-motion branch
+- The journal listing, the journal category page and the related-articles band use `Container`
+- All 17 `sizes` strings name 430px, the breakpoint the grids actually switch at
+- The header, mega menu, mobile drawer and footer omit a destination that does not resolve — 19
+  chrome destinations became 9, all of them 200
+
+#### Changed
+
+- `DESIGN_SYSTEM.md` §8.1 records the navigation exception: a dead target renders as text in a page
+  body and is **omitted** from the chrome, because a navigation item's entire payload is its
+  destination and a signpost to nowhere is worse than no signpost
+- `MegaMenu` carries `data-megamenu`, and `navigation-a11y.spec.ts` targets it. Without that the
+  panel's disappearance would have retargeted five tests onto the search box, where they would have
+  passed and proved nothing
+- `docs/project/ROADMAP.md` carries the Phase 45 backlog: the capability gaps the owner cannot
+  close, the four conversion affordances that do not exist, the composition changes held for their
+  own diff, and a cold-load CLS measurement that needs the deployed preview before anyone acts on it
+
+
 ### Phase 42 — Comprehensive Testing (2026-09-11)
 
 The test system the previous forty-one phases wrote specs against. One deterministic fixture, a

@@ -45,9 +45,9 @@ const COLUMN_CLASS: Record<CategoryGridPayload['columns'], string> = {
 }
 
 const CARD_SIZES: Record<CategoryGridPayload['columns'], string> = {
-  2: '(min-width: 640px) 50vw, 100vw',
-  3: '(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw',
-  4: '(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw',
+  2: '(min-width: 430px) 50vw, 100vw',
+  3: '(min-width: 1024px) 33vw, (min-width: 430px) 50vw, 100vw',
+  4: '(min-width: 1024px) 25vw, (min-width: 430px) 50vw, 100vw',
 }
 
 export function CategoryGridSection({

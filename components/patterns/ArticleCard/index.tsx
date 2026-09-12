@@ -189,7 +189,7 @@ export function ArticleCardGrid({
               ? null
               : (categoryNames.get(article.primary_category_id) ?? null)
           }
-          sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 96px"
+          sizes="(min-width: 1024px) 33vw, (min-width: 430px) 50vw, 96px"
           headingLevel={headingLevel}
           strings={strings}
           cloudName={cloudName}

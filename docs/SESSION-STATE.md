@@ -7,8 +7,48 @@
 ---
 
 ## Current Phase
-**Phase 42 — Comprehensive Testing. COMPLETE.** The test system the previous forty-one phases wrote
-specs against: one deterministic fixture, a browser suite that actually runs, a visual tier,
+**Phase 45 — Final Creative Polish. PARTIAL.** The audit FEAT §49 asks for has been run and
+recorded: `docs/design/DESIGN_SYSTEM.md` §19 holds all eight questions, and `docs/ops/TESTING.md`
+§14 holds the five-task walkthrough and the owner's ten Studio operations. Nine dimensions were
+examined and **every one returned FAIL**.
+
+**Three questions are the owner's and are outstanding**, deliberately: question 1 ("does it feel
+like a collectible-design studio?"), question 5 (the walkthrough, which needs three first-time
+participants) and question 8 (the ten Studio operations). They carry `OWNER_VERIFICATION_REQUIRED`,
+both documents' front matter carries the same token, and the phase stays PARTIAL until the owner
+answers. Question 4 is recorded N/A: zero real models exist and the flag is off.
+
+### Phase 45: what the first PR fixed
+
+1. **Every product card's hover transition had no duration.** `duration-(--rv-motion-medium)` names
+   a token that does not exist — the `--rv-motion-*` family is rise/parallax/stagger — and
+   `duration-(--var)` is valid syntax whatever the variable resolves to, so `check-tokens.mjs` and
+   `check-utilities.mjs` both passed it.
+2. **Three journal surfaces had no container.** `className="rv-container"` is not a utility and
+   produced no CSS, so the listing, the category page and the related band rendered full-bleed.
+3. **Seventeen `sizes` strings declared a 640px breakpoint this system does not have** (`sm` is
+   430px), so the browser was told the layout changes 210px from where it does. New gate
+   `scripts/design/check-sizes-breakpoints.mjs` fails on any undeclared width.
+4. **The chrome offered ten destinations that answered 404** — seven DRAFT categories plus `/faq`,
+   `/privacy` and `/terms`. `lib/site/live-paths.ts` composes the gate the category route actually
+   applies, and `lib/site/menu.ts` omits what does not resolve. 19 chrome destinations became 9, all
+   200, asserted permanently in `navigation-a11y.spec.ts`.
+
+### Phase 45: what is deferred, and why
+
+`docs/project/ROADMAP.md` carries it with reasons. The largest items: four of the six conversion
+affordances do not exist (`QUOTE` and `CONSULTATION` are enum values with Studio inboxes that can
+never receive a row); the hero's share of the viewport runs 37–91% across the eight QA widths
+because it is aspect-driven rather than viewport-relative; section rhythm is uniform, with 26 of 28
+renderers at `lg` and two steps dead; `media_crops` is written by the Studio and read by no
+renderer; and a cold throttled load measures CLS 0.98–1.00 on `/collection`, which needs measuring
+on the deployed preview before anyone changes code for it.
+
+---
+
+## Previous phase — Phase 42 (Comprehensive Testing)
+
+**COMPLETE.** The test system the previous forty-one phases wrote specs against: one deterministic fixture, a browser suite that actually runs, a visual tier,
 coverage thresholds that mean something, and the CI to run all of it. Deferred by the owner's
 instruction until Phase 44's development had landed, then executed in full.
 

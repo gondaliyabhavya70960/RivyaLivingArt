@@ -2,8 +2,8 @@
 doc: DESIGN_SYSTEM
 status: CURRENT
 owning_phase: 02
-last_reviewed: 2026-09-07
-owner_verification: NOT_REQUIRED
+last_reviewed: 2026-09-12
+owner_verification: OWNER_VERIFICATION_REQUIRED
 ---
 
 # DESIGN SYSTEM — the one visual language
@@ -1134,6 +1134,24 @@ visitor between 1024 and 1279 reaches `/search` by URL or from a page that links
 `tests/e2e/search-combobox-a11y.spec.ts` asserts the field only at and above 1280 — which is the
 threshold it had always used, while its comment said `lg`.
 
+**A DESTINATION THAT IS NOT LIVE IS OMITTED FROM THE CHROME, AND RENDERS AS TEXT IN A PAGE BODY.**
+The two rules differ, and the difference is what the label is for. A card or a call to action has
+copy of its own — a title, a description, sometimes a picture — which is still true when the
+destination is unavailable, so `resolveInternalTarget` withdraws only the click and the editor's
+words stay on the page. A navigation item has no copy: its entire payload *is* the destination.
+"Furniture" as an inert span in a mega menu informs nobody, is correctly not focusable and so cannot
+be reached by keyboard at all, and reads as a disabled control with no explanation of what would
+enable it. A signpost to nowhere is worse than no signpost. Nothing is deleted — the
+`navigation_items` row is untouched and the item returns the moment its destination is live, exactly
+as a call to action does.
+
+The filter is applied once, in `lib/site/menu.ts`, which is the single pure transformation all four
+chrome surfaces read; the live set it consults is composed in `lib/site/live-paths.ts`, because a
+category listing has a second gate its `pages` row knows nothing about. Phase 45 added both after
+finding ten destinations in the published menus answering 404. Neither rendering is a WCAG failure,
+so axe cannot arbitrate this and the Phase 41 sweep stays at zero either way — which is precisely
+why the rule is written down here.
+
 ### 8.2 Mega menu
 
 The Collection item opens a panel. Only the panel and the mobile drawer are client components.
@@ -1541,3 +1559,168 @@ the other document carries the line.
 | 1 | Add a font-payload line item — **≤ 120 kB total woff2, latin subset, across the two loaded faces** — to the budget tables | `docs/ops/PERFORMANCE.md` §2.2 or §3, owned by Phase 40 | §3.1 states the budget and owns it. PERFORMANCE.md §3 budgets per-route JavaScript only; the sole 120 kB figure there is `/faq`'s first-load JS and is unrelated. Until the line exists, §3.1 is the citation for a font number |
 | 2 | Confirm that "at most two families" counts **loaded** families, so a device-resident `--rv-font-mono` stack that fetches nothing is permitted | `docs/ops/PERFORMANCE.md` §2.2, owned by Phase 40 | §3.1 takes that reading and says so. If Phase 40 rules otherwise, the `identifier` role (§3.5) collapses onto the body family with `tabular-nums` and this document is amended — the fix is one row, not a redesign |
 | 3 | `components/patterns/ArticleCard.tsx` is named as the journal card; this system's journal card is `JournalCard` (registry RC-220, §9) | `docs/content/INITIAL_CONTENT_INVENTORY.md` | Two names for one component. `JournalCard` is the name in the registry, in the phase documents and in §9; the inventory row should follow it |
+
+---
+
+## 19. Final creative audit
+
+FEAT §49 asks eight questions. This section is where they are answered, and its shape was fixed
+before the answers existed so that no question can be answered without also recording who answered
+it and when. Phase 45 owns it (`docs/project/phases/PHASE-39-46.md` §45); Phase 02 owns everything
+above. The two are different kinds of writing and the difference matters: §1–§18 are rules, and a
+rule is true until amended. §19 is a dated record of judgements, and a judgement carries a name.
+
+**No question gets a number.** There is no 7/10 for "does it feel like a collectible-design studio",
+because a score invents precision the evidence does not have and averages away the one question that
+cannot be averaged. A row gets one of five tokens from the closed vocabulary in §19.2 and nothing
+else — and the vocabulary is closed, so a reviewer who wants `PARTIAL` or `71%` is being told by
+this document that they have not finished thinking.
+
+**Three of the eight cannot be answered from inside the repository.** Question 1 is the owner's
+judgement about their own studio. Question 5 needs people who have never seen the site. Question 8
+needs the owner to sit in front of the Studio and try. An engineer can measure the site all day and
+answer none of the three, and an AI agent can answer none of them at all. §19.3 states who may write
+in which column, and §19.4 is the standing instruction that produces the owner's answers.
+
+### 19.1 The eight questions
+
+| # | FEAT §49 question | Examined on | Evidence | Verdict | Reviewer | Date |
+|---|---|---|---|---|---|---|
+| 1 | Does it feel like a collectible-design studio? | `/`, `/large-format`, `/about`, `/process` at 1440 × 900 and 390 × 844. **Not** `/collection/[category]` or `/collections/[slug]`, which §45 names and which 404 — see §19.5 | The owner's own session log, kept to the shape in §19.4 and pasted beneath this table | `OWNER_VERIFICATION_REQUIRED` | — | — |
+| 2 | Does large furniture visually dominate? | `/` and `/large-format`, all eight FEAT §45 widths | Measured. The hero media box is **617 px = 69 % of 900** at 1440 and **693 px = 82 % of 844** at 390; across the eight widths it runs 91 · 69 · 61 · 49 · 37 · 91 · 82 · 76 %. It is a 21:9 `AspectBox`, so its height is a function of WIDTH and never of viewport height — the ≥ 70 % condition is met or missed by accident of viewport aspect, which is the finding rather than the one missing point. The scale-reference-above-the-fold clause and the "no large-format piece smaller than a décor item" clause are **not yet observed**; a row takes the worst verdict among its measured clauses and names the rest | `FAIL` | — (measured; see §19.3) | 2026-09-12 |
+| 3 | Can the visitor feel resin, wood, light and surface? | `/about` material palette, `/process`, product galleries; delivery presets and `sizes` read statically, because the browser harness serves committed fixture derivatives and cannot judge texture | Seventeen `sizes` strings declare a `(min-width: 640px)` switch this design system does not have — `--breakpoint-sm` is 26.875rem (430 px) and `--breakpoint-md` is 48rem (768 px) — so the browser is told the layout changes where it does not. `media_crops` focal points are written by the Studio and read by no public renderer. The material palette forces `mobileRatio="4:5"` on a macro study | `FAIL` | — (measured; see §19.3) | 2026-09-12 |
+| 4 | Does 3D improve understanding rather than exist as a gimmick? | Nothing. There is nothing to examine | Zero real models exist and the flag is off: `three_d_viewer` in `lib/flags/flags.ts` is off until a model with a poster exists, and no row seeds it on. Inventing a model to answer this question would fabricate a product (D10) | `N/A — no model exists; flag off` | — | 2026-09-12 |
+| 5 | Can users discover and understand products easily? | The five tasks in `docs/ops/TESTING.md` §14.2, on each participant's own device | Three or more first-time participants, task completion, times and verbatim quotes, recorded in `TESTING.md` §14.4. The threshold lives there and is not restated here | `OWNER_VERIFICATION_REQUIRED` | — | — |
+| 6 | Can users Enquire · Customize · Request Quote · Request Consultation · Commission · Continue to WhatsApp? | Every conversion surface at 390 px, plus `tests/e2e/inquiry-conversion.spec.ts` in both directions | Six named affordances resolve to **one** form reached by two URLs. `ProductInquiryRail` returns the same `/contact?product=<slug>&type=product` for "Ask About This Piece" and "Request a Quote", and `type` is read by nothing; both file `kind = 'PRODUCT'`. `QUOTE` and `CONSULTATION` are real enum values with real schemas, real WhatsApp templates and two Studio inbox views that can never receive a row. `Customize` is gated on a flag that ships off, behind a block type nothing seeds. Persistence-before-redirect **passes** structurally. The pass condition's own "two clicks" is unsatisfiable for affordance six — see the note below this table | `FAIL` | — (measured; see §19.3) | 2026-09-12 |
+| 7 | Does mobile feel intentionally designed? | Every tier A and B route at 430, 390 and 360 | No route scrolls sideways at any of the eight widths, and `rv-hit-44` holds every touch target. Against that: there is no sticky conversion affordance anywhere, so on `/product/<slug>` at 390 the two calls to action sit at y = 997 and 1053 of a 1928 px document, outside the thumb zone on every phone; the journal card's `h2` truncates at 390 and 360; and the mobile crops the Studio can write are not read by any renderer | `FAIL` | — (measured; see §19.3) | 2026-09-12 |
+| 8 | Can the owner manage everything without code changes? | The ten operations in `docs/ops/TESTING.md` §14.3, performed by the owner, unaided and observed | Ten of ten, or a named list of what needed an engineer. Three capability-table rows are excluded from the ten by construction and the exclusions are part of the verdict — see `TESTING.md` §14.3 | `OWNER_VERIFICATION_REQUIRED` | — | — |
+
+**Question 6's pass condition is itself wrong, and the audit records that rather than the code.**
+FEAT §49 asks that each affordance be reachable "within two clicks" *and* "terminate in a persisted
+inquiry then WhatsApp". For "Continue to WhatsApp" those two clauses cannot both hold: D1 requires
+the enquiry to be saved before any redirect, so the handoff is the link on the success state — the
+third click, by construction. `buildHandoffUrl` takes a non-optional inquiry id, which is the rule
+expressed in a type signature. The code is right and the condition is over-specified; a future
+amendment should say "within two clicks of the surface that files it".
+
+Beneath this table, each answered question gets a short paragraph: what was looked at, what was
+seen, and what the verdict cost. A `FAIL` or a `PASS_WITH_ACTIONS` names its work item and where it
+went — fixed inside the five-condition remit (§45), or recorded in `docs/project/ROADMAP.md` with
+the reason it was deferred. A verdict with no paragraph is a verdict nobody can audit.
+
+### 19.2 The verdict vocabulary, and why an unanswered question is not "TBD"
+
+| Token | Means | Who may replace it, and with what |
+|---|---|---|
+| `PASS` | Every clause of the pass condition was met | Nobody. It is finished. A later regression opens a new dated row; it does not edit this one |
+| `PASS_WITH_ACTIONS` | Met, with named work items | The reviewer who wrote it, once every item is closed or deferred with a reason |
+| `FAIL` | A clause was not met | The reviewer who re-runs the evidence after the fix, with a new date |
+| `OWNER_VERIFICATION_REQUIRED` | The question is a fact about the world, or a judgement about this business, that only the owner can settle | **The owner alone**, replacing it with `PASS` or `FAIL` and adding their name and the date |
+| `NOT YET RUN` | The examination is scheduled and nobody has done it | Whoever does it |
+
+`OWNER_VERIFICATION_REQUIRED` is not a word invented for this table. It is the D5 enum value, it is
+the value the publish triggers refuse a row for, it is already this document's own status-pill
+vocabulary (§2.9), and it is on the front matter of five sibling documents. Using it here means this
+project has exactly one phrase for "nobody has confirmed this", which is the discipline §1 applies
+to a colour.
+
+**It is not "TBD", for five reasons, and the reasons are the convention.**
+
+1. **TBD is prose; this is a value.** `OWNER_VERIFICATION_REQUIRED` is greppable and it means the
+   same thing in this table as it means in `media_assets`, in `page_sections` and in a front-matter
+   block. A reader who knows the codebase needs no key to read this cell.
+2. **It names who owes the answer.** TBD says a cell is empty. This token says the cell is waiting
+   on one specific person, and §19.3 says nobody else may fill it.
+3. **It flips the front matter, so the outstanding row is visible outside this section.** While any
+   row here carries the token, this document's front matter reads
+   `owner_verification: OWNER_VERIFICATION_REQUIRED`. A blank cell would leave the front matter
+   saying `NOT_REQUIRED` — this document claiming it needs nothing from the owner while three of its
+   eight audit rows are unanswered. That is the failure mode the convention prevents, and it is
+   mechanical rather than cultural.
+4. **It cannot be tidied away.** A blank cell and a `TBD` both read as an editorial oversight, and a
+   careful reviewer's instinct on meeting an oversight is to fix it. Fixing this token is a rule
+   violation, not a tidy-up: §19.3 makes it one in writing, and the front-matter interlock makes the
+   violation show up in a two-line diff rather than one cell of a wide table.
+5. **It keeps the phase honest.** Phase 45's exit criteria require all eight questions answered with
+   a verdict, named reviewers and a date. Three tokens here therefore mean Phase 45 is **PARTIAL**,
+   and `PROJECT_STATE.md`, `docs/project/ROADMAP.md` and `docs/SESSION-STATE.md` say so with these
+   three question numbers named. A `TBD` invites the opposite reading.
+
+An outstanding row's Reviewer and Date cells stay `—`. They are never a role, never "pending", never
+a placeholder name, and never the date the token was written: a date in that column means an answer
+was given on that day.
+
+**A blocked precondition does not get a sixth token.** If question 5 cannot be run because the site
+cannot yet support one of its tasks, the row keeps `OWNER_VERIFICATION_REQUIRED` and its Evidence
+cell names the blocker. Inventing `BLOCKED` would let a row look answered when the honest statement
+is that nobody has answered it.
+
+### 19.3 Who may write in which column
+
+**Evidence may be produced by anybody; a verdict is signed by a person.** Questions 2, 3, 6 and 7
+resolve to measurements — a pixel height, a derivative width, a click count, a scroll width — and a
+measurement is reproducible, so the Evidence cell names the mechanism precisely enough for a
+stranger to re-run it and the verdict may stand unsigned, with `—` in Reviewer. Questions 1, 5 and 8
+resolve to judgement or to somebody's lived attempt. Nothing can be re-run, so the verdict is void
+without a name and a date. That is the whole rule, and it is why row 2 may carry `FAIL` with no
+signature while row 1 may not carry `PASS` with one.
+
+**No AI agent signs a row.** An agent may fill *Examined on* and *Evidence* — the routes it opened,
+the numbers it measured, the file and line it read — because those are checkable. It may not write
+in *Verdict*, *Reviewer* or *Date*, and its name may not appear in *Reviewer* on any row, including
+a measured one. The agent measured; a person decides what the measurement means.
+
+**The people who built a thing do not sign question 1, 5 or 8.** That is the point of the three
+tokens. An audit that passes itself is the risk §45's own risk table names, and the countermeasure
+is not a policy but this table's shape: those three verdicts have exactly one legitimate author
+each.
+
+### 19.4 The standing instruction to the owner — question 1
+
+Do this once, in one sitting, on the deployed site rather than a development server, before any
+polish change is accepted. It takes about forty minutes and needs no preparation. It is not a review
+of the work: it is the only recorded answer to the question the whole project is for.
+
+**What to open, in this order, at 1440 × 900 on a laptop and then at 390 × 844 on your own phone:**
+`/` · `/large-format` · `/about` · `/process`. Eight visits. Do not open `/collection/…` or
+`/collections/…` — those routes return "not found" today for the reasons in §19.5, and a broken door
+tells you nothing about the room.
+
+**How to look.** For each visit, wait for the page to finish, then scroll once at a normal reading
+pace to the bottom and stop. Do not click into anything, do not read the copy closely, and do not
+compare it with another site. Then write four short lines, in your own words:
+
+| Line | What to write |
+|---|---|
+| First thing | The first thing your eye landed on — an image, a word, a shape, an empty space |
+| Studio or shop | Whether this page reads as a design studio or as a shop, in one sentence |
+| The weakest thing | The one thing on this page that most works against the studio reading |
+| Would you send it | Whether you would send this page, as it is, to someone whose opinion you care about |
+
+**Then the verdict, once, for the site as a whole.** One line: `Yes` — or `No, because …` followed
+by the single most important reason. Not a score, not a list. If the answer is `No`, the reason
+becomes a work item under §19.1 row 1 and it is the highest-priority item in the phase.
+
+**Where it goes.** The four-line notes and the verdict are pasted beneath the §19.1 table under the
+heading `Question 1 — the owner's session, <date>`, and row 1's Verdict, Reviewer and Date are
+filled in the same commit. Nobody else fills them. If you have not done this, row 1 stays as it is:
+the token is the honest state, and the site can ship with it outstanding as long as
+`PROJECT_STATE.md` says Phase 45 is PARTIAL and says why.
+
+**Questions 5 and 8 are the same kind of instruction and live with the procedure they belong to**,
+in `docs/ops/TESTING.md` §14 — §14.2 for the five-task walkthrough, §14.3 for the ten Studio
+operations, §14.4 for the record. They are written there rather than here so that the tasks, the
+thresholds and the record form are one text in one place; §19.1 cites them rather than restating
+them, for the same reason a token has one home.
+
+### 19.5 What was deliberately not examined, and why
+
+Recorded so a reader does not mistake an absence for an oversight, and so nobody "fixes" the audit
+by examining a route that cannot be examined.
+
+| Not examined | Why | Where it is tracked |
+|---|---|---|
+| `/collection/<slug>`, all seven | Every `categories` row is `DRAFT`, so each route calls `notFound()`. The owner cannot clear it either: `saveCategoryAction` writes name, subtitle, description, order, hero image and the two SEO fields and never `status`, and no `publishCategoryAction` exists anywhere in the repository | `docs/project/ROADMAP.md` |
+| `/collections/<slug>` | Ten of the eleven rows sit at `DRAFT_COLLECTION_CONCEPT`, which only an owner or admin may clear. The one published collection is the Phase 42 test fixture, not editorial content | `docs/project/ROADMAP.md` |
+| `/faq`, `/privacy`, `/terms` | Published `pages` rows with zero published sections, so all three 404. An editor cannot fix them: `faq-list` and `rich-text` are PLANNED block types that render nothing | `docs/project/ROADMAP.md` |
+| The 3D viewer | Question 4's own answer: no model exists and `three_d_viewer` is off | Nothing to track until the owner supplies a model |

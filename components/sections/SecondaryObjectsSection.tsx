@@ -64,7 +64,7 @@ export function SecondaryObjectsSection({
                   ratio="3:4"
                   mobileRatio="4:5"
                   preset="card"
-                  sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
+                  sizes="(min-width: 1024px) 25vw, (min-width: 430px) 50vw, 100vw"
                   strings={strings}
                   cloudName={cloudName}
                 />

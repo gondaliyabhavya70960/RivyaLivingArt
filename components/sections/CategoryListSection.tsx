@@ -77,7 +77,7 @@ export function CategoryListSection({
                       ratio="16:9"
                       mobileRatio="4:5"
                       preset="grid"
-                      sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                      sizes="(min-width: 1024px) 33vw, (min-width: 430px) 50vw, 100vw"
                       strings={strings}
                       cloudName={cloudName}
                     />

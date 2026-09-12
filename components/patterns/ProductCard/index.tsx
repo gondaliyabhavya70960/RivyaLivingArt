@@ -99,7 +99,7 @@ export function ProductCard({
   categoryName = null,
   strings,
   cloudName,
-  sizes = '(min-width: 1024px) 30vw, (min-width: 640px) 45vw, 100vw',
+  sizes = '(min-width: 1024px) 30vw, (min-width: 430px) 45vw, 100vw',
   headingLevel = 3,
 }: ProductCardProps): React.ReactElement {
   const price = presentPrice(product, strings)
@@ -123,7 +123,23 @@ export function ProductCard({
           sizes={sizes}
           strings={strings}
           cloudName={cloudName}
-          className="transition-transform duration-(--rv-motion-medium) group-hover:scale-[1.015]"
+          /*
+           * THE DURATION TOKEN DID NOT EXIST — Phase 45, found by the §50 motion inventory.
+           *
+           * This line read `duration-(--rv-motion-medium)`. There is no such token: the
+           * `--rv-motion-*` family is `rise-sm/md/lg`, `parallax-max` and `stagger`, and durations
+           * live under `--rv-duration-*`. `duration-(--var)` is valid Tailwind syntax whatever the
+           * variable resolves to, so `check-tokens.mjs` (which fails on colour literals and on
+           * arbitrary values) and `check-utilities.mjs` (which fails on a class that produces no
+           * CSS) both passed it — the class DID produce CSS, with an empty duration. Every card in
+           * the catalogue therefore snapped to its hover scale rather than easing into it, on the
+           * one component a visitor meets most.
+           *
+           * `--rv-duration-quick` and `--rv-ease-standard` are what §4.2 assigns to the LIGHT
+           * class, which is the class hover belongs to. `motion-reduce:transition-none` is the
+           * house idiom for the parity branch §4.5 requires.
+           */
+          className="transition-transform duration-(--rv-duration-quick) ease-standard group-hover:scale-[1.015] motion-reduce:transition-none"
         />
 
         {product.title === null ? null : (

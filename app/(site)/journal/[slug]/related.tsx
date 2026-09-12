@@ -12,6 +12,7 @@ import { createPublicClient } from '@/lib/supabase/public'
 import { listArticlesByIds, listCategories } from '@/lib/supabase/repositories/journal'
 import { listMediaAssetsByIds } from '@/lib/supabase/repositories/media'
 import type { JournalArticle } from '@/lib/supabase/schemas'
+import { Container } from '@/components/primitives/Container'
 
 /**
  * What sits at the end of an article.
@@ -76,24 +77,33 @@ export async function ArticleRelated({
     ),
   ])
 
+  /*
+   * `rv-container` WAS NOT A CLASS — Phase 45, found by the token-usage audit. It looked like a
+   * utility, matched nothing in the `@theme` bridge and produced NO CSS, so this surface rendered
+   * full-bleed with no gutter and no measure at every width. `check-utilities.mjs` catches a
+   * Tailwind candidate that resolves to nothing; a bare class name is not a candidate, so nothing
+   * caught it. §5.3 keeps the measure and the gutter in `Container`, and this asks for them there.
+   */
   return (
-    <Stack gap={12} className="rv-container pb-24" data-article-related="">
-      {groups.map((group) => (
-        <Stack key={group.key} gap={6} data-related-group={group.key}>
-          <Heading level={2} size="display-xs">
-            {group.heading}
-          </Heading>
-          <ArticleCardGrid
-            articles={group.articles}
-            covers={covers}
-            categoryNames={categoryNames}
-            strings={strings}
-            cloudName={cloudName}
-            copy={articleCardCopy(strings)}
-          />
-        </Stack>
-      ))}
-    </Stack>
+    <Container>
+      <Stack gap={12} className="pb-24" data-article-related="">
+        {groups.map((group) => (
+          <Stack key={group.key} gap={6} data-related-group={group.key}>
+            <Heading level={2} size="display-xs">
+              {group.heading}
+            </Heading>
+            <ArticleCardGrid
+              articles={group.articles}
+              covers={covers}
+              categoryNames={categoryNames}
+              strings={strings}
+              cloudName={cloudName}
+              copy={articleCardCopy(strings)}
+            />
+          </Stack>
+        ))}
+      </Stack>
+    </Container>
   )
 }
 

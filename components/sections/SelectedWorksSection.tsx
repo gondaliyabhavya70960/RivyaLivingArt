@@ -94,7 +94,7 @@ export function SelectedWorksSection({
             assets={reference?.assets ?? new Map()}
             marker="data-product-card"
             ratio="4:5"
-            sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+            sizes="(min-width: 1024px) 33vw, (min-width: 430px) 50vw, 100vw"
             strings={strings}
             cloudName={cloudName}
           />

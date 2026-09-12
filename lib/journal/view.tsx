@@ -6,6 +6,7 @@ import * as React from 'react'
 
 import { ArticleCardGrid } from '@/components/patterns/ArticleCard'
 import { Pagination } from '@/components/patterns/Pagination'
+import { Container } from '@/components/primitives/Container'
 import { Stack } from '@/components/primitives/Stack'
 import { VisuallyHidden } from '@/components/primitives/VisuallyHidden'
 import { CATALOG_ACTION_KEYS } from '@/lib/catalog/labels'
@@ -51,83 +52,92 @@ export async function JournalListingView({
   const chipsName = siteString(strings, JOURNAL_KEYS.categories)
   const allLabel = siteString(strings, JOURNAL_KEYS.categoriesAll)
 
+  /*
+   * `rv-container` WAS NOT A CLASS — Phase 45, found by the token-usage audit. It looked like a
+   * utility, matched nothing in the `@theme` bridge and produced NO CSS, so this surface rendered
+   * full-bleed with no gutter and no measure at every width. `check-utilities.mjs` catches a
+   * Tailwind candidate that resolves to nothing; a bare class name is not a candidate, so nothing
+   * caught it. §5.3 keeps the measure and the gutter in `Container`, and this asks for them there.
+   */
   return (
-    <Stack gap={10} className="rv-container py-16" data-journal-listing="">
-      {/*
-        The chips render even with nothing published: the categories exist, and a reader arriving at
-        an empty journal still learns what the studio intends to write about. What they must not do
-        is render unnamed — an unlabelled row of links is a row a screen reader cannot explain.
-      */}
-      {chipsName === null || listing.categories.length === 0 ? null : (
-        <nav aria-label={chipsName} data-journal-categories="">
-          <ul role="list" className="flex flex-wrap gap-2">
-            {allLabel === null ? null : (
-              <li>
-                <Link
-                  href={'/journal' as Route}
-                  aria-current={activeCategorySlug === null ? 'page' : undefined}
-                  className="rv-hit-44 inline-flex min-h-11 items-center rounded-full border border-line px-4 py-2 text-sm aria-[current]:border-transparent aria-[current]:bg-surface-accent aria-[current]:text-ink-on-accent"
-                >
-                  {allLabel}
-                </Link>
-              </li>
-            )}
-            {listing.categories.map((category) => {
-              const slug = category.slug.toLowerCase()
-              return (
-                <li key={category.id}>
+    <Container>
+      <Stack gap={10} className="py-16" data-journal-listing="">
+        {/*
+            The chips render even with nothing published: the categories exist, and a reader arriving at
+            an empty journal still learns what the studio intends to write about. What they must not do
+            is render unnamed — an unlabelled row of links is a row a screen reader cannot explain.
+          */}
+        {chipsName === null || listing.categories.length === 0 ? null : (
+          <nav aria-label={chipsName} data-journal-categories="">
+            <ul role="list" className="flex flex-wrap gap-2">
+              {allLabel === null ? null : (
+                <li>
                   <Link
-                    href={`/journal/category/${slug}` as Route}
-                    aria-current={activeCategorySlug === slug ? 'page' : undefined}
-                    data-category-chip={slug}
+                    href={'/journal' as Route}
+                    aria-current={activeCategorySlug === null ? 'page' : undefined}
                     className="rv-hit-44 inline-flex min-h-11 items-center rounded-full border border-line px-4 py-2 text-sm aria-[current]:border-transparent aria-[current]:bg-surface-accent aria-[current]:text-ink-on-accent"
                   >
-                    {category.name}
+                    {allLabel}
                   </Link>
                 </li>
-              )
-            })}
-          </ul>
-        </nav>
-      )}
+              )}
+              {listing.categories.map((category) => {
+                const slug = category.slug.toLowerCase()
+                return (
+                  <li key={category.id}>
+                    <Link
+                      href={`/journal/category/${slug}` as Route}
+                      aria-current={activeCategorySlug === slug ? 'page' : undefined}
+                      data-category-chip={slug}
+                      className="rv-hit-44 inline-flex min-h-11 items-center rounded-full border border-line px-4 py-2 text-sm aria-[current]:border-transparent aria-[current]:bg-surface-accent aria-[current]:text-ink-on-accent"
+                    >
+                      {category.name}
+                    </Link>
+                  </li>
+                )
+              })}
+            </ul>
+          </nav>
+        )}
 
-      {listing.articles.length === 0 ? null : (
-        <section aria-label={regionName ?? undefined}>
-          {regionName === null ? null : <VisuallyHidden>{regionName}</VisuallyHidden>}
-          {/*
-           * LEVEL 2, BECAUSE THIS GRID IS THE PAGE. `/journal` has one `h1` and this region below
-           * it; a card title at level 3 would sit under nothing. Phase 42's heading spec found it.
-           */}
-          <ArticleCardGrid
-            headingLevel={2}
-            articles={listing.articles}
-            covers={listing.covers}
-            categoryNames={listing.categoryNames}
-            strings={strings}
-            cloudName={cloudName}
-            copy={articleCardCopy(strings)}
-          />
-        </section>
-      )}
+        {listing.articles.length === 0 ? null : (
+          <section aria-label={regionName ?? undefined}>
+            {regionName === null ? null : <VisuallyHidden>{regionName}</VisuallyHidden>}
+            {/*
+             * LEVEL 2, BECAUSE THIS GRID IS THE PAGE. `/journal` has one `h1` and this region below
+             * it; a card title at level 3 would sit under nothing. Phase 42's heading spec found it.
+             */}
+            <ArticleCardGrid
+              headingLevel={2}
+              articles={listing.articles}
+              covers={listing.covers}
+              categoryNames={listing.categoryNames}
+              strings={strings}
+              cloudName={cloudName}
+              copy={articleCardCopy(strings)}
+            />
+          </section>
+        )}
 
-      {/*
-        THE REGION AND POSITION STRINGS ARE THE JOURNAL'S; PREVIOUS AND NEXT ARE NOT. A screen-reader
-        user paging through the journal must hear which listing they are in, so those two rows are
-        the journal's own. "Previous" and "Next" are one word each and mean the same thing in both
-        listings — seeding a second pair would give the owner two rows to keep in step for no gain,
-        and one of them would drift.
-      */}
-      <Pagination
-        hrefFor={(n) => journalUrl(basePath, n)}
-        page={listing.page}
-        pageCount={listing.pageCount}
-        labels={{
-          region: siteString(strings, JOURNAL_KEYS.pagination),
-          previous: siteString(strings, CATALOG_ACTION_KEYS.previous),
-          next: siteString(strings, CATALOG_ACTION_KEYS.next),
-          position: siteString(strings, JOURNAL_KEYS.paginationPosition),
-        }}
-      />
-    </Stack>
+        {/*
+            THE REGION AND POSITION STRINGS ARE THE JOURNAL'S; PREVIOUS AND NEXT ARE NOT. A screen-reader
+            user paging through the journal must hear which listing they are in, so those two rows are
+            the journal's own. "Previous" and "Next" are one word each and mean the same thing in both
+            listings — seeding a second pair would give the owner two rows to keep in step for no gain,
+            and one of them would drift.
+          */}
+        <Pagination
+          hrefFor={(n) => journalUrl(basePath, n)}
+          page={listing.page}
+          pageCount={listing.pageCount}
+          labels={{
+            region: siteString(strings, JOURNAL_KEYS.pagination),
+            previous: siteString(strings, CATALOG_ACTION_KEYS.previous),
+            next: siteString(strings, CATALOG_ACTION_KEYS.next),
+            position: siteString(strings, JOURNAL_KEYS.paginationPosition),
+          }}
+        />
+      </Stack>
+    </Container>
   )
 }
