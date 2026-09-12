@@ -14,6 +14,47 @@ owner_verification: NOT_REQUIRED
 
 ---
 
+## Most recent work — amendment A44, the Vercel dashboard as the owner's login (2026-09-12)
+
+**The owner's decision, taken with the numbers in front of them.** They asked for the admin id and
+password to come from Vercel rather than Supabase. The literal reading — credentials compared in
+application code, no Supabase session — was put to them with its cost: `auth.uid()` would be null,
+so **292 of the 327 RLS policies** deny, and the Studio authenticates somebody into a surface that
+reads nothing and saves nothing. They chose the alternative.
+
+**What shipped.** `npm run auth:sync-admin` is now the first command in the `build` script. On a
+production deployment it applies `STUDIO_ADMIN_EMAIL` / `_PASSWORD` / `_ROLE` / `_NAME` to the owner
+account, setting the password every time. Supabase Auth still issues the session, so authorisation is
+untouched. Production scope only; never fails a deployment; never mints a second owner.
+
+**The consequence that must not be forgotten:** a password set any other way does not survive the next
+production deploy. The reset flow still works, but for the account in `STUDIO_ADMIN_EMAIL` the change
+lasts until the next deployment. Changing the owner's password now means changing the Vercel variable.
+
+**Files Created** — `scripts/auth/admin-sync.ts` (the decision, pure) · `scripts/auth/sync-admin.ts`
+(the runner) · `tests/unit/admin-sync.test.ts` (10 cases)
+
+**Files Changed** — `package.json` (the `build` script) · `.env.example` ·
+`docs/architecture/CANONICAL-DECISIONS.md` (A44, D8) · `docs/ops/ENVIRONMENT.md` ·
+`docs/studio/STUDIO_GUIDE.md` (§2.1.1 path D) · `CHANGELOG.md` · this file
+
+**Database Changes** — **None.**
+
+**Tests Run / Results** — `npm run check` (42 gates) exit 0 · 198 files, 2 978 unit tests, all green ·
+the runner exercised three ways by hand: local (declines, development scope), preview (declines),
+production against an unreachable Supabase (**EXIT=0**, `failed, and the deployment continues`).
+
+**Known Issues** — the diagnosis that prompted this is unchanged and still the owner's to act on:
+sign-in has been refused three times (0 `audit_logs` rows, 0 sessions), and the reset email hit
+Supabase's built-in 2/hour cap at 08:53 (`over_email_send_rate_limit`, 429, logged). A44 routes around
+both: set the password in Vercel, redeploy, sign in.
+
+**Next Exact Action** — **the owner sets `STUDIO_ADMIN_PASSWORD` in Vercel (Sensitive) and
+redeploys**, then signs in at `/studio/login`. The proof is an `audit_logs` row with action
+`auth.signin`.
+
+---
+
 ## Most recent work — post-launch defect pass on A43 (2026-09-12, later the same day)
 
 **Not a phase, and not new scope.** A read-back of the A43 work against the LIVE project and the

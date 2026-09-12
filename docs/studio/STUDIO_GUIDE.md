@@ -193,6 +193,42 @@ reason path A gives. A second `ACTIVE` owner at a **different** address is refus
 Full variable documentation — class, rotation owner, what to do with `STUDIO_ADMIN_PASSWORD` once
 the account exists — is `docs/ops/ENVIRONMENT.md` §4.
 
+#### D — the Vercel dashboard IS the login (amendment A44)
+
+Paths A, B and C all create an account once and then leave it alone. This one is different in kind:
+the four variables become **the source of truth for the owner account**, and every production build
+applies them.
+
+`npm run auth:sync-admin` is the first command in the `build` script. On a **production** deployment
+it reads `STUDIO_ADMIN_EMAIL`, `STUDIO_ADMIN_PASSWORD`, `STUDIO_ADMIN_ROLE` and `STUDIO_ADMIN_NAME`
+and reconciles the account to match — **setting the password every time**. Change the password in
+Vercel, redeploy, and that is the Studio password.
+
+| Property | Behaviour |
+|---|---|
+| **Production only** | Preview and local builds decline. One Supabase project (A42) means a preview applying its own password would rewrite production's |
+| **Never fails a deployment** | Every path exits 0 — missing variable, unreachable auth service, refusal, unanticipated error. The reason goes to the build log. A site that will not deploy because an account setting was wrong is the worse outcome |
+| **Never mints a second owner** | An ACTIVE owner at a different address makes it decline and say so. Deciding the business has a new owner is `/studio/system/users`' job |
+| **Sets the password unconditionally** | There is nothing to compare a bcrypt hash against, and setting it every time is the contract |
+
+> **Read this twice: a password set any other way does not survive the next production deploy.**
+> §2.1.2's reset flow still works end to end and still leaves a usable session — but for the account
+> named in `STUDIO_ADMIN_EMAIL`, the new password lasts only until the next deployment overwrites it.
+> **Changing the owner's password now means changing the Vercel variable and redeploying.** Every
+> other account is unaffected: they are invited from `/studio/system/users` and no build touches them.
+
+`STUDIO_ADMIN_PASSWORD` therefore lives in the Vercel dashboard permanently rather than being cleared
+after first sign-in. Mark it **Sensitive** there — write-only, unreadable afterwards by anyone,
+including you — because that is the whole of its protection.
+
+**Why this rather than replacing Supabase Auth**, which is what "make the login come from Vercel"
+sounds like it means. `public.current_staff_role()` resolves the role with
+`select role from staff_profiles where user_id = auth.uid()`, and `auth.uid()` is a claim in a
+Supabase-issued JWT. **292 of the 327 RLS policies** decide through it. A session that is not a
+Supabase session has no `auth.uid()`, so every one of those policies denies: the Studio would
+authenticate somebody into a surface that reads nothing and saves nothing. A44 gives the dashboard
+authority over the *credential* while leaving the *session* exactly as it was.
+
 #### Where each job belongs
 
 | Job | Where |
@@ -201,6 +237,7 @@ the account exists — is `docs/ops/ENVIRONMENT.md` §4.
 | Every subsequent account | `/studio/system/users` — permission-checked and audited |
 | Role change, suspend, reactivate | `/studio/system/users` |
 | Password reset — self-service | `/studio/forgot-password` → the emailed link → `/studio/reset-password` (§2.1.2) |
+| Owner password, ongoing | Edit `STUDIO_ADMIN_PASSWORD` in Vercel and redeploy (§2.1.1 path D) — it overwrites any other change |
 | Password reset — nobody can receive the email | `npm run auth:bootstrap -- --reset-password`, or Supabase dashboard → Authentication → Users |
 | "Which address is my account?" | `/studio/system/users`, or `npm run auth:list-users` (§2.1.3) |
 
