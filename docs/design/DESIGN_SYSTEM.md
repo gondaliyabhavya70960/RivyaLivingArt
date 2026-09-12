@@ -204,6 +204,76 @@ important accessibility fact in this palette: **champagne `#B89B63` on bone `#FA
 fails WCAG AA for any text size.** On light grounds the accent ink is `--rv-color-champagne-deep`
 (5.05:1). See §2.8.
 
+### 2.3a The warm editorial grounds (amendment A46)
+
+Two measured values and four derived from them. `--rv-color-mineral` (`#f4f1e9`) and
+`--rv-color-sand` (`#e7e0d5`) are read verbatim out of the visual reference's own `:root`; they are
+NEW primitives beside `--rv-color-bone`, never a repointing of it.
+
+**Why not repoint bone.** `check-tokens.mjs` re-derives the ten neutral steps by OKLab interpolation
+between `--rv-color-obsidian` and `--rv-color-bone`. Repointing bone to mineral re-derives nine of
+the ten, and bone is also `--rv-ink-primary` on DEEP and INK — so a change made to obtain a warm
+light ground would have moved every body colour on the dark grounds as well. Adding beside it costs
+nothing and moves nothing. BONE stays exactly as it is and stays the Studio's ground.
+
+**The four intermediate steps are generated, not chosen.** Treat mineral → sand as one unit step
+t = 1 in OKLab and continue along the same line:
+
+| t | value | role |
+|---|---|---|
+| 0 | `#f4f1e9` | `--rv-color-mineral` — MINERAL ground (reference `--mineral`) |
+| 0.5 | `#ede8df` | `--rv-color-mineral-raised` |
+| 1 | `#e7e0d5` | `--rv-color-sand` — SAND ground, MINERAL's raised-2 (reference `--sand`) |
+| 1.5 | `#e1d8cb` | `--rv-color-sand-raised` |
+| 2 | `#dacfc1` | `--rv-color-sand-raised-2` |
+| 2.5 | `#d4c7b8` | `--rv-color-sand-sunken` |
+
+**Two warm accent inks.** `--rv-color-champagne-ink` (`#75602f`) is the reference's own value and
+clears AA on mineral (5.36:1 on ground, 4.96:1 on raised). It does NOT clear it on sand (4.62 / 4.26),
+so SAND uses `--rv-color-champagne-ink-deep` (`#5f4b1f`, 6.38 / 5.92). BONE already made the same
+move with `--rv-color-champagne-deep`, for the same reason.
+
+### 2.4a MINERAL and SAND, and the ground rhythm (amendment A46)
+
+Two schemes rather than one, because the reference's long pages alternate light against slightly
+less light and punctuate with full-bleed obsidian. A single warm scheme would have to reach past
+itself for its neighbour's surface, which is the coupling `SectionShell` exists to prevent. A page
+alternates SCHEMES, not surfaces.
+
+`npm run a11y:check-contrast` enrols a scheme structurally — any block in `scheme.css` declaring
+`--rv-surface-ground` — so both were checked the moment they were written. It reports **60 token
+pairs across 5 schemes**, all at or above their WCAG ratio, with 2 advisory (disabled text, exempt
+under §1.4.3).
+
+**Which ground a band takes when nobody has said.** `components/sections/rhythm.ts`, applied once
+per page by `SectionList` because the sequence is the one thing a section renderer cannot see:
+
+| | rule |
+|---|---|
+| `hero`, `material-story`, `signature-media`, `scale-statement`, `three-d-resin` | INK, wherever they appear |
+| `final-cta` | DEEP |
+| everything else | MINERAL and SAND, alternating |
+| a dark band | does **not** advance the warm counter, so two SAND bands never meet across a hero |
+| a theme an editor set | always wins — the rule fills `theme` only where it is null |
+
+The finding this fixes: before it, `page_sections.theme` was nullable, `SectionShell` fell back to
+`DEEP`, and exactly one of thirty-four renderers passed anything else — so `/` was 11,993px of one
+colour at 1440px. §50's "deliberate negative space" was indistinguishable from a page that had
+failed to load. Asserted by `tests/unit/section-ground-rhythm.test.ts`, which tests the PROPERTIES
+(alternation, continuity across a dark band, editor override) rather than any one band's colour.
+
+### 7.14a The masthead over a dark opening band (amendment A46)
+
+On a page whose first band is dark the header stops being a bar above the page and becomes chrome on
+it: the band is pulled up by `--rv-header-h` and the header trades its opaque ground for a gradient
+scrim. **No JavaScript and no scroll listener** — `SiteHeader` committed to "scroll-state via CSS
+only" and this keeps it.
+
+The layout renders the header but cannot see the page's sections, so the stylesheet asks instead:
+`main:has(> .rv-scheme-ink:first-child)`. A browser without `:has()` matches neither rule and gets
+precisely the previous design, which is why the effect is built as two additive rules rather than as
+an override of a transparent default. Island budget unchanged at 5.
+
 ### 2.4 Colour schemes
 
 Three schemes. They are the permitted values of `page_sections.theme` and of the Studio shell's

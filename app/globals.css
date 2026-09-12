@@ -55,6 +55,7 @@
   --font-sans: var(--rv-font-body);
   --font-mono: var(--rv-font-mono);
 
+  --text-display-hero: var(--rv-text-display-hero);
   --text-display-2xl: var(--rv-text-display-2xl);
   --text-display-xl: var(--rv-text-display-xl);
   --text-display-lg: var(--rv-text-display-lg);
@@ -115,6 +116,8 @@
    * inline styles rather than utilities. A surface that wants the 120rem bound writes
    * `max-w-(--rv-container-full)`, which is the arbitrary-property syntax used everywhere else.
    */
+
+  --spacing-rail: var(--rv-rail-gutter);
 
   --breakpoint-sm: 26.875rem;
   --breakpoint-md: 48rem;

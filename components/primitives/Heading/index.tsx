@@ -55,9 +55,15 @@ export type HeadingHighlightProps = React.HTMLAttributes<HTMLSpanElement>
  * The `heading_highlight` run (§3.5). A <span> inside the heading — never a second
  * heading element, because the outline must not gain a level to gain an accent.
  *
- * The accent is not the only thing marking it: --rv-weight-display-strong (500 against
- * the display face's 400) carries the emphasis where colour cannot (WCAG 1.4.1). The
- * colour itself is whatever --rv-ink-accent already resolves to; inside a
+ * The accent is not the only thing marking it, because colour alone would fail WCAG 1.4.1.
+ * It used to be a 500 weight against the display face's 400; since the face became Instrument
+ * Serif (amendment A46) there IS no 500 — the family ships one weight — and `font-medium` would
+ * have asked the browser to synthesise one, which at display sizes is a visibly smeared stroke
+ * rather than a heavier cut. Instrument Serif does ship a true italic, so the run is marked by a
+ * real change of cut instead of a fake change of weight. The distinction survives at 103px,
+ * which the synthesised weight did not.
+ *
+ * The colour itself is whatever --rv-ink-accent already resolves to; inside a
  * --rv-surface-raised-2 element on a DEEP section the scheme has already stepped that up
  * for contrast (§2.6, §2.11) and this component must not override it.
  *
@@ -66,7 +72,7 @@ export type HeadingHighlightProps = React.HTMLAttributes<HTMLSpanElement>
 export const HeadingHighlight = React.forwardRef<HTMLSpanElement, HeadingHighlightProps>(
   function HeadingHighlight({ className, children, ...rest }, ref) {
     return (
-      <span ref={ref} className={cn('font-medium text-ink-accent', className)} {...rest}>
+      <span ref={ref} className={cn('text-ink-accent italic', className)} {...rest}>
         {children}
       </span>
     )

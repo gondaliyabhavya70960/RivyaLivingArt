@@ -190,3 +190,65 @@ a {
     margin-inline: 0;
   }
 }
+
+/*
+ * THE HEADER OVER THE OPENING BAND (§7.14a, amendment A46)
+ *
+ * WHAT IT DOES. On a page whose first band is dark, the masthead stops being a bar above the page
+ * and becomes chrome ON it: the band is pulled up by the header's own height so the opening image
+ * runs edge to edge behind it, and the header trades its opaque ground for a gradient scrim that
+ * darkens the top of that image just enough for the wordmark and the nav to read. It is the single
+ * most recognisable thing about the reference's homepage, and `SiteHeader`'s own header comment
+ * already committed to the constraint that makes it hard: "scroll-state via CSS only", because a
+ * scroll handler toggling a class on the masthead runs on the main thread on every frame of every
+ * scroll on every page.
+ *
+ * WHY `:has()` AND NOT A PROP. The header is rendered by `app/(site)/layout.tsx`, which cannot see
+ * the page's sections — `renderCmsPage` resolves those inside `{children}`, one level down. Passing
+ * the answer up would mean either resolving the page twice or threading a context through the
+ * layout for a purely visual decision. `:has()` lets the STYLESHEET ask the question the layout
+ * cannot: does this document's `<main>` open with a dark band? The sections are direct children of
+ * `<main>` and already carry their scheme class, so the selector reads the composition that
+ * `components/sections/rhythm.ts` decided, with nothing to keep in sync.
+ *
+ * IT DEGRADES TO EXACTLY TODAY'S BEHAVIOUR. A browser without `:has()` matches neither rule, so the
+ * header keeps its opaque ground and the hero keeps its top margin — the design before this
+ * amendment, not a broken version of the one after. That is the whole reason the effect is built
+ * as two additive rules rather than as an override of a transparent default.
+ *
+ * THE SCRIM IS A GRADIENT, NOT A TINT, and it is `--rv-media-veil` inverted: opaque at the top edge
+ * where the nav sits, gone by the time it reaches the headline. A flat translucent bar would either
+ * be too weak over a bright frame or visible as a band over a dark one. Values are literals because
+ * this file is inside `app/styles/`, the one place §1 permits them, and because a one-off scrim
+ * geometry is not a token anything else will read.
+ *
+ * FIVE SCHEMES, TWO OF THEM DARK. `.rv-scheme-ink` and `.rv-scheme-deep` are the grounds
+ * `rhythm.ts` gives a `hero`, a `material-story` and a `final-cta`; the warm pair and BONE are
+ * never overlaid, so a page that opens on mineral — `/faq` opens on a `faq-list` — keeps a solid
+ * masthead and loses nothing.
+ */
+main:has(> .rv-scheme-ink:first-child) > .rv-scheme-ink:first-child,
+main:has(> .rv-scheme-deep:first-child) > .rv-scheme-deep:first-child {
+  margin-block-start: calc(-1 * var(--rv-header-h));
+}
+
+body:has(main > .rv-scheme-ink:first-child) [data-rv-site-header],
+body:has(main > .rv-scheme-deep:first-child) [data-rv-site-header] {
+  /* INK's own values, so the nav reads as the hero's chrome rather than as the page's. */
+  color-scheme: dark;
+  --rv-ink-primary: var(--rv-color-bone);
+  --rv-ink-secondary: var(--rv-neutral-200);
+  --rv-ink-tertiary: var(--rv-neutral-300);
+  --rv-ink-accent: var(--rv-color-gold-bright);
+  --rv-line-subtle: transparent;
+  --rv-focus-ring: var(--rv-color-gold-bright);
+
+  background: linear-gradient(
+    to bottom,
+    rgb(8 10 14 / 0.86) 0%,
+    rgb(8 10 14 / 0.55) 55%,
+    rgb(8 10 14 / 0) 100%
+  );
+  border-block-end-color: transparent;
+  backdrop-filter: none;
+}

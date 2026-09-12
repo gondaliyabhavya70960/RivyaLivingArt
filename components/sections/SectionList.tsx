@@ -7,6 +7,7 @@ import type { SiteStrings } from '@/lib/cms/strings'
 import type { MediaAsset, PageSection } from '@/lib/supabase/schemas'
 
 import { sectionRenderer } from './registry'
+import { withDefaultTheme } from './rhythm'
 
 /**
  * A resolved page's sections, in order.
@@ -49,9 +50,17 @@ export function SectionList({
    */
   const seen = new Map<string, number>()
 
+  /*
+   * THE PAGE'S GROUND RHYTHM, decided once, here, because it is the only place that can see the
+   * sequence. `withDefaultTheme` fills `theme` on the sections that have none and leaves every
+   * editor-set theme exactly as it was — see components/sections/rhythm.ts for the rule and why
+   * a dark band does not advance the warm counter.
+   */
+  const banded = withDefaultTheme(sections)
+
   return (
     <>
-      {sections.map((section, index) => {
+      {banded.map((section, index) => {
         if (!isBlockType(section.block_type)) return null
         const Renderer = sectionRenderer(section.block_type)
         if (Renderer === null) return null

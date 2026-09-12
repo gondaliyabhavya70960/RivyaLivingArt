@@ -46,10 +46,15 @@
  *   /journal               editorial, workshop-session — landing hero only
  *   /portfolio             gallery-scene — landing atmosphere, never labelled as a project
  *
- * Unbound by design, and recorded as gaps rather than filled: the homepage hero video and its
- * poster, `/collection` landing, `/collection/furniture`, `/collection/collectible-design`,
- * `/custom-commissions`, `/contact`, `/faq`, `/search`, and the mobile ratio for the
- * `/large-format` architectural slot.
+ * Unbound by design, and recorded as gaps rather than filled: the homepage hero video,
+ * `/collection/furniture`, `/collection/collectible-design`, `/custom-commissions`, `/faq`,
+ * `/search`, and the mobile ratio for the `/large-format` architectural slot.
+ *
+ * `/collection` LANDING AND `/contact` WERE ON THAT LIST AND ARE NOT ANY MORE (amendment A46).
+ * Phase 43's registry gives both a real slot — `collection.landing.hero` and `contact.hero` — and
+ * the generated coverage table in `HIGGSFIELD_ASSET_STATUS.md` §5.1 marks both REUSE_FROM_FAMILY
+ * from `material-macro`. The line above outlived the decision it described, and a header that
+ * contradicts the map below it in the same file is worse than no header at all.
  *
  * ------------------------------------------------------------------------------------------------
  * FILLING THIS MAP IS NOT ENOUGH ON ITS OWN, and the reason is worth knowing before anyone tries.
@@ -199,5 +204,139 @@ export const MEDIA_BINDINGS: Readonly<Record<string, MediaBinding>> = {
     slotKey: 'process.sections',
     desktop: 'PROCESS-FINISH-006',
     mobile: 'PROCESS-FINISH-001',
+  },
+
+  /* ----------------------------------------------------------------------------------------
+   * THE SECOND CURATION PASS (amendment A46).
+   *
+   * Seven more slots, taking the map from ten bindings to seventeen. Every one was proposed
+   * against the manifest and then ADVERSARIALLY RE-CHECKED against it — id existence, resource
+   * type, family, the ratio the RENDERER actually delivers (not the one the registry declares),
+   * the srcSet rung the source has to clear, the section's own seeded copy, and D10. Eight further
+   * proposals were refused by that check and are recorded under WHAT IS STILL DELIBERATELY NOT
+   * HERE, below, with the measurement that refused each one.
+   *
+   * THE RESOLUTION RULE THE FIRST PASS DID NOT STATE, and the one that refused three proposals:
+   * `HeroSection` and `FinalCtaSection` both pass `preset: 'hero'`, whose base width is 1600, and
+   * `srcSet(1600)` emits exactly two rungs — 1920 and 2560. There is no rung below 1920, so a
+   * source narrower than 1920 is UPSCALED in every delivery, and `ResponsiveMedia` gives
+   * `priority` to the MOBILE half, which makes that upscale the route's LCP element.
+   * `lib/media/gaps.ts` already states the governing rule: "A slot whose only candidate upscales
+   * is reported as a gap rather than quietly bound."
+   * -------------------------------------------------------------------------------------------- */
+
+  // 21:9 / 9:16, both native, 6336px and 3072px — no crop anywhere and the widest pair in the map.
+  // An abstract macro is the right picture for a navigation surface precisely because it argues
+  // for none of the seven categories the band sends the reader to.
+  'collection.01.hero': {
+    slotKey: 'collection.landing.hero',
+    desktop: 'MATERIAL-MACRO-011',
+    mobile: 'MATERIAL-MACRO-005',
+  },
+
+  // 21:9 / 9:16. Desktop trims 16:9 → 21:9 keeping full width (5504×2359); mobile is native.
+  // The two prompts are the same studio at night from two angles, so the pair reads as one
+  // photograph across the breakpoint rather than as two.
+  'process.01.hero': {
+    slotKey: 'process.sections',
+    desktop: 'PROCESS-STUDIO-005',
+    mobile: 'PROCESS-CURE-002',
+  },
+
+  /*
+   * THE FIVE PROCESS CHAPTERS the first pass left as gaps, now bound.
+   *
+   * That pass refused them because "`process.sections` declares 4:3 and only `process-studio` and
+   * `process-finish` hold one". The declared ratio is not what ships: `ProcessChapter` delivers
+   * 4:3 / 4:5 at preset `grid` with `sizes="(min-width: 768px) 50vw, 100vw"`, so the ceiling is the
+   * 1536 rung rather than the hero ladder's 2560 — and every pair below clears 1536 after its crop.
+   * Accepting a crop here is the same judgement the first pass already made for five of its own ten
+   * ("16:9 → 21:9 and 3:4 → 9:16"), applied to a box less than half as wide.
+   *
+   * Each pair is chosen so the two halves are the same moment, not merely the same family: the
+   * pigment being chosen and the pigment folded in; the slab measured and the slab planed; the
+   * mould empty and the mould filled; the pour wide and the pour close.
+   */
+  'process.03.material-direction': {
+    slotKey: 'process.sections',
+    desktop: 'PROCESS-PIGMENT-004',
+    mobile: 'PROCESS-PIGMENT-005',
+  },
+  'process.04.form-development': {
+    slotKey: 'process.sections',
+    desktop: 'PROCESS-TIMBER-004',
+    mobile: 'PROCESS-TIMBER-001',
+  },
+  'process.05.fabrication': {
+    slotKey: 'process.sections',
+    desktop: 'PROCESS-MOULD-006',
+    mobile: 'PROCESS-MOULD-003',
+  },
+  // Checked specifically for the video defect: `process-pour` holds four videos (POUR-009..012) and
+  // `ProcessChapter` mounts the `ChapterMedia` motion island for any bound asset whose
+  // `resource_type` is `video`. Both of these are stills.
+  'process.06.resin-work': {
+    slotKey: 'process.sections',
+    desktop: 'PROCESS-POUR-007',
+    mobile: 'PROCESS-POUR-005',
+  },
+
+  /* ----------------------------------------------------------------------------------------
+   * WHAT IS STILL DELIBERATELY NOT HERE, after the second pass (amendment A46).
+   *
+   * Each of these was proposed with a rationale that read well and was refused by measurement.
+   * They are written down because the next person to look at an empty band will reach for the same
+   * assets, and the reasons are not visible from the manifest.
+   *
+   * BLOCKED ON A REGISTRY AMENDMENT, NOT ON EDITORIAL JUDGEMENT — the assets are right and the
+   * slot does not exist:
+   *
+   *   · `home.01.hero`, `home.07.custom-commission`, `home.08.three-d-resin`, `home.13.final-cta`.
+   *     `/` declares three slots — `home.hero.video`, `home.hero.poster`, `home.intro` — and none
+   *     of the last three bands has one. Inventing `home.commission` would be worse than the gap:
+   *     migration 0050 comments `media_slot_key` as "the registry key, VERBATIM" and
+   *     `sync_media_usages` copies it into `media_usages.slot_key`, which `lib/media/gaps.ts`
+   *     joins on, so an invented key reports coverage against a slot nothing declares.
+   *     `tests/unit/media-bindings.test.ts` fails the run on one, correctly.
+   *   · `large-format.01.hero`. `LARGEFORMAT-DINING-002` / `-001` are the right pair and
+   *     `large-format.dining` is the wrong slot: it is the dining CATEGORY CARD (16:9/4:5,
+   *     `minAssets: 2`), so binding the hero against it would put `boundCount` at 2 and have
+   *     `classify()` report the dining card FILLED while that card is still empty. A false
+   *     coverage report is worse than a true gap. Wants a `large-format.hero` slot at 21:9/9:16.
+   *
+   * REFUSED ON THE MEASUREMENT, and no substitute exists in the family:
+   *
+   *   · `commissions.01.hero`. `LARGEFORMAT-DINING-001` is 1536px wide, below the hero ladder's
+   *     1920 floor, so it upscales in every delivery — and `ResponsiveMedia` gives `priority` to
+   *     the mobile half, making that upscale the primary conversion route's LCP element. It is
+   *     also the master plan's designated homepage mobile still, and the desktop half it was
+   *     paired with is a different finished room, so the pair would read as two delivered
+   *     installations on the one page whose subject is a commission that has not happened.
+   *   · `commissions.06.cta`. `PROCESS-STUDIO-008`'s prompt is BYTE-IDENTICAL to
+   *     `PROCESS-STUDIO-006`, already bound to `process.02.brief`. DQ-9's rule is "bind one of
+   *     each pair; keep the other as a swap candidate" — the "never both in the same section"
+   *     clause is its floor, not its whole. The slot's two declared families hold exactly two
+   *     distinct 4:5 frames and both are now spoken for on `/process`, so there is no amendment.
+   *   · `collection.collectible-design.01.hero`. A DQ-10 recipe break inside one section: the two
+   *     halves are from different prompt temperaments, so the picture changes character across the
+   *     768px breakpoint.
+   *   · `about.05.closing`. `MATERIAL-MACRO-011` is genuinely the right asset for it — and it is
+   *     now bound to `collection.01.hero`, and its only alternative is `-015`, its verbatim twin.
+   *     Binding both twins breaks DQ-9. The `/about` band is the one that yields, because a
+   *     navigation surface needs an image that argues for nothing and a closing invitation has
+   *     other ways to carry weight.
+   *
+   * STILL REFUSED BECAUSE THE COMPONENT RENDERS NO MEDIA AT ALL — a binding there would write
+   * columns nothing reads: every `statement`, `checklist`, `numbered-steps`, `empty-state`,
+   * `contact-details`, `contact-form` and `faq-list` band on the site.
+   * -------------------------------------------------------------------------------------------- */
+
+  // 21:9 / 9:16, both native, neither cropped. 3168px and 3072px both clear the hero ladder's top
+  // rung. The binding writes media columns only, so the VERIFIED_BUSINESS_FACT phone number and
+  // email address on `contact.02.details` are untouched by it.
+  'contact.01.hero': {
+    slotKey: 'contact.hero',
+    desktop: 'MATERIAL-MACRO-027',
+    mobile: 'MATERIAL-MACRO-004',
   },
 }

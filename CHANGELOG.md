@@ -6,6 +6,56 @@ Every phase adds an entry; see `docs/architecture/CANONICAL-DECISIONS.md` D9 for
 
 ## [Unreleased]
 
+### Rivya UI Redesign, phases 1-2 — the warm palette, the reference typeface, and the ground rhythm (2026-09-12)
+
+A luxury redesign of the public site against a supplied visual reference, whose own CSS was read
+rather than guessed: `--mineral:#f4f1e9`, `--sand:#e7e0d5`, `--obsidian:#080a0e`, Instrument Serif,
+Inter, JetBrains Mono, `clamp(3rem, 7vw + .5rem, 7.5rem)` for the hero. No business rule, no
+migration, no route rename, no logo change. Amendment A46.
+
+**The largest defect was not colour, it was that there was only one.** `page_sections.theme` is
+nullable, `SectionShell` fell back to `DEEP`, and exactly ONE of the thirty-four renderers ever
+passed anything else — so every band of every CMS route rendered on the same ocean ground and `/`
+measured **11,993px of a single colour at 1440px**. `components/sections/rhythm.ts` now fills the
+ground in page order: dark for the material and opening bands, mineral/sand alternating for the
+rest, and a dark interruption does not advance the warm counter so two sand bands never meet across
+a hero. An editor's explicit theme always wins.
+
+**The warm grounds are new primitives, and that was measured rather than assumed.** Repointing
+`--rv-color-bone` to the reference's ivory re-derives NINE of the ten OKLab neutral steps and moves
+`--rv-ink-primary` on both dark schemes — a light-ground change that would have repainted the dark
+ones. Mineral and sand are added beside bone; BONE is untouched and stays the Studio's ground. The
+four intermediate surfaces are the same OKLab line the two measured anchors define.
+
+**Instrument Serif ships one weight, and two things followed from that.**
+`--rv-weight-display-strong` was 500 and is now 400, because a 500 of this face is a
+browser-synthesised smear at a 103px headline. `HeadingHighlight` took its WCAG 1.4.1 non-colour
+marking from that 500 and now takes it from the family's real italic — a genuine change of cut
+rather than a fake change of weight.
+
+**A third loaded family, budgeted rather than smuggled.** The eyebrow above every section heading is
+now mono, so the device-resident stack stopped being adequate: it would have resolved to a different
+face on every platform. JetBrains Mono is 400-only, latin-only, not preloaded; PERFORMANCE.md §2.2's
+ceiling is amended to three in the same breath.
+
+**The masthead overlays a dark opening band with no JavaScript.** The layout cannot see the page's
+sections, so the stylesheet asks — `main:has(> .rv-scheme-ink:first-child)`. Without `:has()` a
+browser gets exactly the previous design. Zero islands added; the budget is still 5.
+
+**Seven more media bindings, and eight refusals recorded beside them.** The map goes 10 → 17
+(`media_usages` 20 → 34 locally). Every proposal was adversarially re-checked against the manifest,
+and the rule that refused three is worth keeping: `preset: 'hero'` emits srcSet rungs of only 1920
+and 2560, so a source narrower than 1920 upscales in every delivery — and `ResponsiveMedia` gives
+`priority` to the mobile half, which would make that upscale the route's LCP element.
+
+**Verified:** 44/44 gates green, 3,076 unit tests pass, production build clean, contrast 60 pairs
+across 5 schemes, island budget 5, no horizontal overflow at 1440 or 390.
+
+**Not done, and recorded as outstanding:** four homepage bands are blocked on a media-slot registry
+amendment (`/` declares three slots and its commission, 3D and closing bands have none); the Studio
+redesign; the external component evaluation; `/large-format`'s hero, which wants a
+`large-format.hero` slot at 21:9/9:16.
+
 ### Phase 45 — the polish pass, and the two gates it was specified to leave behind (2026-09-12)
 
 The owner asked for a complete redesign with the content and the colour untouched. Phase 45 already

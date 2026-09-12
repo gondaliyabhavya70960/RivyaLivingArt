@@ -2,6 +2,7 @@ import * as React from 'react'
 
 import { Cluster } from '@/components/primitives/Cluster'
 import { resolveInternalTarget } from '@/lib/site/resolve-target'
+import { cn } from '@/lib/ui/cn'
 import type { PageSection } from '@/lib/supabase/schemas'
 
 /**
@@ -73,11 +74,23 @@ export function SectionActions({
         <a
           key={action.url}
           href={action.url}
-          className={
+          className={cn(
+            // THE SHARED GEOMETRY (amendment A46). 56px tall with a 36px inline pad and a full
+            // pill, which is the reference's own primary CTA measurement — it renders its section
+            // calls at `h-14 px-9 text-16` and its lesser ones smaller. A band's call to action is
+            // the loudest thing in the band, so it takes the large step; the hit area is 56px in
+            // both axes before padding, well past the 44px minimum, so no `rv-hit-44` is needed.
+            'inline-flex h-14 items-center rounded-pill px-9 text-base',
+            'transition-[color,background-color,border-color] duration-(--rv-duration-fast) ease-standard',
             index === 0
-              ? 'inline-flex h-11 items-center rounded-(--rv-radius-sm) bg-surface-accent px-6 text-base text-ink-on-accent hover:brightness-110'
-              : 'inline-flex h-11 items-center rounded-(--rv-radius-sm) border border-line-strong px-6 text-base text-ink hover:bg-surface-raised'
-          }
+              ? // The inverse fill: ivory on the dark bands, obsidian on the warm ones, decided by
+                // the scheme rather than by this component. Same rule as Button's `primary`.
+                'bg-surface-inverse text-ink-inverse hover:brightness-125'
+              : // The restrained outline. It borrows the accent ink rather than the strong line so
+                // the pair reads as one family — champagne over the dark grounds, bronze over the
+                // warm ones — and both values are AA on every scheme they can appear in.
+                'border border-ink-accent text-ink-accent hover:bg-surface-raised',
+          )}
         >
           {action.label}
         </a>

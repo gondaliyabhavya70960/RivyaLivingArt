@@ -46,6 +46,43 @@
   --rv-color-bone-well: #e9e8e4;
   --rv-color-champagne-deep: #83672f;
 
+  /* ---- primitive: the warm editorial grounds (§2.3a, amendment A46) ----
+   *
+   * MINERAL AND SAND ARE MEASURED VALUES, NOT CHOSEN ONES. Both are read verbatim out of the
+   * reference build's own `:root` — `--mineral:#f4f1e9` and `--sand:#e7e0d5` — so the warm half
+   * of this palette is the reference's, to the byte.
+   *
+   * THEY ARE NEW PRIMITIVES RATHER THAN A REPOINTED `--rv-color-bone`, and that distinction is
+   * the whole reason this block exists. `check-tokens.mjs` re-derives the ten-step neutral ramp
+   * by OKLab interpolation between `--rv-color-obsidian` and `--rv-color-bone`; repointing bone
+   * to mineral re-derives NINE of those ten steps, and bone is also `--rv-ink-primary` on both
+   * dark schemes, so the change would have moved every body colour on the site to chase a light
+   * ground. Adding beside it costs nothing and moves nothing.
+   *
+   * THE FOUR DERIVED STEPS ARE ON THE LINE THE TWO ANCHORS DEFINE. Treating mineral -> sand as
+   * one unit step t=1 in OKLab and continuing along the same line gives t=0.5, 1.5, 2 and 2.5 —
+   * so the warm surfaces step the way the reference's own two do, and a fifth step later is a
+   * calculation rather than a preference. Reproduce with the rule in DESIGN_SYSTEM.md §2.3a.
+   */
+  --rv-color-mineral: #f4f1e9;
+  --rv-color-mineral-raised: #ede8df;
+  --rv-color-sand: #e7e0d5;
+  --rv-color-sand-raised: #e1d8cb;
+  --rv-color-sand-raised-2: #dacfc1;
+  --rv-color-sand-sunken: #d4c7b8;
+
+  /*
+   * TWO WARM ACCENT INKS, BECAUSE ONE DOES NOT CLEAR AA ON BOTH GROUNDS.
+   *
+   * `--rv-color-champagne-ink` is the reference's own `--champagne-ink:#75602f`. It measures
+   * 5.36:1 on mineral and 4.96:1 on mineral-raised — comfortably AA — but only 4.62:1 on sand
+   * and 4.26:1 on sand-raised, which fails. Rather than darken the reference's value everywhere,
+   * SAND takes one further step down the same hue (6.38:1 on its ground, 5.92:1 on its raised).
+   * This mirrors what BONE already does with `--rv-color-champagne-deep` for the same reason.
+   */
+  --rv-color-champagne-ink: #75602f;
+  --rv-color-champagne-ink-deep: #5f4b1f;
+
   /* ---- primitive: state (§2.9) ---- */
   --rv-color-success-dark: #2e804b;
   --rv-color-success-light: #4d9d66;
@@ -64,18 +101,35 @@
   --rv-color-info-soft-light: #e4f3fe;
   --rv-color-info-soft-dark: #122532;
 
-  /* ---- typography: families (§3.1) ----
-     Two loaded families only. --rv-font-mono ships no file: it is a device-resident
-     stack, which is why the two-family ceiling in ops/PERFORMANCE.md §2.2 is not breached.
-     next/font sets --rv-font-display-src and --rv-font-body-src in app/layout.tsx. */
+  /* ---- typography: families (§3.1, amendment A46) ----
+     THREE loaded families since A46, and the third is deliberate rather than a slip. --rv-font-mono
+     used to ship no file — a device-resident stack — which kept the two-family ceiling in
+     ops/PERFORMANCE.md §2.2. That was right while mono was a developer affordance (an id, a
+     checksum, a public_id in Studio) and wrong once the eyebrow above every section heading was set
+     in it: a device stack resolves to SF Mono, Consolas or Liberation Mono depending on the
+     visitor's machine, so the one detail that repeats on every band of every page would have looked
+     different on every platform. JetBrains Mono is 400-only, latin-only and NOT preloaded; §2.2 is
+     amended alongside this rather than quietly exceeded. The device stack stays as the fallback.
+     next/font sets all three --rv-font-*-src variables in app/layout.tsx. */
   --rv-font-display:
     var(--rv-font-display-src), 'Iowan Old Style', 'Palatino Linotype', Georgia, serif;
   --rv-font-body:
     var(--rv-font-body-src), system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
   --rv-font-mono:
-    ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+    var(--rv-font-mono-src), ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas,
+    'Liberation Mono', monospace;
 
   /* ---- typography: display scale, fluid 360 -> 1440 (§3.2) ---- */
+  /*
+   * THE HERO STEP IS THE REFERENCE'S OWN CLAMP, AND IT IS A SEVENTH STEP RATHER THAN A WIDENED
+   * SIXTH. The reference sets its opening headline with `clamp(3rem, 7vw + .5rem, 7.5rem)`,
+   * which evaluates to 103.41px at the 1363px viewport the brief measured — the ~103px it
+   * records. `--rv-text-display-2xl` reaches only 100.00px there and caps at 104px, so matching
+   * the reference by widening it would have pushed every OTHER display-2xl on the site up with
+   * it. A hero is the one element whose size is chosen for the viewport rather than for the
+   * scale, so it gets its own token and the six-step scale is left alone.
+   */
+  --rv-text-display-hero: clamp(3rem, 7vw + 0.5rem, 7.5rem);
   --rv-text-display-2xl: clamp(3rem, 1.833rem + 5.185vw, 6.5rem);
   --rv-text-display-xl: clamp(2.5rem, 1.75rem + 3.333vw, 4.75rem);
   --rv-text-display-lg: clamp(2.125rem, 1.625rem + 2.222vw, 3.625rem);
@@ -102,7 +156,17 @@
 
   /* ---- typography: weight, leading, tracking (§3.4) ---- */
   --rv-weight-display: 400;
-  --rv-weight-display-strong: 500;
+  /*
+   * 400, NOT 500, SINCE THE DISPLAY FACE BECAME INSTRUMENT SERIF (amendment A46).
+   *
+   * Instrument Serif ships ONE weight — `next/font/google`'s own metadata lists
+   * `"weights": ["400"]` and nothing else. Asking a 500 of it does not fail loudly; the browser
+   * SYNTHESISES one by smearing the 400 outlines, which on a 103px headline is visible as a
+   * blurred, uneven stroke. Newsreader shipped 200-800 and this token was real; it is not any
+   * more, so it states the truth and `HeadingHighlight` carries its WCAG 1.4.1 non-colour
+   * marking as a genuine italic — a face Instrument Serif DOES ship — rather than a fake weight.
+   */
+  --rv-weight-display-strong: 400;
   --rv-weight-body: 400;
   --rv-weight-medium: 500;
   --rv-weight-strong: 600;
@@ -198,6 +262,27 @@
   --rv-bp-xl: 1280px;
   --rv-bp-2xl: 1440px;
   --rv-bp-3xl: 1920px;
+
+  /*
+   * THE SECTION RAIL'S GUTTER (§5.3a, amendment A46). The reference reserves a fixed 56px
+   * column at the inline start of wide viewports for its numbered section index and calls it
+   * `--gutter-cure:56px`. It is a LAYOUT reservation rather than a component width: the rail is
+   * `position: fixed`, so without the matching start padding on the shell it would sit on top of
+   * the content rather than beside it. Bound to `lg` and above, like the rail itself.
+   */
+  --rv-rail-gutter: 56px;
+
+  /*
+   * THE MASTHEAD'S HEIGHT, as a token because two things need to agree on it and they are in
+   * different files: the header draws it, and `base.css` pulls a dark opening band up by exactly
+   * it so the band runs behind the header rather than beside it (§7.14a). A literal in either
+   * place would drift from the other the first time the header's padding changed, and the symptom
+   * — a hairline of page ground above the hero — is the kind nobody files.
+   *
+   * 80px is the reference's own `h-20` masthead, and it is what the existing `py-4` row plus its
+   * content already measures.
+   */
+  --rv-header-h: 80px;
 
   --rv-container-prose: 44rem;
   --rv-container-default: 75rem;

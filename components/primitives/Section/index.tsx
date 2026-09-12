@@ -37,7 +37,13 @@ import { asTag } from '@/lib/ui/polymorphic'
 export type SectionSpacing = 'sm' | 'md' | 'lg' | 'xl'
 
 /** The three permitted values of `page_sections.theme` (§2.4), spelled as the column is. */
-export type SectionScheme = 'DEEP' | 'INK' | 'BONE'
+/**
+ * The five grounds a band may sit on (§2.4, §2.4a). MINERAL and SAND are the warm editorial pair
+ * added by amendment A46; DEEP, INK and BONE are unchanged. A scheme is an editorial decision
+ * made per section, so this union is what `page_sections.theme` is parsed into — see
+ * `schemeOf()` in SectionShell, which falls back rather than throwing on an unknown value.
+ */
+export type SectionScheme = 'DEEP' | 'INK' | 'BONE' | 'MINERAL' | 'SAND'
 
 export type SectionElement = 'section' | 'div' | 'article' | 'aside' | 'header' | 'footer'
 
@@ -52,6 +58,8 @@ const SCHEME: Record<SectionScheme, string> = {
   DEEP: 'rv-scheme-deep',
   INK: 'rv-scheme-ink',
   BONE: 'rv-scheme-bone',
+  MINERAL: 'rv-scheme-mineral',
+  SAND: 'rv-scheme-sand',
 }
 
 export interface SectionProps extends React.HTMLAttributes<HTMLElement> {
