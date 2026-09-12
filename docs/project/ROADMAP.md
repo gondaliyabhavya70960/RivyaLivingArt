@@ -236,6 +236,37 @@ duplicated in `tests/e2e/about.spec.ts` and `process.spec.ts`, both of which ski
 no published sections — which has been the state of every route, so it has never executed. The
 specification for the classifier is written and deferred with the rest of the script work.
 
+## Post-launch backlog — there is no Phase 47
+
+Phase 46 is the last phase. Its exit criteria say so, and say where later work goes instead: here.
+Nothing below is a commitment or a date. Each row is something a person found, with enough detail to
+act on and the reason it was not done at the time.
+
+### The owner's, and nobody else can do them
+
+| # | Item | Why it is the owner's | Where it is written down |
+|---|---|---|---|
+| O1 | The 41-row owner-verification backlog | Every row states something about a real business that only the owner can confirm (D10) | [`../content/INITIAL_CONTENT_INVENTORY.md`](../content/INITIAL_CONTENT_INVENTORY.md), and the card on `/studio` |
+| O2 | The capability-boundary dry run — ten Studio operations, unaided | It is a measurement of whether the software is usable by its owner, which only the owner can take | [`../ops/TESTING.md`](../ops/TESTING.md) §14.3 |
+| O3 | The handover walkthrough | A fact about the world: whether it happened, and when | [`../studio/STUDIO_GUIDE.md`](../studio/STUDIO_GUIDE.md) |
+| O4 | Runbook screenshots | Cannot be captured in the build container at all — the local harness has no auth server, so the Studio is unreachable by a browser. They need a preview deployment against the Phase 42 fixture, and must contain no real enquirer's data and no environment value | [`../studio/STUDIO_GUIDE.md`](../studio/STUDIO_GUIDE.md) §16 |
+| O5 | Phase 45 questions 1 and 5 — does it feel like a collectible-design studio, and the first-time walkthrough | Question 1 is a judgement the people who built it cannot make about it; question 5 needs three first-time participants | [`../design/DESIGN_SYSTEM.md`](../design/DESIGN_SYSTEM.md) §19 |
+| O6 | The two deployment drills, rollback and forward-fix | Both need a production deployment a person is willing to break; with one Supabase project the forward-fix drill would migrate the production database | [`../ops/DEPLOYMENT.md`](../ops/DEPLOYMENT.md) §11.1 |
+| O7 | The canonical-host setting | `rivyalivingart.com` and `www` each redirect to the other, so the live site is unreachable on both. Half the cause is a Vercel dashboard setting no repository can see; preflight gate 14 now detects it | [`../ops/DEPLOYMENT.md`](../ops/DEPLOYMENT.md) §7.0 |
+
+### Engineering, found in passing and deliberately not fixed in the phase that found it
+
+| # | Item | Evidence | Why it waited |
+|---|---|---|---|
+| E1 | `lib/cms/docs/index.ts` reads its index with a runtime `join(process.cwd(), …)`, so Turbopack traces **the whole project** into the server bundle | The Vercel build log warns in as many words: "leads to all source files (including the public folder) to be deployed as part of the server code… can slow down deployments or lead to failures when size limits are exceeded" | A warning, not an error, and Phase 38's code rather than Phase 46's. The fix is a statically-scoped path or a `turbopackIgnore` comment, and it wants measuring before and after |
+| E2 | There is no `.nvmrc` | The recovery sequence in [`../../README.md`](../../README.md) tells a newcomer to run `nvm use`, which has nothing to read. Node 22 works | Adding one changes the version Vercel builds with, which is a deployment change and does not belong in a documentation phase |
+| E3 | `npm run build` needs a reachable database and an environment before it will run at all | Both steps are now documented in [`../../README.md`](../../README.md), having been discovered by executing the sequence | Documented rather than automated: a setup script that minted its own throwaway credentials would be the third way to configure this project |
+| E4 | Coverage is measured on the `unit` project alone | [`../ops/TESTING.md`](../ops/TESTING.md) §13 | Merging three runners' coverage is a harness change, and the thresholds would need re-deriving |
+| E5 | Studio browser coverage stops at the login page — about 156 specs skip | [`../ops/TESTING.md`](../ops/TESTING.md) §13 | Needs an auth server the local PostgREST harness cannot provide. The specs are written and will run the moment one exists |
+| E6 | Visual baselines are not compared in CI | [`../ops/TESTING.md`](../ops/TESTING.md) §3 | Font rasterisation differs between this container and a GitHub runner by more than a page of text absorbs. Fixing it means generating baselines on the runner |
+
+Phase 45's own deferred creative work is in its section above rather than repeated here.
+
 ## Media position
 
 250 Higgsfield assets already exist and are catalogued in
