@@ -63,17 +63,35 @@ describe('the documentation parser, on front matter', () => {
     expect(JSON.stringify(blocks)).toContain('Still here')
   })
 
-  it('shows no metadata key on any of the ten allowlisted documents', () => {
-    // The invariant, asserted against the real files rather than a fixture: whatever the ten are
-    // today, none of them may render its front matter as content.
-    for (const key of DOC_KEYS) {
-      const body = readFileSync(DOC_ALLOWLIST[key].path, 'utf8')
-      const rendered = JSON.stringify(parseMarkdown(body))
+  it('renders no front-matter BLOCK on any of the ten allowlisted documents', () => {
+    /*
+     * THE ASSERTION IS THE BLOCK'S SIGNATURE, NOT A SUBSTRING — corrected when this test failed on a
+     * correct page.
+     *
+     * It used to search the rendered output for `owner_verification:` anywhere. That caught the
+     * defect, and it also caught the Studio guide the moment Phase 46 added a sentence EXPLAINING
+     * that its front matter reads `owner_verification: OWNER_VERIFICATION_REQUIRED` — prose inside a
+     * code span, in the body, exactly where it belongs. A documentation set is entitled to document
+     * its own conventions, and a gate that forbids a document from naming a key is a gate that will
+     * be deleted the first time somebody needs to write about front matter.
+     *
+     * What actually goes wrong is a whole BLOCK of `key: value` lines rendered as one paragraph,
+     * which is what the unstripped fence produces. So the signature is what this looks for: a single
+     * text block carrying several of the five keys at once. One key in a sentence is prose; four
+     * keys in one paragraph is the metadata block.
+     */
+    const KEYS = ['doc:', 'status:', 'owning_phase:', 'last_reviewed:', 'owner_verification:']
 
-      for (const metadataKey of ['owning_phase', 'last_reviewed', 'owner_verification']) {
-        expect(rendered, `${key} renders its front matter as page content`).not.toContain(
-          `${metadataKey}:`,
-        )
+    for (const key of DOC_KEYS) {
+      const blocks = parseMarkdown(readFileSync(DOC_ALLOWLIST[key].path, 'utf8'))
+
+      for (const block of blocks) {
+        const text = JSON.stringify(block)
+        const present = KEYS.filter((metadataKey) => text.includes(metadataKey)).length
+        expect(
+          present,
+          `${key} renders a block carrying ${String(present)} of the five front-matter keys, which is the front matter itself`,
+        ).toBeLessThan(3)
       }
     }
   })
