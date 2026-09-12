@@ -4,6 +4,7 @@ import { Container, type ContainerSize } from '@/components/primitives/Container
 import { Section, type SectionScheme, type SectionSpacing } from '@/components/primitives/Section'
 import type { BlockType } from '@/lib/cms/block-types'
 import type { PageSection } from '@/lib/supabase/schemas'
+import { cn } from '@/lib/ui/cn'
 
 /**
  * The chrome every block shares: the scheme band, the vertical rhythm and the container.
@@ -106,6 +107,15 @@ export type SectionShellProps = {
   readonly spacing?: SectionSpacing
   readonly container?: ContainerSize | 'none'
   readonly defaultScheme?: SectionScheme
+  /**
+   * The §4.2 entrance. On by default, and off for the first band on a page.
+   *
+   * A HERO MUST NEVER ANIMATE. It holds the LCP element, and §4.2's third cross-cutting rule is
+   * that motion never moves it — an entrance on the largest image on the page is the one place the
+   * rule has a measurable cost rather than a stylistic one. `SectionList` turns this off for
+   * `isFirst`; nothing else should need to.
+   */
+  readonly reveal?: boolean
   readonly className?: string
   readonly children: React.ReactNode
 }
@@ -130,6 +140,7 @@ export function SectionShell({
   spacing,
   container = 'default',
   defaultScheme = 'DEEP',
+  reveal = true,
   className,
   children,
 }: SectionShellProps): React.ReactElement {
@@ -141,7 +152,7 @@ export function SectionShell({
       data-block-type={section.block_type}
       scheme={schemeOf(section.theme, defaultScheme)}
       spacing={spacing ?? rhythmOf(section.block_type)}
-      className={className}
+      className={reveal ? cn('rv-reveal', className) : className}
     >
       {body}
     </Section>

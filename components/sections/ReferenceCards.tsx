@@ -77,7 +77,7 @@ export function ReferenceCards({
   if (cards.length === 0) return null
 
   return (
-    <Grid gap={6} className="grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+    <Grid gap={6} className="rv-reveal-group grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
       {cards.map((card) => {
         const asset = card.mediaId === null ? null : (assets.get(card.mediaId) ?? null)
         // The marker is a data attribute rather than a class: a class is styling and gets

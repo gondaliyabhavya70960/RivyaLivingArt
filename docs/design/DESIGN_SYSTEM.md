@@ -715,6 +715,48 @@ Three cross-cutting rules:
   `padding` are not animatable in this system. Compositor properties only: `transform`, `opacity`,
   `filter`, `clip-path`, plus colour on paint-only properties.
 
+#### 4.2.1 Where WOOD actually lives: `app/styles/motion.css`
+
+`Reveal` (RC-207) was built in Phase 02 to carry the WOOD entrance and, until the editorial
+redesign, **no section used it** — `grep` found it imported by `Tooltip`, `DropdownMenu` and
+`Accordion` and by not one renderer. Every CMS band on the public site appeared instantly, fully
+formed, with no entrance at all.
+
+That was not an oversight so much as an impossibility. A section renderer may never be a Client
+Component (`scripts/site/check-client-boundary.mjs`), and `components/sections/registry.ts` imports
+every renderer — so one static import of a client component is an island on all sixteen CMS routes.
+`Reveal` was correct and unusable at the same time.
+
+A scroll-driven CSS animation has neither problem: it hydrates nothing, it is in no bundle, and the
+renderer stays a Server Component that adds one class name.
+
+| Class | Applied to | Range |
+|---|---|---|
+| `.rv-reveal` | every band, by `SectionShell` | `entry 0% cover 30%` |
+| `.rv-reveal-fade` | media-led bands wanting opacity alone | `entry 0% cover 25%` |
+| `.rv-reveal-group > *` | card grids — `CategoryGrid`, `MaterialPalette`, `SecondaryObjects`, `ReferenceCards` | `entry 0% cover 25%` |
+
+Four rules make it safe, and each is a way the file could otherwise strand a band at `opacity: 0`:
+
+1. **The unanimated state is the finished state.** No `animation-name` is declared outside the
+   `@supports (animation-timeline: view())` block, so a browser without scroll timelines renders
+   the band exactly as it did before the file existed. This is what §4.2's "motion never gates
+   content" means in CSS, and it is the same argument `Reveal` makes in JavaScript.
+2. **Reduced motion is suppressed here, not inherited.** The floor in `base.css` sets
+   `animation-duration: 0.01ms !important` — a *time* duration. A `view()` timeline is driven by
+   scroll progress, so that floor aims at a different instrument and cannot be relied on to land
+   the animation at its end state. Each class carries its own `animation: none`.
+3. **The first band never animates.** It holds the LCP element, and §4.2's second cross-cutting
+   rule forbids moving it. Expressed as `main > section:first-of-type.rv-reveal`, because sections
+   are direct children of `<main>` — threading `isFirst` in from twenty-seven call sites would put
+   one rule in twenty-seven places.
+4. **A band either arrives as one thing or its children do.** `.rv-reveal:has(.rv-reveal-group)`
+   cancels the parent, so a grid several components down cannot make its cards travel twice the
+   distance the token allows.
+
+`tests/unit/motion-layer.test.ts` asserts all four against the stylesheet text, because jsdom
+implements no scroll timeline and drops the three properties that matter.
+
 ### 4.3 Reduced-motion contract
 
 `prefers-reduced-motion: reduce` selects a **static branch**, not a shortened animation. Phase 02's

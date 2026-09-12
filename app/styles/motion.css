@@ -1,0 +1,164 @@
+/*
+ * THE SCROLL MOTION LAYER (§4.2) — the WOOD and SPACE classes, in CSS, at zero island cost.
+ *
+ * WHY THIS FILE EXISTS. Phase 02 specified six motion classes and built `Reveal` (RC-207) to carry
+ * the entrance one. Three years of renderers later, `grep` finds `Reveal` imported by `Tooltip`,
+ * `DropdownMenu` and `Accordion` — and by NOT ONE SECTION. Every CMS band on the public site has
+ * always appeared instantly, fully formed, with no entrance at all, because applying a Client
+ * Component to a band would have put an island on every route that renders one: a section renderer
+ * may never be a Client Component (`scripts/site/check-client-boundary.mjs`), and the registry
+ * imports every renderer, so one static import is an island on all sixteen CMS routes. The
+ * component was correct and unusable at the same time.
+ *
+ * A scroll-driven CSS animation has neither problem. It hydrates nothing, it is not in any bundle,
+ * and the renderer stays a Server Component that adds one class name.
+ *
+ * ------------------------------------------------------------------------------------------------
+ * THE THREE RULES EVERY CLASS HERE OBEYS, and each is load-bearing rather than a style:
+ *
+ * 1. THE UNANIMATED STATE IS THE FINISHED STATE. No `animation-name` is declared outside the
+ *    `@supports` block, so a browser without scroll timelines renders the band exactly as it
+ *    rendered before this file existed — visible, at full opacity, in place. This is the same
+ *    argument `Reveal` makes in JavaScript ("hiding what the browser has already painted is not an
+ *    entrance, it is a flash") and it is what §4.2's "motion never gates content" means in CSS.
+ *
+ * 2. REDUCED MOTION IS SUPPRESSED HERE, NOT INHERITED FROM base.css. The floor in `base.css` sets
+ *    `animation-duration: 0.01ms !important` — a TIME duration. A `view()` timeline is driven by
+ *    scroll progress, not by time, so that floor is aimed at a different instrument and cannot be
+ *    relied on to land the animation at its end state. Each class below carries its own
+ *    `@media (prefers-reduced-motion: reduce) { animation: none }`. Getting this wrong leaves the
+ *    band at `opacity: 0` forever, for precisely the people least able to tolerate it.
+ *
+ * 3. COMPOSITOR PROPERTIES ONLY. `opacity` and `transform`, never a layout property — §4.2's third
+ *    cross-cutting rule. Nothing here can cause a reflow, and nothing here moves the LCP element:
+ *    the hero is the first section on a page and `.rv-reveal` is not applied to it.
+ *
+ * Durations and easings come from `--rv-duration-*` and `--rv-ease-*`. Travel comes from
+ * `--rv-motion-rise-*`, which is capped at 24px by §4.2 — an entrance, not a journey.
+ */
+
+@keyframes rv-rise {
+  from {
+    opacity: 0;
+    transform: translate3d(0, var(--rv-motion-rise-lg), 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes rv-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/*
+ * THE BAND ENTRANCE (WOOD — settle).
+ *
+ * `animation-range: entry 0% cover 30%` runs the entrance over the first third of the band's
+ * approach and finishes it well before the band is centred, so a visitor scrolling at any speed
+ * reads a settled section rather than one still arriving. `both` holds the end state after the
+ * range, which is what stops a band fading back out as it leaves.
+ */
+.rv-reveal {
+  /* No animation declared here on purpose — see rule 1. */
+}
+
+/*
+ * THE STAGGER (WOOD, applied to a list).
+ *
+ * Children enter on their own timelines rather than on a delay from the parent, so a card that is
+ * already on screen is already finished — no queue, and nothing waits on a sibling above the fold.
+ * §4.2 caps the stagger at six items; beyond that the effect reads as a loading spinner, so the
+ * seventh child onward shares the sixth's range.
+ */
+.rv-reveal-group > * {
+  /* No animation declared here on purpose — see rule 1. */
+}
+
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .rv-reveal {
+      animation: rv-rise var(--rv-duration-flow) var(--rv-ease-out) both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 30%;
+    }
+
+    /*
+     * A BAND EITHER ARRIVES AS ONE THING OR ITS CHILDREN DO, NEVER BOTH.
+     *
+     * `ReferenceCards` is shared by selected works, portfolio, journal and collections, so a band
+     * containing a stagger cannot be known from the renderer that opened it — the grid is several
+     * components down. Without this the parent and its children would run the same 24px rise over
+     * the same range and the cards would travel twice as far as the token allows.
+     *
+     * `:has()` puts the rule where the fact is, instead of threading a `reveal={false}` through
+     * every renderer that might one day contain a grid. It is inside `@supports` with everything
+     * else, and support for it is strictly wider than for scroll timelines.
+     */
+    .rv-reveal:has(.rv-reveal-group) {
+      animation: none;
+    }
+
+    .rv-reveal-fade {
+      animation: rv-fade var(--rv-duration-scene) var(--rv-ease-standard) both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 25%;
+    }
+
+    .rv-reveal-group > * {
+      animation: rv-rise var(--rv-duration-slower) var(--rv-ease-out) both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 25%;
+    }
+  }
+}
+
+/*
+ * THE FIRST BAND ON A PAGE NEVER ANIMATES.
+ *
+ * §4.2's third cross-cutting rule is that motion never moves the LCP element, and the LCP element
+ * is the image in the first section — `MediaImage` gives exactly one element per route
+ * `fetchpriority="high"`, and `scripts/perf/check-priority-images.mjs` fails the build if a route
+ * has none or two. An entrance on that element is the one place the rule has a measurable cost
+ * rather than a stylistic one.
+ *
+ * IT IS A SELECTOR RATHER THAN A PROP, and that is the smaller change by a long way: `isFirst`
+ * reaches every renderer already, but threading it into `SectionShell` from twenty-seven call
+ * sites to express one rule would put the rule in twenty-seven places. Sections are direct
+ * children of `<main>` — `SectionList` and `renderCmsPage` both return fragments, which create no
+ * DOM node — so `:first-of-type` is the first band, whatever the block type happens to be. A
+ * renderer that needs to opt out for its own reason still can, with `reveal={false}`.
+ *
+ * IT IS BELT AND BRACES RATHER THAN THE ONLY GUARD. An element already fully in view when the page
+ * loads is past `animation-range`, and `animation-fill-mode: both` holds it at the end state — so
+ * an above-the-fold band is painted finished even without this rule. That is what stops the
+ * entrance from being a flash of blank page; this is what stops it from running at all.
+ */
+main > section:first-of-type.rv-reveal {
+  animation: none;
+  animation-timeline: none;
+}
+
+/*
+ * SUPPRESSION, STATED TWICE ON PURPOSE.
+ *
+ * The `no-preference` query above already means these rules never attach for a visitor who asked
+ * for less motion. This block is the second lock: it also catches a preference that changes after
+ * paint, and it is what a reader looking for the reduced-motion branch will search for. `animation:
+ * none` restores the declared state — full opacity, no transform — because that state was never
+ * overridden outside the `@supports` block.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .rv-reveal,
+  .rv-reveal-fade,
+  .rv-reveal-group > * {
+    animation: none;
+    animation-timeline: none;
+  }
+}

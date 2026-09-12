@@ -54,7 +54,7 @@ export function MaterialPaletteSection({
     <SectionShell section={section}>
       <Stack gap={10}>
         <SectionCopy section={section} />
-        <Grid gap={6} className={`grid-cols-1 sm:grid-cols-2 ${columns}`}>
+        <Grid gap={6} className={`rv-reveal-group grid-cols-1 sm:grid-cols-2 ${columns}`}>
           {materials.map((material) => {
             const index = material.media_index ?? null
             return (
