@@ -3,10 +3,11 @@ import * as React from 'react'
 import { MediaFrame } from '@/components/primitives/MediaFrame'
 import { MediaImage } from '@/components/patterns/MediaImage'
 import type { AspectRatio } from '@/components/primitives/AspectBox'
+import { cropFor, cropSegment } from '@/lib/media/crop'
 import { altTextOf, mediaRefOf } from '@/lib/cms/media'
 import { MEDIA_FALLBACK_LABEL_KEY, siteStringOrEmpty, type SiteStrings } from '@/lib/cms/strings'
 import type { PresetName } from '@/lib/media/transform'
-import type { MediaAsset } from '@/lib/supabase/schemas'
+import type { BoundMediaAsset } from '@/lib/cms/media'
 
 /**
  * MediaSlot — the two ways any surface shows a CMS-bound asset: one picture, or a desktop/mobile
@@ -33,7 +34,7 @@ import type { MediaAsset } from '@/lib/supabase/schemas'
  */
 
 export type BlockImageProps = {
-  readonly asset: MediaAsset | null
+  readonly asset: BoundMediaAsset | null
   readonly ratio: AspectRatio
   readonly mobileRatio?: AspectRatio
   /** A floor on the frame's height, as a raw token value. See `AspectBoxProps.minBlockSize`. */
@@ -91,6 +92,27 @@ export function BlockImage({
    */
   const deliverable = cloudName === '' ? null : asset
 
+  /*
+   * THE EDITOR'S FOCAL POINT, RESOLVED HERE BECAUSE HERE IS WHERE BOTH FACTS MEET.
+   *
+   * A crop belongs to an asset AND a ratio — `media_crops` is keyed on the pair — and this frame is
+   * the first component that knows both: the asset arrives as a prop, the ratio is the box it is
+   * about to reserve. Every layer above knows one or the other.
+   *
+   * `mobileRatio` GETS ITS OWN CROP, which is the half of §19.1 question 7 that was missing. The
+   * Studio lets an editor set a 9:16 focal point precisely because a 21:9 crop of the same
+   * photograph is a different picture, and until now neither reached a visitor.
+   *
+   * NULL IS THE HONEST ANSWER when no editor has chosen one: `imageUrl` then delivers the master
+   * under the preset's own `g_auto`, exactly as it did before.
+   */
+  const crops = deliverable?.crops
+  const cropAt = (at: AspectRatio): string | null => {
+    if (crops === undefined) return null
+    const crop = cropFor(crops, at)
+    return crop === undefined ? null : cropSegment(crop)
+  }
+
   return (
     <MediaFrame
       ratio={ratio}
@@ -116,6 +138,7 @@ export function BlockImage({
            */
           decorative={deliverable.is_decorative && altOverride === null}
           ratio={ratio}
+          cropSegment={cropAt(ratio)}
           loading={eager ? 'eager' : 'lazy'}
           priority={priority}
         />
@@ -125,8 +148,8 @@ export function BlockImage({
 }
 
 export type ResponsiveMediaProps = {
-  readonly desktop: MediaAsset | null
-  readonly mobile: MediaAsset | null
+  readonly desktop: BoundMediaAsset | null
+  readonly mobile: BoundMediaAsset | null
   readonly desktopRatio: AspectRatio
   readonly mobileRatio: AspectRatio
   readonly preset: PresetName

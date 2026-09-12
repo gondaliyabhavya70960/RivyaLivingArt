@@ -3,7 +3,9 @@ import 'server-only'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 import type { Database } from '@/lib/supabase/database.types'
+import { cropsByRatio, type CropsByRatio, type MediaCropRow } from '@/lib/media/crop'
 import { listMediaAssetsByIds } from '@/lib/supabase/repositories/media'
+import { cropsForAssets } from '@/lib/supabase/repositories/media-crops'
 import type { MediaAsset, PageSection } from '@/lib/supabase/schemas'
 
 import { blockMediaEntries } from './block-media'
@@ -35,12 +37,57 @@ export function pageMediaIds(sections: readonly PageSection[]): readonly string[
   return [...new Set(sections.flatMap(sectionMediaIds))]
 }
 
-/** Assets by id for a whole page, in one query. Ids RLS hides are simply absent. */
+/**
+ * A `media_assets` row carrying the crops an editor stored for it.
+ *
+ * A PLAIN `MediaAsset` IS ASSIGNABLE TO THIS, because `crops` is optional — so every existing
+ * caller and every test fixture keeps working unchanged, and a component that does not care about
+ * crops never learns they exist.
+ *
+ * THE ALTERNATIVE WAS TWENTY CALL SITES. The crop for a picture depends on the RATIO it is being
+ * rendered at, and the only place that knows both the asset and the ratio is the frame itself —
+ * `BlockImage`, deep inside `MediaSlot`. Threading a separate crops map down from `renderCmsPage`
+ * would have meant a new prop on every renderer that draws a picture, to express one rule. Carrying
+ * the crops ON the asset puts the rule where the decision is.
+ */
+export type BoundMediaAsset = MediaAsset & { readonly crops?: CropsByRatio }
+
+/**
+ * Assets by id for a whole page, with their crops, in two queries. Ids RLS hides are simply absent.
+ *
+ * TWO QUERIES, NOT ONE PER PICTURE. `cropsForAssets` takes the whole id list at once, for the
+ * reason its own header gives: a category page resolves a dozen slots, and a crop lookup per slot
+ * would turn one render into a dozen round trips for rows that together weigh less than the request
+ * headers asking for them.
+ *
+ * A CROP FAILURE IS NOT A PAGE FAILURE. `media_crops` is an enhancement — the master renders
+ * perfectly well uncropped — so a read that throws costs the focal points and nothing else. A page
+ * that 500s because an editor's crop table was unreachable would be a worse outcome than the
+ * centre crop it was trying to improve on.
+ */
 export async function loadPageMedia(
   client: Client,
   sections: readonly PageSection[],
-): Promise<ReadonlyMap<string, MediaAsset>> {
-  return listMediaAssetsByIds(client, pageMediaIds(sections))
+): Promise<ReadonlyMap<string, BoundMediaAsset>> {
+  const assets = await listMediaAssetsByIds(client, pageMediaIds(sections))
+  if (assets.size === 0) return assets
+
+  const rows = await cropsForAssets(client, [...assets.keys()]).catch(() => [])
+  if (rows.length === 0) return assets
+
+  const byAsset = new Map<string, MediaCropRow[]>()
+  for (const row of rows) {
+    const existing = byAsset.get(row.media_asset_id)
+    if (existing === undefined) byAsset.set(row.media_asset_id, [row])
+    else existing.push(row)
+  }
+
+  return new Map(
+    [...assets].map(([id, asset]) => {
+      const own = byAsset.get(id)
+      return [id, own === undefined ? asset : { ...asset, crops: cropsByRatio(own) }]
+    }),
+  )
 }
 
 /**
@@ -72,8 +119,8 @@ export function altTextOf(asset: MediaAsset, override: string | null): string {
  * Resolution, not policy: it answers "which asset is this" and nothing about how to display it.
  */
 export type SectionMedia = {
-  readonly desktop: MediaAsset | null
-  readonly mobile: MediaAsset | null
+  readonly desktop: BoundMediaAsset | null
+  readonly mobile: BoundMediaAsset | null
   /**
    * Payload entries for one declared slot, in payload order — index 0 is `slot[0]`.
    *
@@ -81,12 +128,12 @@ export type SectionMedia = {
    * renumber it, and a card holding `media_index: 2` would then draw a different picture than the
    * editor chose — silently, and only for the visitors whose RLS hid the earlier one.
    */
-  readonly slot: (slotId: string) => readonly (MediaAsset | null)[]
+  readonly slot: (slotId: string) => readonly (BoundMediaAsset | null)[]
 }
 
 export function sectionMediaFor(
   section: PageSection,
-  assets: ReadonlyMap<string, MediaAsset>,
+  assets: ReadonlyMap<string, BoundMediaAsset>,
 ): SectionMedia {
   const lookup = (id: string | null) => (id === null ? null : (assets.get(id) ?? null))
   const entries = blockMediaEntries(section.payload)
