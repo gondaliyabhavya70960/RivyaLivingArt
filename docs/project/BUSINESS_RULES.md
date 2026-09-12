@@ -1083,6 +1083,19 @@ rule, without deleting the rule, is a rejection.
 | BR-K2 | Requirements are read-only | Doc-contract guard |
 | BR-K3 | Docs move with code | Doc-contract guard |
 | BR-K4 | No silent weakening | Process + review |
+| BR-N1 | No reviews or ratings | RLS (no public write) + schema (absence) |
+| BR-N2 | No shipping, delivery or returns record | Schema (absence) + verification gate on lead times |
+| BR-N3 | No AR or room visualisation | Code boundary (BR-E7) + schema (absence) |
+| BR-N4 | No CRM; the enquiry is the record | Schema (absence) + permission + retention |
+| BR-N5 | No quotation automation | Build guard/test + schema (absence) |
+| BR-N6 | No newsletter delivery | RLS (no public write) + schema (absence) |
+| BR-N7 | One language, declared in one place | Schema (no locale column) + code |
+| BR-N8 | No published accessibility statement | Schema trigger (BR-H1) + owner verification |
+
+The eight `BR-N` rules are §N, the deferred-capability register. The five capabilities in that
+register that restate a rule above — checkout (BR-A1), payments (BR-A2), accounts and the wishlist
+(BR-A3) and configurator pricing (BR-C3) — are indexed under those rules and are deliberately not
+given a second identifier: one rule, one ID, or BR-K4 has two places to be weakened from.
 
 ---
 
@@ -1150,3 +1163,92 @@ Nothing else above knowingly diverges from `CANONICAL-DECISIONS.md`.
    as durable as a foreign key against a list D3 fixes and costs no coupling; `PHASE-31-38.md` raises
    the same choice as its own open question 13. Whichever is chosen, the allowlist and this rule move
    together — BR-K4 forbids changing one without the other.
+
+---
+
+## N. Deliberately not built — the deferred-capability register
+
+Thirteen capabilities a visitor might expect of a furniture site, absent on purpose (FEAT §39). Each
+row carries the decision, the seam a future team would cut at if the owner ever chooses otherwise,
+and the relations that do not exist because of it.
+
+**THESE ARE DECISIONS, NOT PLANS.** No row carries a date, an intention or a "we will". A register
+that reads as a roadmap is worse than no register: the next team takes an omission for a commitment
+somebody already made and builds towards it. Every row is in the present tense — this is what the
+software *is*. Changing any of it is BR-K1, an amendment with a reason, not an implementation
+detail; and BR-K4 forbids weakening one of these rules without removing its mechanism in the same
+change.
+
+**THE SEAM IS THE POINT.** "Not built" tells a future team nothing they could not see for
+themselves. "Not built, and conversion terminates in `inquiries`, which a commerce layer would
+consume rather than replace" tells them what the design already assumes and saves them
+reverse-engineering the intent from an absence. **Every seam below names an artefact that exists in
+this repository today** — a table, an enum value, a column, a module, a route or a flag — so it can
+be opened rather than imagined. A seam naming something imaginary would be worse than no seam at
+all, because it would read as a promise that something had been prepared.
+
+**NO DEAD TABLE WAS CREATED FOR ANY OF THEM**, which is the other half of each decision and the
+reason the register can be trusted. A schema carrying `orders`, `wishlists` and `subscribers` with
+no code behind them is not extensibility; it is thirteen half-decisions the next person has to
+reverse-engineer, and every one of them would need an RLS policy nobody wrote. §N.2 records the
+check against the live schema, its method and its result.
+
+**Why this section is lettered N and sits after the index.** `SECURITY.md` §141 and §916, `TESTING.md`
+§7 and this document's own §M cite §L and §M *by letter*; inserting a rule section before them would
+renumber both and break those citations for the sake of alphabetical tidiness. §L indexes the eight
+rules this section mints.
+
+### N.1 The register
+
+| # | Not built | Rule | The decision | The seam, if it is ever wanted | Nothing exists for it |
+|---|---|---|---|---|---|
+| 1 | Online checkout | **BR-A1** (restated; that rule binds and this row adds only the seam) | The site never takes an order. A one-of-one piece is agreed in conversation, and a basket would promise a transaction nothing behind it can complete. `Place Order` is a label that resolves to the enquiry flow (SEED §31) | Conversion terminates in `inquiries`, written by `app/(site)/_actions/submit-inquiry.ts` and worked at `/studio/inquiries/*`. **A commerce layer would consume that table rather than replace it:** `inquiries.product_id`, `collection_id`, `customization_form_id` and `reference_code` already say what was asked about, `inquiry_events` already records what happened to it, and `inquiry_status` already carries `QUOTED`, `WON` and `LOST`. What is missing is a line-item child table and a money column on it | `carts`, `cart_items`, `checkout_sessions`, `orders`, `order_items` — no relation of any of those names exists in the schema |
+| 2 | Payment gateway | **BR-A2** (restated) | No provider is integrated, referenced, configured or prepared for, and no price is collected, authorised or captured on any Rivya surface. D8 declares no provider variable, so adding one is an amendment rather than a commit | Money is representation, never collection: `products.price_state` (`STARTING_FROM · REQUEST_QUOTE · PRICE_ON_REQUEST · FIXED`) with `price_minor`, `price_from_minor` and `currency` is a number to *display*. The browser half is off too — `lib/security/headers.ts` ships `payment=()` in `Permissions-Policy` on every response — and relaxing that one directive is the visible seam | `payments`, `transactions`, `refunds` |
+| 3 | Customer accounts | **BR-A3** (restated) | Supabase Auth is staff-only and there is no self-registration path anywhere. An account implies stored preferences, a password to lose and a history to disclose, for a conversion that needs none of them | An enquirer's identity is a **reference code, not an account**: `inquiries.reference_code`, reachable only through `public.inquiry_reference_code(uuid)`, is what they quote on WhatsApp (`tests/unit/rls/phase20.test.ts` holds both halves — insert allowed, read denied). Staff identity is `user_role` (`owner · admin · editor · merchandiser · researcher · viewer`) plus `staff_profiles`; BR-A3's note fixes that a customer identity would be a separate Supabase role with its own policy family, never a seventh `user_role` value | `customers`, `customer_profiles`, `addresses` |
+| 4 | Wishlist | **BR-A3** (restated; it names the tables) | A wishlist needs a per-visitor identity to hang on, and BR-A3 forbids one. A cookie- or `localStorage`-scoped list is the same decision taken badly: it survives no device change, it is invisible to the owner, and it still stores a visitor's intent | An enquiry references **at most one** product (`inquiries.product_id`); its attachments are media, not products (`inquiry_attachments.media_asset_id`, written only by `public.attach_inquiry_references()`). The curated-selection machinery that does exist is owner-side rather than visitor-side — `merchandising_slots` and `merchandising_entries`, at `/studio/merchandising/*`. A wishlist would either widen `inquiries` to many products or grant `anon` a second insert policy | `wishlists`, `saved_items`, `saved_carts` |
+| 5 | Reviews and ratings | **BR-N1** | A review is a business fact about work somebody received and a rating is an arithmetic summary of such facts. BR-D1 forbids fabricating either and BR-D5 forbids publishing a named person without consent, so an empty review system would publish nothing while inviting the first fabricated entry | The consent-gated, owner-curated equivalent already exists: `testimonials`, with `client_consent_state` (`NOT_APPLICABLE · PENDING · GRANTED · WITHDRAWN`) and `owner_verification`, public-readable through `testimonials_select_public` and publicly writable by nobody. A review system would need a second `anon` `INSERT` policy beside `inquiries_insert_public` — **the only one in the whole schema** — plus a moderation state and an aggregate column | `reviews`, `product_reviews`, `ratings` |
+| 6 | Shipping and returns | **BR-N2** | Fulfilment of a commissioned piece is arranged per commission. A rate table would have to state a zone, a carrier and a lead time, and BR-H2 classes lead times as availability claims the owner must verify; a returns policy for bespoke work is a legal statement only the owner can make | Fulfilment is **a state and a sentence**, not a record: `products.availability_state` (`READY_STOCK · MADE_TO_ORDER`), `product_specs` rows (label · value · unit, each carrying its own `owner_verification`), and `faqs`. Every lead time lives there as copy the owner confirms. `/privacy` and `/terms` are the pages a returns statement would join; both exist as `pages` rows carrying no sections | `shipments`, `shipping_rates`, `returns`, `deliveries`, `fulfilments` |
+| 7 | AR and room visualisation | **BR-N3** | AR places a piece in the visitor's own room and so asserts its scale there. BR-E7 fixes that the viewer shows what the file carries and what the owner entered and nothing derived; a room composite is a derived picture of a piece that is not in that room | The 3D pipeline is the whole seam and it is already built: `media_kind = 'MODEL_3D'` assets, `model_variant_labels`, the `three_d_viewer` key in `lib/flags/flags.ts`, `components/patterns/ModelViewerMount/Island.tsx` as the only mount point and `components/three/ModelViewer.tsx` as the only module that reaches the engine. An AR surface would consume the same `media_assets` row and would still be bound by BR-E7 — no dimension the file did not carry, no material below `VERIFIED`, no poster captured from the viewer | No AR, scene, room or visualisation relation of any spelling; and no model is generated at all (`scripts/media/assert-no-regeneration.ts`, BR-E2) |
+| 8 | Advanced configurator pricing | **BR-C3** (restated; see also BR-F4b) | The output of a configuration is a *brief*, not a quote. The risk is not that somebody prices the public form — nobody would — but that a `price_modifier` column is added "for internal estimating" and a summary renders it six months later | `customization_forms` · `customization_form_steps` · `customization_form_fields`, with `form_kind` (`FURNITURE · PRESERVATION · THREE_D_RESIN · CUSTOM`) and `form_field_type`: a field describes, it never multiplies. The public counterpart is `price_state = 'REQUEST_QUOTE'`, so a completed brief reaches a person who prices it. `tests/unit/no-pricing.test.ts` reads the migration and the configurator source for price-shaped identifiers and fails on the column the day it is written | No price, cost, multiplier, surcharge, rate or fee column on any of the three tables — asserted by that test — and no `quotes` or `quotations` relation |
+| 9 | CRM | **BR-N4** | The customer record *is* the enquiry. A CRM is a second copy of the same personal data, and a second copy is a second place it must be found to be exported, answered and erased — which BR-I1 forbids by fixing personal data in exactly one place | `inquiries` + `inquiry_events` + `assigned_to`, worked at `/studio/inquiries/*`, is the pipeline; the outbound path exists and is deliberately one-way. `SHEET_ENTITIES` in `lib/supabase/schemas/sheets.ts` includes `INQUIRIES`, gated by the `inquiries.export` permission and the `google_sheets` flag (`lib/sheets/definitions.ts`, `lib/sheets/run.ts`), with PII columns opt-in per definition. **A CRM would consume that export rather than own the record.** Retention pulls the other way on purpose: `scripts/ops/anonymise-inquiries.ts` ages personal data out (BR-I2) | `crm_contacts`, `leads`, `contacts`, `customers` |
+| 10 | Quotation automation | **BR-N5** | A quotation is a price, and a price for bespoke work is a judgement about labour, material and risk. BR-C3 forbids calculating one and BR-D8 forbids computing, converting or estimating a business fact of any kind | The pipeline already records that a quotation happened without producing one: `inquiry_kind` carries `QUOTE` and `inquiry_status` carries `QUOTED`, so `/studio/inquiries/quote` is a queue of briefs awaiting a human's number, and `price_state` `REQUEST_QUOTE` / `PRICE_ON_REQUEST` is what the public sees meanwhile. What reaches the enquirer is copy the owner wrote: `lib/whatsapp/` renders the handoff from `global_content`'s `WHATSAPP_TEMPLATE` group through a token allowlist (BR-B2) | `quotes`, `quotations`; and no column anywhere that produces a number to be quoted (BR-C3) |
+| 11 | Newsletter delivery | **BR-N6** | Sending to a list is an outbound integration carrying consent, unsubscribe and deliverability obligations, and D8 declares no provider variable for one. BR-H2 classes "newsletter existence" as an operational setting the owner owns | **The copy exists and has no consumer, and that is the seam** — recorded here rather than left to be discovered. `global_content` accepts a `NEWSLETTER` value in its `group_key` CHECK and three rows are seeded in it (`heading`, `body`, `cta_label`); nothing under `app/`, `lib/` or `components/` reads them. Delivery would need a subscriber store and a second `anon` `INSERT` policy beside `inquiries_insert_public`, and no flag gates it: `lib/flags/flags.ts` registers eight keys and none is a newsletter, whatever `STUDIO_GUIDE.md` §19 says | `subscribers`, `newsletter_subscribers`, `newsletter`, `subscriptions` |
+| 12 | Multi-language | **BR-N7** | One language, chosen and stated in one place: `app/layout.tsx` serves `<html lang="en-GB">`. A second language duplicates every copy row and every SEO entry, and a translated capability claim is that claim asserted twice, each needing its own owner verification under BR-D2 | Nothing today assumes one language *implicitly*, which is what makes the seam clean. `pages`, `page_sections` and `global_content` are keyed by `slug` and `seed_key` alone; `seo_entries` is one row per `path` and `lib/seo/metadata.ts` emits `alternates.canonical` and no `hreflang`; `next.config.ts` declares no i18n routing. A localisation layer would add a locale column to those tables and a locale segment to D3's route map | `translations`, `locales`, and no locale, language or translation column on any table. (`research_direction_briefs.form_language` is prose about a design's shape vocabulary, not a locale, and is research-internal under BR-F1) |
+| 13 | The accessibility statement | **BR-N8** | A statement is a factual claim about an organisation's conformance and only the owner can make it — BR-D2, and BR-H2 files it under legal and identity. What is deliberately absent is the published *claim*; the testing is not absent at all. `docs/ops/ACCESSIBILITY.md` records what was tested and what passed, says in as many words that it is not a statement, and lists a published one in its own §6 out-of-scope | It would be a `pages` row of `kind = 'PAGE'` with its `page_sections`, exactly as `/privacy` and `/terms` are today, carrying `fact_classification = 'LEGAL_COPY'` and `owner_verification = 'OWNER_VERIFICATION_REQUIRED'` so that BR-H1's publication gate holds it shut until the owner acts. Nothing else is needed: the CMS already renders a page of prose | No `accessibility` row in `pages`, and no accessibility row in `global_content`. `ACCESSIBILITY.md` describes a drafted skeleton kept at `DRAFT` in `global_content`; the seeded database carries no such row, so the skeleton is that document's intention rather than a row, and this register names the seam instead |
+
+### N.2 The absence, confirmed against the live schema rather than asserted
+
+Phase 46 verification step 11 asks for the register to be checked against `\dt`, so it was, on
+**2026-09-12**, against the seeded local database (105 base tables in `public`).
+
+| What was asked | How | Result |
+|---|---|---|
+| Does any of the thirteen have a table? | `psql -c "\dt"`, then `information_schema.tables` once per name for 29 exact names — `carts`, `cart_items`, `checkout_sessions`, `orders`, `order_items`, `payments`, `transactions`, `refunds`, `customers`, `customer_profiles`, `addresses`, `wishlists`, `saved_items`, `saved_carts`, `reviews`, `product_reviews`, `ratings`, `shipments`, `shipping_rates`, `returns`, `subscribers`, `newsletter`, `newsletter_subscribers`, `translations`, `locales`, `quotes`, `quotations`, `crm_contacts`, `leads` | **All 29 absent** |
+| Is one hiding under a singular, a synonym or another schema? | One regular-expression sweep of `information_schema.tables` across **every** schema for cart · order · payment · transaction · refund · customer · wishlist · saved item · address · review · rating · shipment · shipping · return · delivery · subscriber · newsletter · translation · locale · i18n · quote · quotation · crm · lead · AR · room-scene | **One match, and it is not one of these:** `public.research_review_actions`, which records a staff disposition on a *scraped* row (Phase 29, BR-F5). It matched on the word "review" and has nothing to do with a customer review |
+| Is there a locale dimension anywhere? | `information_schema.columns` for any column named like locale, lang or translat | **One match, and it is not a locale:** `research_direction_briefs.form_language`, free prose about a design's shape vocabulary (migration `0320`) |
+
+**What is honestly missing is the guard, and saying so is the point of this row.** BR-A1, BR-A2 and
+BR-A3 name `tests/integration/forbidden-tables.test.ts`, `tests/e2e/no-commerce.spec.ts` and
+`tests/unit/rls/inquiries.test.ts`; **none of those three files is in the repository**, and no script
+under `scripts/` rejects a commerce identifier in a migration. So the absence above is a hand-run
+check with its method written down so that anybody can repeat it in one command, not a gate that
+fails a build. The nearest thing that does run is `npm run db:check-schema`, which asserts RLS and
+column tiers against the live catalog and would be the natural home for a forbidden-relation
+assertion. Recorded here as a known weakness in the sense of §0 — *a rule enforced only by review is
+recorded as such* — rather than left to be discovered by the next person who trusts the cells above.
+
+### N.3 The eight rules this section mints
+
+The five capabilities already forbidden by §A and §C are indexed under the rule that forbids them and
+are not given a second identifier; these eight had no rule, and now do.
+
+| ID | Rule | Enforced by | Tested by |
+|---|---|---|---|
+| BR-N1 | No reviews or ratings. Praise is owner-curated and consent-gated, never visitor-submitted | **RLS:** `inquiries_insert_public` is the only `INSERT` policy granted to `anon`; `testimonials` is select-only for the public. **Schema (by absence):** no review, rating or aggregate relation | `tests/unit/rls/phase20.test.ts` (the single `anon` write path); `tests/unit/rls/phase17.test.ts` for the `testimonials` policy family; `tests/integration/rls-policies.test.ts` asserts row security and at least one policy on every table, so a new relation cannot arrive unpoliced |
+| BR-N2 | No shipping, delivery or returns record. Fulfilment is a product state plus owner-verified copy | **Schema (by absence):** no shipment, rate, return, delivery or fulfilment relation. **Schema trigger:** `product_specs.owner_verification` gates any lead time before it can publish (BR-H1) | **Review** for the absence itself. The lead-time half is mechanical: `npm run db:check-schema` asserts a `*_verified_before_publish` constraint on `product_specs` and sixteen other content tables against the live catalog |
+| BR-N3 | No AR and no room visualisation. A 3D asset is shown in the viewer it came with, never composited into a visitor's room | **Code boundary:** the viewer renders only values the server parsed from `products.dimensions` and imports no engine outside `components/three/**` (BR-E7). **Schema:** no scene, room or AR relation | `tests/unit/model-policy.test.ts` (source-level, BR-E7); `tests/e2e/model-viewer.spec.ts` |
+| BR-N4 | No CRM. The enquiry is the customer record, and there is exactly one copy of it | **Schema (by absence):** no contact, lead or CRM relation. **Permission:** the only outbound path is the Sheets export behind `inquiries.export` and the `google_sheets` flag. **Cron:** `scripts/ops/anonymise-inquiries.ts` removes personal data on the BR-I2 schedule | `tests/unit/sheets-redaction.test.ts` and `tests/unit/sheets-no-read.test.ts` hold the export half — PII columns opt-in, and the exporter never reads back what it wrote. The retention script has no test; that is a gap, not a claim |
+| BR-N5 | No quotation automation. A quotation is written by a person and only recorded by the software | **Build guard/test:** `tests/unit/no-pricing.test.ts` greps the configurator schema and source for price-shaped identifiers. **Schema (by absence):** no quotation relation | `tests/unit/no-pricing.test.ts` |
+| BR-N6 | No newsletter delivery. The `NEWSLETTER` copy group is copy with no consumer, and no subscriber is stored | **RLS:** no second `anon` `INSERT` policy. **Schema (by absence):** no subscriber relation. **Code:** no module reads the `NEWSLETTER` group | The single-anon-write-path assertion in `tests/unit/rls/phase20.test.ts`; otherwise **review** |
+| BR-N7 | One language. `en-GB`, declared once, with no locale dimension in the schema or the route map | **Schema (by absence):** no locale, language or translation column on any content table. **Code:** `<html lang="en-GB">` is a literal in `app/layout.tsx`; `next.config.ts` declares no i18n routing | **Review**, plus `npm run db:check-schema`'s column-tier assertions, which would surface a new column on a content table |
+| BR-N8 | No published accessibility statement. Conformance is a claim about the organisation, and the owner makes it or nobody does | **Schema trigger:** BR-H1's publication gate, with `owner_verification = 'OWNER_VERIFICATION_REQUIRED'` on any such row. **Documentation:** `docs/ops/ACCESSIBILITY.md` records tests and outcomes and never a conformance claim | `npm run db:check-schema` asserts the `pages_verified_before_publish` and `page_sections_verified_before_publish` constraints exist; `node scripts/docs/audit-docs.mjs --claims` holds the documentation half |
