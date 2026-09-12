@@ -161,6 +161,78 @@ test.describe('the sign-out route', () => {
   })
 })
 
+test.describe('the password-reset flow', () => {
+  /**
+   * WHAT IS PROVABLE WITHOUT AN AUTH SERVER, and it is more than it looks.
+   *
+   * Sending a link and verifying a token both need Supabase, so neither is here. What IS here is
+   * every property that would fail silently: that the two routes are reachable while signed out
+   * (the whole reason they are excluded from the proxy matcher), that a spent link lands somewhere
+   * that says so, and that the forms work with JavaScript off — which is the state of the person
+   * this flow exists for, since somebody who cannot sign in cannot fix a broken bundle either.
+   */
+  const FORGOT_PATH = '/studio/forgot-password'
+  const RESET_PATH = '/studio/reset-password'
+
+  test('reaches the forgot-password page without being redirected', async ({ page }) => {
+    // The point of the matcher exclusion (amendment A43). If this ever redirects, the only people
+    // who can ask for a password reset are the people who can already sign in.
+    await page.goto(FORGOT_PATH)
+    expect(new URL(page.url()).pathname).toBe(FORGOT_PATH)
+  })
+
+  test('reaches the reset-password page without being redirected', async ({ page }) => {
+    // Reachable, and useless without a session: with none it renders the expired state rather than
+    // a form. Being bounced to /studio/login instead would answer a question nobody asked and hide
+    // the one thing the person needs to be told.
+    await page.goto(RESET_PATH)
+    expect(new URL(page.url()).pathname).toBe(RESET_PATH)
+  })
+
+  test('renders resolved copy on both, never a raw string key', async ({ page }) => {
+    for (const path of [FORGOT_PATH, RESET_PATH]) {
+      await page.goto(path)
+      const body = (await page.textContent('body')) ?? ''
+      expect(body, `${path} rendered a key`).not.toMatch(/studio\.(forgotPassword|resetPassword)\./)
+      expect(body.trim().length).toBeGreaterThan(0)
+    }
+  })
+
+  test('offers an email field and a submit on the forgot-password page', async ({ page }) => {
+    await page.goto(FORGOT_PATH)
+
+    await expect(page.locator('input[type="email"]')).toBeVisible()
+    await expect(page.locator('button[type="submit"], input[type="submit"]')).toBeVisible()
+  })
+
+  test('works without JavaScript', async ({ browser }) => {
+    const context = await browser.newContext({ javaScriptEnabled: false })
+    const page = await context.newPage()
+    await page.goto(FORGOT_PATH)
+
+    await expect(page.locator('form')).toBeVisible()
+    await expect(page.locator('input[type="email"]')).toBeVisible()
+    await context.close()
+  })
+
+  test('links to the reset flow from the sign-in form', async ({ page }) => {
+    // A flow nothing links to is a flow nobody finds at the moment they need it.
+    await page.goto(LOGIN_PATH)
+    await expect(page.locator(`a[href="${FORGOT_PATH}"]`)).toBeVisible()
+  })
+
+  test('sends a link with no token to the page that can issue a working one', async ({
+    request,
+  }) => {
+    // A bare visit, a truncated link, a probe: all the same answer, and none of them learns
+    // anything from it. Fail-closed on an unreachable rate limiter lands here too, by design.
+    const response = await request.get('/api/auth/confirm', { maxRedirects: 0 })
+
+    expect(response.status()).toBe(303)
+    expect(response.headers()['location']).toBe(`${FORGOT_PATH}?error=link`)
+  })
+})
+
 /**
  * The authenticated half of verification step 6.
  *

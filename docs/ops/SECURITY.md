@@ -2,7 +2,7 @@
 doc: SECURITY
 status: CURRENT
 owning_phase: 41
-last_reviewed: 2026-09-07
+last_reviewed: 2026-09-12
 owner_verification: OWNER_VERIFICATION_REQUIRED
 ---
 
@@ -296,10 +296,14 @@ not been mapped to a fixed code.
 |---|---|
 | Provider | Supabase Auth, email + password, **staff only** |
 | Public sign-up | **Disabled at the project level.** A deploy checklist item, verified by attempting a sign-up |
-| Provisioning | Invitation from `/studio/system/users` using the service-role client. There is no self-registration path in the application |
+| Provisioning | Invitation from `/studio/system/users` using the service-role client. There is no self-registration path in the application. The FIRST owner, which that surface cannot create, comes from `npm run auth:create-user` or, from an environment, `npm run auth:bootstrap` (amendment A43) |
 | Default on provision | `role = 'viewer'`, `status = 'INVITED'`. Elevation is explicit and audited |
 | Session | `HttpOnly`, `Secure`, `SameSite=Lax`; rotated on privilege change; idle 8 h, absolute 30 d |
 | Sign-in rate limit | 10 per 15 minutes, keyed on email hash + `ip_hash` |
+| Password reset | **Self-service since amendment A43**: `/studio/forgot-password` → an emailed link → `/api/auth/confirm` → `/studio/reset-password`. The request page answers identically for an address with an account and one without — an enumeration oracle is the cost of being helpful here. Setting the password ends **every** session globally |
+| Password reset rate limit | 5 per hour, keyed on email hash + `ip_hash`; 20 per hour on the confirm route, keyed on `ip_hash` alone — never on the token, which would give each guess a fresh allowance |
+| Forgotten sign-in ID | **No self-service path, by design.** The ID is the email address, so any such form would answer an identifier with an address. Behind a credential only: `/studio/system/users`, or `npm run auth:list-users` |
+| Recovery session | Authenticates an auth account and grants no Studio access: every page resolves `getStaffSession()` separately and admits only an `ACTIVE` profile |
 | MFA | Recommended for `owner` and `admin`, configured in the Supabase dashboard — **OWNER_VERIFICATION_REQUIRED** |
 | Customer accounts | None, ever (BR-A3) |
 
@@ -575,6 +579,8 @@ adding one would be an amendment.
 | `POST app/api/vitals` | 60 per min | `ip_hash` |
 | `POST app/api/revalidate` | 30 per min | secret |
 | Studio sign-in | 10 per 15 min | email hash + `ip_hash` |
+| Studio password reset — `/studio/forgot-password` | 5 per hour | email hash + `ip_hash` |
+| Recovery link — `GET app/api/auth/confirm` | 20 per hour | `ip_hash` alone |
 | Research fetches | Per-source rate limit, delay and concurrency | source |
 
 The inquiry limiter is called from **inside the server action** — there is no `/api/inquiries` route

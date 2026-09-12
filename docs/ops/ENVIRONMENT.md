@@ -2,7 +2,7 @@
 doc: ENVIRONMENT
 status: CURRENT
 owning_phase: 38
-last_reviewed: 2026-09-07
+last_reviewed: 2026-09-12
 owner_verification: OWNER_VERIFICATION_REQUIRED
 ---
 
@@ -145,7 +145,11 @@ copy.
 
 ---
 
-## 4. Server-only variables (eight, D8)
+## 4. Server-only variables (sixteen, D8)
+
+> The count said *eight* until amendment A43 and had been wrong since amendment A25: `CRON_SECRET`,
+> `IP_HASH_SALT`, `RATE_LIMIT_SALT` and `CSP_ENFORCE` were each added to D8 without it. Sixteen is
+> the D8 server-only list as it stands; §5's matrix is the authoritative enumeration.
 
 Never compiled into client JavaScript. Every module that reads one carries `import 'server-only'`.
 
@@ -257,6 +261,52 @@ OWNER_VERIFICATION_REQUIRED.**
 | Blast radius if leaked | Forced cache invalidation (a cost and availability nuisance, not a data breach) and the ability to trigger scheduled jobs |
 | Rotation | Engineer, 90 days. Rotate the publish service and the routes in the same window |
 
+### `STUDIO_ADMIN_EMAIL` · `STUDIO_ADMIN_PASSWORD` · `STUDIO_ADMIN_ROLE` · `STUDIO_ADMIN_NAME`
+
+Added by **amendment A43**. Four variables, one job: the **first Studio account**, created by
+`npm run auth:bootstrap` without a terminal and without arguments.
+
+They exist because of a gap that is structural rather than accidental. Every Studio account is
+created by invitation at `/studio/system/users`, and that surface requires a signed-in owner or
+admin — so the first owner has nowhere to come from. `npm run auth:create-user` fills that gap for a
+person at a keyboard; these fill it for a **deployment**, where the configuration is already an
+environment and nobody is watching the output.
+
+| | |
+|---|---|
+| Class | `STUDIO_ADMIN_PASSWORD` is a **Secret** — it is the credential to the account that can do everything the Studio can do. The other three are **Sensitive**: an address, a role name and a display name |
+| Purpose | `STUDIO_ADMIN_EMAIL` is the sign-in address; `STUDIO_ADMIN_PASSWORD` its password; `STUDIO_ADMIN_ROLE` the role to grant, **defaulting to `owner`**; `STUDIO_ADMIN_NAME` an optional display name |
+| Set in | Wherever the bootstrap is run: `.env.local` for a laptop, the CI job's secret store for a pipeline, `vercel env pull` for a one-off against production. **Not needed by the running application** — no page, route or action reads any of them |
+| Read by | `lib/auth/bootstrap.ts` (`readBootstrapConfig`, a pure function that is handed an environment) and `scripts/auth/bootstrap-admin.ts`. Nothing under `app/**` |
+| Without them | `npm run auth:bootstrap` prints one line saying there is nothing to do and **exits 0**. A deployment that created its owner another way has not misconfigured anything. Set *some* but not all and it exits 1 naming the missing variables — a half-set environment is somebody midway through configuring this, and a silent skip would hide it until nobody could sign in |
+| Blast radius if leaked | `STUDIO_ADMIN_PASSWORD` is sign-in as that account. If the account is the owner, that is every Studio capability including `system.owner.transfer`. Rotate by changing the password at `/studio/reset-password` (or with `--reset-password`, below) and clearing the variable |
+| Rotation | **Owner.** Treat the variable as a one-time bootstrap value, not a stored credential: once the account exists and the owner has signed in, the right move is to **clear `STUDIO_ADMIN_PASSWORD` from wherever it is stored**. Leaving it set is a live password in a dashboard |
+
+**Re-running is safe, and that is the point.** The script reconciles rather than recreates: an
+account that already exists in the right role and status is reported and left alone; a wrong role is
+moved; a non-`ACTIVE` profile is activated. **The password of an existing account is never touched
+unless `--reset-password` is given** — a bootstrap wired into a deploy runs on every deploy, and one
+that reset the password each time would silently undo every password change anybody had made since.
+
+```
+npm run auth:bootstrap                       # create, or reconcile, then say what it did
+npm run auth:bootstrap -- --dry-run          # say what it would do and write nothing
+npm run auth:bootstrap -- --reset-password   # also set the password of an existing account
+npm run auth:list-users                      # which addresses have accounts, and as what
+```
+
+`--password=` is **refused**, not ignored, exactly as `auth:create-user` refuses it: a secret in
+`argv` is in the shell history and in the process table of every other user on the machine. The
+password is read from the variable and from nowhere else, and neither the script nor
+`readBootstrapConfig` ever prints it, its length or a prefix. `STUDIO_ADMIN_PASSWORD` is in
+`SERVER_ONLY_VARIABLES` (`lib/logging/redact.ts`), so its value is stripped by the redactor wherever
+it appears in a log line or on a system surface.
+
+**A second `ACTIVE` owner is refused** unless `--force` is given. `enforce_last_owner` (migration
+0009) protects against having too *few* owners; nothing in the database objects to too many, so the
+check lives in the script. The refusal is scoped to a *different* address — re-running the bootstrap
+for the same owner is the ordinary case and is never refused.
+
 ---
 
 ## 5. Per-environment matrix
@@ -284,6 +334,10 @@ a screenshot.
 | `IP_HASH_SALT` | Secret | unique | unique | any | Engineer — rotation breaks enquirer recognition, so treat it as a decision |
 | `RATE_LIMIT_SALT` | Secret | unique | unique | any | Engineer, 90 d |
 | `CSP_ENFORCE` | Server, not secret | `1` after the soak | unset | unset | Engineer |
+| `STUDIO_ADMIN_EMAIL` | Sensitive | bootstrap only | — | bootstrap only | **Owner** |
+| `STUDIO_ADMIN_PASSWORD` | Secret | bootstrap only, **cleared afterwards** | — | bootstrap only | **Owner** |
+| `STUDIO_ADMIN_ROLE` | Server, not secret | optional, defaults to `owner` | — | optional | **Owner** |
+| `STUDIO_ADMIN_NAME` | Sensitive | optional | — | optional | **Owner** |
 
 ### 5.2 Setting these in Vercel — the actual list, as of Phase 25
 

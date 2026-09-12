@@ -4,6 +4,8 @@ import {
   INQUIRY_SUBMIT_WINDOWS,
   INQUIRY_UPLOAD_WINDOWS,
   MEDIA_SIGN_WINDOWS,
+  PASSWORD_RESET_WINDOWS,
+  RECOVERY_CONFIRM_WINDOWS,
   REVALIDATE_WINDOWS,
   SIGN_IN_WINDOWS,
   SUGGEST_WINDOWS,
@@ -140,6 +142,8 @@ describe('Retry-After', () => {
       VITALS_WINDOWS,
       REVALIDATE_WINDOWS,
       SIGN_IN_WINDOWS,
+      PASSWORD_RESET_WINDOWS,
+      RECOVERY_CONFIRM_WINDOWS,
     ]) {
       expect(retryAfterSeconds(windows)).toBeGreaterThan(0)
     }
@@ -156,6 +160,8 @@ describe('the shipped windows', () => {
       VITALS_WINDOWS,
       REVALIDATE_WINDOWS,
       SIGN_IN_WINDOWS,
+      PASSWORD_RESET_WINDOWS,
+      RECOVERY_CONFIRM_WINDOWS,
     ]) {
       expect(windows.length).toBeGreaterThan(0)
       for (const window of windows) {
@@ -179,6 +185,10 @@ describe('the shipped windows', () => {
     expect(SUGGEST_WINDOWS).toEqual([{ seconds: 60, limit: 60 }])
     expect(REVALIDATE_WINDOWS).toEqual([{ seconds: 60, limit: 30 }])
     expect(SIGN_IN_WINDOWS).toEqual([{ seconds: 900, limit: 10 }])
+    // Amendment A43. The reset window is TIGHTER than sign-in, and §8 has to keep saying so: a
+    // refused sign-in costs a retry, while a reset request sends mail to an address somebody typed.
+    expect(PASSWORD_RESET_WINDOWS).toEqual([{ seconds: 3600, limit: 5 }])
+    expect(RECOVERY_CONFIRM_WINDOWS).toEqual([{ seconds: 3600, limit: 20 }])
   })
 })
 

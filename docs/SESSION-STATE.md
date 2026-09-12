@@ -14,6 +14,63 @@ owner_verification: NOT_REQUIRED
 
 ---
 
+## Most recent work — post-launch, amendment A43 (2026-09-12)
+
+**Not a phase.** `ROADMAP.md` says there is no Phase 47; this is post-launch work and is labelled as
+such everywhere it appears. Phase 46 remains the last phase, and its four outstanding owner items
+below are unchanged.
+
+**Scope** — two gaps left by the launch, both the same shape: something the owner needed was an
+engineer's errand.
+
+1. **A password reset the owner can run alone.** `/studio/forgot-password` →
+   `app/api/auth/confirm/route.ts` → `/studio/reset-password`. Rate-limited at 5/hour on the request
+   and 20/hour on the confirm; the request page answers identically whether or not the address has
+   an account; setting a password signs out globally. `proxy.ts` excludes both new routes, and the
+   eslint "every Studio page calls `requirePermission()`" rule exempts them — on the reset page that
+   check would be the wrong question, because setting your own password is not a staff capability.
+2. **The first owner from an environment.** `npm run auth:bootstrap` reads `STUDIO_ADMIN_EMAIL`,
+   `STUDIO_ADMIN_PASSWORD`, `STUDIO_ADMIN_ROLE` (defaults to `owner`) and `STUDIO_ADMIN_NAME`.
+   Unset is a no-op exiting 0; half-set exits 1 naming the variable; an existing account's password
+   is never changed without `--reset-password`. `npm run auth:list-users` answers the
+   forgotten-address question that no public form safely can.
+
+**Files Created** — `lib/auth/password-reset.ts` · `lib/auth/bootstrap.ts` ·
+`lib/auth/bootstrap.test.ts` · `app/(studio)/studio/forgot-password/page.tsx` ·
+`app/(studio)/studio/reset-password/page.tsx` · `app/api/auth/confirm/route.ts` ·
+`scripts/auth/bootstrap-admin.ts` · `scripts/auth/list-staff.ts`
+
+**Files Changed** — `proxy.ts` · `eslint.config.mjs` · `package.json` · `.env.example` ·
+`lib/security/rate-limit.ts` · `lib/logging/redact.ts` · `components/studio/strings.ts` ·
+`app/(studio)/studio/login/page.tsx` · `tests/unit/studio-nav.test.ts` ·
+`tests/e2e/studio-access.spec.ts` · `docs/architecture/CANONICAL-DECISIONS.md` ·
+`docs/ops/ENVIRONMENT.md` · `docs/ops/SECURITY.md` · `docs/studio/STUDIO_GUIDE.md` ·
+`PROJECT_STATE.md` · `CHANGELOG.md` · this file
+
+**Database Changes** — **None.** No migration, no policy, no role, no row. The whole flow runs on
+GoTrue's own account state and on `rate_limit_buckets`, which already existed.
+
+**Tests Run** — `npm run check` (42 gates) · `npx tsc --noEmit` · the full unit project ·
+`playwright --list` on the extended access spec.
+
+**Test Results** — all green: 42 gates, 197 unit files, 2 964 tests. `docs:check-contract` refused
+the four new variables until `ENVIRONMENT.md` §4 documented them, which is the gate working. The
+seven new e2e cases are listed and cover only what needs no auth server; sending and verifying a
+link still cannot be exercised here, for the same reason ~156 Studio specs skip.
+
+**Known Issues** — **two owner actions, and neither is code.** SMTP must be configured in Supabase
+or no reset link is ever delivered, and the page cannot say so without becoming the
+account-enumeration oracle it exists to avoid. The *Reset Password* email template should move to
+`{{ .SiteURL }}/api/auth/confirm?token_hash={{ .TokenHash }}&type=recovery` so a link opened on a
+phone can be completed on a laptop; the default `?code=` shape works only in the browser that asked.
+Both are written out in `STUDIO_GUIDE.md` §2.1.2, and the confirm route accepts either shape, so
+neither is broken today — one is simply better.
+
+**Next Exact Action** — unchanged from Phase 46: **the owner sets the canonical host** (see the end
+of the section below). The two SMTP/template items above belong to the same visit to a dashboard.
+
+---
+
 ## Current Phase
 
 **Phase 46 — Documentation + Handoff. PARTIAL.** The final phase. Run as an **audit of the 34

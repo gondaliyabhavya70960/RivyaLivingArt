@@ -50,12 +50,21 @@ const EXPIRED_PARAM = 'expired'
 const AUTH_COOKIE = /^sb-.+-auth-token(?:\.\d+)?$/
 
 /**
- * Paths that get the AUTH treatment: every Studio path except the login page — matching the login
- * page would redirect it to itself. The lookahead excludes `/studio/login` and anything below it
- * while still matching a route that merely starts with those letters, so a future `/studio/logins`
- * is not silently unprotected.
+ * Paths that get the AUTH treatment: every Studio path except the three that exist FOR people who
+ * have no session — D4, amendment A43. Matching the login page would redirect it to itself, and
+ * matching either recovery route would be worse than that: somebody who followed a link from an
+ * email would be bounced to a sign-in form, which answers a question they did not ask and hides the
+ * one thing they need to be told, which is that their link had expired.
+ *
+ * `/studio/reset-password` IS NOT UNPROTECTED BY BEING EXCLUDED HERE. It does nothing without a
+ * session — `setPasswordForCurrentSession()` acts on the caller's own account and can act on no
+ * other — and a recovery session grants no Studio access, because every Studio page resolves its
+ * staff profile separately. What the exclusion buys is an honest error message.
+ *
+ * The lookahead excludes each name and anything below it while still matching a route that merely
+ * starts with those letters, so a future `/studio/logins` is not silently unprotected.
  */
-const STUDIO_GUARDED = /^\/studio(?:$|\/(?!login$|login\/))/
+const STUDIO_GUARDED = /^\/studio(?:$|\/(?!(?:login|forgot-password|reset-password)(?:$|\/)))/
 
 export const config = {
   /**

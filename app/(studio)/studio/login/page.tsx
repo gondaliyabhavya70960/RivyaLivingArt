@@ -1,4 +1,5 @@
 import type { Metadata, Route } from 'next'
+import Link from 'next/link'
 import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { z } from 'zod'
@@ -46,6 +47,7 @@ import { resolveNextPath } from '@/lib/auth/next-path'
 /** Where a signed-in staff member lands when no valid `next` was carried in. */
 const LOGIN_PATH = '/studio/login'
 const SIGN_OUT_PATH = '/api/auth/sign-out'
+const FORGOT_PATH = '/studio/forgot-password'
 
 /**
  * The three failures the form reports inline. Each maps to a string; none names an account.
@@ -196,6 +198,9 @@ export default async function StudioLoginPage({ searchParams }: StudioLoginPageP
   const inlineError = loginErrorSchema.safeParse(params.error)
   const expired = flagSchema.safeParse(params.expired).success
   const deniedThisAttempt = flagSchema.safeParse(params.denied).success
+  // Set by `/studio/reset-password` after a password has actually been changed. A notice, not an
+  // error: the person did the right thing and the only thing left is to use the new password.
+  const passwordReset = flagSchema.safeParse(params.reset).success
 
   const session = await getStaffSession()
   if (session) redirectTo(next)
@@ -222,6 +227,14 @@ export default async function StudioLoginPage({ searchParams }: StudioLoginPageP
           <Surface level={2} className="px-5 py-4">
             <Text size="sm" tone="secondary" role="status">
               {t('studio.login.noticeExpired')}
+            </Text>
+          </Surface>
+        ) : null}
+
+        {passwordReset ? (
+          <Surface level={2} className="px-5 py-4">
+            <Text size="sm" tone="secondary" role="status">
+              {t('studio.login.noticePasswordReset')}
             </Text>
           </Surface>
         ) : null}
@@ -286,6 +299,16 @@ export default async function StudioLoginPage({ searchParams }: StudioLoginPageP
                 <Button type="submit" variant="primary">
                   {t('studio.login.submitButton')}
                 </Button>
+
+                {/* Inside the form and after the button, so the tab order reaches it where a
+                    person looks for it — after trying the password, not before typing it. A plain
+                    link, because the reset flow is a separate page with its own rate limit and
+                    nothing here should submit anything. */}
+                <Text size="sm">
+                  <Link href={FORGOT_PATH as Route} className="underline underline-offset-4">
+                    {t('studio.login.forgotPasswordLink')}
+                  </Link>
+                </Text>
               </Stack>
             </form>
           </Surface>

@@ -150,14 +150,45 @@ update public.staff_profiles
 Both fields are required: `lib/auth/session.ts` resolves any non-`ACTIVE` profile to `null`, and so
 does every database policy.
 
+**C — the environment**, when the account belongs to a deployment rather than to an afternoon
+(amendment A43):
+
+```
+STUDIO_ADMIN_EMAIL=owner@example.com STUDIO_ADMIN_PASSWORD=… npm run auth:bootstrap
+```
+
+`scripts/auth/bootstrap-admin.ts` does what path A does and reads its four inputs —
+`STUDIO_ADMIN_EMAIL`, `STUDIO_ADMIN_PASSWORD`, `STUDIO_ADMIN_ROLE` (defaults to `owner`) and
+`STUDIO_ADMIN_NAME` — from the environment instead of from flags and a prompt. That is the whole of
+the difference, and it is the difference between a person at a keyboard and a CI step, a container
+entrypoint, or `vercel env pull && npm run auth:bootstrap`.
+
+Three properties make it safe to wire into a deploy:
+
+| Property | What it means |
+|---|---|
+| **Unset is a no-op** | With none of the variables set it prints one line and exits 0. A deployment that made its owner another way has not misconfigured anything |
+| **Half-set is loud** | An email with no password exits 1 naming the missing variable. A silent skip would hide the mistake until nobody could sign in |
+| **It never changes an existing password** | Not without `--reset-password`. A step that runs on every deploy and reset the password each time would undo every password change made since, on the deploy's schedule rather than on a decision's |
+
+Re-running reconciles rather than recreates: an account already in the right role and status is
+reported and left alone, a wrong role is moved, a non-`ACTIVE` profile is activated. Add `--dry-run`
+to see what it would do and write nothing. `--password=` is refused rather than ignored, for the
+reason path A gives. A second `ACTIVE` owner at a **different** address is refused without `--force`.
+
+Full variable documentation — class, rotation owner, what to do with `STUDIO_ADMIN_PASSWORD` once
+the account exists — is `docs/ops/ENVIRONMENT.md` §4.
+
 #### Where each job belongs
 
 | Job | Where |
 |---|---|
-| The first owner | This section — script A, or dashboard B |
+| The first owner | This section — script A, environment C, or dashboard B |
 | Every subsequent account | `/studio/system/users` — permission-checked and audited |
 | Role change, suspend, reactivate | `/studio/system/users` |
-| Password reset | Supabase dashboard → Authentication → Users |
+| Password reset — self-service | `/studio/forgot-password` → the emailed link → `/studio/reset-password` (§2.1.2) |
+| Password reset — nobody can receive the email | `npm run auth:bootstrap -- --reset-password`, or Supabase dashboard → Authentication → Users |
+| "Which address is my account?" | `/studio/system/users`, or `npm run auth:list-users` (§2.1.3) |
 
 `enforce_last_owner` (migration 0009) refuses to demote, suspend or delete the final owner, at the
 database rather than in the server action — so a script, a `psql` session and the service-role client
@@ -167,6 +198,81 @@ are all held to it too. You cannot lock yourself out of the project by mistake.
 > → *Enable sign ups*. Migration 0009's comment states that invitation is the only route to an
 > account; that claim is only true of a deployment where this is actually disabled, and it cannot be
 > set from SQL.
+
+### 2.1.2 A forgotten password — the self-service flow
+
+Amendment A43. Until it, this row of §2.1.1's table read *"Supabase dashboard → Authentication →
+Users"*, which made every forgotten password an engineer's errand and put a person who could not
+sign in at the mercy of somebody else's calendar.
+
+**The three surfaces, and what each one is for.**
+
+| Step | Where | What happens |
+|---|---|---|
+| 1 | `/studio/forgot-password` | The address is validated, rate-limited, and handed to the auth service, which emails a link. The page reports the SAME notice whatever happened |
+| 2 | `/api/auth/confirm` | The link lands here. The token is exchanged for a session, and the browser is sent on. A link that has expired or already been used goes back to step 1 with a message saying so |
+| 3 | `/studio/reset-password` | The new password is set on the account that session belongs to. **Every session everywhere is then ended** and the person is sent to `/studio/login` to use the new password |
+
+**The page never says whether an address has an account.** An address with one, an address without
+one, and an address the auth service refused all produce the identical notice. This looks unhelpful
+and is not negotiable: a form that answers differently is an account-enumeration oracle anybody on
+the internet can query, and a list of staff addresses is the first half of a credential-stuffing
+run. The only outcome reported differently is the throttle, which is a fact about the requester.
+
+**Five requests per hour**, keyed by address and by email hash — tighter than sign-in's ten per
+fifteen minutes, because a refused sign-in costs a retry while a reset request sends mail to an
+address the requester merely typed.
+
+**A recovery session is not a Studio session.** Following a link authenticates an *auth account*; it
+grants no Studio access at all, because every Studio page resolves `getStaffSession()` separately
+and that admits only an `ACTIVE` staff profile. A `SUSPENDED` colleague can therefore complete this
+flow and still open nothing — which is the correct behaviour, not a gap: the password is theirs,
+and the access is not.
+
+**The global sign-out at step 3 is deliberate.** A password reset is what somebody reaches for when
+they think an account has been reached by someone else, and a reset that leaves the other party's
+session alive does not answer that. It costs the legitimate owner one sign-in on each of their
+devices and costs an intruder everything.
+
+> **Deployment note — two things the owner sets, and one of them is optional.**
+>
+> 1. **SMTP must work.** Supabase → Authentication → Emails. Without a configured sender the link is
+>    never delivered and the page still says a link is on its way, because it cannot say otherwise
+>    without becoming the oracle described above. Test it once, from a real deployment.
+> 2. **The email template decides whether the link works in a second browser.** The default template
+>    (`{{ .ConfirmationURL }}`) produces a `?code=` link that can only be completed in the browser
+>    that asked for it — the code verifier is a cookie — and people read email on a phone and manage
+>    the Studio on a laptop. Changing the *Reset Password* template to
+>    `{{ .SiteURL }}/api/auth/confirm?token_hash={{ .TokenHash }}&type=recovery` produces a link
+>    that works anywhere. `app/api/auth/confirm/route.ts` accepts **both** shapes, so neither
+>    setting is broken — one is simply better, and the repository cannot assert which is configured.
+> 3. Add `<site>/api/auth/confirm` to Supabase → Authentication → URL Configuration → Redirect URLs,
+>    and set `NEXT_PUBLIC_SITE_URL`. Without the variable the link falls back to the project's Site
+>    URL, which on a correctly configured deployment is the same address.
+
+**When the email cannot be received at all** — a departed colleague's mailbox, a domain mid-migration
+— the fallbacks are unchanged and both need an existing credential:
+`npm run auth:bootstrap -- --reset-password` with `STUDIO_ADMIN_EMAIL` and `STUDIO_ADMIN_PASSWORD`
+set, or the Supabase dashboard.
+
+### 2.1.3 A forgotten sign-in ID — why there is no form for it
+
+**The sign-in ID is the email address.** `staff_profiles` holds no username, and GoTrue
+authenticates on the address. So "I have forgotten my ID" cannot have a self-service answer: a form
+for it would take some other identifier and reply with an address, which is the enumeration oracle
+of §2.1.2 wearing a different hat. There is no shape of that feature which is safe to put on a
+public page, and `/studio/forgot-password` says so beneath the form rather than leaving the absence
+to look like an oversight.
+
+It is answered behind an existing credential instead:
+
+| Who is asking | Where |
+|---|---|
+| An owner or admin, about a colleague | `/studio/system/users` — every address, role, status and last sign-in |
+| Whoever holds the deployment's environment | `npm run auth:list-users` — the same list, `ACTIVE` first |
+
+Both require a credential somebody already holds, which is exactly the property the public form
+could not have.
 
 ### 2.2 The six roles
 
