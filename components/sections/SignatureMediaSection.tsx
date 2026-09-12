@@ -63,7 +63,7 @@ export function SignatureMediaSection({
   const caption = payload.caption?.trim() ?? ''
 
   return (
-    <SectionShell section={section} spacing="lg" container={inset ? 'default' : 'none'}>
+    <SectionShell section={section} container={inset ? 'default' : 'none'}>
       <Stack gap={6}>
         <SectionCopy section={section} level={isFirst ? 1 : 2} />
         <figure className="m-0">

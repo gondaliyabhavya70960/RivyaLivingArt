@@ -70,7 +70,7 @@ export function CategoryGridSection({
   const columns = payload.columns
 
   return (
-    <SectionShell section={section} spacing="lg">
+    <SectionShell section={section}>
       <Stack gap={10}>
         <SectionCopy section={section} />
         {cards.length === 0 ? null : (

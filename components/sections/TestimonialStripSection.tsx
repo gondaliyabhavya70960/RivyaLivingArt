@@ -43,7 +43,7 @@ export function TestimonialStripSection({
   const attribution = siteString(strings, ATTRIBUTION_KEY)
 
   return (
-    <SectionShell section={section} spacing="lg">
+    <SectionShell section={section}>
       <Stack gap={6}>
         {heading === null ? null : (
           <Text size="sm" tone="secondary" data-testimonial-heading="">

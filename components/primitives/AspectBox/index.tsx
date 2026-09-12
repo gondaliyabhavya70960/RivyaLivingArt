@@ -74,10 +74,24 @@ export interface AspectBoxProps extends React.HTMLAttributes<HTMLElement> {
   ratio: AspectRatio
   /** The mobile ratio (§5.5), applied below 768px. Defaults to `ratio`. */
   mobileRatio?: AspectRatio
+  /**
+   * A floor on the rendered height, as a raw token value — `var(--rv-hero-min-h)`.
+   *
+   * WHY A VALUE AND NOT A CLASS. The floor is viewport-relative (`svh`), and Tailwind has no
+   * scale for that: `min-h-[76svh]` is an arbitrary value, which `scripts/design/check-tokens.mjs`
+   * refuses outright, and inventing a `min-h-hero` utility would put a layout decision in the
+   * theme bridge where no other section measurement lives. `Section` already sets its vertical
+   * rhythm and `Container` its maxima this way, from the raw token, for the same reason.
+   *
+   * IT IS A FLOOR, SO THE RATIO STILL GOVERNS. The box renders at whichever is taller, and both
+   * are known before the image loads — so this reserves space exactly as the ratio alone did and
+   * shifts nothing.
+   */
+  minBlockSize?: string
 }
 
 export const AspectBox = React.forwardRef<HTMLElement, AspectBoxProps>(function AspectBox(
-  { as = 'div', ratio, mobileRatio, className, children, ...rest },
+  { as = 'div', ratio, mobileRatio, minBlockSize, className, style, children, ...rest },
   ref,
 ) {
   const Tag = asTag(as)
@@ -92,6 +106,7 @@ export const AspectBox = React.forwardRef<HTMLElement, AspectBoxProps>(function 
         DESKTOP_RATIO[ratio],
         className,
       )}
+      style={minBlockSize === undefined ? style : { minBlockSize, ...style }}
       {...rest}
     >
       {children}

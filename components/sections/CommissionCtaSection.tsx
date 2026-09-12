@@ -62,14 +62,14 @@ export function CommissionCtaSection({
 
   if (banded) {
     return (
-      <SectionShell section={section} spacing="lg" container="prose">
+      <SectionShell section={section} container="prose">
         {copy}
       </SectionShell>
     )
   }
 
   return (
-    <SectionShell section={section} spacing="lg">
+    <SectionShell section={section}>
       <div className="grid gap-8 md:grid-cols-2 md:items-center md:gap-12">
         {copy}
         <ResponsiveMedia

@@ -60,7 +60,7 @@ export function ScaleStatementSection({
   )
 
   return (
-    <SectionShell section={section} spacing="lg">
+    <SectionShell section={section}>
       <Stack gap={10}>
         {below ? null : picture}
         {copy}

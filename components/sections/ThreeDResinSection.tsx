@@ -71,7 +71,7 @@ export function ThreeDResinSection({
 
   if (fullBleed) {
     return (
-      <SectionShell section={section} spacing="lg">
+      <SectionShell section={section}>
         <Stack gap={10}>
           {scene}
           {copy}
@@ -81,7 +81,7 @@ export function ThreeDResinSection({
   }
 
   return (
-    <SectionShell section={section} spacing="lg">
+    <SectionShell section={section}>
       <div className="grid gap-8 md:grid-cols-2 md:items-center md:gap-12">
         {copy}
         {scene}

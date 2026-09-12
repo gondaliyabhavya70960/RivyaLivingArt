@@ -50,7 +50,7 @@ export function SecondaryObjectsSection({
   const columns = COLUMN_CLASS[Math.min(cards.length, 4)] ?? ''
 
   return (
-    <SectionShell section={section} spacing="lg">
+    <SectionShell section={section}>
       <Stack gap={10}>
         <SectionCopy section={section} />
         <Grid gap={6} className={`grid-cols-1 sm:grid-cols-2 ${columns}`}>

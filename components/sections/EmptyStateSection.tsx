@@ -35,7 +35,7 @@ export function EmptyStateSection({
   if (message === null) return null
 
   return (
-    <SectionShell section={section} spacing="lg" container="prose">
+    <SectionShell section={section} container="prose">
       <Stack gap={6} className="items-center text-center">
         <SectionCopy section={section} align="centre" size="display-sm" />
         <Text size="lg" tone="secondary">

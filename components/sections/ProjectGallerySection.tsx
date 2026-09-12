@@ -48,7 +48,7 @@ export function ProjectGallerySection({
   const bandCaption = siteString(strings, CAPTION_KEY)
 
   return (
-    <SectionShell section={section} spacing="lg">
+    <SectionShell section={section}>
       <Stack gap={6}>
         <SectionCopy section={section} />
 

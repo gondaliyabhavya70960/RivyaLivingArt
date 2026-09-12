@@ -46,7 +46,7 @@ export function CollectionProductsSection({
   const cards = reference?.result.cards ?? []
 
   return (
-    <SectionShell section={section} spacing="lg">
+    <SectionShell section={section}>
       <Stack gap={10}>
         <SectionCopy section={section} />
         {cards.length === 0 ? (

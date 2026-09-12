@@ -2,6 +2,7 @@ import * as React from 'react'
 
 import { Container, type ContainerSize } from '@/components/primitives/Container'
 import { Section, type SectionScheme, type SectionSpacing } from '@/components/primitives/Section'
+import type { BlockType } from '@/lib/cms/block-types'
 import type { PageSection } from '@/lib/supabase/schemas'
 
 /**
@@ -24,8 +25,84 @@ export function schemeOf(theme: string | null, fallback: SectionScheme = 'DEEP')
   return SCHEMES[theme] ?? fallback
 }
 
+/**
+ * How much silence a band gets, by what the band IS.
+ *
+ * FOUR STEPS WERE DECLARED IN PHASE 02 AND ONE WAS USED. Twenty-seven of the thirty call sites
+ * passed `spacing="lg"`, so `sm` and `xl` were dead tokens and ten consecutive bands on `/` were
+ * spaced identically — `DESIGN_SYSTEM.md` §50 asks for deliberate negative space and uniform
+ * padding is the opposite of a decision. The audit recorded it as a composition finding.
+ *
+ * RHYTHM IS A PROPERTY OF THE BLOCK TYPE, NOT OF A CALL SITE. A manifesto wants silence around it
+ * wherever it appears; a divider wants none wherever it appears. Putting the decision here means
+ * it is made once, read in one place, and cannot drift between two renderers that should agree —
+ * and it means the answer for a block is visible beside the answer for every other block, which
+ * is the only way to see a rhythm at all.
+ *
+ * THE FOUR STEPS, AS EDITORIAL INTENT RATHER THAN NUMBERS:
+ *
+ *   `xl` — the held moment. A statement, a manifesto, the material story, the closing call. These
+ *          earn their weight from what is NOT around them, and they are the reason `xl` exists.
+ *   `lg` — the working rhythm. Galleries, grids, process bands: substantial, self-contained, read
+ *          one after another.
+ *   `md` — the sentence above a list. A category introduction, a journal strip, a testimonial row:
+ *          bands that belong to their neighbour rather than standing alone.
+ *   `sm` — connective tissue. A divider, an empty state, a note. Present, not announced.
+ *
+ * `Record<BlockType, …>` RATHER THAN A PARTIAL, for the reason `SECTION_RENDERERS` is one: it
+ * forces a decision for all thirty-four, including the seven with no renderer yet. A block cannot
+ * arrive later and silently inherit a default nobody chose for it.
+ *
+ * A RENDERER MAY STILL OVERRIDE, and two do. `divider` reads its step from its own payload because
+ * the size of a gap is exactly what an editor is choosing when they place one; `hero` picks by
+ * layout variant, because a full-bleed hero wants to meet the header and a contained one does not.
+ * An override is a stated reason in the renderer, never a habit.
+ */
+const SECTION_RHYTHM: Record<BlockType, SectionSpacing> = {
+  hero: 'sm',
+  manifesto: 'xl',
+  statement: 'xl',
+  'scale-statement': 'xl',
+  'material-story': 'xl',
+  'signature-media': 'xl',
+  'commission-cta': 'xl',
+  'final-cta': 'xl',
+  'category-grid': 'lg',
+  'category-list': 'lg',
+  'selected-works': 'lg',
+  'material-palette': 'lg',
+  'three-d-resin': 'lg',
+  'portfolio-strip': 'lg',
+  'process-steps': 'lg',
+  'featured-collections': 'lg',
+  'collection-products': 'lg',
+  'project-gallery': 'lg',
+  'commission-configurator': 'lg',
+  'contact-form': 'lg',
+  'media-split': 'lg',
+  'category-intro': 'md',
+  'journal-strip': 'md',
+  'secondary-objects': 'md',
+  'testimonial-strip': 'md',
+  'faq-list': 'md',
+  'rich-text': 'md',
+  'numbered-steps': 'md',
+  checklist: 'md',
+  quote: 'xl',
+  'contact-details': 'md',
+  'customization-note': 'sm',
+  'empty-state': 'sm',
+  divider: 'sm',
+}
+
+/** The rhythm for a block, falling back to the working step for a value not in the union. */
+export function rhythmOf(blockType: string): SectionSpacing {
+  return SECTION_RHYTHM[blockType as BlockType] ?? 'lg'
+}
+
 export type SectionShellProps = {
   readonly section: PageSection
+  /** Overrides the block type's own rhythm. Pass one only with a reason; see `SECTION_RHYTHM`. */
   readonly spacing?: SectionSpacing
   readonly container?: ContainerSize | 'none'
   readonly defaultScheme?: SectionScheme
@@ -50,7 +127,7 @@ export type SectionShellProps = {
  */
 export function SectionShell({
   section,
-  spacing = 'lg',
+  spacing,
   container = 'default',
   defaultScheme = 'DEEP',
   className,
@@ -63,7 +140,7 @@ export function SectionShell({
       id={`section-${section.id}`}
       data-block-type={section.block_type}
       scheme={schemeOf(section.theme, defaultScheme)}
-      spacing={spacing}
+      spacing={spacing ?? rhythmOf(section.block_type)}
       className={className}
     >
       {body}

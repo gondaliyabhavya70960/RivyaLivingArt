@@ -36,7 +36,7 @@ export function CustomizationNoteSection({
   return (
     <SectionShell
       section={section}
-      spacing="lg"
+
       container="prose"
       defaultScheme={banded ? 'INK' : 'DEEP'}
     >

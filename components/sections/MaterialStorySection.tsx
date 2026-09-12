@@ -84,7 +84,7 @@ export function MaterialStorySection({
   const stages = payload.stages
 
   return (
-    <SectionShell section={section} spacing="lg">
+    <SectionShell section={section}>
       <div className="grid gap-10 lg:grid-cols-2 lg:items-start lg:gap-16">
         <Stack gap={6} className="lg:sticky lg:top-24">
           <SectionCopy section={section} size="display-lg" />

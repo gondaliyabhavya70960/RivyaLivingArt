@@ -42,7 +42,7 @@ export function JournalStripSection({
   if (cards.length === 0 && outcome?.fallback?.mode === 'HIDE_SECTION') return null
 
   return (
-    <SectionShell section={section} spacing="lg">
+    <SectionShell section={section}>
       <Stack gap={10} data-provenance={outcome?.provenance} data-slot={outcome?.slotKey}>
         <SectionCopy section={section} />
         {cards.length === 0 ? (

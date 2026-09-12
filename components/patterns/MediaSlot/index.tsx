@@ -36,6 +36,8 @@ export type BlockImageProps = {
   readonly asset: MediaAsset | null
   readonly ratio: AspectRatio
   readonly mobileRatio?: AspectRatio
+  /** A floor on the frame's height, as a raw token value. See `AspectBoxProps.minBlockSize`. */
+  readonly minBlockSize?: string
   readonly preset: PresetName
   readonly sizes: string
   readonly altOverride?: string | null
@@ -78,6 +80,7 @@ export function BlockImage({
   veil = false,
   overlay,
   className,
+  minBlockSize,
 }: BlockImageProps): React.ReactElement {
   /*
    * NO CLOUD NAME MEANS NO DELIVERABLE IMAGE, and that is a media failure rather than an error.
@@ -96,6 +99,7 @@ export function BlockImage({
       veil={veil && deliverable !== null}
       overlay={overlay}
       className={className}
+      minBlockSize={minBlockSize}
     >
       {deliverable === null ? null : (
         <MediaImage
@@ -143,6 +147,14 @@ export type ResponsiveMediaProps = {
   readonly priority?: boolean
   readonly veil?: boolean
   readonly overlay?: React.ReactNode
+  /**
+   * A floor on the height of BOTH halves of the pair. See `AspectBoxProps.minBlockSize`.
+   *
+   * IT GOES ON THE SHARED PROPS, so the desktop and mobile elements agree. They must: only one is
+   * ever visible, and a floor on one alone would make the hero a different height either side of
+   * 768px for no reason an editor chose.
+   */
+  readonly minBlockSize?: string
 }
 
 /**
@@ -183,8 +195,18 @@ export function ResponsiveMedia({
   priority = false,
   veil = false,
   overlay,
+  minBlockSize,
 }: ResponsiveMediaProps): React.ReactElement {
-  const shared = { preset, altOverride, strings, cloudName, eager, veil, overlay } as const
+  const shared = {
+    preset,
+    altOverride,
+    strings,
+    cloudName,
+    eager,
+    veil,
+    overlay,
+    minBlockSize,
+  } as const
 
   // Same rule as BlockImage, applied before the pair is chosen: with no cloud name neither asset
   // is deliverable, so emit ONE frame carrying the fallback rather than two identical wells.

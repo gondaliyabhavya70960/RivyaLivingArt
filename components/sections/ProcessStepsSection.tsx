@@ -107,7 +107,7 @@ export function ProcessStepsSection({
   const alternating = (section.layout_variant ?? 'alternating') === 'alternating'
 
   return (
-    <SectionShell section={section} spacing="lg">
+    <SectionShell section={section}>
       <Stack gap={12}>
         <SectionCopy section={section} />
         {steps.length === 0 ? null : (
@@ -188,7 +188,7 @@ function ProcessChapter({
   const motion = still !== null && still.resource_type === 'video' ? still : null
 
   return (
-    <SectionShell section={section} spacing="lg">
+    <SectionShell section={section}>
       <div
         className={`grid gap-8 md:grid-cols-2 md:items-center md:gap-12 ${
           reversed ? '[&>*:first-child]:md:order-2' : ''

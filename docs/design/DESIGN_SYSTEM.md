@@ -791,6 +791,57 @@ on a 1920px screen:
 `<Section>` takes `spacing="sm" | "md" | "lg" | "xl"`, defaulting to `lg`. Two adjacent sections in
 the same scheme collapse to the larger of the two paddings; they do not sum.
 
+**Which step a band gets is a property of its block type, not of a call site.** `SECTION_RHYTHM` in
+`components/sections/SectionShell.tsx` is a `Record<BlockType, SectionSpacing>` — exhaustive over
+all thirty-four, so a block cannot arrive later and inherit a default nobody chose. The four steps
+carry editorial intent rather than sizes:
+
+| Step | What it is for | Blocks |
+|---|---|---|
+| `xl` | The held moment — earns its weight from what is *not* around it | `manifesto`, `statement`, `scale-statement`, `material-story`, `signature-media`, `commission-cta`, `final-cta`, `quote` |
+| `lg` | The working rhythm — substantial bands read one after another | galleries, grids, process, products, configurator, contact form |
+| `md` | The sentence above a list — belongs to its neighbour | `category-intro`, `journal-strip`, `secondary-objects`, `testimonial-strip`, `faq-list`, `rich-text` |
+| `sm` | Connective tissue — present, not announced | `hero`, `customization-note`, `empty-state`, `divider` |
+
+A renderer may override with a stated reason, and two do: `divider` reads its step from its own
+payload, because the size of a gap is exactly what an editor places one to choose; `hero` picks by
+layout variant, because a full-bleed hero is meant to meet the header and a contained one is not.
+
+This replaces the state the audit found. Twenty-seven of thirty call sites passed `spacing="lg"`,
+so `sm` and `xl` were tokens nothing referenced and ten consecutive bands on `/` were spaced
+identically — §50 asks for deliberate negative space, and uniform padding is the opposite of a
+decision. `tests/unit/section-rhythm.test.tsx` asserts the shape rather than the values: every
+block type has an answer, and all four steps are in use.
+
+#### 5.1.1 The hero floor
+
+| Token | Value |
+|---|---|
+| `--rv-hero-min-h` | `76svh` |
+
+A hero is an `AspectBox`, so before this token its height was width ÷ ratio and nothing else.
+Measured across the eight QA widths its share of the viewport ran 91 · 69 · 61 · 49 · 37 · 91 · 82 ·
+76 % — at 768 the opening image of the site held barely a third of the screen, and the ≥ 70 % FEAT
+§49 question 2 asks for was met or missed by accident of viewport aspect. §19.1 records that as the
+finding rather than the one missing point.
+
+It is a **floor, not a height**: the box still takes its aspect ratio and renders at whichever is
+taller, so the wide viewports that already give a commanding 21:9 keep it — 1920 stays at 91 % — and
+only the middle band is lifted. One number does that at every width.
+
+`svh` rather than `vh`, deliberately: `vh` on a phone is the height with the browser chrome
+retracted, so a `vh` floor is taller than the screen until the visitor scrolls, and the hero would
+push its own copy under the address bar on first paint.
+
+It costs no layout shift. Both the ratio and the floor are known before any byte of the image
+arrives, so the box reserves its final size on the server exactly as the ratio alone did.
+
+It reaches the frame as `AspectBoxProps.minBlockSize`, a raw token value applied as an inline style
+— the way `Section` already sets its rhythm and `Container` its maxima. It cannot be a class:
+`min-h-[76svh]` is an arbitrary value, which `scripts/design/check-tokens.mjs` refuses outright, and
+a `min-h-hero` utility would put a layout decision in the theme bridge where no other section
+measurement lives. Only the **first** section on a page receives it.
+
 ### 5.2 Breakpoints
 
 Exactly the FEAT §45 visual QA matrix, plus 360 as the base. Mobile-first: no `max-width` queries.
@@ -1587,7 +1638,7 @@ in which column, and §19.4 is the standing instruction that produces the owner'
 | # | FEAT §49 question | Examined on | Evidence | Verdict | Reviewer | Date |
 |---|---|---|---|---|---|---|
 | 1 | Does it feel like a collectible-design studio? | `/`, `/large-format`, `/about`, `/process` at 1440 × 900 and 390 × 844. **Not** `/collection/[category]` or `/collections/[slug]`, which §45 names and which 404 — see §19.5 | The owner's own session log, kept to the shape in §19.4 and pasted beneath this table | `OWNER_VERIFICATION_REQUIRED` | — | — |
-| 2 | Does large furniture visually dominate? | `/` and `/large-format`, all eight FEAT §45 widths | Measured. The hero media box is **617 px = 69 % of 900** at 1440 and **693 px = 82 % of 844** at 390; across the eight widths it runs 91 · 69 · 61 · 49 · 37 · 91 · 82 · 76 %. It is a 21:9 `AspectBox`, so its height is a function of WIDTH and never of viewport height — the ≥ 70 % condition is met or missed by accident of viewport aspect, which is the finding rather than the one missing point. The scale-reference-above-the-fold clause and the "no large-format piece smaller than a décor item" clause are **not yet observed**; a row takes the worst verdict among its measured clauses and names the rest | `FAIL` | — (measured; see §19.3) | 2026-09-12 |
+| 2 | Does large furniture visually dominate? | `/` and `/large-format`, all eight FEAT §45 widths | Measured. The hero media box is **617 px = 69 % of 900** at 1440 and **693 px = 82 % of 844** at 390; across the eight widths it runs 91 · 69 · 61 · 49 · 37 · 91 · 82 · 76 %. It is a 21:9 `AspectBox`, so its height is a function of WIDTH and never of viewport height — the ≥ 70 % condition is met or missed by accident of viewport aspect, which is the finding rather than the one missing point. The scale-reference-above-the-fold clause and the "no large-format piece smaller than a décor item" clause are **not yet observed**; a row takes the worst verdict among its measured clauses and names the rest. **The mechanism has since been fixed** — `--rv-hero-min-h` (§5.1.1) gives the first section of a page a viewport-relative floor of 76 svh, so the height is no longer a function of width alone. The verdict stands at `FAIL` until somebody re-runs the measurement in a browser and signs it, per §19.2, and the two unobserved clauses are unaffected by the floor | `FAIL` | — (measured; see §19.3) | 2026-09-12 |
 | 3 | Can the visitor feel resin, wood, light and surface? | `/about` material palette, `/process`, product galleries; delivery presets and `sizes` read statically, because the browser harness serves committed fixture derivatives and cannot judge texture | Seventeen `sizes` strings declare a `(min-width: 640px)` switch this design system does not have — `--breakpoint-sm` is 26.875rem (430 px) and `--breakpoint-md` is 48rem (768 px) — so the browser is told the layout changes where it does not. `media_crops` focal points are written by the Studio and read by no public renderer. The material palette forces `mobileRatio="4:5"` on a macro study | `FAIL` | — (measured; see §19.3) | 2026-09-12 |
 | 4 | Does 3D improve understanding rather than exist as a gimmick? | Nothing. There is nothing to examine | Zero real models exist and the flag is off: `three_d_viewer` in `lib/flags/flags.ts` is off until a model with a poster exists, and no row seeds it on. Inventing a model to answer this question would fabricate a product (D10) | `N/A — no model exists; flag off` | — | 2026-09-12 |
 | 5 | Can users discover and understand products easily? | The five tasks in `docs/ops/TESTING.md` §14.2, on each participant's own device | Three or more first-time participants, task completion, times and verbatim quotes, recorded in `TESTING.md` §14.4. The threshold lives there and is not restated here | `OWNER_VERIFICATION_REQUIRED` | — | — |
