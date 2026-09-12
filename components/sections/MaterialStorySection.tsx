@@ -1,6 +1,6 @@
+import dynamic from 'next/dynamic'
 import * as React from 'react'
 
-import { MaterialSequence } from '@/components/patterns/MaterialSequence'
 import { BlockImage } from '@/components/patterns/MediaSlot'
 import { Stack } from '@/components/primitives/Stack'
 import { materialStoryBlock } from '@/content/blocks/material-story'
@@ -10,6 +10,26 @@ import { SectionActions } from './SectionActions'
 import { SectionCopy } from './SectionCopy'
 import { SectionShell } from './SectionShell'
 import type { SectionRenderProps } from './types'
+
+/**
+ * LOADED ON DEMAND, FOR THE REASON `ProcessStepsSection` LOADS `ChapterMedia` ON DEMAND.
+ *
+ * `components/sections/registry.ts` imports every renderer, so a static import here put this
+ * island in the INITIAL JAVASCRIPT OF ALL SIXTEEN CMS ROUTES, whether or not they hold a material
+ * story. Together with the hero's motion layer that was two of the homepage's seven budgeted
+ * islands spent by the registry rather than chosen by a route.
+ *
+ * NOTHING IS LOST BY DEFERRING IT, and that is a property of the component rather than a hope:
+ * RC-215 server-renders every stage as `children` and the island only adds and removes a
+ * `data-active` attribute. Absence of the attribute IS the static branch — the unenhanced page is
+ * fully legible, which is exactly what makes the module safe to fetch late or never.
+ *
+ * `ssr` IS LEFT ALONE: a Server Component may not pass `ssr: false`, and the server output of the
+ * stages is the list itself, which must be there.
+ */
+const MaterialSequence = dynamic(() =>
+  import('@/components/patterns/MaterialSequence').then((module) => module.MaterialSequence),
+)
 
 /**
  * The progression from liquid to object: the headline sequence, and one picture per stage.

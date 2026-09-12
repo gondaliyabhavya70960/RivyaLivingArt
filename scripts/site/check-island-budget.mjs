@@ -80,11 +80,6 @@ const ALLOWED = new Map([
   ['components/patterns/MegaMenu/index.tsx', 'open state and roving focus for the header panel'],
   ['components/patterns/MobileNav/index.tsx', 'the drawer, its focus trap and its dismissal'],
   [
-    'components/patterns/HeroMotion/index.tsx',
-    'mounts the hero clip after paint, behind five gates',
-  ],
-  ['components/patterns/MaterialSequence/index.tsx', 'observes scroll to mark the stage in view'],
-  [
     'components/patterns/SiteErrorCopy/index.tsx',
     "carries the error boundary's seeded copy across a boundary Next requires",
   ],
@@ -136,8 +131,20 @@ const ALLOWED = new Map([
  * PHASE 40, which added the vitals reporter. That is the edit this comment describes and it is the
  * only way the number is allowed to move: deliberately, with the new island named above and a
  * sentence saying why it cannot be a Server Component.
+ *
+ * LOWERED FROM SEVEN TO FIVE BY THE EDITORIAL REDESIGN, and this is the first time the number has
+ * come down. `HeroMotion` and `MaterialSequence` were never chosen by the homepage: they were
+ * charged to it — and to all sixteen CMS routes, `/privacy` and `/terms` among them — because
+ * `components/sections/registry.ts` imports every renderer and two renderers imported them
+ * statically. Both now load through `next/dynamic`, the way `ProcessStepsSection` has always
+ * loaded `ChapterMedia`, so they appear in the on-demand list below instead.
+ *
+ * WHAT THE TWO FREED SLOTS ARE FOR IS NOTHING. They are headroom, not an allowance: the redesign's
+ * motion is CSS, and a budget that drops to five and stays there is the point of lowering it. An
+ * island that wants one of them still has to be named above with a sentence saying why it cannot
+ * be a Server Component.
  */
-const BUDGET = 7
+const BUDGET = 5
 
 const EXTENSIONS = ['.tsx', '.ts', '.mjs', '.js', '.jsx']
 
