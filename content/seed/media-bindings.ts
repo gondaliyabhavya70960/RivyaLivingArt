@@ -87,4 +87,109 @@ export type MediaBinding = {
   readonly mobile?: string
 }
 
-export const MEDIA_BINDINGS: Readonly<Record<string, MediaBinding>> = {}
+/**
+ * THE CURATION, MADE. Ten of the twenty-six declared slots; the rest stay gaps.
+ *
+ * CHOSEN AGAINST THE RENDERER'S RATIO, NOT THE SLOT REGISTRY'S, and the two disagree. A slot in
+ * `content/media-slots.ts` declares what the SURFACE needs — `collection.<x>.hero` says 16:9 / 4:5
+ * — while `HeroSection` hardcodes 21:9 / 9:16 and `ManifestoSection` 4:5 / 4:5. The renderer is
+ * what a visitor actually sees, so it is what the asset is picked for. The mismatch is real and is
+ * recorded here rather than papered over: a slot registry that describes a shape nothing renders is
+ * worth an amendment, and it is not this file's to make.
+ *
+ * `native` BELOW MEANS THE ASSET IS ALREADY AT THE DELIVERED RATIO. Where it is not, Cloudinary
+ * crops with `g_auto` — which the presets already ask for — and the result is the first thing the
+ * Studio's focal points should be pointed at. That list is the crop pass's target, in order of how
+ * far the source is from the box.
+ *
+ * WHAT IS DELIBERATELY NOT HERE:
+ *
+ *   · THE HOMEPAGE HERO. `home.hero.video` and `home.hero.poster` are the two `GENERATE_NEW` slots
+ *     in the coverage table: no manifest family can fill them, and `fillableBy` is empty for both.
+ *     Reaching for a material macro because the most important frame on the site is empty is
+ *     exactly the substitution the note above forbids. It stays a gap, and it is the strongest
+ *     single argument for the one generation this library still needs.
+ *   · `/collection` landing, `/collection/furniture`, `/collection/collectible-design`,
+ *     `/custom-commissions`, `/contact`, `/faq`, `/search` — unbound by design, per the list above.
+ *   · FIVE OF THE SEVEN PROCESS BANDS. `process.sections` declares 4:3 and only `process-studio`
+ *     and `process-finish` hold one. The other five families are `RECROP_EXISTING` in the coverage
+ *     table, and a gap is the honest state until somebody crops them.
+ *   · EVERY PORTFOLIO AND TESTIMONIAL SURFACE. `portfolio.project` is declared `EMPTY_STATE`:
+ *     filling it would assert a delivered project, which is D10's first sentence.
+ */
+export const MEDIA_BINDINGS: Readonly<Record<string, MediaBinding>> = {
+  // 4:5 / 4:5 — native at both. The introduction band beneath the homepage hero.
+  'home.02.manifesto': {
+    slotKey: 'home.intro',
+    desktop: 'INTERIOR-LIFESTYLE-001',
+    mobile: 'INTERIOR-LIFESTYLE-003',
+  },
+
+  // 21:9 / 9:16 — native at both, and the only family in the library that is. 6336px and 3072px.
+  'about.01.hero': {
+    slotKey: 'about.hero',
+    desktop: 'MATERIAL-MACRO-009',
+    mobile: 'MATERIAL-MACRO-002',
+  },
+
+  // Desktop native at 21:9 (6336px). Mobile is a 4:5 cropped to 9:16 — the family holds no 9:16.
+  'collection.wall-statement-art.01.hero': {
+    slotKey: 'collection.wall-statement-art.hero',
+    desktop: 'WALL-ART-008',
+    mobile: 'WALL-ART-001',
+  },
+
+  // Mobile native at 9:16. Desktop is a 16:9 trimmed to 21:9 — the mildest crop of the five.
+  'collection.decor.01.hero': {
+    slotKey: 'collection.decor.hero',
+    desktop: 'DECOR-001',
+    mobile: 'DECOR-003',
+  },
+
+  // Neither native: 16:9 → 21:9 and 3:4 → 9:16. Both sources are large, so the crop has room.
+  'collection.3d-resin.01.hero': {
+    slotKey: 'collection.3d-resin.hero',
+    desktop: 'THREE-D-RESIN-002',
+    mobile: 'THREE-D-RESIN-001',
+  },
+
+  // Neither native. The desktop source is the smallest of the ten at 2048px — first in the queue
+  // for a focal point, and the one to re-generate if any of these is re-generated.
+  'collection.preservation.01.hero': {
+    slotKey: 'collection.preservation.hero',
+    desktop: 'PRESERVATION-VARMALA-010',
+    mobile: 'PRESERVATION-VARMALA-005',
+  },
+
+  // Neither native. `GIFTS-005` over 004 and 007, which are tagged `interior-lifestyle` — a gifts
+  // category hero should be the objects, not the room they are in.
+  'collection.gifts.01.hero': {
+    slotKey: 'collection.gifts.hero',
+    desktop: 'GIFTS-005',
+    mobile: 'GIFTS-001',
+  },
+
+  // `EDITORIAL-001` (4:5, 3712px) cropped, NOT `EDITORIAL-017`, which is natively 9:16 and 768px
+  // wide — under what a 390px viewport at DPR 2 asks for. Resolution beats ratio when the crop is
+  // portrait-to-portrait.
+  'journal.01.hero': {
+    slotKey: 'journal.cover',
+    desktop: 'EDITORIAL-008',
+    mobile: 'EDITORIAL-001',
+  },
+
+  // 4:3 / 4:5 — the one slot whose declared ratios and renderer agree, so both are native.
+  'process.02.brief': {
+    slotKey: 'process.sections',
+    desktop: 'PROCESS-STUDIO-001',
+    mobile: 'PROCESS-STUDIO-006',
+  },
+
+  // Native at both. `PROCESS-FINISH-006` over 005, which is tagged `editorial` and `process-timber`
+  // as well as `process-finish` — a finishing band wants the finishing bench and nothing else.
+  'process.07.finishing': {
+    slotKey: 'process.sections',
+    desktop: 'PROCESS-FINISH-006',
+    mobile: 'PROCESS-FINISH-001',
+  },
+}
