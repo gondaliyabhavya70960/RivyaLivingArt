@@ -111,6 +111,7 @@
     "docs:check-claims": "node scripts/docs/check-doc-contract.mjs --claims",
     "docs:audit": "node scripts/docs/audit-docs.mjs",
     "docs:audit-claims": "node scripts/docs/audit-docs.mjs --claims",
+    "docs:check-paths": "node scripts/docs/check-doc-paths.mjs",
     "ops:anonymise-inquiries": "tsx scripts/ops/anonymise-inquiries.ts",
     "a11y:check-focus-styles": "node scripts/a11y/check-focus-styles.mjs",
     "a11y:check-contrast": "node scripts/a11y/check-contrast.mjs",
