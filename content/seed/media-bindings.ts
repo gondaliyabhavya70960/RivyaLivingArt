@@ -50,6 +50,33 @@
  * poster, `/collection` landing, `/collection/furniture`, `/collection/collectible-design`,
  * `/custom-commissions`, `/contact`, `/faq`, `/search`, and the mobile ratio for the
  * `/large-format` architectural slot.
+ *
+ * ------------------------------------------------------------------------------------------------
+ * FILLING THIS MAP IS NOT ENOUGH ON ITS OWN, and the reason is worth knowing before anyone tries.
+ *
+ * `npm run seed:content` will NOT apply a binding to a section a person has published, and both of
+ * the guards that stop it are correct:
+ *
+ *   1. `promotedByAHuman` (seed-content.ts rule 5c) returns BEFORE the media-rebind branch. Every
+ *      seeded section is `DRAFT`; the launch routes were published by a person. So the sections
+ *      that are actually LIVE are precisely the ones the runner refuses to touch.
+ *   2. `media_slot_key` is a `fields` entry, so it is inside the content hash. Adding a binding
+ *      changes the hash, which takes the row off the rebind path and onto the ordinary update
+ *      path — the one guard 1 has already returned from.
+ *
+ * Between them a perfectly filled map still leaves every live band rendering the SEED §47 fallback
+ * well. `npm run seed:bind-media` exists for exactly that: it writes `media_desktop_id`,
+ * `media_mobile_id` and `media_slot_key` and refuses to write anything else — no copy, no status,
+ * no seed hash — because choosing a photograph is not the same act as publishing a sentence.
+ * `--dry-run` prints the plan first, which is what an editorial decision across a dozen pages
+ * deserves.
+ *
+ * WHICH SLOTS CAN BE FILLED TODAY IS ALREADY DECIDED, in the generated coverage table in
+ * `docs/media/HIGGSFIELD_ASSET_STATUS.md`: 15 slots are `REUSE_FROM_FAMILY` and bindable now from
+ * assets that hold both declared ratios natively; 6 are `RECROP_EXISTING` and want the Studio crop
+ * pass first; 2 are `GENERATE_NEW` (the home hero video and its poster, which has no family at
+ * all); and 3 are `LEAVE_EMPTY` by declaration, because filling them would assert a business fact
+ * nobody has confirmed.
  */
 
 export type MediaBinding = {

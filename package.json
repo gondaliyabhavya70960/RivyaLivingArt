@@ -33,6 +33,7 @@
     "db:check-data-layer": "node scripts/db/check-data-layer.mjs",
     "db:check-migrations": "node scripts/db/check-migrations.mjs",
     "seed:content": "tsx scripts/seed/seed-content.ts",
+    "seed:bind-media": "tsx scripts/seed/bind-media.ts",
     "demo:seed": "tsx scripts/demo/seed-demo.ts",
     "demo:purge": "tsx scripts/demo/purge-demo.ts",
     "demo:register": "tsx scripts/demo/build-register.ts",
