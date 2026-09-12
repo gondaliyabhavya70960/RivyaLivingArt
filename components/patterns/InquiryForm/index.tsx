@@ -68,9 +68,32 @@ export interface InquiryFormProps {
   >
 }
 
+/**
+ * `?type=` → the enquiry kind it asks for. A CLOSED MAP, never a cast.
+ *
+ * FEAT §49 question 6 names six affordances and the audit found them resolving to ONE. Phase 15's
+ * rail returned the same `/contact?product=<slug>&type=product` for "Ask About This Piece" and
+ * "Request a Quote", and nothing anywhere read `type` — so `QUOTE` and `CONSULTATION` were real
+ * enum values with real schemas, real WhatsApp templates and two Studio inbox views that could
+ * never receive a row. This map is the missing half.
+ *
+ * A QUERY STRING IS UNTRUSTED INPUT, which is why it is a lookup rather than an uppercase-and-cast.
+ * An unknown value falls through to the kind the section mounted with, so a mistyped or hostile
+ * `?type=` gets the ordinary form rather than an error — and `submitInquiry` re-validates against
+ * the Zod union regardless. The server is still the authority; this only decides which form a
+ * visitor is looking at.
+ */
+const KIND_BY_QUERY: Readonly<Record<string, InquiryFormKind>> = {
+  product: 'PRODUCT',
+  quote: 'QUOTE',
+  consultation: 'CONSULTATION',
+  commission: 'COMMISSION',
+}
+
 export function InquiryForm({ kind, copy, enquiryTypes, action }: InquiryFormProps) {
   const [state, setState] = React.useState<SubmitState>({ status: 'idle' })
   const [productSlug, setProductSlug] = React.useState<string | null>(null)
+  const [requestedKind, setRequestedKind] = React.useState<InquiryFormKind | null>(null)
   const openedAt = React.useRef<number>(0)
 
   // WHEN THE FORM WAS RENDERED, not when the module loaded. `Date.now()` at module scope would be
@@ -89,16 +112,34 @@ export function InquiryForm({ kind, copy, enquiryTypes, action }: InquiryFormPro
      * page, and no modal a keyboard user has to escape from. Amendment A20.
      */
     const params = new URLSearchParams(window.location.search)
-    const slug = params.get('product')
-    if (slug === null || slug.trim() === '') return
+    const slug = params.get('product')?.trim() ?? ''
+    // `?type=` TRAVELS BESIDE `?product=` AND IS READ IN THE SAME PASS. A consultation names no
+    // piece, so this cannot be nested inside the slug check the way the product read used to be —
+    // that is precisely why `type` went unread: there was no branch it could have been reached on.
+    const requested = KIND_BY_QUERY[params.get('type')?.trim().toLowerCase() ?? ''] ?? null
+    if (slug === '' && requested === null) return
 
     // `startTransition` for the same reason the configurator's `?step=` read uses it: a synchronous
     // setState inside an effect is a cascading render, and the linter is right to say so. Nothing
     // here is urgent — the form is already usable, and naming the piece is an improvement to it.
     React.startTransition(() => {
-      setProductSlug(slug.trim())
+      if (slug !== '') setProductSlug(slug)
+      if (requested !== null) setRequestedKind(requested)
     })
   }, [])
+
+  /*
+   * WHICH ENQUIRY THIS IS, decided once and read in two places — the submitted payload and the
+   * type picker below.
+   *
+   * THE SECTION'S OWN KIND WINS WHENEVER IT IS SPECIFIC. A band mounted as COMMISSION is a
+   * commission form wherever it is linked from; only the GENERAL contact band is open to being
+   * told what it is, because that is the one every rail points at. Within GENERAL the URL decides:
+   * an explicit `?type=` first, then a bare `?product=` (Phase 15's original behaviour, kept), then
+   * the plain contact form.
+   */
+  const effectiveKind: InquiryFormKind =
+    kind !== 'GENERAL' ? kind : (requestedKind ?? (productSlug !== null ? 'PRODUCT' : 'GENERAL'))
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -124,13 +165,6 @@ export function InquiryForm({ kind, copy, enquiryTypes, action }: InquiryFormPro
       website: text('website'),
       elapsedMs: openedAt.current === 0 ? undefined : Date.now() - openedAt.current,
     }
-
-    /*
-     * A GENERAL FORM WITH A PRODUCT IN THE URL SUBMITS A PRODUCT ENQUIRY. The section renders the
-     * same markup either way — that is what keeps `/contact` cacheable — and the kind is decided
-     * here, where the query string is known.
-     */
-    const effectiveKind = kind === 'GENERAL' && productSlug !== null ? 'PRODUCT' : kind
 
     const payload =
       effectiveKind === 'PRODUCT'
@@ -178,8 +212,14 @@ export function InquiryForm({ kind, copy, enquiryTypes, action }: InquiryFormPro
   const invalid = (name: string): string | undefined =>
     state.status === 'error' && state.fields.includes(name) ? copy.errorGeneric : undefined
 
+  /*
+   * `data-inquiry-form` REPORTS WHAT THIS FORM WILL FILE, not what it was mounted as. Nothing
+   * asserts its value — every spec uses it as a presence selector — and `effectiveKind` is the
+   * honest answer now that `?type=` can change it, which also makes it the hook a conversion test
+   * can read to prove the quote form is a quote form.
+   */
   return (
-    <form onSubmit={onSubmit} noValidate data-inquiry-form={kind}>
+    <form onSubmit={onSubmit} noValidate data-inquiry-form={effectiveKind}>
       <Stack gap={5}>
         {state.status === 'error' ? (
           <div role="alert">
@@ -201,11 +241,14 @@ export function InquiryForm({ kind, copy, enquiryTypes, action }: InquiryFormPro
         </Field>
 
         {/*
-          THE TYPE PICKER GOES WHEN A PRODUCT IS NAMED. A visitor who arrived from a piece has
-          already answered "what is this about", and asking again invites an answer that contradicts
-          the link they followed.
+          THE TYPE PICKER GOES WHEN THE URL HAS ALREADY ANSWERED. A visitor who arrived from a
+          piece, or from a link that asked for a quote or a consultation, has already said what this
+          is about — asking again invites an answer that contradicts the link they followed. Reading
+          `effectiveKind` rather than `kind` is what extends that to `?type=`: before, only a named
+          product removed the picker, so someone arriving at the quote form was still offered a
+          dropdown that could disagree with it.
         */}
-        {kind === 'GENERAL' && productSlug === null && enquiryTypes.length > 0 ? (
+        {effectiveKind === 'GENERAL' && enquiryTypes.length > 0 ? (
           <Field label={copy.enquiryType}>
             <Select name="enquiry_type" defaultValue="">
               <option value="" />
