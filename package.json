@@ -125,7 +125,7 @@
     "@gltf-transform/extensions": "4.5.0",
     "@react-three/drei": "10.7.8",
     "@react-three/fiber": "9.7.0",
-    "@supabase/ssr": "^0.12.6",
+    "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.116.0",
     "cloudinary": "^2.11.0",
     "draco3d": "1.5.7",
