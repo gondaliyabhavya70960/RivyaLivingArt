@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync, rmSync, writeFileSync, mkdirSync } from 'node:fs'
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync, mkdirSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
@@ -128,5 +128,94 @@ describe('the renderer', () => {
     expect(headingIds).toEqual(['one', 'two-words', 'two-words-1'])
     const list = blocks[2]
     expect(list?.kind === 'list' && list.items[0]?.nested).toHaveLength(1)
+  })
+})
+
+/**
+ * PHASE 46 RE-CONFIRMS THE ALLOWLIST — it does not rebuild it.
+ *
+ * Phase 38 built the viewer against ten documents and four exclusions. Phases 39–45 then wrote a
+ * great deal more prose, moved files, promoted stubs to `CURRENT` and added `SECURITY.md` and a
+ * hundred-odd migrations to the tree. Every one of those is a way for this allowlist to become
+ * wrong WITHOUT ANYTHING FAILING: a key whose path has rotted renders an empty document, and a
+ * newly added key is a file served to anyone holding `system.docs.read`.
+ *
+ * SO THE EXCLUSIONS ARE ASSERTED AS A RULE OVER THE VALUES, NEVER AS TEN HAND-WRITTEN NEGATIONS. A
+ * negation per current key says nothing about the eleventh key somebody adds next year, which is
+ * precisely the addition that matters — `docs/requirements/**` (the verbatim specifications),
+ * `SECURITY.md`, any `.env*` and anything under `supabase/migrations/` must stay unreachable
+ * whatever the allowlist grows into.
+ */
+describe('the Phase 46 re-confirmation', () => {
+  it('resolves every key to a document that exists and has content', () => {
+    for (const key of DOC_KEYS) {
+      const { path } = DOC_ALLOWLIST[key]
+      expect(existsSync(path), `${key} → ${path} does not exist`).toBe(true)
+      expect(readFileSync(path, 'utf8').trim().length, `${key} → ${path} is empty`).toBeGreaterThan(
+        0,
+      )
+    }
+  })
+
+  /**
+   * Each rule is a property of a PATH, so it applies to an allowlist entry nobody has written yet.
+   * `docs/**` plus `.md` is the positive half; the four named exclusions are the half that would
+   * hurt, and each is stated in the form that also refuses a sibling — `SECURITY.md` anywhere
+   * rather than `docs/ops/SECURITY.md`, any `.env` rather than `.env.example`.
+   */
+  it('admits no requirement, no SECURITY.md, no .env and no migration — as a rule, not a list', () => {
+    for (const key of DOC_KEYS) {
+      const { path } = DOC_ALLOWLIST[key]
+      expect(path.startsWith('docs/'), `${key} is outside docs/`).toBe(true)
+      expect(path.endsWith('.md'), `${key} is not Markdown`).toBe(true)
+      expect(path.startsWith('docs/requirements/'), `${key} is a specification of record`).toBe(
+        false,
+      )
+      expect(path.includes('SECURITY'), `${key} names SECURITY`).toBe(false)
+      expect(path.includes('.env'), `${key} names an env file`).toBe(false)
+      expect(path.includes('supabase/migrations/'), `${key} is a migration`).toBe(false)
+      expect(path.includes('..'), `${key} contains a traversal`).toBe(false)
+      expect(path.startsWith('/'), `${key} is an absolute path`).toBe(false)
+    }
+  })
+
+  /**
+   * The five the phase document names, asserted through the path mapper rather than the key
+   * checker: `docKeyForPath` is the half that takes something path-shaped, so it is the half a
+   * link, a redirect or a hand-typed URL reaches. `null` here is what becomes a 404 in the viewer.
+   */
+  it('maps none of the five forbidden shapes to a key', () => {
+    for (const forbidden of [
+      '.env.example',
+      'docs/ops/SECURITY.md',
+      'supabase/migrations/0001_init.sql',
+      '/home/user/RivyaLivingArt/docs/ops/ENVIRONMENT.md',
+      '../../docs/ops/ENVIRONMENT.md',
+    ]) {
+      expect(docKeyForPath(forbidden), forbidden).toBeNull()
+      expect(isDocKey(forbidden), forbidden).toBe(false)
+    }
+  })
+
+  /**
+   * FRONT MATTER ON ALL TEN, because the viewer and the doc audit must agree about the same file.
+   * `audit-docs.mjs` rejects a D7 document without front matter, and `parseMarkdown` strips the
+   * block so the reader does not meet `doc: … status: …` as the first paragraph — a document that
+   * is served but would fail the audit is exactly the aspirational documentation Phase 46 removes.
+   */
+  it('serves only documents carrying Phase 01 front matter', () => {
+    for (const key of DOC_KEYS) {
+      const { path } = DOC_ALLOWLIST[key]
+      const lines = readFileSync(path, 'utf8').replace(/\r\n?/gu, '\n').split('\n')
+      expect(lines[0], `${path} does not open with a front-matter fence`).toBe('---')
+      const close = lines.findIndex((line, index) => index > 0 && line.trim() === '---')
+      expect(close, `${path} never closes its front matter`).toBeGreaterThan(1)
+      const block = lines.slice(1, close).join('\n')
+      expect(block, `${path} front matter names no doc`).toMatch(/^doc:\s*\S+/mu)
+      expect(block, `${path} front matter names no status`).toMatch(/^status:\s*\S+/mu)
+      // The block is metadata, so the renderer must not show it as the document's first paragraph.
+      const first = parseMarkdown(readFileSync(path, 'utf8'))[0]
+      expect(first?.kind, `${path} renders its front matter`).toBe('heading')
+    }
   })
 })

@@ -1,3 +1,11 @@
+---
+doc: ROADMAP
+status: CURRENT
+owning_phase: 01
+last_reviewed: 2026-09-12
+owner_verification: NOT_REQUIRED
+---
+
 # ROADMAP — the phase-wise implementation approach
 
 > The index. Each phase is specified in full under [`phases/`](phases/); this file says how the
@@ -37,55 +45,55 @@ Update CHANGELOG · PROJECT_STATE · SESSION-STATE · the domain docs the change
 
 ## The 47 phases
 
-| # | Phase | Depends on | Document |
-|---|---|---|---|
-| **00** | Repository Audit & Baseline | None. This is the root phase | [`PHASE-00-04.md`](phases/PHASE-00-04.md) |
-| **01** | PRD, Architecture & Documentation | Phase 00 | [`PHASE-00-04.md`](phases/PHASE-00-04.md) |
-| **02** | Reference UI Audit + Design System | Phases 00, 01 | [`PHASE-00-04.md`](phases/PHASE-00-04.md) |
-| **03** | Supabase Database + Data Layer | Phases 00, 01 | [`PHASE-00-04.md`](phases/PHASE-00-04.md) |
-| **04** | Supabase Auth + RBAC + RLS | Phases 00, 01, 03 | [`PHASE-00-04.md`](phases/PHASE-00-04.md) |
-| **05** | Studio Foundation | Phase 02, Phase 03, Phase 04 | [`PHASE-05-09.md`](phases/PHASE-05-09.md) |
-| **06** | Cloudinary Media Architecture | Phase 03, Phase 04, Phase 05 | [`PHASE-05-09.md`](phases/PHASE-05-09.md) |
-| **07** | Higgsfield Asset Audit + Initial Asset Plan | Phase 05, Phase 06 | [`PHASE-05-09.md`](phases/PHASE-05-09.md) |
-| **08** | CMS / Editable Content System | Phase 03, 04, 05, 06 | [`PHASE-05-09.md`](phases/PHASE-05-09.md) |
-| **09** | Initial Website Content Seed | Phase 06, Phase 07, Phase 08 | [`PHASE-05-09.md`](phases/PHASE-05-09.md) |
-| **10** | Public Website Foundation | Phases 02, 04, 06, 08, 09 | [`PHASE-10-15.md`](phases/PHASE-10-15.md) |
-| **11** | Homepage + Material Experience | Phase 10, 08, 09, 07 | [`PHASE-10-15.md`](phases/PHASE-10-15.md) |
-| **12** | About + Process | Phases 10, 11 | [`PHASE-10-15.md`](phases/PHASE-10-15.md) |
-| **13** | Large Format Experience | Phases 10, 11, 12 | [`PHASE-10-15.md`](phases/PHASE-10-15.md) |
-| **14** | Product Catalog | Phases 03, 04, 06, 10, 13 | [`PHASE-10-15.md`](phases/PHASE-10-15.md) |
-| **15** | Product Detail Experience | Phases 03, 06, 10, 14 | [`PHASE-10-15.md`](phases/PHASE-10-15.md) |
-| **16** | Collections / Exhibitions | Phase 08, Phase 09, Phase 10, Phase 14, Phase 06/07 | [`PHASE-16-22.md`](phases/PHASE-16-22.md) |
-| **17** | Portfolio / Projects | Phase 16, Phase 08, Phase 09, Phase 10, Phase 06 | [`PHASE-16-22.md`](phases/PHASE-16-22.md) |
-| **18** | Journal | Phase 16, Phase 08, Phase 09, Phase 10, Phase 06/07 | [`PHASE-16-22.md`](phases/PHASE-16-22.md) |
-| **19** | Bespoke / Custom Configurator | Phase 06, Phase 08, Phase 09, Phase 14/15, Phase 10 | [`PHASE-16-22.md`](phases/PHASE-16-22.md) |
-| **20** | Inquiry + WhatsApp Flow | Phase 19, Phase 15, Phase 09, Phase 08, Phase 05 | [`PHASE-16-22.md`](phases/PHASE-16-22.md) |
-| **21** | 3D Product Experience | Phase 06, Phase 15, Phase 19, Phase 02, Phase 16/17 | [`PHASE-16-22.md`](phases/PHASE-16-22.md) |
-| **22** | Homepage / Store Merchandising | Phase 14, Phase 16, Phase 15, Phase 08/09, Phase 05… | [`PHASE-16-22.md`](phases/PHASE-16-22.md) |
-| **23** | Global Search + Product Relationships | Phase 03, 04, 05, 10, 14, 15, 16, 17, 18, 20 | [`PHASE-23-30.md`](phases/PHASE-23-30.md) |
-| **24** | Bulk Management | Phase 04, 05, 06, 14, 20, 23 | [`PHASE-23-30.md`](phases/PHASE-23-30.md) |
-| **25** | Product Scraper Foundation | Phase 03, 04, 05, 23, 24 | [`PHASE-23-30.md`](phases/PHASE-23-30.md) |
-| **26** | Comparator Source Management | Phase 25, 04, 05, 23, 24 | [`PHASE-23-30.md`](phases/PHASE-23-30.md) |
-| **27** | Scraper Extraction | Phase 25, 26 | [`PHASE-23-30.md`](phases/PHASE-23-30.md) |
-| **28** | Normalization + Validation | Phase 26, 27, 14 | [`PHASE-23-30.md`](phases/PHASE-23-30.md) |
-| **29** | Change Detection + Review | Phase 27, 28, 24, 23 | [`PHASE-23-30.md`](phases/PHASE-23-30.md) |
-| **30** | Large-Format Research Workspace | Phase 28, 29, 26, 24 | [`PHASE-23-30.md`](phases/PHASE-23-30.md) |
-| **31** | Analytics + Comparison | Phase 26, Phase 27, Phase 28, Phase 29, Phase 30… | [`PHASE-31-38.md`](phases/PHASE-31-38.md) |
-| **32** | Opportunity Engine | Phase 31, Phase 28, Phase 29, Phase 26, Phase 14 | [`PHASE-31-38.md`](phases/PHASE-31-38.md) |
-| **33** | Visual Similarity | Phase 27, Phase 28, Phase 31, Phase 06/07, Phase 19 | [`PHASE-31-38.md`](phases/PHASE-31-38.md) |
-| **34** | Product Direction Tool | Phase 31, Phase 32, Phase 33, Phase 30, Phase 08, Phase 05 | [`PHASE-31-38.md`](phases/PHASE-31-38.md) |
-| **35** | Shortlist + Confirmation | Phase 28/29, Phase 32, Phase 34, Phase 24, Phase 14… | [`PHASE-31-38.md`](phases/PHASE-31-38.md) |
-| **36** | Google Sheets | Phase 31, 32, 34, 35, Phase 20, Phase 19, Phase 04, D8 | [`PHASE-31-38.md`](phases/PHASE-31-38.md) |
-| **37** | Studio Analytics | Phase 31, Phase 32, Phase 26, Phase 14/16, Phase 17/18… | [`PHASE-31-38.md`](phases/PHASE-31-38.md) |
-| **38** | Environment + Documentation + Logs | Phase 04, Phase 05, Phase 06, Phase 25–30, Phase 36, D8 | [`PHASE-31-38.md`](phases/PHASE-31-38.md) |
-| **39** | SEO | Phase 08, 09, 10, 14–15, 16–18, 23, 38 | [`PHASE-39-46.md`](phases/PHASE-39-46.md) |
-| **40** | Performance | Phase 00, 02, 06, 10, 11, 14–18, 19, 21, 23, 37, 39 | [`PHASE-39-46.md`](phases/PHASE-39-46.md) |
-| **41** | Accessibility + Security | Phase 02, 04, 05, 06, 10, 14–21, 20, 25–30, 38, 40 | [`PHASE-39-46.md`](phases/PHASE-39-46.md) |
-| **42** | Comprehensive Testing | Phase 00, 03, 04, 06, 09… | [`PHASE-39-46.md`](phases/PHASE-39-46.md) |
-| **43** | Media Coverage + Higgsfield Finalization | Phase 06, 07`, `content/media-slots.ts`… | [`PHASE-39-46.md`](phases/PHASE-39-46.md) |
-| **44** | Vercel Deployment | Phase 00, 01, 03, 04, 25, 38, 39–43, 41, 42 | [`PHASE-39-46.md`](phases/PHASE-39-46.md) |
-| **45** | Final Creative Polish | Phase 02, 11–22, 39, 40, 41, 42, 43, 44 | [`PHASE-39-46.md`](phases/PHASE-39-46.md) |
-| **46** | Documentation + Handoff | Phase 01, 38, 39–45, 44… | [`PHASE-39-46.md`](phases/PHASE-39-46.md) |
+| # | Phase | Status | Depends on | Document |
+|---|---|---|---|---|
+| **00** | Repository Audit & Baseline | **COMPLETE** | None. This is the root phase | [`PHASE-00-04.md`](phases/PHASE-00-04.md) |
+| **01** | PRD, Architecture & Documentation | **COMPLETE** | Phase 00 | [`PHASE-00-04.md`](phases/PHASE-00-04.md) |
+| **02** | Reference UI Audit + Design System | **COMPLETE** | Phases 00, 01 | [`PHASE-00-04.md`](phases/PHASE-00-04.md) |
+| **03** | Supabase Database + Data Layer | **COMPLETE** | Phases 00, 01 | [`PHASE-00-04.md`](phases/PHASE-00-04.md) |
+| **04** | Supabase Auth + RBAC + RLS | **SUBSTANTIALLY COMPLETE** | Phases 00, 01, 03 | [`PHASE-00-04.md`](phases/PHASE-00-04.md) |
+| **05** | Studio Foundation | **SUBSTANTIALLY COMPLETE** | Phase 02, Phase 03, Phase 04 | [`PHASE-05-09.md`](phases/PHASE-05-09.md) |
+| **06** | Cloudinary Media Architecture | **COMPLETE** | Phase 03, Phase 04, Phase 05 | [`PHASE-05-09.md`](phases/PHASE-05-09.md) |
+| **07** | Higgsfield Asset Audit + Initial Asset Plan | **COMPLETE** | Phase 05, Phase 06 | [`PHASE-05-09.md`](phases/PHASE-05-09.md) |
+| **08** | CMS / Editable Content System | **COMPLETE** | Phase 03, 04, 05, 06 | [`PHASE-05-09.md`](phases/PHASE-05-09.md) |
+| **09** | Initial Website Content Seed | **COMPLETE** | Phase 06, Phase 07, Phase 08 | [`PHASE-05-09.md`](phases/PHASE-05-09.md) |
+| **10** | Public Website Foundation | **COMPLETE** | Phases 02, 04, 06, 08, 09 | [`PHASE-10-15.md`](phases/PHASE-10-15.md) |
+| **11** | Homepage + Material Experience | **CODE COMPLETE; NOT MEASURED** | Phase 10, 08, 09, 07 | [`PHASE-10-15.md`](phases/PHASE-10-15.md) |
+| **12** | About + Process | **CODE COMPLETE; NOT MEASURED** | Phases 10, 11 | [`PHASE-10-15.md`](phases/PHASE-10-15.md) |
+| **13** | Large Format Experience | **CODE COMPLETE; NOT MEASURED** | Phases 10, 11, 12 | [`PHASE-10-15.md`](phases/PHASE-10-15.md) |
+| **14** | Product Catalog | **CODE COMPLETE; CATALOGUE EMPTY BY DESIGN** | Phases 03, 04, 06, 10, 13 | [`PHASE-10-15.md`](phases/PHASE-10-15.md) |
+| **15** | Product Detail Experience | **CODE COMPLETE; NO PRODUCTS BY DESIGN** | Phases 03, 06, 10, 14 | [`PHASE-10-15.md`](phases/PHASE-10-15.md) |
+| **16** | Collections / Exhibitions | **CODE COMPLETE; NONE PUBLISHED BY DESIGN** | Phase 08, Phase 09, Phase 10, Phase 14, Phase 06/07 | [`PHASE-16-22.md`](phases/PHASE-16-22.md) |
+| **17** | Portfolio / Projects | **CODE COMPLETE; ARCHIVE EMPTY BY DESIGN** | Phase 16, Phase 08, Phase 09, Phase 10, Phase 06 | [`PHASE-16-22.md`](phases/PHASE-16-22.md) |
+| **18** | Journal | **CODE COMPLETE; NOTHING PUBLISHED BY DESIGN** | Phase 16, Phase 08, Phase 09, Phase 10, Phase 06/07 | [`PHASE-16-22.md`](phases/PHASE-16-22.md) |
+| **19** | Bespoke / Custom Configurator | **CODE COMPLETE; ON SINCE PHASE 20, TEMPLATES STILL DRAFT** | Phase 06, Phase 08, Phase 09, Phase 14/15, Phase 10 | [`PHASE-16-22.md`](phases/PHASE-16-22.md) |
+| **20** | Inquiry + WhatsApp Flow | **CODE COMPLETE; NO ENQUIRIES BY DESIGN** | Phase 19, Phase 15, Phase 09, Phase 08, Phase 05 | [`PHASE-16-22.md`](phases/PHASE-16-22.md) |
+| **21** | 3D Product Experience | **CODE COMPLETE; ZERO MODELS BY DESIGN; FLAG OFF** | Phase 06, Phase 15, Phase 19, Phase 02, Phase 16/17 | [`PHASE-16-22.md`](phases/PHASE-16-22.md) |
+| **22** | Homepage / Store Merchandising | **COMPLETE; EVERY SLOT EMPTY, WHICH IS THE SHIPPED STATE** | Phase 14, Phase 16, Phase 15, Phase 08/09, Phase 05… | [`PHASE-16-22.md`](phases/PHASE-16-22.md) |
+| **23** | Global Search + Product Relationships | **COMPLETE; THE INDEX HOLDS ONLY WHAT IS PUBLISHED** | Phase 03, 04, 05, 10, 14, 15, 16, 17, 18, 20 | [`PHASE-23-30.md`](phases/PHASE-23-30.md) |
+| **24** | Bulk Management | **COMPLETE; NO ROWS TO OPERATE ON, WHICH IS D10 WORKING** | Phase 04, 05, 06, 14, 20, 23 | [`PHASE-23-30.md`](phases/PHASE-23-30.md) |
+| **25** | Product Scraper Foundation | **COMPLETE; NO SOURCE APPROVED, SO NOTHING IS FETCHED** | Phase 03, 04, 05, 23, 24 | [`PHASE-23-30.md`](phases/PHASE-23-30.md) |
+| **26** | Comparator Source Management | **COMPLETE; STILL NO SOURCE, WHICH IS STILL THE SHIPPED STATE** | Phase 25, 04, 05, 23, 24 | [`PHASE-23-30.md`](phases/PHASE-23-30.md) |
+| **27** | Scraper Extraction | **COMPLETE; NOTHING TO EXTRACT FROM, WHICH IS STILL THE SHIPPED STATE** | Phase 25, 26 | [`PHASE-23-30.md`](phases/PHASE-23-30.md) |
+| **28** | Normalization + Validation | **COMPLETE; NOTHING TO NORMALISE, WHICH IS STILL THE SHIPPED STATE** | Phase 26, 27, 14 | [`PHASE-23-30.md`](phases/PHASE-23-30.md) |
+| **29** | Change Detection + Review | **COMPLETE; NOTHING HAS CHANGED BECAUSE NOTHING HAS BEEN FETCHED** | Phase 27, 28, 24, 23 | [`PHASE-23-30.md`](phases/PHASE-23-30.md) |
+| **30** | Large-Format Research Workspace | **COMPLETE; NOTHING IS CLASSIFIED BECAUSE NOTHING HAS BEEN FETCHED** | Phase 28, 29, 26, 24 | [`PHASE-23-30.md`](phases/PHASE-23-30.md) |
+| **31** | Analytics + Comparison | **COMPLETE; NOTHING IS MEASURED BECAUSE NOTHING HAS BEEN FETCHED** | Phase 26, Phase 27, Phase 28, Phase 29, Phase 30… | [`PHASE-31-38.md`](phases/PHASE-31-38.md) |
+| **32** | Opportunity Engine | **COMPLETE; NOTHING IS RANKED BECAUSE NOTHING HAS BEEN FETCHED AND NO MODEL IS ACTIVE** | Phase 31, Phase 28, Phase 29, Phase 26, Phase 14 | [`PHASE-31-38.md`](phases/PHASE-31-38.md) |
+| **33** | Visual Similarity | **COMPLETE, FIRST-PARTY HALF; COMPETITOR IMAGES ARE NEVER FETCHED (OWNER DECISION, A33)** | Phase 27, Phase 28, Phase 31, Phase 06/07, Phase 19 | [`PHASE-31-38.md`](phases/PHASE-31-38.md) |
+| **34** | Product Direction Tool | **COMPLETE; NO BRIEF EXISTS UNTIL A PERSON WRITES ONE** | Phase 31, Phase 32, Phase 33, Phase 30, Phase 08, Phase 05 | [`PHASE-31-38.md`](phases/PHASE-31-38.md) |
+| **35** | Shortlist + Confirmation | **COMPLETE-WITH-FLAG-OFF; THE BRIDGE IS INERT UNTIL THE OWNER ENABLES `research_product_bridge`** | Phase 28/29, Phase 32, Phase 34, Phase 24, Phase 14… | [`PHASE-31-38.md`](phases/PHASE-31-38.md) |
+| **36** | Google Sheets | **COMPLETE; INERT UNTIL THE OWNER'S FIVE-STEP SETUP AND THE FLAG** | Phase 31, 32, 34, 35, Phase 20, Phase 19, Phase 04, D8 | [`PHASE-31-38.md`](phases/PHASE-31-38.md) |
+| **37** | Studio Analytics | **COMPLETE; EVERY TILE IS A TRUE ZERO OR A NAMED REASON UNTIL THE CATALOGUE AND THE CORPUS FILL** | Phase 31, Phase 32, Phase 26, Phase 14/16, Phase 17/18… | [`PHASE-31-38.md`](phases/PHASE-31-38.md) |
+| **38** | Environment + Documentation + Logs | **COMPLETE** | Phase 04, Phase 05, Phase 06, Phase 25–30, Phase 36, D8 | [`PHASE-31-38.md`](phases/PHASE-31-38.md) |
+| **39** | SEO | **COMPLETE** | Phase 08, 09, 10, 14–15, 16–18, 23, 38 | [`PHASE-39-46.md`](phases/PHASE-39-46.md) |
+| **40** | Performance | **COMPLETE** | Phase 00, 02, 06, 10, 11, 14–18, 19, 21, 23, 37, 39 | [`PHASE-39-46.md`](phases/PHASE-39-46.md) |
+| **41** | Accessibility + Security | **DEVELOPMENT COMPLETE** — tests deferred to Phase 42 by the owner's instruction | Phase 02, 04, 05, 06, 10, 14–21, 20, 25–30, 38, 40 | [`PHASE-39-46.md`](phases/PHASE-39-46.md) |
+| **42** | Comprehensive Testing | **COMPLETE** — ran last, by the owner's instruction to finish development first | Phase 00, 03, 04, 06, 09… | [`PHASE-39-46.md`](phases/PHASE-39-46.md) |
+| **43** | Media Coverage + Higgsfield Finalization | **DEVELOPMENT COMPLETE** — tests deferred to Phase 42 | Phase 06, 07`, `content/media-slots.ts`… | [`PHASE-39-46.md`](phases/PHASE-39-46.md) |
+| **44** | Vercel Deployment | **DEVELOPMENT COMPLETE** — drills NOT RUN, tests deferred to Phase 42 | Phase 00, 01, 03, 04, 25, 38, 39–43, 41, 42 | [`PHASE-39-46.md`](phases/PHASE-39-46.md) |
+| **45** | Final Creative Polish | **PARTIAL** — the audit is run and recorded; three questions are the owner's and are outstanding | Phase 02, 11–22, 39, 40, 41, 42, 43, 44 | [`PHASE-39-46.md`](phases/PHASE-39-46.md) |
+| **46** | Documentation + Handoff | **PARTIAL** — the gates, the generated verification backlog and the documentation set are done; the capability-boundary dry run, the handover session, the runbook screenshots and the 41-row backlog are the owner’s | Phase 01, 38, 39–45, 44… | [`PHASE-39-46.md`](phases/PHASE-39-46.md) |
 
 ## Execution order
 
@@ -227,6 +235,40 @@ is a Phase 45 deliverable and the repository's only fabrication scan today is a 
 duplicated in `tests/e2e/about.spec.ts` and `process.spec.ts`, both of which skip when the route has
 no published sections — which has been the state of every route, so it has never executed. The
 specification for the classifier is written and deferred with the rest of the script work.
+
+## Post-launch backlog — there is no Phase 47
+
+Phase 46 is the last phase. Its exit criteria say so, and say where later work goes instead: here.
+Nothing below is a commitment or a date. Each row is something a person found, with enough detail to
+act on and the reason it was not done at the time.
+
+### The owner's, and nobody else can do them
+
+| # | Item | Why it is the owner's | Where it is written down |
+|---|---|---|---|
+| O1 | The 41-row owner-verification backlog | Every row states something about a real business that only the owner can confirm (D10) | [`../content/INITIAL_CONTENT_INVENTORY.md`](../content/INITIAL_CONTENT_INVENTORY.md), and the card on `/studio` |
+| O2 | The capability-boundary dry run — ten Studio operations, unaided | It is a measurement of whether the software is usable by its owner, which only the owner can take | [`../ops/TESTING.md`](../ops/TESTING.md) §14.3 |
+| O3 | The handover walkthrough | A fact about the world: whether it happened, and when | [`../studio/STUDIO_GUIDE.md`](../studio/STUDIO_GUIDE.md) |
+| O4 | Runbook screenshots | Cannot be captured in the build container at all — the local harness has no auth server, so the Studio is unreachable by a browser. They need a preview deployment against the Phase 42 fixture, and must contain no real enquirer's data and no environment value | [`../studio/STUDIO_GUIDE.md`](../studio/STUDIO_GUIDE.md) §16 |
+| O5 | Phase 45 questions 1 and 5 — does it feel like a collectible-design studio, and the first-time walkthrough | Question 1 is a judgement the people who built it cannot make about it; question 5 needs three first-time participants | [`../design/DESIGN_SYSTEM.md`](../design/DESIGN_SYSTEM.md) §19 |
+| O6 | The two deployment drills, rollback and forward-fix | Both need a production deployment a person is willing to break; with one Supabase project the forward-fix drill would migrate the production database | [`../ops/DEPLOYMENT.md`](../ops/DEPLOYMENT.md) §11.1 |
+| O7 | The canonical-host setting | `rivyalivingart.com` and `www` each redirect to the other, so the live site is unreachable on both. Half the cause is a Vercel dashboard setting no repository can see; preflight gate 14 now detects it | [`../ops/DEPLOYMENT.md`](../ops/DEPLOYMENT.md) §7.0 |
+
+### Engineering, found in passing and deliberately not fixed in the phase that found it
+
+| # | Item | Evidence | Why it waited |
+|---|---|---|---|
+| E1 | `lib/cms/docs/index.ts` reads its index with a runtime `join(process.cwd(), …)`, so Turbopack traces **the whole project** into the server bundle | The Vercel build log warns in as many words: "leads to all source files (including the public folder) to be deployed as part of the server code… can slow down deployments or lead to failures when size limits are exceeded" | A warning, not an error, and Phase 38's code rather than Phase 46's. The fix is a statically-scoped path or a `turbopackIgnore` comment, and it wants measuring before and after |
+| E2 | There is no `.nvmrc` | The recovery sequence in [`../../README.md`](../../README.md) tells a newcomer to run `nvm use`, which has nothing to read. Node 22 works | Adding one changes the version Vercel builds with, which is a deployment change and does not belong in a documentation phase |
+| E3 | `npm run build` needs a reachable database and an environment before it will run at all | Both steps are now documented in [`../../README.md`](../../README.md), having been discovered by executing the sequence | Documented rather than automated: a setup script that minted its own throwaway credentials would be the third way to configure this project |
+| E4 | Coverage is measured on the `unit` project alone | [`../ops/TESTING.md`](../ops/TESTING.md) §13 | Merging three runners' coverage is a harness change, and the thresholds would need re-deriving |
+| E5 | Studio browser coverage stops at the login page — about 156 specs skip | [`../ops/TESTING.md`](../ops/TESTING.md) §13 | Needs an auth server the local PostgREST harness cannot provide. The specs are written and will run the moment one exists |
+| E7 | **70 source paths named by a descriptive document do not exist**, across 16 documents | `npm run docs:check-paths` reports them — 2874 concrete paths cited across `docs/`, brace groups expanded and placeholders skipped. It separates three classes: 243 in `docs/project/phases/*.md`, where a plan written before the code names paths the code later spelled differently (route groups like `(shell)` arrived after Phase 05's plan); **25 named inside a sentence that says they do not exist**, which is a report rather than a claim; and the 70 that remain | Found while verifying the omission register. Each needs judging one at a time — a rename, a plan never built, or a genuine gap — so a blanket fix would be guesswork. The script is deliberately NOT in `npm run check`: a gate that fails the build the hour it lands is a gate somebody deletes by Friday. Wire it with `--strict` once the count is zero |
+| E8 | **The three absolute commerce prohibitions are enforced by review, not by a gate** | BR-A1 cited `tests/integration/forbidden-tables.test.ts` and `tests/e2e/no-commerce.spec.ts`; neither exists. BR-A2 cited the first of those. §N.2 of [`BUSINESS_RULES.md`](BUSINESS_RULES.md) records the hand check and its method | The citations are corrected to say so. Writing the test is the fix, and `npm run db:check-schema` is the natural home for a forbidden-relation assertion |
+| E9 | **The production build failed three times today on a database `Gateway Timeout`** | Vercel deployments `4C3AX5T6…` (prerendering `/_not-found`, entity `page section`), `2c5ks4QU…` (`/product/[slug]`, entity `category`) and `4zMvg74D…` (`/collections/[slug]`, entity `collection`). Three different routes, three different entities, one cause; each was followed by a green build on the next commit with no code change that could have fixed it | The build queries the database while prerendering CMS routes, so every deploy depends on it answering promptly — and today it did not, roughly one build in three. Not any one commit's defect, and not something a retry hides: it wants a timeout-and-retry around the prerender reads, or fewer routes prerendered |
+| E6 | Visual baselines are not compared in CI | [`../ops/TESTING.md`](../ops/TESTING.md) §3 | Font rasterisation differs between this container and a GitHub runner by more than a page of text absorbs. Fixing it means generating baselines on the runner |
+
+Phase 45's own deferred creative work is in its section above rather than repeated here.
 
 ## Media position
 

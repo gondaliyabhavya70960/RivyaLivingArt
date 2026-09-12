@@ -1,3 +1,11 @@
+---
+doc: HIGGSFIELD_MASTER_ASSET_PLAN
+status: CURRENT
+owning_phase: 07
+last_reviewed: 2026-09-12
+owner_verification: NOT_REQUIRED
+---
+
 # HIGGSFIELD MASTER ASSET PLAN
 
 > **Standing.** Hand-written. Owned by Phase 07, re-decided by Phase 43.

@@ -1,3 +1,11 @@
+---
+doc: PHASE_31_TO_46_IMPLEMENTATION
+status: CURRENT
+owning_phase: 31
+last_reviewed: 2026-09-12
+owner_verification: NOT_REQUIRED
+---
+
 # Phases 31 → 46 — implementation record
 
 > Owned by the block that runs Phases 31–46 (amendment A31 adds this path to D7). One section per
@@ -2325,4 +2333,272 @@ gates, the checker, the snapshot, the ribbon and the runbook.
 
 ## Phase 46 — Documentation + Handoff
 
-**Status:** NOT STARTED
+**Status:** PARTIAL — the gates, the generated backlog and the documentation set are built and green.
+**Four items are the owner's** and are recorded as outstanding rather than asserted: the
+capability-boundary dry run, the handover session, the runbook screenshots, and the verification
+backlog itself. None of the four can be closed from inside this repository, which is D10 working
+rather than a phase left half-finished.
+
+### Objective
+Hand the project over with no sentence in it the code cannot back. The phase's own goal statement is
+the standard it was held to — *a document that claims a capability the code does not have is worse
+than no document* — so it was run as an **audit of the 34 documents that already existed** rather
+than as a writing exercise, and everything it could not do in this container is written down instead
+of being described as done.
+
+### Requirements Found
+`docs/project/phases/PHASE-39-46.md` §Phase 46 — scope, deliverables, the seven-row risk table and
+verification steps 1–5. D7 (the documentation map, which the audit derives rather than restates), D8
+(the never-expose names), D9 (the ten completion conditions), D10 (a fact about the world is the
+owner's to assert). FEAT §30 (the ten documents the Studio viewer serves), FEAT §39 (the deliberate
+omissions), FEAT §49 question 8 (the capability-boundary dry run, whose verdict row lives in
+`docs/design/DESIGN_SYSTEM.md` §19.1 and whose ten operations live in `docs/ops/TESTING.md` §14.3).
+
+### Implementation Completed
+
+**1. `scripts/docs/audit-docs.mjs` — five checks, one script, and the contract is read rather than
+copied.** D7 completeness (33 mapped paths, all present), front matter (34 documents, five keys, a
+real `status`, an ISO review date, every stub owning a phase), the D8 secret scan (34 documents × 12
+server-only names), phase honesty (no `status: CURRENT` document owned by an incomplete phase), and
+`--claims`, the fabrication vocabulary. The D7 path list and the D8 name list are **parsed out of
+`CANONICAL-DECISIONS.md` at runtime**; a hand-copied list is how a contract and its gate drift apart
+while both look green. The secret scan prints the file, the line, the rule and the token's length and
+never the token.
+
+**2. `--claims` is a classifier, not a grep**, because these documents legitimately use every word in
+the vocabulary — award, certified, testimonial, client, guaranteed, durability, sales — while
+forbidding it. Every hit is classified by the block around it: NOT PROSE (a fence, a backticked
+identifier, a path), SYSTEM (the `testimonials` table, the `client_consent` column — the CMS
+documenting itself), PROHIBITED (the block carries a prohibition marker) or ASSERTION. **Zero
+assertions** — which is the only figure that is a gate. The other two move with the prose: 424 hits
+inside a prohibition when the gate landed, 432 once this section was added, because naming the
+vocabulary in order to forbid it is itself eight hits. 22 name a schema object or a Studio surface.
+
+**3. `scripts/docs/check-doc-contract.mjs --claims` — the other half: a documented capability names
+the file or route that implements it.** 53 claims across 34 documents, each resolving against 126
+routes and 1090 indexed source files, by route, path, module basename or identifier. The default mode
+is untouched on purpose: it is preflight gate 5 and runs on every commit, so it must never fail for a
+reason unrelated to the environment contract. Commit `ecf591b` records the counter-example the phase
+document's verification step 2 asks for — a fabricated "as built" section appended to a document
+makes it exit 1, naming the file and the line, and reverting restores exit 0.
+
+**4. `scripts/content/build-verification-report.ts` — the generated owner-verification backlog, and
+preflight gate 13.** **41 rows across 15 surfaces** on the canonical seeded database, each with the
+Studio path that clears it and one sentence saying what the owner must confirm: seven on `/process`,
+four on `/custom-commissions`, all ten FAQ answers, three site-wide, two each on `/` and `/about`.
+Gate 13 of `scripts/ops/preflight.ts` — *owner verifications blocking a publish* — reported SKIPPED
+naming this phase until the script existed; it now runs. **There is one writer, not two:**
+`content:check-inventory` regenerates `docs/content/INITIAL_CONTENT_INVENTORY.md` wholesale and diffs
+it, so a script that appended a section would have had it erased by the next run of the other
+generator, silently, in the one document this phase hands to the owner. `writeContentInventory()`
+composes inventory, SEO coverage and backlog in a single pass instead.
+
+**5. `lib/cms/verification-backlog.ts` — the 22 flagged surfaces as data and pure functions with no
+database client**, so the script reads them over `pg` and the Studio reads them over PostgREST
+(`lib/supabase/repositories/verifications.ts`) from one declaration. A count that FAILS is never
+reported as `0`: it lands in `unreadable`, because a card saying "nothing outstanding" when it could
+not read the table is exactly the fabricated fact D10 forbids.
+
+**6. The "Outstanding owner verifications" card on `/studio`.** A list in a Markdown file is not where
+an owner looks. It is deliberately **not** a `DASHBOARD_CARDS` row: that registry's contract is one
+card, one relation, one phase, and this figure is a sum over twenty-two tables, so `table` would have
+to name one of them and `availableFromPhase: 46` against `BUILT_THROUGH_PHASE = 36` would render it
+permanently unavailable — the one thing that is not true here, since every table it counts exists
+today. The registry's *rule* is obeyed exactly: a number appears only when a query returned it, and
+with any table unreadable the figure is presented as a floor.
+
+**7. Front matter, and the viewer that was printing it as prose.** Nineteen documents under `docs/`
+had none — including the binding contract, all six phase documents and six of the ten documents FEAT
+§30's viewer serves — and Phase 38's parser had no front-matter branch, so it rendered the opening
+`---` as a rule and the five `key: value` lines as a paragraph. `lib/cms/docs/render.ts` now drops a
+leading block narrowly: only a fence on the very first line opens one, and an unterminated fence is
+left alone rather than swallowing the document. The two generated documents get theirs **from their
+generators**, since a block added by hand would survive exactly one regeneration.
+
+**8. This block's reconciliation of `docs/studio/STUDIO_GUIDE.md`, and the three rows of it that are
+not true today.** The guide already carried thirteen runbooks and a capability boundary strictly
+richer than the phase document's own tables, so it was reconciled rather than rewritten — no section
+renumbered, because `components/studio/strings.ts`, `lib/auth/table-permissions.ts`,
+`app/(studio)/studio/(shell)/page.tsx` and `scripts/auth/gen-role-sql.ts` all cite its numbers. Four
+things changed, each an honest admission rather than new prose:
+
+- **§16 says there are no screenshots and why.** The phase asks for the runbooks "with screenshots
+  taken against fixture data". They cannot be taken here: signing in needs Supabase Auth and the
+  local harness (`scripts/db/local-rest.mjs`) is PostgREST alone, which is the same wall that makes
+  156 Studio specs skip behind `STUDIO_STORAGE_STATE` (`docs/ops/TESTING.md` §13). §16 now names the
+  gap, points at where they would have to be captured — a preview deployment against the Phase 42
+  fixture database — and repeats the phase's own prohibition: no screenshot may carry a real
+  enquirer's personal data or any environment value. The thirteen procedures are complete without
+  them; an illustration is missing, a step is not.
+- **§19 records the dry run as NOT RUN**, cites `TESTING.md` §14.3 for the ten operations and
+  `DESIGN_SYSTEM.md` §19.1 row 8 for the verdict, and writes no count, because the only honest count
+  is the owner's. It also carries the warning that O10 is expected to save and show nothing, so *ten
+  of ten* is not the outcome to expect.
+- **§19 names the three rows of its own boundary that are contradicted today**, with the code that
+  contradicts them: `saveCategoryAction` never writes a content status and there is no
+  `publishCategoryAction`, so the seven category routes stay `DRAFT`;
+  `app/(studio)/studio/(shell)/content/faqs/page.tsx` is a `StudioPage` stub owned by Phase 08; and
+  `app/(studio)/studio/(shell)/system/settings/page.tsx` — the row promising the contact details and
+  the WhatsApp number — is a stub owned by Phase 20. The boundary is described as designed; the table
+  now says where that is not yet as shipped.
+- **§17 points at the generated backlog and says how the two differ** — §17 is about statements in
+  *that document*, the backlog is about database rows that cannot publish — and does not duplicate
+  its contents, which are generated and would go stale by hand. A row for the dry run and a row for
+  the handover session were added, and the new *The handover session* subsection states what the
+  session covers and that it is **not held**.
+
+**9. The front matter flipped, which is the mechanical half of the same point.** The guide's
+`owner_verification` was `NOT_REQUIRED`, which stopped being true the moment it contained an
+unverified statement of that kind; it now reads `OWNER_VERIFICATION_REQUIRED`, matching
+`docs/ops/TESTING.md` and `docs/design/DESIGN_SYSTEM.md` after Phase 45 flipped both, and
+`last_reviewed` is `2026-09-12`.
+
+**10. Two deliverables were still being written when this section was drafted, and are recorded here
+as they finally landed.** The paragraph this replaces said they had not arrived and described what the
+tree held instead, because describing them as finished would have been the failure this phase exists to
+prevent. Both have arrived, so it is updated rather than left standing — a record that is wrong about
+its own subject is the same defect in miniature.
+
+- **The deliberate-omission register** is `BUSINESS_RULES.md` §N: thirteen capabilities, eight new
+  rules `BR-N1`…`N8` for the eight that had none, and the five that restate `BR-A1`, `BR-A2`, `BR-A3`
+  and `BR-C3` indexed under those rules rather than given a second identifier. Every seam names an
+  artefact that exists — `inquiries` and `inquiry_events` for a commerce layer to consume,
+  `products.price_state` for money as representation, `testimonials.client_consent_state` as the
+  consent-gated equivalent of a review, `inquiry_kind = 'QUOTE'` and `inquiry_status = 'QUOTED'` for a
+  quotation the human still prices. §N.2 confirms the absence against the live schema: 29 exact names,
+  a regex sweep of every schema, and a column sweep for a locale dimension. Two matches, neither one
+  of these.
+- **The support model** is `DEPLOYMENT.md` §10.1 — no SLA, said in as many words, which §10 did not —
+  and §10.2, a nine-step incident path an owner can perform. Its first step is deliberately not "open
+  the Studio": the Studio is served from the same host as the public site, so in the outage of
+  2026-09-12 `/studio/system/environment` was unreachable in exactly the same way, and a first step
+  that assumes the site is reachable cannot detect the only outage this project has had. §12 records
+  the engineer contact as `OWNER_VERIFICATION_REQUIRED` rather than printing a plausible name.
+
+**And §N.2 found what this phase's own claim gates could not.** `BR-A1`, `BR-A2` and `BR-A3` each cited
+a test file as their enforcement and **none of the three is in the repository**; of the 52 test files
+that document cites, seven are absent. So the prohibition on checkout is enforced by review rather than
+by a gate, and the document said otherwise. `scripts/docs/check-doc-paths.mjs` now measures it
+repo-wide — 2890 cited paths, 243 plan-document drift, 25 correctly reported absent, **70 descriptive
+misses** — and `ROADMAP.md`'s post-launch backlog carries E7 and E8. Two of the four corrected
+citations were a different finding from the other two: `tests/unit/rls/phase20.test.ts` does assert
+what `BR-A3` and `BR-B3` describe, so there the rule was enforced and only the citation was wrong.
+
+### Files Added
+`scripts/docs/audit-docs.mjs` · `scripts/docs/audit-docs.d.mts` ·
+`scripts/content/build-verification-report.ts` · `lib/cms/verification-backlog.ts` ·
+`lib/supabase/repositories/verifications.ts` · `tests/unit/docs-audit.test.ts` ·
+`tests/unit/docs-render.test.ts`
+
+### Files Modified
+`docs/studio/STUDIO_GUIDE.md` · `docs/PHASE_31_TO_46_IMPLEMENTATION.md` (this section) ·
+`docs/content/INITIAL_CONTENT_INVENTORY.md` (generated) · `scripts/docs/check-doc-contract.mjs` ·
+`scripts/content/build-content-inventory.ts` · `lib/cms/docs/render.ts` ·
+`app/(studio)/studio/(shell)/page.tsx` · `components/studio/strings.ts` ·
+`tests/unit/docs-allowlist.test.ts` · `tests/e2e/studio-system.spec.ts` ·
+`scripts/demo/build-register.ts` · `package.json` · `README.md` · `PROJECT_STATE.md` ·
+`CHANGELOG.md` · `docs/project/ROADMAP.md` · `docs/SESSION-STATE.md` · and the nineteen documents
+under `docs/` that gained front matter, `docs/architecture/CANONICAL-DECISIONS.md` and the six phase
+documents among them.
+
+### Database Changes
+**None.** The phase document says so and the backlog is a read: `lib/cms/verification-backlog.ts`
+holds no writer, and nothing in this phase publishes, edits or verifies a row. Only the owner can
+clear an `OWNER_VERIFICATION_REQUIRED` (D10).
+
+### Supabase Changes
+None. No migration, no policy, no role.
+
+### Environment Variables
+No new ones. `scripts/content/build-verification-report.ts` reads `DATABASE_URL`, as every other
+generator script does, because a script has no session.
+
+### GitHub Actions Changes
+None. The three new gates ride inside `npm run check`, which CI already runs, rather than arriving as
+a fourth workflow.
+
+### Tests Performed
+- `npm run docs:audit` — **exit 0.** 33 mapped D7 paths present · 34 documents with all five front-
+  matter keys, a real status, an ISO date and every stub owned · 34 × 12 server-only names, no value
+  committed · 34 CURRENT documents, every owning phase complete.
+- `npm run docs:audit-claims` — **exit 0.** 432 hits inside a prohibition (424 before this section
+  existed), 22 naming a schema object or a Studio surface, **0 assertions**.
+- `npm run docs:check-claims` — **exit 0.** 53 claims across 34 documents, each naming a route, path,
+  module or identifier that resolves; 126 routes and 1090 source files indexed.
+- `npm run docs:check-contract` — **exit 0**, unchanged behaviour.
+- `npx vitest run --project=unit tests/unit/docs-audit.test.ts tests/unit/docs-render.test.ts
+  tests/unit/docs-allowlist.test.ts` — **39 passed** (22 · 5 · 12).
+- `npx prettier --check` on `docs/studio/STUDIO_GUIDE.md` and this file — clean.
+- **Not run here:** `tests/e2e/studio-system.spec.ts`, including the new card specification. There is
+  no auth server in this container, so it skips behind `STUDIO_STORAGE_STATE` like the other 155 —
+  the same fact §16 of the guide now records about the screenshots.
+
+### Issues Found / Fixed
+
+1. **Nineteen documents under `docs/` had no front matter**, and Phase 01's verification step 4 named
+   sixteen of them, adding that every one must gain it "before this phase's exit criterion can be
+   ticked". The criterion had been ticked. Fixed, and `audit-docs.mjs` now fails the build on it, so
+   the claim and the check cannot diverge again.
+2. **The documentation viewer rendered front matter as page content** — a horizontal rule and a
+   paragraph reading `doc: STUDIO_GUIDE status: CURRENT …`. Already true of the seven allowlisted
+   documents that had front matter, so adding the rest without fixing the parser would have made it
+   ten out of ten. `lib/cms/docs/render.ts` fixed narrowly, with `tests/unit/docs-render.test.ts`.
+3. **`ROADMAP.md` had no `Status` column**, which Phase 01 specified, so the one document indexing
+   all 47 phases could not say which were done. Added, derived from `PROJECT_STATE.md` so the two
+   cannot disagree on arrival.
+4. **The recoverability sequence did not work as written.** Nothing in it creates the environment
+   `next build` reads, and the build queries the database while building, so `DATABASE_URL` alone is
+   not enough. Both steps are now in `README.md` → *From a clean clone*, with the measured timings
+   (about six minutes of machine time) and the two things that could not be run here at all.
+5. **The secret scanner's own test fixtures failed `gitleaks`, correctly.** A forty-character literal
+   at entropy 5.18 beside `SUPABASE_SERVICE_ROLE_KEY` is indistinguishable from a real leak. The fix
+   was not an allowlist — `.gitleaks.toml` forbids that in as many words — but minting the values at
+   run time.
+6. **`STUDIO_GUIDE.md` promised three capabilities the Studio does not have** (publish a category,
+   edit FAQs, change the WhatsApp number). Recorded in §19 beside the rows that promise them, with
+   the file and the owning phase for each, rather than quietly corrected — the rows describe the
+   boundary as designed, and `TESTING.md` §14.3 already listed the same three as excluded from the
+   owner's ten operations.
+7. **The guide's front matter said `owner_verification: NOT_REQUIRED`** while the document contained
+   three statements only the owner can settle. Flipped, for the reason `DESIGN_SYSTEM.md` §19.2
+   states as a convention: the front-matter interlock is what makes an outstanding statement visible
+   from outside the section that carries it.
+
+### Build Status
+`npm run check` gained three gates — `docs:check-claims`, `docs:audit`, `docs:audit-claims` — and all
+three are green. The four documentation gates above were run individually and exit 0.
+
+### Deployment Status
+Nothing was deployed by this phase, and nothing in it changes a public surface: no route, no copy, no
+metadata. What it produces is a documentation set that fails the build when it starts lying.
+
+### Commit
+`feat(phase-46): the documentation gates, and the owner-verification backlog they hand over` ·
+`feat(phase-46): the front matter nineteen documents never had, and the viewer that showed it` ·
+`feat(phase-46): the outstanding-verifications card, where an owner will actually see the backlog` ·
+`fix(phase-46): regenerate the content inventory from the canonical seeded database` ·
+`docs(phase-46): reconcile the Studio guide — and three rows of it are not true today`
+
+### Remaining Notes
+
+**Four items are the owner's, and none of them is asserted anywhere in this repository.**
+
+| # | Outstanding | Where it is written down | What closes it |
+|---|---|---|---|
+| 1 | The capability-boundary dry run — ten routine changes performed unaided | `docs/ops/TESTING.md` §14.3, recorded in §14.4; `STUDIO_GUIDE.md` §19 | The owner performs them, observed and timed, and fills `DESIGN_SYSTEM.md` §19.1 row 8 with their name and the date. O10 is expected to save and show nothing, so *ten of ten* is not the expected result |
+| 2 | The handover session — capability boundary, runbooks, backlog, incident path | `STUDIO_GUIDE.md` §19 → *The handover session* | The owner writes the date. A meeting is a fact about the world (D10) |
+| 3 | The runbook screenshots | `STUDIO_GUIDE.md` §16 | A preview deployment against the Phase 42 fixture database. Impossible here: no auth server, so no browser reaches the Studio at all |
+| 4 | The 41-row verification backlog | `docs/content/INITIAL_CONTENT_INVENTORY.md` → *Owner-verification backlog*, and the `/studio` card | The owner confirms each row in the Studio. Until then the Phase 08 triggers refuse to publish them, which is the gate doing its job |
+
+- **The backlog's two numbers are both right and will never match.** The backlog counts ROWS (41 on
+  the canonical seeded database); the inventory section above it counts COPY FIELDS (70), because one
+  flagged section contributes a heading, a body and a CTA label as three lines. The generated prose
+  says so, and it names the database it was generated from — the Phase 42 fixture legitimately
+  reports 42 across 16, and a copy committed from the wrong one fails `content:check-inventory`.
+- **The screenshots and the dry run are the same blocker seen twice.** Both need a Studio a person
+  can sign into. Closing it needs a hosted preview with a fixture account, or GoTrue added to the
+  local harness — `docs/ops/TESTING.md` §13 says so, and says it is real work that no phase has been
+  given.
+- **Phase 45's section of this document is still `NOT STARTED`** while `CHANGELOG.md`,
+  `PROJECT_STATE.md` and `docs/project/ROADMAP.md` record Phase 45 as PARTIAL and its commit is in
+  `main` (`0491c91`). This log is the block's record, so that section is owed.

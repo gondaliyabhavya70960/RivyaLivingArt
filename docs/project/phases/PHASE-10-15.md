@@ -1,3 +1,11 @@
+---
+doc: PHASE-10-15
+status: CURRENT
+owning_phase: 01
+last_reviewed: 2026-09-12
+owner_verification: NOT_REQUIRED
+---
+
 # PHASES 10–15 — Public Website, Homepage, About, Process, Large Format, Catalogue, PDP
 
 > Binding parent: `docs/architecture/CANONICAL-DECISIONS.md`. Where this document and the

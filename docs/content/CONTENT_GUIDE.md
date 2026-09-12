@@ -1,3 +1,11 @@
+---
+doc: CONTENT_GUIDE
+status: CURRENT
+owning_phase: 08
+last_reviewed: 2026-09-12
+owner_verification: NOT_REQUIRED
+---
+
 # Content guide — how a page is built, and what refuses to let it go live
 
 Phase 08. The CMS engine: pages, blocks, the status workflow, media binding and the schedule.

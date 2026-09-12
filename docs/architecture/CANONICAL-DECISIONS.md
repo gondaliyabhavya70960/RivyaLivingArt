@@ -1,3 +1,11 @@
+---
+doc: CANONICAL-DECISIONS
+status: CURRENT
+owning_phase: 00
+last_reviewed: 2026-09-12
+owner_verification: NOT_REQUIRED
+---
+
 # CANONICAL DECISIONS — binding contract for every phase
 
 > Every phase document, schema, route and component MUST conform to this file.

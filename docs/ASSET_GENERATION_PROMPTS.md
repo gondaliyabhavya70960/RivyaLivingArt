@@ -1,3 +1,11 @@
+---
+doc: ASSET_GENERATION_PROMPTS
+status: CURRENT
+owning_phase: 43
+last_reviewed: 2026-09-12
+owner_verification: OWNER_VERIFICATION_REQUIRED
+---
+
 # Asset generation prompts — the image brief book
 
 > **What this is.** One ChatGPT-compatible prompt per image the site needs and no library asset may

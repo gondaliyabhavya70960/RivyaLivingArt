@@ -9197,6 +9197,73 @@ export const STUDIO_STRINGS = {
       'This entity’s own search title, description, social card, canonical and robots directive. Empty fields fall back to the path entry, then to the entity’s own words, then to the site default; each line above says which.',
     contentKey: 'studio_help.seo_entity_panel_body',
   },
+
+  /* ------------------------- Phase 46: the outstanding owner verifications card (/studio) ------
+   *
+   * THE CARD'S WORDS ASK THE OWNER SOMETHING; THEY NEVER ASSERT ANYTHING ABOUT RIVYA. Every row it
+   * counts is a seeded sentence, detail or media binding that claims something about a real
+   * business and that nobody has confirmed, so the copy here has to describe that state without
+   * quietly adopting it. "Nothing counted here may be published until you confirm it" is a fact
+   * about this system's publication gates (Phase 08) and is checkable; a sentence about what Rivya
+   * offers, delivers or charges would not be, and would be the exact fabrication D10 forbids.
+   *
+   * THE TWO FAILURE SENTENCES ARE DELIBERATELY UNCOMFORTABLE TO READ. A card that cannot source its
+   * number must say so in words the owner cannot mistake for "nothing is outstanding", because the
+   * reader has no other way to tell the two apart — the same reason `studio.card.unreadable` exists
+   * rather than a zero.
+   */
+
+  /** The card's label. FEAT/Phase 46 name it, and the handover document uses the same words. */
+  'studio.overview.verifications.heading': {
+    value: 'Outstanding owner verifications',
+    contentKey: 'studio_help.overview_verifications_heading',
+  },
+  'studio.overview.verifications.body': {
+    value:
+      'Seeded rows that state something about the business which nobody has confirmed. Nothing counted here may be published until you confirm it.',
+    contentKey: 'studio_help.overview_verifications_body',
+  },
+  /** Prefixes the figure when at least one table could not be read: it is a floor, not a total. */
+  'studio.overview.verifications.atLeast': {
+    value: 'At least',
+    contentKey: 'studio_help.overview_verifications_at_least',
+  },
+  /** Interpolated with the number of unreadable tables and the number that carry the flag. */
+  'studio.overview.verifications.partial': {
+    value:
+      '{{unreadable}} of the {{tables}} tables carrying the flag could not be read, so the figure above is a floor rather than a total.',
+    contentKey: 'studio_help.overview_verifications_partial',
+  },
+  /** Every table failed, or the database could not be reached at all. Never rendered as zero. */
+  'studio.overview.verifications.unreadable': {
+    value:
+      'No table carrying the owner-verification flag could be read, so no figure is shown. That is not the same as nothing being outstanding.',
+    contentKey: 'studio_help.overview_verifications_unreadable',
+  },
+  /** A sourced, genuine zero: all tables were read and none held a flagged row. */
+  'studio.overview.verifications.none': {
+    value: 'Every table was read and none holds a row waiting on your confirmation.',
+    contentKey: 'studio_help.overview_verifications_none',
+  },
+  'studio.overview.verifications.whereLabel': {
+    value: 'Where to confirm these',
+    contentKey: 'studio_help.overview_verifications_where_label',
+  },
+  /** For the one surface no Studio screen edits. The written backlog says why. */
+  'studio.overview.verifications.noScreen': {
+    value: 'no Studio screen edits this',
+    contentKey: 'studio_help.overview_verifications_no_screen',
+  },
+  /**
+   * Where the written list is, and — stated rather than implied — that the Studio does not serve
+   * it. The documentation viewer carries ten documents by allowlist key and this is not one of
+   * them; a link to it would 404, and Phase 46 re-confirms that allowlist rather than widening it.
+   */
+  'studio.overview.verifications.backlog': {
+    value:
+      'The written backlog — every flagged row, grouped by surface, with what you are being asked to confirm — is generated into docs/content/INITIAL_CONTENT_INVENTORY.md in the repository. The Studio documentation viewer serves ten documents and this is not one of them, so ask your engineer for a copy.',
+    contentKey: 'studio_help.overview_verifications_backlog',
+  },
 } as const satisfies Record<string, StudioStringEntry>
 
 /** Every key this module resolves. A typo is a compile error, not a blank space on the page. */

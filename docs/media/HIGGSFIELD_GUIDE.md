@@ -1,3 +1,11 @@
+---
+doc: HIGGSFIELD_GUIDE
+status: CURRENT
+owning_phase: 07
+last_reviewed: 2026-09-12
+owner_verification: NOT_REQUIRED
+---
+
 # HIGGSFIELD GUIDE — how the AI media workflow is used
 
 > **Standing.** Hand-written. Binding contract: `CANONICAL-DECISIONS.md` §D6.

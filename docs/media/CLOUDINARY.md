@@ -1,3 +1,11 @@
+---
+doc: CLOUDINARY
+status: CURRENT
+owning_phase: 06
+last_reviewed: 2026-09-12
+owner_verification: NOT_REQUIRED
+---
+
 # CLOUDINARY — folders, naming, delivery and migration
 
 > **Standing.** Hand-written. Binding contract: `CANONICAL-DECISIONS.md` §D1 (Cloudinary behind a
