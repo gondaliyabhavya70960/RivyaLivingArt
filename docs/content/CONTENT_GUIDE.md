@@ -146,11 +146,26 @@ refuses **before writing anything**:
 | RV006 | A bound asset is APPROVED but still `OWNER_VERIFICATION_REQUIRED` |
 | RV007 | A restore names media that no longer exists |
 
-**RV006 is the one you will meet.** All 250 imported Higgsfield assets are APPROVED *and*
-`OWNER_VERIFICATION_REQUIRED`, which collides with `media_assets_verified_before_publish` from
-Phase 03. Nothing that binds one can be published until the owner verifies it in the Media Manager.
-This is working as designed — the assets are AI-generated and assert things about Rivya's work that
-only the owner can confirm — but it means **the site cannot go live on Higgsfield media alone**.
+**RV006 is the one you will meet on a fresh seed.** All 250 imported Higgsfield assets arrive
+APPROVED *and* `OWNER_VERIFICATION_REQUIRED`, which collides with
+`media_assets_verified_before_publish` from Phase 03. Nothing that binds one can be published until
+the owner verifies it in the Media Manager. This is working as designed — the assets are
+AI-generated and assert things about Rivya's work that only the owner can confirm.
+
+> **On the production project, the owner cleared this on 2026-09-12.** All 250 are now `VERIFIED`
+> and `PUBLISHED`, so RV006 no longer fires there. The decision is recorded as **BR-H4** in
+> [`../project/BUSINESS_RULES.md`](../project/BUSINESS_RULES.md) §H. It applies to that database
+> only: a fresh seed still lands `OWNER_VERIFICATION_REQUIRED`, because the gate is right and the
+> next person to import an asset should still meet it.
+>
+> **This did not put pictures on the site, and it was never going to.** RV006 was the *second*
+> lock; the first is that almost nothing is bound. `media_usages` holds **0** rows, and
+> `page_sections.media_slot_key` is null on all 53 — so every section still renders the SEED §47
+> fallback. The only thing the verification actually released is the **7 published journal article
+> covers**, which are bound through `journal_articles.cover_media_id` rather than through a slot.
+> Products, categories, collections, portfolio projects and `seo_entries.og_media_id` are all at
+> zero too. Binding is the curation pass described in `content/seed/media-bindings.ts`, and it is
+> roadmap **E12**.
 
 The picker says so at the moment of choosing, rather than letting an editor build a whole page and
 discover it at the last step.

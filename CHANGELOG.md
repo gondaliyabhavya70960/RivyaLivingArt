@@ -6,6 +6,51 @@ Every phase adds an entry; see `docs/architecture/CANONICAL-DECISIONS.md` D9 for
 
 ## [Unreleased]
 
+### Launch — Studio sign-in, and the site actually serving content (2026-09-12)
+
+**Studio sign-in was broken by the way its first account was created, not by its password.** The
+owner account had been bootstrapped by writing `auth.users` directly and hashing with
+`extensions.crypt`. Four columns were left NULL — `confirmation_token`, `recovery_token`,
+`email_change`, `email_change_token_new` — and GoTrue scans those into non-nullable Go strings, so
+the auth service errored *before comparing a password* and the login form reported bad credentials
+about an account that was otherwise perfect. `last_sign_in_at` was null throughout: it had never
+once succeeded. Verifying the bcrypt hash proved nothing, because the hash was never the broken part.
+
+Repaired on the live project, and removed as a possibility: `npm run auth:create-user`
+(`scripts/auth/create-staff-user.ts`) bootstraps the one account the Studio cannot create itself —
+the first owner — through `auth.admin.createUser({ email_confirm: true })`, the only API that sets
+every column GoTrue expects. It refuses a password passed in `argv`, refuses to mint a second owner
+by accident, and reads the profile back to prove `on_auth_user_created` ran. `STUDIO_GUIDE.md`
+§2.1.1 documents both supported paths with the NULL-token symptom named, so it is recognised rather
+than re-diagnosed.
+
+**The site went from one page to eleven.** The homepage had been publishing-correct but 404ing
+because production's static build predated the publish; after a redeploy it served, and the check
+then showed every *other* route still 404ing with all sections DRAFT, and not one real image
+anywhere.
+
+- **250 Higgsfield assets published** — and, checked afterwards, **this put almost no pictures on
+  the site**. Verification was the second lock; the first is that nothing is bound. `media_usages`
+  holds 0 rows and `page_sections.media_slot_key` is null on all 53, so every section still renders
+  the SEED §47 fallback. What the publish actually released is the **7 published journal article
+  covers**, bound through `journal_articles.cover_media_id` rather than a slot. Products,
+  categories, collections, projects and OG images are all unbound too. The binding curation is
+  roadmap **E12**. Pre-flighted rather than assumed: all 250 confirmed present and active in
+  Cloudinary (224 images, 26 video), one spot-checked byte-for-byte, **0 of 250 missing alt text**.
+  The owner cleared `OWNER_VERIFICATION_REQUIRED` explicitly — recorded as **BR-H4**, a new register
+  in `BUSINESS_RULES.md` §H, including the honest note that applying it by `UPDATE` wrote no
+  `audit_logs` row where BR-H3 requires one.
+- **19 sections published across 10 routes** — `/about`, `/collection`, four `/collection/*`,
+  `/contact`, `/journal`, `/large-format`, `/portfolio` — by the legal `DRAFT → REVIEW → APPROVED →
+  PUBLISHED` walk, scoped so no owner-flagged row could move.
+- **Held deliberately:** `/process` (7 of 8 bands owner-flagged) and `/custom-commissions` (4 of 6),
+  so nobody lands on a mostly-empty page.
+- **Still 404, and said so rather than left to be found:** three `/collection/*` pages whose only
+  section is owner-flagged, and `/faq`, `/privacy`, `/terms`, which have route files and **zero
+  seeded sections** — now **E10** in the roadmap backlog. The two quiet homepage bands are **E11**:
+  three merchandising slots hold 0 curated entries, and `HIDE_SECTION` below `minItems: 3` is
+  working as designed, not a defect.
+
 ### Phase 46 — Documentation + Handoff (PARTIAL — 2026-09-12)
 
 The handoff phase, run as an audit rather than a writing exercise, because its own goal statement
