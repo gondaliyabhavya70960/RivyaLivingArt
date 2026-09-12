@@ -904,6 +904,25 @@ so that an editor can prepare a page they cannot vouch for.
 | Enforced by | **Schema:** the seed runner never changes `owner_verification` or `status` on an existing row (BR-D6); **Audit:** the transition writes an `audit_logs` row |
 | Test | `tests/integration/seed-idempotency.test.ts` asserts the runner leaves both columns untouched; an audit assertion covers the transition |
 
+### BR-H4 — The verification decisions actually taken, and how
+
+A register, because a verification is the one act in this system with no other record: the row simply
+reads `VERIFIED` afterwards, and a year later nobody can say who decided it or on what.
+
+| Date | Scope | Decided by | Applied how | Audit row |
+|---|---|---|---|---|
+| 2026-09-12 | All **250** Higgsfield media assets → `VERIFIED` + `PUBLISHED` | The owner, explicitly, having been shown that the alternative was a site rendering 30 "media unavailable" wells on the homepage alone | `UPDATE` on the production database | **None — see below** |
+
+**The gap in that last column is deliberate and is recorded rather than quietly left.** BR-H3 requires
+the transition to be audited, and an `UPDATE` run against the database writes no `audit_logs` row. The
+decision was the owner's, so the rule's substance held — a human made the claim on the business's own
+behalf — but its mechanism did not, and this table is the only trace. The correct path is the Media
+Manager's verify action, which writes the audit row and is what BR-H3 describes; it was not used
+because the Studio was unreachable at the time (see `STUDIO_GUIDE.md` §2.1.1 for why).
+
+**What this means for the next one:** verify in the Studio. A bulk `UPDATE` should be the fallback for
+a Studio that cannot be reached, and every time it is used it belongs in this table.
+
 ---
 
 ## I. Data protection and retention
@@ -1072,6 +1091,7 @@ rule, without deleting the rule, is a rejection.
 | BR-H1 | One publication gate | Schema trigger |
 | BR-H2 | What requires verification | Data classification |
 | BR-H3 | Verification is a human act | Runner rule + audit |
+| BR-H4 | The verification decisions actually taken | Register (this document) |
 | BR-I1 | Personal data in one place | Schema + redactor |
 | BR-I2 | Stated retention | Cron jobs |
 | BR-I3 | Production data never travels down | Guard + process |
