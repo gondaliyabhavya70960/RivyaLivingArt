@@ -288,11 +288,17 @@ moved; a non-`ACTIVE` profile is activated. **The password of an existing accoun
 unless `--reset-password` is given** — a bootstrap wired into a deploy runs on every deploy, and one
 that reset the password each time would silently undo every password change anybody had made since.
 
+Both scripts read `.env.local` (via `process.loadEnvFile`, as seventeen other operator scripts do)
+and let anything already exported in the shell win. They also need `NEXT_PUBLIC_SUPABASE_URL` and
+`SUPABASE_SERVICE_ROLE_KEY` — writing `auth.users` goes through GoTrue's admin API, which
+authenticates with the service-role key.
+
 ```
-npm run auth:bootstrap                       # create, or reconcile, then say what it did
+vercel env pull                              # or: cp .env.example .env.local and fill it in
+npm run auth:list-users                      # proves the URL + service key reach the project
 npm run auth:bootstrap -- --dry-run          # say what it would do and write nothing
+npm run auth:bootstrap                       # create, or reconcile, then say what it did
 npm run auth:bootstrap -- --reset-password   # also set the password of an existing account
-npm run auth:list-users                      # which addresses have accounts, and as what
 ```
 
 `--password=` is **refused**, not ignored, exactly as `auth:create-user` refuses it: a secret in

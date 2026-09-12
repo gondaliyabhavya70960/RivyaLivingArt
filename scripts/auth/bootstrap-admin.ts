@@ -1,4 +1,5 @@
 #!/usr/bin/env tsx
+import { existsSync } from 'node:fs'
 import { pathToFileURL } from 'node:url'
 
 import { createClient } from '@supabase/supabase-js'
@@ -53,6 +54,35 @@ import {
  * eslint allowlist for the service-role client for exactly this reason: there is no session here to
  * act on behalf of.
  */
+
+/**
+ * The file seventeen other operator scripts read, and this one now reads too.
+ *
+ * IT WAS MISSING, AND THE FAILURE IT CAUSED LOOKED LIKE SUCCESS. `tsx` loads no dotenv file and
+ * `npm run` passes no `--env-file` (Node refuses that flag inside NODE_OPTIONS), so a person who had
+ * done exactly what the documentation told them — `vercel env pull && npm run auth:bootstrap` —
+ * saw `· STUDIO_ADMIN_EMAIL is not set … Nothing done.` and exit 0, with a correctly filled
+ * `.env.local` sitting beside them. A silent, success-shaped no-op is the worst possible answer to
+ * "create my administrator account": the operator concludes the account exists.
+ *
+ * The environment still wins. `loadEnvFile` does not overwrite a variable that is already set, so
+ * `STUDIO_ADMIN_PASSWORD=… npm run auth:bootstrap` — the inline form the Studio guide shows — keeps
+ * working and keeps taking precedence over anything in the file.
+ */
+const ENV_PATH = '.env.local'
+
+function loadEnvFile(): void {
+  if (!existsSync(ENV_PATH)) return
+  try {
+    process.loadEnvFile(ENV_PATH)
+  } catch (error) {
+    // The path and the reason, never a line of the file: it holds a service-role key and a password.
+    console.error(
+      `Could not read ${ENV_PATH}: ${error instanceof Error ? error.message : 'unknown'}`,
+    )
+    process.exit(1)
+  }
+}
 
 type Options = {
   /** Report what would happen and write nothing. */
@@ -237,6 +267,11 @@ async function reconcileAccount(
 
 async function main(): Promise<void> {
   const options = parseArgs(process.argv.slice(2))
+
+  // BEFORE reading the configuration, and the ordering is the whole point: the variables this
+  // script decides everything from may live in the file rather than in the shell.
+  loadEnvFile()
+
   const result = readBootstrapConfig(process.env)
 
   if (result.state === 'ABSENT') {

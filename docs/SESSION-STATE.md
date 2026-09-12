@@ -14,6 +14,64 @@ owner_verification: NOT_REQUIRED
 
 ---
 
+## Most recent work — post-launch defect pass on A43 (2026-09-12, later the same day)
+
+**Not a phase, and not new scope.** A read-back of the A43 work against the LIVE project and the
+installed libraries, rather than against the documents. It found four defects, fixed all four, and
+established three facts about the deployment that no document had right.
+
+**The four defects** — all in the path the owner was about to walk:
+
+1. `auth:bootstrap` / `auth:list-users` ignored `.env.local` and exited **0** saying "Nothing done".
+   Seventeen other operator scripts call `process.loadEnvFile`; these two did not. Fixed.
+2. `/api/auth/confirm` treated "no error, no session" as success, producing an expired-link page
+   about a link that had just been accepted, with no log row. Fixed: it checks the session and writes
+   `auth.recovery.no_session` at WARNING. This is the PKCE-client-versus-`{{ .TokenHash }}`-template
+   case, so it is the shape the recommended dashboard change produces.
+3. `auth:list-users` printed "never signed in" from `staff_profiles.last_seen_at`, which **nothing in
+   the repository or the database ever writes**. Fixed; it points at the `auth.signin` audit row.
+4. `app/api/auth/confirm/route.ts` cited `ENVIRONMENT.md` §4 for the template change; that section is
+   the variable list and the file says nothing about templates. Corrected to `STUDIO_GUIDE.md` §2.1.2.
+
+**Three facts the documents had wrong**, none of them a code change and all of them blocking:
+
+- **Production does not have the reset flow.** All seven GitHub checks on the merge commit passed, but
+  the Vercel **production build failed** — `Gateway Timeout` while prerendering `/custom-commissions`,
+  ROADMAP **E9** for the third time — so production still serves PR #57's code. `/studio/forgot-password`
+  and `/api/auth/confirm` are not deployed. Configuring the Supabase template today points links at a
+  route that 404s.
+- **There is no custom domain, and the site is behind an SSO wall.** The Vercel project has only its two
+  `*.vercel.app` hosts, and deployment protection is `all_except_custom_domains`, so every reachable
+  address redirects to `vercel.com/sso-api`. Closing ROADMAP **O7** is not a "make the apex primary"
+  toggle — the apex is not attached to the project at all, and registrar access is DEPLOYMENT §12 item 1.
+- **An ACTIVE owner already exists and has never signed in.** `staff_profiles` holds exactly one row;
+  `auth.sessions`, `auth.refresh_tokens` and `audit_logs` are all empty. `DEPLOYMENT.md` §12 row 10,
+  `docs/PHASE_31_TO_46_IMPLEMENTATION.md` and the superseded Phase 44 block below all still say
+  "`auth.users` is empty" — they are stale, and a runbook assembled from them sends the owner down the
+  CREATE path, where the second-owner guard refuses with exit 1.
+
+**Files Changed** — `app/api/auth/confirm/route.ts` · `scripts/auth/bootstrap-admin.ts` ·
+`scripts/auth/list-staff.ts` · `lib/auth/bootstrap.test.ts` · `docs/studio/STUDIO_GUIDE.md` ·
+`docs/ops/ENVIRONMENT.md` · `CHANGELOG.md` · this file
+
+**Database Changes** — **None.** Reads only; the live project was queried, never written.
+
+**Tests Run / Results** — `npm run check` (42 gates) exit 0 · 197 files, **2 968** unit tests, all green ·
+`npx tsc --noEmit` clean. The env-file fix was verified by running the script three ways: with
+`.env.local` only (now proceeds), with nothing (still the friendly exit-0 no-op), and with a shell
+variable contradicting the file (the shell wins).
+
+**Known Issues** — unchanged and now better evidenced: the two Supabase dashboard actions, plus the
+production build. **The build is the first blocker**, and it is not this work's defect: E9 is
+non-deterministic and a plain redeploy or an Instant Rollback→promote of
+`dpl_7hvTYYWYR8S88KrYKod866JoibMC` is the lever.
+
+**Next Exact Action** — **redeploy `main` on Vercel until a production build succeeds.** Nothing about
+the reset flow can be configured or tested until the routes are actually served. The canonical-host
+item below is unchanged and is a larger job than it reads.
+
+---
+
 ## Most recent work — post-launch, amendment A43 (2026-09-12)
 
 **Not a phase.** `ROADMAP.md` says there is no Phase 47; this is post-launch work and is labelled as
