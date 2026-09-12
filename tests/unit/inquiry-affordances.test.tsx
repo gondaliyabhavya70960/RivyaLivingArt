@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
+
 import { render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
@@ -177,5 +180,60 @@ describe('the contact form reads the affordance it was reached from', () => {
     at('')
     renderForm()
     expect(document.querySelector('select[name="enquiry_type"]')).not.toBeNull()
+  })
+})
+
+/**
+ * THE STICKY SUBMIT ROW (§7.10), specified in Phase 02 and not built until the editorial redesign.
+ *
+ * §19.1 question 7 measured what its absence cost: at 390px the two product calls to action sat at
+ * y = 997 and 1053 of a 1928px document — below the fold, outside the thumb zone on every phone,
+ * and reachable only by scrolling past the piece they are about.
+ *
+ * The geometry itself needs a browser, so these assert the two halves a unit CAN see: that the
+ * surfaces carry the class, and that the class means what §7.10 says it means.
+ */
+describe('the sticky conversion row', () => {
+  it('is on the product rail', () => {
+    render(<ProductInquiryRail slug="a-piece" isCustomizable strings={siteStrings(LABELS)} />)
+    expect(document.querySelector('[data-inquiry-rail]')?.className).toContain('rv-sticky-actions')
+  })
+
+  it('is on the enquiry form submit row', () => {
+    at('')
+    render(
+      <InquiryForm
+        kind="GENERAL"
+        copy={COPY}
+        enquiryTypes={[]}
+        action={async () => ({
+          ok: true,
+          referenceCode: 'RV-3',
+          whatsappUrl: null,
+          attachments: 0,
+        })}
+      />,
+    )
+    const submit = document.querySelector('button[type="submit"]')
+    expect(submit?.closest('.rv-sticky-actions')).not.toBeNull()
+  })
+
+  it('is mobile-first, and releases at the md breakpoint', () => {
+    // §5.2 forbids `max-width` queries, so sticky is the base state and 768px is the opt-out. A
+    // `max-width` rule here would work in a browser and break the one convention the whole
+    // responsive system rests on.
+    const css = readFileSync(join(process.cwd(), 'app', 'styles', 'base.css'), 'utf8')
+    const rule = css.slice(css.indexOf('.rv-sticky-actions'))
+    expect(rule).toContain('position: sticky')
+    expect(rule).toContain('env(safe-area-inset-bottom')
+    expect(rule).toMatch(/@media \(min-width: 768px\)/)
+    expect(rule).not.toMatch(/max-width/)
+  })
+
+  it('takes its ground and its edge from tokens, so it works in all three schemes', () => {
+    const css = readFileSync(join(process.cwd(), 'app', 'styles', 'base.css'), 'utf8')
+    const rule = css.slice(css.indexOf('.rv-sticky-actions'))
+    expect(rule).toContain('var(--rv-surface-raised)')
+    expect(rule).toContain('var(--rv-line-subtle)')
   })
 })

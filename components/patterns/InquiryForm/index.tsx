@@ -276,7 +276,12 @@ export function InquiryForm({ kind, copy, enquiryTypes, action }: InquiryFormPro
           </label>
         </VisuallyHidden>
 
-        <div>
+        {/*
+          §7.10: the submit row is sticky at the bottom of the viewport below 768px. A long enquiry
+          form on a phone put its own submit button several screens below the first field, so the
+          one control that completes the task was the hardest one to reach.
+        */}
+        <div className="rv-sticky-actions">
           <Button type="submit" disabled={state.status === 'sending'}>
             {state.status === 'sending' ? copy.sending : copy.submit}
           </Button>

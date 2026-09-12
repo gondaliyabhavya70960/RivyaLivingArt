@@ -140,3 +140,53 @@ a {
   block-size: 44px;
   min-inline-size: 44px;
 }
+
+/*
+ * THE STICKY SUBMIT ROW (§7.10) — specified in Phase 02, never built until now.
+ *
+ * WHAT THE AUDIT MEASURED. On `/product/<slug>` at 390px the two calls to action sit at y = 997
+ * and 1053 of a 1928px document — below the fold, outside the thumb zone on every phone, and
+ * reachable only by scrolling past the thing they are about. §19.1 question 7 records it as one of
+ * the reasons mobile does not yet feel intentionally designed, and §7.10 had already said what to
+ * do: "sticky at the bottom of the viewport below 768px with `--rv-surface-raised` and a top
+ * `--rv-line-subtle`".
+ *
+ * IT IS A CLASS AND NOT A UTILITY BECAUSE OF `env()`. A phone with a home indicator reserves space
+ * at the bottom of the viewport, and a bar that ignores it puts the primary action under the
+ * gesture area. Tailwind has no scale for `env(safe-area-inset-bottom)`, and `pb-[env(…)]` is an
+ * arbitrary value `scripts/design/check-tokens.mjs` refuses outright — so this is the same
+ * sanctioned shape as `.rv-hit-44` above: a `.rv-*` class in the one stylesheet that is allowed to
+ * hold what the utility layer cannot express.
+ *
+ * MOBILE-FIRST, AND THE DESKTOP RULE IS THE OPT-OUT. §5.2 forbids `max-width` queries, so sticky is
+ * the base state and 768px releases it — which is also the honest default: a narrow viewport is
+ * where the problem is.
+ *
+ * IT COSTS NO ISLAND AND NO SCROLL LISTENER. `position: sticky` is the browser's own; the element
+ * stays in flow, so it reserves its own space and nothing below it is covered at the end of the
+ * document.
+ */
+.rv-sticky-actions {
+  position: sticky;
+  inset-block-end: 0;
+  z-index: var(--rv-z-raised);
+  background: var(--rv-surface-raised);
+  border-block-start: var(--rv-border-hairline) solid var(--rv-line-subtle);
+  padding-block: var(--rv-space-3);
+  padding-block-end: calc(var(--rv-space-3) + env(safe-area-inset-bottom, 0px));
+  padding-inline: var(--rv-gutter);
+  /* The bar spans the reading column's gutters rather than sitting inside them. */
+  margin-inline: calc(var(--rv-gutter) * -1);
+}
+
+@media (min-width: 768px) {
+  .rv-sticky-actions {
+    position: static;
+    z-index: auto;
+    background: none;
+    border-block-start: none;
+    padding-block: 0;
+    padding-inline: 0;
+    margin-inline: 0;
+  }
+}
