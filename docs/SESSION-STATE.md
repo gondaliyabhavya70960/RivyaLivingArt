@@ -15,42 +15,119 @@ owner_verification: NOT_REQUIRED
 ---
 
 ## Current Phase
-**Phase 45 — Final Creative Polish. PARTIAL.** The audit FEAT §49 asks for has been run and
-recorded: `docs/design/DESIGN_SYSTEM.md` §19 holds all eight questions, and `docs/ops/TESTING.md`
-§14 holds the five-task walkthrough and the owner's ten Studio operations. Nine dimensions were
-examined and **every one returned FAIL**.
 
-**Three questions are the owner's and are outstanding**, deliberately: question 1 ("does it feel
-like a collectible-design studio?"), question 5 (the walkthrough, which needs three first-time
-participants) and question 8 (the ten Studio operations). They carry `OWNER_VERIFICATION_REQUIRED`,
-both documents' front matter carries the same token, and the phase stays PARTIAL until the owner
-answers. Question 4 is recorded N/A: zero real models exist and the flag is off.
+**Phase 46 — Documentation + Handoff. PARTIAL.** The final phase. Run as an **audit of the 34
+documents that already existed** rather than as a writing exercise, because the phase's own goal
+statement is the standard: *a document that claims a capability the code does not have is worse than
+no document.* It found eight defects. Four items remain and every one of them is the owner's.
 
-### Phase 45: what the first PR fixed
+**Status** — PARTIAL.
 
-1. **Every product card's hover transition had no duration.** `duration-(--rv-motion-medium)` names
-   a token that does not exist — the `--rv-motion-*` family is rise/parallax/stagger — and
-   `duration-(--var)` is valid syntax whatever the variable resolves to, so `check-tokens.mjs` and
-   `check-utilities.mjs` both passed it.
-2. **Three journal surfaces had no container.** `className="rv-container"` is not a utility and
-   produced no CSS, so the listing, the category page and the related band rendered full-bleed.
-3. **Seventeen `sizes` strings declared a 640px breakpoint this system does not have** (`sm` is
-   430px), so the browser was told the layout changes 210px from where it does. New gate
-   `scripts/design/check-sizes-breakpoints.mjs` fails on any undeclared width.
-4. **The chrome offered ten destinations that answered 404** — seven DRAFT categories plus `/faq`,
-   `/privacy` and `/terms`. `lib/site/live-paths.ts` composes the gate the category route actually
-   applies, and `lib/site/menu.ts` omits what does not resolve. 19 chrome destinations became 9, all
-   200, asserted permanently in `navigation-a11y.spec.ts`.
+**Completed** — the five-check documentation audit and the two claim gates; the generated
+owner-verification backlog and preflight gate 13; the `/studio` card; front matter on all 34
+documents and the viewer that was printing it as prose; `ROADMAP`'s status column and post-launch
+backlog; the deliberate-omission register; the support model and incident path; the recoverability
+proof; the Studio guide reconciled with the four rows of its own capability boundary that are not
+true today.
 
-### Phase 45: what is deferred, and why
+### Phase 46: what the audit found
 
-`docs/project/ROADMAP.md` carries it with reasons. The largest items: four of the six conversion
-affordances do not exist (`QUOTE` and `CONSULTATION` are enum values with Studio inboxes that can
-never receive a row); the hero's share of the viewport runs 37–91% across the eight QA widths
-because it is aspect-driven rather than viewport-relative; section rhythm is uniform, with 26 of 28
-renderers at `lg` and two steps dead; `media_crops` is written by the Studio and read by no
-renderer; and a cold throttled load measures CLS 0.98–1.00 on `/collection`, which needs measuring
-on the deployed preview before anyone changes code for it.
+1. **Nineteen documents under `docs/` had no front matter** — the binding contract, all six phase
+   documents, and six of the ten the Studio's documentation viewer serves. Phase 01's verification
+   step 4 names sixteen of them by path and says each "must gain front matter before this phase's exit
+   criterion can be ticked". The criterion was ticked.
+2. **The viewer rendered that block as page content**, on every document that had one. Phase 38's
+   parser has no front-matter branch.
+3. **`ROADMAP.md` had no `Status` column**, which Phase 01's scope specifies.
+4. **`PROJECT_STATE.md` claimed 33 gates**; `npm run check` runs 39.
+5. **The clean-clone recovery sequence fails as written, twice** — nothing in it creates the
+   environment `next build` reads, and the build queries the database while building, so
+   `DATABASE_URL` alone is not enough.
+6. **Four rows of the capability boundary are untrue.** There is no `publishCategoryAction` anywhere,
+   so the seven category routes stay `DRAFT` and 404; `/studio/content/faqs` and
+   `/studio/system/settings` are twenty-line route stubs, which makes **changing the WhatsApp number
+   an engineer task**; and the feature-flags row named a `newsletter` flag that has never existed.
+7. **`BUSINESS_RULES.md` cited enforcement that does not exist.** Of the 52 test files it names, seven
+   are absent — including both files BR-A1 cites, so **the prohibition on checkout is enforced by
+   review, not by a gate**. Two others were citation errors only: the rule is enforced, by
+   `tests/unit/rls/phase20.test.ts`.
+8. **Seventy source paths named by descriptive documents do not exist**, measured by
+   `npm run docs:check-paths` (2874 cited, 243 plan-document drift, 25 correctly reported absent).
+
+### Phase 46: what remains, and why none of it can be done here
+
+| # | Outstanding | Why it is the owner's |
+|---|---|---|
+| 1 | The **41-row** owner-verification backlog | Every row states something about a real business only the owner can confirm (D10) |
+| 2 | The capability-boundary dry run — ten Studio operations, unaided | A measurement of whether the software is usable by its owner |
+| 3 | The handover session | A fact about the world: whether it happened, and when |
+| 4 | The runbook screenshots | **Cannot be captured in this container at all** — the local harness has no auth server, so no browser can reach a Studio page; the same wall behind which ~156 Studio specs skip |
+
+**Files Changed** — `README.md` · `PROJECT_STATE.md` · `CHANGELOG.md` · `package.json` ·
+`docs/SESSION-STATE.md` · `docs/PHASE_31_TO_46_IMPLEMENTATION.md` · `docs/project/ROADMAP.md` ·
+`docs/project/BUSINESS_RULES.md` · `docs/studio/STUDIO_GUIDE.md` · `docs/ops/DEPLOYMENT.md` ·
+`docs/architecture/CANONICAL-DECISIONS.md` · `docs/content/INITIAL_CONTENT_INVENTORY.md` (generated) ·
+`docs/content/DEMO_CONTENT.md` (generated) · the six phase documents and the four media guides, for
+front matter · `lib/cms/docs/render.ts` · `scripts/docs/check-doc-contract.mjs` ·
+`scripts/content/build-content-inventory.ts` · `scripts/demo/build-register.ts` ·
+`app/(studio)/studio/(shell)/page.tsx` · `components/studio/strings.ts` ·
+`tests/unit/docs-allowlist.test.ts` · `tests/e2e/studio-system.spec.ts`
+
+**Files Created** — `scripts/docs/audit-docs.mjs` · `scripts/docs/audit-docs.d.mts` ·
+`scripts/docs/check-doc-paths.mjs` · `scripts/content/build-verification-report.ts` ·
+`lib/cms/verification-backlog.ts` · `lib/supabase/repositories/verifications.ts` ·
+`tests/unit/docs-audit.test.ts` · `tests/unit/docs-render.test.ts`
+
+**Database Changes** — **None.** No migration, no policy, no role, no row. The backlog is a read;
+`lib/cms/verification-backlog.ts` holds no writer. Only the owner can clear an
+`OWNER_VERIFICATION_REQUIRED` (D10).
+
+**Components Added** — one, and it is not a new file: `OutstandingVerificationsCard` inside
+`app/(studio)/studio/(shell)/page.tsx`. Deliberately **not** a `DASHBOARD_CARDS` row — that registry
+is one card, one relation, one phase, and this figure sums twenty-two tables. A failed read is never
+rendered as `0`.
+
+**External References** — none added. No new dependency, no new service, no new network call. The
+only gate that reaches the internet is still Phase 44's `check-canonical-host.ts`.
+
+**Media Assets Added** — **None.** Runbook screenshots would be documentation images under `docs/`,
+not `media_assets` rows, and none was captured (see outstanding item 4).
+
+**Higgsfield Assets** — untouched. No generation, no modification; `manifest:verify` unaffected.
+
+**Tests Run** — `npm run check` (44 commands, 39 gates) · `npx tsc --noEmit` · `docs-audit` (22) ·
+`docs-render` (5) · `docs-allowlist` (12) · `npm run test:unit` in the clean clone · the four
+documentation gates individually · `playwright --list` on the extended Studio spec · gitleaks 8.30
+against `.gitleaks.toml` over `origin/main..HEAD` · the clean-clone sequence end to end.
+
+**Test Results** — all green. CI on `75e6b30` was green on all eight checks: `verify`, four browser
+shards, both Security jobs and Vercel. Two CI failures were hit and fixed rather than worked around:
+gitleaks on this phase's own synthetic secret fixtures (now minted at run time — `.gitleaks.toml`
+forbids the path allowlist that would have been the easy fix), and `content:check-inventory` (the
+document had been generated from a fixture-laden database rather than the canonical seeded one).
+
+**Known Issues** — `ROADMAP.md`'s post-launch backlog, E1–E9. The three worth naming: the build has
+failed three times today on a database `Gateway Timeout` while prerendering (E9); `lib/cms/docs/index.ts`
+traces the whole project into the server bundle (E1); and the commerce prohibitions are unenforced by
+any gate (E8).
+
+**Remaining Work** — the four owner items above. No engineering work is required to close the phase.
+
+**Next Exact Action** — **the owner sets the canonical host.** Vercel → `rivya-living-art` → Settings →
+Domains: make `rivyalivingart.com` the primary domain and `www.rivyalivingart.com` redirect to it.
+The live site is currently unreachable on both addresses because each redirects to the other; every
+canonical tag, sitemap entry and OG url already names the apex, so no code change is wanted. Preflight
+gate 14 (`npm run ops:check-canonical-host`) confirms it.
+
+**Relevant Documentation** — `docs/project/phases/PHASE-39-46.md` §Phase 46 ·
+`docs/studio/STUDIO_GUIDE.md` §16, §17, §19 · `docs/project/BUSINESS_RULES.md` §N ·
+`docs/ops/DEPLOYMENT.md` §10.1, §10.2 · `docs/content/INITIAL_CONTENT_INVENTORY.md` ·
+`docs/project/ROADMAP.md` post-launch backlog · `README.md` *From a clean clone*.
+
+**Environment Requirements** — no new variable. D8 is unchanged. `build-verification-report.ts` reads
+`DATABASE_URL`, as every other script in `scripts/` does.
+
+**Migration Requirements** — **None.** Nothing to apply, in any environment.
 
 ---
 
