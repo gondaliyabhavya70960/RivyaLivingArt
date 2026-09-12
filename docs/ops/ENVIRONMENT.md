@@ -130,7 +130,7 @@ Compiled into the client bundle. Never put anything here that is not intended to
 |---|---|
 | Class | Public, and a **real business contact** |
 | Purpose | The `wa.me` destination for every handoff and every "Enquire on WhatsApp" affordance |
-| Format | Digits only, international, no `+`, no spaces — e.g. `917096036250` |
+| Format | **E.164: a leading `+` and 8–15 digits**, no spaces — e.g. `+917096036250`. This row said *digits only, no `+`* until 2026-09-12 and was wrong: `scripts/ops/check-env.ts` applies `isE164` (`^\+[1-9]\d{7,14}$`), and `tests/unit/env-schema.test.ts` asserts that `919999999999` is REFUSED. The application itself tolerates either — `lib/whatsapp/link.ts` strips every non-digit before building the `wa.me` URL — so the old format worked while failing preflight gate 11, which is the worst of both |
 | Set in | Vercel per environment; `.env.local` |
 | Read by | `lib/whatsapp/**` only. It is never read in more than one place (SEED §21) |
 | Without it | The handoff cannot be built. The inquiry still persists and the success state renders, but the WhatsApp action is unavailable and `whatsapp_state` records `UNAVAILABLE`. **The inquiry is never lost because the handoff is broken** (BR-B1) |
