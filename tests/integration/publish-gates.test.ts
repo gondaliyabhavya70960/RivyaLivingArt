@@ -177,6 +177,36 @@ describeDb('the database refuses a fabricated business fact', () => {
     expect(result.refused).toBe(true)
   })
 
+  it('refuses a published category the owner has not verified', async () => {
+    /*
+     * THE GATE `publishCategoryAction` TRANSLATES — Phase 45.
+     *
+     * `categories_verified_before_publish` (0004_taxonomy.sql) is why `3d-resin` is the one
+     * category of the seven a publish control may not turn on: its NAME asserts a fabrication
+     * capability, and D10 puts a capability claim behind the owner. The Studio action checks the
+     * same fact before it writes so the editor reads a sentence rather than a constraint name —
+     * this asserts the rule it is translating still exists underneath, which is the half that
+     * cannot be bypassed by a bulk import or a psql session.
+     */
+    const result = await attempt(
+      `insert into categories (id, slug, name, sort_order, status, owner_verification)
+       values ($1,'probe-category','Probe',900,'PUBLISHED','OWNER_VERIFICATION_REQUIRED')`,
+      [probe(13)],
+    )
+    expect(result.refused).toBe(true)
+  })
+
+  it('accepts a published category that needs no verification', async () => {
+    // The other six. A category that claims nothing about the business publishes on its own,
+    // which is what makes the missing control a defect rather than a policy.
+    const result = await attempt(
+      `insert into categories (id, slug, name, sort_order, status, owner_verification)
+       values ($1,'probe-category-ok','Probe',901,'PUBLISHED','NOT_REQUIRED')`,
+      [probe(14)],
+    )
+    expect(result.refused).toBe(false)
+  })
+
   it('refuses a published article with no body', async () => {
     // SEED §20 seeds ideas, not articles. An article page with nothing on it is an idea.
     const result = await attempt(

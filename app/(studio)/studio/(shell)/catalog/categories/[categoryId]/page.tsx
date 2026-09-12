@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation'
 import { Stack } from '@/components/primitives/Stack'
 import { Text } from '@/components/primitives/Text'
 import { EntityForm } from '@/components/studio/catalog/EntityForm'
+import { PublishControls } from '@/components/studio/catalog/PublishControls'
 import { PageHeader } from '@/components/studio/PageHeader'
 import { StatusPill } from '@/components/studio/StatusPill'
 import { t } from '@/components/studio/strings'
@@ -15,7 +16,7 @@ import { getCategoryByIdForStudio } from '@/lib/supabase/repositories/catalog-ad
 import { listMediaAssets } from '@/lib/supabase/repositories/media'
 import { createClient } from '@/lib/supabase/server'
 
-import { saveCategoryAction } from '../../actions'
+import { publishCategoryAction, saveCategoryAction, unpublishCategoryAction } from '../../actions'
 
 /**
  * /studio/catalog/categories/[categoryId] — the copy, order, hero image and SEO of one category.
@@ -61,6 +62,23 @@ export default async function Page({ params }: { params: Promise<{ categoryId: s
           {t('studio.catalog.categories.caption')}
         </Text>
       </Link>
+
+      {/*
+        Phase 45: the control that makes `/collection/<slug>` exist.
+
+        ABOVE THE FORM, because publishing is the decision and the copy is the detail — and because
+        a category arrives here DRAFT, so the first thing its editor needs is the button that was
+        missing rather than the seventh field. `3d-resin` refuses here and says why: its name
+        asserts a fabrication capability and `categories_verified_before_publish` holds it until an
+        owner clears the flag.
+      */}
+      <PublishControls
+        entityId={category.id}
+        isPublished={category.status === 'PUBLISHED'}
+        publishAction={publishCategoryAction}
+        unpublishAction={unpublishCategoryAction}
+        canPublish={roleHasPermission(session.role, 'catalog.publish')}
+      />
 
       <EntityForm
         id={category.id}

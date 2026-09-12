@@ -13,11 +13,17 @@
     "weighs and fails CI on growth beyond 5%.",
     "",
     "`islands` IS A CEILING AND IT IS SET AT THE MEASURED COUNT. Unlike bytes, an island count of",
-    "'2' on a route that has 7 would be red on every run from the day it was written, which trains",
-    "people to ignore the gate. The phase document's island numbers were written before Phase 10",
-    "gave the site a shell and Phase 23 put search in it; every public route now inherits five",
+    "'2' on a route that has five would be red on every run from the day it was written, which",
+    "trains people to ignore the gate. The phase document's island numbers were written before",
+    "Phase 10 gave the site a shell and Phase 23 put search in it; every public route inherits five",
     "islands it did not choose. Each route below records the measured figure, and `note` says what",
     "the phase document asked for where the two differ.",
+    "",
+    "THESE CAME DOWN FROM SEVEN, which is the first time a number in this file has fallen. The two",
+    "that went were never chosen by any route: the hero clip and the material sequence were charged",
+    "to all sixteen CMS routes because components/sections/registry.ts imports every renderer and",
+    "two of them imported those islands statically. Both now load through next/dynamic. The freed",
+    "slots are headroom, not an allowance.",
     "",
     "RAISING ANY NUMBER HERE IS THE POINT OF THE FILE. It is a one-line edit a reviewer sees, with",
     "a reason beside it. That is the whole mechanism: the budget is not advisory because exceeding",
@@ -48,80 +54,80 @@
     "/": {
       "lcpMs": 2500,
       "firstLoadJsKb": 180,
-      "islands": 7,
+      "islands": 5,
       "lcpImage": true
     },
     "/about": {
       "lcpMs": 2500,
       "firstLoadJsKb": 150,
-      "islands": 7,
-      "note": "The phase document budgets 2 islands. The shell contributes five to every public route (error copy, mega menu, mobile nav, search box, vitals reporter) and the section registry adds two more; none of the seven is chosen by this route.",
+      "islands": 5,
+      "note": "The shell contributes all five to every public route (error copy, mega menu, mobile nav, search box, vitals reporter); none is chosen by this route. The phase document budgets 2. The section registry used to add two more — the hero clip and the material sequence, charged to every CMS route because two renderers imported them statically; both now load through next/dynamic.",
       "lcpImage": true
     },
     "/process": {
       "lcpMs": 2500,
       "firstLoadJsKb": 150,
-      "islands": 7,
+      "islands": 5,
       "note": "As /about.",
       "lcpImage": true
     },
     "/large-format": {
       "lcpMs": 2500,
       "firstLoadJsKb": 150,
-      "islands": 7,
+      "islands": 5,
       "note": "As /about.",
       "lcpImage": true
     },
     "/collection": {
       "lcpMs": 2500,
       "firstLoadJsKb": 175,
-      "islands": 7,
+      "islands": 5,
       "lcpImage": true
     },
     "/collection/[category]": {
       "lcpMs": 2500,
       "firstLoadJsKb": 175,
-      "islands": 7,
+      "islands": 5,
       "lcpImage": true
     },
     "/product/[slug]": {
       "lcpMs": 2500,
       "firstLoadJsKb": 190,
       "islands": 6,
-      "note": "The only public route that meets its byte budget today, and the reason is instructive: it does not render CMS sections, so it never reaches the section registry.",
+      "note": "Six, not five: the product gallery is this route's own island, and it is the only public route that chooses one. It is also the only one that meets its byte budget, for the same reason — it does not render CMS sections.",
       "lcpImage": true
     },
     "/collections/[slug]": {
       "lcpMs": 2500,
       "firstLoadJsKb": 165,
-      "islands": 7,
+      "islands": 5,
       "lcpImage": true
     },
     "/portfolio": {
       "lcpMs": 2500,
       "firstLoadJsKb": 150,
-      "islands": 7,
+      "islands": 5,
       "note": "The phase document budgets 2. See /about.",
       "lcpImage": true
     },
     "/portfolio/[slug]": {
       "lcpMs": 2500,
       "firstLoadJsKb": 150,
-      "islands": 7,
+      "islands": 5,
       "note": "The phase document budgets 2. See /about.",
       "lcpImage": true
     },
     "/journal": {
       "lcpMs": 2000,
       "firstLoadJsKb": 140,
-      "islands": 7,
+      "islands": 5,
       "note": "Text-led, and the tightest byte budget on the site after /faq. The phase document budgets 2 islands.",
       "lcpImage": true
     },
     "/journal/[slug]": {
       "lcpMs": 2000,
       "firstLoadJsKb": 140,
-      "islands": 7,
+      "islands": 5,
       "note": "The phase document budgets 2. See /journal.",
       "lcpImage": true
     },
@@ -129,40 +135,40 @@
       "lcpMs": 2000,
       "firstLoadJsKb": 140,
       "islands": 5,
-      "note": "Five, not seven: this route renders its own listing rather than CMS sections, so it carries the shell and nothing else. It and /search are the two lightest routes on the site, which is the measurement that identified the section registry as the cost.",
+      "note": "Five: this route renders its own listing rather than CMS sections, so it carries the shell and nothing else. It and /search being lighter than the CMS routes is the measurement that identified the section registry as the cost — since fixed, so every public route now carries the same five.",
       "lcpImage": false
     },
     "/custom-commissions": {
       "lcpMs": 2500,
       "firstLoadJsKb": 200,
-      "islands": 7,
+      "islands": 5,
       "lcpImage": true
     },
     "/contact": {
       "lcpMs": 2000,
       "firstLoadJsKb": 160,
-      "islands": 7,
+      "islands": 5,
       "note": "The phase document budgets 2. See /about.",
       "lcpImage": true
     },
     "/faq": {
       "lcpMs": 2000,
       "firstLoadJsKb": 120,
-      "islands": 7,
+      "islands": 5,
       "note": "The phase document budgets 1. See /about.",
       "lcpImage": true
     },
     "/privacy": {
       "lcpMs": 2000,
       "firstLoadJsKb": 120,
-      "islands": 7,
+      "islands": 5,
       "note": "The phase document budgets 1. See /about.",
       "lcpImage": true
     },
     "/terms": {
       "lcpMs": 2000,
       "firstLoadJsKb": 120,
-      "islands": 7,
+      "islands": 5,
       "note": "The phase document budgets 1. See /about.",
       "lcpImage": true
     },

@@ -1,6 +1,6 @@
+import dynamic from 'next/dynamic'
 import * as React from 'react'
 
-import { HeroMotion } from '@/components/patterns/HeroMotion'
 import { ResponsiveMedia } from '@/components/patterns/MediaSlot'
 import { Stack } from '@/components/primitives/Stack'
 import { heroBlock } from '@/content/blocks/hero'
@@ -12,6 +12,27 @@ import { SectionActions } from './SectionActions'
 import { SectionCopy } from './SectionCopy'
 import { SectionShell } from './SectionShell'
 import type { SectionRenderProps } from './types'
+
+/**
+ * LOADED ON DEMAND, FOR THE REASON `ProcessStepsSection` LOADS `ChapterMedia` ON DEMAND.
+ *
+ * `components/sections/registry.ts` imports every renderer, so a static import here put the hero's
+ * motion island in the INITIAL JAVASCRIPT OF ALL SIXTEEN CMS ROUTES — `/privacy` and `/terms`
+ * included, neither of which has ever rendered a hero, let alone a moving one. Two of the seven
+ * islands the homepage was budgeted for were this one and `MaterialSequence`, and no route chose
+ * either.
+ *
+ * A dynamic import leaves a stub in the graph and fetches the module only when a hero is actually
+ * marked as a moving piece AND allowed to start by itself. `HeroMotion` then applies its own five
+ * technical gates on top and renders nothing if any refuses — so on most loads the module is never
+ * fetched at all.
+ *
+ * `ssr` IS LEFT ALONE. A Server Component may not pass `ssr: false`, and it does not need to:
+ * `HeroMotion` renders null until after the first paint, so its server output is empty anyway.
+ */
+const HeroMotion = dynamic(() =>
+  import('@/components/patterns/HeroMotion').then((module) => module.HeroMotion),
+)
 
 /**
  * The page opener.

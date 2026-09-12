@@ -13,6 +13,10 @@ import type { CatalogActionState } from '@/app/(studio)/studio/(shell)/catalog/a
 /**
  * Publish and unpublish, with the refusal shown where the button is.
  *
+ * `entityId` RATHER THAN `productId`, because Phase 45 gave categories the same control. The
+ * component never knew what it was publishing — it forwards an id and renders the action's
+ * refusal — so the only thing that was product-specific about it was the name of a prop.
+ *
  * THE REFUSAL NAMES THE UNMET ITEMS. `publishProductAction` returns one issue per unmet required
  * item, carrying the item's own name, and they are listed here verbatim — so "Hero image" appears
  * next to the button that just refused rather than only in the checklist further up the page.
@@ -23,13 +27,13 @@ import type { CatalogActionState } from '@/app/(studio)/studio/(shell)/catalog/a
  * be a second opinion that can disagree with the one that counts.
  */
 export function PublishControls({
-  productId,
+  entityId,
   isPublished,
   publishAction,
   unpublishAction,
   canPublish,
 }: {
-  readonly productId: string
+  readonly entityId: string
   readonly isPublished: boolean
   readonly publishAction: (state: CatalogActionState, form: FormData) => Promise<CatalogActionState>
   readonly unpublishAction: (
@@ -50,7 +54,7 @@ export function PublishControls({
   return (
     <form action={submit} data-publish-form="">
       <Stack gap={3}>
-        <input type="hidden" name="id" value={productId} />
+        <input type="hidden" name="id" value={entityId} />
         <Button type="submit" variant={isPublished ? 'secondary' : 'primary'} loading={pending}>
           {isPublished
             ? t('studio.catalog.product.unpublish')
