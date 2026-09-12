@@ -15,6 +15,7 @@ import { createPublicClient } from '@/lib/supabase/public'
 import { listMaterials } from '@/lib/supabase/repositories/materials'
 import { listModelIdsForProject, loadPublicModel } from '@/lib/supabase/repositories/models'
 import { getProjectBySlug, listPublishedProjects } from '@/lib/supabase/repositories/portfolio'
+import { prerenderParams } from '@/lib/site/prerender'
 
 /**
  * `/portfolio/[slug]` — one delivered project.
@@ -53,17 +54,6 @@ type Props = { readonly params: Promise<Params> }
 const pathFor = (slug: string) => `/portfolio/${slug.toLowerCase()}`
 
 /**
- * PostgREST's codes for a relation that is not there: PostgreSQL's own `undefined_table`, and
- * PostgREST's for a table absent from its cached schema. `lib/cms/selectors/types.ts` matches the
- * same pair, for the same reason — the second is what a live project answers before its schema
- * cache has caught up with a migration.
- */
-function isMissingTable(error: unknown): boolean {
-  const code = (error as { cause?: { code?: string } } | null)?.cause?.code
-  return code === '42P01' || code === 'PGRST205'
-}
-
-/**
  * Published projects only.
  *
  * The anonymous client is the filter, as everywhere else — nothing here says `status = 'PUBLISHED'`,
@@ -76,20 +66,26 @@ function isMissingTable(error: unknown): boolean {
  * and not yet on the hosted database. One table being a migration behind should cost this route its
  * pre-rendering, not every other page its deployment.
  *
- * IT SWALLOWS ONLY THE MISSING-TABLE CODES. Any other failure — a broken policy, a bad column, a
- * connection refused — still throws and still fails the build, because those are faults nobody
- * should discover from an empty portfolio. And this is only the pre-render list: `dynamicParams`
- * still renders on request, and the same visibility rule applies there, so nothing becomes
- * reachable that would not otherwise have been.
+ * IT USED TO SWALLOW ONLY THE MISSING-TABLE CODES, and said so here: *any other failure — a broken
+ * policy, a bad column, a connection refused — still throws and still fails the build, because
+ * those are faults nobody should discover from an empty portfolio.* That objection is right, and
+ * `prerenderParams` answers it a better way than a failed deployment does: the fault is announced
+ * in the build log, named, with the route and the cause beside the routes that did pre-render. It
+ * is discovered — just not by taking the whole site's deploy down.
+ *
+ * What forced the change is that the narrow predicate did not hold. A database `Gateway Timeout` is
+ * not a missing table, so the guard never fired, and `Failed to collect page data` brought the build
+ * down four more times — the same failure this comment was written about, through the one door it
+ * left open. The paragraph above already conceded the decisive half: *this is only the pre-render
+ * list; `dynamicParams` still renders on request, and the same visibility rule applies there, so
+ * nothing becomes reachable that would not otherwise have been.* If correctness is unaffected, a
+ * failed build is the costlier way to report a fault. See ROADMAP E9 and `lib/site/prerender.ts`.
  */
 export async function generateStaticParams(): Promise<Params[]> {
-  try {
+  return prerenderParams('/portfolio/[slug]', async () => {
     const projects = await listPublishedProjects(createPublicClient())
     return projects.map((project) => ({ slug: project.slug.toLowerCase() }))
-  } catch (error) {
-    if (isMissingTable(error)) return []
-    throw error
-  }
+  })
 }
 
 /** The project, or null — one read shared by the metadata, the trail and the model mount. */

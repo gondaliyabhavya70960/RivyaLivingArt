@@ -13,6 +13,7 @@ import { collectionJsonLd, graphOf } from '@/lib/seo/jsonld'
 import { listCollections } from '@/lib/supabase/repositories/collections'
 import { listMediaAssetsByIds } from '@/lib/supabase/repositories/media'
 import { createPublicClient } from '@/lib/supabase/public'
+import { prerenderParams } from '@/lib/site/prerender'
 
 /**
  * `/collections/[slug]` — the exhibition page.
@@ -72,8 +73,10 @@ const pathFor = (slug: string) => `${BASE}/${slug.toLowerCase()}`
  * confirms one.
  */
 export async function generateStaticParams(): Promise<Params[]> {
-  const collections = await listCollections(createPublicClient())
-  return collections.map((collection) => ({ slug: collection.slug.toLowerCase() }))
+  return prerenderParams('/collections/[slug]', async () => {
+    const collections = await listCollections(createPublicClient())
+    return collections.map((collection) => ({ slug: collection.slug.toLowerCase() }))
+  })
 }
 
 /** The collection for this slug, or null. Compared case-insensitively, as `citext` would. */

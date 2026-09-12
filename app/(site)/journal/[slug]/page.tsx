@@ -18,6 +18,7 @@ import { listMediaAssetsByIds } from '@/lib/supabase/repositories/media'
 import type { JournalArticle } from '@/lib/supabase/schemas'
 
 import { ArticleRelated } from './related'
+import { prerenderParams } from '@/lib/site/prerender'
 
 /**
  * `/journal/[slug]` — one article.
@@ -50,28 +51,14 @@ type Props = { readonly params: Promise<Params> }
 
 const pathFor = (slug: string) => `/journal/${slug.toLowerCase()}`
 
-/**
- * PostgREST's codes for a relation that is not there, matched for the same reason
- * `/portfolio/[slug]` matches them: `generateStaticParams` runs at BUILD time, and a build against
- * an environment whose schema cache has not caught up with a migration would otherwise fail the
- * whole site's build rather than this one route. Seen once already, on Vercel, in Phase 17.
- */
-function isMissingTable(error: unknown): boolean {
-  const code = (error as { cause?: { code?: string } } | null)?.cause?.code
-  return code === '42P01' || code === 'PGRST205'
-}
-
 /** Published articles only — the anonymous client is the filter, as everywhere else. */
 export async function generateStaticParams(): Promise<Params[]> {
-  try {
+  return prerenderParams('/journal/[slug]', async () => {
     // A ceiling rather than a promise: pre-rendering the most recent hundred is generous for a
     // studio journal, and anything beyond it renders on demand rather than at build time.
     const articles = await listArticles(createPublicClient(), { limit: 100 })
     return articles.map((article) => ({ slug: article.slug.toLowerCase() }))
-  } catch (error) {
-    if (isMissingTable(error)) return []
-    throw error
-  }
+  })
 }
 
 async function articleFor(slug: string): Promise<JournalArticle | null> {
