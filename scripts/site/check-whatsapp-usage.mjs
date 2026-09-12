@@ -38,12 +38,25 @@ const MODULE_PREFIX = join('lib', 'whatsapp') + sep
 const HOSTS = /wa\.me|api\.whatsapp\.com/
 
 /**
- * Where `buildDirectContactUrl` may be imported. The phase document's list, verbatim, plus the
- * barrel that re-exports it.
+ * Where `buildDirectContactUrl` may be imported.
+ *
+ * THE PHASE DOCUMENT'S LIST IS THREE SURFACES, AND IT STILL IS. `DirectContactSource` names them —
+ * the announcement bar, the footer and the contact page — and that closed union is what decides who
+ * may open a chat with no enquiry to carry. This list is about which FILES hold the call, which is a
+ * different question and moves when an implementation is shared.
+ *
+ * Phase 45 built the `contact-details` block, which needed the footer's contact column exactly:
+ * the same `tel:` rule, the same two strings that must resolve before a WhatsApp link may exist,
+ * the same location pair. So the column became `ContactChannels` (RC-244) and both surfaces render
+ * it — the footer with `source="footer"`, the contact band with `source="contact-page"`. The import
+ * moved with the markup; `SiteFooter` no longer holds it, and the section renderer never does.
+ *
+ * THIS IS NOT A WIDENING. One file replaced one file, the union is unchanged, and a product page
+ * that imported `ContactChannels` would still have to pass a `source` the union does not have.
  */
 const DIRECT_CONTACT_ALLOWED = new Set([
   join('components', 'patterns', 'AnnouncementBar', 'index.tsx'),
-  join('components', 'patterns', 'SiteFooter', 'index.tsx'),
+  join('components', 'patterns', 'ContactChannels', 'index.tsx'),
   join('app', '(site)', 'contact', 'page.tsx'),
 ])
 

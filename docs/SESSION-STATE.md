@@ -41,6 +41,23 @@ unchanged. Phase 45 had already been run and recorded: `DESIGN_SYSTEM.md` §19 h
 - **The two §45 gates.** `scripts/design/check-token-usage.mjs` (44th gate in `npm run check`) and
   `scripts/content/classify-copy-diff.ts` (`npm run content:classify-copy`, deliberately not in
   `check`).
+- **The seven `null` renderers; the catalogue is 34 BUILT / 0 PLANNED** (amendment A45).
+  `checklist`, `numbered-steps`, `faq-list`, `contact-details`, `rich-text`, `media-split`, `quote`.
+  `rich-text` is PLAIN TEXT, so A14's objection to a markup block stands unaltered; the exhibition
+  template regains FEAT §8 element 9. `faq-list` resolves through `lib/cms/references.ts` and renders
+  native `<details>` rather than RC-206 (a Client Component there is an island on all sixteen CMS
+  routes). `/faq` gained the band that draws the questions — it had a page row, ten `faqs` rows and
+  no sections at all. `contact-details` and the footer now share `ContactChannels` (RC-244).
+
+**A site-wide outage, found by publishing a section rather than by reading code.**
+`buildDirectContactUrl` read `NEXT_PUBLIC_WHATSAPP_NUMBER` through `requiredEnv`, which THROWS, and
+the footer calls it on every page as soon as the `contact-details` section is published. In any
+environment without that variable, the first time the owner does what they are asked to do — verify
+the studio's number and publish it — **every route answers 500.** It had never fired because the
+section had never been published; publishing it in the local harness turned every page red at once.
+It returns null now, and a missing number means no link, like a missing label and a missing greeting
+already did. Both surfaces also pass the VERIFIED section's number (A20), which the direct contact
+links had never used.
 
 **The local harness, at last.** Postgres 16 + PostgREST 13.0.4 + `scripts/db/local-rest.mjs` +
 `next dev`, which is what made the hero measurement and the a11y sweep real rather than reasoned.
@@ -72,20 +89,27 @@ Higgsfield assets, so every binding resolves to a gap there.
 
 **Database Changes** — **None.**
 
-**Tests Run / Results** — `npm run check` (**44 gates**) exit 0 · 203 files, **3 021** unit tests,
+**Tests Run / Results** — `npm run check` (**44 gates**) exit 0 · 204 files, **3 050** unit tests,
 all green · `tests/e2e/a11y/` against the local harness: **89 passed, 0 failed**, 85 skipped
 (unpublished routes) · the six specs that failed locally re-run green under `E2E_PRODUCTION=1` ·
 both new gates negative-tested: a bespoke `cubic-bezier` fails the motion gate, and `padding-block:
 13px`, `font-weight: 600`, `line-height: 1.5` and `z-index: 40` fail the usage gate while
-`calc(var(--rv-space-3) + env(safe-area-inset-bottom, 0px))` and `clamp(var(…), 2vw, var(…))` pass.
+`calc(var(--rv-space-3) + env(safe-area-inset-bottom, 0px))` and `clamp(var(…), 2vw, var(…))` pass ·
+the seven promoted blocks verified in a real browser against the local harness, with their sections
+published there: `/custom-commissions`, `/contact` and `/faq` all 200, **zero axe violations on each**,
+and the FAQ band measured for the things `<details>` gets wrong — the native marker gone in both
+engines (`display: flex` and `list-style: none`), a collapsed answer out of the tree, Enter toggling
+from the summary, and the chevron animating on Tailwind v4's standalone `rotate` property.
 
-**Next exact action** — PR 5 of the plan: the seven `null` renderers in `components/sections/registry.ts`
-(`rich-text`, `quote`, `checklist`, `numbered-steps`, `media-split` are payload-only; `contact-details`
-is a pure function over its own section; `faq-list` needs a `SectionReference.faqs` branch beside the
-`project-gallery` `media` one). Then PR 6, the twelve declared-but-unbuilt layout variants and
-`ContentCarousel` (RC-222).
+**Next exact action** — PR 6 of the plan: the twelve declared-but-unbuilt layout variants and
+`ContentCarousel` (RC-222, §7.18 — CSS scroll-snap, controls through `next/dynamic` so the scroller
+stays a Server Component). `ReferenceCards` takes no section, so the four blocks that share it need
+the variant threaded in as a prop. Every branch keeps the `section.layout_variant ?? '<default>'`
+shape: an unknown value from the database must fall through, as `schemeOf` does for an unknown theme.
 
 **Still the owner's** — audit questions 1, 5 and 8 (§19.2); legal copy for `/privacy` and `/terms`;
+**a heading for `/faq`**, which has no `h1` without one (`SectionList` gives the first section level
+1, so one sentence typed on the band is enough, and `content/seed/faq.ts` says so beside the record);
 the ten FAQ answers; and the two `seo:global.*` sentences the new classifier reports.
 
 ---

@@ -316,6 +316,7 @@ and Phase 10's site shell then reuses it.
 | RC-241 | `ProductInquiryRail` | conversion | 15 | BUILT | §7.46 |
 | RC-242 | `RelatedContent` | navigation | 15 | BUILT | §7.47 |
 | RC-243 | `MerchandisedRow` | conversion | 22 | BUILT | §7.49 |
+| RC-244 | `ContactChannels` | conversion | 45 | BUILT | index only — server; the studio's channels as links, shared by the footer's contact column and the `contact-details` band so §21's rule (one home for the number) holds for the BEHAVIOUR as well as the values. A missing label, greeting or number means no WhatsApp link, never an anonymous one: `buildDirectContactUrl` returns null rather than throwing, which is Phase 45's fix for a published contact section 500-ing every page in an environment with no `NEXT_PUBLIC_WHATSAPP_NUMBER` |
 | RC-318 | `BarSeries` | usability | 31 | BUILT | index only — inline SVG from tokens, `role="img"` + data table; no chart library |
 | RC-319 | `BandStrip` | usability | 31 | BUILT | index only — one strip cut into price bands, edges printed |
 | RC-320 | `Scatter` | usability | 31 | BUILT | index only — two-axis points, every pair in the table |

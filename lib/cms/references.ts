@@ -20,17 +20,18 @@ import { getProjectIdForPage, listProjectMedia } from '@/lib/supabase/repositori
 import { listMediaAssetsByIds } from '@/lib/supabase/repositories/media'
 import { listMaterials } from '@/lib/supabase/repositories/materials'
 import { type PublicModel, loadPublicModel } from '@/lib/supabase/repositories/models'
-import type { Material, MediaAsset, PageSection } from '@/lib/supabase/schemas'
+import type { Faq, Material, MediaAsset, PageSection } from '@/lib/supabase/schemas'
 
 import { collectionProductsBlock } from '@/content/blocks/collection-products'
 import { commissionConfiguratorBlock } from '@/content/blocks/commission-configurator'
 import { featuredCollectionsBlock } from '@/content/blocks/featured-collections'
+import { faqListBlock } from '@/content/blocks/faq-list'
 import { projectGalleryBlock } from '@/content/blocks/project-gallery'
 import { journalStripBlock } from '@/content/blocks/journal-strip'
 import { portfolioStripBlock } from '@/content/blocks/portfolio-strip'
 import { selectedWorksBlock } from '@/content/blocks/selected-works'
 import { threeDResinBlock } from '@/content/blocks/three-d-resin'
-import { getSection } from '@/lib/supabase/repositories/cms'
+import { getSection, listFaqs } from '@/lib/supabase/repositories/cms'
 import { tileFromSection, type EditorialTile } from './editorial-tile'
 import { parseBlockPayload } from './registry'
 
@@ -112,6 +113,21 @@ export type SectionReference = {
    * EDITORIAL_BLOCK, or nothing resolved.
    */
   readonly tiles?: readonly EditorialTile[]
+  /**
+   * Phase 45: the rows a `faq-list` band draws, in `faqs.position` order.
+   *
+   * A QUERY, NOT A PAYLOAD. The ten questions live in `faqs` because that is where they are edited,
+   * where they appear in search, and where each one carries its own `owner_verification`. Copying
+   * them into a section payload would make `/faq` and the FAQ table two different answers to the
+   * same question, and the second would go stale silently.
+   *
+   * RESOLVED HERE FOR THE REASON EVERYTHING ELSE IS: `SectionRenderer` is synchronous and pure, so
+   * a band that read its own rows would be a round trip inside the render.
+   *
+   * EMPTY IS A REAL ANSWER AND IS NOT AN ERROR. Every seeded answer is `DRAFT` until the owner
+   * verifies it, so the published set is empty today and the band renders its heading alone.
+   */
+  readonly faqs?: readonly Faq[]
 }
 
 export type ModelReference = {
@@ -265,7 +281,10 @@ export async function loadPageReferences(
   pagePath: string | null = null,
 ): Promise<PageReferences> {
   const referencing = sections.filter(
-    (section) => isReferenceBlock(section.block_type) || section.block_type === MODEL_SLOT_BLOCK,
+    (section) =>
+      isReferenceBlock(section.block_type) ||
+      section.block_type === MODEL_SLOT_BLOCK ||
+      section.block_type === FAQ_BLOCK,
   )
   if (referencing.length === 0) return new Map()
 
@@ -273,6 +292,9 @@ export async function loadPageReferences(
     referencing.map(async (section) => {
       if (section.block_type === MODEL_SLOT_BLOCK) {
         return [section.id, await loadModelSlot(client, section)] as const
+      }
+      if (section.block_type === FAQ_BLOCK) {
+        return [section.id, await loadFaqList(client, section)] as const
       }
       const config: {
         select: (typeof SELECTORS)[ReferenceBlockType]['select']
@@ -405,7 +427,11 @@ async function loadConfigurator(
   section: PageSection,
   productSlug: string | null,
 ): Promise<SectionReference> {
-  const empty = { result: EMPTY_GALLERY, assets: new Map<string, MediaAsset>(), configurator: null }
+  const empty = {
+    result: EMPTY_NO_CARDS,
+    assets: new Map<string, MediaAsset>(),
+    configurator: null,
+  }
   if (!(await isEnabled('commission_configurator'))) return empty
 
   /*
@@ -464,7 +490,7 @@ async function loadProjectGallery(
 ): Promise<SectionReference> {
   const payload = parseBlockPayload(projectGalleryBlock, section.payload)
   const projectId = await getProjectIdForPage(client, pageId)
-  if (projectId === null) return { result: EMPTY_GALLERY, assets: new Map(), media: [] }
+  if (projectId === null) return { result: EMPTY_NO_CARDS, assets: new Map(), media: [] }
 
   const wanted = new Set<string>(payload.roles)
   const rows = (await listProjectMedia(client, projectId))
@@ -483,12 +509,54 @@ async function loadProjectGallery(
       : [{ asset, caption: row.caption, altOverride: row.alt_override }]
   })
 
-  return { result: media.length === 0 ? EMPTY_GALLERY : OK_GALLERY, assets, media }
+  return { result: media.length === 0 ? EMPTY_NO_CARDS : OK_NO_CARDS, assets, media }
 }
 
-/** A gallery has no cards; `reason` still travels, so `data-empty-reason` reads the same as elsewhere. */
-const EMPTY_GALLERY: SelectorResult = { cards: [], reason: 'EMPTY' }
-const OK_GALLERY: SelectorResult = { cards: [], reason: 'OK' }
+// --- Phase 45: the faq-list query -------------------------------------------------------------------
+
+const FAQ_BLOCK = 'faq-list'
+
+/**
+ * The questions a `faq-list` band draws.
+ *
+ * NOT A SELECTOR, for the reason the gallery is not one: a selector returns entity CARDS, and a
+ * question and its answer is neither an entity with a page of its own nor a thing with an `href`.
+ * Squeezing it into `cards` with an empty link would make every consumer of `cards` handle a case
+ * that is not a card.
+ *
+ * A CATEGORY THAT MATCHES NOTHING RETURNS NOTHING, never every row. `listFaqs` filters server-side
+ * when a category is given; an editor who mistypes one should see an empty band and go and fix it,
+ * rather than silently publish the whole table under the wrong heading.
+ *
+ * RLS DECIDES WHAT COMES BACK. The read goes through the caller's client — a visitor's anon session
+ * on the public site, a staff session in the Studio preview — so the published/draft split is the
+ * database's answer rather than a filter written here and forgotten in the next renderer.
+ *
+ * A FAILED READ IS AN EMPTY BAND, NOT A DEAD PAGE, which is this module's rule for every reference:
+ * `/faq` losing its questions is bad and `/faq` returning 500 is worse.
+ */
+async function loadFaqList(
+  client: SelectorClient,
+  section: PageSection,
+): Promise<SectionReference> {
+  const payload = parseBlockPayload(faqListBlock, section.payload)
+  const category = payload.category.trim()
+  const faqs = await listFaqs(client, category === '' ? undefined : category).catch(() => [])
+
+  return {
+    result: faqs.length === 0 ? EMPTY_NO_CARDS : OK_NO_CARDS,
+    assets: new Map(),
+    faqs,
+  }
+}
+
+/**
+ * Neither a gallery nor an FAQ list has cards; `reason` still travels, so `data-empty-reason` reads
+ * the same on those bands as on every selector-backed one. Named for what they are rather than for
+ * the first block that needed them — Phase 45 added the second user.
+ */
+const EMPTY_NO_CARDS: SelectorResult = { cards: [], reason: 'EMPTY' }
+const OK_NO_CARDS: SelectorResult = { cards: [], reason: 'OK' }
 
 // --- Phase 21: the three-d-resin model slot ---------------------------------------------------------
 
@@ -507,12 +575,12 @@ async function loadModelSlot(
   client: SelectorClient,
   section: PageSection,
 ): Promise<SectionReference> {
-  const empty: SectionReference = { result: EMPTY_GALLERY, assets: new Map(), model: null }
+  const empty: SectionReference = { result: EMPTY_NO_CARDS, assets: new Map(), model: null }
   const modelId = parseBlockPayload(threeDResinBlock, section.payload).model_media_id
   if (modelId === null) return empty
   if (!(await isEnabled('three_d_viewer'))) return empty
   const model = await loadPublicModel(client, modelId)
   if (model === null) return empty
   const materials = await listMaterials(client)
-  return { ...empty, result: OK_GALLERY, model: { model, materials } }
+  return { ...empty, result: OK_NO_CARDS, model: { model, materials } }
 }

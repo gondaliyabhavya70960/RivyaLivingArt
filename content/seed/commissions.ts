@@ -44,6 +44,13 @@ import type { SeedModule, SeedRecord } from './types'
 const PAGE = 'page:custom-commissions'
 
 /** §15's nine starting points, in its order. Editable in Studio, as §15 requires. */
+/** A sentence reduced to a stable identifier: lower case, non-alphanumerics collapsed to `_`. */
+const slugKey = (text: string): string =>
+  text
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_|_$/g, '')
+
 const STARTING_POINTS = [
   'Dining / Statement Table',
   'Coffee / Centre Table',
@@ -135,11 +142,18 @@ type TemplateField = {
 }
 
 /** SEED §15's nine starting points, as the one choice list in the whole phase. */
+/**
+ * A §15 list entry as a `checklist` item.
+ *
+ * THE TEXT IS UNCHANGED AND THE KEY IS DERIVED FROM IT. `entryArrays` on the block means every item
+ * is separately withholdable, and `lib/cms/entry-visibility.ts` requires a key that survives
+ * reordering — an index does not. Deriving it from the sentence keeps the seed to one statement of
+ * each line rather than two, and `tests/unit/entry-verification.test.ts` asserts uniqueness.
+ */
+const checklistItem = (text: string) => ({ key: slugKey(text), text })
+
 const PROJECT_TYPE_OPTIONS = STARTING_POINTS.map((label) => ({
-  value: label
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '_')
-    .replace(/^_|_$/g, ''),
+  value: slugKey(label),
   label,
 }))
 
@@ -439,7 +453,7 @@ export const commissionsSeed: SeedModule = {
       fact: 'BRAND_COPY',
       // The policy table: starting points imply an offered service scope.
       verify: true,
-      payload: { items: STARTING_POINTS },
+      payload: { items: STARTING_POINTS.map(checklistItem) },
     }),
 
     section({
@@ -451,7 +465,7 @@ export const commissionsSeed: SeedModule = {
       fact: 'BRAND_COPY',
       // The policy table names "what to share" alongside the starting points.
       verify: true,
-      payload: { items: BRIEF_FIELDS },
+      payload: { items: BRIEF_FIELDS.map(checklistItem) },
     }),
 
     section({
@@ -464,9 +478,12 @@ export const commissionsSeed: SeedModule = {
       // §15: "Exact workflow editable and owner-verifiable."
       verify: true,
       payload: {
-        numbered: true,
         steps: [
-          { title: 'Enquiry', body: 'Share the basic idea, dimensions and references.' },
+          {
+            key: 'enquiry',
+            title: 'Enquiry',
+            body: 'Share the basic idea, dimensions and references.',
+          },
           {
             key: 'discussion',
             title: 'Discussion',

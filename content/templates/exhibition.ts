@@ -4,14 +4,14 @@ import { blockModule } from '@/lib/cms/registry'
 /**
  * The exhibition page template — FEAT §8's element order, as blocks.
  *
- * TEN ELEMENTS, NOT ELEVEN, AND THE MISSING ONE IS RECORDED RATHER THAN QUIETLY DROPPED. FEAT §8
- * element 9 is "Editorial copy", which the phase document maps to `rich-text` — one of the eight
- * blocks that is declared and explicitly unbuilt: no renderer, nothing on the public site, and not
- * offered in the Studio picker. Inserting it here would give an editor a band that renders nothing,
- * which is worse than its absence: they would apply the template, count ten bands, and have no way
- * to tell that the eleventh is missing rather than empty. Amendment A14 records the decision and
- * why building a rich-text renderer is not this phase's work. Until then `statement` carries
- * editorial copy, and it is already element 2.
+ * ELEVEN ELEMENTS AGAIN, BECAUSE THE REASON THERE WERE TEN HAS GONE. FEAT §8 element 9 is
+ * "Editorial copy", which the phase document maps to `rich-text`. Amendment A14 left it out with a
+ * precise reason: the block was PLANNED, so inserting it would have given an editor a band that
+ * renders nothing — worse than its absence, because they would apply the template, count ten bands
+ * and have no way to tell that the eleventh was missing rather than empty. Phase 45 built the
+ * renderer (amendment A45), so the band renders, and the element returns to the position FEAT §8
+ * gives it. Nothing else about A14's reasoning is disturbed: what Phase 45 built is a PLAIN-TEXT
+ * prose band, not the markup block with a sanitiser and a rich editor that A14 declined.
  *
  * `signature-media` APPEARS TWICE, which is not a mistake in the list. FEAT §8 asks for a signature
  * image at 3 and a film at 6; they are the same band with the same shape and the same caption, and
@@ -20,7 +20,7 @@ import { blockModule } from '@/lib/cms/registry'
  * THE TEMPLATE WRITES NO COPY. Every entry carries the block's own defaults and nothing else — no
  * heading, no body, no eyebrow. A template that pre-filled "A new collection from Rivya" would be
  * marketing copy written by this repository rather than by the owner, which is the thing D2 and
- * D10 both forbid from opposite directions. What an editor gets is ten empty bands in the right
+ * D10 both forbid from opposite directions. What an editor gets is eleven empty bands in the right
  * order, which is what a starting point is.
  *
  * EVERY BLOCK IS OPTIONAL AND REMOVABLE. The phase document says so and it is worth repeating here,
@@ -47,7 +47,7 @@ export const EXHIBITION_TEMPLATE: readonly ExhibitionElement[] = [
   { element: 6, label: 'Video', blockType: 'signature-media', payload: { is_video: true } },
   { element: 7, label: 'Portfolio reference', blockType: 'portfolio-strip' },
   { element: 8, label: '3D element', blockType: 'three-d-resin' },
-  // Element 9, "Editorial copy", is `rich-text` and is PLANNED. See the header and amendment A14.
+  { element: 9, label: 'Editorial copy', blockType: 'rich-text' },
   { element: 10, label: 'Related journal stories', blockType: 'journal-strip' },
   { element: 11, label: 'Commission CTA', blockType: 'commission-cta' },
 ]

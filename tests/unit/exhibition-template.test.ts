@@ -31,14 +31,21 @@ describe('the exhibition template', () => {
   })
 
   /**
-   * Element 9 is "Editorial copy" → `rich-text`, which is PLANNED. Amendment A14 records the
-   * decision. This asserts the absence deliberately: a future edit that "completes" the template by
-   * adding it back would pass the ordering test above and fail here, next to the reason.
+   * Element 9 is "Editorial copy" → `rich-text`.
+   *
+   * THIS TEST USED TO ASSERT ITS ABSENCE, and it was written to make exactly this moment
+   * deliberate: "a future edit that 'completes' the template by adding it back would pass the
+   * ordering test above and fail here, next to the reason." The reason was that `rich-text` was
+   * PLANNED, so the band would have rendered nothing and an editor applying the template would have
+   * counted ten bands with no way to tell the eleventh was missing rather than empty. Phase 45 built
+   * the renderer (amendment A45), so the reason is gone and the element is back — and the assertion
+   * is inverted rather than deleted, so the two halves stay tied together: the day `rich-text` loses
+   * its renderer, this fails beside the element that depends on it.
    */
-  it('omits element 9, because rich-text has no renderer', () => {
-    expect(EXHIBITION_TEMPLATE.map((entry) => entry.element)).not.toContain(9)
-    expect(EXHIBITION_TEMPLATE).toHaveLength(10)
-    expect(SECTION_RENDERERS['rich-text']).toBeNull()
+  it('includes element 9, because rich-text has a renderer', () => {
+    expect(EXHIBITION_TEMPLATE.map((entry) => entry.element)).toContain(9)
+    expect(EXHIBITION_TEMPLATE).toHaveLength(11)
+    expect(SECTION_RENDERERS['rich-text']).not.toBeNull()
   })
 
   it('uses signature-media twice — once as a still, once as a film', () => {

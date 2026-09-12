@@ -1,12 +1,11 @@
 import * as React from 'react'
 
+import { ContactChannels } from '@/components/patterns/ContactChannels'
 import { NavLink } from '@/components/patterns/NavLink'
 import { Container } from '@/components/primitives/Container'
 import { Stack } from '@/components/primitives/Stack'
 import { siteString } from '@/lib/cms/strings'
 import type { SiteChrome } from '@/lib/site/chrome'
-import type { ContactDetails } from '@/lib/site/contact-details'
-import { buildDirectContactUrl } from '@/lib/whatsapp'
 import { cn } from '@/lib/ui/cn'
 
 /**
@@ -22,84 +21,12 @@ import { cn } from '@/lib/ui/cn'
  * `chrome.contact` is null and the column is a heading with nothing beneath it. A wrong number in
  * the footer of every page is paid for by a customer who cannot reach anyone.
  *
- * THE DETAILS ARE THEIR OWN LINK TEXT. A `tel:` link labelled with the number, and a `mailto:`
- * labelled with the address, need no separate "Phone" and "Email" labels — which is fortunate,
- * because those labels do not exist in `global_content` and inventing them in JSX is what D2
- * forbids. The WhatsApp link is the exception and uses the seeded
- * `ACTION_LABEL.discuss_on_whatsapp`, because a bare number there would not say where it goes.
+ * THE CHANNELS THEMSELVES ARE `ContactChannels` (RC-244), not a list written here. Phase 45 built
+ * the `contact-details` block and it needed the identical rules — how a number becomes a `tel:`
+ * href, which strings must resolve before a WhatsApp link may exist, when a location renders — so
+ * the list moved out to one component both surfaces use. §21 forbids hardcoding the NUMBER in
+ * several components; a second copy of the behaviour is the same mistake one level up.
  */
-
-type ContactColumnProps = {
-  readonly contact: ContactDetails
-  readonly whatsappLabel: string | null
-  readonly greeting: string | null
-}
-
-function ContactLinks({
-  contact,
-  whatsappLabel,
-  greeting,
-}: ContactColumnProps): React.ReactElement {
-  const linkClass = cn(
-    'text-sm text-ink-secondary underline-offset-4',
-    'transition-[color] duration-(--rv-duration-fast) ease-standard',
-    'hover:text-ink hover:underline focus-visible:text-ink',
-  )
-
-  return (
-    <Stack as="ul" gap={2} className="list-none">
-      {contact.phone === null ? null : (
-        <li>
-          {/* `tel:` wants no spaces; the visible text keeps the owner's formatting. */}
-          <a href={`tel:${contact.phone.replace(/\s+/gu, '')}`} className={linkClass}>
-            {contact.phone}
-          </a>
-        </li>
-      )}
-
-      {/*
-       * Both the label and the greeting must resolve. A WhatsApp link with no label is an
-       * anonymous destination, and one with no greeting opens an empty chat with a sentence
-       * nobody wrote — so a missing string means no link rather than an invented one.
-       */}
-      {contact.whatsapp === null || whatsappLabel === null || greeting === null ? null : (
-        <li>
-          <a
-            href={buildDirectContactUrl({ source: 'footer', greeting })}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={linkClass}
-          >
-            {whatsappLabel}
-          </a>
-        </li>
-      )}
-
-      {contact.email === null ? null : (
-        <li>
-          <a href={`mailto:${contact.email}`} className={linkClass}>
-            {contact.email}
-          </a>
-        </li>
-      )}
-
-      {/* §21 refers to a Google Maps destination and supplies none, so both halves are null and
-          this renders nothing. A label with no link would be a location claim with no address. */}
-      {contact.locationUrl === null ? null : (
-        <li>
-          <a
-            href={contact.locationUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={linkClass}
-          >
-            {contact.locationLabel ?? contact.locationUrl}
-          </a>
-        </li>
-      )}
-    </Stack>
-  )
-}
 
 export type SiteFooterProps = {
   readonly chrome: SiteChrome
@@ -156,10 +83,13 @@ export function SiteFooter({ chrome }: SiteFooterProps): React.ReactElement {
 
                   {column.id === contactColumnId && contact !== null ? (
                     <div className="mt-3">
-                      <ContactLinks
+                      <ContactChannels
                         contact={contact}
                         whatsappLabel={whatsappLabel}
                         greeting={greeting}
+                        source="footer"
+                        /* A20: only a VERIFIED number is dialled; otherwise the environment's. */
+                        whatsappNumber={chrome.contactVerified ? contact.whatsapp : null}
                       />
                     </div>
                   ) : (
