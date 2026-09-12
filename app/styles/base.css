@@ -76,7 +76,7 @@ button {
 
 a {
   color: inherit;
-  text-decoration-thickness: 1px;
+  text-decoration-thickness: var(--rv-border-hairline);
   text-underline-offset: 0.18em;
 }
 

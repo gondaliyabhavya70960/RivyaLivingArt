@@ -14,6 +14,82 @@ owner_verification: NOT_REQUIRED
 
 ---
 
+## Most recent work — Phase 45's deferral list, worked through (2026-09-12)
+
+**What was asked.** A complete redesign of the public site and the Studio, content and colour
+unchanged. Phase 45 had already been run and recorded: `DESIGN_SYSTEM.md` §19 held four measured
+`FAIL` verdicts and `ROADMAP.md` a deferral list. This is that list.
+
+**What shipped, in five pull requests** (#62–#66, all on `claude/youthful-edison-d0s86n`):
+
+- **The hero floor.** `--rv-hero-min-h: 76svh` applied through a new `AspectBox` `minBlockSize` prop
+  — a floor, not a height, so the aspect ratio still drives the box. Measured at the eight QA widths
+  on `/` and `/large-format`: `91·69·61·49·37·91·82·76%` → `91·76·76·76·76·91·82·76%`.
+- **Section rhythm.** `SECTION_RHYTHM` in `SectionShell`, exhaustive over all 34 block types, four
+  steps. Before, 26 of 28 renderers sat at `lg`.
+- **The reveal layer.** `app/styles/motion.css`, scroll-driven, `@supports`-guarded, **zero islands**.
+  RC-207 `Reveal` had been built in Phase 02 and imported by nothing, because a client component in a
+  renderer is an island on all sixteen CMS routes.
+- **Two islands off every public route.** `HeroMotion` and `MaterialSequence` to `next/dynamic`;
+  budget lowered 7 → 5 so it cannot silently come back.
+- **Conversion.** The §7.10 sticky submit row; `?type=` honoured by `InquiryForm`; typed rail
+  destinations; Studio publish/unpublish for a category (six of seven publish; `3d-resin` is refused
+  by its own trigger, correctly).
+- **Crops.** `cropsForAssets` had no callers anywhere. `loadPageMedia` now resolves them in one query
+  per page and threads them through `MediaSlot` to `MediaImage`'s `src` and **every `srcSet` rung**.
+  Ten media slots bound from the documented family map; unbound slots stay gaps.
+- **The two §45 gates.** `scripts/design/check-token-usage.mjs` (44th gate in `npm run check`) and
+  `scripts/content/classify-copy-diff.ts` (`npm run content:classify-copy`, deliberately not in
+  `check`).
+
+**The local harness, at last.** Postgres 16 + PostgREST 13.0.4 + `scripts/db/local-rest.mjs` +
+`next dev`, which is what made the hero measurement and the a11y sweep real rather than reasoned.
+Three PRs had been verified without it.
+
+**The local e2e run, explained rather than waved off.** Eighteen failures per width project, four
+causes, **none of them the site**: ten need `DATABASE_URL` in Playwright's own environment (the
+enquiry rate-limit reset runs in a `beforeEach` and throws before any page loads), three need
+`NEXT_PUBLIC_SITE_URL` (no origin, so no canonical and no publisher), three are the dev server's
+cache headers and two its module graph. All eighteen pass against `E2E_PRODUCTION=1` with both
+variables set. Written down in `TESTING.md` §8 so the next person does not spend the afternoon on it.
+
+**Two corrections I made to my own reports.** "Four bands stranded at opacity 0" was my probe, not
+the code — `scroll-behavior: smooth` means measuring two frames after `scrollIntoView` measures a
+moving page; every band is 1.00 once it settles, and my `animation-range` change was reverted. And
+the media bindings move **no** visual baseline: the test fixture inserts eleven rows, not the 250
+Higgsfield assets, so every binding resolves to a gap there.
+
+**Files Created** — `app/styles/motion.css` · `scripts/design/check-motion-tokens.mjs` ·
+`scripts/design/check-token-usage.mjs` · `scripts/content/classify-copy-diff.ts` ·
+`scripts/seed/bind-media.ts` · five unit test files
+
+**Files Changed** — `app/styles/tokens.css`, `base.css` · `components/primitives/AspectBox` ·
+`components/sections/{SectionShell,HeroSection,MaterialStorySection}.tsx` ·
+`components/patterns/{InquiryForm,ProductInquiryRail,MediaSlot,MediaImage}` · `lib/cms/media.ts` ·
+`content/seed/media-bindings.ts` · `app/(studio)/studio/(shell)/catalog/actions.ts` ·
+`scripts/site/check-island-budget.mjs` · `package.json` · `CHANGELOG.md` · `PROJECT_STATE.md` ·
+`docs/design/DESIGN_SYSTEM.md` · `docs/ops/TESTING.md` · `docs/project/ROADMAP.md` · this file
+
+**Database Changes** — **None.**
+
+**Tests Run / Results** — `npm run check` (**44 gates**) exit 0 · 203 files, **3 021** unit tests,
+all green · `tests/e2e/a11y/` against the local harness: **89 passed, 0 failed**, 85 skipped
+(unpublished routes) · the six specs that failed locally re-run green under `E2E_PRODUCTION=1` ·
+both new gates negative-tested: a bespoke `cubic-bezier` fails the motion gate, and `padding-block:
+13px`, `font-weight: 600`, `line-height: 1.5` and `z-index: 40` fail the usage gate while
+`calc(var(--rv-space-3) + env(safe-area-inset-bottom, 0px))` and `clamp(var(…), 2vw, var(…))` pass.
+
+**Next exact action** — PR 5 of the plan: the seven `null` renderers in `components/sections/registry.ts`
+(`rich-text`, `quote`, `checklist`, `numbered-steps`, `media-split` are payload-only; `contact-details`
+is a pure function over its own section; `faq-list` needs a `SectionReference.faqs` branch beside the
+`project-gallery` `media` one). Then PR 6, the twelve declared-but-unbuilt layout variants and
+`ContentCarousel` (RC-222).
+
+**Still the owner's** — audit questions 1, 5 and 8 (§19.2); legal copy for `/privacy` and `/terms`;
+the ten FAQ answers; and the two `seo:global.*` sentences the new classifier reports.
+
+---
+
 ## Most recent work — amendment A44, the Vercel dashboard as the owner's login (2026-09-12)
 
 **The owner's decision, taken with the numbers in front of them.** They asked for the admin id and

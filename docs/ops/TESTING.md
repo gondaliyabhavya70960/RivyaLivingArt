@@ -370,6 +370,23 @@ in a production build by design, so its spec skips under the flag with that reas
 local re-run needs `rm -rf .next` first, because `next start` will otherwise serve ISR output
 generated against an earlier state of the fixture.
 
+**A local run needs two variables in PLAYWRIGHT's environment, not just the server's**, and neither
+failure reads as what it is. `DATABASE_URL` is used by the specs themselves:
+`tests/support/inquiry-limiter.ts` runs in the `beforeEach` of `inquiry-flow.spec.ts` and connects
+with `pg`, so without it
+every test in that file — seven on `/contact` and three on the enquiry inbox — fails in about twenty
+milliseconds, before a page is ever requested, and the report reads as a broken conversion path on a
+site that is serving `/contact` at 200. `NEXT_PUBLIC_SITE_URL` is used by the app: `siteOrigin()`
+returns null without it, by design (§Phase 39: a malformed value is null, never a guess), so the page
+renders with no `<link rel="canonical">` and no publisher URL in its structured data, and three SEO
+specs fail on absences that are correct for the environment they were run in.
+
+Together with the paragraph above that is the whole of the local-versus-CI difference, measured on
+2026-09-12: **eighteen failures per width project, four causes, none of them the site.** Ten are
+`DATABASE_URL`, three are `NEXT_PUBLIC_SITE_URL`, three are the dev server's cache headers and two
+are its module graph. `e2e.yml` sets all of it, which is why this has never been red in CI and why it
+is written down here instead.
+
 **`security.yml` runs on a schedule as well as on a push**, because an advisory is published against
 code that was already merged. gitleaks reads the **whole history** rather than the diff: a key
 committed on a branch and removed in the next commit is still fetchable and is still a leak. The

@@ -230,11 +230,18 @@ second is what a shared link shows. Whether they are true is a fact about the bu
 recorded here for the owner rather than edited by us — a sentence is either true, in which case the
 owner clears it, or it is not, in which case the owner rewrites it. Neither is an engineer's call.
 
-The mechanism that should have caught it does not exist yet: `scripts/content/classify-copy-diff.ts`
-is a Phase 45 deliverable and the repository's only fabrication scan today is a five-token regex
-duplicated in `tests/e2e/about.spec.ts` and `process.spec.ts`, both of which skip when the route has
-no published sections — which has been the state of every route, so it has never executed. The
-specification for the classifier is written and deferred with the rest of the script work.
+The mechanism that should have caught it now exists, and it still finds them.
+`scripts/content/classify-copy-diff.ts` (`npm run content:classify-copy`) classifies every sentence
+in `content/seed/**` and reports a claim that is PUBLISHED with `owner_verification: NOT_REQUIRED`.
+Run against the whole corpus it reads 710 sentences, finds 13 capability claims, and fails on
+exactly these two — every other claim is either unpublished or already flagged for the owner. So the
+two rows above are no longer a gap in the tooling; they are the tooling's open finding, waiting on a
+fact only the owner has. It is deliberately **not** in `npm run check` for that reason: a gate that
+must be ignored to work is a gate that gets deleted. It joins `check` the day this section is empty.
+
+Until this landed, the repository's only fabrication scan was a five-token regex duplicated in
+`tests/e2e/about.spec.ts` and `process.spec.ts`, both of which skip when the route has no published
+sections — which has been the state of every route, so it had never executed.
 
 ## Post-launch backlog — there is no Phase 47
 

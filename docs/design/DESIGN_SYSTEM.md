@@ -26,8 +26,20 @@ use, and the behavioural contract of every control that consumes them.
 Three rules govern everything below.
 
 1. **One place.** A value that appears in this document appears in `app/styles/tokens.css` and
-   nowhere else. `scripts/design/check-tokens.mjs` fails the build on a hex literal or a raw `px`
-   spacing value found anywhere under `components/**` or `app/**` outside `app/styles/**`.
+   nowhere else. Three gates hold that, and it is worth knowing which reads what, because for a long
+   time the sentence here claimed more than any of them did:
+   - `scripts/design/check-tokens.mjs` reads **Tailwind classes and colour literals** — a hex,
+     `rgb()` or named colour, and any arbitrary-value class such as `p-[13px]` — under
+     `components/**` and `app/**`, skipping `app/styles/**`.
+   - `scripts/design/check-token-usage.mjs` reads **CSS declarations and `style={{ }}` objects**,
+     `app/styles/**` included, and is keyed on the property rather than the value: `--rv-space-*`
+     governs `padding-block`, so `padding-block: 13px` fails whether or not a token carries 13px.
+     A value-equality check would have told a margin to use a font-size token.
+   - `scripts/design/check-motion-tokens.mjs` holds the declared duration and easing sets (§4.1).
+
+   Between them: a colour anywhere, an arbitrary class, a raw length in a stylesheet or an inline
+   style, and a bespoke curve. A print stylesheet is exempt from the second as a different medium —
+   `@page` takes millimetres — and the exemption is printed on every run rather than kept quiet.
 2. **No copy.** A primitive or pattern takes content as props. No component in this system contains
    a headline, a label or a sentence a visitor reads — that comes from `page_sections`,
    `global_content`, `faqs`, `seo_entries` or an entity column (SEED §1, D2).
