@@ -2453,17 +2453,36 @@ unverified statement of that kind; it now reads `OWNER_VERIFICATION_REQUIRED`, m
 `docs/ops/TESTING.md` and `docs/design/DESIGN_SYSTEM.md` after Phase 45 flipped both, and
 `last_reviewed` is `2026-09-12`.
 
-**10. Two of this phase's deliverables are deliberately not described here, because they had not
-landed when this section was written.** The phase document asks for a **deliberate-omission register**
-in `docs/project/BUSINESS_RULES.md` — thirteen rows, each naming the reason and the architectural seam
-rather than a date or an intention — and a **support model and incident path** in
-`docs/ops/DEPLOYMENT.md`. Both were being written in parallel with this section. What the tree holds
-at this writing: `DEPLOYMENT.md` §10 already states there is no on-call rotation, no paging and no
-third-party APM, RUM or uptime vendor, and lists the five things that do exist (`system_logs`,
-`audit_logs`, Vercel runtime logs, `/studio/system/environment`, and Lighthouse CI history with
-`web_vitals_samples`); `BUSINESS_RULES.md` carries no *Deliberately not built* table yet. Describing
-either as finished would be the failure this phase exists to prevent, so the gap is named and the
-block closes it — the same rule §8 above applies to a screenshot.
+**10. Two deliverables were still being written when this section was drafted, and are recorded here
+as they finally landed.** The paragraph this replaces said they had not arrived and described what the
+tree held instead, because describing them as finished would have been the failure this phase exists to
+prevent. Both have arrived, so it is updated rather than left standing — a record that is wrong about
+its own subject is the same defect in miniature.
+
+- **The deliberate-omission register** is `BUSINESS_RULES.md` §N: thirteen capabilities, eight new
+  rules `BR-N1`…`N8` for the eight that had none, and the five that restate `BR-A1`, `BR-A2`, `BR-A3`
+  and `BR-C3` indexed under those rules rather than given a second identifier. Every seam names an
+  artefact that exists — `inquiries` and `inquiry_events` for a commerce layer to consume,
+  `products.price_state` for money as representation, `testimonials.client_consent_state` as the
+  consent-gated equivalent of a review, `inquiry_kind = 'QUOTE'` and `inquiry_status = 'QUOTED'` for a
+  quotation the human still prices. §N.2 confirms the absence against the live schema: 29 exact names,
+  a regex sweep of every schema, and a column sweep for a locale dimension. Two matches, neither one
+  of these.
+- **The support model** is `DEPLOYMENT.md` §10.1 — no SLA, said in as many words, which §10 did not —
+  and §10.2, a nine-step incident path an owner can perform. Its first step is deliberately not "open
+  the Studio": the Studio is served from the same host as the public site, so in the outage of
+  2026-09-12 `/studio/system/environment` was unreachable in exactly the same way, and a first step
+  that assumes the site is reachable cannot detect the only outage this project has had. §12 records
+  the engineer contact as `OWNER_VERIFICATION_REQUIRED` rather than printing a plausible name.
+
+**And §N.2 found what this phase's own claim gates could not.** `BR-A1`, `BR-A2` and `BR-A3` each cited
+a test file as their enforcement and **none of the three is in the repository**; of the 52 test files
+that document cites, seven are absent. So the prohibition on checkout is enforced by review rather than
+by a gate, and the document said otherwise. `scripts/docs/check-doc-paths.mjs` now measures it
+repo-wide — 2890 cited paths, 243 plan-document drift, 25 correctly reported absent, **70 descriptive
+misses** — and `ROADMAP.md`'s post-launch backlog carries E7 and E8. Two of the four corrected
+citations were a different finding from the other two: `tests/unit/rls/phase20.test.ts` does assert
+what `BR-A3` and `BR-B3` describe, so there the rule was enforced and only the citation was wrong.
 
 ### Files Added
 `scripts/docs/audit-docs.mjs` · `scripts/docs/audit-docs.d.mts` ·
