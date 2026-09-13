@@ -45,6 +45,18 @@ existing render → new generation → technical fallback. Regenerating somethin
 manifest is a defect, not a shortcut. Rebuild the manifest with
 `python3 scripts/media/build-higgsfield-manifest.py`.
 
+## Design skills
+
+`.claude/skills/` holds ten first-party skills that encode this repository's own gates, alongside
+five third-party design skills installed with `npx skills add` (real files in `.agents/skills/`).
+
+**The first-party skills win wherever the two disagree, and several disagree sharply.** One of them
+bans Inter, which is our body face; one mandates the opacity-fade scroll entry that amendment A48
+deleted for failing contrast at SERIOUS; two want to write a second design system into the project.
+Read the conflict table in `.claude/skills/README.md` before acting on third-party design advice.
+Their palettes and font pairings are not usable here at all — `tokens.css` is the only file
+permitted a colour literal and the faces are fixed by A46.
+
 ## Phase discipline
 
 A phase is COMPLETE only when all ten conditions in CANONICAL-DECISIONS.md D9 hold. At the end of
