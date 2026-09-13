@@ -1,0 +1,429 @@
+[
+  {
+    "kind": "CANONICAL",
+    "slug": "ocean",
+    "name": "Ocean",
+    "statement_draft": "Deep water as a field, not a printed wave. Blue is structure.",
+    "rule": "Do not mark OWNER_CONFIRMED and do not publish an exhibition page until real pieces exist."
+  },
+  {
+    "kind": "CANONICAL",
+    "slug": "earth",
+    "name": "Earth",
+    "statement_draft": "Mineral browns, timber warmth, resin as ground rather than river.",
+    "rule": "Do not mark OWNER_CONFIRMED and do not publish an exhibition page until real pieces exist."
+  },
+  {
+    "kind": "CANONICAL",
+    "slug": "aurora",
+    "name": "Aurora",
+    "statement_draft": "Quiet colour shift. No novelty glow unless the owner confirms a system.",
+    "rule": "Do not mark OWNER_CONFIRMED and do not publish an exhibition page until real pieces exist."
+  },
+  {
+    "kind": "CANONICAL",
+    "slug": "midnight",
+    "name": "Midnight",
+    "statement_draft": "Dark architecture. Depth must survive a dim dining room.",
+    "rule": "Do not mark OWNER_CONFIRMED and do not publish an exhibition page until real pieces exist."
+  },
+  {
+    "kind": "CANONICAL",
+    "slug": "monsoon",
+    "name": "Monsoon",
+    "statement_draft": "Storm green and wet slate. Indian weather as a palette, not a motif.",
+    "rule": "Do not mark OWNER_CONFIRMED and do not publish an exhibition page until real pieces exist."
+  },
+  {
+    "kind": "CANONICAL",
+    "slug": "geode",
+    "name": "Geode",
+    "statement_draft": "Banding and fracture. Mineral logic without glitter.",
+    "rule": "Do not mark OWNER_CONFIRMED and do not publish an exhibition page until real pieces exist."
+  },
+  {
+    "kind": "CANONICAL",
+    "slug": "forest",
+    "name": "Forest",
+    "statement_draft": "Canopy darks and timber. Green that stays furniture.",
+    "rule": "Do not mark OWNER_CONFIRMED and do not publish an exhibition page until real pieces exist."
+  },
+  {
+    "kind": "CANONICAL",
+    "slug": "clear",
+    "name": "Clear",
+    "statement_draft": "The wood remains the picture. Resin as glass, not garnish.",
+    "rule": "Do not mark OWNER_CONFIRMED and do not publish an exhibition page until real pieces exist."
+  },
+  {
+    "kind": "CANONICAL",
+    "slug": "botanical",
+    "name": "Botanical",
+    "statement_draft": "Living matter only as a brief. No permanence claim.",
+    "rule": "Do not mark OWNER_CONFIRMED and do not publish an exhibition page until real pieces exist."
+  },
+  {
+    "kind": "CANONICAL",
+    "slug": "bespoke",
+    "name": "Bespoke",
+    "statement_draft": "A door into a room-specific piece. Not a SKU.",
+    "rule": "Do not mark OWNER_CONFIRMED and do not publish an exhibition page until real pieces exist."
+  },
+  {
+    "kind": "SERIES IDEA",
+    "slug": "tide-line",
+    "name": "Tide Line",
+    "statement_draft": "Long horizontal pours for dining and conference.",
+    "rule": "Additional series ideas. Do not confirm or publish until pieces exist. The ten canonical concepts stay primary."
+  },
+  {
+    "kind": "SERIES IDEA",
+    "slug": "fault",
+    "name": "Fault",
+    "statement_draft": "Mineral fracture as a drawing across a plane.",
+    "rule": "Additional series ideas. Do not confirm or publish until pieces exist. The ten canonical concepts stay primary."
+  },
+  {
+    "kind": "SERIES IDEA",
+    "slug": "harbour",
+    "name": "Harbour",
+    "statement_draft": "Deep still water, almost no movement.",
+    "rule": "Additional series ideas. Do not confirm or publish until pieces exist. The ten canonical concepts stay primary."
+  },
+  {
+    "kind": "SERIES IDEA",
+    "slug": "ember",
+    "name": "Ember",
+    "statement_draft": "Charcoal timber with a warm interior line.",
+    "rule": "Additional series ideas. Do not confirm or publish until pieces exist. The ten canonical concepts stay primary."
+  },
+  {
+    "kind": "SERIES IDEA",
+    "slug": "veil",
+    "name": "Veil",
+    "statement_draft": "Thin tint over highly figured wood.",
+    "rule": "Additional series ideas. Do not confirm or publish until pieces exist. The ten canonical concepts stay primary."
+  },
+  {
+    "kind": "SERIES IDEA",
+    "slug": "canopy",
+    "name": "Canopy",
+    "statement_draft": "Overhead greens for dining alcoves.",
+    "rule": "Additional series ideas. Do not confirm or publish until pieces exist. The ten canonical concepts stay primary."
+  },
+  {
+    "kind": "SERIES IDEA",
+    "slug": "rift",
+    "name": "Rift",
+    "statement_draft": "A single dark channel, not a novelty river.",
+    "rule": "Additional series ideas. Do not confirm or publish until pieces exist. The ten canonical concepts stay primary."
+  },
+  {
+    "kind": "SERIES IDEA",
+    "slug": "salt",
+    "name": "Salt",
+    "statement_draft": "Pale, mineral, almost white interiors.",
+    "rule": "Additional series ideas. Do not confirm or publish until pieces exist. The ten canonical concepts stay primary."
+  },
+  {
+    "kind": "SERIES IDEA",
+    "slug": "ink",
+    "name": "Ink",
+    "statement_draft": "Calligraphic black fields.",
+    "rule": "Additional series ideas. Do not confirm or publish until pieces exist. The ten canonical concepts stay primary."
+  },
+  {
+    "kind": "SERIES IDEA",
+    "slug": "silt",
+    "name": "Silt",
+    "statement_draft": "River-bottom browns without rustic cliché.",
+    "rule": "Additional series ideas. Do not confirm or publish until pieces exist. The ten canonical concepts stay primary."
+  },
+  {
+    "kind": "SERIES IDEA",
+    "slug": "lagoon",
+    "name": "Lagoon",
+    "statement_draft": "Warm shallow-water greens.",
+    "rule": "Additional series ideas. Do not confirm or publish until pieces exist. The ten canonical concepts stay primary."
+  },
+  {
+    "kind": "SERIES IDEA",
+    "slug": "basalt",
+    "name": "Basalt",
+    "statement_draft": "Stone-dark architecture.",
+    "rule": "Additional series ideas. Do not confirm or publish until pieces exist. The ten canonical concepts stay primary."
+  },
+  {
+    "kind": "SERIES IDEA",
+    "slug": "pollen",
+    "name": "Pollen",
+    "statement_draft": "Botanical colour without embedding claims.",
+    "rule": "Additional series ideas. Do not confirm or publish until pieces exist. The ten canonical concepts stay primary."
+  },
+  {
+    "kind": "SERIES IDEA",
+    "slug": "mirror-pool",
+    "name": "Mirror Pool",
+    "statement_draft": "High gloss only when the room can take it.",
+    "rule": "Additional series ideas. Do not confirm or publish until pieces exist. The ten canonical concepts stay primary."
+  },
+  {
+    "kind": "SERIES IDEA",
+    "slug": "dune",
+    "name": "Dune",
+    "statement_draft": "Desert neutrals and cut edges.",
+    "rule": "Additional series ideas. Do not confirm or publish until pieces exist. The ten canonical concepts stay primary."
+  },
+  {
+    "kind": "SERIES IDEA",
+    "slug": "well",
+    "name": "Well",
+    "statement_draft": "Vertical depth in small objects.",
+    "rule": "Additional series ideas. Do not confirm or publish until pieces exist. The ten canonical concepts stay primary."
+  },
+  {
+    "kind": "SERIES IDEA",
+    "slug": "spine",
+    "name": "Spine",
+    "statement_draft": "Printed rib structures as bases.",
+    "rule": "Additional series ideas. Do not confirm or publish until pieces exist. The ten canonical concepts stay primary."
+  },
+  {
+    "kind": "SERIES IDEA",
+    "slug": "lattice-house",
+    "name": "Lattice House",
+    "statement_draft": "Visible printed bone under resin skin.",
+    "rule": "Additional series ideas. Do not confirm or publish until pieces exist. The ten canonical concepts stay primary."
+  },
+  {
+    "kind": "SERIES IDEA",
+    "slug": "threshold",
+    "name": "Threshold",
+    "statement_draft": "Consoles for halls and lifts.",
+    "rule": "Additional series ideas. Do not confirm or publish until pieces exist. The ten canonical concepts stay primary."
+  },
+  {
+    "kind": "SERIES IDEA",
+    "slug": "board-length",
+    "name": "Board Length",
+    "statement_draft": "Tables that organise a meeting.",
+    "rule": "Additional series ideas. Do not confirm or publish until pieces exist. The ten canonical concepts stay primary."
+  },
+  {
+    "kind": "SERIES IDEA",
+    "slug": "alcove",
+    "name": "Alcove",
+    "statement_draft": "Pieces drawn from a measured niche.",
+    "rule": "Additional series ideas. Do not confirm or publish until pieces exist. The ten canonical concepts stay primary."
+  },
+  {
+    "kind": "SERIES IDEA",
+    "slug": "north-light",
+    "name": "North Light",
+    "statement_draft": "Colours that survive cool daylight.",
+    "rule": "Additional series ideas. Do not confirm or publish until pieces exist. The ten canonical concepts stay primary."
+  },
+  {
+    "kind": "SERIES IDEA",
+    "slug": "lampblack",
+    "name": "Lampblack",
+    "statement_draft": "Soft black, not piano gloss.",
+    "rule": "Additional series ideas. Do not confirm or publish until pieces exist. The ten canonical concepts stay primary."
+  },
+  {
+    "kind": "SERIES IDEA",
+    "slug": "raw-silk",
+    "name": "Raw Silk",
+    "statement_draft": "Champagne veil kept quiet.",
+    "rule": "Additional series ideas. Do not confirm or publish until pieces exist. The ten canonical concepts stay primary."
+  },
+  {
+    "kind": "SERIES IDEA",
+    "slug": "laterite",
+    "name": "Laterite",
+    "statement_draft": "Indian red earth as tint, used sparingly.",
+    "rule": "Additional series ideas. Do not confirm or publish until pieces exist. The ten canonical concepts stay primary."
+  },
+  {
+    "kind": "SERIES IDEA",
+    "slug": "nilgiri",
+    "name": "Nilgiri",
+    "statement_draft": "High-altitude greens.",
+    "rule": "Additional series ideas. Do not confirm or publish until pieces exist. The ten canonical concepts stay primary."
+  },
+  {
+    "kind": "SERIES IDEA",
+    "slug": "arabian-sea",
+    "name": "Arabian Sea",
+    "statement_draft": "Warmer blue than deep ocean.",
+    "rule": "Additional series ideas. Do not confirm or publish until pieces exist. The ten canonical concepts stay primary."
+  },
+  {
+    "kind": "SERIES IDEA",
+    "slug": "yamuna",
+    "name": "Yamuna",
+    "statement_draft": "Silt and silver-grey.",
+    "rule": "Additional series ideas. Do not confirm or publish until pieces exist. The ten canonical concepts stay primary."
+  },
+  {
+    "kind": "SERIES IDEA",
+    "slug": "kutch",
+    "name": "Kutch",
+    "statement_draft": "Salt white and mineral crust.",
+    "rule": "Additional series ideas. Do not confirm or publish until pieces exist. The ten canonical concepts stay primary."
+  },
+  {
+    "kind": "SERIES IDEA",
+    "slug": "gir",
+    "name": "Gir",
+    "statement_draft": "Dry forest browns.",
+    "rule": "Additional series ideas. Do not confirm or publish until pieces exist. The ten canonical concepts stay primary."
+  },
+  {
+    "kind": "SERIES IDEA",
+    "slug": "charter",
+    "name": "Charter",
+    "statement_draft": "Hospitality-grade planes.",
+    "rule": "Additional series ideas. Do not confirm or publish until pieces exist. The ten canonical concepts stay primary."
+  },
+  {
+    "kind": "SERIES IDEA",
+    "slug": "capsule",
+    "name": "Capsule",
+    "statement_draft": "Small gift objects in house colour.",
+    "rule": "Additional series ideas. Do not confirm or publish until pieces exist. The ten canonical concepts stay primary."
+  },
+  {
+    "kind": "SERIES IDEA",
+    "slug": "press",
+    "name": "Press",
+    "statement_draft": "Thin botanical planes.",
+    "rule": "Additional series ideas. Do not confirm or publish until pieces exist. The ten canonical concepts stay primary."
+  },
+  {
+    "kind": "SERIES IDEA",
+    "slug": "volume",
+    "name": "Volume",
+    "statement_draft": "Block preservation pieces.",
+    "rule": "Additional series ideas. Do not confirm or publish until pieces exist. The ten canonical concepts stay primary."
+  },
+  {
+    "kind": "SERIES IDEA",
+    "slug": "cleat",
+    "name": "Cleat",
+    "statement_draft": "Wall systems and hang hardware as design.",
+    "rule": "Additional series ideas. Do not confirm or publish until pieces exist. The ten canonical concepts stay primary."
+  },
+  {
+    "kind": "SERIES IDEA",
+    "slug": "plinth-line",
+    "name": "Plinth Line",
+    "statement_draft": "Objects that sit on architecture.",
+    "rule": "Additional series ideas. Do not confirm or publish until pieces exist. The ten canonical concepts stay primary."
+  },
+  {
+    "kind": "SERIES IDEA",
+    "slug": "span",
+    "name": "Span",
+    "statement_draft": "Long tables and the engineering they need.",
+    "rule": "Additional series ideas. Do not confirm or publish until pieces exist. The ten canonical concepts stay primary."
+  },
+  {
+    "kind": "SERIES IDEA",
+    "slug": "quiet-metal",
+    "name": "Quiet Metal",
+    "statement_draft": "Bases that disappear.",
+    "rule": "Additional series ideas. Do not confirm or publish until pieces exist. The ten canonical concepts stay primary."
+  },
+  {
+    "kind": "SERIES IDEA",
+    "slug": "warm-metal",
+    "name": "Warm Metal",
+    "statement_draft": "Bronze-tone against ocean fields.",
+    "rule": "Additional series ideas. Do not confirm or publish until pieces exist. The ten canonical concepts stay primary."
+  },
+  {
+    "kind": "SERIES IDEA",
+    "slug": "cut-only",
+    "name": "Cut Only",
+    "statement_draft": "No live edge in the series.",
+    "rule": "Additional series ideas. Do not confirm or publish until pieces exist. The ten canonical concepts stay primary."
+  },
+  {
+    "kind": "SERIES IDEA",
+    "slug": "found-edge",
+    "name": "Found Edge",
+    "statement_draft": "Live edge only, slab-led.",
+    "rule": "Additional series ideas. Do not confirm or publish until pieces exist. The ten canonical concepts stay primary."
+  },
+  {
+    "kind": "SERIES IDEA",
+    "slug": "pair-house",
+    "name": "Pair House",
+    "statement_draft": "Table + console as a set.",
+    "rule": "Additional series ideas. Do not confirm or publish until pieces exist. The ten canonical concepts stay primary."
+  },
+  {
+    "kind": "SERIES IDEA",
+    "slug": "triptych-wall",
+    "name": "Triptych Wall",
+    "statement_draft": "Three-panel statement art.",
+    "rule": "Additional series ideas. Do not confirm or publish until pieces exist. The ten canonical concepts stay primary."
+  },
+  {
+    "kind": "SERIES IDEA",
+    "slug": "stair-void",
+    "name": "Stair Void",
+    "statement_draft": "Double-height panels.",
+    "rule": "Additional series ideas. Do not confirm or publish until pieces exist. The ten canonical concepts stay primary."
+  },
+  {
+    "kind": "SERIES IDEA",
+    "slug": "desk-plane",
+    "name": "Desk Plane",
+    "statement_draft": "Work surfaces with cable discipline.",
+    "rule": "Additional series ideas. Do not confirm or publish until pieces exist. The ten canonical concepts stay primary."
+  },
+  {
+    "kind": "SERIES IDEA",
+    "slug": "island-only",
+    "name": "Island Only",
+    "statement_draft": "Tops for kitchens by others.",
+    "rule": "Additional series ideas. Do not confirm or publish until pieces exist. The ten canonical concepts stay primary."
+  },
+  {
+    "kind": "SERIES IDEA",
+    "slug": "night-lobby",
+    "name": "Night Lobby",
+    "statement_draft": "Public-circulation dark fields.",
+    "rule": "Additional series ideas. Do not confirm or publish until pieces exist. The ten canonical concepts stay primary."
+  },
+  {
+    "kind": "SERIES IDEA",
+    "slug": "sample-bar",
+    "name": "Sample Bar",
+    "statement_draft": "Designer borrow-box, not products.",
+    "rule": "Additional series ideas. Do not confirm or publish until pieces exist. The ten canonical concepts stay primary."
+  },
+  {
+    "kind": "SERIES IDEA",
+    "slug": "study-cast",
+    "name": "Study Cast",
+    "statement_draft": "Failed and successful pours as teaching objects.",
+    "rule": "Additional series ideas. Do not confirm or publish until pieces exist. The ten canonical concepts stay primary."
+  },
+  {
+    "kind": "SERIES IDEA",
+    "slug": "edition-one",
+    "name": "Edition One",
+    "statement_draft": "Unique works with gallery captions.",
+    "rule": "Additional series ideas. Do not confirm or publish until pieces exist. The ten canonical concepts stay primary."
+  },
+  {
+    "kind": "SERIES IDEA",
+    "slug": "made-for-room",
+    "name": "Made for Room",
+    "statement_draft": "The tenth idea: no series, only the brief.",
+    "rule": "Additional series ideas. Do not confirm or publish until pieces exist. The ten canonical concepts stay primary."
+  }
+]

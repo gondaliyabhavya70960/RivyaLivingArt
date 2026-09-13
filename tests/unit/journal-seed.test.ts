@@ -52,6 +52,15 @@ const SEED_20 = [
 /** §20 attaches a caution to exactly these three, one-indexed as the specification numbers them. */
 const FLAGGED = [2, 4, 8] as const
 
+/**
+ * The owner's Studio pack (2026-09-13) added forty-nine more ideas, taking the list to fifty-nine.
+ * Six of them name a capability or a promise and carry the flag for it: UV behaviour, heat and
+ * daily use, 3D printing entering a furniture brief, printed bases under cast tops, one-of-one, and
+ * what a preservation brief must never promise.
+ */
+const PACK_FLAGGED = [21, 22, 31, 32, 37, 49] as const
+const TOTAL_ARTICLES = 59
+
 describe('the nine categories are SEED §19, in SEED §19 order', () => {
   it('seeds nine, and no more', () => {
     expect(categories).toHaveLength(SEED_19.length)
@@ -83,10 +92,23 @@ describe('the nine categories are SEED §19, in SEED §19 order', () => {
   })
 })
 
-describe('the ten articles are ideas, not articles', () => {
-  it('seeds ten, with §20 titles in §20 order', () => {
+describe('the articles are ideas, not articles', () => {
+  /**
+   * §20's TEN COME FIRST AND UNCHANGED, which is the half of this that must not drift. The Studio
+   * pack proposed its own wording for them; it was not taken, so `journal-article:01` … `:10` are
+   * still the specification's titles in the specification's order. The pack's forty-nine follow.
+   */
+  it('opens with §20 titles in §20 order, then the pack', () => {
     const inOrder = [...articles].sort((a, b) => a.seedKey.localeCompare(b.seedKey))
-    expect(inOrder.map((record) => record.fields.title)).toEqual([...SEED_20])
+    expect(inOrder).toHaveLength(TOTAL_ARTICLES)
+    expect(inOrder.slice(0, SEED_20.length).map((record) => record.fields.title)).toEqual([
+      ...SEED_20,
+    ])
+  })
+
+  it('gives every article a slug distinct from every other', () => {
+    const slugs = articles.map((record) => record.fields.slug)
+    expect(new Set(slugs).size).toBe(slugs.length)
   })
 
   /** §20, in capitals: "Do NOT publish automatically. Seed as DRAFT." */
@@ -116,12 +138,12 @@ describe('the ten articles are ideas, not articles', () => {
     }
   })
 
-  it('flags exactly §20 articles 02, 04 and 08 for owner verification', () => {
+  it('flags §20 articles 02, 04 and 08, and the six the pack marks', () => {
     const flagged = articles
       .filter((record) => record.fields.owner_verification === 'OWNER_VERIFICATION_REQUIRED')
       .map((record) => Number(record.seedKey.split(':')[1]))
       .sort((a, b) => a - b)
-    expect(flagged).toEqual([...FLAGGED])
+    expect(flagged).toEqual([...FLAGGED, ...PACK_FLAGGED])
   })
 
   it('files every article under one of the nine categories', () => {
@@ -140,10 +162,25 @@ describe('the ten articles are ideas, not articles', () => {
    * than a landscape asset squeezed into a portrait frame. D6 keeps the two slots separate exactly
    * so "there is no portrait asset" has a representation.
    */
-  it('binds a distinct desktop cover to every article', () => {
-    const desktops = articles.map((record) => record.media?.cover_media_id)
+  it('binds a distinct desktop cover to every article that binds one, and none to the rest', () => {
+    /*
+     * THE PACK TOOK THIS FROM "EVERY ARTICLE" TO "EVERY ARTICLE THAT BINDS ONE", and the
+     * distinction is the point rather than a relaxation. `ARTICLE_COVERS` holds ten pairs and
+     * nothing was invented to reach fifty-nine — an article with no entry carries NO `media` key
+     * at all, because the runner throws on an asset id the manifest does not have and the empty
+     * string is not in the manifest. A gap is spelled by absence, never by ''.
+     */
+    const bound = articles.filter((record) => record.media !== undefined)
+    expect(bound).toHaveLength(10)
+
+    const desktops = bound.map((record) => record.media?.cover_media_id)
     expect(desktops.every((id) => typeof id === 'string' && id !== '')).toBe(true)
-    expect(new Set(desktops).size).toBe(articles.length)
+    expect(new Set(desktops).size).toBe(bound.length)
+
+    // And the unbound ones really are unbound — not bound to nothing.
+    for (const record of articles.filter((r) => r.media === undefined)) {
+      expect(record.media).toBeUndefined()
+    }
   })
 
   it('binds no duplicate mobile cover, and never a video', () => {

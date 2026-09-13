@@ -1,0 +1,366 @@
+[
+  {
+    "#": "1",
+    "name": "Deep Ocean Resin",
+    "slug": "deep-ocean-resin",
+    "kind": "resin",
+    "note": "Tinted epoxy field in deep ocean #08283A. Depth over decoration."
+  },
+  {
+    "#": "2",
+    "name": "Obsidian Resin",
+    "slug": "obsidian-resin",
+    "kind": "resin",
+    "note": "Near-black field #080A0E. Use when the room already has light."
+  },
+  {
+    "#": "3",
+    "name": "Sapphire Resin",
+    "slug": "sapphire-resin",
+    "kind": "resin",
+    "note": "Cool sapphire #164E6B. Holds under indoor light."
+  },
+  {
+    "#": "4",
+    "name": "Champagne Veil Resin",
+    "slug": "champagne-veil-resin",
+    "kind": "resin",
+    "note": "Muted champagne gold #B89B63 as a veil, not a glitter."
+  },
+  {
+    "#": "5",
+    "name": "Clear Casting Resin",
+    "slug": "clear-casting-resin",
+    "kind": "resin",
+    "note": "Low-tint clear for figured timber. Yellowing behaviour to be confirmed per batch."
+  },
+  {
+    "#": "6",
+    "name": "Storm Grey Resin",
+    "slug": "storm-grey-resin",
+    "kind": "resin",
+    "note": "Neutral grey for offices that refuse blue."
+  },
+  {
+    "#": "7",
+    "name": "Monsoon Green Resin",
+    "slug": "monsoon-green-resin",
+    "kind": "resin",
+    "note": "Deep green with low metallic. Forest and monsoon collections."
+  },
+  {
+    "#": "8",
+    "name": "Mineral Amber Resin",
+    "slug": "mineral-amber-resin",
+    "kind": "resin",
+    "note": "Warm amber for earth and geode pairings."
+  },
+  {
+    "#": "9",
+    "name": "Aurora Shift Resin",
+    "slug": "aurora-shift-resin",
+    "kind": "resin",
+    "note": "Two-tint pour; do not promise a hologram."
+  },
+  {
+    "#": "10",
+    "name": "Smoke Resin",
+    "slug": "smoke-resin",
+    "kind": "resin",
+    "note": "Translucent charcoal for midnight edges."
+  },
+  {
+    "#": "11",
+    "name": "Botanical Embedding Resin",
+    "slug": "botanical-embedding-resin",
+    "kind": "resin",
+    "note": "Clear system chosen for inclusions. No archive-permanence claim."
+  },
+  {
+    "#": "12",
+    "name": "Indian Walnut",
+    "slug": "indian-walnut",
+    "kind": "wood",
+    "note": "Dark furniture walnut when available. Grain is the drawing."
+  },
+  {
+    "#": "13",
+    "name": "American Black Walnut",
+    "slug": "american-black-walnut",
+    "kind": "wood",
+    "note": "Imported walnut only when the brief needs it and supply exists."
+  },
+  {
+    "#": "14",
+    "name": "White Oak",
+    "slug": "white-oak",
+    "kind": "wood",
+    "note": "Pale, quiet grain under clear or smoke resin."
+  },
+  {
+    "#": "15",
+    "name": "Teak",
+    "slug": "teak",
+    "kind": "wood",
+    "note": "Indian teak for warmth and outdoor-adjacent conversations."
+  },
+  {
+    "#": "16",
+    "name": "Sheesham / Indian Rosewood",
+    "slug": "sheesham-indian-rosewood",
+    "kind": "wood",
+    "note": "Local character; confirm legality and supply."
+  },
+  {
+    "#": "17",
+    "name": "Ash",
+    "slug": "ash",
+    "kind": "wood",
+    "note": "Open grain; takes tint in the pores."
+  },
+  {
+    "#": "18",
+    "name": "Mango",
+    "slug": "mango",
+    "kind": "wood",
+    "note": "Local, lively grain; better in secondary objects than banquet tables."
+  },
+  {
+    "#": "19",
+    "name": "Reclaimed Teak",
+    "slug": "reclaimed-teak",
+    "kind": "wood",
+    "note": "Character and holes; resin as repair and drawing."
+  },
+  {
+    "#": "20",
+    "name": "Burned / Charred Oak",
+    "slug": "burned-charred-oak",
+    "kind": "wood",
+    "note": "Black surface against a quiet resin line."
+  },
+  {
+    "#": "21",
+    "name": "Live-Edge Slab",
+    "slug": "live-edge-slab",
+    "kind": "wood",
+    "note": "Edge as found. Slab is unique; photograph the actual board."
+  },
+  {
+    "#": "22",
+    "name": "Cut-Edge Board",
+    "slug": "cut-edge-board",
+    "kind": "wood",
+    "note": "Planed edge when the room wants architecture over rustic."
+  },
+  {
+    "#": "23",
+    "name": "Blackened Steel Base",
+    "slug": "blackened-steel-base",
+    "kind": "metal",
+    "note": "Quiet geometry. Powder or oil finish to be specified."
+  },
+  {
+    "#": "24",
+    "name": "Mild Steel Welded Frame",
+    "slug": "mild-steel-welded-frame",
+    "kind": "metal",
+    "note": "For long spans. Engineer the deflection."
+  },
+  {
+    "#": "25",
+    "name": "Stainless Base",
+    "slug": "stainless-base",
+    "kind": "metal",
+    "note": "Hospitality and wet-adjacent rooms."
+  },
+  {
+    "#": "26",
+    "name": "Bronze-Tone Base",
+    "slug": "bronze-tone-base",
+    "kind": "metal",
+    "note": "Warm metal against ocean and earth fields."
+  },
+  {
+    "#": "27",
+    "name": "Brass Inlay",
+    "slug": "brass-inlay",
+    "kind": "metal",
+    "note": "Thin line, not a theme."
+  },
+  {
+    "#": "28",
+    "name": "Aluminium Printed Lattice",
+    "slug": "aluminium-printed-lattice",
+    "kind": "metal",
+    "note": "3D-printed structure. Capability flagged."
+  },
+  {
+    "#": "29",
+    "name": "Stone Plinth",
+    "slug": "stone-plinth",
+    "kind": "stone",
+    "note": "Separate plinth; resin does not pretend to be marble."
+  },
+  {
+    "#": "30",
+    "name": "Kota or Local Stone",
+    "slug": "kota-or-local-stone",
+    "kind": "stone",
+    "note": "Indian stone as a quiet base."
+  },
+  {
+    "#": "31",
+    "name": "Marble Sample Pairing",
+    "slug": "marble-sample-pairing",
+    "kind": "stone",
+    "note": "Pairing only; Rivya does not fabricate marble tops by default."
+  },
+  {
+    "#": "32",
+    "name": "Matte Finish",
+    "slug": "matte-finish",
+    "kind": "finish",
+    "note": "Low sheen; fingerprints recede; colour deepens."
+  },
+  {
+    "#": "33",
+    "name": "Satin Finish",
+    "slug": "satin-finish",
+    "kind": "finish",
+    "note": "Default conversation for dining."
+  },
+  {
+    "#": "34",
+    "name": "Gloss Finish",
+    "slug": "gloss-finish",
+    "kind": "finish",
+    "note": "Maximum depth; shows every mark."
+  },
+  {
+    "#": "35",
+    "name": "Oil on Wood Only",
+    "slug": "oil-on-wood-only",
+    "kind": "finish",
+    "note": "Timber wings oiled; resin field separate."
+  },
+  {
+    "#": "36",
+    "name": "Soft-Touch Topcoat",
+    "slug": "soft-touch-topcoat",
+    "kind": "finish",
+    "note": "If specified; confirm chemical system."
+  },
+  {
+    "#": "37",
+    "name": "UV-Considered System",
+    "slug": "uv-considered-system",
+    "kind": "finish",
+    "note": "Name the actual product after owner review."
+  },
+  {
+    "#": "38",
+    "name": "Felt Glides",
+    "slug": "felt-glides",
+    "kind": "hardware",
+    "note": "Floors matter. Always part of a large piece."
+  },
+  {
+    "#": "39",
+    "name": "Leveling Feet",
+    "slug": "leveling-feet",
+    "kind": "hardware",
+    "note": "Required on long tables."
+  },
+  {
+    "#": "40",
+    "name": "Cable Grommet",
+    "slug": "cable-grommet",
+    "kind": "hardware",
+    "note": "Conference and desk pieces only."
+  },
+  {
+    "#": "41",
+    "name": "Hidden Drawer Runner",
+    "slug": "hidden-drawer-runner",
+    "kind": "hardware",
+    "note": "Consoles and desks."
+  },
+  {
+    "#": "42",
+    "name": "Wall Hang Track",
+    "slug": "wall-hang-track",
+    "kind": "hardware",
+    "note": "Statement panels; specify load."
+  },
+  {
+    "#": "43",
+    "name": "French Cleat",
+    "slug": "french-cleat",
+    "kind": "hardware",
+    "note": "Alternative hang for heavy panels."
+  },
+  {
+    "#": "44",
+    "name": "Cotton Wrap for Crating",
+    "slug": "cotton-wrap-for-crating",
+    "kind": "packaging",
+    "note": "Soft wrap before crate."
+  },
+  {
+    "#": "45",
+    "name": "Plywood Crate",
+    "slug": "plywood-crate",
+    "kind": "packaging",
+    "note": "Export and long road journeys."
+  },
+  {
+    "#": "46",
+    "name": "Silica in Crate",
+    "slug": "silica-in-crate",
+    "kind": "packaging",
+    "note": "Monsoon movement."
+  },
+  {
+    "#": "47",
+    "name": "Sample Chip — Ocean",
+    "slug": "sample-chip-ocean",
+    "kind": "sample",
+    "note": "Client chip, not a product."
+  },
+  {
+    "#": "48",
+    "name": "Sample Chip — Midnight",
+    "slug": "sample-chip-midnight",
+    "kind": "sample",
+    "note": "Client chip, not a product."
+  },
+  {
+    "#": "49",
+    "name": "Sample Chip — Clear on Walnut",
+    "slug": "sample-chip-clear-on-walnut",
+    "kind": "sample",
+    "note": "Client chip, not a product."
+  },
+  {
+    "#": "50",
+    "name": "Sample Chip — Geode Band",
+    "slug": "sample-chip-geode-band",
+    "kind": "sample",
+    "note": "Client chip, not a product."
+  },
+  {
+    "#": "51",
+    "name": "Printed Test Coupon",
+    "slug": "printed-test-coupon",
+    "kind": "sample",
+    "note": "3D + resin coupon for a designer meeting."
+  },
+  {
+    "#": "52",
+    "name": "Finish Board",
+    "slug": "finish-board",
+    "kind": "sample",
+    "note": "Matte / satin / gloss on one bar."
+  }
+]

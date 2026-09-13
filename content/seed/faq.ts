@@ -2,20 +2,21 @@ import { section } from './section'
 import type { SeedModule, SeedRecord } from './types'
 
 /**
- * The ten FAQ entries, SEED §23.
+ * The FAQ entries — SEED §23's original ten, and forty-five more from the owner's Studio content
+ * pack (2026-09-13).
  *
- * ALL TEN ARE `OWNER_VERIFICATION_REQUIRED`, and the phase document's policy table says why in one
- * line: "they touch process, timelines, delivery and customization capability". That is true even
- * of the ones that sound like policy rather than capability — FAQ 05 says Rivya does not process
- * online payments, which is a statement about how the business operates and is only safe to
- * publish because the owner has confirmed it is still true.
+ * ALL FIFTY-FIVE ARE `OWNER_VERIFICATION_REQUIRED` AND ALL ARE `DRAFT`, which is two gates rather
+ * than one. The phase document's policy table gives the reason for the first in a line: FAQ answers
+ * "touch process, timelines, delivery and customization capability". That is true even of the ones
+ * that sound like policy rather than capability — 05 says Rivya does not process online payments,
+ * which is a statement about how the business operates and is only safe to publish because the
+ * owner has confirmed it is still true. `faqs_verified_before_publish` (migration 0050) enforces
+ * it in the database, so an unverified answer cannot reach the public site even by accident.
  *
- * §23 marks two of them itself (01 and 07). The other eight are flagged on the policy table's
- * reading rather than the specification's, which is the stricter of the two — and for a page whose
- * entire job is answering "can you do X", stricter is right. An unflagged FAQ answer is a promise
- * the site makes on Rivya's behalf.
- *
- * THREE ANSWERS RESTATE FIXED BUSINESS RULES, and they are worth reading against D1:
+ * THE FIRST TEN ARE UNCHANGED, DELIBERATELY, AND THE PACK PROPOSED OTHERWISE. The content pack
+ * supplies its own wording for 01-10 — tightened, a little shorter, and different in every one but
+ * 06. It was not taken. These ten are SEED §23 verbatim, and three of them restate fixed business
+ * rules that a paraphrase erodes:
  *
  *   04 describes the order path — enquiry recorded, then WhatsApp. That is the rule, not a
  *      simplification: the inquiry is persisted BEFORE any redirect, and never redirects if the
@@ -24,11 +25,23 @@ import type { SeedModule, SeedRecord } from './types'
  *      payment gateway are fixed decisions.
  *   06 says there are no customer accounts. Same.
  *
- * They are seeded exactly as §23 words them because those three sentences are how a visitor finds
- * out, and rewording them is how the site drifts away from what it actually does.
+ * Rewording those is how the site drifts away from what it actually does, and the owner can edit
+ * any of them in Studio — which is the right place for a wording change, because the runner stops
+ * owning a row an editor has touched.
+ *
+ * `caution` NEVER REACHES THE DATABASE. Three of the pack's answers ended with an instruction to
+ * whoever verifies them rather than a sentence for a visitor — "Do not publish a blanket insurance
+ * claim", and two like it. `faqs` has no notes column, so leaving them in `answer` would have put
+ * operator shorthand in the one field a visitor reads. They are split out here as a code-level
+ * annotation instead: present for the person doing the verification, absent from the row.
+ *
+ * WHAT THE PACK DOES NOT DO. It states no lead time in days or weeks, no UV or yellowing warranty,
+ * no food-safe claim, no edition size, and no delivered commission — every answer that touches one
+ * of those says the answer depends on the project, or declines it outright. That is D10 holding at
+ * the point copy is written rather than at review.
  */
 
-const FAQS: readonly { question: string; answer: string }[] = [
+const FAQS: readonly { question: string; answer: string; caution?: string }[] = [
   {
     question: 'Do you make custom-size furniture?',
     answer:
@@ -78,6 +91,221 @@ const FAQS: readonly { question: string; answer: string }[] = [
     question: 'How do custom commissions begin?',
     answer:
       'Start by sharing the type of object, approximate dimensions, intended use, location and any visual references you already have. Rivya will continue the discussion through WhatsApp.',
+  },
+  {
+    question: 'Where is the studio based?',
+    answer:
+      'Rivya works from India. Exact visit arrangements are confirmed directly; do not publish a walk-in address until the owner sets one in Site Settings.',
+  },
+  {
+    question: 'Do you ship outside India?',
+    answer:
+      'Export can be discussed per project. Crating, routes and Incoterms are agreed on WhatsApp — not as a site-wide promise.',
+  },
+  {
+    question: 'What is a typical lead time?',
+    answer:
+      'Lead time depends on scale, cure, finish and site access. Rivya will give a range only after the brief is clear.',
+  },
+  {
+    question: 'Can I visit to see samples?',
+    answer:
+      'Material samples and studio visits can be arranged when available. Ask on WhatsApp rather than assuming a public showroom.',
+  },
+  {
+    question: 'Do you work with interior designers?',
+    answer:
+      'Yes. Designers can share drawings, finishes and room photographs. The enquiry is still recorded against the project, not a designer login.',
+  },
+  {
+    question: 'Do you work with architects?',
+    answer:
+      'Yes. Built-in and large-format pieces need a site measure and a clear owner of the drawing set.',
+  },
+  {
+    question: 'Can you match an existing stone or fabric?',
+    answer: 'Bring or send physical samples. Screens are not a colour contract.',
+  },
+  {
+    question: 'Do you make outdoor furniture?',
+    answer:
+      'Most work is conceived for interiors. Covered outdoor use is a separate conversation about UV and climate.',
+  },
+  {
+    question: 'Is the surface heat resistant?',
+    answer:
+      'Dining use is expected with ordinary care. Hot cookware should not sit directly on resin. Confirm any hospitality specification in writing.',
+  },
+  {
+    question: 'Is the surface food safe?',
+    answer: 'Do not assume food contact. Serving pieces need a separate review before any claim.',
+  },
+  {
+    question: 'How do I clean a resin table?',
+    answer:
+      'Dust with a soft cloth. Avoid abrasives and harsh solvents. The owner should confirm any named cleaner before it is published.',
+  },
+  {
+    question: 'Will the resin yellow?',
+    answer:
+      'UV behaviour depends on resin system, tint and light. Ask for the current system rather than reading a generic promise on the site.',
+  },
+  {
+    question: 'Can you embed flowers or personal objects?',
+    answer:
+      'Preservation work is possible as a brief. Moisture, size and clarity limits are discussed per object. No permanence claim.',
+  },
+  {
+    question: 'Can you reproduce a river-table image I saw online?',
+    answer:
+      "References help direction. Rivya does not copy another maker's piece. The pour and the timber will not match a photograph.",
+  },
+  {
+    question: 'Do you use live-edge slabs?',
+    answer:
+      'Live edge and cut edge are both possible. Availability of a particular slab is never guaranteed from a website picture.',
+  },
+  {
+    question: 'Which woods do you work with?',
+    answer:
+      'Hardwoods such as walnut, oak, teak and local species can be discussed. Species is confirmed per project against what can actually be sourced.',
+  },
+  {
+    question: 'Can the base be customized?',
+    answer:
+      'Yes. Metal and timber bases are part of the brief. Structure must suit the span and the floor.',
+  },
+  {
+    question: 'Do you make chairs and sofas?',
+    answer:
+      'Seating is treated as sculptural furniture. Comfort and structure are proven before a seat is offered as a product.',
+  },
+  {
+    question: 'Do you make beds or wardrobes?',
+    answer:
+      'Those typologies are not the centre of the collection. Ask if a related plane or panel is what you need.',
+  },
+  {
+    question: 'Can you make a reception desk?',
+    answer: 'Large-format reception pieces can be discussed from drawings and site photos.',
+  },
+  {
+    question: 'Can you make a conference table?',
+    answer:
+      'Yes, at dining-to-boardroom scale. Cable routes and seating count belong in the first note.',
+  },
+  {
+    question: 'What is large-format at Rivya?',
+    answer:
+      'Pieces whose scale is part of the design — dining, conference, consoles and wall planes that organise a room.',
+  },
+  {
+    question: 'What is 3D resin?',
+    answer:
+      'A direction that combines digital form with resin. Any specific process is confirmed by the owner before it is offered.',
+  },
+  {
+    question: 'Do you 3D-print entire tables?',
+    answer: 'Printed parts may support a piece. A printed dining slab is not a default offering.',
+  },
+  {
+    question: 'Can I buy from stock?',
+    answer:
+      'Most work is made to order. Anything listed as available is marked as such on the product page.',
+  },
+  {
+    question: 'Can I reserve a slab?',
+    answer:
+      'Slab holds, if offered, are agreed directly and expire. The site does not run a reservation cart.',
+  },
+  {
+    question: 'Do you offer installation?',
+    answer:
+      'Installation and placement can be arranged by project and city. It is not an automatic line item.',
+  },
+  {
+    question: 'Who handles damage in transit?',
+    answer: 'Crating and carrier terms are written into the project confirmation.',
+    caution: 'Do not publish a blanket insurance claim.',
+  },
+  {
+    question: 'Can I see work in progress?',
+    answer:
+      'Progress photographs can be shared for a commission when agreed. They are not a public production feed.',
+  },
+  {
+    question: 'Do you take institutional or hotel projects?',
+    answer:
+      'Hospitality and workplace projects are possible when durability and programme are clear from the start.',
+  },
+  {
+    question: 'Can two rooms share a material language?',
+    answer: 'Yes. A house or office can be briefed as a set: table, console, panel.',
+  },
+  {
+    question: 'Do you sell décor and gifts?',
+    answer: 'Smaller objects exist as a secondary line. They are not the centre of the brand.',
+  },
+  {
+    question: 'Can a gift be personalised?',
+    answer:
+      'Monograms, dates and small inclusions can be discussed. Keep the object honest about size.',
+  },
+  {
+    question: 'What if I only have a Pinterest board?',
+    answer: 'Send it. Also send the room. A board without dimensions is only a mood.',
+  },
+  {
+    question: 'Do you sign pieces?',
+    answer: 'Signing and certificates, if offered, are decided per work.',
+    caution: 'Do not publish a signature policy until the owner writes one.',
+  },
+  {
+    question: 'Are pieces numbered editions?',
+    answer:
+      'Only if the owner declares an edition. Unique and made-to-order are the default language.',
+  },
+  {
+    question: 'Can I commission a wall mural in resin?',
+    answer: 'Large wall planes are part of statement art. Access, hanging and weight come first.',
+  },
+  {
+    question: 'Do you restore damaged resin furniture?',
+    answer: 'Repair is a different service from making. Ask with photographs; it may be declined.',
+  },
+  {
+    question: 'What information do you store from an enquiry?',
+    answer:
+      'Name, contact, project notes and any files you upload — enough to continue on WhatsApp. There is no customer account.',
+  },
+  {
+    question: 'How fast do you reply?',
+    answer: 'Rivya aims to continue the conversation promptly on WhatsApp.',
+    caution: 'Do not publish a guaranteed response time unless the owner sets one.',
+  },
+  {
+    question: 'Can I change the brief after work starts?',
+    answer:
+      'Changes are possible until materials are committed. After pour and print, changes become a new conversation.',
+  },
+  {
+    question: 'Do you offer samples of colour?',
+    answer: 'Small colour and finish samples can be discussed. A sample is not the final pour.',
+  },
+  {
+    question: 'Is teak or sheesham available?',
+    answer:
+      'Indian hardwoods can be part of a brief when the project wants them. Confirm species against current supply.',
+  },
+  {
+    question: 'Can you work in Ahmedabad or Surat?',
+    answer:
+      'Site work in Gujarat and across India is discussed per project. Travel is not assumed.',
+  },
+  {
+    question: 'Why is some copy still in draft on the site?',
+    answer:
+      'Rivya publishes only what the owner has verified. Empty or quiet pages are preferred to invented work.',
   },
 ]
 
@@ -148,6 +376,6 @@ const faqListSection = section({
 export const faqSeed: SeedModule = {
   name: 'faq',
   description:
-    'The ten FAQ entries from SEED §23, all flagged for owner verification, and the band that draws them.',
+    "Fifty-five FAQ entries — SEED §23's original ten verbatim plus the owner's Studio pack — every one DRAFT and flagged for owner verification, and the band that draws them.",
   records: [...FAQS.map(faqRecord), faqListSection],
 }

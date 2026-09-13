@@ -202,6 +202,56 @@ Brand and editorial copy may be written; anything asserting business capability 
 
 ## Amendments
 
+**2026-09-13 · A54 — the owner's Studio content pack lands as drafts, and the four places it was
+refused.**
+
+*528 items across nine surfaces, supplied as a workbook. Two surfaces became seed modules; seven
+became read-only JSON a person pastes from. Nothing became inventory.*
+
+**WHAT WENT INTO THE SEED.** `faqs` from ten to **fifty-five**, `journal_articles` from ten to
+**fifty-nine**, against the nine `journal_categories` §19 already fixed — the pack's categories are
+those nine exactly, so nothing was added. Every FAQ is `DRAFT` and
+`OWNER_VERIFICATION_REQUIRED`; every article is `DRAFT` with a title and an `angle_note` and
+**no body and no excerpt**. Verified on a real cluster after `seed:content`: 55/55/55, 59 articles
+with 9 flagged, 9 categories PUBLISHED, **0 excerpts**, 0 published rows of either.
+
+**WHAT WENT INTO `data/studio-pack/` INSTEAD.** Comparators (60), product concepts (76), materials
+(52), portfolio studies (55), commission briefs (55), SEO themes (55) and collections (61) are JSON
+with a README, imported by nothing. They are a person's paste buffer, not a pipeline. Measured
+after the seed: `products` **0**, `research_sources` **0**, `portfolio_projects` **0**,
+`testimonials` **0**, `collections` **10** — the canonical set, not the 61.
+
+**THE FOUR REFUSALS, each of which the pack itself invited.**
+
+*1. The pack's rewording of the original ten FAQs was not taken.* It supplies tighter wording for
+all ten and differs in nine. SEED §23's answers restate fixed business rules — enquiry-then-WhatsApp,
+no online payment, no customer accounts — and `faq.ts` already says rewording them "is how the site
+drifts away from what it actually does". Same for §20's ten journal titles. Where the pack's
+verification flag was LOOSER than the repo's on those ten, the repo's stricter flag won.
+
+*2. Three FAQ answers ended with an instruction to the verifier* — "Do not publish a blanket
+insurance claim", and two like it. `faqs` has no notes column, so leaving them in `answer` would
+have put operator shorthand in the one field a visitor reads. They are split into a `caution` field
+that exists in the module and never reaches the database.
+
+*3. No journal cover was invented.* `ARTICLE_COVERS` still holds ten pairs. The record builder read
+`cover_media_id: cover?.desktop ?? ''`, which was harmless at ten articles and would have bound
+**the empty string on forty-nine** — and `resolveReferences` throws on an id the manifest does not
+carry, by design, to catch a typo. An empty id is not a typo but an absence, and an absence is
+spelled by omitting the key. Fixed here; articles 11-59 carry no `media` at all.
+
+*4. `products` was never a candidate.* `SeedableTable` has no `products` member and cannot grow one
+— SEED §32's rule is expressed as a type the union does not contain, so a module targeting it is
+unwritable. The 76 concepts are `REQUEST_FOR_QUOTE` with dimensions that are brief envelopes, and
+they stay in JSON until the object exists.
+
+**THE CONTENT WAS SCANNED, NOT ASSUMED.** All nine files were searched for lead times in days or
+weeks, UV or yellowing warranties, food-safe claims, edition sizes, certifications, durability
+promises and delivered commissions. Six matches in the FAQs and three in the journal are every one
+a REFUSAL of the claim — "lead time depends on scale, cure, finish and site access", "availability
+is never guaranteed from a website picture", "no warranty language" — which is D10 holding where
+copy is written rather than at review.
+
 **2026-09-13 · A53 — the catalogue's empty well says what kind of object is missing, the mobile
 drawer's rows reach 44px, and the guard that should have measured them does not look at links.**
 
