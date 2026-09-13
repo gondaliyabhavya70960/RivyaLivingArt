@@ -92,6 +92,7 @@ export function FaqListSection({
   section,
   reference,
   livePaths,
+  isFirst,
 }: SectionRenderProps): React.ReactElement | null {
   const faqs = reference?.faqs ?? []
   if (faqs.length === 0 && !hasSectionCopy(section)) return null
@@ -101,7 +102,27 @@ export function FaqListSection({
   return (
     <SectionShell section={section} container="prose">
       <Stack gap={8}>
-        <SectionCopy section={section} size="display-sm" maxWidth="none" />
+        {/*
+         * `level` IS PASSED, AND `/faq` IS THE REASON.
+         *
+         * `SectionCopy` defaults to `level = 2`, which is right for a band beneath a hero and
+         * wrong for the only band on a page. `/faq` has exactly one section, so before this the
+         * route rendered five h2s and NO h1 — `tests/e2e/a11y/headings.spec.ts` had never caught
+         * it because the spec skips an unpublished route and `/faq` 404'd until Phase 45 seeded
+         * this band. The moment it served 200, E2E went red on `main`.
+         *
+         * `content/seed/faq.ts` anticipated the gap but prescribed the wrong remedy — it says
+         * "`SectionList` gives the FIRST section level 1, so typing a heading on this band is
+         * enough". `SectionList` assigns no levels at all; only a renderer that passes one gets
+         * anything but an h2, and this renderer passed none. A heading alone still produced an h2.
+         * Measured, not reasoned: with the heading set and this prop absent, `/faq` served
+         * 5 × h2 and 0 × h1.
+         *
+         * EVERY OTHER BLOCK ON THE SITE OPENS UNDER A `hero`, which is why no other renderer needs
+         * this. `isFirst` is already threaded to every renderer for the eager-loading rule, so the
+         * page's own opener is a fact this component already had.
+         */}
+        <SectionCopy section={section} size="display-sm" maxWidth="none" level={isFirst ? 1 : 2} />
 
         {faqs.length === 0 ? null : byCategory ? (
           <Stack gap={10}>

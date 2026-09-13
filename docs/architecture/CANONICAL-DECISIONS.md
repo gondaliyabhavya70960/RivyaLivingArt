@@ -202,6 +202,73 @@ Brand and editorial copy may be written; anything asserting business capability 
 
 ## Amendments
 
+**2026-09-13 · A47 — four media slots the homepage and `/large-format` always needed, a delivery
+width the coverage engine can no longer guess wrong, and the `/faq` `h1` (Rivya UI Redesign,
+phase 2 continued).**
+
+*Four slots, and why their pictures had been waiting.* `/` declares three media slots and composes
+thirteen bands; three of the other ten mount `ResponsiveMedia` and so have a frame to fill. Their
+assets were curated and adversarially verified against the manifest in A46's pass and then could
+not be written, for one reason: a binding must name a registry key VERBATIM (migration 0050's
+column comment) and inventing one puts a row in the reverse index pointing at a slot the registry
+does not hold (migration 0054's header). `home.commission`, `home.three-d-resin`, `home.final-cta`
+and `large-format.hero` are added, and the four verified pairs are bound.
+
+*`large-format.hero` is a new slot rather than a reuse, and that distinction is the point.* The
+pair had been proposed against `large-format.dining`, which is the dining CATEGORY CARD at 16:9/4:5
+with `minAssets: 2`. Binding a hero there would have put `boundCount` at 2 and had `classify()`
+report the dining card FILLED while that card is still empty. **A false coverage report is worse
+than a true gap**, which is the same standard the A46 pass used to refuse three of its own
+proposals.
+
+*`MediaSlot.delivery`, because a string heuristic cannot be made correct by adding words to it.*
+`presetWidthFor()` in `lib/media/gaps.ts` derived the delivered width from the slot's KEY —
+`key.includes('hero')` meant 2560. That is right for `home.hero.poster` and silently wrong for any
+band delivered full-bleed without the word in its name. `home.final-cta` renders through
+`FinalCtaSection` at `preset: 'hero'`, `sizes: '100vw'`; inferred from its key it lands at the 768
+grid rung, `resolutionFit` calls a 1000px asset FITS for a slot that delivers at 2560, and
+`classify()` proposes REUSE_FROM_FAMILY for a binding that upscales on every wide screen — the
+exact failure that function exists to catch, reached through the coverage engine instead of past
+it. The slot now declares its delivery. The field is OPTIONAL and the substring rule is kept as the
+fallback, so every slot written before this amendment keeps the width it had and no coverage figure
+moves.
+
+*The resolution arithmetic, settled, because two reviews disagreed about it.* `srcSet(boxWidth)`
+returns the ladder rungs between `snapWidth(boxWidth)` and `snapWidth(boxWidth × 2)`. For
+`preset: 'grid'` (base 768) that is 768 · 1024 · 1280 · 1536 — **the ceiling is 1536, not the
+ladder's global 2560**. For `preset: 'hero'` (base 1600) it is 1920 · 2560, so a hero-delivered
+source under 1920 upscales in every delivery. Those two numbers decided every pick.
+
+*One binding does not clear its floor, and it is recorded rather than hidden.*
+`LARGEFORMAT-DINING-001` is 1536px against the hero chain's 1920 floor, so a phone downloads a 1920
+rung derived from it — about a 25% upscale on a photograph. It is bound anyway, for three stated
+reasons: its own manifest prompt opens "Vertical editorial photograph for a mobile hero" and
+reserves the upper third as headline safe area, so it was generated for this surface; the master
+plan blesses 1536 for this exact slot (§4.3/G6); and the library holds NO `largeformat-*` or
+`interior-lifestyle` asset at 9:16 above 1920, so the alternative is not a better picture but an
+empty hero on the site's second route.
+
+*The homepage hero stays unbound, and that is a decision rather than an omission.*
+`home.hero.video` and `home.hero.poster` remain the two `GENERATE_NEW` slots with `fillableBy: []`.
+`tests/unit/media-bindings.test.ts` pins both, the poster's registry note requires it to be the
+video's own opening frame rather than an unrelated still, and binding a material macro there would
+flip the site's single outstanding generation brief to FILLED and suppress it. **It is still the
+strongest argument for the one generation this library needs.**
+
+*`/faq` has an `h1`, and the note that said how to give it one was wrong.* `content/seed/faq.ts`
+anticipated the gap and prescribed: "`SectionList` gives the FIRST section level 1, so typing a
+heading on this band is enough." `SectionList` assigns no heading levels at all — `SectionCopy`
+defaults to `level = 2` and `FaqListSection` passed none, so a heading typed there rendered an
+`h2` and the page still had none. Measured with the heading set: five h2s, zero h1s. Both halves
+are fixed — the renderer passes `level={isFirst ? 1 : 2}`, and the heading is seeded as the page's
+own name, which `pages.ts` already carries. This had turned E2E red on `main` since #67: the
+a11y spec skips an unpublished route, `/faq` 404'd until Phase 45 seeded the band, and the spec ran
+against it for the first time the moment it served 200.
+
+*Verified:* 44/44 gates green, 3,076 unit tests, **E2E 307 passed / 0 failed** at `w1440` against
+CI's own recipe (up from 303/1), production build clean, island budget unchanged at 5.
+`/large-format` fallback wells 1 → **0**; homepage bound images 2 → 8.
+
 **2026-09-12 · A46 — the warm editorial palette, Instrument Serif, a mono eyebrow, and a ground
 rhythm the composition decides rather than each renderer (Rivya UI Redesign, phases 1-2).**
 

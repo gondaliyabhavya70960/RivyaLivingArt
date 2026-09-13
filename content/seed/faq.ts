@@ -111,12 +111,22 @@ const faqRecord = (f: (typeof FAQS)[number], i: number): SeedRecord => ({
  * So the title is not borrowed for it either. `category: ''` means every question, in
  * `faqs.position` order.
  *
- * **WHICH LEAVES ONE THING FOR A PERSON, AND IT IS WRITTEN HERE RATHER THAN DISCOVERED LATER:**
- * `/faq` has no heading section of any kind seeded, so a page published with only this band has no
- * `h1`. `SectionList` gives the FIRST section level 1, so typing a heading on this band is enough —
- * or adding a `statement` above it. `tests/e2e/a11y/headings.spec.ts` catches the omission once the
- * route is reachable, which it is not while every section is DRAFT. Whoever publishes `/faq` writes
- * that sentence; nobody here can, because it is copy.
+ * **THE MISSING `h1`, AND THE TWO THINGS IT ACTUALLY TOOK.** This note used to say `/faq` had no
+ * heading seeded, that "`SectionList` gives the FIRST section level 1, so typing a heading on this
+ * band is enough", and that the sentence was somebody else's to write. The first clause was true;
+ * the second was WRONG and cost a red CI run on `main` to disprove. `SectionList` assigns no
+ * heading levels at all — `SectionCopy` defaults to `level = 2` and `FaqListSection` passed none,
+ * so a heading typed on this band rendered an `h2` and the page still had no `h1`. Measured: five
+ * h2s, zero h1s.
+ *
+ * Both halves are fixed now. `FaqListSection` passes `level={isFirst ? 1 : 2}`, and the heading
+ * below is seeded. It is the page's OWN NAME — `pages.ts` already titles this route "Frequently
+ * Asked Questions" — so it asserts nothing about the business that the route's existence did not
+ * already assert, which is why it can be written here when the ten answers below cannot.
+ *
+ * `tests/e2e/a11y/headings.spec.ts` skips a route that is not published, which is why this went
+ * unseen: `/faq` 404'd until Phase 45 seeded this band, and the spec ran against it for the first
+ * time the moment it served 200.
  *
  * DRAFT, like every seeded section, so `/faq` stays 404 until somebody publishes it — and the ten
  * answers stay `OWNER_VERIFICATION_REQUIRED` until the owner clears them, which is a second gate
@@ -128,6 +138,10 @@ const faqListSection = section({
   blockType: 'faq-list',
   position: 1,
   fact: 'EDITORIAL_COPY',
+  // The page's own name, so `/faq` has an `h1`. Sentence case with a full stop, like the other
+  // fifty seeded headings. NOT `verify: true`: naming a page after what it contains is not a
+  // business claim, and flagging it would keep the route at 404 for a label.
+  heading: 'Frequently asked questions.',
   payload: { category: '' },
 })
 

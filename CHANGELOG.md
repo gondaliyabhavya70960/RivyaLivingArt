@@ -6,6 +6,55 @@ Every phase adds an entry; see `docs/architecture/CANONICAL-DECISIONS.md` D9 for
 
 ## [Unreleased]
 
+### Rivya UI Redesign, phase 2 continued — the four slots the pictures were waiting on, and the `/faq` `h1` (2026-09-13)
+
+Amendment A47. Follows the A46 foundation; no business rule, migration, route rename or logo change.
+
+**Four homepage and `/large-format` bands could not be given pictures, and the reason was a missing
+key rather than a missing asset.** `/` declares three media slots and composes thirteen bands.
+Three of the other ten mount `ResponsiveMedia`. Their assets were curated and verified in A46's
+pass and then refused, because a binding must name a registry key verbatim and inventing one puts a
+row in the reverse index pointing at a slot that does not exist. `home.commission`,
+`home.three-d-resin`, `home.final-cta` and `large-format.hero` are added and the four pairs bound.
+`/large-format` goes from an empty opening frame to a full-bleed one; the homepage goes from 2
+bound images to 8.
+
+**`large-format.hero` is new rather than borrowed, deliberately.** Binding it to the existing
+`large-format.dining` CARD slot would have had `classify()` report that card FILLED while it is
+still empty. A false coverage report is worse than a true gap.
+
+**`MediaSlot.delivery` replaces a string heuristic that was quietly wrong.** `presetWidthFor()`
+read the slot's KEY for the word "hero". `home.final-cta` is delivered full-bleed at
+`preset: 'hero'`/`100vw` and has no such word, so it would have been filed at the 768 grid rung —
+and `resolutionFit` would then have called a 1000px asset a fit for a slot that delivers at 2560.
+The field is optional and the substring rule stays as the fallback, so no existing slot's width
+moves.
+
+**The resolution arithmetic, settled once.** `srcSet` returns ladder rungs between
+`snapWidth(box)` and `snapWidth(box × 2)`: the grid chain tops at **1536**, not the ladder's global
+2560, and the hero chain runs 1920 · 2560 with a hard 1920 floor. Two earlier reviews disagreed
+about this; it decided every pick.
+
+**One binding does not clear its floor and says so.** `LARGEFORMAT-DINING-001` is 1536px against
+the hero floor of 1920 — roughly a 25% upscale on mobile. Bound anyway because its own prompt reads
+"Vertical editorial photograph for a mobile hero" with the upper third reserved as headline safe
+area, the master plan blesses 1536 for this slot, and no `largeformat-*` or `interior-lifestyle`
+asset exists at 9:16 above 1920. The alternative was an empty hero, not a sharper one.
+
+**The homepage hero stays unbound.** Still the two `GENERATE_NEW` slots, still pinned by a test,
+still the strongest argument for the one generation this library needs.
+
+**`/faq` has an `h1` — and the seed note explaining how to give it one was wrong.** It said typing
+a heading on the band was enough because "`SectionList` gives the FIRST section level 1".
+`SectionList` assigns no levels; `SectionCopy` defaults to 2 and `FaqListSection` passed none, so a
+heading rendered an h2 and the page still had no h1 (measured: 5 × h2, 0 × h1). The renderer now
+passes `level={isFirst ? 1 : 2}` and the heading is seeded as the page's own name. **This had been
+red on `main` since #67** — the a11y spec skips unpublished routes, and `/faq` only started serving
+200 when Phase 45 seeded the band.
+
+**Verified:** 44/44 gates, 3,076 unit tests, **E2E 307 passed / 0 failed** at `w1440` against CI's
+own recipe (was 303 / 1), clean production build, island budget unchanged at 5.
+
 ### Rivya UI Redesign, phases 1-2 — the warm palette, the reference typeface, and the ground rhythm (2026-09-12)
 
 A luxury redesign of the public site against a supplied visual reference, whose own CSS was read

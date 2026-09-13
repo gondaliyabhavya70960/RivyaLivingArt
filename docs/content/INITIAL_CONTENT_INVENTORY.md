@@ -125,7 +125,7 @@ the phase that creates its table.
 | /custom-commissions | commissions.05.how-it-works | heading | Yes | Yes | `/studio/content/pages/custom-commissions` | Yes | — | — | DRAFT |
 | /custom-commissions | commissions.06.cta | heading | Yes | Yes | `/studio/content/pages/custom-commissions` | No | — | — | DRAFT |
 | /custom-commissions | commissions.06.cta | cta_label | Yes | Yes | `/studio/content/pages/custom-commissions` | No | — | — | DRAFT |
-| /faq | faq.01.list | (no copy fields) | Yes | Yes | `/studio/content/pages/faq` | No | — | — | DRAFT |
+| /faq | faq.01.list | heading | Yes | Yes | `/studio/content/pages/faq` | No | — | — | DRAFT |
 | /journal | journal.01.hero | body | Yes | Yes | `/studio/content/pages/journal` | No | — | — | DRAFT |
 | /journal | journal.01.hero | eyebrow | Yes | Yes | `/studio/content/pages/journal` | No | — | — | DRAFT |
 | /journal | journal.01.hero | heading | Yes | Yes | `/studio/content/pages/journal` | No | — | — | DRAFT |

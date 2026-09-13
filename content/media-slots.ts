@@ -53,6 +53,21 @@ export type MediaSlot = {
   readonly minAssets: number
   /** What to do if `fillableBy` yields nothing. */
   readonly resolution: GapResolution
+  /**
+   * WHICH DELIVERY PRESET THE RENDERER ACTUALLY USES (amendment A47).
+   *
+   * `lib/media/gaps.ts` needs the delivered width to answer "would the best candidate upscale".
+   * It used to infer that from the KEY — `key.includes('hero')` meant 2560 — which is right for
+   * `home.hero.poster` and silently wrong for any band delivered full-bleed without the word in
+   * its name. `home.final-cta` renders through `FinalCtaSection` at `preset: 'hero'` and
+   * `sizes: '100vw'`; inferred from its key it would have been filed at the 768 grid rung, and a
+   * 1000px candidate would have been reported as fitting a slot that delivers at 2560.
+   *
+   * OPTIONAL, AND THE OLD RULE IS THE FALLBACK. Every slot written before this amendment keeps
+   * exactly the width the substring rule gave it, so no coverage figure moves; new slots say what
+   * they mean. Set it from the renderer's own `preset`, not from how large the band looks.
+   */
+  readonly delivery?: 'HERO' | 'GRID' | 'CARD'
 }
 
 export const MEDIA_SLOTS: readonly MediaSlot[] = [
@@ -101,6 +116,71 @@ export const MEDIA_SLOTS: readonly MediaSlot[] = [
     mobileRatio: '4:5',
     fillableBy: ['interior-lifestyle'], // 5 assets
     minAssets: 2,
+    resolution: 'GENERATE',
+  },
+
+  /*
+   * THREE HOMEPAGE BANDS THAT RENDER MEDIA AND HAD NO SLOT (amendment A47).
+   *
+   * `/` declared three slots — the hero video, its poster and the introduction band — while the
+   * page composes thirteen. Three of the other ten mount `ResponsiveMedia` and therefore have a
+   * frame to fill: the commission invitation, the 3D band and the closing call. Their assets were
+   * curated and verified against the manifest and then could not be written, because a binding
+   * must name a registry key VERBATIM (migration 0050) and inventing one puts a row in the reverse
+   * index pointing at a slot that does not exist (migration 0054). So the pictures waited on this.
+   *
+   * EACH DECLARES ITS `delivery`, which is the half of this amendment that is not bookkeeping. Two
+   * of the three are delivered at the hero preset despite having no "hero" in their key, and the
+   * old substring rule in `gaps.ts` would have filed them at the 768 grid rung — reporting a
+   * 1000px candidate as fitting a slot that delivers at 2560.
+   *
+   * THE HERO AND ITS POSTER ARE STILL NOT HERE, and that is deliberate rather than pending. Both
+   * remain `fillableBy: []` GENERATE slots, `tests/unit/media-bindings.test.ts` asserts they stay
+   * unbound, and the poster's own note above says why: it must be the video's opening frame, not
+   * an unrelated still. The one outstanding generation brief on the site stays outstanding.
+   */
+  {
+    // `CommissionCtaSection` defaults to `layout_variant: 'split'` — ResponsiveMedia at 3:2 / 4:5,
+    // `preset: 'grid'`, `sizes: '(min-width: 768px) 50vw, 100vw'`.
+    key: 'home.commission',
+    page: '/',
+    label: 'Home commission invitation',
+    kind: 'IMAGE',
+    desktopRatio: '3:2',
+    mobileRatio: '4:5',
+    // Making and material, never a delivered commission — the same D10 reasoning that gives
+    // `custom-commissions.supporting` these two families.
+    fillableBy: ['process-timber', 'process-studio'],
+    minAssets: 2,
+    delivery: 'GRID',
+    resolution: 'GENERATE',
+  },
+  {
+    // `ThreeDResinSection` also defaults to 'split': 16:9 / 4:5 at `preset: 'grid'`, 50vw.
+    key: 'home.three-d-resin',
+    page: '/',
+    label: 'Home 3D-printed resin band',
+    kind: 'IMAGE',
+    desktopRatio: '16:9',
+    mobileRatio: '4:5',
+    fillableBy: ['three-d-resin'], // 13
+    minAssets: 2,
+    delivery: 'GRID',
+    resolution: 'GENERATE',
+  },
+  {
+    // `FinalCtaSection` defaults to 'banded', which is FULL-BLEED: 21:9 / 4:5 at `preset: 'hero'`
+    // with `sizes: '100vw'`. This is the slot the old key-substring rule would have misfiled, and
+    // the reason `delivery` exists.
+    key: 'home.final-cta',
+    page: '/',
+    label: 'Home closing call',
+    kind: 'IMAGE',
+    desktopRatio: '21:9',
+    mobileRatio: '4:5',
+    fillableBy: ['material-macro'], // 39
+    minAssets: 2,
+    delivery: 'HERO',
     resolution: 'GENERATE',
   },
 
@@ -232,6 +312,31 @@ export const MEDIA_SLOTS: readonly MediaSlot[] = [
   // Six families, two of which hold a single asset each. A single asset cannot serve a desktop and
   // a mobile slot both — D6 makes those separate — so `minAssets: 2` marks them THIN rather than
   // covered, which is exactly the state the phase document describes.
+  /*
+   * THE `/large-format` OPENING BAND (amendment A47).
+   *
+   * Every other slot on this page is a CATEGORY CARD — dining, coffee, console, seating, side,
+   * architectural — at 16:9/4:5 with `minAssets: 2`. The page's hero is a different surface with
+   * a different shape, and it had no slot, so the verified pair for it was proposed against
+   * `large-format.dining` and refused: binding a hero there would have put `boundCount` at 2 on a
+   * slot whose `minAssets` is 2, and `classify()` would have reported the dining CARD as FILLED
+   * while that card is still empty. A false coverage report is worse than a true gap.
+   *
+   * 21:9 / 9:16 because `HeroSection` with `layout_variant: 'full-bleed'` sets `split = false` and
+   * passes those two ratios literally — not the 16:9/4:5 the category cards declare.
+   */
+  {
+    key: 'large-format.hero',
+    page: '/large-format',
+    label: 'Large format opening band',
+    kind: 'IMAGE',
+    desktopRatio: '21:9',
+    mobileRatio: '9:16',
+    fillableBy: ['largeformat-dining', 'interior-lifestyle'],
+    minAssets: 2,
+    delivery: 'HERO',
+    resolution: 'GENERATE',
+  },
   {
     key: 'large-format.architectural',
     page: '/large-format',
