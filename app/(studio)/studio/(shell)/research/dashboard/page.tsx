@@ -12,6 +12,7 @@ import { requirePermission } from '@/lib/auth/require'
 import { isEnabled } from '@/lib/flags'
 import { STAGE_ORDER } from '@/lib/scraper/core/stage'
 import { HealthPill } from '@/components/studio/research/HealthPill'
+import { LeafIndex } from '@/components/studio/research/LeafIndex'
 import { SourceCoveragePanel } from '@/components/studio/research/SourceCoveragePanel'
 import { countProductsByStage } from '@/lib/supabase/repositories/research/products'
 import { listResearchRuns } from '@/lib/supabase/repositories/research/runs'
@@ -52,7 +53,7 @@ import { createClient } from '@/lib/supabase/server'
 export const metadata = studioMetadata('/studio/research/dashboard')
 
 export default async function Page() {
-  await requirePermission('research.read')
+  const session = await requirePermission('research.read')
 
   const client = await createClient()
   const [
@@ -129,6 +130,11 @@ export default async function Page() {
   return (
     <StudioPage path="/studio/research/dashboard">
       <Stack gap={8}>
+        {/* §9: "Do not hide leaves — group them." Fifteen research screens in one flat sidebar list
+            is a scroll rather than a structure; this is the same fifteen, arranged by the job. It
+            sits first because somebody opening the dashboard is usually on their way elsewhere. */}
+        <LeafIndex role={session.role} />
+
         {researchOn ? null : (
           <EmptyState
             reason="empty"

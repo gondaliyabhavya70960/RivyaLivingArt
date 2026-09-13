@@ -9400,6 +9400,102 @@ export const STUDIO_STRINGS = {
    */
 
   /** The card's label. FEAT/Phase 46 name it, and the handover document uses the same words. */
+  /* --- Phase F: the concept badge and the studio-pack note --------------------------------------- */
+
+  /**
+   * ALWAYS VISIBLE ON `is_concept` ASSETS — §9's Phase F line, and the reason is D10 rather than
+   * decoration. A concept asset is art direction for work that has not been photographed. The
+   * `product_media` trigger refuses one, which means somebody who does not know an asset is concept
+   * media meets a database error instead of an explanation. The badge is the explanation, shown
+   * before the attempt.
+   *
+   * Deliberately short: it sits in a table cell beside the source badge, and the full sentence is
+   * already on the Higgsfield tracker where the whole grid is concept media.
+   */
+  'studio.media.conceptBadge': {
+    value: 'Concept',
+    contentKey: 'studio_help.media_concept_badge',
+  },
+  'studio.media.conceptNote': {
+    value:
+      'Concept assets are art direction, not photographs of delivered work. They cannot be attached to a product as its gallery — the database refuses it — and they must never be sent to a client as a finished piece.',
+    contentKey: 'studio_help.media_concept_note',
+  },
+  /**
+   * §9: "Documentation card can point at data/studio-pack/ **if that folder is committed**." A54
+   * committed it, so the condition is met. It is a repository path rather than a link because the
+   * viewer serves ten documents by allowlist key and this is not one of them — and widening that
+   * allowlist to make a link work is the scope creep it exists to prevent.
+   */
+  'studio.docs.studioPackNote': {
+    value:
+      'The owner’s content pack — sixty comparators, seventy-six product concepts, fifty-five FAQs and the rest — is held as JSON in data/studio-pack/ in the repository, with a README saying what each file is for. Nothing in it is seeded, rendered or published; it is there to be read and pasted from. Ask your engineer for a copy.',
+    contentKey: 'studio_help.docs_studio_pack_note',
+  },
+
+  /* --- The research dashboard's grouped leaf index (Phase E) ------------------------------------- */
+
+  'studio.research.leafIndexHeading': {
+    value: 'Where everything is',
+    contentKey: 'studio_help.research_leaf_index_heading',
+  },
+  'studio.research.leafIndexBody': {
+    value:
+      'Fifteen research screens, grouped by what you are doing rather than by when they were built. Nothing is hidden here — every screen you may open is listed.',
+    contentKey: 'studio_help.research_leaf_index_body',
+  },
+  'studio.research.groupSetup': {
+    value: 'Setup',
+    contentKey: 'studio_help.research_group_setup',
+  },
+  'studio.research.groupQueue': {
+    value: 'Queue',
+    contentKey: 'studio_help.research_group_queue',
+  },
+  'studio.research.groupAnalysis': {
+    value: 'Analysis',
+    contentKey: 'studio_help.research_group_analysis',
+  },
+  /**
+   * The guide names ten of the fifteen research leaves across its three groups. The other five are
+   * real screens, and "do not hide leaves" is the instruction beside the grouping, so they are
+   * gathered here rather than dropped.
+   */
+  'studio.research.groupDecisions': {
+    value: 'Decisions and export',
+    contentKey: 'studio_help.research_group_decisions',
+  },
+
+  /* --- The sources list's league and enabled columns (Phase E) ----------------------------------- */
+
+  'studio.research.colEnabled': {
+    value: 'Fetching',
+    contentKey: 'studio_help.research_col_enabled',
+  },
+  /** A source that is switched on. Only reachable once its policy row says APPROVED. */
+  'studio.research.enabledYes': {
+    value: 'On',
+    contentKey: 'studio_help.research_enabled_yes',
+  },
+  /** The shipped state of every source in this repository, and not a fault. */
+  'studio.research.enabledNo': {
+    value: 'Off',
+    contentKey: 'studio_help.research_enabled_no',
+  },
+  /**
+   * Why a row cannot be switched on. `research_sources_enabled_requires_approval` refuses the write
+   * in the database, so this is a statement of a constraint rather than a warning about one.
+   */
+  'studio.research.enabledBlocked': {
+    value: 'Off — needs an approved policy first',
+    contentKey: 'studio_help.research_enabled_blocked',
+  },
+  /** No league recorded. Nobody has placed this business yet, which is a normal starting state. */
+  'studio.research.leagueNone': {
+    value: 'Unplaced',
+    contentKey: 'studio_help.research_league_none',
+  },
+
   /* --- The products list's price column (Phase D) ------------------------------------------------ */
 
   'studio.catalog.products.colPrice': {
