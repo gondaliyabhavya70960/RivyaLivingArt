@@ -5,38 +5,6 @@ description: "UI/UX design intelligence for web, mobile, and desktop. This skill
 
 # UI/UX Pro Max - Design Intelligence
 
-> ## ⚠️ LOCAL NOTE FOR THIS REPOSITORY — read before acting on anything below
->
-> This is a **vendored third-party skill** (MIT, `nextlevelbuilder/ui-ux-pro-max-skill` v2.13.0,
-> `LICENSE` alongside this file). Its content is unmodified apart from resolving
-> `${CLAUDE_PLUGIN_ROOT}` to a repository-relative path and this note.
->
-> **Its colour and typography output does not apply here, and following it will fail the build.**
->
-> - **Palettes.** This skill offers 192 palettes. This repository has exactly one, `--rv-*`, and
->   `app/styles/tokens.css` is the **only** file permitted a colour literal — enforced by
->   `scripts/design/check-tokens.mjs` and `check-token-usage.mjs` in `npm run check`. Take the
->   *reasoning* about contrast, hierarchy and mood; never take the hex values.
-> - **Font pairings.** 74 are offered. The display face is fixed (Instrument Serif, chosen in
->   amendment A46 against a measured reference) with Inter for body and all Studio UI.
-> - **`--persist` / `MASTER.md`.** Do **not** use it. It writes a second design system into the
->   project, and `docs/design/DESIGN_SYSTEM.md` is the one source. Two vocabularies is the exact
->   collision the token rule exists to prevent.
-> - **Motion.** GSAP presets assume an animation runtime. This project ships **none**, and its six
->   motion classes fix which properties may animate — see the `motion-classes` skill.
-> - **Stack guidance.** Anything proposing a Client Component for a section renderer is an island on
->   all sixteen CMS routes — see the `island-budget` skill.
->
-> **What it is genuinely good for here:** layout and composition patterns, UX guidelines,
-> interaction and navigation patterns, chart selection, and accessibility checklists — the parts
-> that are about structure and behaviour rather than about picking a colour.
->
-> The first-party skills (`design-tokens`, `motion-classes`, `island-budget`,
-> `accessibility-contract`, `section-renderer`) state this repository's rules and **take precedence
-> wherever the two disagree**.
-
-
-
 Searchable local UI/UX guidance: 79 searchable styles (50 active), 192 product palettes and exact reasoning profiles, 74 font pairings, 119 UX guidelines, 105 curated icons, 17 GSAP presets, 25 chart types, and 22 technology stacks.
 
 ## When to Apply
@@ -71,7 +39,7 @@ For the full rule list per category (all 119 UX guidelines with rationale), read
 The search script lives inside this skill's own directory, not the project directory. Always invoke it by its full path — do not assume a particular working directory:
 
 ```bash
-python ".claude/skills/ui-ux-pro-max/scripts/search.py" "<query>" --domain <domain>
+python ".agents/skills/ui-ux-pro-max/scripts/search.py" "<query>" --domain <domain>
 ```
 
 If `python` is not found, try `python3`, then `py -3`. Requires Python 3.x, no external dependencies (see README for install instructions if Python is missing).
@@ -107,14 +75,14 @@ Extract from the user request:
 Use `--design-system` when the task needs a coherent product-wide visual direction:
 
 ```bash
-python ".claude/skills/ui-ux-pro-max/scripts/search.py" "<product_type> <industry> <keywords>" --design-system [-p "Project Name"]
+python ".agents/skills/ui-ux-pro-max/scripts/search.py" "<product_type> <industry> <keywords>" --design-system [-p "Project Name"]
 ```
 
 This aggregates product/style/color/landing/typography matches, applies reasoning rules from `ui-reasoning.csv`, and returns pattern, style, colors, typography, effects, and anti-patterns to avoid.
 
 **Example:**
 ```bash
-python ".claude/skills/ui-ux-pro-max/scripts/search.py" "beauty spa wellness service" --design-system -p "Serenity Spa"
+python ".agents/skills/ui-ux-pro-max/scripts/search.py" "beauty spa wellness service" --design-system -p "Serenity Spa"
 ```
 
 ### Step 2b: Persist Design System (Master + Overrides Pattern)
@@ -122,7 +90,7 @@ python ".claude/skills/ui-ux-pro-max/scripts/search.py" "beauty spa wellness ser
 To save the design system for retrieval across sessions, add `--persist` **and always pass `--output-dir` pointed at the project root** — without it, files are written relative to whatever directory the tool happens to run from:
 
 ```bash
-python ".claude/skills/ui-ux-pro-max/scripts/search.py" "<query>" --design-system --persist -p "Project Name" --output-dir "<project-root>"
+python ".agents/skills/ui-ux-pro-max/scripts/search.py" "<query>" --design-system --persist -p "Project Name" --output-dir "<project-root>"
 ```
 
 This creates:
@@ -145,7 +113,7 @@ Read an existing `MASTER.md` before deciding whether `--force` is justified. Nev
 Three optional 1-10 sliders that tune `--design-system` output without changing your query. Add any combination of them to the same command:
 
 ```bash
-python ".claude/skills/ui-ux-pro-max/scripts/search.py" "<query>" --design-system --variance <1-10> --motion <1-10> --density <1-10>
+python ".agents/skills/ui-ux-pro-max/scripts/search.py" "<query>" --design-system --variance <1-10> --motion <1-10> --density <1-10>
 ```
 
 | Dial | Low (1-3) | Mid (4-7) | High (8-10) |
@@ -160,13 +128,13 @@ python ".claude/skills/ui-ux-pro-max/scripts/search.py" "<query>" --design-syste
 
 **Example:**
 ```bash
-python ".claude/skills/ui-ux-pro-max/scripts/search.py" "internal analytics dashboard" --design-system --variance 8 --motion 7 --density 8 -p "Ops Console"
+python ".agents/skills/ui-ux-pro-max/scripts/search.py" "internal analytics dashboard" --design-system --variance 8 --motion 7 --density 8 -p "Ops Console"
 ```
 
 ### Step 3: Supplement with Detailed Searches (as needed)
 
 ```bash
-python ".claude/skills/ui-ux-pro-max/scripts/search.py" "<keyword>" --domain <domain> [-n <max_results>]
+python ".agents/skills/ui-ux-pro-max/scripts/search.py" "<keyword>" --domain <domain> [-n <max_results>]
 ```
 
 | Need | Domain | Example |
@@ -189,7 +157,7 @@ Domain is auto-detected from the query if `--domain` is omitted — but auto-det
 ### Step 4: Stack Guidelines
 
 ```bash
-python ".claude/skills/ui-ux-pro-max/scripts/search.py" "<keyword>" --stack <stack>
+python ".agents/skills/ui-ux-pro-max/scripts/search.py" "<keyword>" --stack <stack>
 ```
 
 **Available stacks:** `react`, `nextjs`, `vue`, `svelte`, `astro`, `nuxtjs`, `nuxt-ui`, `angular`, `laravel`, `swiftui`, `react-native`, `flutter`, `jetpack-compose`, `html-tailwind`, `shadcn`, `threejs`, `javafx`, `wpf`, `winui`, `avalonia`, `uno`, `uwp`. Use the stack detected in Step 1.
@@ -209,13 +177,13 @@ Do not fabricate output. Instead:
 
 ```bash
 # Step 2: design system
-python ".claude/skills/ui-ux-pro-max/scripts/search.py" "AI search tool modern minimal" --design-system -p "AI Search"
+python ".agents/skills/ui-ux-pro-max/scripts/search.py" "AI search tool modern minimal" --design-system -p "AI Search"
 
 # Step 3: supplement
-python ".claude/skills/ui-ux-pro-max/scripts/search.py" "keyboard focus modal" --domain ux
+python ".agents/skills/ui-ux-pro-max/scripts/search.py" "keyboard focus modal" --domain ux
 
 # Step 4: stack guidelines
-python ".claude/skills/ui-ux-pro-max/scripts/search.py" "suspense streaming bundle" --stack nextjs
+python ".agents/skills/ui-ux-pro-max/scripts/search.py" "suspense streaming bundle" --stack nextjs
 ```
 
 Then synthesize the design system + detailed searches and implement.

@@ -6,6 +6,56 @@ Every phase adds an entry; see `docs/architecture/CANONICAL-DECISIONS.md` D9 for
 
 ## [Unreleased]
 
+### Five design skills installed, and the three things an installer overwrote (2026-09-13)
+
+No amendment: nothing about the design system changed. No route, component or token moved.
+
+`npx skills add` now works in this environment (it did not when `ui-ux-pro-max` was installed by
+hand), so five design skills are installed with it: **`frontend-design`** (anthropics/skills,
+Apache 2.0), **`web-design-guidelines`** (vercel-labs, MIT), **`high-end-visual-design`**
+(leonxlnx/taste-skill, MIT), **`design-md`** (google-labs-code/stitch-skills, Apache 2.0) and
+**`ui-ux-pro-max`** (MIT), which moved from a hand-vendored directory onto the installer so all five
+are managed one way and `skills-lock.json` is complete. Real files live in `.agents/skills/`;
+`.claude/skills/<name>` are symlinks into it. Together they add 41 KB of markdown; `ui-ux-pro-max`
+remains 3.6 MB.
+
+**Re-running the installer over the hand-vendored copy silently destroyed three things**, which is
+the part worth recording:
+
+1. its MIT `LICENSE`, restored here from git history;
+2. the `${CLAUDE_PLUGIN_ROOT}` path rewrite, without which the documented `search.py` invocation
+   resolves to an absolute path that does not exist — re-applied and re-verified from the repository
+   root, not just from inside the skill's own directory;
+3. a local note at the top of its `SKILL.md` recording what this repository cannot take from it.
+
+The note was **not** restored in place. A note inside an installer-managed file does not survive an
+update, as this proved. The conflicts now live in `.claude/skills/README.md`, which no installer
+writes, with a pointer from `CLAUDE.md` so a session reads it before acting on design advice.
+
+**These skills disagree with this repository, sharply in places.** `high-end-visual-design` bans
+Inter outright — our body and Studio face, fixed by A46 — and mandates `opacity-0` → `opacity-100`
+scroll entry, which is precisely what **A48 deleted**: on a `view()` timeline with
+`animation-fill-mode: both` it held a band at `opacity: 0.184`, **1.82:1** where opaque is 17.55:1,
+failing axe at SERIOUS. `tests/unit/motion-layer.test.ts` asserts no keyframe animates opacity, so
+following that skill fails a test. `design-md` and `ui-ux-pro-max --persist` each write a second
+design system beside `DESIGN_SYSTEM.md`. The full table is in `.claude/skills/README.md`.
+
+They also contradict **each other**: `frontend-design` names per-section fade-up entrances as a tell
+of a generated page; `high-end-visual-design` requires them. A48 already settled it on measurement.
+
+**Two limits found by reading rather than assuming.** `web-design-guidelines` fetches its real rules
+from `raw.githubusercontent.com` at review time, so the lockfile hash covers a 1.2 KB stub and not
+the guidance — upstream can change what it checks with no diff here. `design-md` needs the Stitch
+MCP server, which is not connected, so it cannot run at all in this session.
+
+Licences: `frontend-design` shipped its own; the ones for `high-end-visual-design`, `design-md` and
+`ui-ux-pro-max` were fetched from source. **`web-design-guidelines` has none** — upstream declares
+MIT in its README and ships no licence file, so none was invented. `.prettierignore` excludes
+`.agents/` for the same reason it excluded the old path: reformatting third-party source makes every
+future update a diff against our formatting. All 44 gates pass; the token gates scan only `app`,
+`components` and `lib`, so the hex literals in this markdown never reach them.
+
+
 ### Tabs can slide their indicator, and the component that inspired it was not adopted (2026-09-13)
 
 Amendment A51. No dependency added. The default is unchanged, so no public route moves.
