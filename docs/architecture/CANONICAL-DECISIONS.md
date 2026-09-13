@@ -202,6 +202,59 @@ Brand and editorial copy may be written; anything asserting business capability 
 
 ## Amendments
 
+**2026-09-13 · A48 — the redesign brief becomes a specification of record, a page-section index
+that costs no island, an entrance that no longer makes contrast depend on scroll position, and a
+footer address that scrolled every page sideways (Rivya UI Redesign, phase 2 continued).**
+
+*The brief is now `docs/requirements/03-UI-REDESIGN-BRIEF.md`, verbatim and read-only.* The whole
+of A46, A47 and this amendment implement a document that existed only as a chat attachment, so
+every citation of it was unverifiable — and four of them were wrong. `SectionRail`, `rhythm.ts`,
+`SectionShell` and DESIGN_SYSTEM §2.4a each attributed a phrase to **FEAT §50**, which is the
+one-paragraph FINAL QUALITY BAR and contains neither "a compact page-section index where it helps
+navigation" nor "negative space". Both phrases are the brief's §A3. D7's glob already reads
+`docs/requirements/*`, `scripts/docs/audit-docs.mjs` skips that prefix as history rather than as
+this repository's assertions, and the Studio documentation allowlist is explicit and unaffected, so
+the file needed no gate change — only the citations, which now read **REDESIGN §A3** and point at
+text that says what they claim. `SectionShell`'s now cites FEAT §4, which is where "architectural
+negative space" actually appears.
+
+*RC-245 — `SectionRail`, and the reason it has no active-state highlight.* The brief's §A3 asks for
+"a compact page-section index where it helps navigation". A fixed 56px column at `xl` and above,
+listing each band that carries an `eyebrow`, numbered over what it lists. **A highlight was refused
+on cost, not on taste**: tracking the visible band needs either a scroll handler — a Client
+Component imported by `components/sections/registry.ts`, therefore an island on all sixteen CMS
+routes, which `check-client-boundary.mjs` and the island budget both refuse — or a
+`view-timeline-name` per section plus a `timeline-scope` naming every one, and that list is static
+CSS while a page's section count is data. An index without a highlight is still an index. The
+threshold is arithmetic: free space before the reading column is `max(0,(vw−1200)÷2)+gutter`, which
+is 47px at 1024 and 97px at 1280, so `xl` is the first width where the column already exists. An
+earlier version showed it at `lg` and BOUGHT the space through a container-padding token; at 1440
+that double-inset the copy to 240px while the rail stayed at the edge. **The whole mechanism was
+reverted and `Container` is untouched.** Documented at DESIGN_SYSTEM §7.15.
+
+*The entrance is transform-only, and this is an accessibility decision rather than a stylistic one.*
+`rv-rise` faded `opacity` 0 → 1 alongside the rise. `animation-fill-mode: both` on a `view()`
+timeline holds a band at its `from` keyframe until it enters, so on a long page exactly one band is
+part way through the range at any moment — and while it is, every colour inside it composites with
+whatever sits behind the section. **Contrast therefore became a function of scroll position**, which
+no static token check can see. It was not hypothetical: `/large-format` at 390px failed axe's
+`color-contrast` at SERIOUS on its `category-intro` heading, with the band measured at
+`opacity: 0.184` — 1.82:1 against a required 3:1, where the same band opaque is 17.55:1. Nothing
+about the band was wrong and no colour could have fixed it; A47's taller hero had simply moved a
+different band into the range, so whichever band landed there would fail. §4.2 permits opacity and
+transform; using only the second keeps rule 3 (compositor properties, no reflow) and rule 1 (the
+unanimated state is the finished state) and removes the class of fragility from all sixteen CMS
+routes at once. `.rv-reveal-fade` and its `rv-fade` keyframe — used by nothing, and carrying exactly
+the same hazard — were **deleted rather than kept**, because dead code that is also a trap is worse
+than no code. `tests/unit/motion-layer.test.ts` now asserts the rule over EVERY keyframe rather than
+over `rv-rise` by name, since the hazard is the property and not the animation.
+
+*The footer's own email address scrolled every page sideways at 1024px.* `ContactChannels` renders
+the address as a link in a 160px footer column; at 237px it overflowed, giving a `scrollWidth` of
+1053 against a 1024 viewport on **every route**. A46's mono eyebrow was the obvious suspect and was
+wrong — forcing the eyebrow back to sans in the live page produced identical numbers. The fix is
+`break-words` on the email link alone, not on the column, so nothing else in it re-wraps.
+
 **2026-09-13 · A47 — four media slots the homepage and `/large-format` always needed, a delivery
 width the coverage engine can no longer guess wrong, and the `/faq` `h1` (Rivya UI Redesign,
 phase 2 continued).**

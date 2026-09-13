@@ -33,7 +33,7 @@ export function schemeOf(theme: string | null, fallback: SectionScheme = 'DEEP')
  *
  * FOUR STEPS WERE DECLARED IN PHASE 02 AND ONE WAS USED. Twenty-seven of the thirty call sites
  * passed `spacing="lg"`, so `sm` and `xl` were dead tokens and ten consecutive bands on `/` were
- * spaced identically — `DESIGN_SYSTEM.md` §50 asks for deliberate negative space and uniform
+ * spaced identically — FEAT §4 asks for "architectural negative space" and uniform
  * padding is the opposite of a decision. The audit recorded it as a composition finding.
  *
  * RHYTHM IS A PROPERTY OF THE BLOCK TYPE, NOT OF A CALL SITE. A manifesto wants silence around it

@@ -258,7 +258,7 @@ per page by `SectionList` because the sequence is the one thing a section render
 
 The finding this fixes: before it, `page_sections.theme` was nullable, `SectionShell` fell back to
 `DEEP`, and exactly one of thirty-four renderers passed anything else — so `/` was 11,993px of one
-colour at 1440px. §50's "deliberate negative space" was indistinguishable from a page that had
+colour at 1440px. REDESIGN §A3's "balanced negative space" was indistinguishable from a page that had
 failed to load. Asserted by `tests/unit/section-ground-rhythm.test.ts`, which tests the PROPERTIES
 (alternation, continuity across a dark band, editor override) rather than any one band's colour.
 
@@ -274,9 +274,73 @@ The layout renders the header but cannot see the page's sections, so the stylesh
 precisely the previous design, which is why the effect is built as two additive rules rather than as
 an override of a transparent default. Island budget unchanged at 5.
 
+### 7.15 The page-section index rail (RC-245, amendment A48)
+
+A fixed 56px column at the inline start of the viewport listing a page's bands as numbered links.
+REDESIGN §A3 asks for "thin rules, small section numbers, restrained uppercase labels and a compact
+page-section index where it helps navigation"; the reference's own markup names the element
+`data-slot="cure-line"` and numbers thirteen of its fifteen homepage sections.
+
+**What appears is CMS data, not a list in the component.** A band is in the rail if and only if it
+carries an `eyebrow` — already the short technical label above its heading, which is the exact role
+the rail needs and is editable where the section is editable. An editor lengthens the rail by
+writing an eyebrow and shortens it by clearing one. The rail's numbers count WHAT RENDERED, 1-based
+over the bands it lists, the same rule `ordinal` follows in `SectionList`: a page whose second band
+is withheld for owner verification reads 01, 02, 03, never 01, 03, 04.
+
+**Two entries is the floor.** An index of one tells a visitor nothing they cannot already see, and
+would put a permanent empty column beside every short page on the site.
+
+**On the seeded content that floor makes this very nearly a homepage feature, and that is an
+editorial fact rather than a bug.** Counted on the canonical database: `/` has 9 labelled bands of
+11 and `/about` has 2 of 3; **every other route has exactly one**, so no rail is drawn there. The
+rail lengthens the moment an editor writes eyebrows, which is the intended control — but a reviewer
+expecting to see it on `/collection` or `/portfolio` should know why they do not, and should not
+"fix" it in code.
+
+**It costs no island.** A Server Component rendering anchors — no scroll listener, nothing in a
+bundle. There is deliberately **no active-state highlight**: tracking which band is on screen needs
+either a scroll handler (an island on all sixteen CMS routes, which the client-boundary gate and the
+island budget both refuse) or a `view-timeline-name` per section plus a `timeline-scope` naming every
+one — and that list is static CSS while a page's section count is data.
+
+**`xl` and above, and the threshold is arithmetic rather than taste.** The rail is `position: fixed`,
+so it reserves no space and would sit ON the reading column if that column reached it. `Container` at
+`default` is 75rem centred inside `--rv-gutter`, so the free space before content is
+`max(0, (vw − 1200) ÷ 2) + gutter`:
+
+| Viewport | Free space | |
+|---|---|---|
+| 1024 | 0 + 47 = **47px** | less than the rail's 56 — it would overlap |
+| 1280 | 40 + 57 = **97px** | clears it |
+| 1440 | 120 + 64 = **184px** | |
+| 1920 | 360 + 64 = **424px** | |
+
+An earlier version showed it at `lg` and BOUGHT the space by adding the rail's width to the
+container's start padding through a token. That worked at 1024 and was wrong above it: at 1440 the
+container already has a 120px margin, so the extra padding pushed copy to 240px while the rail
+stayed at the viewport edge — a 180px gulf between an index and the thing it indexes. Taking space
+that already exists is simpler than making more, and it leaves `Container` untouched. Below `xl` the
+rail is not rendered at all rather than given a horizontal variant, which would be a second
+navigation pattern to learn for a page that is already reachable by scrolling.
+
+**The label is announced, not drawn.** A 56px column cannot set a word legibly, and rotated text is
+a decoration a screen reader cannot follow and a keyboard user cannot scan. The visible mark is the
+number (mono, `tabular-nums`, so 01 and 11 are the same width in a vertical stack); the eyebrow is
+the link's accessible name. The `<nav>`'s own name is a `UI_LABEL` row, because a second navigation
+landmark without a name leaves a screen-reader user hearing "navigation" twice — and a missing row
+means **no rail**, never an unnamed one.
+
+Asserted by `tests/unit/section-rail.test.ts` (the selection and numbering rule, which is the part a
+later edit can get wrong silently) and by `tests/e2e/section-rail.spec.ts` at all eight QA widths:
+drawn at `xl` and hidden below it, never overlapping the first heading in `<main>`, adding no
+horizontal scroll, every entry carrying an accessible name longer than its digits, and every `href`
+resolving to a band that exists on the page.
+
 ### 2.4 Colour schemes
 
-Three schemes. They are the permitted values of `page_sections.theme` and of the Studio shell's
+**Five schemes since amendment A46** — the three below plus MINERAL and SAND, which have their own
+rules in §2.4a. They are the permitted values of `page_sections.theme` and of the Studio shell's
 root class. A component never asks which scheme it is in; it reads semantic tokens.
 
 | Scheme | Class | Ground | Where it is used |
@@ -287,8 +351,11 @@ root class. A component never asks which scheme it is in; it reads semantic toke
 
 Rules:
 
-- `page_sections.theme` is a Zod enum of exactly `DEEP · INK · BONE`. A row with any other value
-  fails validation in `content/blocks/<type>.ts` and renders `DEEP`.
+- `page_sections.theme` is a nullable text column with **no check constraint and no Zod enum**, and
+  that is deliberate: this list is a front-end concern that grows, and a constraint would mean a
+  migration every time it did. `schemeOf()` in `SectionShell` is the single parser; a value it does
+  not know falls back to the section's default rather than throwing, so a page never 500s because
+  someone typed "dark". A null falls back the same way — see §2.4a for what fills it first.
 - `app/(site)/layout.tsx` sets `.rv-scheme-deep` on `<body>`. `app/(studio)/studio/layout.tsx` sets
   `.rv-scheme-bone`. A section sets its own class on its outermost element.
 - Adjacent sections may not both be `INK` unless they are one continuous cinematic passage; two
@@ -779,7 +846,7 @@ ceiling and a reduced-motion branch. A component picks a class. It does not pick
 
 | Class | What it governs | Tokens | Hard limits | Reduced-motion branch |
 |---|---|---|---|---|
-| **WOOD** — settle | First appearance of static content: headings, paragraphs, list items, cards entering the viewport | `--rv-duration-slow`, `--rv-ease-out`, `--rv-motion-rise-md`, stagger 60ms | Opacity + `translateY` only. No scale, no blur, no rotation. Runs **once** per element per page view | Renders in final position, fully opaque, no transition |
+| **WOOD** — settle | First appearance of static content: headings, paragraphs, list items, cards entering the viewport | `--rv-duration-slow`, `--rv-ease-out`, `--rv-motion-rise-md`, stagger 60ms | `translateY` only — see §4.2.1 rule 5 for why not opacity. No scale, no blur, no rotation. Runs **once** per element per page view | Renders in final position, fully opaque, no transition |
 | **RESIN** — flow | Media revealing: hero stills, gallery images, the material sequence, image crossfades | `--rv-duration-flow`, `--rv-ease-flow` | Opacity and `clip-path` inset only. Never a scale on a photograph larger than `--rv-motion-scale-in` | Image is simply present |
 | **LIGHT** — specular | Hover, focus, active. Anything that answers a pointer or a key within one frame budget | `--rv-duration-fast`/`quick`, `--rv-ease-standard` | Colour, border, opacity, `box-shadow`. No layout property, ever | Colour changes still apply; they are not motion |
 | **FORM** — mass | Things with weight: drawers, dialogs, mega-menu panels, accordions, mobile nav | `--rv-duration-base`, `--rv-ease-out` in / `--rv-ease-in` out, `--rv-motion-rise-md` | Transform + opacity. Height animation only via `grid-template-rows` or `interpolate-size`, never JS-measured pixels | Appears and disappears instantly; focus management is unchanged |
@@ -815,10 +882,12 @@ renderer stays a Server Component that adds one class name.
 | Class | Applied to | Range |
 |---|---|---|
 | `.rv-reveal` | every band, by `SectionShell` | `entry 0% cover 30%` |
-| `.rv-reveal-fade` | media-led bands wanting opacity alone | `entry 0% cover 25%` |
 | `.rv-reveal-group > *` | card grids — `CategoryGrid`, `MaterialPalette`, `SecondaryObjects`, `ReferenceCards` | `entry 0% cover 25%` |
 
-Four rules make it safe, and each is a way the file could otherwise strand a band at `opacity: 0`:
+There is deliberately **no fade class**. `.rv-reveal-fade` existed here, was used by nothing, and was
+removed by amendment A48 for the reason rule 5 below gives.
+
+Five rules make it safe. The first four are ways the file could otherwise strand a band at `opacity: 0`; the fifth is why it no longer animates opacity at all:
 
 1. **The unanimated state is the finished state.** No `animation-name` is declared outside the
    `@supports (animation-timeline: view())` block, so a browser without scroll timelines renders
@@ -836,8 +905,20 @@ Four rules make it safe, and each is a way the file could otherwise strand a ban
    cancels the parent, so a grid several components down cannot make its cards travel twice the
    distance the token allows.
 
-`tests/unit/motion-layer.test.ts` asserts all four against the stylesheet text, because jsdom
-implements no scroll timeline and drops the three properties that matter.
+5. **No keyframe animates `opacity`** — the entrance is transform-only (amendment A48).
+   `animation-fill-mode: both` on a `view()` timeline holds a band at its `from` keyframe until it
+   enters, so on a long page exactly one band is part way through the range at any moment, and
+   while it is, every colour inside it composites with what sits behind the section. **Contrast
+   became a function of scroll position**, which no static token check can see. `/large-format` at
+   390px failed axe's `color-contrast` at SERIOUS on its `category-intro` heading, measured at
+   `opacity: 0.184` — 1.82:1 against a required 3:1, where the same band opaque is 17.55:1. Nothing
+   about that band was wrong and no colour choice could have fixed it: the page had got taller,
+   which moved a different band into the range. A rise without a fade is still an entrance, and it
+   removes the whole class of fragility from all sixteen CMS routes at once.
+
+`tests/unit/motion-layer.test.ts` asserts all five against the stylesheet text, because jsdom
+implements no scroll timeline and drops the three properties that matter. Rule 5 is asserted over
+every keyframe rather than over `rv-rise` by name: the hazard is the property, not the animation.
 
 ### 4.3 Reduced-motion contract
 

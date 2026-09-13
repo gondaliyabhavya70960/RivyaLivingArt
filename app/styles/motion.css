@@ -37,25 +37,55 @@
  * `--rv-motion-rise-*`, which is capped at 24px by §4.2 — an entrance, not a journey.
  */
 
+/*
+ * TRANSFORM ONLY — THE ENTRANCE DOES NOT TOUCH `opacity`, AND THAT IS AN ACCESSIBILITY DECISION
+ * RATHER THAN A STYLISTIC ONE (amendment A48).
+ *
+ * It used to fade 0 -> 1 alongside the rise. A `view()` timeline with `fill-mode: both` holds a
+ * band at its `from` keyframe until it enters, so at any moment ONE band on a long page is part
+ * way through the range — and while it is, every colour inside it composites with whatever is
+ * behind the section. Contrast therefore became a function of SCROLL POSITION, which no static
+ * token check can see and which `docs/ops/TESTING.md` §13 already names as the class the axe sweep
+ * exists to catch — §5.1 there is the full record of this instance.
+ *
+ * IT WAS NOT HYPOTHETICAL. `/large-format` at 390px failed `color-contrast (serious)` on its
+ * `category-intro` heading with the band measured at `opacity: 0.184` — 1.82:1 against a required
+ * 3:1. Nothing about that band was wrong: its ink is `--rv-ink-primary` on MINERAL, which is
+ * 17.55:1 when the band is opaque. The only thing that changed was the page getting taller, which
+ * moved a different band into the entry range. Whichever band lands there fails, so the failure
+ * was never about a colour and could not be fixed by choosing one.
+ *
+ * A RISE WITHOUT A FADE IS STILL AN ENTRANCE. §4.2 permits opacity and transform; using only the
+ * second keeps rule 3 (compositor properties, no reflow), keeps rule 1 (the unanimated state is
+ * the finished state) and removes an entire class of contrast fragility from all sixteen CMS
+ * routes at once. The cost is the fade; the gain is that a band's contrast no longer depends on
+ * where the visitor has scrolled to.
+ */
 @keyframes rv-rise {
   from {
-    opacity: 0;
     transform: translate3d(0, var(--rv-motion-rise-lg), 0);
   }
   to {
-    opacity: 1;
     transform: translate3d(0, 0, 0);
   }
 }
 
-@keyframes rv-fade {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
+/*
+ * THERE IS NO FADE KEYFRAME, AND ITS ABSENCE IS THE POINT (amendment A48).
+ *
+ * `rv-fade` and the `.rv-reveal-fade` class that drove it were removed here rather than kept for
+ * later. They were used by nothing — `grep` found the class in this file and nowhere else in
+ * `app/` or `components/` — and they carried precisely the hazard `rv-rise` was just relieved of:
+ * anything animating `opacity` on a `view()` timeline makes the contrast of every colour inside
+ * that element a function of scroll position, which is invisible to every static token check and
+ * fails the axe sweep on whichever band happens to be mid-range when it runs.
+ *
+ * DEAD CODE THAT IS ALSO A TRAP IS WORSE THAN NO CODE. Left in place it read as an available,
+ * documented option, and the first person to reach for it would have reintroduced a failure that
+ * took a DOM probe at a measured `opacity: 0.184` to diagnose. A cross-fade is still a legitimate
+ * thing to want; when something actually wants one, it can be written against a decorative element
+ * that contains no text, which is the only shape of it that is safe.
+ */
 
 /*
  * THE BAND ENTRANCE (WOOD — settle).
@@ -105,12 +135,6 @@
       animation: none;
     }
 
-    .rv-reveal-fade {
-      animation: rv-fade var(--rv-duration-scene) var(--rv-ease-standard) both;
-      animation-timeline: view();
-      animation-range: entry 0% cover 25%;
-    }
-
     .rv-reveal-group > * {
       animation: rv-rise var(--rv-duration-slower) var(--rv-ease-out) both;
       animation-timeline: view();
@@ -156,7 +180,6 @@ main > section:first-of-type.rv-reveal {
  */
 @media (prefers-reduced-motion: reduce) {
   .rv-reveal,
-  .rv-reveal-fade,
   .rv-reveal-group > * {
     animation: none;
     animation-timeline: none;

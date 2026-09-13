@@ -14,7 +14,7 @@ owner_verification: NOT_REQUIRED
 
 ---
 
-## Most recent work — the Rivya UI Redesign, phases 1-2 of 6 (2026-09-12)
+## Most recent work — the Rivya UI Redesign, phases 1-2 of 6 (2026-09-13)
 
 **What was asked.** A luxury redesign of the public site and the Studio against a supplied visual
 reference (`https://rivya-living-art.vercel.app/`), delivered as working code with connected media,
@@ -49,42 +49,62 @@ inverts correctly on all five schemes from one rule; a ground rhythm decided by 
 by each renderer; a masthead that overlays a dark opening band using `:has()` and no JavaScript; and
 seven more media bindings.
 
-**Verified, and these are the real numbers.** 44/44 gates green (`npm run check`, exit 0); 3,076
-unit tests across 206 files pass; `next build` clean with 17 self-hosted woff2 files; contrast 60
-pairs across 5 schemes; island budget unchanged at 5; no horizontal overflow at 1440 or 390.
+**A47 then unblocked the pictures.** Four slots the homepage and `/large-format` always needed —
+`home.commission`, `home.three-d-resin`, `home.final-cta`, `large-format.hero` — plus
+`MediaSlot.delivery`, because `presetWidthFor()` derived a delivered width by reading the slot's KEY
+for the word "hero" and `home.final-cta` is delivered full-bleed without it. The homepage went from
+2 bound images to 8. One binding deliberately does not clear its floor and says so in the record.
+
+**A48 is the most recent.** The redesign brief is now `docs/requirements/03-UI-REDESIGN-BRIEF.md`,
+verbatim and read-only, because everything since A46 implements a document that existed only as a
+chat attachment — and four citations of it were pointing at `FEAT §50`, which says neither of the
+things they attributed to it. Then: RC-245 `SectionRail`, a page-section index at `xl` and above
+that costs no island and holds no list of its own; a transform-only band entrance, because a
+scroll-driven `opacity` animation had made CONTRAST A FUNCTION OF SCROLL POSITION and failed axe at
+SERIOUS on `/large-format`; and `break-words` on the footer email, which at 237px in a 160px column
+had been scrolling **every route** sideways at 1024px.
+
+**Verified, and these are the real numbers.** 44/44 gates green (`npm run check`, exit 0); **3,083
+unit tests across 207 files pass**; `next build` clean; **the full browser suite at eight widths
+across four shards: 1,979 passed, 0 failed**; contrast 60 pairs across 5 schemes; island budget
+unchanged at 5; no horizontal overflow at any of the eight QA widths.
 
 ### Where to pick it up — the pending work, in order
 
-**1. The media-slot registry amendment, which unblocks the homepage.** Four homepage bands were
-curated, adversarially verified, and then REFUSED for one reason: `/` declares only
-`home.hero.video`, `home.hero.poster` and `home.intro`, and the commission, 3D and closing bands
-have no slot at all. Inventing a key is not available — migration 0050 comments `media_slot_key` as
-"the registry key, VERBATIM", `sync_media_usages` copies it into `media_usages.slot_key`, and
-`lib/media/gaps.ts` joins on it, so an invented key reports coverage against a slot nothing
-declares, and `tests/unit/media-bindings.test.ts` fails on one. Add `home.commission`,
-`home.three-d-resin`, `home.final-cta` and `large-format.hero` (21:9/9:16) to
-`content/media-slots.ts`, then bind the pairs already verified and recorded in
-`content/seed/media-bindings.ts` under "BLOCKED ON A REGISTRY AMENDMENT". **The homepage still shows
-32 fallback wells; this is why.**
+**DONE since this list was written: the media-slot registry amendment (was item 1).** Amendment A47
+added the four slots and bound the four verified pairs. The homepage's fallback wells are no longer
+a registry problem.
 
-**2. Phase 3 — the remaining public routes.** `/collection/[category]`, `/collections/[slug]`,
-`/product/[slug]`, `/custom-commissions`, `/portfolio`, `/journal`, `/search`, `/faq` and the global
-states. The token and rhythm work propagates to all of them automatically; what is NOT done is
-route-specific composition.
+**1. Phase 3 — the remaining public routes.** `/collection`, `/collection/[category]`,
+`/collections/[slug]`, `/product/[slug]`, `/custom-commissions`, `/portfolio`, `/journal`,
+`/search`, `/privacy`, `/terms` and the global states. The token, rhythm, rail and motion work
+propagates to all of them automatically; what is NOT done is route-specific composition. `/faq` is
+done — A47 gave it the `h1` it had been missing, which was red on `main` before this work started.
 
-**3. Phase 4 — the Studio.** Untouched beyond what it inherits from the primitives (pill buttons,
+**2. Phase 4 — the Studio.** Untouched beyond what it inherits from the primitives (pill buttons,
 inverse-fill primary). 82 routes under `app/(studio)/studio/(shell)/`. Note the constraint recorded
 in `TESTING.md` §13: the local harness is PostgREST alone with no auth server, so **156 Studio specs
 skip** and a Studio redesign cannot be browser-regression-tested here without GoTrue or a hosted
-preview with a fixture account.
+preview with a fixture account. **Resolve that before starting, not after** — a redesign of 82
+routes with its regression suite skipped is not verifiable.
 
-**4. Phase 5 — the external component evaluation.** The brief names eleven sources and asks for a
-fresh, recorded evaluation. **None was performed.** Nothing was adopted, and that is an absence, not
-a rejection — do not record it as one.
+**3. Phase 5 — the external component evaluation.** The brief names eleven sources and asks for a
+recorded evaluation. **One EXISTS and must not be described as absent**: `COMPONENT_REGISTRY.md` §5,
+audited 2026-09-07 and gate-enforced, with five sources MIT-verified and marked `NOT_ADOPTED` and
+six `REJECTED`. What it is not is what the brief asks for: it evaluates SOURCES, and the brief asks
+per COMPONENT. That per-component pass is the pending work. Marketing sites are blocked from this
+sandbox; `raw.githubusercontent.com` and `registry.npmjs.org` are reachable, which is enough to read
+a licence and a component's source.
 
-**5. Phase 6 — e2e, visual baselines, Lighthouse.** Not run. The 33 committed visual baselines will
-all need regenerating in the pinned container image once the composition settles, and
-`TESTING.md` §8 records the two environment variables a local Playwright run needs.
+**OPEN QUESTION FOR THE OWNER, still unanswered.** Whether to ADOPT any external component at all,
+or to keep everything first-party and record the evaluation as the brief's deliverable. Nothing
+should be adopted until this is answered — every candidate so far has been `NOT_ADOPTED`, and
+reversing that is a dependency decision, not an implementation one.
+
+**4. Phase 6 — e2e, visual baselines, Lighthouse.** The e2e suite IS now run and green (1,979
+passed across four shards at eight widths). What remains: the 33 committed visual baselines need
+regenerating in the pinned container image now that the composition has moved, Lighthouse has not
+been run, and the brief's preview-deployment evidence needs a machine with Cloudinary reachable.
 
 ### Environment notes for the next session
 

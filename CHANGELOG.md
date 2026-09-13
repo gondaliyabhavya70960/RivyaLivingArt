@@ -6,6 +6,45 @@ Every phase adds an entry; see `docs/architecture/CANONICAL-DECISIONS.md` D9 for
 
 ## [Unreleased]
 
+### Rivya UI Redesign, phase 2 continued — a page-section index, an entrance that stopped breaking contrast, and a footer address that scrolled every page (2026-09-13)
+
+Amendment A48. No business rule, migration, route rename or logo change.
+
+**The redesign brief is now a specification of record.** `docs/requirements/03-UI-REDESIGN-BRIEF.md`,
+verbatim and read-only alongside the other two. Everything since A46 implements a document that
+existed only as a chat attachment, so every citation of it was unverifiable — and four were wrong,
+attributing two of its phrases to `FEAT §50`, which is a single paragraph containing neither. They
+now read `REDESIGN §A3` and point at text that says what they claim.
+
+**A page-section index rail (RC-245).** A fixed 56px column at `xl` and above, listing every band
+that carries an `eyebrow` as a numbered link. It holds no list of its own — an editor lengthens it
+by writing an eyebrow and shortens it by clearing one — and the numbers count what rendered, so a
+band withheld for owner verification leaves no hole. **No island and no scroll listener**: a Server
+Component rendering anchors. It has no active-state highlight, deliberately, because tracking the
+visible band costs either an island on all sixteen CMS routes or a static list of every section on
+a page whose section count is data.
+
+**The band entrance no longer fades, and that fixed a real accessibility failure.** A scroll-driven
+`opacity` animation holds one band part-way through its range at any moment, so contrast became a
+function of **scroll position** — invisible to every static check. `/large-format` at 390px failed
+axe's `color-contrast` at SERIOUS on a heading measured at `opacity: 0.184`: 1.82:1 where the same
+band opaque is 17.55:1. Nothing about that band was wrong; the page had got taller. The entrance is
+now transform-only, which removes the whole class of fragility from all sixteen CMS routes. The
+unused `.rv-reveal-fade` carried the same hazard and was deleted rather than kept.
+
+**The footer's email address scrolled every page sideways at 1024px.** A 237px address in a 160px
+column gave a `scrollWidth` of 1053 against a 1024 viewport on **every route**. The mono eyebrow
+added in A46 was the obvious suspect and was measurably not the cause.
+
+**Also corrected:** DESIGN_SYSTEM §2.4 still said "Three schemes" and described a Zod enum of
+`DEEP · INK · BONE` that does not exist — A46 made it five, and the parser is `schemeOf()` with a
+fallback, not validation.
+
+**Verified.** Four browser shards at eight widths: **1,979 passed, 0 failed**. The two specs that
+were red on the previous commit (`/large-format` axe, both at 390px) pass. A new unit assertion
+fails if any keyframe animates opacity again, and was checked against a deliberately reintroduced
+regression.
+
 ### Rivya UI Redesign, phase 2 continued — the four slots the pictures were waiting on, and the `/faq` `h1` (2026-09-13)
 
 Amendment A47. Follows the A46 foundation; no business rule, migration, route rename or logo change.

@@ -6,12 +6,12 @@ import type { PageSection } from '@/lib/supabase/schemas'
 import { cn } from '@/lib/ui/cn'
 
 /**
- * RC-245 — the page-section index (§7.15, amendment A48).
+ * RC-245 — the page-section index (DESIGN_SYSTEM §7.15, amendment A48).
  *
  * A fixed 56px column at the inline start of wide viewports, listing the page's bands as numbered
  * links. It is the reference's most recognisable navigation device — its own markup calls the
  * element `data-slot="cure-line"` and numbers thirteen of fifteen homepage sections — and it is
- * what §50's "a compact page-section index where it helps navigation" asks for.
+ * what REDESIGN §A3's "a compact page-section index where it helps navigation" asks for.
  *
  * IT COSTS NO ISLAND AND NO SCROLL LISTENER. A Server Component rendering anchors. There is
  * deliberately NO active-state highlight: tracking which band is on screen needs either a scroll
