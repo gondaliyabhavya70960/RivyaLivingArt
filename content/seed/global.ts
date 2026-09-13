@@ -196,6 +196,26 @@ export const globalSeed: SeedModule = {
       fact: 'EDITORIAL_COPY',
     }),
 
+    /*
+     * THE DESIGNED EMPTY, WHICH IS NOT THE SAME THING AS A FAILURE — public redesign guide §5.4.
+     *
+     * `ERROR.media_unavailable.*` above says an image that EXISTS could not be shown. This says no
+     * photograph has been taken yet, which on this site is the ordinary state of almost everything:
+     * the catalogue is concept media and unbuilt objects, and a well with nothing in it is telling
+     * the truth rather than reporting a fault. Rendering the failure copy there — which the site
+     * used to do, five times down the homepage — told a visitor something was broken when nothing
+     * was.
+     *
+     * It promises no date. "In preparation" is true the moment an object is briefed; "coming soon"
+     * would be a delivery claim, and SEED §55 forbids exactly that.
+     */
+    globalRow('MEDIA', 'pending.label', 'Photograph in preparation', {
+      label: 'Empty media well — label',
+      description:
+        'Public redesign guide §5.4. Shown in a media well that has no asset bound yet. Distinct from ERROR.media_unavailable.*, which is a failure to display an image that exists.',
+      fact: 'EDITORIAL_COPY',
+    }),
+
     // --- §48 inquiry success --------------------------------------------------------------------
     globalRow('FORM_COPY', 'inquiry_success.heading', 'Your enquiry has been saved.', {
       label: 'Inquiry success — heading',

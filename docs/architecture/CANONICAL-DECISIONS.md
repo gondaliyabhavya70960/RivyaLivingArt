@@ -202,6 +202,84 @@ Brand and editorial copy may be written; anything asserting business capability 
 
 ## Amendments
 
+**2026-09-13 · A61 — public redesign P0: the empty well says what is true, and the homepage hero
+stops being a black box.**
+
+*The public showroom redesign guide, phase P0 ("Media honesty"). A different train from the Studio
+work of A55-A60 and deliberately not mixed with it.*
+
+**WHAT THE LIVE SITE ACTUALLY SHOWED, MEASURED RATHER THAN ASSUMED.** Fetched 2026-09-13:
+`"Image unavailable"` appears **zero** times on `/`, `/large-format`, `/collection` and `/process` —
+A52 removed it and that half of P0 was already done. What the homepage did show was worse in a
+quieter way: the hero well rendered `<div data-media-fallback></div>` with **nothing inside it**, a
+black box above the fold, and 28 empty wells down the page.
+
+**"EMPTY IS DESIGNED" — §3, AND THE THIRD ANSWER IS THE RIGHT ONE.** The well has had two wrong
+states. It used to render the media FAILURE string, five times down the homepage, telling a visitor
+something was broken when nothing was; A52 correctly deleted that and left silence. Silence is
+honest and says nothing. `EmptyPlate` is §5.4's bone plate — a hairline rule, "Photograph in
+preparation", and the object's name where the surface has one.
+
+**IT IS NOT THE FAILURE COPY AND THE DISTINCTION IS LOAD-BEARING.** `ERROR.media_unavailable.*`
+means an image that EXISTS could not be shown. `MEDIA.pending.label` means no photograph has been
+taken, which on this site is the ordinary state of almost everything: the catalogue is concept media
+and objects nobody has built. Two different sentences for two different facts.
+
+**IT PROMISES NO DATE.** "In preparation" is true the moment an object is briefed. "Coming soon" is
+a delivery claim and SEED §55 forbids one.
+
+**THE COPY IS A `global_content` ROW, AND WHEN IT IS MISSING THE PLATE RENDERS NOTHING.** Not the
+key, not an English literal compiled into the bundle — `cms:check-copy` would fail the literal and
+would be right to. The degradation path is the quiet well A52 settled on, which is why every
+existing test kept passing when the plate landed and why a new test pins it.
+
+**THE HOMEPAGE HERO: A DOCUMENTED REFUSAL, REVERSED ON ITS OWN TERMS.**
+`content/seed/media-bindings.ts` spent three paragraphs explaining why it would not bind this slot,
+and the argument was good: `home.hero.poster` is the frame before a video plays and "under reduced
+motion it is the whole experience", so "it cannot be an unrelated still: it must be the video's own
+opening" — a gap for as long as the video is. **That reasoning depends entirely on there being a
+video.** The redesign guide §6.1 specifies the hero as a full-bleed STILL of a dining or conference
+plane; the composition it is drawn from has no video either. With none briefed, "the video's opening
+frame" constrains a thing nobody is making.
+
+**THE HALF OF THE OLD ARGUMENT THAT STILL STANDS.** Its real warning was against "reaching for a
+material macro because the most important frame on the site is empty". A macro texture is not a
+room, and `fillableBy` now names only families that can show a room-scale object — the same two
+`large-format.hero` declares for the identical job one route over, at the identical 21:9 / 9:16.
+`home.hero.video` stays a true gap: no video exists and none is briefed.
+
+**FOUR TESTS ENCODED THE OLD POLICY AND WERE UPDATED TO ASSERT THE NEW ONE, NOT DELETED.** Three
+were policy statements ("leave the homepage hero unbound", "finds the two home hero slots as gaps",
+"proposes generation for the two home hero slots"). The fourth — "cannot fill a gap by binding to
+it" — is a GENERAL invariant that merely needed *a* zero-candidate slot as its example, and its own
+comment said it had picked the poster because it was "one of the only two left"; it now uses
+`home.hero.video`, which still is. The rewritten binding test also asserts what the hero is bound
+TO — `LARGEFORMAT-*` on both halves — which is the guard the old refusal was really protecting.
+
+**A COVERABLE SLOT MUST NEVER EARN A GENERATION BRIEF.** `briefableGaps` went from two keys to one.
+Leaving the poster there would ask somebody to draw a picture the library already holds, which is
+the exact waste that engine exists to prevent.
+
+**DESKTOP AND MOBILE ARE DELIBERATELY NOT THE SAME PAIR `/large-format` USES.** Desktop is the same
+dining plane and the guide points both pages at Fig. 1, so that is the brief rather than an
+accident. Mobile is `-004` rather than `-001` because the owner works from an Android phone, and two
+of the site's most important pages opening on an identical frame is something you only notice on the
+device where you cannot put them side by side. Both assets are `is_concept`; neither is a photograph
+of a delivered Rivya table.
+
+**WHAT IS BOUND IN THE DATABASE AND NOT YET VISIBLE.** The row is written and verified
+(`media_slot_key = 'home.hero.poster'`, both columns set). `/` is a static prerender —
+`x-vercel-cache: HIT`, `x-nextjs-prerender: 1` — so the published page keeps serving the empty hero
+until the next deployment. The plate's copy is likewise a seed row that production does not carry
+until `npm run seed:content` runs there, which stays owner-gated; until then the well is quiet rather
+than wrong.
+
+**NO BROWSER RUN, AND THIS TIME THE REASON IS DIFFERENT.** The environment has Chromium, but the
+agent proxy closes browser tunnels mid-exchange (`ws_closed_mid_exchange`), so the live site could
+not be driven. Everything above about what the site shows was measured from the served HTML with
+`curl`, which is evidence rather than inference — and is stated as HTML analysis, not as "I opened
+it at 390px".
+
 **2026-09-13 · A60 — the completion pass: §7.2's count, §3.3's second branch, and two primary
 actions §8 names.**
 

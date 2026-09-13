@@ -130,15 +130,18 @@ describe('against the real registry and the real manifest', () => {
     }
   })
 
-  it('proposes generation for the two home hero slots and nothing else', () => {
+  it('proposes generation for the home hero VIDEO and nothing else', () => {
     /*
-     * THE PHASE'S RESULT, PINNED. Ten briefs became two when six `fillableBy` lists and two
-     * dispositions were corrected against Phase 07's own analysis. A third appearing here means a
-     * mapping was removed, and the next coverage report would ask somebody to draw a picture that
-     * already exists.
+     * THE PHASE'S RESULT, PINNED — AND IT SHRANK AGAIN. Ten briefs became two when six `fillableBy`
+     * lists and two dispositions were corrected against Phase 07's own analysis. Two became one
+     * when the public redesign guide rebriefed the homepage hero as a still: `home.hero.poster` can
+     * now be filled from the large-format dining family, so asking somebody to draw it would be
+     * asking for a picture that already exists — which is exactly what this test exists to catch.
+     *
+     * A SECOND KEY APPEARING HERE means a `fillableBy` mapping was removed.
      */
     const generate = proposals.filter((p) => p.proposed === 'GENERATE_NEW').map((p) => p.slot.key)
-    expect(generate).toEqual(['home.hero.video', 'home.hero.poster'])
+    expect(generate).toEqual(['home.hero.video'])
   })
 
   it('never proposes generation for a slot declared EMPTY_STATE', () => {

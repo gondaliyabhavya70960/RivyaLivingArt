@@ -6,6 +6,35 @@ Every phase adds an entry; see `docs/architecture/CANONICAL-DECISIONS.md` D9 for
 
 ## [Unreleased]
 
+### Public redesign P0 — media honesty (2026-09-13)
+
+Amendment **A61**. The public showroom guide's first phase. A different PR train from the Studio
+work above, deliberately not mixed with it.
+
+**Measured before changing anything.** `"Image unavailable"` appears **zero** times on the live `/`,
+`/large-format`, `/collection` and `/process` — A52 had already fixed that half. What the homepage
+did show was an empty `<div data-media-fallback>` for its hero: a black box above the fold.
+
+- **`EmptyPlate`** — §5.4's bone plate. A hairline rule, "Photograph in preparation", and the
+  object's name where the surface has one. It is **not** the failure copy:
+  `ERROR.media_unavailable.*` means an image that exists could not be shown, this means no
+  photograph has been taken — the ordinary state of a catalogue of concept media. It promises no
+  date, and when its `global_content` row is missing it renders **nothing** rather than a literal.
+- **The homepage hero is bound** to a room-scale dining plane. This reverses a documented refusal
+  in `content/seed/media-bindings.ts` — on its own terms: the refusal held that the poster "must be
+  the video's own opening", which depends on there being a video, and §6.1 briefs a full-bleed
+  still instead. The half of that argument that still stands — no material macro standing in for a
+  room — is what the new `fillableBy` list enforces. `home.hero.video` stays a true gap.
+- **Four tests updated, none deleted.** Three asserted the old policy. The fourth is a general
+  invariant that just needed a zero-candidate slot for its example and now uses `home.hero.video`.
+
+**Not yet visible on the live site**, stated plainly: `/` is a static prerender
+(`x-vercel-cache: HIT`), so the bound hero appears on the next deployment; and the plate's copy is a
+seed row production does not carry until `seed:content` runs there, which stays owner-gated.
+
+**No browser run** — this environment's proxy closes browser tunnels, so everything above was
+measured from the served HTML with `curl` rather than by opening the page.
+
 ### The completion pass — auditing A–F against the guide, line by line (2026-09-13)
 
 Amendment **A60**. Not a phase: a re-read of the whole guide against the finished work. "All six
