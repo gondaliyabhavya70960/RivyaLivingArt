@@ -289,11 +289,15 @@ Two things follow, and both are now enforced:
   will look intermittent. Probe the computed `opacity` of the reported element's section before
   reaching for a re-run.
 
-Plus three pre-browser guards in `npm run check`: `scripts/a11y/check-contrast.mjs` (token matrix),
-`scripts/a11y/check-focus-styles.mjs` (no unreplaced `outline: none`) and
-`scripts/a11y/check-no-timed-navigation.mjs` (no `router.push`/`replace`, `location.assign` or
-`window.open` inside a `setTimeout`/`setInterval` under `app/(site)/**` or `components/patterns/**` —
-WCAG 2.2.1, `ACCESSIBILITY.md` §1.2).
+Plus **two** pre-browser guards in `npm run check`: `scripts/a11y/check-contrast.mjs` (token matrix)
+and `scripts/a11y/check-focus-styles.mjs` (no unreplaced `outline: none`).
+
+**This section claimed a third, and it does not exist.** `scripts/a11y/check-no-timed-navigation.mjs`
+was described here as guarding WCAG 2.2.1 — no `router.push`/`replace`, `location.assign` or
+`window.open` inside a `setTimeout`/`setInterval` under `app/(site)/**` or `components/patterns/**`.
+There is no such file and no such entry in `check`; `scripts/a11y/` holds exactly two scripts. The
+**rule** stands and `ACCESSIBILITY.md` §1.2 states it, but it is enforced by review rather than by a
+gate, and a reader who trusted this line would have believed otherwise. Corrected 2026-09-13.
 
 `tests/e2e/a11y/exceptions.json` ships with **zero rows**, prints in full on every run, and requires
 a reason, an owner and a dated review per row. Its row count is an exit criterion.
