@@ -147,6 +147,28 @@ export default defineConfig({
           setupFiles: ['./tests/setup/vitest.setup.ts'],
           include: ['tests/unit/rls/**/*.test.{ts,tsx}'],
           css: false,
+          /*
+           * EVERY TEST IN THIS PROJECT TALKS TO POSTGRES, AND THE 5-SECOND DEFAULT IS FOR TESTS
+           * THAT DO NOT.
+           *
+           * `integration` below already makes this argument for itself and sets 120s. `rls` is
+           * equally database-backed and was left on the default, which held only because almost
+           * every test here is a single statement that answers in milliseconds.
+           *
+           * `phase38.test.ts` is the exception that found it: "collapses 1,000 identical events"
+           * performs a THOUSAND SERIAL ROUND TRIPS, because collapsing is what it is asserting and
+           * a batch would not exercise the dedupe path. It measures 706ms against a local cluster
+           * on a unix socket. On CI the cluster is a Docker service and each round trip pays
+           * container network latency, so the same loop crossed 5,000ms and failed CI run 317 on
+           * main — a timeout, not a wrong answer.
+           *
+           * 30s rather than `integration`'s 120s: the work here is statements, not migration
+           * replays, so ~40x the measured time is ample headroom while still failing fast on a
+           * genuine hang. Raising this is not weakening an assertion — the test still performs all
+           * thousand writes and still demands exactly one row counting 1000.
+           */
+          testTimeout: 30_000,
+          hookTimeout: 30_000,
         },
       },
       /**

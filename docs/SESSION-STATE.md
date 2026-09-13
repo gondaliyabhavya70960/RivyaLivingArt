@@ -20,6 +20,17 @@ Amendment **A60**, on top of A55-A59. All six phases are on main; this is the au
 re-reading the guide line by line against the finished work. **It found four things, which is the
 useful lesson: finishing every phase is not the same as satisfying every line.**
 
+**MAIN WENT RED AFTER #84 AND THE CAUSE WAS A CONFIG DEFECT, NOT THE DIFF.** CI run 317 on merge
+commit `8f550e4` failed on `tests/unit/rls/phase38.test.ts` — "Test timed out in 5000ms" on
+"collapses 1,000 identical events". **The `rls` vitest project was running database-backed tests on
+the 5-second default meant for tests that touch no database.** `integration` had already made that
+argument for itself and set 120s; `rls` was missed, and it held only because almost every test there
+is a single statement answering in milliseconds. `phase38` is the exception: a thousand SERIAL round
+trips, 706ms against a local socket, over 5,000ms against CI's Dockerised Postgres. The project now
+sets `testTimeout: 30_000`. **That is not a weakened assertion** — the test still performs all
+thousand writes and still demands exactly one row counting 1000. If an `rls` test ever times out
+again, look for a real hang; 30s is ~40x the slowest measured case.
+
 **WHAT IT FIXED.** §7.2 names a **count** in the list header and no list had one — `ListPage` takes
 it now, and it obeys the same `null`-is-not-`0` rule as everything else (a failed read prints no
 figure). §3.3's second branch — "or a sentence that says why there is no action" — was missing on
