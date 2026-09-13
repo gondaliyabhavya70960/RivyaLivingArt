@@ -237,11 +237,21 @@ describeDb('a page renders from real rows', () => {
   })
 
   /**
-   * The seeded strings are what make an unresolved asset legible. `lib/cms/strings.ts` ships no
-   * fallback, so a missing row would render an unlabelled well — which is exactly why the row is
-   * seeded rather than defaulted in code.
+   * AMENDMENT A52 INVERTED THIS TEST, and the inversion is the point rather than a relaxation.
+   *
+   * It used to assert that an unresolved asset renders the seeded `ERROR.media_unavailable.label`.
+   * That string was not true on this site: nothing had failed to load and nothing had been
+   * requested — the slot had never been bound — and with the asset library unbound it printed
+   * roughly thirty times on `/` alone. `BlockImage` no longer passes it, so a public well is a
+   * well and says nothing.
+   *
+   * BOTH HALVES STILL MATTER, WHICH IS WHY THE TEST SURVIVES RATHER THAN BEING DELETED. The seeded
+   * row is still there and still reaches the renderer — `lib/cms/strings.ts` ships no fallback, so
+   * losing the row is a real regression and Studio lists the key as an expected one. What must NOT
+   * happen is that string reaching a visitor. Asserting the row exists AND is not rendered pins
+   * exactly the decision A52 made; asserting only one half would let either failure through.
    */
-  it('uses the seeded ERROR string when an asset does not resolve', () => {
+  it('keeps the seeded ERROR string out of the public well', () => {
     expect(strings.get('ERROR.media_unavailable.label')).toBe('Image unavailable')
 
     render(
@@ -253,7 +263,9 @@ describeDb('a page renders from real rows', () => {
         cloudName="rivya-test"
       />,
     )
-    expect(screen.getAllByText('Image unavailable').length).toBeGreaterThan(0)
+    // The reserved box is still drawn — that is the layout shift MediaFrame exists to prevent.
+    expect(document.querySelectorAll('[data-media-fallback]').length).toBeGreaterThan(0)
+    expect(screen.queryByText('Image unavailable')).toBeNull()
   })
 
   /** SEED §28, verbatim, through the whole chain. D10 in the one place a visitor sees it. */
