@@ -6,6 +6,7 @@ import { notFound } from 'next/navigation'
 import * as React from 'react'
 import { cache } from 'react'
 
+import { SectionRail } from '@/components/patterns/SectionRail'
 import { SectionList } from '@/components/sections/SectionList'
 import { sectionRenderer } from '@/components/sections/registry'
 import { optionalEnv } from '@/lib/env'
@@ -213,6 +214,13 @@ export async function renderCmsPage(
   return (
     <>
       <MissingRenderers sections={unrenderable(resolved.sections)} />
+      {/*
+       * THE PAGE-SECTION INDEX (RC-245). Rendered here rather than in the site layout because it
+       * indexes THIS page's bands, and the layout cannot see them — `resolved.sections` exists
+       * only inside this function. It returns null on a page with fewer than two labelled bands,
+       * so short routes get no empty column.
+       */}
+      <SectionRail sections={resolved.sections} strings={chrome.strings} />
       <SectionList
         sections={resolved.sections}
         assets={assets}

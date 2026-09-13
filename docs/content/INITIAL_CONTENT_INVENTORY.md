@@ -15,7 +15,7 @@ SEED §54’s audit of what the content seed actually put in the database, read 
 database rather than from the seed modules. Its target is §54’s: **100% of intended launch
 copy mapped to a Studio editing control.**
 
-- **588** rows audited
+- **589** rows audited
 - **70** await owner verification and cannot be published until it is given
 - **0** are authored and deferred to a later phase’s tables
 - **0** carry a bound media asset
@@ -432,6 +432,7 @@ the phase that creates its table.
 | Global content | global:UI_LABEL.search.similar.heading | UI_LABEL.search.similar.heading | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | global:UI_LABEL.search.suggestions.hint | UI_LABEL.search.suggestions.hint | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | global:UI_LABEL.search.suggestions.label | UI_LABEL.search.suggestions.label | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:UI_LABEL.section_rail.label | UI_LABEL.section_rail.label | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | global:UI_LABEL.testimonial.attribution | UI_LABEL.testimonial.attribution | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | global:UI_LABEL.testimonial.heading | UI_LABEL.testimonial.heading | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | global:WHATSAPP_TEMPLATE.commission | WHATSAPP_TEMPLATE.commission | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
