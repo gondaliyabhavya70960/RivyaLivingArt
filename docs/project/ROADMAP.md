@@ -163,7 +163,7 @@ any route). What is missing is not styling.
 | `/process` | yes | **1** | 1 | §A5 asks for "clear chapters"; one band cannot be chapters. Needs CMS composition |
 | `/faq` | yes | 1 | 0 | Correct as is — the questions are `<details>`, which is why it shows no `h2` |
 | `/search` | yes | 1 | 0 | Bespoke route, 362 lines; grouped results already render |
-| `/product/[slug]` | yes (4 fixture products) | 0 | 0 | Bespoke route, 356 lines — it uses no `page_sections` at all |
+| `/product/[slug]` | yes (4 fixture products) | 0 | 0 | **Complete against §A5 in code** — see below |
 | `/collection/[category]` | **no — 404** | — | — | **All seven categories are `DRAFT`.** The publication gate is working; only the owner can publish them |
 | `/collections/[slug]` | **no — 404** | — | — | **No `pages` row exists for any collection.** An exhibition is page-driven, so there is nothing to render |
 | `/privacy`, `/terms` | **no — 404** | 0 | — | **No legal copy exists**, so the pages have zero sections. §A5 says to preserve that gating, and D10 forbids inventing legal text. **Correct as is** |
@@ -172,6 +172,17 @@ any route). What is missing is not styling.
 **~30 empty media frames**, and they are empty for the reason amendment A49 records: nothing was ever
 bound. They fill when the binding runs (`MEDIA_GUIDE.md` §6.1) — no code change will fill them, and
 no redesign of those bands can be judged until they do.
+
+**`/product/[slug]` already satisfies its §A5 row, and the gap there is data the owner owns.** The
+brief asks for "large gallery, thumbnails, optional real model, factual specifications/materials,
+existing customization and a clearly visible inquiry action". Measured on the rendered page, all of
+it is present: `data-product-gallery`, `data-gallery-thumbnails` with an active thumbnail,
+`data-inquiry-rail`, two distinct `data-inquiry-action` affordances, `data-product-badges`,
+`data-price-state` and two JSON-LD blocks. `ProductSpecifications` is mounted and renders **nothing**
+for one reason: `product_specs` holds **0 rows** for all four products, and the component correctly
+returns null rather than drawing an empty table. **Those rows may not be invented** — specifications
+are dimensions, materials and weights, which D10 names explicitly. The section fills when the owner
+supplies them.
 
 **Three route families are gated on owner content, not on engineering.** Category pages, collection
 exhibitions and the legal pages cannot be exercised in any environment — including CI — because the

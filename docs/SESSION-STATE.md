@@ -160,10 +160,21 @@ which §A5 says to preserve and D10 forbids inventing. These are gated on owner 
 class of blocker as Studio's missing auth server, and a route that 404s everywhere cannot have a
 redesign verified against it.
 
-**What is genuinely left as code:** `/process` has one band where §A5 asks for chapters (a CMS
-composition change, so copy — seed it `OWNER_VERIFICATION_REQUIRED` where it asserts capability);
-and the two bespoke routes, `/product/[slug]` (356 lines, uses no `page_sections` at all) and
-`/search` (362 lines).
+**`/product/[slug]` turned out to be complete against §A5 already.** Measured on the rendered page:
+gallery, thumbnails with an active state, the inquiry rail, two inquiry affordances, badges, price
+state and two JSON-LD blocks are all there. `ProductSpecifications` is mounted and draws nothing
+because `product_specs` holds **0 rows** for all four products — and those rows are dimensions,
+materials and weights, which **D10 forbids inventing**. The section fills when the owner supplies
+them.
+
+**What is genuinely left as code is small:** `/process` has one band where §A5 asks for chapters (a
+CMS composition change, so seeded copy — `OWNER_VERIFICATION_REQUIRED` wherever it asserts
+capability), and `/search` (362 lines), which already renders grouped results.
+
+**The honest summary of phase 3: the code is substantially done and the remainder is owner
+content** — the media binding, publishing categories or collection exhibitions, legal copy, and
+product specifications. Do not let a later session mistake those for engineering work, and do not
+let one invent them.
 
 **2. Phase 4 — the Studio.** Untouched beyond what it inherits from the primitives (pill buttons,
 inverse-fill primary). 82 routes under `app/(studio)/studio/(shell)/`. Note the constraint recorded
