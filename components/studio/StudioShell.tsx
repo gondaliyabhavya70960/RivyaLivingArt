@@ -3,7 +3,11 @@ import Link from 'next/link'
 
 import { Heading } from '@/components/primitives/Heading'
 import { Stack } from '@/components/primitives/Stack'
-import { Text } from '@/components/primitives/Text'
+import {
+  StudioNav,
+  type StudioNavGroupData,
+  type StudioNavLinkData,
+} from '@/components/studio/StudioChrome'
 import { StudioTopBar } from '@/components/studio/StudioTopBar'
 import { CommandPalette } from '@/components/studio/command/CommandPalette'
 import { t } from '@/components/studio/strings'
@@ -53,6 +57,27 @@ export async function StudioShell({
    */
   const route = (href: string) => href as Route
 
+  /*
+   * THE LABELS ARE RESOLVED HERE, ON THE SERVER — Phase A.
+   *
+   * `StudioNav` is a Client Component because the active leaf needs the pathname, which nothing in
+   * this tree has server-side. Passing it the manifest would have put the route map and the string
+   * map in the browser, which is the thing this shell being a Server Component exists to prevent.
+   * So it receives resolved `{href, label}` pairs — exactly the hrefs and words that were going
+   * into the HTML anyway — and `t()` stays where it is.
+   */
+  const link = (leaf: { href: string; labelKey: Parameters<typeof t>[0] }): StudioNavLinkData => ({
+    href: leaf.href,
+    label: t(leaf.labelKey),
+  })
+  const navHome: StudioNavLinkData = link(STUDIO_HOME_LEAF)
+  const navPinned: StudioNavLinkData[] = pinned.map(link)
+  const navGroups: StudioNavGroupData[] = groups.map((group) => ({
+    id: group.id,
+    label: t(group.labelKey),
+    leaves: group.leaves.map(link),
+  }))
+
   return (
     <div className="flex min-h-screen flex-col">
       {/* Copy is resolved HERE and passed down: the palette is a Client Component, and `t()` reads
@@ -84,10 +109,22 @@ export async function StudioShell({
         {/* Removed from the tree when collapsed, not hidden with CSS: a `display:none` landmark
             is still announced by some assistive technology, offering navigation the person has
             deliberately put away. The control to bring it back is in the top bar, which stays. */}
+        {/*
+         * THE RAIL IS DESKTOP-ONLY NOW — Phase A.
+         *
+         * It used to be `border-b` above the main landmark below `lg`, which put eight groups and
+         * fifty-odd leaves between the top of the phone and the first word of the page, on every
+         * navigation. `lg:flex hidden` moves that job to `StudioMobileNav`, a dialog opened from
+         * the top bar; §3.7 of the implementation guide is the whole reason.
+         *
+         * Removed from the tree when collapsed, not hidden with CSS: a `display:none` landmark is
+         * still announced by some assistive technology, offering navigation the person has
+         * deliberately put away. The control to bring it back is in the top bar, which stays.
+         */}
         {!chrome.sidebar_collapsed && (
           <nav
             aria-label={t('studio.shell.primaryNavLabel')}
-            className="border-line bg-surface-raised shrink-0 border-b lg:w-64 lg:border-r lg:border-b-0"
+            className="border-line bg-surface-raised hidden shrink-0 lg:block lg:w-64 lg:border-r"
           >
             <Stack gap={6} className="p-4">
               <Stack gap={1}>
@@ -98,58 +135,12 @@ export async function StudioShell({
                 </Link>
               </Stack>
 
-              <Stack as="ul" gap={5} className="list-none p-0">
-                <li>
-                  <Link href={route(STUDIO_HOME_LEAF.href)} className="rounded-sm">
-                    <Text size="sm">{t(STUDIO_HOME_LEAF.labelKey)}</Text>
-                  </Link>
-                </li>
-
-                {pinned.length > 0 && (
-                  <li>
-                    <Stack gap={2}>
-                      <Text size="2xs" uppercase tone="tertiary">
-                        {t('studio.shell.pinnedHeading')}
-                      </Text>
-                      <Stack as="ul" gap={1} className="list-none p-0">
-                        {pinned.map((leaf) => (
-                          <li key={`pinned:${leaf.href}`}>
-                            <Link href={route(leaf.href)} className="rounded-sm">
-                              <Text size="sm" tone="secondary">
-                                {t(leaf.labelKey)}
-                              </Text>
-                            </Link>
-                          </li>
-                        ))}
-                      </Stack>
-                    </Stack>
-                  </li>
-                )}
-
-                {groups.map((group) => (
-                  <li key={group.id}>
-                    <Stack gap={2}>
-                      {/* `uppercase` is required by the Text primitive at 2xs, not decoration:
-                        DESIGN_SYSTEM §3.3 permits 11px only for uppercase eyebrow text, and the
-                        prop is typed so the pairing cannot be separated. */}
-                      <Text size="2xs" uppercase tone="tertiary">
-                        {t(group.labelKey)}
-                      </Text>
-                      <Stack as="ul" gap={1} className="list-none p-0">
-                        {group.leaves.map((leaf) => (
-                          <li key={leaf.href}>
-                            <Link href={route(leaf.href)} className="rounded-sm">
-                              <Text size="sm" tone="secondary">
-                                {t(leaf.labelKey)}
-                              </Text>
-                            </Link>
-                          </li>
-                        ))}
-                      </Stack>
-                    </Stack>
-                  </li>
-                ))}
-              </Stack>
+              <StudioNav
+                home={navHome}
+                pinned={navPinned}
+                pinnedHeading={t('studio.shell.pinnedHeading')}
+                groups={navGroups}
+              />
             </Stack>
           </nav>
         )}
@@ -158,7 +149,23 @@ export async function StudioShell({
             content rather than spanning the sidebar — and so the sidebar reaches the full height of
             the page on desktop. */}
         <div className="flex min-w-0 flex-1 flex-col">
-          <StudioTopBar session={session} sidebarCollapsed={chrome.sidebar_collapsed} />
+          <StudioTopBar
+            session={session}
+            sidebarCollapsed={chrome.sidebar_collapsed}
+            nav={{
+              home: navHome,
+              pinned: navPinned,
+              pinnedHeading: t('studio.shell.pinnedHeading'),
+              groups: navGroups,
+            }}
+            labels={{
+              search: t('studio.shell.searchLabel'),
+              searchShortcut: t('studio.shell.searchShortcut'),
+              openNav: t('studio.shell.openNav'),
+              closeNav: t('studio.shell.closeNav'),
+              navDialogTitle: t('studio.shell.navDialogTitle'),
+            }}
+          />
 
           {/* The PAGE supplies the h1, through StudioPage. A heading here as well would give every
               Studio surface two h1s, and a screen-reader user navigating by heading would land on

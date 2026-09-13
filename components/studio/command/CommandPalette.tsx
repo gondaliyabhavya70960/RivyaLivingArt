@@ -10,6 +10,15 @@ import { Dialog } from '@/components/patterns/Dialog'
 import type { CommandResult } from './registry'
 
 /**
+ * The event a Studio control dispatches to open the palette.
+ *
+ * EXPORTED FROM HERE so the listener and every dispatcher share one spelling. A string literal
+ * repeated at two call sites is a typo waiting to become a button that does nothing, and nothing
+ * would fail: `addEventListener` for a name no one dispatches is silent, and so is the reverse.
+ */
+export const STUDIO_COMMAND_OPEN_EVENT = 'rivya:studio-command-open'
+
+/**
  * ⌘K / Ctrl-K: jump anywhere in the Studio.
  *
  * IT COMPOSES `patterns/Dialog`, so the focus trap, Escape, focus restoration and scroll lock are
@@ -74,6 +83,28 @@ export function CommandPalette({
     }
     window.addEventListener('keydown', onKeyDown, { capture: true })
     return () => window.removeEventListener('keydown', onKeyDown, { capture: true })
+  }, [])
+
+  /*
+   * AND A TAP, BECAUSE AN ANDROID PHONE HAS NO COMMAND KEY — Phase A.
+   *
+   * Until this existed the palette had exactly one way in, and the top bar advertised it as "Press
+   * Ctrl-K or Cmd-K to search" — a sentence that is not actionable on the owner's own device. The
+   * search control in the top bar dispatches this event instead of faking a keystroke: a synthetic
+   * `KeyboardEvent` would have worked and would have coupled a button to the shape of a shortcut,
+   * so that changing the shortcut later would silently break the button.
+   *
+   * OPEN RATHER THAN TOGGLE, which is the difference between the two entry points and is
+   * deliberate. ⌘K toggles because the same keystroke is how a keyboard user dismisses what they
+   * opened. A tap on a control that is behind the open dialog's scrim cannot be a dismissal, so
+   * treating it as one would mean a tap that appears to do nothing.
+   */
+  useEffect(() => {
+    function onOpenRequest() {
+      setOpen(true)
+    }
+    window.addEventListener(STUDIO_COMMAND_OPEN_EVENT, onOpenRequest)
+    return () => window.removeEventListener(STUDIO_COMMAND_OPEN_EVENT, onOpenRequest)
   }, [])
 
   const search = useCallback(async (value: string) => {

@@ -6,6 +6,44 @@ Every phase adds an entry; see `docs/architecture/CANONICAL-DECISIONS.md` D9 for
 
 ## [Unreleased]
 
+### Studio Phase A — the shell works on a phone (2026-09-13)
+
+Amendment **A55**. The owner's Studio UI/UX implementation guide, Phase A only; it says to stop
+after A+B and merge, and this is A.
+
+- **You can see where you are.** The active leaf takes `aria-current="page"` and a left champagne
+  rule. Nothing in the sidebar carried `aria-current` before — only the Overview tabs did.
+- **The navigation opens on a phone.** Below `lg` the rail was a fifty-leaf stack *above* the main
+  landmark; it is now a labelled dialog built on `patterns/Drawer`, with its focus trap, Escape and
+  focus restoration. Two taps to Products.
+- **Search has a tap target.** The bar used to say "Press Ctrl-K or Cmd-K to search" as inert text.
+  An Android phone has neither key, so Studio search had no entry point at all on the owner's
+  device. It is a 44px button now, dispatching an event the palette listens for beside the
+  shortcut; the hint shows at `lg` and above.
+- Top-bar controls were `underline` text at roughly 20px. They are 44px.
+
+**The island budget caught a real cost and the fix was not to raise it.** Three controls as three
+files took two Studio routes from six islands to **nine against a budget of eight** — the gate
+counts a `'use client'` module as an island when a *server* component imports it, so boundaries
+moved, not shipped JavaScript. They are one module now (`StudioChrome.tsx`) and the heaviest Studio
+route is 7/8.
+
+**A test forced one design decision.** `/studio` is a prefix of every Studio route, so a plain
+longest-prefix rule over the links *one role can see* lights up Overview on any route whose own leaf
+is hidden. The home leaf matches exactly; an unknown route marks nothing.
+
+**Not in Phase A, on purpose:** the optional bottom bar (the drawer already gives the two taps the
+exit criterion asks for) and the verification badges (they need metric readers, and "a failed query
+is never `0`" deserves its own change).
+
+**Unverified in the browser, and stated plainly:** the local harness has no auth server, so 156
+Studio specs skip and no Studio interaction can be browser-tested here. Twelve new unit tests cover
+the active rule, the drawer trigger and the search dispatch; none is a measurement of the rendered
+shell on a phone.
+
+Verified: `npm run check` exit 0 (44 gates); full suite, all three vitest projects, **248 files,
+3,775 tests, 0 failed, 0 skipped**.
+
 ### The owner's Studio content pack, as drafts (2026-09-13)
 
 Amendment **A54**. 528 items across nine surfaces, supplied as a workbook. Two surfaces became seed

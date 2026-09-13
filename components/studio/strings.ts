@@ -2305,6 +2305,34 @@ export const STUDIO_STRINGS = {
     value: 'Pinned',
     contentKey: 'studio_help.shell_pinned_heading',
   },
+  /**
+   * PHASE A. The search hint above became a CONTROL, so these are its name and its shortcut, split
+   * in two: the name is what the button says and what a screen reader announces, the shortcut is
+   * shown at `lg` and above only. An Android phone has no Command key, and the old single sentence
+   * — "Press Ctrl-K or Cmd-K to search" — was the only entry point Studio search had on the
+   * owner's own device.
+   */
+  'studio.shell.searchLabel': {
+    value: 'Search Studio',
+    contentKey: 'studio_help.shell_search_label',
+  },
+  'studio.shell.searchShortcut': {
+    value: 'Ctrl-K',
+    contentKey: 'studio_help.shell_search_shortcut',
+  },
+  /** The mobile navigation dialog: its trigger, its close control, and its accessible name. */
+  'studio.shell.openNav': {
+    value: 'Open navigation',
+    contentKey: 'studio_help.shell_open_nav',
+  },
+  'studio.shell.closeNav': {
+    value: 'Close navigation',
+    contentKey: 'studio_help.shell_close_nav',
+  },
+  'studio.shell.navDialogTitle': {
+    value: 'Studio navigation',
+    contentKey: 'studio_help.shell_nav_dialog_title',
+  },
   'studio.page.pin': {
     value: 'Pin to the sidebar',
     contentKey: 'studio_help.page_pin',

@@ -1,8 +1,24 @@
 import { collapseSidebarAction } from '@/app/(studio)/studio/(shell)/actions'
 import { Badge } from '@/components/primitives/Badge'
 import { Text } from '@/components/primitives/Text'
+import {
+  StudioMobileNav,
+  StudioSearchButton,
+  type StudioNavProps,
+} from '@/components/studio/StudioChrome'
 import { t } from '@/components/studio/strings'
 import type { StaffSession } from '@/lib/auth/session'
+
+/**
+ * The 44px floor, in one place. §9 of the implementation guide puts every Studio target at 44×44,
+ * and the two controls here were `underline underline-offset-4` text — roughly 20px tall on the
+ * owner's phone. Sized rather than overlaid: these sit in a wrapping flex row, where an
+ * `rv-hit-44` overlay would reach into whatever wrapped beside it.
+ */
+const TOP_BAR_CONTROL =
+  'border-line bg-surface flex min-h-11 items-center rounded-sm border px-3 ' +
+  'transition-colors duration-(--rv-duration-fast) ease-standard motion-reduce:transition-none ' +
+  'hover:border-(--rv-ink-accent)'
 
 /**
  * The Studio top bar: who you are, where you are deployed, and how to search.
@@ -43,21 +59,49 @@ function environmentLabel(): string | null {
 export function StudioTopBar({
   session,
   sidebarCollapsed,
+  nav,
+  labels,
 }: {
   session: StaffSession
   sidebarCollapsed: boolean
+  /** The resolved link list, for the mobile drawer. See `StudioShell`. */
+  nav: Omit<StudioNavProps, 'onNavigate'>
+  /** Resolved copy for the controls this bar owns. */
+  labels: {
+    search: string
+    searchShortcut: string
+    openNav: string
+    closeNav: string
+    navDialogTitle: string
+  }
 }) {
   const environment = environmentLabel()
 
   return (
-    <div className="border-line bg-surface-raised flex flex-wrap items-center justify-between gap-3 border-b px-4 py-2">
+    /*
+     * STICKY — Phase A. On a phone the top bar carries the only way into the navigation and the
+     * only way into search, and a bar that scrolls away takes both with it. `z-30` sits under the
+     * Drawer's own layer so the open dialog is never underneath the control that opened it.
+     */
+    <div className="border-line bg-surface-raised sticky top-0 z-30 flex flex-wrap items-center justify-between gap-3 border-b px-4 py-2">
       <div className="flex flex-wrap items-center gap-2">
+        {/* The drawer trigger, below `lg` only: above it the rail is always there. */}
+        <StudioMobileNav
+          {...nav}
+          openLabel={labels.openNav}
+          closeLabel={labels.closeNav}
+          title={labels.navDialogTitle}
+          className="lg:hidden"
+        />
         {/* A form, not a button with a handler: this renders on the server, and a plain form means
             the control works before hydration and with JavaScript off. The NEXT state is submitted
             rather than a toggle, so two fast clicks converge instead of racing. */}
         <form action={collapseSidebarAction}>
           <input type="hidden" name="collapsed" value={sidebarCollapsed ? 'false' : 'true'} />
-          <button type="submit" className="rounded-sm underline underline-offset-4">
+          {/* `hidden lg:flex`: this collapses the DESKTOP rail. Below `lg` there is no rail to
+              collapse — the navigation is the drawer — so the control would toggle a preference
+              with no visible effect. */}
+          <button type="submit" className={`${TOP_BAR_CONTROL} hidden lg:flex`}>
             <Text as="span" size="xs">
               {sidebarCollapsed
                 ? t('studio.shell.expandSidebar')
@@ -66,13 +110,15 @@ export function StudioTopBar({
           </button>
         </form>
 
-        {/* A visible affordance for ⌘K. A keyboard shortcut nobody is told about is a shortcut
-            only its author uses; this is not a button because the palette is opened by the
-            shortcut, and a button that says "press ⌘K" would be a control that does nothing when
-            clicked. */}
-        <Text size="xs" tone="tertiary">
-          {t('studio.shell.searchHint')}
-        </Text>
+        {/*
+         * A CONTROL, NOT A SENTENCE — Phase A, and the reasoning it replaces was sound but wrong
+         * for the owner's device. This used to read "Press Ctrl-K or Cmd-K to search" as inert
+         * text, on the argument that a button saying "press ⌘K" would do nothing when clicked. An
+         * Android phone has neither key, so Studio search had NO entry point at all on the machine
+         * it is actually used from. The button opens the same palette; the shortcut is now a hint
+         * inside it, shown at `lg` and above.
+         */}
+        <StudioSearchButton label={labels.search} shortcutHint={labels.searchShortcut} />
         {environment !== null && <Badge tone="warning">{environment}</Badge>}
       </div>
 
@@ -84,7 +130,7 @@ export function StudioTopBar({
             staff member who cannot see their own role has to ask somebody. */}
         <Badge tone="neutral">{session.role}</Badge>
         <form action="/api/auth/sign-out" method="post">
-          <button type="submit" className="rounded-sm underline underline-offset-4">
+          <button type="submit" className={TOP_BAR_CONTROL}>
             <Text as="span" size="xs">
               {t('studio.shell.signOut')}
             </Text>

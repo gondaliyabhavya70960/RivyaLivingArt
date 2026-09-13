@@ -202,6 +202,73 @@ Brand and editorial copy may be written; anything asserting business capability 
 
 ## Amendments
 
+**2026-09-13 · A55 — Studio Phase A: the shell tells you where you are, opens on a phone, and
+search has a tap target.**
+
+*The owner's Studio UI/UX implementation guide, Phase A only. It says to stop after A+B and merge;
+this is A.*
+
+**THREE DEFECTS, EACH NAMED BY THE GUIDE.**
+
+*§3.2 — no current-route signal.* Every sidebar link was `Text tone="secondary"` and nothing in the
+navigation carried `aria-current`; only the Overview tabs did. In eight groups and fifty-odd leaves
+the only signal of position was the page's own `h1`. The active leaf now takes `aria-current="page"`
+and a left champagne rule — `border-(--rv-ink-accent)`, the scheme's own accent, not a new colour.
+
+*§3.7 — mobile is an afterthought.* Below `lg` the sidebar was a full-width `border-b` stack
+rendered ABOVE the main landmark, so every navigation on the owner's 1440×3088 Android viewport
+began with a fifty-leaf scroll. The rail is now `lg:block` and a labelled dialog carries the
+navigation on a phone, composed from `patterns/Drawer` so the focus trap, Escape, scroll lock and
+focus restoration are the ones Phase 02 built. Closed means absent, which is the rule the shell
+already followed for a collapsed sidebar.
+
+*§3.3 — search was a sentence.* The top bar rendered "Press Ctrl-K or Cmd-K to search" as inert
+text, with a comment arguing a button saying "press ⌘K" would be a control that does nothing. The
+reasoning was sound and the conclusion was wrong for the device Studio is used from: **an Android
+phone has neither key**, so Studio search had no entry point at all there. It is now a 44px button
+dispatching `STUDIO_COMMAND_OPEN_EVENT`, which the palette listens for beside the shortcut. The
+hint moved inside the button and shows at `lg` and above.
+
+**A DISPATCH, NOT A SIMULATED KEYSTROKE.** Synthesising a `KeyboardEvent` would have worked and
+would have tied a button to the shape of a shortcut, so changing ⌘K later would silently break a
+control that does not mention it. The event opens rather than toggles: ⌘K toggles because the same
+key dismisses what it opened, but a tap on a control behind the dialog's scrim cannot be a
+dismissal, and treating it as one is a tap that appears to do nothing.
+
+**THE ISLAND BUDGET CAUGHT A REAL COST, AND THE FIX WAS NOT TO RAISE IT.** The three controls began
+as three files; the shell and the top bar imported them separately, and two Studio routes went from
+six islands to **nine against a budget of eight**. `check-island-budget.mjs` counts a `'use client'`
+module as an island when a SERVER component imports it, so the number of boundaries — not the
+shipped JavaScript — was what moved. They are now one module, `StudioChrome.tsx`: the sidebar's
+link list, the drawer that carries it on a phone, and the search control. The heaviest Studio route
+is 7/8. Raising the budget would have made the gate describe whatever the code happened to do.
+
+**ONE CLIENT BOUNDARY, AND THE SHELL STAYS A SERVER COMPONENT.** The active leaf needs the pathname,
+which no server component in this tree has — a layout does not receive one and `proxy.ts` publishes
+no header for it. The guide offers `headers()` or "a small client wrapper only around the link
+list"; this is the wrapper. It carries **no manifest and no string map**: `StudioShell` resolves
+every label through `t()` and passes `{href, label}` pairs, which are the hrefs and words that were
+going into the HTML anyway.
+
+**THE HOME LEAF MATCHES EXACTLY, WHICH THE MANIFEST'S VERSION DOES NOT NEED TO.** A test forced the
+question. `/studio` is a prefix of every route in the application, so under a plain longest-prefix
+rule over a PARTIAL set — the links one role can see — Overview lights up on any route whose own
+leaf is hidden. A confident wrong answer teaches a reader the indicator cannot be trusted, so an
+unknown route marks nothing.
+
+**WHAT PHASE A DELIBERATELY DOES NOT INCLUDE.** The optional four-item bottom bar: the exit
+criterion is Products in two taps, and the drawer gives exactly two (menu, then the leaf), so a
+second persistent island would buy one tap at the cost of another untestable surface. The
+verification badges are also not here — they need metric readers wired into the chrome, and §12's
+rule that a failed query must never render `0` deserves its own change rather than a corner of this
+one.
+
+**UNVERIFIED IN THE BROWSER, AND SAID PLAINLY.** `docs/ops/TESTING.md` §13: the local harness has no
+auth server, so 156 Studio specs skip and no Studio interaction can be browser-tested here. The
+drawer, the active rule and the search dispatch are covered by **twelve new unit tests**; none of
+them is a measurement of the rendered shell on a phone. That gap is the top blocker for the Studio
+redesign and it is unchanged by this amendment.
+
 **2026-09-13 · A54 — the owner's Studio content pack lands as drafts, and the four places it was
 refused.**
 
