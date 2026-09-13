@@ -862,9 +862,18 @@ ceiling and a reduced-motion branch. A component picks a class. It does not pick
 | **WOOD** — settle | First appearance of static content: headings, paragraphs, list items, cards entering the viewport | `--rv-duration-slow`, `--rv-ease-out`, `--rv-motion-rise-md`, stagger 60ms | `translateY` only — see §4.2.1 rule 5 for why not opacity. No scale, no blur, no rotation. Runs **once** per element per page view | Renders in final position, fully opaque, no transition |
 | **RESIN** — flow | Media revealing: hero stills, gallery images, the material sequence, image crossfades | `--rv-duration-flow`, `--rv-ease-flow` | Opacity and `clip-path` inset only. Never a scale on a photograph larger than `--rv-motion-scale-in` | Image is simply present |
 | **LIGHT** — specular | Hover, focus, active. Anything that answers a pointer or a key within one frame budget | `--rv-duration-fast`/`quick`, `--rv-ease-standard` | Colour, border, opacity, `box-shadow`. No layout property, ever | Colour changes still apply; they are not motion |
-| **FORM** — mass | Things with weight: drawers, dialogs, mega-menu panels, accordions, mobile nav | `--rv-duration-base`, `--rv-ease-out` in / `--rv-ease-in` out, `--rv-motion-rise-md` | Transform + opacity. Height animation only via `grid-template-rows` or `interpolate-size`, never JS-measured pixels | Appears and disappears instantly; focus management is unchanged |
+| **FORM** — mass | Things with weight: drawers, dialogs, mega-menu panels, accordions, mobile nav, **and a tab list's travelling selection indicator** (amendment A51) | `--rv-duration-base`, `--rv-ease-out` in / `--rv-ease-in` out, `--rv-motion-rise-md` | Transform + opacity. Height animation only via `grid-template-rows` or `interpolate-size`, never JS-measured pixels | Appears and disappears instantly; focus management is unchanged |
 | **SPACE** — depth | Scroll-linked depth: hero media drift, section ground shifts, sticky chapter media | `--rv-duration-slower`, `--rv-motion-parallax-max` | ≤ 24px total travel; `transform` only; disabled below 768px; never on text; never scroll-jacking — the page scroll is observed, never captured | Nothing moves. No listener is attached |
 | **ART** — the held moment | The one deliberate transition per page: hero entrance, lightbox open, 3D viewer reveal | `--rv-duration-scene`, `--rv-ease-flow` | **At most one ART transition may run per viewport per page**. Never blocks input; never delays LCP | Static composition, immediately complete |
+
+**Why a tab indicator is FORM and not LIGHT (amendment A51).** A travelling bar is a `transform`,
+and LIGHT permits colour, border, opacity and shadow and no transform at all — which is why
+`components/patterns/Tabs` originally argued a sliding indicator could not be built inside §4.2 and
+shipped a colour transition instead. That argument was correct about LIGHT and wrong about the
+class: a small object moving to a new position is exactly what FORM already describes, and FORM
+permits transform at `--rv-duration-base`. Placing it there needed no rule weakened — only the
+enumerated examples widened. The reduced-motion branch FORM already specifies ("appears and
+disappears instantly") is what the indicator does: it arrives at the right tab without travelling.
 
 Three cross-cutting rules:
 

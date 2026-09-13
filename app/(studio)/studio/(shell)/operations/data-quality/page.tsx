@@ -311,7 +311,18 @@ export default async function Page() {
 
   return (
     <StudioPage path="/studio/operations/data-quality">
-      <Tabs items={items} label={t('studio.research.dataQualityHeading')} defaultValue="products" />
+      {/*
+       * `indicator="slide"` is opted into HERE rather than defaulted in the component, because
+       * `Tabs` also renders on `/product/[slug]` and a default would change the public site.
+       * Studio is the surface amendment A51 scopes the travelling bar to: it is behind auth, so
+       * the measurement and its ResizeObserver cost nothing against the public island budget.
+       */}
+      <Tabs
+        items={items}
+        label={t('studio.research.dataQualityHeading')}
+        defaultValue="products"
+        indicator="slide"
+      />
     </StudioPage>
   )
 }

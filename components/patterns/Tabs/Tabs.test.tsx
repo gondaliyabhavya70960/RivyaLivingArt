@@ -129,6 +129,69 @@ describe('Tabs', () => {
     expect(screen.getByRole('tab', { name: 'Overview' })).toHaveAttribute('aria-selected', 'true')
   })
 
+  /**
+   * THE TRAVELLING INDICATOR (amendment A51), AND THE PART OF IT THAT CAN GO WRONG SILENTLY.
+   *
+   * jsdom lays nothing out: every `offsetLeft` and `offsetWidth` is 0 and `ResizeObserver` does
+   * not exist. So these assert the things that do NOT depend on layout — which branch draws, that
+   * only one indicator is ever present, and that the default is unchanged — and leave the geometry
+   * to the browser suite. A test that asserted a pixel here would be asserting jsdom's zero.
+   *
+   * `indicator` DEFAULTS TO `static` AND THAT IS LOAD-BEARING. `Tabs` renders on `/product/[slug]`
+   * as well as in Studio, so a default of `slide` would change the public site. The first case is
+   * the one that fails if somebody flips the default to be helpful.
+   */
+  it('draws the per-tab underline by default, because the public site renders this', () => {
+    const { container } = render(<Tabs items={ITEMS} label="Product details" />)
+
+    expect(container.querySelector('[data-rv-tab-indicator]')).toBeNull()
+    expect(screen.getByRole('tab', { name: 'Overview' })).toHaveClass('border-ink-accent')
+  })
+
+  /**
+   * Without a measurement there is nothing to slide to, so the strip keeps the underline. This is
+   * the server render and the JavaScript-off case, and it is why selection always has a SHAPE —
+   * WCAG 1.4.1 is not satisfied by the ink step alone.
+   */
+  /**
+   * THE CASE THAT CAUGHT A REAL DEFECT. jsdom reports `offsetWidth: 0` for everything, so the
+   * first version of this measured `{x: 0, w: 0}`, decided it HAD a measurement, drew a bar at
+   * `scaleX(0)` — invisible — and turned the per-tab underline transparent. The strip was left
+   * with no selection shape at all, which is a WCAG 1.4.1 failure wherever a box measures zero:
+   * inside a `display: none` ancestor, or before a webfont resolves.
+   */
+  it('keeps the underline when the measurement has no width, so selection always has a shape', () => {
+    const { container } = render(<Tabs items={ITEMS} label="Product details" indicator="slide" />)
+
+    expect(container.querySelector('[data-rv-tab-indicator]')).toBeNull()
+    expect(screen.getByRole('tab', { name: 'Overview' })).toHaveClass('border-ink-accent')
+  })
+
+  it('leaves the keyboard contract alone when the indicator slides', async () => {
+    render(<Tabs items={ITEMS} label="Product details" indicator="slide" />)
+
+    await userEvent.click(screen.getByRole('tab', { name: 'Overview' }))
+    await userEvent.keyboard('{ArrowRight}')
+
+    // The indicator is decoration; arrow keys, roving tabindex and aria-selected are the contract.
+    const materials = screen.getByRole('tab', { name: 'Materials' })
+    expect(materials).toHaveAttribute('aria-selected', 'true')
+    expect(materials).toHaveAttribute('tabindex', '0')
+    expect(screen.getByRole('tab', { name: 'Overview' })).toHaveAttribute('tabindex', '-1')
+  })
+
+  it('still associates every tab with its panel when the indicator slides', () => {
+    render(<Tabs items={ITEMS} label="Product details" indicator="slide" />)
+
+    // The reason this component was not replaced by a third-party strip: that one renders
+    // `role="tablist"` and `role="tab"` and no panels at all, so it carries no `aria-controls`.
+    for (const tab of screen.getAllByRole('tab')) {
+      const controls = tab.getAttribute('aria-controls')
+      expect(controls).not.toBeNull()
+      expect(document.getElementById(controls ?? '')).not.toBeNull()
+    }
+  })
+
   it('falls back to the first selectable tab when the value names no tab', () => {
     render(<Tabs items={ITEMS} label="Product details" defaultValue="dimensions" />)
 

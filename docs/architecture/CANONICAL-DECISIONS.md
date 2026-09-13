@@ -202,6 +202,49 @@ Brand and editorial copy may be written; anything asserting business capability 
 
 ## Amendments
 
+**2026-09-13 · A51 — the one external candidate worth reopening, read at source; a selection
+indicator joins §4.2's FORM class; and the travelling bar is built first-party.**
+
+*This reverses nothing in A50 and completes it.* A50 recorded the owner's decision to stay
+first-party and deferred SmoothUI's Animated Tabs on verification grounds, naming it "the one
+candidate worth reopening". The owner asked for it to be reopened the same day. The source was
+located and read, the verdict stayed `NOT_ADOPTED`, **and its basis changed entirely**.
+
+*What reading the source found, which no architectural argument would have.* The file is
+`packages/smoothui/components/animated-tabs/index.tsx` — found only after eleven 404s, because the
+marketing host is unreachable, GitHub's tree API is scoped to this account's own repositories, and
+`pnpm-workspace.yaml` was what finally revealed the monorepo layout. It is 165 lines carrying
+`role="tablist"`, `role="tab"`, `aria-selected`, roving `tabIndex`, Arrow/Home/End and
+`useReducedMotion` — and **zero `aria-controls` and zero `role="tabpanel"`**. It renders no panels
+at all. **It is a tab STRIP, and the APG tabs pattern is a strip plus panels associated to it.**
+RC-203 has both halves; adopting this would have traded a complete, tested accessibility contract
+for a sliding underline. A licence check and a bundle check would each have waved that through.
+
+*A51·a — a tab list's travelling selection indicator is §4.2 FORM.* The original `Tabs` argued at
+length that a sliding bar could not be built inside §4.2, because a travelling bar is a `transform`
+and LIGHT permits colour, border, opacity and shadow and no transform at all. That was right about
+LIGHT and wrong about the class: FORM already describes a small object moving to a new position and
+already permits transform at `--rv-duration-base`. **No rule is weakened — only FORM's enumerated
+examples are widened**, and the reduced-motion branch FORM already specifies is exactly what the
+indicator needs.
+
+*A51·b — the bar is first-party and OFF BY DEFAULT.* `components/patterns/Tabs` gains
+`indicator="slide"`: one bar, `translateX` + `scaleX` on a 1px element, measured by a
+`ResizeObserver` watching both the tab (its webfont changes its width) and the strip (a resize moves
+every tab without changing any tab's box). **No dependency was added**; SmoothUI's own package
+declares `motion@^12.23.25`, which would have been this project's first animation runtime. The
+default is `static` because **`Tabs` renders on `/product/[slug]` as well as in Studio**, so a
+changed default is a changed public site; Studio's data-quality page opts in. Per the brief — *"A
+first-party approximation must not be reported as an imported library component"* — this is recorded
+as first-party work with SmoothUI as the visual reference.
+
+*A defect the work found in itself, and the reason the guard reads `w > 0`.* The first version
+treated any measurement as sufficient. A box measures `0` inside a `display: none` ancestor and
+before a webfont resolves, so it drew a bar at `scaleX(0)` — invisible — **and** turned the per-tab
+underline transparent, leaving selection carried by the ink step alone, which WCAG 1.4.1 refuses.
+The strip now keeps the underline until a non-zero width exists, so it is never without a shape;
+`Tabs.test.tsx` fails if the guard is removed, checked by removing it.
+
 **2026-09-13 · A50 — the external component evaluation, done per component, and the owner's decision
 to stay first-party (Rivya UI Redesign, brief phase 5).**
 
