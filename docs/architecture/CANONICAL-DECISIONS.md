@@ -202,6 +202,88 @@ Brand and editorial copy may be written; anything asserting business capability 
 
 ## Amendments
 
+**2026-09-13 · A58 — Studio Phase D: the FAQ register exists, a request for quote reads as a
+decision, and the last 20px control in Studio is gone.**
+
+*The same implementation guide, Phase D — its largest, at days 7-12. This lands the part that is UI
+work. What it does not land is named at the end, with reasons.*
+
+**A CORRECTION FIRST, BECAUSE IT SHAPED A DECISION.** A56 recorded that `/studio/content/faqs` was
+left a stub because "no FAQ repository exists". That was wrong: `listFaqs` has been in
+`lib/supabase/repositories/cms.ts` since the CMS engine landed, ordered by `position`, RLS-scoped
+like every other reader. The screen needed writing; the data layer did not. Phase B deferred it on a
+premise that a two-minute grep would have disproved, and the deferral is the kind that quietly
+becomes permanent.
+
+**THE FAQ SCREEN'S JOB IS VERIFYING, NOT WRITING, AND THAT IS WHY IT HAS NO CREATE FORM.** §8 gives
+it "Verify answers". A54 seeded fifty-five, every one a DRAFT carrying `owner_verification`, because
+each states something about how this studio works and D10 forbids the interface asserting that on
+the owner's behalf. The work in front of anyone opening this screen is reading those fifty-five, not
+adding a fifty-sixth, so the verification pill beside the status pill is the point of the table: the
+status says DRAFT, and only the verification says whether that is because nobody has written it or
+because nobody has confirmed it. Across fifty-five rows the two are otherwise indistinguishable.
+
+**NO PUBLISH CONTROL ON THE LIST, AND THAT IS A SCOPE LINE RATHER THAN AN OVERSIGHT.** Publishing a
+row carrying `OWNER_VERIFICATION_REQUIRED` is refused in the database. The Studio's answer to that
+refusal belongs on an editing screen with the permission checks and transition rules that go with
+it; a one-click publish on a list row would be a control whose most likely outcome is a server error
+the reader cannot interpret. The first column is likewise not a link — every other Studio list makes
+it the way in, and there is no detail screen to go to yet. A link that goes nowhere teaches a reader
+the whole table is inert.
+
+**A FAILED READ IS NOT AN EMPTY LIST, AND `listFaqs` THROWS RATHER THAN RETURNING `[]`.** Rendering
+"No questions yet" from a caught throw would tell an owner their fifty-five seeded drafts had
+vanished. The page catches into `null` and passes `reason: 'unreadable'`, which is the same rule
+A57 wrote into `TodayList` and A56 into `EmptyState`, now in a third place.
+
+**"RFQ IS A PILL, NOT A BLANK"** — §9's line, and the defect it names is specific. A product priced
+`REQUEST_QUOTE` has no number, so a price column that renders the number renders nothing, and an
+empty cell is indistinguishable from one somebody forgot to fill in. Across a catalogue where MOST
+rows are request-for-quote — which is what this business sells — a column of blanks reads as a
+broken import rather than as a deliberate commercial decision. `PriceStatePill` renders every state
+as words, including the two that carry a figure: showing the word only for the numberless states
+would make "request a quote" look like the exception it is not.
+
+**THE FIGURE IS DELIBERATELY NOT IN THE COLUMN.** A price is minor units in a currency, and
+formatting one for a list means deciding what "₹1,20,000 from" means beside "₹1,20,000" in a narrow
+cell. The state is what a merchandiser scans for; the amount belongs on the product's own screen
+where it has room to be unambiguous. A half-formatted figure would be inventing a price display, and
+D10 has a view about invented prices. No tone is `danger` either: a request-for-quote product is
+this studio's whole conversion model, not a deficiency.
+
+**DIMENSIONS ARE NOW LABELLED A TARGET ENVELOPE UNTIL THE PIECE IS MADE.** §9 asks for it and D10 is
+the reason. Every one of the pack's seventy-six concepts carries a size describing the brief rather
+than an object that exists, and a figure typed into the product form before the piece is built is a
+target, not a measurement — yet it reaches a visitor as a specification either way. The help text
+now says so before the number is typed rather than after.
+
+**THE LAST 20px CONTROL IN STUDIO IS GONE.** The inquiries CSV export was still `underline
+underline-offset-4`, which §3.6 measured at about 20px on the owner's phone. It is
+`StudioActionAnchor` — a plain `<a>` at 44px rather than a `Link`, because `next/link` would
+prefetch a CSV of every enquiry in the database on every render of this page.
+
+**THE QUIET INBOX IS THE ONE EMPTY STATE IN STUDIO THAT MUST NOT READ AS A TASK.** §8: "Quiet inbox
+is success." Nobody is being asked to go and make an enquiry happen, so this screen gets no CTA —
+the opposite of the rule A56 applied everywhere else — and a line under the table says why the zero
+is fine. §8's primary action, "Open latest", exists only when there IS a newest enquiry: the list is
+already newest-first, so it is the first row, and a button that opens nothing on a quiet inbox is
+worse than no button on the state this screen is usually in.
+
+**WHAT PHASE D DOES NOT LAND, AND WHY EACH ONE IS LEFT.** The page editor is §9's own "keep
+SectionBoard, status transitions stay `lib/cms/transitions.ts`" — the instruction is to change
+nothing, and nothing changed. Portfolio's bullet ("client fields stay empty unless the owner types a
+real name") was ALREADY satisfied before this phase: the create form asks for a title and an address
+and nothing else, and consent is a column in the table. Product create's "category + title first"
+is a reordering of `ProductForm`, which serves create and edit from one component and carries its
+own validation and issue-mapping; reordering it is a change to the editing screen as much as the
+creating one, and it is not worth attaching to a phase already spanning four surfaces. The FAQ
+editing screen is the real remaining gap and is the natural next slice.
+
+**UNVERIFIED IN THE BROWSER, UNCHANGED SINCE A55.** Six new unit tests; the FAQ screen and the
+inquiries changes have no unit coverage of their own because both are Server Components reading
+through a request-scoped Supabase client, which the offline `unit` project cannot build. The local
+harness still has no auth server, so 156 Studio specs skip and none of this was seen in a viewport.
+
 **2026-09-13 · A57 — Studio Phase C: the Overview answers "what needs a human today", and a failed
 query still refuses to say zero.**
 

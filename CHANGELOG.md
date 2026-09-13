@@ -6,6 +6,41 @@ Every phase adds an entry; see `docs/architecture/CANONICAL-DECISIONS.md` D9 for
 
 ## [Unreleased]
 
+### Studio Phase D — the FAQ register, and RFQ stops reading as a blank (2026-09-13)
+
+Amendment **A58**. The same guide, Phase D — its largest. This lands the part that is UI work.
+
+- **`/studio/content/faqs` is a real screen.** It was a twenty-line stub, deferred in Phase B on the
+  premise that no FAQ reader existed — **that was wrong**: `listFaqs` has been in
+  `lib/supabase/repositories/cms.ts` since the CMS engine landed. The screen needed writing; the
+  data layer did not.
+- **Its job is verifying, not writing**, so it has no create form. Fifty-five seeded DRAFTs each
+  carry `owner_verification`, and the verification pill beside the status pill is the point of the
+  table: the status says DRAFT, only the verification says whether that is because nobody wrote it
+  or because nobody confirmed it.
+- **A failed read renders `unreadable`, not "no questions yet"** — `listFaqs` throws rather than
+  returning `[]`, and the wrong branch would tell an owner their seeded drafts had vanished.
+- **`PriceStatePill`** — §9's "RFQ is a pill, not a blank". Most of this catalogue is
+  request-for-quote, so a column rendering only the number renders a column of blanks, which reads
+  as a broken import rather than as the commercial model this studio runs. The figure stays off the
+  list deliberately: a half-formatted price is an invented price.
+- **Dimensions are labelled a target envelope until the piece is made.** The pack's concepts carry
+  sizes describing a brief, not a measurement, and that reaches a visitor as a specification either
+  way.
+- **The last ~20px control in Studio is gone** — the inquiries CSV export, now `StudioActionAnchor`
+  (a plain `<a>`, because `next/link` would prefetch a CSV of every enquiry on every render).
+- **A quiet inbox gets no CTA**, unlike every other empty state. §8: "Quiet inbox is success."
+  "Open latest" appears only when there is a newest enquiry to open.
+
+**Not landed, with reasons:** the page editor (§9 says keep it as is, and it is unchanged);
+portfolio (its bullet was already satisfied); product create's field order (a `ProductForm`
+reordering that changes the edit screen as much as the create one). The FAQ **editing** screen is
+the real remaining gap.
+
+**Unverified in the browser.** Six new unit tests; the FAQ and inquiries screens have no unit
+coverage of their own because both are Server Components reading through a request-scoped Supabase
+client. 3,798 tests pass across all three projects and the 44 static gates are green.
+
 ### Studio Phase C — the Overview says what needs a human today (2026-09-13)
 
 Amendment **A57**. The same guide, Phase C.
