@@ -14,7 +14,40 @@ owner_verification: NOT_REQUIRED
 
 ---
 
-## Most recent work — Studio UI/UX phases A, B and C (2026-09-13)
+## Most recent work — Studio UI/UX phases A-D (2026-09-13)
+
+Amendments **A55**-**A58**. A, B and C are on main. **D is the work in flight and only its UI half
+is done** — see the gap list below. **E and F are not started**; the guide's §9 is the map.
+
+**READ THIS BEFORE DEFERRING ANYTHING ELSE.** Phase B left `/studio/content/faqs` a stub and
+recorded the reason as "no FAQ repository exists". That was false — `listFaqs` has been in
+`lib/supabase/repositories/cms.ts` since the CMS engine landed. A deferral written on an unchecked
+premise is the kind that becomes permanent. **Grep before you defer.**
+
+**PHASE D, IN ONE LINE.** FAQs is a real list; the products list has a price-state column;
+`/studio/inquiries/all` joined the list rhythm and lost the last ~20px control in Studio.
+
+**THE GAPS PHASE D LEFT, AND WHICH ARE REAL.** The **FAQ editing screen** does not exist, and it is
+the genuine remaining piece — a list you cannot act from is half a surface. Product create's
+"category + title first" is a `ProductForm` reordering that touches the edit screen as much as the
+create one. The page editor is untouched **on purpose** (§9: keep SectionBoard, transitions stay in
+`lib/cms/transitions.ts`) and portfolio already satisfied its bullet before the phase began.
+
+**THE RULE, NOW IN FOUR PLACES.** A failed read renders *unreadable*, never a zero or an empty list.
+`MetricCount` is `number | null`; `EmptyState` refuses a CTA on `reason="unreadable"`; `TodayList`
+withholds "everything is clear" unless every row read; and the FAQ page catches `listFaqs`' throw
+into `null` rather than into `[]`. Any fifth surface needs the same behaviour.
+
+**THE ONE EMPTY STATE THAT MUST NOT OFFER A CTA** is `/studio/inquiries/all`. §8: "Quiet inbox is
+success." Nobody is being asked to make an enquiry happen. Do not "fix" it to match the others.
+
+**NO PUBLISH CONTROL ON A LIST ROW.** Publishing a row carrying `OWNER_VERIFICATION_REQUIRED` is
+refused in the database; a one-click publish on a list would surface a server error the reader
+cannot interpret. That belongs on an editing screen with its permission checks.
+
+---
+
+## Previous work — Studio UI/UX phases A, B and C (2026-09-13)
 
 Amendments **A55** (Phase A), **A56** (Phase B) and **A57** (Phase C). A+B is the slice the guide
 says to merge and both are on main; **C is the Overview and is the work in flight**. **D, E and F are

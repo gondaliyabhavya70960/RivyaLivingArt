@@ -4297,9 +4297,17 @@ export const STUDIO_STRINGS = {
     value: 'Dimensions',
     contentKey: 'studio_help.catalog_product_dimensions',
   },
+  /**
+   * §9's Phase D line: "Dimensions labelled target envelope until manufactured." The units sentence
+   * was already here; the second half was not, and it is the half D10 cares about. Every one of the
+   * pack's seventy-six concepts carries a size that describes the brief rather than an object that
+   * exists, and a figure typed here before the piece is built is a target, not a measurement. The
+   * distinction reaches a visitor as a specification either way, so the form has to make it before
+   * the number is typed rather than after.
+   */
   'studio.catalog.product.dimensionsHelp': {
     value:
-      'Millimetres, except weight in grams and seats as a count. Leave a measurement empty if it does not apply.',
+      'Millimetres, except weight in grams and seats as a count. Leave a measurement empty if it does not apply. Until the piece has been made, these are the target envelope agreed in the brief and not a measurement of a finished object — measure the real thing before you publish.',
     contentKey: 'studio_help.catalog_product_dimensions_help',
   },
   'studio.catalog.product.seoTitle': {
@@ -9392,6 +9400,106 @@ export const STUDIO_STRINGS = {
    */
 
   /** The card's label. FEAT/Phase 46 name it, and the handover document uses the same words. */
+  /* --- The products list's price column (Phase D) ------------------------------------------------ */
+
+  'studio.catalog.products.colPrice': {
+    value: 'Price',
+    contentKey: 'studio_help.catalog_products_col_price',
+  },
+
+  /* --- /studio/inquiries/all (Phase D) ---------------------------------------------------------- */
+
+  /**
+   * §8's primary action for this screen. It appears only when there is a newest enquiry to open;
+   * on a quiet inbox there is nothing behind it and the control is absent rather than inert.
+   */
+  'studio.inquiries.openLatest': {
+    value: 'Open the newest',
+    contentKey: 'studio_help.inquiries_open_latest',
+  },
+  /**
+   * §8: "Quiet inbox is success". The empty state on this screen is the one in Studio that must
+   * NOT read as a task — nobody is being asked to go and make an enquiry happen — so it gets no
+   * call to action and this line says why the zero is fine.
+   */
+  'studio.inquiries.quietNote': {
+    value: 'A quiet inbox is not a problem to solve. Enquiries arrive when they arrive.',
+    contentKey: 'studio_help.inquiries_quiet_note',
+  },
+
+  /* --- /studio/content/faqs (Phase D) ---------------------------------------------------------- */
+
+  /**
+   * §8 gives this screen one job: "Verify answers". Not write them — the fifty-five seeded rows are
+   * already written, and every one of them is a DRAFT nobody has confirmed.
+   */
+  'studio.faqs.purpose': {
+    value:
+      'Fifty-five answers are seeded as drafts. Each one states something about how this studio works, and none of them may be published until you have read it and confirmed it is true.',
+    contentKey: 'studio_help.faqs_purpose',
+  },
+  'studio.faqs.caption': {
+    value: 'Frequently asked questions',
+    contentKey: 'studio_help.faqs_caption',
+  },
+  'studio.faqs.colQuestion': {
+    value: 'Question',
+    contentKey: 'studio_help.faqs_col_question',
+  },
+  'studio.faqs.colCategory': {
+    value: 'Category',
+    contentKey: 'studio_help.faqs_col_category',
+  },
+  'studio.faqs.colStatus': {
+    value: 'Status',
+    contentKey: 'studio_help.faqs_col_status',
+  },
+  'studio.faqs.colPosition': {
+    value: 'Order',
+    contentKey: 'studio_help.faqs_col_position',
+  },
+  'studio.faqs.noCategory': {
+    value: 'Uncategorised',
+    contentKey: 'studio_help.faqs_no_category',
+  },
+  /** A question row with no words in it. The list says so rather than rendering a blank cell. */
+  'studio.faqs.untitled': {
+    value: 'Untitled question',
+    contentKey: 'studio_help.faqs_untitled',
+  },
+  'studio.faqs.emptyHeading': {
+    value: 'No questions yet',
+    contentKey: 'studio_help.faqs_empty_heading',
+  },
+  'studio.faqs.emptyBody': {
+    value:
+      'The seeded answers land here when the content seed is run against this database. Until then there is nothing to verify.',
+    contentKey: 'studio_help.faqs_empty_body',
+  },
+  /**
+   * The read failed. Distinct from a zero, because "no questions yet" after a failed query would
+   * tell an owner their seeded content had vanished.
+   */
+  'studio.faqs.unreadableHeading': {
+    value: 'The questions could not be read',
+    contentKey: 'studio_help.faqs_unreadable_heading',
+  },
+  'studio.faqs.unreadableBody': {
+    value:
+      'The query did not complete, so this list is not a count of anything. Nothing has been lost; try again, and tell your engineer if it persists.',
+    contentKey: 'studio_help.faqs_unreadable_body',
+  },
+  /**
+   * There is no create form on this screen and the label says why in three words. §8 puts the
+   * primary action as "New FAQ / verify first", and verifying is the half that exists: fifty-five
+   * drafts are already waiting, so a sixth-sixth question is not the work in front of anybody.
+   */
+  'studio.faqs.verifyNote': {
+    value:
+      'Editing and publishing an answer happens on its own screen, which is not built yet. This list is the register of what is waiting.',
+    contentKey: 'studio_help.faqs_verify_note',
+  },
+
   /* --- The Overview's "today" list (Phase C) ------------------------------------------------- */
 
   /**

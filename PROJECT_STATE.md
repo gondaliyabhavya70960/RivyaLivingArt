@@ -426,8 +426,8 @@ docs/SESSION-STATE.md
 
 ## Studio UI/UX: phases A and B shipped, C-F not started
 
-The owner's Studio UI/UX implementation guide runs A-F. **A (amendment A55), B (A56) and C (A57)
-are in**; D, E and F are not started. The active nav leaf carries `aria-current` and a champagne
+The owner's Studio UI/UX implementation guide runs A-F. **A (amendment A55), B (A56), C (A57) and the UI half of D (A58)
+are in**; E and F are not started. The active nav leaf carries `aria-current` and a champagne
 rule; below `lg` the fifty-leaf rail is a `patterns/Drawer` dialog rather than a stack above the main
 landmark; search is a 44px button rather than a sentence naming two keys an Android phone does not
 have. Products, Journal and Sources share `ListPage`'s rhythm, `StudioAction`'s 44px control, and an
@@ -438,7 +438,17 @@ verification backlog, unread inquiries, unpublished sections, sources awaiting a
 a link to the screen that clears it, each gated on the permission to clear it, and every count
 rendering *unreadable* rather than `0` when its query failed.
 
-**Two of B's five named screens are deliberately not converted.** `/studio/content/faqs` is a stub
+**`/studio/content/faqs` is no longer a stub.** Phase D gave it a list ordered as the public page
+orders it, with the verification pill beside the status pill, and no create form — §8's job for that
+screen is verifying the fifty-five seeded drafts, not writing a fifty-sixth. There is still **no FAQ
+editing screen**, which is the real remaining gap in Phase D.
+
+**A product's price state reads as a decision, not an empty cell.** Most of this catalogue is
+request-for-quote; a column rendering only the number rendered a column of blanks.
+
+**Two of B's five named screens were deliberately not converted at the time**, and one of them —
+FAQs — was deferred on a premise that turned out to be false (see A58). `/studio/inquiries/all` was
+the other, and Phase D converted it. `/studio/content/faqs` is a stub
 with no FAQ repository behind it, and `/studio/inquiries/all` is a bespoke inbox; the guide's own §7
 table assigns both to **Phase D**, which is a data-layer change rather than a UI one.
 

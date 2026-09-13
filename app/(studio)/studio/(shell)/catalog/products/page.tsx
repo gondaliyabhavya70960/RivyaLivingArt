@@ -6,6 +6,7 @@ import { Text } from '@/components/primitives/Text'
 import { DataTable } from '@/components/studio/DataTable'
 import { ListPage } from '@/components/studio/ListPage'
 import { RelativeTime } from '@/components/studio/RelativeTime'
+import { PriceStatePill } from '@/components/studio/catalog/PriceStatePill'
 import { DemoPill, StatusPill } from '@/components/studio/StatusPill'
 import { StudioActionButton, StudioActionLink } from '@/components/studio/StudioAction'
 import { StudioPage, studioMetadata } from '@/components/studio/StudioPage'
@@ -173,6 +174,23 @@ export default async function Page({
                   ? t('studio.catalog.products.noCategory')
                   : (categoryNames.get(product.category_id) ??
                     t('studio.catalog.products.noCategory')),
+            },
+            {
+              id: 'price',
+              header: t('studio.catalog.products.colPrice'),
+              /*
+               * §9: "RFQ is a pill, not a blank." Most of this catalogue is request-for-quote, so a
+               * column that rendered only the number would be a column of empty cells — which reads
+               * as a broken import rather than as the commercial model this studio actually runs.
+               *
+               * THE FIGURE IS NOT SHOWN HERE, DELIBERATELY. A price is minor units in a currency,
+               * and formatting it for a list means deciding what "₹1,20,000 from" means beside
+               * "₹1,20,000" in a column four characters wide. The state is the fact a merchandiser
+               * scans for; the amount is on the product's own screen, where it has room to be
+               * unambiguous. Rendering a half-formatted figure would be inventing a price display,
+               * and D10 is unamused by invented prices.
+               */
+              cell: (product) => <PriceStatePill state={product.price_state} />,
             },
             {
               id: 'status',

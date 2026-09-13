@@ -1,8 +1,9 @@
 import { HelpText } from '@/components/primitives/HelpText'
 import { Stack } from '@/components/primitives/Stack'
-import { Text } from '@/components/primitives/Text'
 import { DataRequestPanel } from '@/components/studio/inquiries/DataRequestPanel'
 import { InquiryInbox } from '@/components/studio/inquiries/InquiryInbox'
+import { ListPage } from '@/components/studio/ListPage'
+import { StudioActionAnchor, StudioActionLink } from '@/components/studio/StudioAction'
 import { StudioPage, studioMetadata } from '@/components/studio/StudioPage'
 import { t } from '@/components/studio/strings'
 import { roleHasPermission } from '@/lib/auth/permissions'
@@ -35,10 +36,37 @@ export default async function Page() {
     products.flatMap((product) => (product.title === null ? [] : [[product.id, product.title]])),
   )
 
+  /*
+   * §8's primary action: "Open latest". The list is already newest-first, so the newest enquiry is
+   * the first row — and the control exists only when there IS one. A button that opens nothing on a
+   * quiet inbox is worse than no button, and a quiet inbox is the state this screen is usually in.
+   */
+  const latest = rows[0]
+
   return (
-    <StudioPage path="/studio/inquiries/all">
+    <StudioPage
+      path="/studio/inquiries/all"
+      actions={
+        latest === undefined ? undefined : (
+          <StudioActionLink
+            href={`/studio/inquiries/all/${latest.id}`}
+            label={t('studio.inquiries.openLatest')}
+            tone="primary"
+          />
+        )
+      }
+    >
       <Stack gap={8}>
-        <InquiryInbox rows={rows} productTitles={titles} />
+        <ListPage>
+          <InquiryInbox rows={rows} productTitles={titles} />
+        </ListPage>
+
+        {/*
+          §8: "Quiet inbox is success". Said once, under the table, rather than inside the empty
+          state — because it is true whether the inbox holds nothing or holds three things somebody
+          has already answered, and an empty state only speaks in the first case.
+        */}
+        {rows.length === 0 ? <HelpText>{t('studio.inquiries.quietNote')}</HelpText> : null}
 
         {/*
           THE EXPORT IS ON THIS VIEW AND NOT THE OTHER FOUR, because it exports EVERY enquiry rather
@@ -50,15 +78,19 @@ export default async function Page() {
         {roleHasPermission(session.role, 'inquiries.export') ? (
           <Stack gap={2}>
             <HelpText>{t('studio.inquiries.exportNote')}</HelpText>
-            <a
-              href="/api/studio/inquiries/export"
-              className="underline underline-offset-4"
-              data-inquiries-export
-            >
-              <Text size="sm" as="span">
-                {t('studio.inquiries.export')}
-              </Text>
-            </a>
+            {/*
+              A PLAIN ANCHOR AT 44px, NOT A `Link`. The href is a download rather than an app route,
+              so `next/link` would prefetch a CSV of every enquiry in the database every time this
+              page rendered. It was `underline underline-offset-4` — about 20px on the owner's
+              phone, which is §3.6's defect and the last instance of it in Studio.
+            */}
+            <div>
+              <StudioActionAnchor
+                href="/api/studio/inquiries/export"
+                label={t('studio.inquiries.export')}
+                data-inquiries-export=""
+              />
+            </div>
           </Stack>
         ) : null}
 
