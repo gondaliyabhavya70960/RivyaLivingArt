@@ -14,7 +14,54 @@ owner_verification: NOT_REQUIRED
 
 ---
 
-## Most recent work — two §A5 UI items, and a guard that does not guard (2026-09-13)
+## Most recent work — Studio UI/UX phases A and B, the slice the guide says to merge (2026-09-13)
+
+Amendments **A55** (Phase A) and **A56** (Phase B). The owner's Studio UI/UX implementation guide is
+explicit: *"Stop after A+B and merge."* That is done. **Phases C-F are not started**, and the guide's
+own §7 screen table is the map for what belongs in each.
+
+**WHAT IS TRUE OF THE STUDIO SHELL NOW.** The active leaf carries `aria-current="page"` and a left
+champagne rule. Below `lg` the fifty-leaf rail is a labelled dialog built on `patterns/Drawer` rather
+than a stack above the main landmark — Products is two taps. Search is a 44px button dispatching
+`STUDIO_COMMAND_OPEN_EVENT`, because the owner's Android phone has neither Ctrl nor Cmd and Studio
+search previously had no entry point there at all. Products, Journal and Sources share one list
+rhythm through `ListPage`, one 44px control through `StudioAction`, and an empty state that offers a
+next step.
+
+**THE EXIT CRITERION FOR B IS NOT FULLY MET, AND THE FILE SAYS SO RATHER THAN ROUNDING UP.** The
+guide names five screens. Three are converted. `/studio/content/faqs` is a twenty-line stub with **no
+FAQ repository behind it** — converting it is a data-layer change, not a UI one — and
+`/studio/inquiries/all` is a bespoke `InquiryInbox`. The guide's §7 table assigns both to **Phase
+D**. Do not convert them as a UI-only change; build the repository first.
+
+**THE RULE THAT WILL BITE THE NEXT SESSION.** `EmptyState` refuses a CTA when
+`reason="unreadable"`, in the component. If a caller passes `actionHref` there and it does not
+render, that is the guard, not a bug. Likewise every CTA in Studio is gated on the role's write
+permission, never on the list being empty.
+
+**WHAT `min-h-11` PROVES AND WHAT IT DOES NOT.** Every unit assertion about the 44px target checks
+the CLASS. jsdom computes no layout — every element reports a zero box — so a measurement written
+here would pass on markup that renders 20px tall in a browser. The measurement lives in
+`tests/e2e/design-system.spec.ts`, whose selector is still `button, input, select, textarea`: it
+would catch `StudioActionButton` and **neither** `StudioActionLink` nor `StudioActionAnchor`. See the
+finding below — it is the same defect, still open, and Phase B added two more link-shaped controls
+that fall outside it.
+
+**THE ISLAND BUDGET IS AT 7/8 ON THE HEAVIEST STUDIO ROUTE.** Phase A's three controls began as three
+files and took two routes to 9/8; they are one module, `StudioChrome.tsx`. Phase B added no island —
+`StudioAction` and `ListPage` are Server Components on purpose, so Studio's forms keep working before
+hydration. **If a Studio change needs a new `'use client'` file, check the budget before writing it**,
+and merge into `StudioChrome` rather than raising the gate.
+
+**VERIFICATION, STATED AS IT ACTUALLY RAN.** 44 static gates green; 3,785 tests pass across all three
+vitest projects (unit 3,117 / rls 632 / integration 36) against a local PostgreSQL 16 cluster. **No
+browser run**: the local harness has no auth server, so 156 Studio specs skip and no Studio
+interaction was exercised in a real viewport. That is unchanged by both amendments and remains the
+top blocker for this redesign.
+
+---
+
+## Previous work — two §A5 UI items, and a guard that does not guard (2026-09-13)
 
 Amendment **A53**. Read this before picking up any more of the redesign brief's §4, because the
 audit behind it changes what is left.

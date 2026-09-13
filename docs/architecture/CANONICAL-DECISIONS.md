@@ -202,6 +202,84 @@ Brand and editorial copy may be written; anything asserting business capability 
 
 ## Amendments
 
+**2026-09-13 · A56 — Studio Phase B: one list rhythm, one 44px control, and an empty state with
+somewhere to go.**
+
+*The same implementation guide, Phase B. It says to stop after A+B and merge; this completes that.*
+
+**§13 STATES THE STAKE: "If every screen invents its own header, the rest of the redesign will
+rot."** Measured before this change, the five screens the guide names shared almost nothing.
+`/studio/catalog/products` had a table and a hand-rolled `GET` form whose submit was underlined
+text. `/studio/content/journal` and `/studio/research/sources` each had a `PageHeader` of their own
+and their own vertical spacing, and Sources kept its only action nested inside a policy card.
+`/studio/content/faqs` was a twenty-line stub. `/studio/inquiries/all` had a bespoke inbox. Four
+different answers to one question.
+
+**`StudioAction` IS NOT `primitives/Button`, AND THAT IS THE DECISION WORTH RECORDING.** A46 made
+every pressable thing on the public site `rounded-full`, because confining roundness to what you
+press is what makes a control legible on a cinematic page. A dense bench is the opposite brief and
+Studio's surfaces are `rounded-sm` throughout, so a pill beside a data table reads as marketing —
+precisely the "public-cinematic mismatch" §7 anticipated when it listed `StudioButton` as *only if*
+needed. It turned out to be needed, once, replacing `underline underline-offset-4` text at about
+20px tall in five places. §3.6's defect was the height; the duplication was why it kept coming back.
+
+**IT IS PHASE A's `TOP_BAR_CONTROL`, PROMOTED.** That was a const string inside `StudioTopBar.tsx`
+and it was already the right shape. Leaving it there would have meant the chrome and the lists
+drifting apart by exactly the amount nobody checks.
+
+**SERVER-SAFE, WITH NO HANDLER PROP.** A link is a link and a button is a `type="submit"` inside
+somebody's form. Studio's pages are Server Components and its forms work before hydration, so a
+control that needed an island would have quietly taken that away. Three variants, because a
+download (`/api/studio/inquiries/export`) must stay a plain `<a>` that `next/link` cannot prefetch.
+
+**THE EMPTY STATE'S CTA IS REFUSED ON A FAILED READ, IN THE COMPONENT.** §3.5 asks for a next step —
+"honest but not actionable" — and `actionHref`/`actionLabel` supply one. But `reason="unreadable"`
+means nobody knows whether the list is empty, and "Create the first one" under a read that did not
+complete invites a duplicate of something already there. The rule lives in `EmptyState` rather than
+in each caller, because the caller is exactly who is least likely to be thinking about it. The pair
+is also all-or-nothing: an href with no words is a control a reader cannot use, and it would
+otherwise render without complaint.
+
+**EVERY CTA IS GATED ON THE PERMISSION, NOT ON THE EMPTINESS.** §8's checklist says to hide a write
+control a role cannot use rather than offer a button that always 403s. A viewer opening an empty
+catalogue is told it is empty, which is true, and is not invited to do something the server would
+refuse.
+
+**THE CTA POINTS AT A ROUTE, NEVER AT THE CONTENT PACK.** §7 suggests pointing an empty catalogue at
+`data/studio-pack` concepts. That is a directory in the repository rather than a Studio surface, and
+A54 is explicit that nothing in it is seeded, rendered or imported. A CTA can only go where the
+route manifest already goes.
+
+**JOURNAL GETS NO CTA, AND THAT IS THE HONEST ANSWER RATHER THAN AN OMISSION.** It has no `/new`
+route: creating an article is an `ActionForm` a few hundred pixels down the same page, already on
+screen when the list is empty. A control that scrolls you to something you can see is furniture.
+
+**`ListPage` DOES NOT OWN THE `h1`.** `StudioPage` renders the breadcrumb, the heading from the
+route manifest, the pin control and the page's actions. A second heading would give every Studio
+surface two `h1`s, and a screen-reader user navigating by heading would land on the frame rather
+than on what they opened. `ListPage` is what goes inside it: an optional purpose line, a filter
+slot, then the rows. The purpose line is optional because the manifest's label already names most of
+these pages accurately and a sentence restating the title in longer words is furniture; Research is
+where it earns its place and Catalog is where it does not.
+
+**FILTERS STAY IN THE URL.** `filters` is a slot rather than a component so a page keeps the `GET`
+form it already has — §6's rule is that filters live in `searchParams` like the Overview tabs, and a
+slot cannot accidentally take that away. What it buys is one place in the vertical rhythm, so the
+rows start at the same height on every screen.
+
+**THE EXIT CRITERION IS NOT FULLY MET, AND SAYING OTHERWISE WOULD BE THE DEFECT.** The guide asks
+for Products, FAQs, Journal, Sources and Inquiries/all to share the rhythm. Three do.
+`/studio/content/faqs` is a stub with no FAQ repository behind it — converting it means a data-layer
+change, not a UI one — and `/studio/inquiries/all` is a bespoke `InquiryInbox`. The guide's own §7
+screen table assigns both to Phase D, so they are left there rather than half-converted here.
+
+**UNVERIFIED IN THE BROWSER, UNCHANGED FROM A55.** The 44px height is asserted as the `min-h-11`
+class, not measured: jsdom has no layout and every element reports a zero box, so a measurement here
+would pass on markup that renders 20px tall. `tests/e2e/design-system.spec.ts` measures for real but
+selects `button, input, select, textarea` — it would catch `StudioActionButton` and neither link.
+Widening that selector needs a browser run, and the local harness has no auth server, so it stays on
+the blocker list rather than being claimed.
+
 **2026-09-13 · A55 — Studio Phase A: the shell tells you where you are, opens on a phone, and
 search has a tap target.**
 

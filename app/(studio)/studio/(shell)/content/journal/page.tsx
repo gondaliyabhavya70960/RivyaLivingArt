@@ -1,17 +1,17 @@
 import type { Route } from 'next'
 import Link from 'next/link'
 
-import { Button } from '@/components/primitives/Button'
 import { Divider } from '@/components/primitives/Divider'
 import { HelpText } from '@/components/primitives/HelpText'
 import { Stack } from '@/components/primitives/Stack'
-import { Text } from '@/components/primitives/Text'
 import { ActionForm } from '@/components/studio/ActionForm'
 import { DataTable } from '@/components/studio/DataTable'
 import { SelectField, TextField } from '@/components/studio/FormField'
+import { ListPage } from '@/components/studio/ListPage'
 import { PageHeader } from '@/components/studio/PageHeader'
 import { RelativeTime } from '@/components/studio/RelativeTime'
 import { DemoPill, StatusPill } from '@/components/studio/StatusPill'
+import { StudioActionButton, StudioActionLink } from '@/components/studio/StudioAction'
 import { StudioPage, studioMetadata } from '@/components/studio/StudioPage'
 import { t } from '@/components/studio/strings'
 import { roleHasPermission } from '@/lib/auth/permissions'
@@ -49,79 +49,92 @@ export default async function Page() {
   const categoryNames = new Map(categories.map((category) => [category.id, category.name]))
 
   return (
-    <StudioPage path="/studio/content/journal">
-      <Stack gap={8}>
-        <Text size="sm" tone="secondary">
-          {t('studio.journal.caption')}
-        </Text>
-
-        <Link
-          href={'/studio/content/journal/categories' as Route}
-          className="underline underline-offset-4"
-        >
-          <Text size="sm" as="span">
-            {t('studio.journal.categoriesHeading')}
-          </Text>
-        </Link>
-
-        <DataTable<JournalArticle>
-          caption={t('studio.journal.caption')}
-          rows={articles}
-          rowKey={(article) => article.id}
-          empty={{
-            reason: 'empty',
-            heading: t('studio.journal.emptyHeading'),
-            body: t('studio.journal.emptyBody'),
-          }}
-          columns={[
-            {
-              id: 'title',
-              header: t('studio.journal.colTitle'),
-              cell: (article) => (
-                <Link
-                  href={`/studio/content/journal/${article.id}` as Route}
-                  className="underline underline-offset-4"
-                  data-article-link={article.id}
-                >
-                  {article.title === '' ? t('studio.journal.untitled') : article.title}
-                </Link>
-              ),
-            },
-            {
-              id: 'category',
-              header: t('studio.journal.colCategory'),
-              cell: (article) =>
-                article.primary_category_id === null
-                  ? t('studio.journal.noCategory')
-                  : (categoryNames.get(article.primary_category_id) ??
-                    t('studio.journal.noCategory')),
-            },
-            {
-              id: 'body',
-              header: t('studio.journal.colBody'),
-              cell: (article) =>
-                article.page_id === null
-                  ? t('studio.journal.bodyAbsent')
-                  : t('studio.journal.bodyPresent'),
-            },
-            {
-              id: 'published',
-              header: t('studio.journal.colPublished'),
-              cell: (article) =>
-                article.published_at === null ? '—' : <RelativeTime value={article.published_at} />,
-            },
-            {
-              id: 'status',
-              header: t('studio.journal.colStatus'),
-              cell: (article) => (
-                <span className="flex flex-wrap items-center gap-1">
-                  <StatusPill status={article.status} />
-                  <DemoPill isDemo={article.is_demo} />
-                </span>
-              ),
-            },
-          ]}
+    <StudioPage
+      path="/studio/content/journal"
+      /*
+       * Categories is a SIBLING, not this page's primary action — §8 allows one primary per screen
+       * and journal's is the create form below, which is a form rather than a destination. So this
+       * takes the default tone: 44px and reachable, without claiming to be the thing to do here.
+       */
+      actions={
+        <StudioActionLink
+          href="/studio/content/journal/categories"
+          label={t('studio.journal.categoriesHeading')}
         />
+      }
+    >
+      <Stack gap={8}>
+        <ListPage purpose={t('studio.journal.caption')}>
+          <DataTable<JournalArticle>
+            caption={t('studio.journal.caption')}
+            rows={articles}
+            rowKey={(article) => article.id}
+            /*
+             * NO `actionHref` HERE, AND THAT IS THE HONEST ANSWER RATHER THAN AN OMISSION. Journal
+             * has no `/new` route: the create form is an `ActionForm` a few hundred pixels down this
+             * same page, already on screen when the list is empty. A CTA that scrolls you to
+             * something you can see is furniture, and `EmptyState`'s `actionHref` is documented as a
+             * route the manifest declares — a fragment is not one.
+             */
+            empty={{
+              reason: 'empty',
+              heading: t('studio.journal.emptyHeading'),
+              body: t('studio.journal.emptyBody'),
+            }}
+            columns={[
+              {
+                id: 'title',
+                header: t('studio.journal.colTitle'),
+                cell: (article) => (
+                  <Link
+                    href={`/studio/content/journal/${article.id}` as Route}
+                    className="underline underline-offset-4"
+                    data-article-link={article.id}
+                  >
+                    {article.title === '' ? t('studio.journal.untitled') : article.title}
+                  </Link>
+                ),
+              },
+              {
+                id: 'category',
+                header: t('studio.journal.colCategory'),
+                cell: (article) =>
+                  article.primary_category_id === null
+                    ? t('studio.journal.noCategory')
+                    : (categoryNames.get(article.primary_category_id) ??
+                      t('studio.journal.noCategory')),
+              },
+              {
+                id: 'body',
+                header: t('studio.journal.colBody'),
+                cell: (article) =>
+                  article.page_id === null
+                    ? t('studio.journal.bodyAbsent')
+                    : t('studio.journal.bodyPresent'),
+              },
+              {
+                id: 'published',
+                header: t('studio.journal.colPublished'),
+                cell: (article) =>
+                  article.published_at === null ? (
+                    '—'
+                  ) : (
+                    <RelativeTime value={article.published_at} />
+                  ),
+              },
+              {
+                id: 'status',
+                header: t('studio.journal.colStatus'),
+                cell: (article) => (
+                  <span className="flex flex-wrap items-center gap-1">
+                    <StatusPill status={article.status} />
+                    <DemoPill isDemo={article.is_demo} />
+                  </span>
+                ),
+              },
+            ]}
+          />
+        </ListPage>
 
         {canWrite ? (
           <>
@@ -154,8 +167,9 @@ export default async function Page() {
                     })),
                   ]}
                 />
+                {/* §3.6 again: `primitives/Button` is A46's pill, which is the public register. */}
                 <div>
-                  <Button type="submit">{t('studio.journal.newSubmit')}</Button>
+                  <StudioActionButton label={t('studio.journal.newSubmit')} tone="primary" />
                 </div>
               </ActionForm>
             </Stack>
