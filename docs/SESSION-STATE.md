@@ -38,7 +38,64 @@ single, verifiable answer. Cloudinary holds all 252 assets and serves derived tr
 points at the library. It is not delivery, not status, not the cloud name. `seed:content` binds
 media, and it was last run BEFORE the Higgsfield migration landed, so every binding resolved to a
 gap and was skipped. Proved locally: re-running it after the migration bound 10 sections and wrote
-20 `media_usages` rows. **The production fix is to re-run the binding, not to change code.**
+20 `media_usages` rows.
+
+**THAT CONCLUSION WAS WRONG, AND THIS CORRECTS IT (2026-09-13).** "Re-run the binding" cannot work
+on any real environment, and the reason is in the seed runner's own idempotency guard. Rule 5c in
+`scripts/seed/seed-content.ts` reads:
+
+```
+promotedByAHuman = row.status === 'PUBLISHED' && seededStatus !== 'PUBLISHED'
+```
+
+Section modules seed their rows as **DRAFT**. Every environment that has ever shown the site has
+walked those rows to **PUBLISHED**. So the guard classifies every live section as a human's work and
+skips it whole — including its media columns. Measured by actually running it here:
+`skipped (owner edit) 35`, `inserted 0`, `updated 3`. It bound nothing that renders.
+
+On the hosted project that means: **60 PUBLISHED sections would be skipped and 23 DRAFT ones bound**,
+and a DRAFT section is not on the site. Re-running the seed against production would leave the
+visible pages exactly as empty as they are now.
+
+**FIXED — amendment A49, rule 5d.** The binding now runs AHEAD of the owner-edit guard, restricted to
+columns that are NULL. A NULL media column is an absence, not a decision — nobody opens Studio and
+chooses to have no image — so writing it overwrites nothing, while a column an editor HAS filled is
+left alone even when the module names a different asset. The slot key is written in the same
+statement, because migration 0050 requires one whenever an id is set and the key is a hashed field
+the guard has already declined to write; ids alone would violate the check and roll back the whole
+module. No second binding system was built, per the brief.
+
+**Proved end to end.** A published section with NULL media and NULL slot key received
+`media_mobile_id` and `media_slot_key = 'home.commission'` through the real runner, status unchanged.
+With a desktop asset present, the homepage then served a real
+`res.cloudinary.com/.../w_768/...` image where it had served a fallback well — so the render path was
+never broken, and the binding was the only missing piece.
+
+**A caution for whoever measures this next.** Early readings of "zero images on the homepage" were a
+STALE PRERENDER, not a defect: `/` is statically prerendered, `rm -rf .next/cache` does not touch
+`.next/server/app`, and Next reuses the existing HTML when no source file changed. Data-only changes
+need `rm -rf .next` and a full rebuild before the page reflects them.
+
+**THE REMAINING STEP IS THE OWNER'S, AND IT IS BLOCKED ON MERGE ORDER.** Nothing was written to
+production. Hosted serves `main`, which does not carry A47's four new slots, and `sync_media_usages`
+copies a slot key verbatim — so binding `home.final-cta` or `large-format.hero` there now would put
+reverse-index rows against slots the deployed registry does not declare. **Merge this work first,
+then run `npm run seed:content` against production**, where the 250 assets already exist.
+
+**RE-VERIFIED AGAINST THE HOSTED PROJECT ON 2026-09-13**, directly rather than by inference:
+`page_sections` 83 rows, `media_desktop_id` non-null on **0**, `media_mobile_id` non-null on **0**,
+`media_usages` **0 rows**, `media_assets` **250 rows, all PUBLISHED**. The diagnosis holds unchanged.
+
+**DO NOT RUN THE BINDING UNTIL THIS WORK IS MERGED.** Production serves `main`, which does not yet
+carry A47's four new slots. `sync_media_usages` copies a binding's slot key into `media_usages`
+verbatim, so binding `home.final-cta` or `large-format.hero` against a deployment whose registry
+does not declare them writes reverse-index rows pointing at slots that do not exist — which is the
+exact failure A47 was written to prevent. Merge first, then bind.
+
+**The Vercel preview is behind Vercel Authentication and an agent cannot reach it.** Both the plain
+URL and the `_vercel_share` link answer `302` to `vercel.com/sso-api`. The brief's reviewable-preview
+deliverable therefore needs the OWNER to open it; it is not something this session can screenshot or
+assert against.
 
 **What shipped.** Amendment A46 in `CANONICAL-DECISIONS.md` is the full record. In brief: two new
 warm schemes (MINERAL, SAND) built on new primitives beside `--rv-color-bone` rather than on a

@@ -202,6 +202,60 @@ Brand and editorial copy may be written; anything asserting business capability 
 
 ## Amendments
 
+**2026-09-13 · A49 — why an entire asset library was invisible, and the ordering decision that
+caused it (Rivya UI Redesign, the media question answered).**
+
+*The finding, stated plainly: the site had no pictures because of a guard, not a gap.* Cloudinary
+holds every asset; `media_assets` holds **250 rows, all PUBLISHED and VERIFIED**; the resolver
+resolves and the renderer renders. And on the hosted project `page_sections.media_desktop_id` was
+NULL on **all 83 rows** with `media_usages` empty. Every part worked and nothing was connected.
+
+*A46 and A47 recorded the cause as a stale run — "`seed:content` last ran before the Higgsfield
+migration; the production fix is to re-run the binding". **That was wrong**, and this amendment
+supersedes it.* Rule 5c in `scripts/seed/seed-content.ts` stands the runner down on a row a person
+published: `promotedByAHuman = row.status === 'PUBLISHED' && seededStatus !== 'PUBLISHED'`. Section
+modules seed **DRAFT**; every environment that has ever shown the site has walked those rows to
+**PUBLISHED**; so the guard classified every LIVE section as a human's work and skipped it whole,
+media columns included. A media rebind already existed and was correct — and sat BELOW that guard,
+so it could fire only for rows nobody could see. Measured rather than reasoned: a run against a
+database mirroring hosted reported `skipped (owner edit) 35`, `inserted 0`, and bound nothing that
+renders. On hosted it would skip all **60 PUBLISHED** sections and bind only the **23 DRAFT** ones.
+Re-running the seed was never going to put a picture on a page.
+
+*Rule 5d — an empty media column is an absence, not a decision.* The binding now runs **ahead of**
+rule 5c, restricted to columns that are **NULL**. That is the whole justification and it is narrow
+on purpose: writing NULL overwrites nothing, because nobody opens Studio and chooses to have no
+image. A column an editor HAS filled is left alone even when the module names a different asset —
+the brief's own rule, *"Do not replace an editor's existing selection simply because a seed script
+contains another one."* No copy, no status, no hash, no version is touched, and a row that is
+otherwise a human's still reports as skipped. **No second binding system was built**, per the
+brief's *"do not create a second binding system"*: same resolver, same manifest check, same gap
+report — only the reachability changed.
+
+*The slot key travels with the ids, and the first version of the rule did not do this.* Migration
+0050 constrains the table `media_slot_key IS NOT NULL OR (both ids IS NULL)`, and `media_slot_key`
+is a hashed `fields` entry, so rule 5c has already declined to write it. Setting ids alone on a
+published section whose slot key is NULL therefore violates the check — and because the runner takes
+**one transaction per module**, that does not skip a row, it rolls the entire module back. **26
+published sections** on the reference database carry a NULL slot key, among them
+`commissions.01.hero` and `collection.furniture.01.hero`. `tests/integration/seed-media-on-live-rows.test.ts`
+caught it before it ran against anything that mattered.
+
+*The fixture could not remove itself once bindings existed.* `--reset` deletes fixture sections and
+assets, but `media_usages.media_id` and `page_sections.media_desktop_id` have no cascade, so a
+fixture asset bound to a REAL section refused to go and took `seed-idempotency` and `publish-gates`
+down with it. The reset now clears the reverse-index rows and nulls any non-fixture section's
+reference to a fixture asset, leaving `media_slot_key` alone because 0050 permits a key with no ids
+and the key is an editorial fact about the section. **CI never met this** — it resets, seeds content
+into fresh DRAFT rows before any asset exists, then publishes — which is also why CI's database
+still has zero section bindings and no visual baseline moves.
+
+*What this does NOT do, deliberately.* It does not write to production. The hosted project serves
+`main`, which does not yet carry A47's four new slots, and `sync_media_usages` copies a slot key
+verbatim — so binding `home.final-cta` or `large-format.hero` there now would write reverse-index
+rows for slots the deployed registry does not declare, which is the exact failure A47 exists to
+prevent. **Merge first, then run the binding.**
+
 **2026-09-13 · A48 — the redesign brief becomes a specification of record, a page-section index
 that costs no island, an entrance that no longer makes contrast depend on scroll position, and a
 footer address that scrolled every page sideways (Rivya UI Redesign, phase 2 continued).**

@@ -183,6 +183,14 @@ const plannedKeys = new Set<string>()
 type MediaGap = { readonly seedKey: string; readonly column: string; readonly rivyaAssetId: string }
 const mediaGaps: MediaGap[] = []
 
+/**
+ * Columns filled by rule 5d — a binding written onto a row the runner no longer owns, because the
+ * column was empty. Reported on its own line: it is the one write this runner makes to somebody
+ * else's row, so it should never be silent.
+ */
+type MediaFill = { readonly seedKey: string; readonly columns: readonly string[] }
+const mediaFilled: MediaFill[] = []
+
 let manifestIds: Set<string> | null = null
 function manifestHas(rivyaAssetId: string): boolean {
   manifestIds ??= new Set(readManifest().assets.map((asset) => asset.rivya_asset_id))
@@ -329,6 +337,83 @@ async function applyRecord(record: SeedRecord): Promise<RecordResult> {
    * module said PUBLISHED, the runner published it and still owns it. If the module said DRAFT and
    * the row is live, a person promoted it, and that is theirs.
    */
+  /**
+   * --- rule 5d: an EMPTY media column is not an owner's decision ---
+   *
+   * THE BUG THIS EXISTS FOR, AND IT MADE THE WHOLE LIBRARY INVISIBLE. A rebind for a media gap that
+   * resolves on a later run already existed — and sat BELOW rule 5c and below the hash comparison,
+   * so it was reachable only by a row the runner still owned. Section modules seed their rows
+   * DRAFT; every environment that has ever shown the site has walked them to PUBLISHED; so rule 5c
+   * classified every LIVE section as a human's work and skipped it whole, media columns included.
+   * The rebind could only ever fire for rows nobody could see.
+   *
+   * Measured rather than reasoned: a run against a database mirroring hosted reported
+   * `skipped (owner edit) 35`, `inserted 0`, and bound nothing that renders. On the hosted project
+   * it would skip all 60 PUBLISHED sections and bind only the 23 DRAFT ones. That is why
+   * `page_sections.media_desktop_id` is NULL on every row of a database holding 250 PUBLISHED,
+   * VERIFIED assets, and why "just re-run the seed" was never going to fix it.
+   *
+   * WHY THIS MAY RUN AHEAD OF THE GUARD WHEN NOTHING ELSE MAY. Rule 5c protects a decision a person
+   * made. NULL is not a decision — nobody opens Studio and chooses to have no image. So writing a
+   * column that is NULL overwrites nothing, which is the entire justification, and it is why this
+   * is restricted to `row[column] === null` rather than to "differs from the module". A column an
+   * editor has actually filled is left alone even when the module names a different asset, which is
+   * the brief's own rule: *"Do not replace an editor's existing selection simply because a seed
+   * script contains another one."*
+   *
+   * IT IS ALSO WHY THERE IS NO SECOND SCRIPT. The brief says *"Inspect existing binding and import
+   * scripts before running them. Reuse their validation and identity rules; do not create a second
+   * binding system."* This is the same resolver, the same manifest check, the same gap reporting —
+   * only the reachability changed.
+   *
+   * Nothing but the media columns is touched: no copy, no status, no hash, no version. A row that
+   * is otherwise a human's stays a human's, and still reports as skipped below.
+   */
+  const fillable = Object.keys(record.media ?? {}).filter(
+    (column) => references[column] !== undefined && row[column] === null,
+  )
+
+  /**
+   * THE SLOT KEY TRAVELS WITH THE IDS, AND WITHOUT THIS THE WHOLE RUN ABORTS.
+   *
+   * Migration 0050 constrains the table:
+   *
+   *     CHECK (media_slot_key IS NOT NULL OR (media_desktop_id IS NULL AND media_mobile_id IS NULL))
+   *
+   * — a binding must name the registry slot it fills. But `media_slot_key` is a `fields` entry, so
+   * it is inside the content hash and is written by the ordinary field update, which rule 5c has
+   * already declined to run on this row. So setting the ids alone on a published section whose slot
+   * key is still NULL violates the check, and because the runner takes ONE TRANSACTION PER MODULE,
+   * that does not skip a row — it rolls the entire module back.
+   *
+   * It is not a corner case: 26 published sections on the reference database have a NULL slot key,
+   * among them `commissions.01.hero` and `collection.furniture.01.hero`. The first version of this
+   * rule wrote only the ids and was caught by `tests/integration/seed-media-on-live-rows.test.ts`
+   * before it ever ran against anything that mattered.
+   *
+   * Including it widens nothing. A NULL slot key is the same kind of absence as a NULL id — nobody
+   * chooses to bind a picture to no slot — and it is written only in the same breath as the ids it
+   * is required by, never on its own and never over a value that is already there.
+   */
+  const slotKey = record.fields['media_slot_key']
+  const needsSlotKey =
+    fillable.length > 0 && row['media_slot_key'] === null && typeof slotKey === 'string'
+
+  if (fillable.length > 0 && !dryRun) {
+    const columns = needsSlotKey ? [...fillable, 'media_slot_key'] : fillable
+    const values = needsSlotKey
+      ? [...fillable.map((column) => references[column]), slotKey]
+      : fillable.map((column) => references[column])
+    const assignments = columns.map((column, i) => `${quoteIdent(column)} = $${i + 1}`)
+    await client.query(
+      `update ${table} set ${assignments.join(', ')} where seed_key = $${columns.length + 1}`,
+      [...values, record.seedKey],
+    )
+    for (const column of fillable) row[column] = references[column]
+    if (needsSlotKey) row['media_slot_key'] = slotKey
+    mediaFilled.push({ seedKey: record.seedKey, columns })
+  }
+
   const seededStatus = record.fields['status']
   const promotedByAHuman = row['status'] === 'PUBLISHED' && seededStatus !== 'PUBLISHED'
 
@@ -637,6 +722,18 @@ async function main(): Promise<number> {
   console.log(`  skipped (owner edit)  ${counts.skippedOwnerEdited}`)
   console.log(`  deferred              ${counts.deferred}`)
   console.log(`  failed                ${counts.failed}`)
+  if (mediaFilled.length > 0) {
+    const columns = mediaFilled.reduce((n, fill) => n + fill.columns.length, 0)
+    console.log('')
+    console.log(
+      `  media bound on live rows  ${columns} column(s) across ${mediaFilled.length} section(s) ` +
+        '(rule 5d — the column was empty, so nothing was overwritten)',
+    )
+    for (const fill of mediaFilled) {
+      console.log(`    ${fill.seedKey}  ${fill.columns.join(', ')}`)
+    }
+  }
+
   if (mediaGaps.length > 0) {
     // Not a failure and not a count the idempotency check reads: a gap is a database the media
     // migration has not been run against, and the next seed after it binds these.
