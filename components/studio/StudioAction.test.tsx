@@ -138,6 +138,42 @@ describe('ListPage', () => {
     expect(container.querySelectorAll('p')).toHaveLength(1)
   })
 
+  /*
+   * §7.2 names four things in a list header — "title, count, primary action, secondary action" —
+   * and the count was missing from every converted list until the completion pass. These three
+   * tests are really one rule stated three ways: the figure must never be a guess.
+   */
+  it('shows a sourced count, grouped for an Indian reader', () => {
+    const { container } = render(
+      <ListPage count={100000}>
+        <p>Rows</p>
+      </ListPage>,
+    )
+    expect(container.querySelector('[data-list-count]')?.textContent).toContain('1,00,000')
+  })
+
+  it('prints no figure at all when the read failed, rather than a zero', () => {
+    // A count is a claim about how much exists. A list whose query failed knows nothing, and
+    // "0 in this list" above an unreadable table contradicts the empty state directly below it.
+    const { container } = render(
+      <ListPage count={null}>
+        <p>Rows</p>
+      </ListPage>,
+    )
+    expect(container.querySelector('[data-list-count]')).toBeNull()
+  })
+
+  it('says "matching" while a filter is narrowing the list', () => {
+    // "3 in this list" under an active search reads as "you have three products" — the same
+    // confusion EmptyState's `filtered` reason exists to prevent, one row higher up the page.
+    const { container } = render(
+      <ListPage count={3} filtered>
+        <p>Rows</p>
+      </ListPage>,
+    )
+    expect(container.querySelector('[data-list-count]')?.textContent).toContain('matching')
+  })
+
   it('keeps the filter slot above the rows', () => {
     const { container } = render(
       <ListPage filters={<form method="get" data-filters="" />}>

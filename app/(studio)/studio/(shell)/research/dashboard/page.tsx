@@ -13,6 +13,7 @@ import { isEnabled } from '@/lib/flags'
 import { STAGE_ORDER } from '@/lib/scraper/core/stage'
 import { HealthPill } from '@/components/studio/research/HealthPill'
 import { LeafIndex } from '@/components/studio/research/LeafIndex'
+import { StudioActionLink } from '@/components/studio/StudioAction'
 import { SourceCoveragePanel } from '@/components/studio/research/SourceCoveragePanel'
 import { countProductsByStage } from '@/lib/supabase/repositories/research/products'
 import { listResearchRuns } from '@/lib/supabase/repositories/research/runs'
@@ -128,7 +129,22 @@ export default async function Page() {
   const approved = sources.filter((source) => source.policy_status === 'APPROVED')
 
   return (
-    <StudioPage path="/studio/research/dashboard">
+    <StudioPage
+      path="/studio/research/dashboard"
+      /*
+       * §8's primary action for this screen, and §3.5 is the reason it is this one: "Comparators
+       * (sources) are the only daily research screen." Every number on this dashboard stays zero
+       * until a source is approved, so the useful thing to do from here is nearly always to go and
+       * look at the sources.
+       */
+      actions={
+        <StudioActionLink
+          href="/studio/research/sources"
+          label={t('studio.research.openSources')}
+          tone="primary"
+        />
+      }
+    >
       <Stack gap={8}>
         {/* §9: "Do not hide leaves — group them." Fifteen research screens in one flat sidebar list
             is a scroll rather than a structure; this is the same fifteen, arranged by the job. It

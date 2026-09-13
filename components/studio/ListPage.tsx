@@ -2,6 +2,7 @@ import * as React from 'react'
 
 import { Stack } from '@/components/primitives/Stack'
 import { Text } from '@/components/primitives/Text'
+import { t } from '@/components/studio/strings'
 
 /**
  * The rhythm every Studio list shares: what this page is for, how to narrow it, then the rows.
@@ -31,11 +32,21 @@ import { Text } from '@/components/primitives/Text'
  */
 export function ListPage({
   purpose,
+  count,
+  filtered = false,
   filters,
   children,
 }: {
   /** One line, resolved copy. Omit it when the route's own name already says this. */
   readonly purpose?: string
+  /**
+   * How many rows there are. `undefined` when the caller has no figure; **`null` when the read
+   * failed**, which renders nothing rather than a zero — the same rule `EmptyState`, `TodayList`
+   * and `MetricCount` hold, now at the top of the page as well as inside it.
+   */
+  readonly count?: number | null
+  /** True when a search or filter is narrowing the list, so the count says "matching" instead. */
+  readonly filtered?: boolean
   /** The filter or search form. Keeps its own `method="get"` — see above. */
   readonly filters?: React.ReactNode
   /** The table, the grid, or whatever this list actually is. */
@@ -43,10 +54,28 @@ export function ListPage({
 }): React.ReactElement {
   return (
     <Stack gap={6}>
-      {purpose === undefined ? null : (
-        <Text tone="secondary" className="max-w-prose">
-          {purpose}
-        </Text>
+      {purpose === undefined && (count === undefined || count === null) ? null : (
+        <Stack gap={1}>
+          {purpose === undefined ? null : (
+            <Text tone="secondary" className="max-w-prose">
+              {purpose}
+            </Text>
+          )}
+          {/*
+           * `null` IS NOT `0` HERE EITHER. A count is a claim about how much exists, and a list
+           * whose query failed knows nothing — printing "0 in this list" above an unreadable table
+           * would contradict the honest empty state directly below it.
+           */}
+          {count === undefined || count === null ? null : (
+            <Text size="sm" tone="tertiary" data-list-count={String(count)}>
+              {t(filtered ? 'studio.list.countFiltered' : 'studio.list.count').replace(
+                '{{count}}',
+                // en-IN, as every other figure in Studio: this reader reads 1,00,000.
+                count.toLocaleString('en-IN'),
+              )}
+            </Text>
+          )}
+        </Stack>
       )}
       {filters}
       {children}

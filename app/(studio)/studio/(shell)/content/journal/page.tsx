@@ -64,7 +64,7 @@ export default async function Page() {
       }
     >
       <Stack gap={8}>
-        <ListPage purpose={t('studio.journal.caption')}>
+        <ListPage purpose={t('studio.journal.caption')} count={articles.length}>
           <DataTable<JournalArticle>
             caption={t('studio.journal.caption')}
             rows={articles}
@@ -134,6 +134,18 @@ export default async function Page() {
               },
             ]}
           />
+
+          {/*
+            §3.3's SECOND BRANCH, WHICH THIS SCREEN HAD NEITHER HALF OF: "Every empty list needs one
+            primary action the role is allowed to take, OR a sentence that says why there is no
+            action." Journal has no `/new` route — creating an article is the form below — so the
+            CTA branch does not apply and the sentence was simply missing. A code comment saying so
+            served the next engineer and not the owner staring at an empty table.
+
+            Shown to a writer only: a reader who cannot create an article is not owed an explanation
+            of where the control they do not get would have been.
+          */}
+          {canWrite ? <HelpText>{t('studio.journal.createBelow')}</HelpText> : null}
         </ListPage>
 
         {canWrite ? (

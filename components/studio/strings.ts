@@ -9466,6 +9466,52 @@ export const STUDIO_STRINGS = {
     contentKey: 'studio_help.research_group_decisions',
   },
 
+  /* --- §8's remaining named primary actions ------------------------------------------------------ */
+
+  /** §8 for `content/pages`: "Open Home". The one page an editor returns to most. */
+  'studio.content.pages.openHome': {
+    value: 'Open Home',
+    contentKey: 'studio_help.content_pages_open_home',
+  },
+  /** §8 for `research/dashboard`: "Open sources" — the only daily research screen, per §3.5. */
+  'studio.research.openSources': {
+    value: 'Open sources',
+    contentKey: 'studio_help.research_open_sources',
+  },
+
+  /* --- §3.3's "sentence that says why there is no action" ---------------------------------------- */
+
+  'studio.journal.createBelow': {
+    value:
+      'There is no separate create screen for an article — the form to start one is at the bottom of this page.',
+    contentKey: 'studio_help.journal_create_below',
+  },
+
+  /* --- The list header's count (§7.2) ------------------------------------------------------------ */
+
+  /**
+   * §7.2 names four things in a list header — "title, count, primary action, secondary action" —
+   * and the count was the one every converted list was missing. It answers the question somebody
+   * asks before they start scrolling: is this five rows or five hundred.
+   *
+   * INTERPOLATED WITH A GROUPED FIGURE. One string rather than a noun per list, because "55" beside
+   * a table captioned "Frequently asked questions" already says what is being counted, and a noun
+   * per surface is five more strings to keep in step for no added meaning.
+   */
+  'studio.list.count': {
+    value: '{{count}} in this list',
+    contentKey: 'studio_help.list_count',
+  },
+  /**
+   * A filtered list says what it is showing out of what exists, because "3 in this list" under an
+   * active search reads as "you have three products" — the same confusion `EmptyState`'s `filtered`
+   * reason exists to prevent, one row higher up the page.
+   */
+  'studio.list.countFiltered': {
+    value: '{{count}} matching',
+    contentKey: 'studio_help.list_count_filtered',
+  },
+
   /* --- The sources list's league and enabled columns (Phase E) ----------------------------------- */
 
   'studio.research.colEnabled': {

@@ -55,7 +55,9 @@ export default async function Page() {
 
   return (
     <StudioPage path="/studio/content/faqs">
-      <ListPage purpose={t('studio.faqs.purpose')}>
+      {/* `faqs?.length ?? null` and NOT `faqs?.length ?? 0`: a failed read prints no figure at all,
+          because "0 in this list" above an unreadable table contradicts the empty state below it. */}
+      <ListPage purpose={t('studio.faqs.purpose')} count={faqs?.length ?? null}>
         <DataTable<Faq>
           caption={t('studio.faqs.caption')}
           rows={faqs ?? []}

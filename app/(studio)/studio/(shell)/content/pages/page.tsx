@@ -4,6 +4,8 @@ import Link from 'next/link'
 import { DataTable } from '@/components/studio/DataTable'
 import { RelativeTime } from '@/components/studio/RelativeTime'
 import { DemoPill, StatusPill } from '@/components/studio/StatusPill'
+import { ListPage } from '@/components/studio/ListPage'
+import { StudioActionLink } from '@/components/studio/StudioAction'
 import { StudioPage, studioMetadata } from '@/components/studio/StudioPage'
 import { t } from '@/components/studio/strings'
 import { requirePermission } from '@/lib/auth/require'
@@ -36,82 +38,104 @@ export default async function Page() {
 
   const pages = await listPages(await createClient())
 
+  /*
+   * §8's primary action for this screen is "Open Home", and it is a LOOKUP rather than a constant:
+   * the home page's id is a uuid, and hardcoding one would break the moment this ran against a
+   * different database. `path === '/'` is what makes a row the home page — the same column the
+   * public router resolves against. Absent when there is no such row, which is a real state on a
+   * database the content seed has not been run against.
+   */
+  const home = pages.find((page) => page.path === '/')
+
   return (
-    <StudioPage path="/studio/content/pages">
-      <DataTable<CmsPage>
-        caption={t('studio.content.pages.caption')}
-        rows={pages}
-        rowKey={(page) => page.id}
-        empty={{
-          reason: 'empty',
-          heading: t('studio.content.pages.emptyHeading'),
-          body: t('studio.content.pages.emptyBody'),
-        }}
-        columns={[
-          {
-            id: 'title',
-            header: t('studio.content.pages.colTitle'),
-            cell: (page) => (
-              <Link
-                href={`/studio/content/pages/${page.id}` as Route}
-                className="underline underline-offset-4"
-              >
-                {page.title}
-              </Link>
-            ),
-          },
-          {
-            id: 'path',
-            header: t('studio.content.pages.colPath'),
-            cell: (page) => page.path ?? t('studio.content.pages.systemPath'),
-          },
-          {
-            id: 'kind',
-            header: t('studio.content.pages.colKind'),
-            cell: (page) => page.kind,
-          },
-          {
-            id: 'status',
-            header: t('studio.content.pages.colStatus'),
-            cell: (page) => (
-              <span className="flex flex-wrap items-center gap-1">
-                <StatusPill status={page.status} />
-                <DemoPill isDemo={page.is_demo} />
-              </span>
-            ),
-          },
-          {
-            id: 'updated',
-            header: t('studio.content.pages.colUpdated'),
-            cell: (page) => <RelativeTime value={page.updated_at} />,
-          },
-          {
-            id: 'on-site',
-            header: t('studio.content.pages.colOnSite'),
-            cell: (page) =>
-              page.path === null ? null : page.status === 'PUBLISHED' ? (
-                <Link href={page.path as Route} className="underline underline-offset-4">
-                  {t('studio.content.pages.viewLive')}
-                </Link>
-              ) : (
-                /**
-                 * A PLAIN ANCHOR, NOT `Link`. `/api/preview` is a Route Handler whose whole effect
-                 * is the `Set-Cookie` on its response — draft mode IS that cookie — and a
-                 * client-side navigation never issues the document request that would receive it.
-                 * The router would change the URL and the page would show published content, which
-                 * on a draft page means a 404. Same reasoning as `components/studio/content/
-                 * PageEditor.tsx`, and the same shape.
-                 */
-                <a
-                  href={`/api/preview?path=${encodeURIComponent(page.path)}`}
+    <StudioPage
+      path="/studio/content/pages"
+      actions={
+        home === undefined ? undefined : (
+          <StudioActionLink
+            href={`/studio/content/pages/${home.id}`}
+            label={t('studio.content.pages.openHome')}
+            tone="primary"
+          />
+        )
+      }
+    >
+      <ListPage count={pages.length}>
+        <DataTable<CmsPage>
+          caption={t('studio.content.pages.caption')}
+          rows={pages}
+          rowKey={(page) => page.id}
+          empty={{
+            reason: 'empty',
+            heading: t('studio.content.pages.emptyHeading'),
+            body: t('studio.content.pages.emptyBody'),
+          }}
+          columns={[
+            {
+              id: 'title',
+              header: t('studio.content.pages.colTitle'),
+              cell: (page) => (
+                <Link
+                  href={`/studio/content/pages/${page.id}` as Route}
                   className="underline underline-offset-4"
                 >
-                  {t('studio.content.pages.viewDraft')}
-                </a>
+                  {page.title}
+                </Link>
               ),
-          },
-        ]}
-      />
+            },
+            {
+              id: 'path',
+              header: t('studio.content.pages.colPath'),
+              cell: (page) => page.path ?? t('studio.content.pages.systemPath'),
+            },
+            {
+              id: 'kind',
+              header: t('studio.content.pages.colKind'),
+              cell: (page) => page.kind,
+            },
+            {
+              id: 'status',
+              header: t('studio.content.pages.colStatus'),
+              cell: (page) => (
+                <span className="flex flex-wrap items-center gap-1">
+                  <StatusPill status={page.status} />
+                  <DemoPill isDemo={page.is_demo} />
+                </span>
+              ),
+            },
+            {
+              id: 'updated',
+              header: t('studio.content.pages.colUpdated'),
+              cell: (page) => <RelativeTime value={page.updated_at} />,
+            },
+            {
+              id: 'on-site',
+              header: t('studio.content.pages.colOnSite'),
+              cell: (page) =>
+                page.path === null ? null : page.status === 'PUBLISHED' ? (
+                  <Link href={page.path as Route} className="underline underline-offset-4">
+                    {t('studio.content.pages.viewLive')}
+                  </Link>
+                ) : (
+                  /**
+                   * A PLAIN ANCHOR, NOT `Link`. `/api/preview` is a Route Handler whose whole effect
+                   * is the `Set-Cookie` on its response — draft mode IS that cookie — and a
+                   * client-side navigation never issues the document request that would receive it.
+                   * The router would change the URL and the page would show published content, which
+                   * on a draft page means a 404. Same reasoning as `components/studio/content/
+                   * PageEditor.tsx`, and the same shape.
+                   */
+                  <a
+                    href={`/api/preview?path=${encodeURIComponent(page.path)}`}
+                    className="underline underline-offset-4"
+                  >
+                    {t('studio.content.pages.viewDraft')}
+                  </a>
+                ),
+            },
+          ]}
+        />
+      </ListPage>
     </StudioPage>
   )
 }

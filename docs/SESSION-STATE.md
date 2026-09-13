@@ -14,7 +14,52 @@ owner_verification: NOT_REQUIRED
 
 ---
 
-## Most recent work — the Studio UI/UX guide, A through F (2026-09-13)
+## Most recent work — the completion pass over the Studio guide (2026-09-13)
+
+Amendment **A60**, on top of A55-A59. All six phases are on main; this is the audit that followed,
+re-reading the guide line by line against the finished work. **It found four things, which is the
+useful lesson: finishing every phase is not the same as satisfying every line.**
+
+**MAIN WENT RED AFTER #84 AND THE CAUSE WAS A CONFIG DEFECT, NOT THE DIFF.** CI run 317 on merge
+commit `8f550e4` failed on `tests/unit/rls/phase38.test.ts` — "Test timed out in 5000ms" on
+"collapses 1,000 identical events". **The `rls` vitest project was running database-backed tests on
+the 5-second default meant for tests that touch no database.** `integration` had already made that
+argument for itself and set 120s; `rls` was missed, and it held only because almost every test there
+is a single statement answering in milliseconds. `phase38` is the exception: a thousand SERIAL round
+trips, 706ms against a local socket, over 5,000ms against CI's Dockerised Postgres. The project now
+sets `testTimeout: 30_000`. **That is not a weakened assertion** — the test still performs all
+thousand writes and still demands exactly one row counting 1000. If an `rls` test ever times out
+again, look for a real hang; 30s is ~40x the slowest measured case.
+
+**WHAT IT FIXED.** §7.2 names a **count** in the list header and no list had one — `ListPage` takes
+it now, and it obeys the same `null`-is-not-`0` rule as everything else (a failed read prints no
+figure). §3.3's second branch — "or a sentence that says why there is no action" — was missing on
+journal, where A56 had written the reason into a code comment instead of onto the screen. Two of
+§8's primary actions are built: `content/pages` → "Open Home", `research/dashboard` → "Open sources".
+
+**"OPEN HOME" IS A LOOKUP BY `path === '/'`, NOT A UUID.** Hardcoding the id would work here and
+break on the next database. It is absent when no such row exists, which is real on a database the
+content seed has not been run against.
+
+**THREE THINGS THE AUDIT FOUND AND LEFT, EACH WORTH ITS OWN CHANGE.**
+
+1. **§7.2 says "every list uses one wrapper" and six of ~24 do.** The other eighteen were never
+   assigned to a phase by §7's screen table. A mechanical sweep whose risk is entirely its size.
+2. **§5.3 asks the Overview to group into Today / Catalog / Inquiries / Research** and the registry
+   grid is still eighteen equal tiles. Grouping means restructuring `DASHBOARD_CARDS`, which three
+   gates assert against — a contract change, not a layout one.
+3. **Collections, portfolio and media** have §8 primary actions that live in-page as inline
+   `ActionForm`s. Promoting them means moving a form, not adding a link.
+
+**STILL BLOCKED ON THE OWNER:** `/studio/system/settings`. The contact of record is
+`NEXT_PUBLIC_WHATSAPP_NUMBER`, an environment variable; `DATA_MODEL.md` deliberately records that no
+settings table exists. **Do not start this by writing a form.**
+
+**STILL ORDINARY WORK:** the FAQ editing screen. The register reads; nothing acts.
+
+---
+
+## Previous work — the Studio UI/UX guide, A through F (2026-09-13)
 
 Amendments **A55**-**A59**. **All six phases of the owner's Studio UI/UX implementation guide are
 done**, to the extent they can be done from a UI pull request. A-D are on main; E and F are the work
