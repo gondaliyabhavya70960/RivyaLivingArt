@@ -6,6 +6,40 @@ Every phase adds an entry; see `docs/architecture/CANONICAL-DECISIONS.md` D9 for
 
 ## [Unreleased]
 
+### The catalogue's empty wells name their category, and the drawer's rows reach 44px (2026-09-13)
+
+Amendment **A53**. Two §A5 items from the redesign brief, plus the finding behind the second.
+
+**Product cards.** §A5 asks for "a sand well with the category word in mono — never *Image
+unavailable*". A52 silenced every public well, which is right for an editorial band and wrong for a
+grid: a page of identical blank wells is unreadable. `MediaFrame` gains a `fallback` node slot
+beside its `fallbackLabel` string, forwarded by `BlockImage`/`ResponsiveMedia`, and `ProductCard`
+passes an `Eyebrow` — the mono face, uppercased in CSS so the accessible name keeps the editor's
+casing. It is `aria-hidden`, because the same word is real text under the title and a stand-in for
+a photograph is what assistive tech should skip. The well's colour stays `--rv-surface-sunken`,
+whose §2.5 role already *is* the sand on a mineral ground.
+
+**The mobile drawer.** Rows were `py-1` — about 36px at the top level, about 28px for a category —
+on the only touch-only surface the site has. Now `min-h-11` with `flex items-center`, **not**
+`rv-hit-44`: the category list sets no gap, so a 44px overlay on a 28px row would reach into its
+neighbours and a tap near the boundary would open the wrong page.
+
+**And the guard that should have caught it does not measure links.**
+`tests/e2e/design-system.spec.ts` says block links are checked; its selector is
+`button, input, select, textarea` and no anchors. Every block link on the site is outside the 44px
+guard. The component is fixed here and **the guard deliberately is not** — widening that selector
+may surface violations across surfaces this session cannot measure, and that is a change to make
+with a browser available. Named as a follow-up in `SESSION-STATE.md`.
+
+**An audit came with it**, recorded in `SESSION-STATE.md`: most of the brief's §4 asks — masthead,
+mega menu, footer, enquiry reference before the handoff, configurator hidden when empty, 3D poster
+first, related row, Selected Works collapsing — are **already built**. What genuinely remains is
+four items, each with its cost stated, so the next session neither rebuilds them nor fakes the one
+(sort by "Scale") that has no data behind it.
+
+Verified: `npm run check` exit 0 (44 gates), and the **full suite — all three vitest projects, 247
+files, 3,765 tests, 0 failed, 0 skipped** — against a seeded local cluster.
+
 ### The 250-asset library is bound on the hosted project, and empty wells stop apologising (2026-09-13)
 
 Amendment **A52**. Phase 0 of the redesign brief, executed on the hosted project rather than
