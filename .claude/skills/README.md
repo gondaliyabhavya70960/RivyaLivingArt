@@ -16,6 +16,22 @@ defect this project actually shipped and fixed.
 | `external-components` | Before adopting any third-party component |
 | `studio-surfaces` | Anything under `app/(studio)/` |
 
+## Vendored third-party skill
+
+`ui-ux-pro-max/` — MIT, `nextlevelbuilder/ui-ux-pro-max-skill` v2.13.0, 74 files / 3.6 MB including
+five Python scripts and eighteen CSV/JSON datasets. Installed by hand because `/plugin` is
+unavailable in the web environment and the official `npx` installer could not execute in the
+sandbox; `${CLAUDE_PLUGIN_ROOT}` was rewritten to a repository-relative path, which is what that
+installer does. Its `LICENSE` sits alongside it and its content is otherwise unmodified apart from a
+clearly-marked local note.
+
+**Read that note before acting on it.** Its headline features — 192 palettes and 74 font pairings —
+are the one class of advice this repository cannot take: `tokens.css` is the only file permitted a
+colour literal, and the display face is fixed by amendment A46. Its `--persist` mode writes a second
+design system into the project and must not be used. **The first-party skills above take precedence
+wherever the two disagree.** What it is genuinely good for is layout, UX guidelines, interaction
+patterns, chart selection and accessibility checklists.
+
 **Format note.** `SKILL.md` with YAML frontmatter is a Claude Code convention — Claude Code
 discovers these automatically from `.claude/skills/`. ChatGPT and other assistants have no
 equivalent auto-loading, but the files are plain markdown and can be pasted or referenced directly.
