@@ -76,11 +76,16 @@ STALE PRERENDER, not a defect: `/` is statically prerendered, `rm -rf .next/cach
 `.next/server/app`, and Next reuses the existing HTML when no source file changed. Data-only changes
 need `rm -rf .next` and a full rebuild before the page reflects them.
 
-**THE REMAINING STEP IS THE OWNER'S, AND IT IS BLOCKED ON MERGE ORDER.** Nothing was written to
-production. Hosted serves `main`, which does not carry A47's four new slots, and `sync_media_usages`
-copies a slot key verbatim — so binding `home.final-cta` or `large-format.hero` there now would put
-reverse-index rows against slots the deployed registry does not declare. **Merge this work first,
-then run `npm run seed:content` against production**, where the 250 assets already exist.
+**THE REMAINING STEP IS THE OWNER'S.** Nothing was written to production, deliberately.
+
+The merge-order constraint that blocked it is now **half satisfied**: PR #69 merged at 03:29 on
+2026-09-13, so `main` carries A47's four new slots and `sync_media_usages` will find each slot key in
+the registry. What `main` does NOT yet carry is rule 5d, which is the thing that makes binding
+possible at all — without it `seed:content` skips every published section and writes nothing.
+
+So the order is: **merge the A49 branch, let `main` deploy, then run `npm run seed:content` against
+production**, where the 250 assets already exist. Running it before that merge is harmless but
+pointless — it will report `skipped (owner edit)` and bind nothing.
 
 **RE-VERIFIED AGAINST THE HOSTED PROJECT ON 2026-09-13**, directly rather than by inference:
 `page_sections` 83 rows, `media_desktop_id` non-null on **0**, `media_mobile_id` non-null on **0**,

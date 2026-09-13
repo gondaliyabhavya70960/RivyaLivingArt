@@ -250,11 +250,12 @@ and the key is an editorial fact about the section. **CI never met this** — it
 into fresh DRAFT rows before any asset exists, then publishes — which is also why CI's database
 still has zero section bindings and no visual baseline moves.
 
-*What this does NOT do, deliberately.* It does not write to production. The hosted project serves
-`main`, which does not yet carry A47's four new slots, and `sync_media_usages` copies a slot key
-verbatim — so binding `home.final-cta` or `large-format.hero` there now would write reverse-index
-rows for slots the deployed registry does not declare, which is the exact failure A47 exists to
-prevent. **Merge first, then run the binding.**
+*What this does NOT do, deliberately.* It does not write to production. The slot half of that
+constraint has since cleared — PR #69 merged on 2026-09-13, so `main` carries A47's four new slots
+and `sync_media_usages` will find every key in the registry — but the rule 5d half has not: until
+this amendment is on `main`, `seed:content` skips every published section and binds nothing at all.
+**Merge this, let `main` deploy, then run the binding**; running it sooner is harmless and
+pointless.
 
 **2026-09-13 · A48 — the redesign brief becomes a specification of record, a page-section index
 that costs no island, an entrance that no longer makes contrast depend on scroll position, and a
