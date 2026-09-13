@@ -6,6 +6,31 @@ Every phase adds an entry; see `docs/architecture/CANONICAL-DECISIONS.md` D9 for
 
 ## [Unreleased]
 
+### Studio Phase C — the Overview says what needs a human today (2026-09-13)
+
+Amendment **A57**. The same guide, Phase C.
+
+- **`components/studio/TodayList.tsx`** — four queues, each a link: verification backlog, inquiries
+  nobody has opened, page sections not yet live, research sources awaiting a policy note. It sits
+  above the registry grid because those cards *measure* the business while these rows are *work*.
+- **A failed query renders unreadable, never `0`.** §8: "Zero is allowed; failed query is not."
+  `MetricCount` is `number | null` so the two cannot collapse. "Everything is clear" appears only
+  when every row actually read its table — one `null` among zeros and the list says nothing.
+- **Every row is gated on the permission that lets you clear it**, decided on the page rather than
+  inside the component, so there is no second authorisation surface to keep in step.
+- **The Phase 46 verification card is now a row**, with its per-surface breakdown as the row's
+  detail. Two blocks showing one number in different shapes is how the two come to disagree; the
+  count still comes from `countOutstandingVerifications` over `lib/cms/verification-backlog.ts`.
+- **Three new counts** in `lib/supabase/repositories/metrics.ts`, each an explicit query. Unread is
+  `NEW` alone, not the open pipeline; ARCHIVED sections do not count as outstanding; only
+  `UNREVIEWED` sources do, because RESTRICTED and BLOCKED are decisions somebody already made.
+
+**No charts**, per §9 — nothing mixing currencies, nothing comparing an empty catalogue to scraped
+prices.
+
+**Unverified in the browser**, unchanged from A55 and A56. Seven new unit tests; 3,792 pass across
+all three projects and the 44 static gates are green.
+
 ### Studio Phase B — one list rhythm across Studio (2026-09-13)
 
 Amendment **A56**. The same guide, Phase B, which completes the A+B slice it says to merge.

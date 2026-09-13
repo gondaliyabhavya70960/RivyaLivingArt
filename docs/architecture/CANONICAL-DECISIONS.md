@@ -202,6 +202,82 @@ Brand and editorial copy may be written; anything asserting business capability 
 
 ## Amendments
 
+**2026-09-13 · A57 — Studio Phase C: the Overview answers "what needs a human today", and a failed
+query still refuses to say zero.**
+
+*The same implementation guide, Phase C. Its §8 gives `/studio` one job — "What needs a human
+today" — and its §9 names the four queues and one rule.*
+
+**FOUR QUEUES, EACH A LINK.** Verification backlog, inquiries nobody has opened, page sections not
+yet live, research sources awaiting a policy note. `components/studio/TodayList.tsx` renders them
+above the registry grid. The distinction from `StatCard` is the point: the grid MEASURES the
+business — how many products, how many assets — and those figures are worth knowing and are not
+work. Every row here is a queue with somebody's name on it, so each row goes somewhere. Reading "3"
+and then hunting a fifty-leaf sidebar for where to clear it is the §3.5 defect A56 fixed on the
+list screens, arrived at from the other direction.
+
+**A FAILED QUERY RENDERS UNREADABLE, NEVER `0`, AND THE TYPE IS WHAT ENFORCES IT.** `MetricCount` is
+`number | null` precisely so the two cannot collapse. §8 puts it in five words — "Zero is allowed;
+failed query is not" — and this is the screen it was written for: a zero here is a promise that
+somebody looked and found nothing, and a list that makes that promise after a failed read teaches
+its reader to stop believing the promise. The row still links, because you can always go and look
+yourself; it just makes no claim about what you will find. "Everything is clear" is likewise sayable
+only when EVERY row actually read its table — one `null` among zeros and the honest statement is
+nothing at all.
+
+**EVERY ROW IS GATED ON THE PERMISSION THAT LETS YOU CLEAR IT**, not on the one that lets you see
+the number, and the gating lives on the page rather than in the component. A presentational
+component that reads permissions is a second authorisation surface to keep in step with
+`ROLE_PERMISSIONS`; deciding in `readToday()` keeps the one rule in one place and leaves `TodayList`
+a thing you can render in a test with four literal rows. Visibility was never authorisation either
+way — the counts run under RLS as the signed-in user, so a hidden row leaked nothing.
+
+**THE PHASE 46 VERIFICATION CARD BECAME A ROW, WHICH IS A DELIBERATE REVERSAL.** A46-era reasoning
+gave it its own frame because it was the ONLY task-shaped block on the page. It is now one of four,
+and two blocks showing the same number in different shapes is precisely how the two come to
+disagree. Its per-surface breakdown survives as the row's `detail` — that is the part `TodayList`
+cannot express and the part an owner actually navigates by — along with the partial-read caveat, the
+unreadable state, the one surface no Studio screen edits, and the note saying where the written
+backlog lives and that the Studio does not serve it.
+
+**THE COUNT STILL COMES FROM `countOutstandingVerifications`**, over the one declaration in
+`lib/cms/verification-backlog.ts` that `scripts/content/build-verification-report.ts` also reads.
+§12's acceptance test is that the Overview agrees with that module; they agree because there is only
+ever one count. A partial read still yields a figure rather than throwing one away: one unreadable
+table out of twenty-two makes the number a FLOOR, which is worth showing with the caveat attached.
+
+**A TEST HOOK MOVED WITHOUT ITS INVARIANT MOVING.** `tests/e2e/studio-system.spec.ts` asserts that
+exactly one of `data-outstanding-verifications-total` and `-unreadable` appears inside the card —
+the invariant being that a zero can never arrive by both being absent. That invariant is still
+exactly right; only the place the number is DRAWN changed, so the attribute stayed on the detail
+block rather than the figure being re-rendered there to satisfy a selector. Rendering it twice to
+keep a locator happy would have re-introduced the duplication this phase removed.
+
+**TWO NEW COUNTS, IN THE MODULE'S EXISTING SHAPE.** `countUnreadInquiries`,
+`countUnpublishedSections` and `countSourcesAwaitingPolicy` join `lib/supabase/repositories/metrics.ts`
+as explicit, individually-written queries — the module bans a `count(table: string)` helper, and for
+good reason. Three scoping decisions are worth recording because each one is a choice about what
+"outstanding" means:
+
+- **Unread is `NEW` alone, not `OPEN_STATUSES`.** `countOpenInquiries` counts NEW, READ and
+  IN_CONVERSATION, which is the size of the pipeline: a healthy figure that does not go to zero and
+  should not. "Nobody has read this" is a different claim, it IS meant to reach zero every day, and
+  it is the only one of the two that answers this screen's question.
+- **ARCHIVED sections are excluded.** Four of `content_status`'s five values are "not published",
+  but ARCHIVED is a section somebody deliberately retired. Counting it as outstanding would make the
+  number grow every time the owner tidied up, which trains a reader to ignore it.
+- **Only `UNREVIEWED` sources count.** RESTRICTED and BLOCKED are decisions — somebody read the
+  site's terms and wrote down an answer, which is exactly the work being asked for. Re-counting them
+  would mean the list never clears no matter how carefully the owner worked through it.
+
+**NO CHARTS, PER §9.** Nothing that mixes currencies, nothing that compares an empty catalogue to
+scraped prices. Four counts and four links is the whole surface.
+
+**UNVERIFIED IN THE BROWSER, UNCHANGED FROM A55 AND A56.** Seven new unit tests cover the three
+count states, the all-clear rule, the link targets and the no-rows case; none is a measurement of
+the rendered Overview on a phone, and `tests/e2e/studio-system.spec.ts` still cannot run here for
+want of an auth server.
+
 **2026-09-13 · A56 — Studio Phase B: one list rhythm, one 44px control, and an empty state with
 somewhere to go.**
 

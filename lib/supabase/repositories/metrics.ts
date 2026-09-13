@@ -106,6 +106,56 @@ export function countOpenCommissionInquiries(client: Client): Promise<MetricCoun
   )
 }
 
+/* --- Phase C: the two rows the Overview's "today" list had no reader for ------------------------ */
+
+/**
+ * Inquiries nobody has opened yet — `NEW` alone, not `OPEN_STATUSES`.
+ *
+ * THE DISTINCTION IS THE WHOLE POINT OF THE ROW. `countOpenInquiries` counts NEW, READ and
+ * IN_CONVERSATION, which is the size of the pipeline: a healthy figure that does not go to zero and
+ * should not. "Nobody has read this" is a different claim, it IS meant to reach zero every day, and
+ * it is the only one of the two that answers the Overview's question of what needs a person now.
+ */
+export function countUnreadInquiries(client: Client): Promise<MetricCount> {
+  return count(client, (c) =>
+    c.from('inquiries').select('*', { count: 'exact', head: true }).eq('pipeline_status', 'NEW'),
+  )
+}
+
+/**
+ * Page sections written but not live.
+ *
+ * ARCHIVED IS EXCLUDED, AND IT IS NOT AN OVERSIGHT. `content_status` has five values and four of
+ * them are "not published", but ARCHIVED is a section somebody deliberately retired. Counting it as
+ * outstanding work would make this number grow every time the owner tidied up, which trains a
+ * reader to ignore it — the opposite of what a "needs a human" list is for.
+ */
+export function countUnpublishedSections(client: Client): Promise<MetricCount> {
+  return count(client, (c) =>
+    c
+      .from('page_sections')
+      .select('*', { count: 'exact', head: true })
+      .in('status', ['DRAFT', 'REVIEW', 'APPROVED']),
+  )
+}
+
+/**
+ * Research sources whose policy nobody has ruled on — `UNREVIEWED` only.
+ *
+ * RESTRICTED AND BLOCKED ARE DECISIONS, NOT A BACKLOG. Those two are somebody having read the
+ * site's terms and written down an answer, which is the work this row is asking for; re-counting
+ * them would mean the list never clears no matter how carefully the owner worked through it.
+ * APPROVED is likewise done. Only UNREVIEWED is a question still open.
+ */
+export function countSourcesAwaitingPolicy(client: Client): Promise<MetricCount> {
+  return count(client, (c) =>
+    c
+      .from('research_sources')
+      .select('*', { count: 'exact', head: true })
+      .eq('policy_status', 'UNREVIEWED'),
+  )
+}
+
 export function countResearchRunsLast7Days(client: Client): Promise<MetricCount> {
   return count(client, (c) =>
     c
