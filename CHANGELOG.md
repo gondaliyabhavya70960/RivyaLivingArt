@@ -6,6 +6,44 @@ Every phase adds an entry; see `docs/architecture/CANONICAL-DECISIONS.md` D9 for
 
 ## [Unreleased]
 
+### Studio Phase B — one list rhythm across Studio (2026-09-13)
+
+Amendment **A56**. The same guide, Phase B, which completes the A+B slice it says to merge.
+
+- **`components/studio/StudioAction.tsx`** — one 44px `rounded-sm` control in three variants (link,
+  submit, plain anchor for downloads). It replaces `underline underline-offset-4` text at roughly
+  20px tall in five places. Deliberately **not** `primitives/Button`: A46 made that a pill for the
+  public site, and a pill beside a data table is the "public-cinematic mismatch" §7 warned about.
+  Server-safe — no `'use client'`, no handler prop, so Studio's forms keep working before hydration.
+- **`components/studio/ListPage.tsx`** — purpose line, filter slot, rows. It does **not** render an
+  `h1`; `StudioPage` already owns the heading, and a second one would give every Studio surface two.
+  Filters stay a slot so each page keeps its own `GET` form and its query stays in the URL.
+- **`EmptyState` has a next step** (§3.5). `actionHref`/`actionLabel` arrive as a pair or not at all,
+  and a CTA is **refused on `reason="unreadable"`** — a failed read means nobody knows whether the
+  list is empty, so "create the first one" there invites a duplicate of something already present.
+  The rule is in the component, not left to callers. `DataTable` forwards both untouched.
+- **Products, Journal and Sources** now share the rhythm. Sources' only action moved out of the
+  policy card up beside the page heading, where §8 wants it visible without scrolling.
+
+**Every CTA is gated on the permission, not on the emptiness** — §8's rule is to hide a write
+control a role cannot use rather than offer a button that always 403s.
+
+**No CTA points at the content pack.** §7 suggests pointing an empty catalogue at
+`data/studio-pack`; that is a repository directory, and A54 is explicit that nothing in it is
+seeded, rendered or imported. Journal gets no CTA either: it has no `/new` route, and its create
+form is already on screen below the empty list.
+
+**The exit criterion is not fully met, and claiming it would be the defect.** The guide names five
+screens; three are converted. `/studio/content/faqs` is a stub with no FAQ repository behind it — a
+data-layer change, not a UI one — and `/studio/inquiries/all` is a bespoke inbox. The guide's own §7
+screen table assigns both to **Phase D**, so they are left there rather than half-converted.
+
+**Unverified in the browser, unchanged from A55.** The 44px height is asserted as the `min-h-11`
+class: jsdom has no layout, so a measurement here would pass on markup that renders 20px tall.
+`tests/e2e/design-system.spec.ts` measures for real but selects `button, input, select, textarea`,
+which catches the submit and neither link. Ten new unit tests; 3,785 pass across all three projects
+and the 44 static gates are green.
+
 ### Studio Phase A — the shell works on a phone (2026-09-13)
 
 Amendment **A55**. The owner's Studio UI/UX implementation guide, Phase A only; it says to stop

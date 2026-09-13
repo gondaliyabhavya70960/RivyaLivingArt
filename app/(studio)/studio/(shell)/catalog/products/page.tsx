@@ -4,8 +4,10 @@ import Link from 'next/link'
 import { Cluster } from '@/components/primitives/Cluster'
 import { Text } from '@/components/primitives/Text'
 import { DataTable } from '@/components/studio/DataTable'
+import { ListPage } from '@/components/studio/ListPage'
 import { RelativeTime } from '@/components/studio/RelativeTime'
 import { DemoPill, StatusPill } from '@/components/studio/StatusPill'
+import { StudioActionButton, StudioActionLink } from '@/components/studio/StudioAction'
 import { StudioPage, studioMetadata } from '@/components/studio/StudioPage'
 import { t } from '@/components/studio/strings'
 import { roleHasPermission } from '@/lib/auth/permissions'
@@ -91,117 +93,131 @@ export default async function Page({
       path="/studio/catalog/products"
       actions={
         canWrite ? (
-          <Link
-            href={'/studio/catalog/products/new' as Route}
-            className="underline underline-offset-4"
-          >
-            <Text as="span" size="sm">
-              {t('studio.catalog.products.newHeading')}
-            </Text>
-          </Link>
+          <StudioActionLink
+            href="/studio/catalog/products/new"
+            label={t('studio.catalog.products.newHeading')}
+            tone="primary"
+          />
         ) : undefined
       }
     >
-      {/* A plain GET form: searching a list must not need JavaScript any more than filtering the
-          public one does. */}
-      <form method="get" className="mb-6 flex flex-wrap items-end gap-3">
-        <label htmlFor="q" className="flex flex-col gap-1">
-          <Text as="span" size="sm" tone="secondary">
-            {t('studio.catalog.products.searchLabel')}
-          </Text>
-          <input
-            id="q"
-            name="q"
-            defaultValue={q ?? ''}
-            className="border-line-strong bg-surface h-11 rounded-sm border px-3"
-          />
-        </label>
-        <button type="submit" className="underline underline-offset-4">
-          <Text as="span" size="sm">
-            {t('studio.catalog.products.searchSubmit')}
-          </Text>
-        </button>
-      </form>
-
-      <DataTable<Product>
-        caption={t('studio.catalog.products.caption')}
-        rows={products}
-        rowKey={(product) => product.id}
-        empty={{
-          reason: 'empty',
-          heading: t('studio.catalog.products.emptyHeading'),
-          body: t('studio.catalog.products.emptyBody'),
-        }}
-        columns={[
-          {
-            id: 'title',
-            header: t('studio.catalog.products.colTitle'),
-            cell: (product) => (
-              <Link
-                href={`/studio/catalog/products/${product.id}` as Route}
-                className="underline underline-offset-4"
-              >
-                {product.title ?? t('studio.catalog.products.untitled')}
-              </Link>
-            ),
-          },
-          {
-            id: 'sku',
-            header: t('studio.catalog.products.colSku'),
-            cell: (product) => product.sku ?? t('studio.catalog.products.noSku'),
-          },
-          {
-            id: 'category',
-            header: t('studio.catalog.products.colCategory'),
-            cell: (product) =>
-              product.category_id === null
-                ? t('studio.catalog.products.noCategory')
-                : (categoryNames.get(product.category_id) ??
-                  t('studio.catalog.products.noCategory')),
-          },
-          {
-            id: 'status',
-            header: t('studio.catalog.products.colStatus'),
-            cell: (product) => (
-              <span className="flex flex-wrap items-center gap-1">
-                <StatusPill status={product.status} />
-                <DemoPill isDemo={product.is_demo} />
-              </span>
-            ),
-          },
-          {
-            id: 'readiness',
-            header: t('studio.catalog.products.colReadiness'),
-            cell: (product) => {
-              const unmet = unmetForPublish(
-                readinessChecklist(productDraft(product), {
-                  materialIds: new Array<string>(joinCounts.materials.get(product.id) ?? 0),
-                  galleryMediaIds: new Array<string>(joinCounts.gallery.get(product.id) ?? 0),
-                  specCount: joinCounts.specs.get(product.id) ?? 0,
-                }),
-              )
-              return unmet.length === 0 ? (
-                <Text as="span" size="sm">
-                  {t('studio.catalog.products.readyToPublish')}
-                </Text>
-              ) : (
-                <Cluster gap={2} data-unmet-summary="">
-                  {unmet.map((item) => (
-                    <Text key={item} as="span" size="sm" tone="secondary">
-                      {item}
-                    </Text>
-                  ))}
-                </Cluster>
-              )
+      <ListPage
+        filters={
+          /* A plain GET form: searching a list must not need JavaScript any more than filtering
+             the public one does, and the query stays in the URL where §6 wants it. */
+          <form method="get" className="flex flex-wrap items-end gap-3">
+            <label htmlFor="q" className="flex flex-col gap-1">
+              <Text as="span" size="sm" tone="secondary">
+                {t('studio.catalog.products.searchLabel')}
+              </Text>
+              <input
+                id="q"
+                name="q"
+                defaultValue={q ?? ''}
+                className="border-line-strong bg-surface h-11 rounded-sm border px-3"
+              />
+            </label>
+            {/* Was `underline underline-offset-4` — about 20px on a phone, beside a 44px field. */}
+            <StudioActionButton label={t('studio.catalog.products.searchSubmit')} />
+          </form>
+        }
+      >
+        <DataTable<Product>
+          caption={t('studio.catalog.products.caption')}
+          rows={products}
+          rowKey={(product) => product.id}
+          empty={{
+            reason: 'empty',
+            heading: t('studio.catalog.products.emptyHeading'),
+            body: t('studio.catalog.products.emptyBody'),
+            /*
+             * §3.5's "weak next step", fixed — and gated on the permission rather than shown to
+             * everyone. §8's checklist: hide a write control a role cannot use rather than offer a
+             * button that always 403s. A viewer reading an empty catalogue is told it is empty,
+             * which is true, and is not invited to do something the server would refuse.
+             *
+             * IT POINTS AT A ROUTE, NOT AT THE CONTENT PACK. §7 suggests "point at
+             * data/studio-pack concepts", and that is a directory in the repository rather than a
+             * Studio surface — a CTA can only go where the manifest already goes.
+             */
+            ...(canWrite
+              ? {
+                  actionHref: '/studio/catalog/products/new',
+                  actionLabel: t('studio.catalog.products.newHeading'),
+                }
+              : {}),
+          }}
+          columns={[
+            {
+              id: 'title',
+              header: t('studio.catalog.products.colTitle'),
+              cell: (product) => (
+                <Link
+                  href={`/studio/catalog/products/${product.id}` as Route}
+                  className="underline underline-offset-4"
+                >
+                  {product.title ?? t('studio.catalog.products.untitled')}
+                </Link>
+              ),
             },
-          },
-          {
-            id: 'updated',
-            header: t('studio.catalog.products.colUpdated'),
-            cell: (product) => <RelativeTime value={product.updated_at} />,
-          },
-        ]}
-      />
+            {
+              id: 'sku',
+              header: t('studio.catalog.products.colSku'),
+              cell: (product) => product.sku ?? t('studio.catalog.products.noSku'),
+            },
+            {
+              id: 'category',
+              header: t('studio.catalog.products.colCategory'),
+              cell: (product) =>
+                product.category_id === null
+                  ? t('studio.catalog.products.noCategory')
+                  : (categoryNames.get(product.category_id) ??
+                    t('studio.catalog.products.noCategory')),
+            },
+            {
+              id: 'status',
+              header: t('studio.catalog.products.colStatus'),
+              cell: (product) => (
+                <span className="flex flex-wrap items-center gap-1">
+                  <StatusPill status={product.status} />
+                  <DemoPill isDemo={product.is_demo} />
+                </span>
+              ),
+            },
+            {
+              id: 'readiness',
+              header: t('studio.catalog.products.colReadiness'),
+              cell: (product) => {
+                const unmet = unmetForPublish(
+                  readinessChecklist(productDraft(product), {
+                    materialIds: new Array<string>(joinCounts.materials.get(product.id) ?? 0),
+                    galleryMediaIds: new Array<string>(joinCounts.gallery.get(product.id) ?? 0),
+                    specCount: joinCounts.specs.get(product.id) ?? 0,
+                  }),
+                )
+                return unmet.length === 0 ? (
+                  <Text as="span" size="sm">
+                    {t('studio.catalog.products.readyToPublish')}
+                  </Text>
+                ) : (
+                  <Cluster gap={2} data-unmet-summary="">
+                    {unmet.map((item) => (
+                      <Text key={item} as="span" size="sm" tone="secondary">
+                        {item}
+                      </Text>
+                    ))}
+                  </Cluster>
+                )
+              },
+            },
+            {
+              id: 'updated',
+              header: t('studio.catalog.products.colUpdated'),
+              cell: (product) => <RelativeTime value={product.updated_at} />,
+            },
+          ]}
+        />
+      </ListPage>
     </StudioPage>
   )
 }

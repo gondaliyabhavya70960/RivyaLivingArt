@@ -41,10 +41,29 @@ export function DataTable<Row>({
   columns: readonly Column<Row>[]
   rows: readonly Row[]
   rowKey: (row: Row) => string
-  empty: { reason: EmptyReason; heading: string; body: string }
+  /**
+   * PHASE B ADDED THE NEXT STEP. `actionHref`/`actionLabel` are forwarded untouched — the table
+   * does not decide what an empty list should offer, it only stops being the reason a caller
+   * cannot say. `EmptyState` still refuses a CTA on `unreadable`, which is where that rule belongs.
+   */
+  empty: {
+    reason: EmptyReason
+    heading: string
+    body: string
+    actionHref?: string
+    actionLabel?: string
+  }
 }) {
   if (rows.length === 0) {
-    return <EmptyState reason={empty.reason} heading={empty.heading} body={empty.body} />
+    return (
+      <EmptyState
+        reason={empty.reason}
+        heading={empty.heading}
+        body={empty.body}
+        actionHref={empty.actionHref}
+        actionLabel={empty.actionLabel}
+      />
+    )
   }
 
   return (

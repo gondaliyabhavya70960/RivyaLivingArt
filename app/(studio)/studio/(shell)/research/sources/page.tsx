@@ -1,5 +1,4 @@
 import type { Route } from 'next'
-import Link from 'next/link'
 
 import { Badge } from '@/components/primitives/Badge'
 import { Stack } from '@/components/primitives/Stack'
@@ -7,7 +6,9 @@ import { Surface } from '@/components/primitives/Surface'
 import { Text } from '@/components/primitives/Text'
 import { TextLink } from '@/components/primitives/TextLink'
 import { DataTable, type Column } from '@/components/studio/DataTable'
+import { ListPage } from '@/components/studio/ListPage'
 import { PageHeader } from '@/components/studio/PageHeader'
+import { StudioActionLink } from '@/components/studio/StudioAction'
 import { StudioPage, studioMetadata } from '@/components/studio/StudioPage'
 import { HealthPill } from '@/components/studio/research/HealthPill'
 import { t } from '@/components/studio/strings'
@@ -123,39 +124,63 @@ export default async function Page() {
   ]
 
   return (
-    <StudioPage path="/studio/research/sources">
-      <Stack gap={8}>
-        <Surface level={1} className="p-6">
-          <PageHeader
-            level={2}
-            title={t('studio.research.policyOwnerOnly')}
-            actions={
-              canWrite ? (
-                <Link
-                  href={'/studio/research/sources/new' as Route}
-                  className="underline underline-offset-4"
-                >
-                  {t('studio.research.addSource')}
-                </Link>
-              ) : undefined
-            }
+    <StudioPage
+      path="/studio/research/sources"
+      /*
+       * "Add source" MOVED UP OUT OF THE POLICY CARD. §8's checklist wants the primary action
+       * visible without scrolling, and every other Studio list now puts it beside the page's own
+       * heading. Leaving it nested inside a notice card meant the one control on the screen sat
+       * wherever that card happened to end up.
+       */
+      actions={
+        canWrite ? (
+          <StudioActionLink
+            href="/studio/research/sources/new"
+            label={t('studio.research.addSource')}
+            tone="primary"
           />
-          <Text tone="secondary" className="mt-3">
-            {t('studio.research.policyOwnerOnlyBody')}
-          </Text>
-        </Surface>
-
-        <DataTable
-          caption={t('studio.research.sourcesHeading')}
-          columns={columns}
-          rows={rows}
-          rowKey={(row) => row.id}
-          empty={{
-            reason: 'empty',
-            heading: t('studio.research.noSources'),
-            body: t('studio.research.noSourcesBody'),
-          }}
-        />
+        ) : undefined
+      }
+    >
+      <Stack gap={8}>
+        <ListPage
+          filters={
+            /* Not a filter — the standing policy notice, in the slot that keeps the rows starting
+               at the same height as every other Studio list. This screen is the one in §7's table
+               whose name does not tell you its job: "sources" reads as a feed list until you know
+               the scraper is off by default and each row needs a written policy note. */
+            <Surface level={1} className="p-6">
+              <PageHeader level={2} title={t('studio.research.policyOwnerOnly')} />
+              <Text tone="secondary" className="mt-3">
+                {t('studio.research.policyOwnerOnlyBody')}
+              </Text>
+            </Surface>
+          }
+        >
+          <DataTable
+            caption={t('studio.research.sourcesHeading')}
+            columns={columns}
+            rows={rows}
+            rowKey={(row) => row.id}
+            empty={{
+              reason: 'empty',
+              heading: t('studio.research.noSources'),
+              body: t('studio.research.noSourcesBody'),
+              /*
+               * An empty source list is the CORRECT state of this repository — the pack's 60
+               * comparators ship disabled and `research_sources` is deliberately not seeded. The
+               * CTA opens the form where a policy note gets written; it does not enable anything,
+               * and it appears only for a role that could act on it.
+               */
+              ...(canWrite
+                ? {
+                    actionHref: '/studio/research/sources/new',
+                    actionLabel: t('studio.research.addSource'),
+                  }
+                : {}),
+            }}
+          />
+        </ListPage>
 
         <Surface level={1} className="p-6">
           <PageHeader level={2} title={t('studio.research.healthHeading')} />

@@ -424,6 +424,24 @@ docs/architecture/ docs/design/ docs/studio/ docs/media/ docs/content/ docs/ops/
 docs/SESSION-STATE.md
 ```
 
+## Studio UI/UX: phases A and B shipped, C-F not started
+
+The owner's Studio UI/UX implementation guide runs A-F and says to stop after A+B and merge.
+**A (amendment A55) and B (A56) are in.** The active nav leaf carries `aria-current` and a champagne
+rule; below `lg` the fifty-leaf rail is a `patterns/Drawer` dialog rather than a stack above the main
+landmark; search is a 44px button rather than a sentence naming two keys an Android phone does not
+have. Products, Journal and Sources share `ListPage`'s rhythm, `StudioAction`'s 44px control, and an
+`EmptyState` that offers one permission-gated next step and **refuses one entirely on a failed read**.
+
+**Two of B's five named screens are deliberately not converted.** `/studio/content/faqs` is a stub
+with no FAQ repository behind it, and `/studio/inquiries/all` is a bespoke inbox; the guide's own §7
+table assigns both to **Phase D**, which is a data-layer change rather than a UI one.
+
+**The Studio island budget stands at 7/8 on its heaviest route.** Phase A's three controls are one
+module (`StudioChrome.tsx`) because three files took two routes to 9/8; Phase B added no island at
+all. A new Studio `'use client'` file should be merged into `StudioChrome` rather than met by raising
+the gate.
+
 ## What does NOT exist yet
 
 **The test track deferred from Phases 41–44 is written and running — Phase 42 did it.** The seven
