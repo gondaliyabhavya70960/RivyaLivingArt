@@ -19,6 +19,8 @@ const SCHEMES: Record<string, SectionScheme> = {
   DEEP: 'DEEP',
   INK: 'INK',
   BONE: 'BONE',
+  MINERAL: 'MINERAL',
+  SAND: 'SAND',
 }
 
 export function schemeOf(theme: string | null, fallback: SectionScheme = 'DEEP'): SectionScheme {

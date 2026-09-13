@@ -1,7 +1,7 @@
 /*
  * COLOUR SCHEMES (docs/design/DESIGN_SYSTEM.md §2.4, §2.5)
  *
- * Three schemes, each redeclaring the same complete set of semantic names.
+ * Five schemes, each redeclaring the same complete set of semantic names.
  * A component never asks which scheme it is in — it reads the semantic token
  * and receives a value already proven compliant in §2.6-§2.8.
  *
@@ -106,6 +106,96 @@
   --rv-state-danger-soft: var(--rv-color-danger-soft-light);
   --rv-state-info-soft: var(--rv-color-info-soft-light);
   /* Elevation on a light ground is a shadow; on DEEP/INK it is a lifted surface (§6.2). */
+  --rv-elevation-1: var(--rv-shadow-1);
+  --rv-elevation-2: var(--rv-shadow-2);
+  --rv-elevation-3: var(--rv-shadow-3);
+}
+
+/*
+ * THE TWO WARM EDITORIAL SCHEMES (§2.4a, amendment A46).
+ *
+ * WHY TWO AND NOT ONE. The reference's long pages do not alternate light against dark; they
+ * alternate light against SLIGHTLY LESS LIGHT, and punctuate with full-bleed obsidian. Reading
+ * its homepage section by section, `bg-mineral` and `bg-sand` strictly alternate across eleven
+ * bands with three navy interruptions. A single warm scheme could not express that: the second
+ * band would have to reach past its own scheme for a surface, which is the exact coupling
+ * `SectionShell` exists to prevent. So MINERAL and SAND are peers, and a page alternates SCHEMES
+ * rather than surfaces.
+ *
+ * WHY NOT REUSE BONE. BONE is `#faf9f5` — a cool near-white built for the Studio, where a warm
+ * cast under dense tabular data reads as a stain rather than as paper. It stays exactly as it is
+ * and keeps the Studio's own contrast figures intact. These two are for the public site, where a
+ * warm ground is the point.
+ *
+ * ACCENT INK DIFFERS BETWEEN THEM ON PURPOSE. See `--rv-color-champagne-ink` in tokens.css: the
+ * reference's own bronze clears AA on mineral and fails it on sand, so sand takes the deeper
+ * step. Every gated pair in both schemes is verified by `npm run a11y:check-contrast`, which
+ * discovers a scheme structurally — any block declaring `--rv-surface-ground` is enrolled — so
+ * these two were checked the moment they were written rather than when somebody used them.
+ *
+ * ELEVATION IS A SHADOW HERE, as on BONE: on a light ground a lifted surface is not readable as
+ * lift, and §6.2 makes the distinction by scheme rather than by component.
+ */
+.rv-scheme-mineral {
+  color-scheme: light;
+  --rv-surface-ground: var(--rv-color-mineral);
+  --rv-surface-raised: var(--rv-color-mineral-raised);
+  --rv-surface-raised-2: var(--rv-color-sand);
+  --rv-surface-sunken: var(--rv-color-sand-raised);
+  --rv-surface-accent: var(--rv-color-sapphire);
+  --rv-surface-inverse: var(--rv-color-obsidian);
+  --rv-ink-primary: var(--rv-color-obsidian);
+  --rv-ink-secondary: var(--rv-neutral-700);
+  --rv-ink-tertiary: var(--rv-neutral-600);
+  --rv-ink-disabled: var(--rv-neutral-500);
+  --rv-ink-accent: var(--rv-color-champagne-ink);
+  --rv-ink-on-accent: var(--rv-color-mineral);
+  --rv-ink-inverse: var(--rv-color-mineral);
+  --rv-line-subtle: var(--rv-color-sand);
+  --rv-line-strong: var(--rv-neutral-400);
+  --rv-focus-ring: var(--rv-color-sapphire);
+  --rv-scrim: rgb(8 10 14 / 0.62);
+  --rv-state-success: var(--rv-color-success-dark);
+  --rv-state-warning: var(--rv-color-warning-dark);
+  --rv-state-danger: var(--rv-color-danger-dark);
+  --rv-state-info: var(--rv-color-info-dark);
+  --rv-state-success-soft: var(--rv-color-success-soft-light);
+  --rv-state-warning-soft: var(--rv-color-warning-soft-light);
+  --rv-state-danger-soft: var(--rv-color-danger-soft-light);
+  --rv-state-info-soft: var(--rv-color-info-soft-light);
+  --rv-elevation-1: var(--rv-shadow-1);
+  --rv-elevation-2: var(--rv-shadow-2);
+  --rv-elevation-3: var(--rv-shadow-3);
+}
+
+.rv-scheme-sand {
+  color-scheme: light;
+  --rv-surface-ground: var(--rv-color-sand);
+  --rv-surface-raised: var(--rv-color-sand-raised);
+  --rv-surface-raised-2: var(--rv-color-sand-raised-2);
+  --rv-surface-sunken: var(--rv-color-sand-sunken);
+  --rv-surface-accent: var(--rv-color-sapphire);
+  --rv-surface-inverse: var(--rv-color-obsidian);
+  --rv-ink-primary: var(--rv-color-obsidian);
+  --rv-ink-secondary: var(--rv-neutral-700);
+  --rv-ink-tertiary: var(--rv-neutral-600);
+  --rv-ink-disabled: var(--rv-neutral-500);
+  /* The deeper bronze: the reference's own #75602f is 4.26:1 on this scheme's raised. */
+  --rv-ink-accent: var(--rv-color-champagne-ink-deep);
+  --rv-ink-on-accent: var(--rv-color-mineral);
+  --rv-ink-inverse: var(--rv-color-mineral);
+  --rv-line-subtle: var(--rv-color-sand-raised-2);
+  --rv-line-strong: var(--rv-neutral-400);
+  --rv-focus-ring: var(--rv-color-sapphire);
+  --rv-scrim: rgb(8 10 14 / 0.62);
+  --rv-state-success: var(--rv-color-success-dark);
+  --rv-state-warning: var(--rv-color-warning-dark);
+  --rv-state-danger: var(--rv-color-danger-dark);
+  --rv-state-info: var(--rv-color-info-dark);
+  --rv-state-success-soft: var(--rv-color-success-soft-light);
+  --rv-state-warning-soft: var(--rv-color-warning-soft-light);
+  --rv-state-danger-soft: var(--rv-color-danger-soft-light);
+  --rv-state-info-soft: var(--rv-color-info-soft-light);
   --rv-elevation-1: var(--rv-shadow-1);
   --rv-elevation-2: var(--rv-shadow-2);
   --rv-elevation-3: var(--rv-shadow-3);

@@ -202,6 +202,99 @@ Brand and editorial copy may be written; anything asserting business capability 
 
 ## Amendments
 
+**2026-09-12 · A46 — the warm editorial palette, Instrument Serif, a mono eyebrow, and a ground
+rhythm the composition decides rather than each renderer (Rivya UI Redesign, phases 1-2).**
+
+*Why an amendment at all.* The redesign brief supplies a visual reference and three measured values
+from it. Two of the three did not exist here, and one of them cannot be adopted by changing an
+existing token. This records what changed, what deliberately did not, and the measurements that
+decided each.
+
+*The warm grounds are NEW primitives, never a repointed `--rv-color-bone` (§2.3a).* The reference's
+body ground is `#f4f1e9` and its second surface `#e7e0d5`; both are read verbatim out of its own
+`:root` and land as `--rv-color-mineral` and `--rv-color-sand`. Repointing bone was tried and
+refused by measurement: `check-tokens.mjs` re-derives the ten-step neutral ramp by OKLab
+interpolation between `--rv-color-obsidian` and `--rv-color-bone`, and moving bone re-derives NINE
+of the ten steps — and bone is `--rv-ink-primary` on both dark schemes, so the change would have
+moved every body colour on the site in order to chase a light ground. **BONE is unchanged and stays
+the Studio's ground**: a warm cast under dense tabular data reads as a stain rather than as paper.
+The four intermediate warm surfaces are the same OKLab line the two anchors define, at t = 0.5, 1.5,
+2 and 2.5, so a fifth step later is a calculation rather than a preference.
+
+*Five schemes, not three (§2.4a).* `.rv-scheme-mineral` and `.rv-scheme-sand` join DEEP, INK and
+BONE. Two rather than one because the reference's long pages alternate light against SLIGHTLY LESS
+light and punctuate with full-bleed obsidian — a single warm scheme would have to reach past itself
+for its neighbour's surface, which is the coupling `SectionShell` exists to prevent. Their accent
+inks differ on purpose: the reference's own `#75602f` measures 5.36:1 on mineral and 4.26:1 on
+sand-raised, so SAND takes one further step down the same hue. `npm run a11y:check-contrast`
+enrols a scheme structurally — any block declaring `--rv-surface-ground` — and now reports **60
+token pairs across 5 schemes**, every one at or above its WCAG ratio.
+
+*The display face is Instrument Serif, and it ships ONE weight (§3.1).* `next/font/google`'s
+metadata for the family is `{"weights": ["400"], "styles": ["normal","italic"]}`. Two consequences
+are code, not taste. `--rv-weight-display-strong` was 500 and is now 400, because a 500 of this face
+is a browser-synthesised smear rather than a cut — visible at a 103px headline. And
+`HeadingHighlight`, which needs a non-colour marking to satisfy WCAG 1.4.1 and took it from that
+500, now takes it from the family's real italic. **A fake weight was replaced by a genuine change of
+cut, not by colour alone.**
+
+*A third loaded family, and PERFORMANCE.md §2.2's two-family ceiling is amended with it.*
+`--rv-font-mono` used to ship no file — a device-resident stack — which was right while mono was a
+developer affordance and wrong once the eyebrow above every section heading was set in it: a device
+stack resolves to SF Mono, Consolas or Liberation Mono by platform, so the one detail repeating on
+every band of every page would have looked different on every machine. JetBrains Mono is 400-only,
+latin-only and NOT preloaded; the display face keeps the single permitted preload. The ceiling is
+raised to three deliberately rather than exceeded quietly.
+
+*The hero type step is a seventh step, not a widened sixth (§3.2).* The reference's
+`clamp(3rem, 7vw + .5rem, 7.5rem)` evaluates to 103.41px at the 1363px viewport the brief measured.
+`--rv-text-display-2xl` reaches 100.00px there and caps at 104px, so matching by widening it would
+have pushed every other display-2xl on the site up too. `--rv-text-display-hero` is the reference's
+clamp verbatim and the six-step scale is untouched.
+
+*Primary is an inverse fill (§7.1).* Filled obsidian on a light page and filled ivory over a dark
+hero look like two variants and are one rule: `--rv-surface-inverse` already means "the opposite
+ground" in every scheme. The button therefore needs no knowledge of its scheme and no `onDark`
+prop, and it inverts correctly on all five. Every CTA is `--rv-radius-pill` while surfaces stay
+near-square, which is the reference's own division — the roundness is confined to things you press.
+The champagne accent fill is freed to mark emphasis rather than to carry weight.
+
+*The ground rhythm is decided by the composition, not by each renderer (§2.4a).* This is the
+finding, and it was the largest visual defect on the site. `page_sections.theme` is nullable,
+`SectionShell` fell back to `DEEP`, and exactly ONE of the thirty-four renderers ever passed
+anything else — so every band of every CMS route rendered on one ocean ground and `/` measured
+**11,993px of a single colour at 1440px**. `components/sections/rhythm.ts` fills `theme` where it is
+null, in page order: the material and opening bands take a dark ground wherever they appear, every
+other band alternates mineral and sand, and a dark interruption does NOT advance the warm counter,
+so two sand bands never meet across a hero. **An editor's explicit theme always wins** — the rule is
+a default that makes an unconfigured page read well, not a policy. `SectionList` applies it once per
+page because the sequence is the one thing a section renderer cannot see.
+
+*The masthead overlays a dark opening band, with no JavaScript (§7.14a).* `SiteHeader`'s own comment
+already committed to "scroll-state via CSS only". The layout cannot see the page's sections —
+`renderCmsPage` resolves those one level down — so the STYLESHEET asks the question instead:
+`main:has(> .rv-scheme-ink:first-child)`. A browser without `:has()` matches neither rule and gets
+exactly the previous design, so this is additive progressive enhancement rather than an override of
+a transparent default. Zero islands, zero scroll listeners; the island budget is unchanged at 5.
+
+*Seven more media bindings, and eight refusals recorded beside them (§D6).* The map goes from 10 to
+17. Each was proposed against the manifest and then adversarially re-checked — id existence,
+resource type, family, the ratio the RENDERER delivers rather than the one the registry declares,
+the srcSet rung the source must clear, the section's seeded copy, and D10. The resolution rule that
+refused three: `HeroSection` and `FinalCtaSection` pass `preset: 'hero'`, whose `srcSet` emits only
+1920 and 2560, so a source narrower than 1920 upscales in every delivery — and `ResponsiveMedia`
+gives `priority` to the mobile half, which would make that upscale the route's LCP element.
+**Four homepage bands are blocked on a registry amendment, not on editorial judgement**: `/` declares
+three slots and its commission, 3D and closing bands have none, and inventing a key would have
+`lib/media/gaps.ts` report coverage against a slot nothing declares. That amendment is outstanding
+work, recorded in `content/seed/media-bindings.ts`.
+
+*What did NOT change.* No business rule, no schema migration, no route rename, no logo. Inquiry
+persistence before WhatsApp, research isolation, Sheets direction, RLS, permissions and the
+publication gates are untouched — this amendment moves colour, type and composition only. No
+external component library was adopted; that evaluation is outstanding and is recorded as such
+rather than as a rejection.
+
 **2026-09-12 · A45 — the block catalogue is 34 BUILT and 0 PLANNED, and the exhibition template is
 eleven elements again (supersedes A14's element-9 clause; PHASE-39-46 §Phase 45).**
 

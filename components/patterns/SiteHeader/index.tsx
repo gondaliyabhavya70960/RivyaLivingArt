@@ -123,14 +123,26 @@ export function SiteHeader({ chrome, cloudName }: SiteHeaderProps): React.ReactE
 
   return (
     <header
+      // The hook for the §7.14a overlay in base.css. An ATTRIBUTE rather than a class because the
+      // rule that reads it is a `:has()` selector in the stylesheet — nothing in TypeScript needs
+      // to know whether the header is currently overlaying, and giving it a class would invite a
+      // component to start asking.
+      data-rv-site-header=""
       className={cn(
         'sticky top-0 z-30 border-b border-line',
         // `supports-` so a browser without backdrop-filter gets an opaque ground rather than
-        // unreadable text over a photograph.
+        // unreadable text over a photograph. Both are overridden by the overlay rule on a page
+        // that opens dark; on every other page this stays exactly as it was.
         'bg-surface supports-[backdrop-filter]:bg-surface/85 supports-[backdrop-filter]:backdrop-blur-sm',
       )}
     >
-      <Container size="wide" className="flex items-center justify-between gap-6 py-4">
+      <Container
+        size="wide"
+        className="flex items-center justify-between gap-6"
+        // The height the overlay pulls the opening band up by. Set from the token rather than from
+        // a `h-20` utility so `base.css` and this row cannot disagree — see --rv-header-h.
+        style={{ minBlockSize: 'var(--rv-header-h)' }}
+      >
         {/* The brand is a link home. It renders nothing at all if the string is missing, rather
             than falling back to a literal — see lib/cms/strings.ts on why there is no default. */}
         {brand === null ? null : (

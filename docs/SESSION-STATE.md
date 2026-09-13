@@ -14,7 +14,98 @@ owner_verification: NOT_REQUIRED
 
 ---
 
-## Most recent work — Phase 45's deferral list, worked through (2026-09-12)
+## Most recent work — the Rivya UI Redesign, phases 1-2 of 6 (2026-09-12)
+
+**What was asked.** A luxury redesign of the public site and the Studio against a supplied visual
+reference (`https://rivya-living-art.vercel.app/`), delivered as working code with connected media,
+editable Studio controls and recorded test results. Six phases were specified. **Phases 0, 1 and
+most of 2 are done; 3, 4, 5 and 6 are not.** What follows is where to pick it up.
+
+**The reference was READ, not guessed.** Egress blocks the reference host, the production host and
+`res.cloudinary.com` from this sandbox, but `mcp__Vercel__web_fetch_vercel_url` reached the
+reference and returned its HTML and all three stylesheets. Its whole design system is one `:root`
+block, and the brief's three measured values are named tokens in it: `--mineral:#f4f1e9`,
+`--sand:#e7e0d5`, `--obsidian:#080a0e`, alongside `--champagne:#b89b63` and `--sapphire:#164e6b`
+which this repository ALREADY matches to the byte. Its hero clamp is
+`clamp(3rem, 7vw + .5rem, 7.5rem)` = 103.41px at 1363px, confirming the brief's ~103px. Its
+homepage is 15 sections in a strict mineral/sand alternation with three obsidian interruptions and a
+56px numbered left rail. Everything in A46 is downstream of that read.
+
+**The missing-media diagnosis, with the evidence.** This was the brief's first question and it has a
+single, verifiable answer. Cloudinary holds all 252 assets and serves derived transforms;
+`media_assets` holds 250 rows, all PUBLISHED and VERIFIED. But on the hosted project
+**`page_sections.media_desktop_id` is NULL on all 83 rows and `media_usages` has 0 rows** — nothing
+points at the library. It is not delivery, not status, not the cloud name. `seed:content` binds
+media, and it was last run BEFORE the Higgsfield migration landed, so every binding resolved to a
+gap and was skipped. Proved locally: re-running it after the migration bound 10 sections and wrote
+20 `media_usages` rows. **The production fix is to re-run the binding, not to change code.**
+
+**What shipped.** Amendment A46 in `CANONICAL-DECISIONS.md` is the full record. In brief: two new
+warm schemes (MINERAL, SAND) built on new primitives beside `--rv-color-bone` rather than on a
+repointing of it; Instrument Serif as the display face with the two consequences its single weight
+forces; a third loaded family for the mono eyebrow, with §2.2's ceiling amended rather than
+exceeded; `--rv-text-display-hero` as a seventh step; pill CTAs with an inverse-fill primary that
+inverts correctly on all five schemes from one rule; a ground rhythm decided by the page rather than
+by each renderer; a masthead that overlays a dark opening band using `:has()` and no JavaScript; and
+seven more media bindings.
+
+**Verified, and these are the real numbers.** 44/44 gates green (`npm run check`, exit 0); 3,076
+unit tests across 206 files pass; `next build` clean with 17 self-hosted woff2 files; contrast 60
+pairs across 5 schemes; island budget unchanged at 5; no horizontal overflow at 1440 or 390.
+
+### Where to pick it up — the pending work, in order
+
+**1. The media-slot registry amendment, which unblocks the homepage.** Four homepage bands were
+curated, adversarially verified, and then REFUSED for one reason: `/` declares only
+`home.hero.video`, `home.hero.poster` and `home.intro`, and the commission, 3D and closing bands
+have no slot at all. Inventing a key is not available — migration 0050 comments `media_slot_key` as
+"the registry key, VERBATIM", `sync_media_usages` copies it into `media_usages.slot_key`, and
+`lib/media/gaps.ts` joins on it, so an invented key reports coverage against a slot nothing
+declares, and `tests/unit/media-bindings.test.ts` fails on one. Add `home.commission`,
+`home.three-d-resin`, `home.final-cta` and `large-format.hero` (21:9/9:16) to
+`content/media-slots.ts`, then bind the pairs already verified and recorded in
+`content/seed/media-bindings.ts` under "BLOCKED ON A REGISTRY AMENDMENT". **The homepage still shows
+32 fallback wells; this is why.**
+
+**2. Phase 3 — the remaining public routes.** `/collection/[category]`, `/collections/[slug]`,
+`/product/[slug]`, `/custom-commissions`, `/portfolio`, `/journal`, `/search`, `/faq` and the global
+states. The token and rhythm work propagates to all of them automatically; what is NOT done is
+route-specific composition.
+
+**3. Phase 4 — the Studio.** Untouched beyond what it inherits from the primitives (pill buttons,
+inverse-fill primary). 82 routes under `app/(studio)/studio/(shell)/`. Note the constraint recorded
+in `TESTING.md` §13: the local harness is PostgREST alone with no auth server, so **156 Studio specs
+skip** and a Studio redesign cannot be browser-regression-tested here without GoTrue or a hosted
+preview with a fixture account.
+
+**4. Phase 5 — the external component evaluation.** The brief names eleven sources and asks for a
+fresh, recorded evaluation. **None was performed.** Nothing was adopted, and that is an absence, not
+a rejection — do not record it as one.
+
+**5. Phase 6 — e2e, visual baselines, Lighthouse.** Not run. The 33 committed visual baselines will
+all need regenerating in the pinned container image once the composition settles, and
+`TESTING.md` §8 records the two environment variables a local Playwright run needs.
+
+### Environment notes for the next session
+
+The local harness runs and is the reason any of this could be measured: PostgreSQL 16.13 at
+`/var/lib/postgresql/rivya` on :5432, PostgREST 13.0.4 (not vendored — fetch the release binary and
+point `POSTGREST_BIN` at it), `node scripts/db/local-rest.mjs`, then `next dev`. `ENVIRONMENT.md`
+§741 documents port 5433 and a `$PGROOT/data` layout; both differ from what actually runs here, and
+the doc is the one to trust for a fresh setup.
+
+**Egress blocks `res.cloudinary.com`.** No screenshot taken in this sandbox can show a real
+photograph. Screenshots were captured with Playwright route interception substituting a labelled
+placeholder carrying each asset's `public_id` and delivered pixel size, so layout, crop, scale and
+placement are faithful and the pixels are visibly not the real asset. **Do not present those as
+before/after photography evidence.** The brief's deliverable 8 needs a machine with Cloudinary
+reachable.
+
+The local database is NOT canonical seed state: all 250 media were published and verified and all 57
+sections walked to PUBLISHED through the real `cms_publish_section`, to mirror hosted. Do not
+regenerate `INITIAL_CONTENT_INVENTORY.md` against it.
+
+## Previous work — Phase 45's deferral list, worked through (2026-09-12)
 
 **What was asked.** A complete redesign of the public site and the Studio, content and colour
 unchanged. Phase 45 had already been run and recorded: `DESIGN_SYSTEM.md` §19 held four measured
