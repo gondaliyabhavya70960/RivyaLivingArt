@@ -202,6 +202,59 @@ Brand and editorial copy may be written; anything asserting business capability 
 
 ## Amendments
 
+**2026-09-13 · A62 — public redesign P1, in part: the masthead gets its one call to action, and the
+arithmetic decides where it appears.**
+
+*The public showroom guide §5.1. P1's other half — §6.1's band order — is measured and reported at
+the end rather than shipped, because it is CMS data rather than code.*
+
+**THE MASTHEAD HAD NO CALL TO ACTION AT ALL.** Brand, nav, search, drawer trigger. §5.1: "Primary
+header CTA on desktop: Commission a piece → /custom-commissions. **Not wa.me.**"
+
+**THE LABEL IS COPY AND THE DESTINATION IS NOT, WHICH IS THE WHOLE DESIGN OF THE THING.** Every
+other string in this header comes from `global_content` and so does this one. The href does not:
+§5.1 forbids a WhatsApp link in the masthead, and an href stored beside the label is an href
+somebody can change to one. D2 allows precisely that choice for the announcement bar — a strip a
+visitor can ignore is not the primary action, and an enquiry must still be persisted before any chat
+opens. The owner rewords the button; they cannot repoint it from the CMS.
+
+**`2xl`, AND THE NUMBER CAME FROM MEASUREMENT RATHER THAN TASTE.** Phase 42 recorded this row
+overflowing by 77px at 1024 and its arithmetic still governs: the nine-item nav will not compress
+below 834 at `xl`'s `gap-6`, the wordmark needs 124, the search control will not go under 118, the
+container's three gaps are 72, and this button is about 155. That is **1303px of content in an `xl`
+box of roughly 1200** — a 100px overflow, the same sideways scroll `homepage.spec.ts` exists to
+catch. At `2xl` the box is about 1440 and it fits.
+
+**A CTA THAT APPEARS ONLY ABOVE 1536 IS A COMPROMISE AND IS NAMED AS ONE.** §5.1's other header
+instruction is what would fix it — "Search icon only — the full Search page stays /search" — and
+`DESIGN_SYSTEM` §8.1 independently asks for the same compact trigger, with `SiteHeader`'s own note
+already filing it as a later change. Replacing the inline field frees about 118px and brings the
+button to `xl`, arguably to `lg`. **It is not bundled in here**: the combobox is a hydration island
+that `check-island-budget.mjs` and `check-search-scope.mjs` both name, and removing a working
+feature to make room for a new one is a decision for the owner rather than a side effect of adding
+a button. Between 1024 and 1535 the commission route stays reachable through the nav, and below
+`lg` through the drawer — what is missing there is the emphasis, not the destination.
+
+**A COUNT GUARD MOVED AND WAS KEPT MEANINGFUL.** `seed-modules.test.ts` pins §7's thirteen `CTA`
+rows. The new row makes fourteen, and simply changing 13 to 14 would make the specification's own
+number stop meaning anything — the file already refuses that move once, counting "Return Home"
+separately "so the specification's own number stays legible". So the test now asserts thirteen
+excluding this key AND fourteen in total: both numbers stay true and a fifteenth row still fails.
+
+**WHAT §6.1 ASKS FOR THAT IS NOT HERE, MEASURED ON THE LIVE DATABASE RATHER THAN GUESSED.** The band
+order is CMS data. Home's published sequence is hero, category-grid, selected-works, material-story,
+material-palette, commission-cta, portfolio-strip, process-steps, secondary-objects, journal-strip,
+final-cta — with the **manifesto band DRAFT** and therefore invisible, **no large-format doorway
+band and no maker band in existence at all**, and process at position 10 where §6.1 wants it fifth.
+Reordering published sections and creating two new ones is content work with its own seed keys and
+its own publish gates; doing it silently inside a header commit would be the opposite of what the
+seed contract is for.
+
+**NO BROWSER RUN, AND THE WIDTHS ABOVE ARE ARITHMETIC RATHER THAN MEASUREMENT.** They are the
+masthead's own recorded figures from Phase 42 applied to a new element, not fresh pixels: this
+environment's proxy closes browser tunnels, and standing the app up locally needs a Supabase
+harness. `homepage.spec.ts`'s overflow assertion runs in CI at the QA widths and is the real check.
+
 **2026-09-13 · A61 — public redesign P0: the empty well says what is true, and the homepage hero
 stops being a black box.**
 

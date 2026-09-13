@@ -348,14 +348,24 @@ describe('the label library', () => {
     RECORDS.filter((r) => r.table === 'global_content' && r.fields.group_key === name)
 
   /**
-   * §7 supplies thirteen CTAs. The fourteenth is "Return Home", which §45 and §46 name as the
+   * §7 supplies thirteen CTAs. The `chrome:` one is "Return Home", which §45 and §46 name as the
    * secondary action on the 404 and error pages — Phase 10 seeded it when it built those surfaces,
    * because until then no page existed that could show it. Counted separately rather than folded
    * into the thirteen, so the specification's own number stays legible.
+   *
+   * THE FOURTEENTH `global:` CTA IS NOT §7's, AND IS ASSERTED APART FOR THE SAME REASON.
+   * `CTA.header_commission.label` is the masthead's primary action, from the public redesign guide
+   * §5.1. Folding it into the thirteen would make the specification's count read as fourteen and
+   * quietly stop meaning anything; naming it keeps both numbers true, and keeps this guard doing
+   * its job — a fifteenth row still fails here.
    */
   it('seeds §7, §30 and §31 in full', () => {
     const ctas = group('CTA')
-    expect(ctas.filter((r) => r.seedKey.startsWith('global:'))).toHaveLength(13)
+    const globals = ctas.filter((r) => r.seedKey.startsWith('global:'))
+    expect(globals.filter((r) => r.seedKey !== 'global:CTA.header_commission.label')).toHaveLength(
+      13,
+    )
+    expect(globals).toHaveLength(14)
     expect(ctas.filter((r) => r.seedKey.startsWith('chrome:'))).toHaveLength(1)
     expect(group('COMMERCE_LABEL')).toHaveLength(10)
   })

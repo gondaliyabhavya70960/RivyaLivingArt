@@ -137,6 +137,27 @@ export const globalSeed: SeedModule = {
       status: 'DRAFT',
     }),
 
+    /*
+     * THE MASTHEAD'S ONE CALL TO ACTION — public redesign guide §5.1: "Primary header CTA on
+     * desktop: Commission a piece → /custom-commissions. **Not wa.me.**"
+     *
+     * ONLY THE LABEL IS COPY. The destination is fixed in `SiteHeader` rather than stored beside
+     * this row, and that asymmetry is the point: an editable href is an editable href, and the one
+     * thing §5.1 forbids for this control is pointing it at WhatsApp. D2 and the announcement bar
+     * allow that choice deliberately elsewhere — a bar a visitor can ignore is not the masthead's
+     * primary action, and an enquiry must be persisted before any chat opens. The owner can reword
+     * the button; they cannot turn it into a WhatsApp deep link from the CMS.
+     *
+     * NOT `OWNER_VERIFICATION_REQUIRED`: it offers to start a conversation, which is the whole
+     * business model, and asserts nothing about lead times, materials or delivered work.
+     */
+    globalRow('CTA', 'header_commission.label', 'Commission a piece', {
+      label: 'Masthead commission button',
+      description:
+        'Public redesign guide §5.1. The masthead primary action. Its destination is fixed to /custom-commissions in code — the guide forbids a WhatsApp link here.',
+      fact: 'EDITORIAL_COPY',
+    }),
+
     // --- §26 search -----------------------------------------------------------------------------
     globalRow('FORM_COPY', 'search.placeholder', 'Search furniture, art, materials and stories', {
       label: 'Search placeholder',

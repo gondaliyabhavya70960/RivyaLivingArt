@@ -6,6 +6,31 @@ Every phase adds an entry; see `docs/architecture/CANONICAL-DECISIONS.md` D9 for
 
 ## [Unreleased]
 
+### Public redesign P1 (partial) — the masthead's commission CTA (2026-09-13)
+
+Amendment **A62**. The public showroom guide's §5.1 header action. **Part of P1 only** — the §6.1
+band reorder is reported, not shipped; see below.
+
+- **`CTA.header_commission.label`** — "Commission a piece", from `global_content`. The masthead had
+  brand, nav and search and no call to action at all.
+- **The destination is a literal, the label is not.** §5.1 forbids a WhatsApp link in the masthead,
+  and an href read from the CMS is an href somebody can change to one. The owner rewords the button;
+  they cannot repoint it.
+- **`2xl` and above, which the arithmetic decided, not a preference.** Phase 42 measured this row
+  when it overflowed by 77px at 1024, and those numbers still govern: nav 834 at `xl`, wordmark 124,
+  search floor 118, container gaps 72, this button ~155 — 1303px of content in an `xl` box of ~1200.
+  At `2xl` the box is ~1440 and it fits.
+
+**To bring it down to `xl` or `lg`, §5.1's other header change is the prerequisite:** "Search icon
+only — the full Search page stays /search". `DESIGN_SYSTEM` §8.1 asks for the same compact trigger
+and `SiteHeader`'s own note already files it as a later change. It would free ~118px. That replaces
+a real feature — the combobox is an island two gates name — so it is **not** bundled in here.
+
+**The §6.1 band order is not shipped and the reason is that it is CMS data, not code.** Measured on
+the live database: the manifesto band is DRAFT, there is no large-format doorway band and no maker
+band at all, and process sits at position 10 where §6.1 wants it fifth. Creating and reordering
+published sections is content work with its own seed keys; it is reported rather than done silently.
+
 ### Public redesign P0 — media honesty (2026-09-13)
 
 Amendment **A61**. The public showroom guide's first phase. A different PR train from the Studio
