@@ -37,7 +37,7 @@ export function EmptyPlate({
   /** The object's own name, when the surface has one. Never a slug, never a placeholder. */
   readonly title?: string | null
 }) {
-  const label = siteString(strings, 'MEDIA.pending.label')
+  const label = siteString(strings, 'EMPTY_STATE.media_pending.label')
   if (label === null) return null
 
   return (

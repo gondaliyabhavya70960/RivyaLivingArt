@@ -221,7 +221,7 @@ honest and says nothing. `EmptyPlate` is §5.4's bone plate — a hairline rule,
 preparation", and the object's name where the surface has one.
 
 **IT IS NOT THE FAILURE COPY AND THE DISTINCTION IS LOAD-BEARING.** `ERROR.media_unavailable.*`
-means an image that EXISTS could not be shown. `MEDIA.pending.label` means no photograph has been
+means an image that EXISTS could not be shown. `EMPTY_STATE.media_pending.label` means no photograph has been
 taken, which on this site is the ordinary state of almost everything: the catalogue is concept media
 and objects nobody has built. Two different sentences for two different facts.
 
@@ -273,6 +273,16 @@ of a delivered Rivya table.
 until the next deployment. The plate's copy is likewise a seed row that production does not carry
 until `npm run seed:content` runs there, which stays owner-gated; until then the well is quiet rather
 than wrong.
+
+**THE SEED ROW'S GROUP WAS WRONG AND CI CAUGHT IT, WHICH IS THE HONEST ORDER OF EVENTS.** The first
+push filed the copy under an invented `MEDIA` group; `global_content_group_allowed` is a CLOSED list
+and refused it, the seed failed, and all four browser shards went red. **Local unit tests, the 44
+gates, `rls` and `integration` all passed** — because none of them re-seeds a database, and the
+constraint only speaks when a row is written. The copy now lives in `EMPTY_STATE`, beside
+`EMPTY_STATE.search.*`, which is where it belonged on the merits: this IS an empty state, and 0055's
+note already warned that "a free-text group would let a typo create a group of one that no surface
+ever reads" — a `MEDIA` group of exactly one row was that. **The lesson worth keeping: adding a seed
+row is a database change, and the local suites that pass without one prove nothing about it.**
 
 **NO BROWSER RUN, AND THIS TIME THE REASON IS DIFFERENT.** The environment has Chromium, but the
 agent proxy closes browser tunnels mid-exchange (`ws_closed_mid_exchange`), so the live site could

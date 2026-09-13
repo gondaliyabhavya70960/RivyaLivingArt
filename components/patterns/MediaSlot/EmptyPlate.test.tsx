@@ -20,7 +20,7 @@ function global_(group: string, key: string, value: string): GlobalContent {
   return { id: `${group}-${key}`, group_key: group, key, value, is_enabled: true } as GlobalContent
 }
 
-const PENDING = global_('MEDIA', 'pending.label', 'Photograph in preparation')
+const PENDING = global_('EMPTY_STATE', 'media_pending.label', 'Photograph in preparation')
 const strings = siteStrings([PENDING])
 
 describe('EmptyPlate', () => {

@@ -208,8 +208,15 @@ export const globalSeed: SeedModule = {
      *
      * It promises no date. "In preparation" is true the moment an object is briefed; "coming soon"
      * would be a delivery claim, and SEED §55 forbids exactly that.
+     *
+     * `EMPTY_STATE` RATHER THAN A GROUP OF ITS OWN, AND THE CONSTRAINT WAS RIGHT TO INSIST.
+     * `global_content_group_allowed` is a closed list, and 0055's note says why: "a free-text group
+     * would let a typo create a group of one that no surface ever reads". A `MEDIA` group was
+     * exactly that — one row, invented for one component. This IS an empty state, which is what §3
+     * means by "empty is designed", and filing it here puts it beside `EMPTY_STATE.search.*` where
+     * an owner looking for the site's empty copy will actually find it.
      */
-    globalRow('MEDIA', 'pending.label', 'Photograph in preparation', {
+    globalRow('EMPTY_STATE', 'media_pending.label', 'Photograph in preparation', {
       label: 'Empty media well — label',
       description:
         'Public redesign guide §5.4. Shown in a media well that has no asset bound yet. Distinct from ERROR.media_unavailable.*, which is a failure to display an image that exists.',
