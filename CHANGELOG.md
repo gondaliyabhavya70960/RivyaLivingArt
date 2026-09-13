@@ -6,6 +6,102 @@ Every phase adds an entry; see `docs/architecture/CANONICAL-DECISIONS.md` D9 for
 
 ## [Unreleased]
 
+### Rivya UI Redesign, phase 2 continued — a page-section index, an entrance that stopped breaking contrast, and a footer address that scrolled every page (2026-09-13)
+
+Amendment A48. No business rule, migration, route rename or logo change.
+
+**The redesign brief is now a specification of record.** `docs/requirements/03-UI-REDESIGN-BRIEF.md`,
+verbatim and read-only alongside the other two. Everything since A46 implements a document that
+existed only as a chat attachment, so every citation of it was unverifiable — and four were wrong,
+attributing two of its phrases to `FEAT §50`, which is a single paragraph containing neither. They
+now read `REDESIGN §A3` and point at text that says what they claim.
+
+**A page-section index rail (RC-245).** A fixed 56px column at `xl` and above, listing every band
+that carries an `eyebrow` as a numbered link. It holds no list of its own — an editor lengthens it
+by writing an eyebrow and shortens it by clearing one — and the numbers count what rendered, so a
+band withheld for owner verification leaves no hole. **No island and no scroll listener**: a Server
+Component rendering anchors. It has no active-state highlight, deliberately, because tracking the
+visible band costs either an island on all sixteen CMS routes or a static list of every section on
+a page whose section count is data.
+
+**The band entrance no longer fades, and that fixed a real accessibility failure.** A scroll-driven
+`opacity` animation holds one band part-way through its range at any moment, so contrast became a
+function of **scroll position** — invisible to every static check. `/large-format` at 390px failed
+axe's `color-contrast` at SERIOUS on a heading measured at `opacity: 0.184`: 1.82:1 where the same
+band opaque is 17.55:1. Nothing about that band was wrong; the page had got taller. The entrance is
+now transform-only, which removes the whole class of fragility from all sixteen CMS routes. The
+unused `.rv-reveal-fade` carried the same hazard and was deleted rather than kept.
+
+**The footer's email address scrolled every page sideways at 1024px.** A 237px address in a 160px
+column gave a `scrollWidth` of 1053 against a 1024 viewport on **every route**. The mono eyebrow
+added in A46 was the obvious suspect and was measurably not the cause.
+
+**The rail's own spec found a defect the moment it existed.** §7.15 claimed browser assertions that
+had never been written. Writing them failed immediately: `journal-strip` on the seeded homepage
+carries an eyebrow, is published and visible, and renders nothing — its renderer returns null when
+its cards resolve empty — so the rail emitted a link to a band that was never on the page. A label
+is no longer enough; a band must also have drawn something, tested through the `result.reason` field
+every selector already reports rather than through a table of block types that would rot.
+
+**Also corrected:** DESIGN_SYSTEM §2.4 still said "Three schemes" and described a Zod enum of
+`DEEP · INK · BONE` that does not exist — A46 made it five, and the parser is `schemeOf()` with a
+fallback, not validation.
+
+**Verified.** Four browser shards at eight widths, plus 3,083 unit tests and 44/44 gates. The two
+specs that were red on the previous commit (`/large-format` axe, both at 390px) pass. Two new
+assertions were each checked against a deliberately reintroduced regression: the unit test fails if
+any keyframe animates opacity again, and the rail spec fails on a link to a band that is not on the
+page.
+
+### Rivya UI Redesign, phase 2 continued — the four slots the pictures were waiting on, and the `/faq` `h1` (2026-09-13)
+
+Amendment A47. Follows the A46 foundation; no business rule, migration, route rename or logo change.
+
+**Four homepage and `/large-format` bands could not be given pictures, and the reason was a missing
+key rather than a missing asset.** `/` declares three media slots and composes thirteen bands.
+Three of the other ten mount `ResponsiveMedia`. Their assets were curated and verified in A46's
+pass and then refused, because a binding must name a registry key verbatim and inventing one puts a
+row in the reverse index pointing at a slot that does not exist. `home.commission`,
+`home.three-d-resin`, `home.final-cta` and `large-format.hero` are added and the four pairs bound.
+`/large-format` goes from an empty opening frame to a full-bleed one; the homepage goes from 2
+bound images to 8.
+
+**`large-format.hero` is new rather than borrowed, deliberately.** Binding it to the existing
+`large-format.dining` CARD slot would have had `classify()` report that card FILLED while it is
+still empty. A false coverage report is worse than a true gap.
+
+**`MediaSlot.delivery` replaces a string heuristic that was quietly wrong.** `presetWidthFor()`
+read the slot's KEY for the word "hero". `home.final-cta` is delivered full-bleed at
+`preset: 'hero'`/`100vw` and has no such word, so it would have been filed at the 768 grid rung —
+and `resolutionFit` would then have called a 1000px asset a fit for a slot that delivers at 2560.
+The field is optional and the substring rule stays as the fallback, so no existing slot's width
+moves.
+
+**The resolution arithmetic, settled once.** `srcSet` returns ladder rungs between
+`snapWidth(box)` and `snapWidth(box × 2)`: the grid chain tops at **1536**, not the ladder's global
+2560, and the hero chain runs 1920 · 2560 with a hard 1920 floor. Two earlier reviews disagreed
+about this; it decided every pick.
+
+**One binding does not clear its floor and says so.** `LARGEFORMAT-DINING-001` is 1536px against
+the hero floor of 1920 — roughly a 25% upscale on mobile. Bound anyway because its own prompt reads
+"Vertical editorial photograph for a mobile hero" with the upper third reserved as headline safe
+area, the master plan blesses 1536 for this slot, and no `largeformat-*` or `interior-lifestyle`
+asset exists at 9:16 above 1920. The alternative was an empty hero, not a sharper one.
+
+**The homepage hero stays unbound.** Still the two `GENERATE_NEW` slots, still pinned by a test,
+still the strongest argument for the one generation this library needs.
+
+**`/faq` has an `h1` — and the seed note explaining how to give it one was wrong.** It said typing
+a heading on the band was enough because "`SectionList` gives the FIRST section level 1".
+`SectionList` assigns no levels; `SectionCopy` defaults to 2 and `FaqListSection` passed none, so a
+heading rendered an h2 and the page still had no h1 (measured: 5 × h2, 0 × h1). The renderer now
+passes `level={isFirst ? 1 : 2}` and the heading is seeded as the page's own name. **This had been
+red on `main` since #67** — the a11y spec skips unpublished routes, and `/faq` only started serving
+200 when Phase 45 seeded the band.
+
+**Verified:** 44/44 gates, 3,076 unit tests, **E2E 307 passed / 0 failed** at `w1440` against CI's
+own recipe (was 303 / 1), clean production build, island budget unchanged at 5.
+
 ### Rivya UI Redesign, phases 1-2 — the warm palette, the reference typeface, and the ground rhythm (2026-09-12)
 
 A luxury redesign of the public site against a supplied visual reference, whose own CSS was read

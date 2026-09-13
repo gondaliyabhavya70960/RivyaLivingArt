@@ -8,7 +8,7 @@ import type { PageSection } from '@/lib/supabase/schemas'
  * THE PROBLEM THIS SOLVES. `page_sections.theme` is nullable, `SectionShell` fell back to `DEEP`,
  * and exactly one of the thirty-four renderers ever passed anything else. So every band of every
  * CMS route rendered on the same ocean ground: the homepage was 11,993px of one colour at 1440px,
- * and the §50 "deliberate negative space" the design contract asks for was indistinguishable from
+ * and the REDESIGN §A3 "balanced negative space" the brief asks for was indistinguishable from
  * a page that had failed to load. A long page needs a rhythm to be readable at all, and a rhythm
  * is a property of the SEQUENCE, which is the one thing a section renderer cannot see.
  *

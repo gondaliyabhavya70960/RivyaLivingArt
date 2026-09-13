@@ -202,6 +202,141 @@ Brand and editorial copy may be written; anything asserting business capability 
 
 ## Amendments
 
+**2026-09-13 · A48 — the redesign brief becomes a specification of record, a page-section index
+that costs no island, an entrance that no longer makes contrast depend on scroll position, and a
+footer address that scrolled every page sideways (Rivya UI Redesign, phase 2 continued).**
+
+*The brief is now `docs/requirements/03-UI-REDESIGN-BRIEF.md`, verbatim and read-only.* The whole
+of A46, A47 and this amendment implement a document that existed only as a chat attachment, so
+every citation of it was unverifiable — and four of them were wrong. `SectionRail`, `rhythm.ts`,
+`SectionShell` and DESIGN_SYSTEM §2.4a each attributed a phrase to **FEAT §50**, which is the
+one-paragraph FINAL QUALITY BAR and contains neither "a compact page-section index where it helps
+navigation" nor "negative space". Both phrases are the brief's §A3. D7's glob already reads
+`docs/requirements/*`, `scripts/docs/audit-docs.mjs` skips that prefix as history rather than as
+this repository's assertions, and the Studio documentation allowlist is explicit and unaffected, so
+the file needed no gate change — only the citations, which now read **REDESIGN §A3** and point at
+text that says what they claim. `SectionShell`'s now cites FEAT §4, which is where "architectural
+negative space" actually appears.
+
+*RC-245 — `SectionRail`, and the reason it has no active-state highlight.* The brief's §A3 asks for
+"a compact page-section index where it helps navigation". A fixed 56px column at `xl` and above,
+listing each band that carries an `eyebrow`, numbered over what it lists. **A highlight was refused
+on cost, not on taste**: tracking the visible band needs either a scroll handler — a Client
+Component imported by `components/sections/registry.ts`, therefore an island on all sixteen CMS
+routes, which `check-client-boundary.mjs` and the island budget both refuse — or a
+`view-timeline-name` per section plus a `timeline-scope` naming every one, and that list is static
+CSS while a page's section count is data. An index without a highlight is still an index. The
+threshold is arithmetic: free space before the reading column is `max(0,(vw−1200)÷2)+gutter`, which
+is 47px at 1024 and 97px at 1280, so `xl` is the first width where the column already exists. An
+earlier version showed it at `lg` and BOUGHT the space through a container-padding token; at 1440
+that double-inset the copy to 240px while the rail stayed at the edge. **The whole mechanism was
+reverted and `Container` is untouched.** Documented at DESIGN_SYSTEM §7.15.
+
+*The rail's selection rule needed a second condition, and writing its browser spec is what found
+that.* `tests/e2e/section-rail.spec.ts` was written because §7.15 claimed assertions that did not
+exist; it immediately failed on a real defect. Around twenty renderers decline at runtime, returning
+null rather than an empty frame. Most guard on `items.length === 0 && !hasSectionCopy(section)`, and
+`hasSectionCopy` is true whenever an eyebrow exists — so the rail's own rule satisfies them. The
+family that hides itself when its REFERENCE is empty does not: on the seeded homepage `journal-strip`
+carries the eyebrow "JOURNAL", is PUBLISHED and visible, and renders nothing, so **the rail emitted
+a link to `#section-<id>` for an element that was never on the page** — a dead link inside a
+navigation device. The rail now also requires `result.reason === 'OK'`, which every selector reports.
+**A uniform field rather than a table of block types**, so it cannot fall out of step with a renderer
+the way a hand-maintained list would. It is conservative in the safe direction: a reference-backed
+band that resolves EMPTY but has copy renders an empty state and is now left out, which is a missing
+entry rather than a dead link. `empty-state`, `quote` and `commission-configurator` decline on
+payload rather than on a reference and are the documented residue, with the browser spec as backstop.
+
+*The entrance is transform-only, and this is an accessibility decision rather than a stylistic one.*
+`rv-rise` faded `opacity` 0 → 1 alongside the rise. `animation-fill-mode: both` on a `view()`
+timeline holds a band at its `from` keyframe until it enters, so on a long page exactly one band is
+part way through the range at any moment — and while it is, every colour inside it composites with
+whatever sits behind the section. **Contrast therefore became a function of scroll position**, which
+no static token check can see. It was not hypothetical: `/large-format` at 390px failed axe's
+`color-contrast` at SERIOUS on its `category-intro` heading, with the band measured at
+`opacity: 0.184` — 1.82:1 against a required 3:1, where the same band opaque is 17.55:1. Nothing
+about the band was wrong and no colour could have fixed it; A47's taller hero had simply moved a
+different band into the range, so whichever band landed there would fail. §4.2 permits opacity and
+transform; using only the second keeps rule 3 (compositor properties, no reflow) and rule 1 (the
+unanimated state is the finished state) and removes the class of fragility from all sixteen CMS
+routes at once. `.rv-reveal-fade` and its `rv-fade` keyframe — used by nothing, and carrying exactly
+the same hazard — were **deleted rather than kept**, because dead code that is also a trap is worse
+than no code. `tests/unit/motion-layer.test.ts` now asserts the rule over EVERY keyframe rather than
+over `rv-rise` by name, since the hazard is the property and not the animation.
+
+*The footer's own email address scrolled every page sideways at 1024px.* `ContactChannels` renders
+the address as a link in a 160px footer column; at 237px it overflowed, giving a `scrollWidth` of
+1053 against a 1024 viewport on **every route**. A46's mono eyebrow was the obvious suspect and was
+wrong — forcing the eyebrow back to sans in the live page produced identical numbers. The fix is
+`break-words` on the email link alone, not on the column, so nothing else in it re-wraps.
+
+**2026-09-13 · A47 — four media slots the homepage and `/large-format` always needed, a delivery
+width the coverage engine can no longer guess wrong, and the `/faq` `h1` (Rivya UI Redesign,
+phase 2 continued).**
+
+*Four slots, and why their pictures had been waiting.* `/` declares three media slots and composes
+thirteen bands; three of the other ten mount `ResponsiveMedia` and so have a frame to fill. Their
+assets were curated and adversarially verified against the manifest in A46's pass and then could
+not be written, for one reason: a binding must name a registry key VERBATIM (migration 0050's
+column comment) and inventing one puts a row in the reverse index pointing at a slot the registry
+does not hold (migration 0054's header). `home.commission`, `home.three-d-resin`, `home.final-cta`
+and `large-format.hero` are added, and the four verified pairs are bound.
+
+*`large-format.hero` is a new slot rather than a reuse, and that distinction is the point.* The
+pair had been proposed against `large-format.dining`, which is the dining CATEGORY CARD at 16:9/4:5
+with `minAssets: 2`. Binding a hero there would have put `boundCount` at 2 and had `classify()`
+report the dining card FILLED while that card is still empty. **A false coverage report is worse
+than a true gap**, which is the same standard the A46 pass used to refuse three of its own
+proposals.
+
+*`MediaSlot.delivery`, because a string heuristic cannot be made correct by adding words to it.*
+`presetWidthFor()` in `lib/media/gaps.ts` derived the delivered width from the slot's KEY —
+`key.includes('hero')` meant 2560. That is right for `home.hero.poster` and silently wrong for any
+band delivered full-bleed without the word in its name. `home.final-cta` renders through
+`FinalCtaSection` at `preset: 'hero'`, `sizes: '100vw'`; inferred from its key it lands at the 768
+grid rung, `resolutionFit` calls a 1000px asset FITS for a slot that delivers at 2560, and
+`classify()` proposes REUSE_FROM_FAMILY for a binding that upscales on every wide screen — the
+exact failure that function exists to catch, reached through the coverage engine instead of past
+it. The slot now declares its delivery. The field is OPTIONAL and the substring rule is kept as the
+fallback, so every slot written before this amendment keeps the width it had and no coverage figure
+moves.
+
+*The resolution arithmetic, settled, because two reviews disagreed about it.* `srcSet(boxWidth)`
+returns the ladder rungs between `snapWidth(boxWidth)` and `snapWidth(boxWidth × 2)`. For
+`preset: 'grid'` (base 768) that is 768 · 1024 · 1280 · 1536 — **the ceiling is 1536, not the
+ladder's global 2560**. For `preset: 'hero'` (base 1600) it is 1920 · 2560, so a hero-delivered
+source under 1920 upscales in every delivery. Those two numbers decided every pick.
+
+*One binding does not clear its floor, and it is recorded rather than hidden.*
+`LARGEFORMAT-DINING-001` is 1536px against the hero chain's 1920 floor, so a phone downloads a 1920
+rung derived from it — about a 25% upscale on a photograph. It is bound anyway, for three stated
+reasons: its own manifest prompt opens "Vertical editorial photograph for a mobile hero" and
+reserves the upper third as headline safe area, so it was generated for this surface; the master
+plan blesses 1536 for this exact slot (§4.3/G6); and the library holds NO `largeformat-*` or
+`interior-lifestyle` asset at 9:16 above 1920, so the alternative is not a better picture but an
+empty hero on the site's second route.
+
+*The homepage hero stays unbound, and that is a decision rather than an omission.*
+`home.hero.video` and `home.hero.poster` remain the two `GENERATE_NEW` slots with `fillableBy: []`.
+`tests/unit/media-bindings.test.ts` pins both, the poster's registry note requires it to be the
+video's own opening frame rather than an unrelated still, and binding a material macro there would
+flip the site's single outstanding generation brief to FILLED and suppress it. **It is still the
+strongest argument for the one generation this library needs.**
+
+*`/faq` has an `h1`, and the note that said how to give it one was wrong.* `content/seed/faq.ts`
+anticipated the gap and prescribed: "`SectionList` gives the FIRST section level 1, so typing a
+heading on this band is enough." `SectionList` assigns no heading levels at all — `SectionCopy`
+defaults to `level = 2` and `FaqListSection` passed none, so a heading typed there rendered an
+`h2` and the page still had none. Measured with the heading set: five h2s, zero h1s. Both halves
+are fixed — the renderer passes `level={isFirst ? 1 : 2}`, and the heading is seeded as the page's
+own name, which `pages.ts` already carries. This had turned E2E red on `main` since #67: the
+a11y spec skips an unpublished route, `/faq` 404'd until Phase 45 seeded the band, and the spec ran
+against it for the first time the moment it served 200.
+
+*Verified:* 44/44 gates green, 3,076 unit tests, **E2E 307 passed / 0 failed** at `w1440` against
+CI's own recipe (up from 303/1), production build clean, island budget unchanged at 5.
+`/large-format` fallback wells 1 → **0**; homepage bound images 2 → 8.
+
 **2026-09-12 · A46 — the warm editorial palette, Instrument Serif, a mono eyebrow, and a ground
 rhythm the composition decides rather than each renderer (Rivya UI Redesign, phases 1-2).**
 

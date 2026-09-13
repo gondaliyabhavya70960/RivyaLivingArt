@@ -363,13 +363,30 @@ export type DispositionProposal = {
 /**
  * The delivered width a slot's preset asks for.
  *
- * READ FROM THE SLOT'S ROLE RATHER THAN STORED PER SLOT, because the presets are the design
- * system's and a second copy of their widths here would drift from `transform.ts` the first time
- * one changed. A hero is `hero-xl` at 2560; a card is `card` at 480; everything else is `grid` at
- * 768. That mapping is coarse on purpose — the question it answers is "would this upscale", and a
- * rung either way does not change the answer.
+ * THE ROLE IS DECLARED WHERE IT IS KNOWN, AND INFERRED FROM THE KEY ONLY WHERE IT IS NOT.
+ * A hero is delivered at 2560; a card at 480; everything else at the 768 grid rung. The mapping is
+ * coarse on purpose — the question it answers is "would this upscale", and a rung either way does
+ * not change the answer. The widths are not stored per slot, because they are the design system's
+ * and a second copy here would drift from `transform.ts` the first time one changed.
+ *
+ * WHY `delivery` EXISTS, AND WHAT IT REPLACED (amendment A47). This used to read the slot's KEY:
+ * `key.includes('hero')` meant 2560. That works for `home.hero.poster` and fails silently for any
+ * band that is delivered full-bleed without the word in its name — a `final-cta` renders through
+ * `FinalCtaSection` at `preset: 'hero'`, `sizes: '100vw'`, and would have been filed at the 768
+ * grid floor. The consequence is not a wrong number in a report: `resolutionFit` would call a
+ * 1000px asset FITS for a slot that delivers at 2560, and `classify()` would propose
+ * REUSE_FROM_FAMILY for a binding that upscales on every wide screen — which is the exact failure
+ * the function below exists to catch, arrived at through the coverage engine instead of past it.
+ *
+ * A STRING HEURISTIC CANNOT BE MADE CORRECT BY ADDING WORDS TO IT, so the slot declares its
+ * delivery instead. `delivery` is optional and the substring rule is kept as the fallback: every
+ * slot that predates this amendment keeps the width it had, so no coverage figure moves, and the
+ * declaration is what new slots use.
  */
 export function presetWidthFor(slot: MediaSlot): number {
+  if (slot.delivery === 'HERO') return 2560
+  if (slot.delivery === 'CARD') return 480
+  if (slot.delivery === 'GRID') return 768
   if (slot.key.includes('hero')) return 2560
   if (slot.key.includes('card') || slot.key.includes('thumb')) return 480
   return 768

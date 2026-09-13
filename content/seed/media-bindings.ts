@@ -339,4 +339,85 @@ export const MEDIA_BINDINGS: Readonly<Record<string, MediaBinding>> = {
     desktop: 'MATERIAL-MACRO-027',
     mobile: 'MATERIAL-MACRO-004',
   },
+
+  /* ----------------------------------------------------------------------------------------
+   * THE FOUR THE REGISTRY AMENDMENT UNBLOCKED (amendment A47).
+   *
+   * Every one of these was curated, adversarially verified against the manifest, and then REFUSED
+   * for one reason only: the slot it needed did not exist. `/` declared three slots and composes
+   * thirteen; `/large-format` declared six category cards and no hero. A47 adds `home.commission`,
+   * `home.three-d-resin`, `home.final-cta` and `large-format.hero`, so the pictures can be written
+   * without inventing a key — which migrations 0050 and 0054 forbid, and which would have put a
+   * row in the reverse index pointing at a slot the registry does not hold.
+   *
+   * THE RESOLUTION ARITHMETIC, SETTLED. Two reviews disagreed about the grid chain's ceiling, so:
+   * `srcSet(boxWidth)` returns the ladder rungs between `snapWidth(boxWidth)` and
+   * `snapWidth(boxWidth * 2)`. For `preset: 'grid'` (base 768) that is 768 · 1024 · 1280 · 1536 —
+   * the ceiling is 1536, NOT the ladder's global 2560. For `preset: 'hero'` (base 1600) it is
+   * 1920 · 2560, so a hero-delivered source under 1920 upscales in every delivery. Those two
+   * numbers decide every pick below.
+   * -------------------------------------------------------------------------------------------- */
+
+  // 3:2 / 4:5 at the grid preset, both native, 2528px and 3712px against a 1536 ceiling.
+  // The moment before a commission: a raw walnut slab on trestles, then the same slab clamped with
+  // a hand plane mid-stroke. Both prompts say it outright — "No resin anywhere, nothing poured,
+  // nothing polished" — so the band that says "Begin with an idea, not a catalogue limitation"
+  // shows material and making rather than a finished piece somebody might read as delivered work.
+  'home.07.custom-commission': {
+    slotKey: 'home.commission',
+    desktop: 'PROCESS-TIMBER-004',
+    mobile: 'PROCESS-TIMBER-001',
+  },
+
+  // 16:9 / 4:5 at the grid preset, both native. 2048px and 1856px, both clear of the 1536 ceiling —
+  // a review flagged this pair as upscaling against a 2560 ladder top, which is the global ladder
+  // rather than this chain's. `THREE-D-RESIN-010` is the lattice half-embedded in cured resin,
+  // which is literally the band's sentence: digital fabrication MEETING resin. `-003` is a sharper
+  // 5504px master and shows only a print head — half the sentence at three times the resolution,
+  // and the subject wins because both clear the ceiling anyway. `-001`/`-002` are already the
+  // `/collection/3d-resin` hero and are deliberately not reused here.
+  'home.08.three-d-resin': {
+    slotKey: 'home.three-d-resin',
+    desktop: 'THREE-D-RESIN-010',
+    mobile: 'THREE-D-RESIN-005',
+  },
+
+  // 21:9 / 4:5 at the HERO preset — `FinalCtaSection` defaults to `banded`, which is full-bleed at
+  // `sizes: '100vw'`. 3168px and 3712px against the 1920 floor and 2560 top. Both native.
+  // `MATERIAL-MACRO-011` would also have fitted and is now the `/collection` hero; its verbatim
+  // twin `-015` stays the spare rather than putting both halves of a DQ-9 pair on the live site.
+  'home.13.final-cta': {
+    slotKey: 'home.final-cta',
+    desktop: 'MATERIAL-MACRO-027',
+    mobile: 'MATERIAL-MACRO-013',
+  },
+
+  /*
+   * 21:9 / 9:16 at the hero preset. THE ONE BINDING IN THIS MAP THAT DOES NOT CLEAR ITS FLOOR, and
+   * it is recorded rather than quietly accepted.
+   *
+   * `LARGEFORMAT-DINING-002` (6336px) is the exact subject the route asks for — a live-edge resin
+   * dining table in a rammed-earth interior with generous negative space, under the heading
+   * "Designed to shape the room around them." `-001` is its deliberate counterpart: the manifest
+   * prompt opens "Vertical editorial photograph for a mobile hero" and reserves "the upper third
+   * of the frame calm and near-empty as headline safe area". Same table, same room, same light.
+   * They were generated as a desktop/mobile pair for this surface.
+   *
+   * AND `-001` IS 1536px, below the hero chain's 1920 floor, so a phone downloads a 1920 rung
+   * derived from it — roughly a 25% upscale on a photograph. Three things make that the better
+   * trade rather than a hole: the master plan blesses 1536 for this exact slot (§4.3/G6); the
+   * whole library holds NO `largeformat-*` or `interior-lifestyle` asset at 9:16 above 1920, so
+   * there is no substitute (the only 9:16 masters at 3072 are decor, material macros and process
+   * frames — none of them room-scale furniture); and the alternative is the second most important
+   * route on the site opening on an empty frame.
+   *
+   * NOT A COLLISION with the homepage. The master plan names `-001` as the interim homepage mobile
+   * still, but `home.hero.poster` is permanently unbound here — `tests/unit/media-bindings.test.ts`
+   * pins it, and the poster must be the hero video's own opening frame — so nothing else claims it.
+   */
+  'large-format.01.hero': {
+    slotKey: 'large-format.hero',
+    desktop: 'LARGEFORMAT-DINING-002',
+    mobile: 'LARGEFORMAT-DINING-001',
+  },
 }

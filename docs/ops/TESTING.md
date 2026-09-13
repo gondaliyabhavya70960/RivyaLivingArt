@@ -266,6 +266,28 @@ Run as a separate required CI job. Standard and per-component detail: `docs/ops/
 | `a11y/reduced-motion.spec.ts` | No transform/opacity transition applies; **no `<video>` element exists in the document** |
 | `a11y/zoom-reflow.spec.ts` | 200 % zoom and 320 px reflow: no horizontal scroll, no lost content |
 | `navigation-a11y.spec.ts` | Skip links, mega-menu keyboard model, mobile drawer focus trap, `aria-current` |
+| `section-rail.spec.ts` | The page-section index (RC-245): drawn at `xl` and hidden below it, never overlapping the first heading in `<main>`, adding no horizontal scroll, every entry named beyond its digits, every `href` resolving to a band on the page |
+
+### 5.1 The contrast failure a token matrix could not have found (amendment A48)
+
+`check-contrast.mjs` proves every semantic PAIR in every scheme, and it proved them all the day
+`/large-format` started failing axe at SERIOUS. Both were right. The band it failed on —
+`category-intro`, ink on MINERAL, **17.55:1 when opaque** — was being composited at
+`opacity: 0.184`, because the entrance animation faded `opacity` on a `view()` timeline and
+`animation-fill-mode: both` holds a band at its `from` keyframe until it enters. **Contrast was a
+function of scroll position.** On a long page exactly one band is mid-range at any moment, so
+whichever one landed there failed; A47's taller hero simply changed which one. No colour choice
+could have fixed it and no static check could have seen it.
+
+Two things follow, and both are now enforced:
+
+- The entrance is **transform-only**, and `tests/unit/motion-layer.test.ts` fails if any keyframe in
+  `app/styles/motion.css` animates `opacity` again — asserted over every keyframe, because the
+  hazard is the property rather than any one animation.
+- **A serious axe violation that moves when the page gets taller is a composition bug, not a flaky
+  test.** It reproduces only at the width and scroll offset where a band straddles the range, so it
+  will look intermittent. Probe the computed `opacity` of the reported element's section before
+  reaching for a re-run.
 
 Plus three pre-browser guards in `npm run check`: `scripts/a11y/check-contrast.mjs` (token matrix),
 `scripts/a11y/check-focus-styles.mjs` (no unreplaced `outline: none`) and

@@ -75,6 +75,32 @@ describe('the scroll motion layer', () => {
     }
   })
 
+  /**
+   * THE ONE THIS FILE EXISTS FOR NOW, AND IT WAS FOUND IN A BROWSER RATHER THAN HERE.
+   *
+   * `rv-rise` used to fade 0 -> 1 alongside the rise. `animation-fill-mode: both` on a `view()`
+   * timeline holds a band at its `from` keyframe until it enters, so on any long page exactly one
+   * band is part way through the range at any moment — and while it is, every colour inside it
+   * composites with whatever sits behind the section. Contrast became a function of SCROLL
+   * POSITION.
+   *
+   * That is not a theory. `/large-format` at 390px failed axe's `color-contrast` at SERIOUS with
+   * its `category-intro` heading measured at `opacity: 0.184` — 1.82:1 against a required 3:1 —
+   * while the same band opaque is 17.55:1. Nothing about the band was wrong and no colour could
+   * have fixed it; the page had simply got taller, which moved a different band into the range.
+   *
+   * So: no keyframe in this stylesheet may touch `opacity`. It is asserted over ALL keyframes
+   * rather than over `rv-rise` by name, because the failure mode is the property, not the animation
+   * — a new keyframe added later would carry it just the same, and the band does not fail loudly.
+   */
+  it('animates no opacity at all, because a partly-faded band fails contrast mid-scroll', () => {
+    const keyframes = [...CODE.matchAll(/@keyframes[^{]+\{([\s\S]*?)\n\}/g)].map((m) => m[1])
+    expect(keyframes.length).toBeGreaterThan(0)
+    for (const body of keyframes) {
+      expect(body).not.toMatch(/\bopacity\s*:/)
+    }
+  })
+
   it('exempts the first band on a page, which holds the LCP element', () => {
     expect(CODE).toMatch(/main\s*>\s*section:first-of-type\.rv-reveal/)
   })

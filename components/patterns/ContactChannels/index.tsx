@@ -106,7 +106,25 @@ export function ContactChannels({
 
       {contact.email === null ? null : (
         <li>
-          <a href={`mailto:${contact.email}`} className={linkClass}>
+          {/*
+           * `break-words` ON THE EMAIL AND NOWHERE ELSE (amendment A48).
+           *
+           * An address has no spaces, so it offers the line breaker no opportunity and simply runs
+           * out of its column. In the footer's four-column grid that column is 160px and a real
+           * address is wider — `gondaliyabhavya70960@gmail.com` measures 237px — so the page
+           * scrolled sideways at 1024px. Measured before the fix: `scrollWidth` 1053 against a
+           * 1024 viewport, on every route, with the footer link the only overflowing element.
+           *
+           * WHY NO TEST CAUGHT IT. The browser suite's overflow assertions run against the e2e
+           * fixture, whose seeded contact address is short enough to fit. The defect needs the
+           * REAL address to appear, which is to say it was only ever visible in production and in
+           * a local harness seeded from `content/seed`.
+           *
+           * ONLY THIS LINK. The phone number and the WhatsApp label are short and already wrap at
+           * their spaces; letting them break mid-token would hyphenate a phone number across two
+           * lines, which reads as two numbers.
+           */}
+          <a href={`mailto:${contact.email}`} className={cn(linkClass, 'break-words')}>
             {contact.email}
           </a>
         </li>
