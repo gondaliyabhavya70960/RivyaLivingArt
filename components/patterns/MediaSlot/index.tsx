@@ -5,15 +5,15 @@ import { MediaImage } from '@/components/patterns/MediaImage'
 import type { AspectRatio } from '@/components/primitives/AspectBox'
 import { cropFor, cropSegment } from '@/lib/media/crop'
 import { altTextOf, mediaRefOf } from '@/lib/cms/media'
-import { MEDIA_FALLBACK_LABEL_KEY, siteStringOrEmpty, type SiteStrings } from '@/lib/cms/strings'
+import { type SiteStrings } from '@/lib/cms/strings'
 import type { PresetName } from '@/lib/media/transform'
 import type { BoundMediaAsset } from '@/lib/cms/media'
 
 /**
  * MediaSlot — the two ways any surface shows a CMS-bound asset: one picture, or a desktop/mobile
  * pair. It reserves the aspect box from the CMS ratio before the asset is known, so a slow image,
- * a missing one and a failed one all occupy the same space, and it paints the SEED §47 fallback
- * with its seeded label when nothing resolves.
+ * a missing one and a failed one all occupy the same space, and it paints the SEED §47 well —
+ * silent, on the public site — when nothing resolves.
  *
  * IT LIVED AT `components/sections/SectionMedia.tsx` UNTIL PHASE 10 and moved here unchanged. Not
  * a tidy-up: Phase 10's header needs exactly this behaviour for the mega menu's category cards,
@@ -42,6 +42,13 @@ export type BlockImageProps = {
   readonly preset: PresetName
   readonly sizes: string
   readonly altOverride?: string | null
+  /**
+   * KEPT THOUGH `BlockImage` NO LONGER READS IT. It stopped reading it when the public well
+   * stopped carrying `ERROR.media_unavailable.label`; every section renderer still threads it
+   * here, `ResponsiveMedia` still forwards it, and the pair `BlockVideo`/`HeroSection` genuinely
+   * need a string bag for the play label. Removing it from this one type would be a rename
+   * across twenty renderers to save a prop nobody passes wrongly.
+   */
   readonly strings: SiteStrings
   readonly cloudName: string
   readonly eager?: boolean
@@ -65,7 +72,7 @@ export type BlockImageProps = {
  *
  * A NULL ASSET STILL RENDERS THE FRAME. The box was reserved from the CMS ratio before the asset
  * was known, so collapsing it now would move everything below — the exact layout shift the frame
- * exists to prevent. The well carries the fallback label instead.
+ * exists to prevent. The well stands empty instead, and says nothing about why.
  */
 export function BlockImage({
   asset,
@@ -74,7 +81,6 @@ export function BlockImage({
   preset,
   sizes,
   altOverride = null,
-  strings,
   cloudName,
   eager = false,
   priority = false,
@@ -87,8 +93,8 @@ export function BlockImage({
    * NO CLOUD NAME MEANS NO DELIVERABLE IMAGE, and that is a media failure rather than an error.
    * `imageUrl` would happily build `https://res.cloudinary.com//image/upload/...` from an empty
    * string — a URL that resolves to nothing, an `<img>` that 404s, and a broken-image glyph where
-   * the design says a labelled well should be. Treated as "no asset", the frame renders the
-   * reserved box and the seeded SEED §47 label, which is what the layout is already sized for.
+   * the design says a quiet well should be. Treated as "no asset", the frame renders the
+   * reserved SEED §47 box, which is what the layout is already sized for.
    */
   const deliverable = cloudName === '' ? null : asset
 
@@ -117,7 +123,21 @@ export function BlockImage({
     <MediaFrame
       ratio={ratio}
       mobileRatio={mobileRatio}
-      fallbackLabel={siteStringOrEmpty(strings, MEDIA_FALLBACK_LABEL_KEY)}
+      /*
+       * NO LABEL, DELIBERATELY — the public well says nothing.
+       *
+       * This call site used to pass `ERROR.media_unavailable.label`, and it was the single
+       * funnel through which every public media frame on the site drew "Image unavailable".
+       * With the library unbound that string appeared roughly thirty times on `/` alone, and
+       * it was not true: nothing had failed to load, nothing had been bound. A reserved,
+       * grounded, silent well is the honest rendering of a slot an editor has not filled, and
+       * the question it leaves open — WHICH slot — belongs to `lib/media/gaps.ts` and the
+       * Studio's Gaps tab, where an editor can act on the answer.
+       *
+       * `MediaFrame` keeps `data-media-fallback` so the empty state stays assertable, and the
+       * Studio's own frames still pass a label because there the frame stands in for a named
+       * asset rather than for a gap.
+       */
       veil={veil && deliverable !== null}
       overlay={overlay}
       className={className}

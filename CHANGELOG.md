@@ -6,6 +6,44 @@ Every phase adds an entry; see `docs/architecture/CANONICAL-DECISIONS.md` D9 for
 
 ## [Unreleased]
 
+### The 250-asset library is bound on the hosted project, and empty wells stop apologising (2026-09-13)
+
+Amendment **A52**. Phase 0 of the redesign brief, executed on the hosted project rather than
+handed back to the owner, plus the one code change it exposed.
+
+**The binding.** `media_assets` held 250 published, verified rows and nothing pointed at them:
+`page_sections.media_desktop_id` was NULL on all 83 rows and `media_usages` had 0. A47 added the
+four missing slots and A49 fixed the seed runner's ordering, so the only step left was to run it —
+and it ran through the Supabase MCP, the route `scripts/seed/emit-sql.ts` already documents for
+environments where the hosted database is reachable that way and no other. The twenty-one
+`MEDIA_BINDINGS` entries were emitted as the three-column `update` that `scripts/seed/bind-media.ts`
+executes, pre-flighted the way that script pre-flights (39 assets and 21 sections, all present),
+then applied.
+
+- `media_desktop_id` / `media_mobile_id`: **0 → 21 sections**
+- `media_usages`: **0 → 42 rows**, written by `sync_media_usages` from the slot keys
+- No copy, no `status`, no seed hash touched — `bind-media.ts`'s contract, kept
+
+**Two routes stop returning 404.** `renderCmsPage` 404s a page with zero live sections, and
+`/process` and `/custom-commissions` each had zero. Three seeded sections carrying **no**
+owner-verification gate — `process.01.hero`, `commissions.01.hero`, `commissions.06.cta` — were
+promoted through `cms_publish_section` along the legal edge. The nine DRAFT sections that **do**
+carry the gate were left alone: clearing it is the owner asserting a business claim, which is what
+D10 is for.
+
+**Empty wells say nothing now.** `MediaFrame.fallbackLabel` is optional and `BlockImage` — the one
+funnel every public media frame is drawn through — no longer passes `ERROR.media_unavailable.label`.
+Nothing had failed to load; the slot had never been bound, and the string appeared roughly thirty
+times on `/` alone. The reserved box and `data-media-fallback` are unchanged, so no layout shifts
+and the empty state stays assertable. Studio frames still carry their label.
+
+**Two of the brief's premises were stale and are corrected in A52:** all 250 assets are already
+`VERIFIED`/`PUBLISHED` (the RV006 media gate was never the blocker), and six of seven categories
+are already published — Furniture and Wall & Statement Art needed no action.
+
+Verified: `npm run check` exit 0 (44 gates), **3,092 unit tests across 207 files pass**,
+`tsc --noEmit` clean.
+
 ### Five design skills installed, and the three things an installer overwrote (2026-09-13)
 
 No amendment: nothing about the design system changed. No route, component or token moved.

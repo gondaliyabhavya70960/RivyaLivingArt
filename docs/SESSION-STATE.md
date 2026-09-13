@@ -14,7 +14,92 @@ owner_verification: NOT_REQUIRED
 
 ---
 
-## Most recent work — the Rivya UI Redesign, phases 1-2 of 6 (2026-09-13)
+## Most recent work — PHASE 0 IS DONE ON PRODUCTION (2026-09-13)
+
+**THE BINDING RAN. The homepage is no longer a dark page with missing pictures.** Everything below
+this heading that says the binding is "the owner's remaining step" is now history — it was, it is
+not any more, and amendment **A52** is the record.
+
+**What was written to the hosted project, and how.** No `DATABASE_URL` exists in this session and
+none was needed: the hosted project is reachable through the Supabase MCP, which is the route
+`scripts/seed/emit-sql.ts` already documents for exactly this situation. The twenty-one
+`MEDIA_BINDINGS` entries were emitted as the three-column `update` that `scripts/seed/bind-media.ts`
+itself executes — `media_desktop_id`, `media_mobile_id`, `media_slot_key`, and nothing else — and
+pre-flighted the way that script pre-flights: every one of the 39 named assets and every one of the
+21 named sections was confirmed present *before* a byte was written. Both checks came back empty.
+
+Measured on the hosted project, before and after:
+
+| | before | after |
+|---|---|---|
+| `page_sections.media_desktop_id` non-null | 0 | **21** |
+| `page_sections.media_mobile_id` non-null | 0 | **21** |
+| `media_usages` | 0 | **42** |
+| sections bound *and* PUBLISHED (i.e. live) | 0 | **10** |
+
+No copy, no `status`, no seed hash was touched. The undo is `set media_desktop_id = null,
+media_mobile_id = null, media_slot_key = null` on those 21 seed keys.
+
+**`/process` AND `/custom-commissions` NO LONGER 404.** The cause was never missing code.
+`renderCmsPage` calls `notFound()` on a page with zero live sections, and both pages had **zero**
+published sections out of 8 and 6 respectively. Three seeded sections carry **no** owner-verification
+gate — `process.01.hero`, `commissions.01.hero`, `commissions.06.cta` — and were promoted through
+`cms_publish_section` along the legal edge (DRAFT → REVIEW → APPROVED → PUBLISHED). Both routes now
+render.
+
+**WHAT IS STILL DRAFT IS THE OWNER'S, AND THE SCHEMA SAYS SO.** Nine DRAFT sections carry
+`OWNER_VERIFICATION_REQUIRED`; `cms_publish_section` refuses them with **RV002** and the check
+constraint refuses underneath it. That gate was deliberately not touched — clearing it is the owner
+asserting a business claim, which is D10's entire mechanism rather than an obstacle to it. Seven of
+those nine are already bound to pictures and will show them the moment the owner clears the flag:
+
+- `/process` — `process.02.brief` … `process.07.finishing` (6 bands, all bound) + `process.08.final-review`
+- `/` — `home.02.manifesto`, `home.08.three-d-resin` (both bound)
+- `/collection/3d-resin`, `/collection/preservation` (both bound), `/collection/collectible-design`
+- `/about` — `about.03.scale`, `about.04.bespoke`; `/large-format` — `large-format.04.customization`
+- `/custom-commissions` — the four middle bands; `/contact` — `contact.02.details`
+
+**TWO OF THE BRIEF'S PREMISES WERE STALE. Do not re-plan against them.**
+
+1. *"Every asset is `OWNER_VERIFICATION_REQUIRED`."* Not any more — all 250 are `VERIFIED` **and**
+   `PUBLISHED` on the hosted project. So `cms_publish_section`'s RV006 media gate is clear, and it
+   was never what blocked a publish.
+2. *"Seven DRAFT categories."* Six of seven are `PUBLISHED`. Only `3d-resin` is DRAFT, and it
+   carries the owner gate. **Furniture and Wall & Statement Art needed no action** — the brief's
+   week-plan item 3 was already done.
+
+**THE CODE CHANGE — the public well stops claiming a failure.** `MediaFrame.fallbackLabel` is now
+optional and `BlockImage` (the single funnel every public media frame is drawn through) stopped
+passing `ERROR.media_unavailable.label`. The string was false: nothing had failed to load, the slot
+had never been bound. The reserved box and `data-media-fallback` are unchanged, so nothing shifts
+and the empty state is still assertable. Studio frames still pass a label — there the frame stands
+in for a named asset, not for a gap.
+
+### THE NEXT BINDING GAP, named precisely
+
+**`categories.hero_media_id` is NULL on all seven categories.** That is why the mega menu's category
+cards have no pictures, and it is a *different* surface from `page_sections` —
+`content/seed/media-bindings.ts` binds section slots "and only those", by its own header. Filling it
+is a curation pass of seven choices, and that file's standing rule is that doing it badly is worse
+than leaving it undone. It was not filled from this session on purpose.
+
+**`product_media` is still 0 rows and must stay that way until real photography exists.** All 250
+assets are `is_concept = true`, and the product-media trigger refuses every one of them. That is
+correct. Product galleries stay honest-empty.
+
+### Verified this session
+
+`npm run check` exit 0 (44 gates). **3,092 unit tests across 207 files pass.** `tsc --noEmit`
+clean. Three assertions in `tests/unit/cms-sections.test.tsx` were updated from "shows the fallback
+label" to "keeps the frame and keeps it silent", because that is the contract now.
+
+**A rebuild is still needed for the prerender.** `/` is statically prerendered and this was a
+data-only change, so production must redeploy before the new bindings appear. That trap is
+documented below and it has not changed.
+
+---
+
+## Previous work — the Rivya UI Redesign, phases 1-2 of 6 (2026-09-13)
 
 **What was asked.** A luxury redesign of the public site and the Studio against a supplied visual
 reference (`https://rivya-living-art.vercel.app/`), delivered as working code with connected media,
