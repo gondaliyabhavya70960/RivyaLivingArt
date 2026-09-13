@@ -141,11 +141,29 @@ unchanged at 5; no horizontal overflow at any of the eight QA widths.
 added the four slots and bound the four verified pairs. The homepage's fallback wells are no longer
 a registry problem.
 
-**1. Phase 3 — the remaining public routes.** `/collection`, `/collection/[category]`,
-`/collections/[slug]`, `/product/[slug]`, `/custom-commissions`, `/portfolio`, `/journal`,
-`/search`, `/privacy`, `/terms` and the global states. The token, rhythm, rail and motion work
-propagates to all of them automatically; what is NOT done is route-specific composition. `/faq` is
-done — A47 gave it the `h1` it had been missing, which was red on `main` before this work started.
+**1. Phase 3 — MEASURED, and most of it is not engineering work.** The route-by-route matrix is
+`ROADMAP.md` §"The redesign's phase 3, measured route by route", taken in a browser at 1440 and 390
+against the canonical database rather than read off the code.
+
+**Every route that serves already has the redesign's foundations**: exactly one `h1`, no horizontal
+overflow at either width, and the A46 ground rhythm applied — no two adjacent bands share a ground
+on any route. Styling is not what is missing.
+
+**The largest single finding is ~30 empty media frames** across the serving routes (15 on `/` alone,
+8 on `/collection`). They are empty for the A49 reason: nothing was ever bound. **No code change
+fills them** — the binding does, and until it runs no redesign of those bands can be judged.
+
+**Three route families return 404 in every environment, CI included, and none of it is a defect:**
+all seven categories are `DRAFT`; no `pages` row exists for any collection, so an exhibition has
+nothing to render; and `/privacy` and `/terms` have zero sections because no legal copy exists —
+which §A5 says to preserve and D10 forbids inventing. These are gated on owner content, the same
+class of blocker as Studio's missing auth server, and a route that 404s everywhere cannot have a
+redesign verified against it.
+
+**What is genuinely left as code:** `/process` has one band where §A5 asks for chapters (a CMS
+composition change, so copy — seed it `OWNER_VERIFICATION_REQUIRED` where it asserts capability);
+and the two bespoke routes, `/product/[slug]` (356 lines, uses no `page_sections` at all) and
+`/search` (362 lines).
 
 **2. Phase 4 — the Studio.** Untouched beyond what it inherits from the primitives (pill buttons,
 inverse-fill primary). 82 routes under `app/(studio)/studio/(shell)/`. Note the constraint recorded

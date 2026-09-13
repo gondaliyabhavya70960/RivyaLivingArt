@@ -144,6 +144,41 @@ public site. If time is short it can be deferred wholesale without touching a si
 None of these blocks phase 02, and none blocks writing the code that phases 03–09 will run against
 once credentials exist.
 
+### The redesign's phase 3, measured route by route (2026-09-13)
+
+Brief §A5 lists the public routes to redesign and asks that each one record its current state and
+acceptance evidence. This is that measurement, taken in a browser at 1440px and 390px against the
+canonical seeded database — not read off the code.
+
+**Every route that serves already has the redesign's foundations**: exactly one `h1`, no horizontal
+overflow at either width, and the A46 ground rhythm applied (no two adjacent bands share a ground on
+any route). What is missing is not styling.
+
+| Route | Live? | Bands | Empty media frames | What it actually needs |
+|---|---|---|---|---|
+| `/` | yes | 10 | **15** | Media binding. The frames are composed and empty |
+| `/collection` | yes | 2 | **8** | Media binding; composition is thin at 2 bands |
+| `/large-format` | yes | 4 | 1 | Media binding |
+| `/about`, `/portfolio`, `/journal`, `/contact`, `/custom-commissions` | yes | 2–3 | 1 each | Media binding; composition is thin |
+| `/process` | yes | **1** | 1 | §A5 asks for "clear chapters"; one band cannot be chapters. Needs CMS composition |
+| `/faq` | yes | 1 | 0 | Correct as is — the questions are `<details>`, which is why it shows no `h2` |
+| `/search` | yes | 1 | 0 | Bespoke route, 362 lines; grouped results already render |
+| `/product/[slug]` | yes (4 fixture products) | 0 | 0 | Bespoke route, 356 lines — it uses no `page_sections` at all |
+| `/collection/[category]` | **no — 404** | — | — | **All seven categories are `DRAFT`.** The publication gate is working; only the owner can publish them |
+| `/collections/[slug]` | **no — 404** | — | — | **No `pages` row exists for any collection.** An exhibition is page-driven, so there is nothing to render |
+| `/privacy`, `/terms` | **no — 404** | 0 | — | **No legal copy exists**, so the pages have zero sections. §A5 says to preserve that gating, and D10 forbids inventing legal text. **Correct as is** |
+
+**The single largest finding is not a design problem.** Across the routes that serve there are
+**~30 empty media frames**, and they are empty for the reason amendment A49 records: nothing was ever
+bound. They fill when the binding runs (`MEDIA_GUIDE.md` §6.1) — no code change will fill them, and
+no redesign of those bands can be judged until they do.
+
+**Three route families are gated on owner content, not on engineering.** Category pages, collection
+exhibitions and the legal pages cannot be exercised in any environment — including CI — because the
+content behind them is DRAFT, absent, or deliberately withheld. A redesign of a route that returns
+404 everywhere cannot be verified, which is the same class of blocker as Studio's missing auth
+server. These belong in the table above rather than in a list of work someone could start today.
+
 ## Phase 45 backlog — what the creative audit found and deliberately deferred
 
 The audit is `docs/design/DESIGN_SYSTEM.md` §19; the walkthrough it depends on is `docs/ops/TESTING.md`
