@@ -14,7 +14,49 @@ owner_verification: NOT_REQUIRED
 
 ---
 
-## Most recent work — Studio UI/UX phases A-D (2026-09-13)
+## Most recent work — the Studio UI/UX guide, A through F (2026-09-13)
+
+Amendments **A55**-**A59**. **All six phases of the owner's Studio UI/UX implementation guide are
+done**, to the extent they can be done from a UI pull request. A-D are on main; E and F are the work
+in flight.
+
+**TWO THINGS THE GUIDE ASKED FOR ARE NOT BUILT. READ BOTH BEFORE PICKING UP A "FINISH THE REDESIGN"
+TASK.**
+
+1. **`/studio/system/settings` is BLOCKED, not deferred.** §9's Phase F asks for "phone, WhatsApp,
+   email edited once". The contact of record is **`NEXT_PUBLIC_WHATSAPP_NUMBER`, an environment
+   variable**, and `DATA_MODEL.md` records deliberately that no `site_settings`-style table exists.
+   Making it editable in Studio means moving the contact of record from the environment into the
+   database: a schema change, a seed decision, a publish-gate question and a deployment change at
+   once, every one of which the guide's own bans keep out of a UI PR. **Do not start this by writing
+   a form.** It needs the owner to decide where the number lives.
+2. **The FAQ editing screen does not exist.** Phase D built the register; you can read the
+   fifty-five drafts and not act on any of them. This one is ordinary work, not a blocked decision,
+   and it is the obvious next slice.
+
+**WHAT E AND F ACTUALLY CHANGED.** The sources list gained `league` (staff-only — the pack bans
+printing it publicly) and `enabled`. The research dashboard gained `LeafIndex`, grouping fifteen
+screens into Setup / Queue / Analysis plus a fourth heading. The media library gained a concept
+badge. The documentation card names `data/studio-pack/`.
+
+**THE TRAP IN THE LEAF INDEX.** §9 names ten of the fifteen research leaves. A three-column index of
+exactly those ten looks finished and hides five real screens, which is why the instruction says "do
+not hide leaves". `LeafIndex.test.tsx` asserts coverage **against `STUDIO_NAV`**, not against a list
+written in the test — so if you add a research leaf and the test fails, the fix is to place it in a
+group, never to edit the expectation.
+
+**"ENABLED" IS A STATE, NOT A SWITCH, AND "OFF" IS NOT A FAULT.** Every source in this repository
+ships disabled and the pack's sixty comparators all carry `enabled = NO`. Only *off and not yet
+approvable* takes a warning tone. `research_sources_enabled_requires_approval` refuses the write in
+the database, so do not add a toggle to the list.
+
+**A CONCEPT BADGE IS NOT A SOURCE BADGE.** `source` says where an asset came from; `is_concept` says
+whether it depicts something that exists. They correlate and are not equivalent, and treating
+provenance as if it settled the question is how a render of a table nobody built reaches a client.
+
+---
+
+## Previous work — Studio UI/UX phases A-D (2026-09-13)
 
 Amendments **A55**-**A58**. A, B and C are on main. **D is the work in flight and only its UI half
 is done** — see the gap list below. **E and F are not started**; the guide's §9 is the map.

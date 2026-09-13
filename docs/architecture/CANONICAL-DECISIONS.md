@@ -202,6 +202,93 @@ Brand and editorial copy may be written; anything asserting business capability 
 
 ## Amendments
 
+**2026-09-13 · A59 — Studio phases E and F: the sources list says whether a scraper can run, the
+research tree becomes a structure, and a concept asset says so before the database refuses it.**
+
+*The same implementation guide, Phases E and F — the last two. What is not landed is named at the
+end, with the reason, and one of the four is genuinely blocked rather than deferred.*
+
+**THE SOURCES LIST GAINS THE TWO COLUMNS §9 NAMES.** It asks for "name, league (staff-only chip),
+policy, readiness, enabled" and the list carried name, health, policy, readiness, last run, queue
+and adapter. League and enabled were both absent — the two that answer "who is this" and "can it
+run".
+
+**THE LEAGUE CHIP IS STAFF-ONLY AND THE BAN IS EXPLICIT.** The owner's content pack: "Do not print
+analytics league on the public site." Calling another business ASPIRATIONAL or MASS is Rivya's
+opinion about a competitor; publishing it would be both a legal problem and a rude one. It renders
+here because the route sits behind `research.read`, no public renderer reads the column, and
+`research:check-isolation` refuses an `anon` policy on the table it lives in. All four values take a
+neutral tone: the axis is "who are we comparing ourselves to", not a ranking, and a coloured scale
+would turn a filing decision into a judgement the analytics never made.
+
+**"ENABLED" RENDERS AS A STATE, NOT A DISABLED SWITCH, AND THAT IS THE HONEST FORM OF §9's RULE.**
+The guide asks for an "enabled control disabled until APPROVED". A greyed-out toggle would describe
+a UI convention when what exists is a hard one: `research_sources_enabled_requires_approval` REFUSES
+the write in the database. Three states, and the tones are the argument — `success` for on,
+`neutral` for off-and-could-be-on, `warning` only for off-and-cannot-yet-be. **Off is the shipped
+state of every source in this repository and is not a fault**: the pack's sixty comparators all
+carry `enabled = NO`, and the scraper being off is the design rather than a gap. Only the third
+state names an action the owner has not taken.
+
+**THE RESEARCH DASHBOARD GROUPS FIFTEEN LEAVES, AND THE SECOND HALF OF THE INSTRUCTION IS THE
+LOAD-BEARING HALF.** §9: "Setup (sources, scrape, jobs) / Queue (runs, changes, explorer) / Analysis
+(large-format, compare, similarity, opportunities). **Do not hide leaves — group them.**" The guide
+names ten of the fifteen. A tidy three-column index of exactly those ten would look finished and
+would have hidden five real screens — opportunity direction, the shortlist, confirmed products, the
+sheets export — so the remainder gather under a fourth heading. The unit test asserts coverage
+against `STUDIO_NAV` rather than against a list written in the test, so a leaf added later cannot
+fall out silently.
+
+**IT IS ON THE DASHBOARD RATHER THAN IN THE SIDEBAR, WHICH IS THE READING THAT COSTS NOTHING.** The
+instruction says "Dashboard groups leaves". Restructuring the sidebar would mean adding a field to
+`StudioNavLeaf` and changing the manifest `studio-nav.test.ts` holds to disk — altering the shape of
+navigation for every group to solve a problem one group has. Every href is read from `STUDIO_NAV`,
+which is the bans list's own rule ("No hardcoded sidebar hrefs outside the manifest"); what is
+hardcoded is the GROUPING, which is an editorial judgement about the work rather than a route. A
+leaf added to the manifest appears without this file being touched, in the fourth group — the
+failure mode worth having, because it shows up in the wrong place rather than vanishing.
+
+**THE CONCEPT BADGE IS NOT THE SAME FACT AS THE SOURCE BADGE, AND CONFLATING THEM IS THE DEFECT.**
+§9's Phase F line asks for a concept badge always visible on `is_concept` assets; the media library
+showed provenance (`HIGGSFIELD`, `REAL`, `UPLOAD`) and nothing else. `source` says where an asset
+came from; `is_concept` says whether it depicts something that exists. They correlate and are not
+equivalent — a Higgsfield asset can be marked non-concept once it stands in for a real object, and
+an uploaded render is concept media whoever made it. Reading provenance as if it settled the
+question is how a render of a table nobody has built reaches a client.
+
+**IT IS `warning` WHERE THE SOURCE BADGE IS `neutral`, AND THE ASYMMETRY IS DELIBERATE.** D6's
+ladder puts Higgsfield third of six legitimate sources, so marking provenance as a warning would
+editorialise about a decision the business has made. The concept flag is different: `product_media`
+REFUSES a concept asset, so somebody who does not know meets a database error rather than an
+explanation — and D10's worst outcome here is not an error at all, it is a picture presented as
+delivered work. It is the one badge on the row that names a constraint.
+
+**THE DOCUMENTATION CARD NAMES `data/studio-pack/` IN WORDS RATHER THAN LINKING TO IT.** §9 makes it
+conditional — "if that folder is committed" — and A54 committed it, so the condition is met. It is
+not a link for the same reason A57's verification detail is not: the viewer serves ten documents by
+allowlist key, this is not one of them, and widening that allowlist to make a link work is precisely
+the scope creep the allowlist exists to prevent.
+
+**NO NEW MOTION IN ANY LIST**, per §9, and it is checkable rather than asserted: the diff adds no
+`transition`, `animate-`, `duration-` or `ease-` class anywhere, and `design:check-motion-tokens`,
+`a11y:check-focus-styles` and `a11y:check-contrast` all pass.
+
+**SETTINGS IS BLOCKED, NOT DEFERRED, AND THE DISTINCTION MATTERS.** §9's Phase F asks for "Settings:
+phone, WhatsApp, email edited once". `/studio/system/settings` is still a stub, and it cannot stop
+being one in a UI PR: **the contact of record is `NEXT_PUBLIC_WHATSAPP_NUMBER`, an environment
+variable**, and `DATA_MODEL.md` records deliberately that no `site_settings`-style table exists.
+Making the number editable in Studio means moving the contact of record from the environment into
+the database — a schema change, a seed decision, a publish-gate question and a deployment change all
+at once. The bans list keeps every one of those out of a UI PR ("No RLS / seed-type / publish-gate
+changes in a UI PR"), and D8 governs the variable's name. **This needs a decision from the owner
+before it needs code**, and it is the honest end of the Studio redesign rather than a loose thread.
+
+**UNVERIFIED IN THE BROWSER, UNCHANGED SINCE A55.** Five new unit tests, all on `LeafIndex`. The
+sources columns, the concept badge and the documentation note have no unit coverage of their own —
+each is a cell or a line inside a Server Component reading through a request-scoped Supabase client,
+which the offline `unit` project cannot build. 156 Studio specs still skip for want of an auth
+server, so none of this was seen in a viewport.
+
 **2026-09-13 · A58 — Studio Phase D: the FAQ register exists, a request for quote reads as a
 decision, and the last 20px control in Studio is gone.**
 

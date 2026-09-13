@@ -103,9 +103,29 @@ export function MediaLibrary({
       id: 'source',
       header: t('studio.media.colSource'),
       cell: (asset) => (
-        // Neutral, always. A tone that marked HIGGSFIELD as a warning would editorialise about
-        // provenance the business has decided is legitimate (D6's ladder puts it third of six).
-        <Badge tone="neutral">{asset.source}</Badge>
+        <span className="flex flex-wrap items-center gap-1">
+          {/* Neutral, always. A tone that marked HIGGSFIELD as a warning would editorialise about
+              provenance the business has decided is legitimate (D6's ladder puts it third of six). */}
+          <Badge tone="neutral">{asset.source}</Badge>
+          {/*
+           * THE CONCEPT BADGE IS ALWAYS VISIBLE AND IS NOT THE SAME FACT AS THE SOURCE — §9's
+           * Phase F line. `source` says where an asset came from; `is_concept` says whether it
+           * depicts something that exists. They correlate and they are not equivalent: a Higgsfield
+           * asset can be marked non-concept once it stands in for a real object, and an uploaded
+           * render is concept media whoever made it. Reading provenance as if it settled the
+           * question is how a render of a table nobody has built reaches a client.
+           *
+           * `warning`, not `neutral`. The `product_media` trigger REFUSES a concept asset, so
+           * somebody who does not know meets a database error rather than an explanation — and
+           * D10's worst outcome here is not an error at all, it is a picture presented as
+           * delivered work. This is the one badge on the row that names a constraint.
+           */}
+          {asset.is_concept ? (
+            <Badge tone="warning" data-media-concept="">
+              {t('studio.media.conceptBadge')}
+            </Badge>
+          ) : null}
+        </span>
       ),
     },
     {

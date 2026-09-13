@@ -59,6 +59,17 @@ export default async function Page() {
             <Text size="xs" tone="tertiary" className="mt-3">
               {`${t('studio.docs.generatedAt')} ${index.generatedAt}`}
             </Text>
+            {/*
+              §9's Phase F line: "Documentation card can point at data/studio-pack/ if that folder
+              is committed." A54 committed it, so the condition is met — and it is named in WORDS
+              rather than linked, because the viewer serves ten documents by allowlist key and this
+              is not one of them. A link would 404, and widening the allowlist to make one work is
+              exactly the scope creep that allowlist exists to prevent. Same reasoning the Overview
+              applies to INITIAL_CONTENT_INVENTORY.md.
+            */}
+            <Text size="xs" tone="tertiary" className="mt-3" data-docs-studio-pack="">
+              {t('studio.docs.studioPackNote')}
+            </Text>
           </Surface>
         )}
       </Stack>

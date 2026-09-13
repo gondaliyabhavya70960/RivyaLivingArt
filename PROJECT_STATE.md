@@ -426,12 +426,19 @@ docs/SESSION-STATE.md
 
 ## Studio UI/UX: phases A and B shipped, C-F not started
 
-The owner's Studio UI/UX implementation guide runs A-F. **A (amendment A55), B (A56), C (A57) and the UI half of D (A58)
-are in**; E and F are not started. The active nav leaf carries `aria-current` and a champagne
+The owner's Studio UI/UX implementation guide runs A-F. **A (A55), B (A56), C (A57), the UI half of D (A58), and E and F (A59) are
+all in.** The redesign is as far as it goes without decisions only the owner can make. The active nav leaf carries `aria-current` and a champagne
 rule; below `lg` the fifty-leaf rail is a `patterns/Drawer` dialog rather than a stack above the main
 landmark; search is a 44px button rather than a sentence naming two keys an Android phone does not
 have. Products, Journal and Sources share `ListPage`'s rhythm, `StudioAction`'s 44px control, and an
 `EmptyState` that offers one permission-gated next step and **refuses one entirely on a failed read**.
+
+**Two things the guide asked for are NOT built, and neither is a loose thread.**
+`/studio/system/settings` is still a stub because the contact of record is
+`NEXT_PUBLIC_WHATSAPP_NUMBER`, an environment variable, and `DATA_MODEL.md` deliberately records
+that no settings table exists — making it editable in Studio is a schema, seed, publish-gate and
+deployment decision, not a UI one. The **FAQ editing screen** does not exist, which leaves the FAQ
+list a register you can read but not act from.
 
 **The Overview answers one question.** `TodayList` puts four queues above the registry grid —
 verification backlog, unread inquiries, unpublished sections, sources awaiting a policy note — each

@@ -6,6 +6,46 @@ Every phase adds an entry; see `docs/architecture/CANONICAL-DECISIONS.md` D9 for
 
 ## [Unreleased]
 
+### Studio Phases E and F — research safety and the last of the polish (2026-09-13)
+
+Amendment **A59**. The last two phases of the guide. One of the four Phase F bullets is **blocked**
+rather than done, and the reason is below.
+
+- **The sources list gains `league` and `enabled`** — the two of §9's five columns that were absent.
+  The league chip is staff-only (the pack bans printing it publicly) and neutral-toned for all four
+  values: the axis is "who are we comparing ourselves to", not a ranking.
+- **"Enabled" renders as a state, not a greyed-out switch.**
+  `research_sources_enabled_requires_approval` refuses the write in the database, so a disabled
+  toggle would describe a UI convention where a hard rule exists. **Off is the shipped state of
+  every source here and is not a fault** — only *off and not yet approvable* takes a warning tone.
+- **`LeafIndex`** groups the fifteen research screens into Setup / Queue / Analysis. §9's second
+  sentence is the load-bearing one — *"Do not hide leaves — group them"* — and the guide names only
+  ten, so the other five gather under a fourth heading rather than disappearing into a tidy three.
+  Hrefs come from `STUDIO_NAV`; the test asserts coverage against the manifest, so a leaf added
+  later cannot fall out silently.
+- **A concept badge on every `is_concept` asset**, and it is *not* the source badge. `source` says
+  where an asset came from; `is_concept` says whether it depicts something that exists. It is
+  `warning` where the source badge is `neutral`, because `product_media` refuses a concept asset and
+  D10's worst outcome is a render reaching a client as delivered work.
+- **The documentation card names `data/studio-pack/`** — in words, not as a link, because the viewer
+  serves ten documents by allowlist key and widening that allowlist to make a link work is the scope
+  creep it exists to prevent.
+- **No new motion in any list**, per §9 — the diff adds no `transition`, `animate-`, `duration-` or
+  `ease-` class anywhere, and the motion, focus and contrast gates pass.
+
+**Settings is blocked, not deferred.** §9 asks for "phone, WhatsApp, email edited once".
+`/studio/system/settings` is still a stub and cannot stop being one in a UI PR: the contact of
+record is **`NEXT_PUBLIC_WHATSAPP_NUMBER`, an environment variable**, and `DATA_MODEL.md` records
+deliberately that no settings table exists. Making it editable means moving the contact of record
+from the environment into the database — schema, seed, publish gate and deployment at once, every
+one of which the bans list keeps out of a UI PR. **This needs an owner decision before it needs
+code.**
+
+**Unverified in the browser.** Five new unit tests, all on `LeafIndex`; the sources columns, the
+concept badge and the documentation note have no unit coverage of their own, each being a cell or a
+line inside a Server Component. 3,803 tests pass across all three projects and the 44 gates are
+green.
+
 ### Studio Phase D — the FAQ register, and RFQ stops reading as a blank (2026-09-13)
 
 Amendment **A58**. The same guide, Phase D — its largest. This lands the part that is UI work.

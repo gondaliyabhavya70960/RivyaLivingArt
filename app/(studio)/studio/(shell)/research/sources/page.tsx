@@ -75,6 +75,30 @@ export default async function Page() {
       cell: (row) => <HealthPill health={row.health?.health ?? null} />,
     },
     {
+      id: 'league',
+      header: t('studio.research.sourceLeague'),
+      /*
+       * STAFF-ONLY, AND THE BAN IS EXPLICIT. The owner's content pack: "Do not print analytics
+       * league on the public site." This is Rivya's own reading of where another business sits —
+       * calling someone ASPIRATIONAL or MASS is an opinion about a competitor, and publishing it
+       * would be both a legal problem and a rude one. It appears here because this route is behind
+       * `research.read` and nowhere else; no public renderer reads the column, and
+       * `research:check-isolation` refuses an `anon` policy on the table it lives in.
+       *
+       * NEUTRAL TONE FOR ALL FOUR. There is no better or worse league — the axis is "who are we
+       * comparing ourselves to", not a ranking — and a coloured scale would turn a filing decision
+       * into a judgement the analytics never made.
+       */
+      cell: (row) =>
+        row.analytics_league === null ? (
+          <Text size="sm" tone="tertiary">
+            {t('studio.research.leagueNone')}
+          </Text>
+        ) : (
+          <Badge tone="neutral">{row.analytics_league}</Badge>
+        ),
+    },
+    {
       id: 'policy',
       header: t('studio.research.policyHeading'),
       cell: (row) => (
@@ -91,6 +115,31 @@ export default async function Page() {
           {row.readiness}
         </Text>
       ),
+    },
+    {
+      id: 'enabled',
+      header: t('studio.research.colEnabled'),
+      /*
+       * THE STATE, NOT A SWITCH. §9 asks for the "enabled control disabled until APPROVED", and the
+       * honest rendering of that in a list is a word rather than a greyed-out toggle: the database
+       * constraint `research_sources_enabled_requires_approval` REFUSES the write, so a control
+       * that looked switchable-but-disabled would be describing a UI convention when what exists is
+       * a hard rule. Switching a source on is a decision with a policy note attached and it belongs
+       * on the source's own page.
+       *
+       * "OFF" IS THE SHIPPED STATE OF EVERY ROW IN THIS REPOSITORY AND IS NOT A FAULT, so it is not
+       * `danger`. The pack's sixty comparators all carry `enabled = NO`; the scraper being off is
+       * the design. `warning` is reserved for the row that is off AND cannot yet be turned on,
+       * because that one names an action the owner has not taken.
+       */
+      cell: (row) =>
+        row.is_enabled ? (
+          <Badge tone="success">{t('studio.research.enabledYes')}</Badge>
+        ) : row.policy_status === 'APPROVED' ? (
+          <Badge tone="neutral">{t('studio.research.enabledNo')}</Badge>
+        ) : (
+          <Badge tone="warning">{t('studio.research.enabledBlocked')}</Badge>
+        ),
     },
     {
       id: 'last-run',
