@@ -13,3 +13,11 @@ public/basis
 # would be worse than not: a fixture reformatted to be tidy is no longer a sample of what a real
 # site sends, which is the only thing it is for.
 tests/fixtures/scraper
+
+# VENDORED THIRD-PARTY SKILL — do not reformat.
+#
+# `.claude/skills/ui-ux-pro-max/` is `nextlevelbuilder/ui-ux-pro-max-skill` v2.13.0 (MIT),
+# vendored verbatim apart from a repository-relative path fix and a local note. Reformatting it
+# would rewrite somebody else's source, and every future update would then arrive as a diff against
+# our formatting rather than against theirs. The first-party skills beside it are NOT excluded.
+.claude/skills/ui-ux-pro-max/
