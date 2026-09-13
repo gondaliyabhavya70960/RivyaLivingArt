@@ -202,6 +202,70 @@ Brand and editorial copy may be written; anything asserting business capability 
 
 ## Amendments
 
+**2026-09-13 · A60 — the completion pass: §7.2's count, §3.3's second branch, and two primary
+actions §8 names.**
+
+*Not a phase. An audit of the finished A-F work against the guide line by line, and the four things
+it found. Written because "all six phases are done" and "everything the guide asks for is done" are
+different claims, and A55-A59 only established the first.*
+
+**§7.2 NAMES FOUR THINGS IN A LIST HEADER AND ONE OF THEM WAS MISSING EVERYWHERE.** "PageHeader with
+title, **count**, primary action, secondary action." Every converted list had a title, most had a
+primary action, and **not one of them showed a count**. It is not decoration: it answers the
+question somebody asks before they start scrolling, which is whether this is five rows or five
+hundred. `ListPage` now takes one, and products, FAQs, journal, sources, inquiries and content pages
+all pass it.
+
+**THE COUNT OBEYS THE SAME RULE AS EVERY OTHER FIGURE IN STUDIO: `null` IS NOT `0`.** `count` is
+`number | null | undefined` — `undefined` when the caller has no figure, **`null` when the read
+failed**, which prints nothing at all. A list whose query failed knows nothing about how much
+exists, and "0 in this list" sitting directly above an honest `reason: 'unreadable'` empty state
+would contradict it in the same viewport. That is now the fourth place this rule is enforced,
+alongside `MetricCount`, `EmptyState` and `TodayList`.
+
+**A FILTERED COUNT SAYS "MATCHING".** "3 in this list" under an active search reads as "you have
+three products" — precisely the confusion `EmptyState`'s `filtered` reason exists to prevent, one
+row higher up the page. The products list passes `filtered` from its own `?q=`.
+
+**§3.3 HAS TWO BRANCHES AND JOURNAL HAD NEITHER.** "Every empty list needs one primary action the
+role is allowed to take, **or a sentence that says why there is no action**." A56 correctly declined
+the CTA — journal has no `/new` route, its create form is an `ActionForm` further down the same page
+— and then wrote the reason into a **code comment**, which serves the next engineer and not the
+owner staring at an empty table. The sentence is now on the screen, and only for a role that could
+create an article: a reader who cannot is not owed an explanation of where a control they do not get
+would have been. FAQs and inquiries already had their sentences (`verifyNote`, `quietNote`); journal
+was the only gap.
+
+**TWO OF §8's PRIMARY ACTIONS ARE NOW BUILT.** `content/pages` gets "Open Home" and
+`research/dashboard` gets "Open sources" — §3.5's reasoning for the second, that "comparators
+(sources) are the only daily research screen" and every number on that dashboard stays zero until a
+source is approved.
+
+**"OPEN HOME" IS A LOOKUP, NOT A CONSTANT, AND THAT IS THE DETAIL WORTH RECORDING.** The home page's
+id is a uuid. Hardcoding one would work in this database and break in the next, so the row is found
+by `path === '/'` — the same column the public router resolves against. It is absent when no such
+row exists, which is a real state on a database the content seed has not been run against, and an
+action pointing at a uuid that is not there is a 404 with a confident label.
+
+**WHAT THE AUDIT FOUND AND DELIBERATELY DID NOT DO.** Three things, each for a different reason:
+
+- **§7.2 says "every list uses one wrapper" and six of roughly twenty-four do.** The remaining
+  eighteen — collections, materials, categories, navigation, the research analysis screens — were
+  never assigned to a phase by §7's own screen table, and converting them is a mechanical sweep
+  whose risk is entirely in its size. It is worth doing as its own change with its own review.
+- **§5.3's Fig. 5 asks the Overview to group into "Today, Catalog, Inquiries, Research — not 20
+  equal tiles".** A57 built Today; the registry grid below it is still eighteen equal tiles. Grouping
+  them means restructuring `DASHBOARD_CARDS`, which is the registry three gates assert against, and
+  that is a change to a contract rather than a layout.
+- **`catalog/collections`, `content/portfolio` and `media/*` have §8 primary actions that are not
+  StudioPage actions.** Each already carries its create affordance in-page — collections and
+  portfolio as inline `ActionForm`s with notes explaining the absent publish control. Promoting
+  those would mean moving the form, not adding a link, and none of the three is in the converted set.
+
+**UNVERIFIED IN THE BROWSER, UNCHANGED SINCE A55.** Three new unit tests, all on the count's three
+states. The primary actions and the journal sentence have no unit coverage of their own, each being
+a prop on a Server Component reading through a request-scoped Supabase client.
+
 **2026-09-13 · A59 — Studio phases E and F: the sources list says whether a scraper can run, the
 research tree becomes a structure, and a concept asset says so before the database refuses it.**
 

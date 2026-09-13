@@ -57,7 +57,7 @@ export default async function Page() {
       }
     >
       <Stack gap={8}>
-        <ListPage>
+        <ListPage count={rows.length}>
           <InquiryInbox rows={rows} productTitles={titles} />
         </ListPage>
 

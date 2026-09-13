@@ -6,6 +6,37 @@ Every phase adds an entry; see `docs/architecture/CANONICAL-DECISIONS.md` D9 for
 
 ## [Unreleased]
 
+### The completion pass — auditing A–F against the guide, line by line (2026-09-13)
+
+Amendment **A60**. Not a phase: a re-read of the whole guide against the finished work. "All six
+phases are done" and "everything the guide asks for is done" are different claims, and A55–A59 only
+established the first.
+
+- **§7.2's count was missing from every list.** The section names four things in a list header —
+  "title, **count**, primary action, secondary action" — and no converted list showed one.
+  `ListPage` takes it now; products, FAQs, journal, sources, inquiries and content pages pass it.
+- **The count obeys the rule: `null` is not `0`.** A failed read prints no figure, because
+  "0 in this list" above an honest `unreadable` empty state contradicts it in the same viewport.
+  Fourth place this rule is enforced, after `MetricCount`, `EmptyState` and `TodayList`.
+- **A filtered count says "matching"** — "3 in this list" under a search reads as "you have three
+  products".
+- **§3.3 has two branches and journal had neither.** "One primary action … **or a sentence that says
+  why there is no action**." A56 correctly declined the CTA and then wrote the reason into a *code
+  comment*, which serves the next engineer and not the owner staring at an empty table. The sentence
+  is on the screen now, for writers only.
+- **Two of §8's primary actions built** — `content/pages` → "Open Home", `research/dashboard` →
+  "Open sources". "Open Home" is a lookup by `path === '/'`, not a hardcoded uuid, and is absent
+  when no such row exists.
+
+**Found and deliberately not done**, each for its own reason: the remaining ~18 lists that do not
+use `ListPage` (never assigned to a phase by §7's screen table; a mechanical sweep whose risk is its
+size); the Overview's 18 equal tiles that §5.3 would group (restructuring `DASHBOARD_CARDS`, which
+three gates assert against); and the primary actions on collections, portfolio and media (each
+already carries its create form in-page).
+
+Three new unit tests, all on the count's three states. 3,806 tests pass across all three projects
+and the 44 gates are green.
+
 ### Studio Phases E and F — research safety and the last of the polish (2026-09-13)
 
 Amendment **A59**. The last two phases of the guide. One of the four Phase F bullets is **blocked**

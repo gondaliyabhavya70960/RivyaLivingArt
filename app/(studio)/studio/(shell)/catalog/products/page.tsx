@@ -103,6 +103,9 @@ export default async function Page({
       }
     >
       <ListPage
+        count={products.length}
+        // The search box narrows the list, so the figure says "matching" rather than claiming a total.
+        filtered={q !== undefined}
         filters={
           /* A plain GET form: searching a list must not need JavaScript any more than filtering
              the public one does, and the query stays in the URL where §6 wants it. */

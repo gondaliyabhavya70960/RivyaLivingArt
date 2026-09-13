@@ -433,6 +433,12 @@ landmark; search is a 44px button rather than a sentence naming two keys an Andr
 have. Products, Journal and Sources share `ListPage`'s rhythm, `StudioAction`'s 44px control, and an
 `EmptyState` that offers one permission-gated next step and **refuses one entirely on a failed read**.
 
+**A60's completion pass** re-read the guide against the finished phases and added what the phases
+had missed: §7.2's list count (honest about a failed read, like every other figure), §3.3's "sentence
+that says why there is no action" on journal, and two of §8's named primary actions. It also recorded
+three things left for their own change — the ~18 lists not yet on `ListPage`, the Overview's
+eighteen equal tiles, and the in-page create forms on collections, portfolio and media.
+
 **Two things the guide asked for are NOT built, and neither is a loose thread.**
 `/studio/system/settings` is still a stub because the contact of record is
 `NEXT_PUBLIC_WHATSAPP_NUMBER`, an environment variable, and `DATA_MODEL.md` deliberately records

@@ -193,6 +193,7 @@ export default async function Page() {
     >
       <Stack gap={8}>
         <ListPage
+          count={rows.length}
           filters={
             /* Not a filter — the standing policy notice, in the slot that keeps the rows starting
                at the same height as every other Studio list. This screen is the one in §7's table
