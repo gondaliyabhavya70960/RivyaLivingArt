@@ -198,10 +198,24 @@ GitHub's API is scoped to this session's repositories, so a third-party tree can
 verdict rests on licence evidence and this repository's own architecture. Do not let a later session
 report otherwise.
 
-**4. Phase 6 — e2e, visual baselines, Lighthouse.** The e2e suite IS now run and green (1,979
-passed across four shards at eight widths). What remains: the 33 committed visual baselines need
-regenerating in the pinned container image now that the composition has moved, Lighthouse has not
-been run, and the brief's preview-deployment evidence needs a machine with Cloudinary reachable.
+**4. Phase 6 — the e2e half is done; the other two are owner-gated.** The browser suite runs and is
+green: **1,999 passed, 0 failed** across four shards at eight widths.
+
+**Visual baselines** (33 committed PNGs) need regenerating now the composition has moved, and must be
+regenerated **in the pinned CI image** — `e2e.yml` has a `workflow_dispatch` input
+`update_snapshots` for exactly this. Regenerating them on a different machine produces diffs that
+are font-rendering noise, so do not do it locally.
+
+**Lighthouse cannot be run from here, for two independent reasons**, both worth knowing before
+someone tries:
+
+1. `lighthouse.yml` is `workflow_dispatch` only and its own header records why — *"The owner's
+   standing instruction is to stay inside the free Actions tier and to be asked before anything
+   spends beyond it"*. Dispatching it spends Actions minutes, so it is the owner's call, not a
+   session's.
+2. It audits a **deployed URL**, and the Vercel preview is behind Vercel Authentication: both the
+   plain URL and its `_vercel_share` link answer `302` to `vercel.com/sso-api`. Pointed at the
+   preview it would measure a login redirect. It needs a publicly reachable URL.
 
 ### Two harness traps that cost an hour, and how to spot them in a minute
 
