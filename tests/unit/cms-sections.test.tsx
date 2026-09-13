@@ -310,10 +310,19 @@ describe('hero', () => {
    * The frame is reserved from the CMS ratio before the asset is known, so an unresolved asset
    * must not collapse it — that is the layout shift MediaFrame exists to prevent.
    */
-  it('keeps the frame and shows the fallback label when the asset does not resolve', () => {
+  it('keeps the frame, and keeps it silent, when the asset does not resolve', () => {
     renderSections([section({ block_type: 'hero', media_desktop_id: MISSING })], [])
     expect(screen.queryAllByRole('img')).toHaveLength(0)
-    expect(screen.getByText('Image unavailable')).toBeTruthy()
+    // The reserved box is still there — that is the layout shift this guards.
+    expect(document.querySelectorAll('[data-media-fallback]')).toHaveLength(1)
+    /*
+     * AND IT SAYS NOTHING. An unbound slot has not failed to load; telling a visitor an image is
+     * "unavailable" describes a delivery error that did not happen, and it was being printed
+     * roughly thirty times on the homepage alone. Which slot is empty is an editor's question,
+     * answered by `lib/media/gaps.ts` and the Studio's Gaps tab.
+     */
+    expect(screen.queryByText('Image unavailable')).toBeNull()
+    expect(document.querySelector('[data-media-fallback]')?.textContent).toBe('')
   })
 })
 
@@ -511,7 +520,8 @@ describe('no Cloudinary cloud name', () => {
   it('renders the §47 fallback instead of an image', () => {
     renderSections([section({ block_type: 'hero', media_desktop_id: M1 })], [asset(M1)], '')
     expect(screen.queryAllByRole('img')).toHaveLength(0)
-    expect(screen.getAllByText('Image unavailable').length).toBeGreaterThan(0)
+    expect(document.querySelectorAll('[data-media-fallback]').length).toBeGreaterThan(0)
+    expect(screen.queryByText('Image unavailable')).toBeNull()
   })
 
   it('emits one frame for a desktop/mobile pair rather than two identical wells', () => {
@@ -520,7 +530,7 @@ describe('no Cloudinary cloud name', () => {
       [asset(M1), asset(M2)],
       '',
     )
-    expect(screen.getAllByText('Image unavailable')).toHaveLength(1)
+    expect(document.querySelectorAll('[data-media-fallback]')).toHaveLength(1)
   })
 
   it('renders no player for a video, which has nothing to say in a reserved box', () => {

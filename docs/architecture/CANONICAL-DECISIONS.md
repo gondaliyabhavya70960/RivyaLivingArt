@@ -202,6 +202,72 @@ Brand and editorial copy may be written; anything asserting business capability 
 
 ## Amendments
 
+**2026-09-13 · A52 — the library is bound on the hosted project, and the public well stops
+claiming an image failed to load.**
+
+*Phase 0 of the redesign brief, executed rather than handed back.* Three things happened, and
+the third is the only code change.
+
+**THE BINDING RAN, AND IT RAN THROUGH THE MCP RATHER THAN THROUGH `DATABASE_URL`.** A49 cleared
+the last blocker and A47 the one before it, and the step then sat waiting on a credential this
+session does not hold. It did not need one: the hosted project is reachable through the Supabase
+MCP, and `scripts/seed/emit-sql.ts` already establishes the precedent for that route — "there are
+environments where the hosted database is reachable through the Supabase MCP and nowhere else".
+So the twenty-one `MEDIA_BINDINGS` entries were emitted as the three-column `update` that
+`scripts/seed/bind-media.ts` would itself execute, pre-flighted for a missing asset and a missing
+row exactly as that script pre-flights (both came back clean: 39 assets present, 21 sections
+present), and applied. `media_desktop_id` and `media_mobile_id` went from **0 rows to 21**;
+`sync_media_usages` fired and `media_usages` went from **0 rows to 42**. No copy, no `status`, no
+seed hash was written, which is `bind-media.ts`'s own contract and the reason it is safe against
+rows a person owns.
+
+**TEN OF THE TWENTY-ONE BOUND SECTIONS WERE ALREADY PUBLISHED AND ARE THEREFORE LIVE.** The other
+eleven are `DRAFT`, and nine of those carry `OWNER_VERIFICATION_REQUIRED`, so `cms_publish_section`
+refuses them with RV002 and the check constraint refuses underneath it. That gate was not touched
+and must not be: clearing it is the owner asserting a business claim, which is D10's whole
+mechanism rather than an obstacle to it. The three DRAFT sections carrying **no** gate —
+`process.01.hero`, `commissions.01.hero`, `commissions.06.cta` — were promoted through
+`cms_publish_section` along the legal edge (DRAFT → REVIEW → APPROVED → PUBLISHED), which is why
+`/process` and `/custom-commissions` now answer 200 instead of 404. `renderCmsPage` 404s a page
+with zero live sections; those two had zero.
+
+**TWO STALE FACTS IN THE BRIEF, CORRECTED BY MEASUREMENT.** All 250 assets are already `VERIFIED`
+and `PUBLISHED` on the hosted project, not `OWNER_VERIFICATION_REQUIRED` — so the RV006 media gate
+in `cms_publish_section` is clear and was never what blocked a publish. And six of the seven
+categories are already `PUBLISHED`; only `3d-resin` is `DRAFT`, and it carries the owner gate.
+Furniture and Wall & Statement Art needed no action.
+
+**THE CODE CHANGE: A PUBLIC WELL SAYS NOTHING.** `MediaFrame.fallbackLabel` becomes optional, and
+`BlockImage` — the single funnel through which every public media frame on the site is drawn —
+stops passing `ERROR.media_unavailable.label`. The string was not true. Nothing had failed to
+load and nothing had been requested; the slot had never been bound, and "Image unavailable"
+describes a delivery error that did not happen. With the library unbound it appeared roughly
+thirty times on `/` alone and made a design house read as a broken site.
+
+The reserved box stays exactly as it was — that is the layout shift `MediaFrame` exists to
+prevent — and `data-media-fallback` stays as the machine-readable hook, so the empty state is
+still assertable and `tests/e2e/perf-headers.spec.ts` still distinguishes an unbound hero from a
+hero missing its priority hint. What is gone is the sentence. The question it left open — WHICH
+slot is empty — was always an editor's question and is answered where an editor can act on it:
+`lib/media/gaps.ts` and the Studio's Gaps tab. An empty `<p>` was not an acceptable middle ground
+either; it is a line box and an empty paragraph in the accessibility tree, so the element is not
+rendered at all.
+
+The Studio's own frames — `MediaLibrary`, the asset detail page — still pass a label, and are
+unchanged. There the frame stands in for a *named asset* for a signed-in editor, and the label is
+that asset's kind rather than an apology to a visitor.
+
+`REQUIRED_SITE_STRINGS` keeps `MEDIA_FALLBACK_LABEL_KEY` and the seeded row stays in
+`global_content`. Removing a string an editor can see in Studio, to save a constant, would be a
+migration's worth of risk for no gain, and the key is what the Studio lists as an expected key.
+
+**WHAT THIS AMENDMENT DELIBERATELY DOES NOT DO.** `categories.hero_media_id` is NULL on all seven
+categories, which is why the mega menu's category cards have no pictures. It is a *different*
+binding surface from `page_sections`, and `content/seed/media-bindings.ts` says so in its own
+header — "This file binds SECTION slots, and only those". Choosing seven category card images is
+a curation pass, and that file's standing rule is that doing it badly is worse than leaving it
+undone. It is recorded here as the next binding gap, not filled from this session.
+
 **2026-09-13 · A51 — the one external candidate worth reopening, read at source; a selection
 indicator joins §4.2's FORM class; and the travelling bar is built first-party.**
 

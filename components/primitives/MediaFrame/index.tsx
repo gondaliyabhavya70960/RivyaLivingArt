@@ -21,18 +21,27 @@ import { AspectBox, type AspectBoxProps } from '@/components/primitives/AspectBo
  *
  * THE FALLBACK (SEED §47). When no media resolves, the frame does not collapse and does
  * not borrow a sibling's image: the reserved box stays exactly the size AspectBox reserved
- * and the well carries a label. The label is a required prop and never a literal — SEED §1
- * and D2 put every visitor-readable string in the database, and this one is
- * `ERROR.media_unavailable.label` in `global_content`. Requiring it even on frames that
- * expect to have media is deliberate: a frame that cannot say what happened is a frame
- * that will collapse when something does.
+ * and the well stays quiet. `fallbackLabel` is OPTIONAL, and on the public site it is not
+ * passed at all — see the next paragraph, which is the whole of the change.
  *
- * The label is `--rv-ink-secondary`, not the `--rv-ink-tertiary` a caption would use, and
- * that choice is measured rather than aesthetic. §2.5 warns that INK's sunken surface is
- * the one place pure black is permitted and is "never a text ground"; secondary ink is the
- * strongest supporting ink in the system and clears AA on every scheme's well by a wide
- * margin — 10.42:1 on DEEP's obsidian well and 9.88:1 on BONE's bone-well, both from
- * §2.6/§2.7, and higher still on INK's black. A failure message is read, not skimmed.
+ * A VISITOR IS NOT TOLD AN IMAGE IS MISSING, because on this site it is not missing: it was
+ * never bound. "Image unavailable" describes a delivery failure, and printing it under
+ * every unbound band told 30-odd lies per page and made a design house read as a broken
+ * one. The honest rendering of an empty editorial slot is an empty editorial slot — a
+ * reserved, quiet, grounded well — and WHICH slot is empty is a question for an editor,
+ * answered by `lib/media/gaps.ts` and the Studio's Gaps tab, not by copy on the live page.
+ * `data-media-fallback` remains as the machine-readable hook for exactly that question.
+ *
+ * SURFACES THAT DO STILL PASS A LABEL are the Studio's own — `MediaLibrary`, the asset
+ * detail page — where the frame stands in for a named asset for a signed-in editor and the
+ * label is that asset's kind rather than an apology. Those callers are unchanged.
+ *
+ * When a label IS passed it is `--rv-ink-secondary`, not the `--rv-ink-tertiary` a caption
+ * would use, and that choice is measured rather than aesthetic. §2.5 warns that INK's
+ * sunken surface is the one place pure black is permitted and is "never a text ground";
+ * secondary ink is the strongest supporting ink in the system and clears AA on every
+ * scheme's well by a wide margin — 10.42:1 on DEEP's obsidian well and 9.88:1 on BONE's
+ * bone-well, both from §2.6/§2.7, and higher still on INK's black.
  *
  * THE VEIL. `--rv-media-veil` is the §2.5 gradient that makes overlay ink survive whatever
  * photograph is underneath it — bottom-weighted, transparent by 78% of the height, so a
@@ -68,14 +77,18 @@ import { AspectBox, type AspectBoxProps } from '@/components/primitives/AspectBo
  */
 export interface MediaFrameProps extends AspectBoxProps {
   /**
-   * The SEED §47 message shown on the well when no media resolves. From `global_content`
-   * (`ERROR.media_unavailable.label`), never a string written in a component.
+   * An editor-facing name for the well when no media resolves — the asset's kind, on the
+   * Studio surfaces that stand a frame in for a named asset.
+   *
+   * OMITTED ON THE PUBLIC SITE, which is the point: an unbound slot is a quiet well, not a
+   * sentence. Never a literal when it IS passed from CMS-backed copy — SEED §1 and D2 put
+   * every visitor-readable string in the database.
    */
-  fallbackLabel: string
+  fallbackLabel?: string
   /**
    * Paints `--rv-media-veil` over the media. Set it whenever text sits on the frame. It is
    * ignored in the fallback state: there is no photograph to protect the ink from, and the
-   * gradient would only drag `fallbackLabel` under AA.
+   * gradient would only drag an editor label under AA.
    */
   veil?: boolean
   /** Content that sits above the veil — a caption, an eyebrow, a play control. */
@@ -113,7 +126,15 @@ export const MediaFrame = React.forwardRef<HTMLElement, MediaFrameProps>(functio
           data-media-fallback=""
           className="absolute inset-0 flex items-center justify-center p-4 text-center"
         >
-          <p className="text-ink-secondary text-sm">{fallbackLabel}</p>
+          {/*
+           * NOTHING AT ALL WHEN NO LABEL IS PASSED, and an empty `<p>` is not "nothing": it
+           * is a text node's worth of line box that pushes nothing but exists in the
+           * accessibility tree as an empty paragraph. The public site omits the prop, so the
+           * well is a well — `bg-surface-sunken` from AspectBox above and no children.
+           */}
+          {fallbackLabel === undefined || fallbackLabel === '' ? null : (
+            <p className="text-ink-secondary text-sm">{fallbackLabel}</p>
+          )}
         </div>
       )}
 
