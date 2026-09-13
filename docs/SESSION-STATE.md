@@ -83,9 +83,13 @@ The merge-order constraint that blocked it is now **half satisfied**: PR #69 mer
 the registry. What `main` does NOT yet carry is rule 5d, which is the thing that makes binding
 possible at all — without it `seed:content` skips every published section and writes nothing.
 
-So the order is: **merge the A49 branch, let `main` deploy, then run `npm run seed:content` against
-production**, where the 250 assets already exist. Running it before that merge is harmless but
-pointless — it will report `skipped (owner edit)` and bind nothing.
+**BOTH CONSTRAINTS ARE NOW CLEARED.** PR #69 merged at 03:29 and PR #70 at 04:21 on 2026-09-13, so
+`main` carries both A47's four slots and A49's rule 5d.
+
+**The remaining step is the owner's, by their own decision (2026-09-13): they run
+`npm run seed:content` against production themselves.** No production credential exists in this
+session and none was requested. The full runbook — prerequisites, the command, what the output should
+say, the verification queries and how to undo it — is `MEDIA_GUIDE.md` §6.1.
 
 **RE-VERIFIED AGAINST THE HOSTED PROJECT ON 2026-09-13**, directly rather than by inference:
 `page_sections` 83 rows, `media_desktop_id` non-null on **0**, `media_mobile_id` non-null on **0**,
@@ -137,11 +141,40 @@ unchanged at 5; no horizontal overflow at any of the eight QA widths.
 added the four slots and bound the four verified pairs. The homepage's fallback wells are no longer
 a registry problem.
 
-**1. Phase 3 — the remaining public routes.** `/collection`, `/collection/[category]`,
-`/collections/[slug]`, `/product/[slug]`, `/custom-commissions`, `/portfolio`, `/journal`,
-`/search`, `/privacy`, `/terms` and the global states. The token, rhythm, rail and motion work
-propagates to all of them automatically; what is NOT done is route-specific composition. `/faq` is
-done — A47 gave it the `h1` it had been missing, which was red on `main` before this work started.
+**1. Phase 3 — MEASURED, and most of it is not engineering work.** The route-by-route matrix is
+`ROADMAP.md` §"The redesign's phase 3, measured route by route", taken in a browser at 1440 and 390
+against the canonical database rather than read off the code.
+
+**Every route that serves already has the redesign's foundations**: exactly one `h1`, no horizontal
+overflow at either width, and the A46 ground rhythm applied — no two adjacent bands share a ground
+on any route. Styling is not what is missing.
+
+**The largest single finding is ~30 empty media frames** across the serving routes (15 on `/` alone,
+8 on `/collection`). They are empty for the A49 reason: nothing was ever bound. **No code change
+fills them** — the binding does, and until it runs no redesign of those bands can be judged.
+
+**Three route families return 404 in every environment, CI included, and none of it is a defect:**
+all seven categories are `DRAFT`; no `pages` row exists for any collection, so an exhibition has
+nothing to render; and `/privacy` and `/terms` have zero sections because no legal copy exists —
+which §A5 says to preserve and D10 forbids inventing. These are gated on owner content, the same
+class of blocker as Studio's missing auth server, and a route that 404s everywhere cannot have a
+redesign verified against it.
+
+**`/product/[slug]` turned out to be complete against §A5 already.** Measured on the rendered page:
+gallery, thumbnails with an active state, the inquiry rail, two inquiry affordances, badges, price
+state and two JSON-LD blocks are all there. `ProductSpecifications` is mounted and draws nothing
+because `product_specs` holds **0 rows** for all four products — and those rows are dimensions,
+materials and weights, which **D10 forbids inventing**. The section fills when the owner supplies
+them.
+
+**What is genuinely left as code is small:** `/process` has one band where §A5 asks for chapters (a
+CMS composition change, so seeded copy — `OWNER_VERIFICATION_REQUIRED` wherever it asserts
+capability), and `/search` (362 lines), which already renders grouped results.
+
+**The honest summary of phase 3: the code is substantially done and the remainder is owner
+content** — the media binding, publishing categories or collection exhibitions, legal copy, and
+product specifications. Do not let a later session mistake those for engineering work, and do not
+let one invent them.
 
 **2. Phase 4 — the Studio.** Untouched beyond what it inherits from the primitives (pill buttons,
 inverse-fill primary). 82 routes under `app/(studio)/studio/(shell)/`. Note the constraint recorded
@@ -150,23 +183,39 @@ skip** and a Studio redesign cannot be browser-regression-tested here without Go
 preview with a fixture account. **Resolve that before starting, not after** — a redesign of 82
 routes with its regression suite skipped is not verifiable.
 
-**3. Phase 5 — the external component evaluation.** The brief names eleven sources and asks for a
-recorded evaluation. **One EXISTS and must not be described as absent**: `COMPONENT_REGISTRY.md` §5,
-audited 2026-09-07 and gate-enforced, with five sources MIT-verified and marked `NOT_ADOPTED` and
-six `REJECTED`. What it is not is what the brief asks for: it evaluates SOURCES, and the brief asks
-per COMPONENT. That per-component pass is the pending work. Marketing sites are blocked from this
-sandbox; `raw.githubusercontent.com` and `registry.npmjs.org` are reachable, which is enough to read
-a licence and a component's source.
+**3. Phase 5 — DONE (amendment A50).** The per-component review the brief asks for is
+`COMPONENT_REGISTRY.md` §5.1: the five named candidates, with licences re-verified from primary
+sources on 2026-09-13. **The owner was asked and chose to keep everything first-party**, so nothing
+is adopted and that is recorded as a decision rather than left as an absence.
 
-**OPEN QUESTION FOR THE OWNER, still unanswered.** Whether to ADOPT any external component at all,
-or to keep everything first-party and record the evaluation as the brief's deliverable. Nothing
-should be adopted until this is answered — every candidate so far has been `NOT_ADOPTED`, and
-reversing that is a dependency decision, not an implementation one.
+Worth carrying forward: **React Bits is `MIT + Commons Clause`, not MIT** — verified verbatim, and it
+fails §4's allowlist on its face. And **SmoothUI's Animated Tabs is a DEFERRAL, not a refusal**: it
+is MIT, Studio is the one place an island is cheap, and the only barrier is that Studio's regression
+suite does not run without an auth server. Reopen it when Phase 4 has one.
 
-**4. Phase 6 — e2e, visual baselines, Lighthouse.** The e2e suite IS now run and green (1,979
-passed across four shards at eight widths). What remains: the 33 committed visual baselines need
-regenerating in the pinned container image now that the composition has moved, Lighthouse has not
-been run, and the brief's preview-deployment evidence needs a machine with Cloudinary reachable.
+The individual component SOURCE FILES were not read — the marketing hosts are unreachable here and
+GitHub's API is scoped to this session's repositories, so a third-party tree cannot be browsed. Every
+verdict rests on licence evidence and this repository's own architecture. Do not let a later session
+report otherwise.
+
+**4. Phase 6 — the e2e half is done; the other two are owner-gated.** The browser suite runs and is
+green: **1,999 passed, 0 failed** across four shards at eight widths.
+
+**Visual baselines** (33 committed PNGs) need regenerating now the composition has moved, and must be
+regenerated **in the pinned CI image** — `e2e.yml` has a `workflow_dispatch` input
+`update_snapshots` for exactly this. Regenerating them on a different machine produces diffs that
+are font-rendering noise, so do not do it locally.
+
+**Lighthouse cannot be run from here, for two independent reasons**, both worth knowing before
+someone tries:
+
+1. `lighthouse.yml` is `workflow_dispatch` only and its own header records why — *"The owner's
+   standing instruction is to stay inside the free Actions tier and to be asked before anything
+   spends beyond it"*. Dispatching it spends Actions minutes, so it is the owner's call, not a
+   session's.
+2. It audits a **deployed URL**, and the Vercel preview is behind Vercel Authentication: both the
+   plain URL and its `_vercel_share` link answer `302` to `vercel.com/sso-api`. Pointed at the
+   preview it would measure a login redirect. It needs a publicly reachable URL.
 
 ### Two harness traps that cost an hour, and how to spot them in a minute
 

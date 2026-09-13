@@ -202,6 +202,51 @@ Brand and editorial copy may be written; anything asserting business capability 
 
 ## Amendments
 
+**2026-09-13 · A50 — the external component evaluation, done per component, and the owner's decision
+to stay first-party (Rivya UI Redesign, brief phase 5).**
+
+*What the brief asked that §5 did not answer.* `COMPONENT_REGISTRY.md` §5 has audited the eleven
+approved SOURCES since 2026-09-07, with verified licences and recorded rejections. The redesign
+brief §A4 asks for something narrower: a **component-specific** review of five named pages, with the
+exact source, licence evidence, dependencies, target file, adaptation, mobile behaviour,
+accessibility and measured bundle impact. It also warns that a previous rejection of a source is
+"useful evidence, not proof that every new candidate from that source must fail". That per-component
+pass is now `COMPONENT_REGISTRY.md` §5.1.
+
+*The decision is the owner's and is recorded as one.* Asked on 2026-09-13 whether to adopt any
+external component or keep everything first-party and record the evaluation, **the owner chose to
+keep everything first-party.** Nothing is adopted. That is a decision, not an absence, and
+§5.1 says so — the distinction the brief asks for, and one an earlier session's note got wrong in
+the other direction by calling an existing audit "not performed".
+
+*Licences were re-verified from primary sources today*, over the two hosts this session can reach.
+daisyUI, Magic UI and SmoothUI are **MIT**; daisyUI's npm metadata additionally shows **zero
+dependencies** at `5.7.37`. **React Bits is `MIT + Commons Clause License Condition v1.0`**, not
+MIT — its restriction forbids selling, sublicensing or redistributing the components themselves, and
+is recorded verbatim. The brief flagged that source as needing its licence verified before reuse;
+this is that verification, and it fails §4's allowlist on its face.
+
+*A limitation is stated rather than papered over.* The individual component source files were **not
+read**: the two marketing hosts are unreachable from this session and GitHub's API is scoped to this
+session's own repositories, so a third-party tree cannot be browsed to find a file. Every verdict
+rests on licence evidence and on this repository's own architecture, never on an unread
+implementation.
+
+*Four of the five clear the licence bar, and none fails on taste.* They fail on three facts about
+THIS repository: a section renderer may not be a Client Component, so any React-driven entrance is
+an island on all sixteen CMS routes against a budget of 5; there is exactly one token vocabulary, so
+a themed Tailwind plugin cannot be imported without installing a second; and Studio's regression
+suite does not currently run for want of an auth server, so an interactive adoption there cannot be
+verified. The first two are settled design decisions. **The third is temporary — SmoothUI's Animated
+Tabs is a deferral rather than a refusal**, and is the one candidate worth reopening when Phase 4
+has an auth server.
+
+*One candidate is refused for a reason the redesign itself produced.* Magic UI's Blur Fade is an
+opacity-and-blur entrance, and amendment A48 had just removed exactly that: animating `opacity` on a
+`view()` timeline makes contrast a function of scroll position, measured at 1.82:1 where the opaque
+band is 17.55:1, failing axe at SERIOUS. Adopting it would reintroduce a defect this project fixed
+three amendments ago.
+
 **2026-09-13 · A49 — why an entire asset library was invisible, and the ordering decision that
 caused it (Rivya UI Redesign, the media question answered).**
 

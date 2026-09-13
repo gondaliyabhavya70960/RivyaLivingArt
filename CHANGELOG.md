@@ -6,6 +6,43 @@ Every phase adds an entry; see `docs/architecture/CANONICAL-DECISIONS.md` D9 for
 
 ## [Unreleased]
 
+### Rivya UI Redesign, phase 5 — the external components, reviewed one by one (2026-09-13)
+
+Amendment A50. **Nothing adopted, by the owner's decision** — recorded as a decision, not left as an
+absence. No dependency added, no code change.
+
+**The brief asked for a per-component review, and §5 was per-source.** The eleven-source audit has
+existed and been gate-enforced since 2026-09-07; what the brief wants is narrower — the five named
+candidate pages, each with its own licence evidence, dependencies, target file and measured cost.
+That is now `COMPONENT_REGISTRY.md` §5.1.
+
+**Licences re-verified from primary sources.** daisyUI, Magic UI and SmoothUI are MIT; daisyUI ships
+**zero dependencies** at 5.7.37. **React Bits is `MIT + Commons Clause`, not MIT** — its restriction
+forbids selling, sublicensing or redistributing the components themselves, recorded verbatim. The
+brief specifically asked for that one to be checked before reuse.
+
+**Four of five clear the licence bar and none fails on taste.** They fail on three facts about this
+repository: a section renderer may not be a Client Component, so any React-driven entrance is an
+island on all sixteen CMS routes against a budget of 5; there is one token vocabulary, so a themed
+Tailwind plugin cannot be imported without a second; and Studio's regression suite does not run
+without an auth server, so an interactive adoption there cannot be verified.
+
+**One is a deferral rather than a refusal.** SmoothUI's Animated Tabs is MIT and targets Studio,
+where an island is cheap. Reopen it when Phase 4 has an auth server.
+
+**One is refused for a reason this redesign produced.** Magic UI's Blur Fade is an opacity-and-blur
+entrance — exactly what A48 removed after measuring 1.82:1 contrast on a band mid-scroll where the
+opaque value is 17.55:1.
+
+**A limit stated rather than papered over:** the individual component source files were not read.
+The marketing hosts are unreachable from this session and GitHub's API is scoped to this session's
+own repositories. Every verdict rests on licence evidence and this repository's architecture, never
+on an unread implementation.
+
+**Also:** `MEDIA_GUIDE.md` §6.1 is a production runbook for binding the media library — the
+prerequisites, the command, what the output should say, the verification queries and how to undo it.
+Both merge-order constraints cleared when #69 and #70 merged.
+
 ### Rivya UI Redesign — why the site had no pictures, answered and fixed (2026-09-13)
 
 Amendment A49. **Supersedes the cause recorded in A46 and A47.** No migration, no route change.
