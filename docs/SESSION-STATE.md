@@ -14,7 +14,76 @@ owner_verification: NOT_REQUIRED
 
 ---
 
-## Most recent work — PHASE 0 IS DONE ON PRODUCTION (2026-09-13)
+## Most recent work — two §A5 UI items, and a guard that does not guard (2026-09-13)
+
+Amendment **A53**. Read this before picking up any more of the redesign brief's §4, because the
+audit behind it changes what is left.
+
+**WHAT SHIPPED.** The catalogue's empty product wells now carry their category word in the mono
+face (§A5), and the mobile drawer's rows are 44px instead of ~36px and ~28px. Both are small; the
+second was a real accessibility defect on the only touch-only surface the site has.
+
+### THE FINDING WORTH MORE THAN EITHER FIX — the touch guard never measures a link
+
+`tests/e2e/design-system.spec.ts` claims in its own docstring that "links styled as blocks or
+buttons are not exempt and are checked". Its selector is:
+
+```
+main button:not([disabled]), main input:not([type="hidden"]), main select, main textarea
+```
+
+**No anchors.** So every block link on the site is outside the 44px guard, which is how a drawer
+built entirely from links shipped at 36px. The component is fixed; **the guard is not**, and that
+was a decision rather than an oversight: widening the selector may surface violations on surfaces
+this session could not measure, and a selector change whose blast radius is unknown is exactly the
+speculative push that costs a red CI run. **Widen it in a session that can run Playwright**, and
+expect it to find more than the drawer.
+
+The unit test standing in for it (`components/patterns/MobileNav/MobileNav.test.tsx`) asserts the
+CLASS, not the height — jsdom computes no layout. It catches a revert to `py-1` and nothing subtler.
+The real measurement belongs in `tests/e2e/touch.spec.ts`, which already opens the drawer at 390px.
+
+### THE §4 AUDIT — most of the brief's public-site asks are ALREADY BUILT
+
+Measured against the code rather than assumed, so the next session does not rebuild working
+components:
+
+| Brief §4 item | State |
+|---|---|
+| Masthead, mega menu, mobile drawer, 4-column footer | **Built and published.** All three menus are seeded PUBLISHED — 9 header items, 7 category children, a mobile mirror and 4 footer columns |
+| Enquiry reference shown before the WhatsApp handoff | **Built.** `InquiryForm/Success.tsx` shows the code, then forwards after a second, and the visitor can stop it |
+| Configurator hidden when the form has no fields | **Built.** `CommissionConfiguratorSection` returns null on `steps.length === 0` |
+| 3D poster first, viewer on demand, never a black void | **Built.** `ModelViewerMount` renders `data-model-state="poster-only"` server-side |
+| Related row on the product page | **Built.** `RelatedContent` with `SAME_CATEGORY_LIMIT` |
+| Selected Works collapses rather than showing empty tiles | **Built.** `HIDE_SECTION` renders nothing, heading included |
+| Card hover = slow scale | **Built**, and the duration token bug was already found and fixed in Phase 45 |
+| Transform-only band entrance, `prefers-reduced-motion` | **Built** (A48) |
+
+### WHAT IS GENUINELY LEFT, and what each one costs
+
+1. **Sort offers `curated · newest · title`; §A5 asks for `Featured · Newest · Scale`.** "Curated" is
+   Featured under another name. **Scale does not exist as data** — no column on `products` ranks
+   physical size — so this is a schema change plus a migration plus a seeded label, not a UI change.
+   Do not fake it by sorting on title.
+2. **Filters are a rail, not a drawer.** §A5: "filters in a drawer, not a left rail that eats the
+   grid". `lib/catalog/listing.tsx` renders `FilterRail` in a grid column. Moving it into `Drawer`
+   at narrow widths is real work and touches a surface with its own e2e spec
+   (`catalogue-filters.spec.ts`) — worth doing, worth doing with a browser available.
+3. **A floating WhatsApp CTA on mobile after 40% scroll does not exist.** It needs a scroll
+   listener, so it is an ISLAND, and the budget is 5. Read `.claude/skills/island-budget/SKILL.md`
+   before adding it; a CSS-only approach is worth trying first.
+4. **`categories.hero_media_id` is still NULL on all seven** — the mega menu's category cards have
+   no pictures. Unchanged from A52 and still a curation pass, not code.
+
+### Verified
+
+`npm run check` exit 0 (44 gates). **Full suite, all three vitest projects: 247 files, 3,765 tests,
+0 failed, 0 skipped**, against a seeded local cluster with `RLS_TESTS_REQUIRED=1`. The cluster
+recipe is below and it works — use it, and remember `npm run check` runs no tests at all.
+
+---
+
+## Previous work — PHASE 0 IS DONE ON PRODUCTION (2026-09-13)
 
 **THE BINDING RAN. The homepage is no longer a dark page with missing pictures.** Everything below
 this heading that says the binding is "the owner's remaining step" is now history — it was, it is

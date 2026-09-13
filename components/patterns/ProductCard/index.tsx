@@ -5,6 +5,7 @@ import * as React from 'react'
 import { BlockImage } from '@/components/patterns/MediaSlot'
 import { Badge } from '@/components/primitives/Badge'
 import { Cluster } from '@/components/primitives/Cluster'
+import { Eyebrow } from '@/components/primitives/Eyebrow'
 import { Heading } from '@/components/primitives/Heading'
 import { Stack } from '@/components/primitives/Stack'
 import { Text } from '@/components/primitives/Text'
@@ -140,6 +141,39 @@ export function ProductCard({
            * house idiom for the parity branch §4.5 requires.
            */
           className="transition-transform duration-(--rv-duration-quick) ease-standard group-hover:scale-[1.015] motion-reduce:transition-none"
+          /*
+           * THE EMPTY WELL CARRIES THE CATEGORY WORD — §A5, "a sand well with the category word in
+           * mono, never Image unavailable".
+           *
+           * A52 made every public well silent, which was right for an editorial band: an unbound
+           * hero has nothing useful to say. A PRODUCT CARD IS DIFFERENT. A grid of identical blank
+           * wells is unreadable, and the one fact the card already knows — what kind of object this
+           * is — turns each well into a legible placeholder without asserting anything. It is not a
+           * message about the image; it is the card's own category, set in the frame instead of a
+           * photograph that does not exist yet.
+           *
+           * `Eyebrow` RATHER THAN HAND-ROLLED CLASSES. It is the mono face (§A46's third family),
+           * uppercased in CSS so the accessible name keeps the editor's casing, with the 0.14em
+           * tracking that makes uppercase legible at this size. Reaching for `font-mono` here would
+           * be a second opinion about what a mono label is.
+           *
+           * `aria-hidden`, AND THAT IS THE WHOLE REASON IT IS SAFE. The same category word is real
+           * text a few lines below, under the title. Announcing it twice would make every card in
+           * the grid stutter for a screen-reader user, and this copy is decorative — it stands in
+           * for a picture, which is exactly the thing assistive tech should skip.
+           *
+           * THE WELL'S COLOUR IS NOT SET HERE and must not be. `MediaFrame` paints
+           * `--rv-surface-sunken`, whose §2.5 role is "wells, code, table header, empty media", and
+           * on the catalogue's mineral and sand grounds that role IS the sand the brief asks for.
+           * A literal would fail `check-tokens.mjs` and would also be wrong on DEEP.
+           */
+          fallback={
+            categoryName === null ? undefined : (
+              <Eyebrow as="span" tone="tertiary" aria-hidden="true" data-card-empty-category="">
+                {categoryName}
+              </Eyebrow>
+            )
+          }
         />
 
         {product.title === null ? null : (

@@ -86,7 +86,25 @@ export function MobileNav({
                 target={item.target}
                 onClick={() => setOpen(false)}
                 className={cn(
-                  'block py-1 text-lg text-ink',
+                  /*
+                   * 44px ROWS — §A5 asks for them in the drawer, and FEAT §48 asks for 44×44 on
+                   * every control regardless of who asked.
+                   *
+                   * THEY WERE ~36px AND NOTHING CAUGHT IT. `py-1` on an 18px line is 36px, under
+                   * the floor, on the one surface that is touch-only. The `/design-system` touch
+                   * spec that should have found it selects `button, input, select, textarea` and
+                   * NO ANCHORS — so a drawer built entirely from links was never measured. That
+                   * selector gap is recorded in SESSION-STATE; this is the row it let through.
+                   *
+                   * `min-h-11` AND NOT `rv-hit-44`, which was the first attempt and was wrong
+                   * here. The overlay grows a hit box without moving the text, which suits a
+                   * control with room around it — but these rows stack, and the CHILD list below
+                   * has no gap at all, so a 44px overlay on a 28px row would reach 8px into its
+                   * neighbours and a tap near the boundary would open the wrong page. Overlapping
+                   * targets are a worse defect than small ones. `Tabs` states the rule this
+                   * follows: "the touch target is the row itself, so there is no overlay".
+                   */
+                  'flex min-h-11 items-center text-lg text-ink',
                   'transition-[color] duration-(--rv-duration-fast) ease-standard',
                   'hover:text-ink-accent focus-visible:text-ink-accent',
                 )}
@@ -103,7 +121,10 @@ export function MobileNav({
                         target={child.target}
                         onClick={() => setOpen(false)}
                         className={cn(
-                          'block py-1 text-sm text-ink-secondary',
+                          // Same rule, and these rows need it most: `text-sm` with `py-1` is
+                          // ~28px, the smallest target in the drawer, and this list sets no gap
+                          // between its items — so the row must BE 44px rather than overlay one.
+                          'flex min-h-11 items-center text-sm text-ink-secondary',
                           'transition-[color] duration-(--rv-duration-fast) ease-standard',
                           'hover:text-ink focus-visible:text-ink',
                         )}

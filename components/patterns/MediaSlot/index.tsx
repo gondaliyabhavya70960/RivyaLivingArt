@@ -64,6 +64,16 @@ export type BlockImageProps = {
   readonly priority?: boolean
   readonly veil?: boolean
   readonly overlay?: React.ReactNode
+  /**
+   * What the well draws when nothing resolves. Ignored whenever an asset does, so a caller passes
+   * it unconditionally rather than asking whether the asset arrived — `deliverable` is decided in
+   * here, not out there.
+   *
+   * ONLY THE CATALOGUE PASSES ONE. A product card's empty well carries its category word in the
+   * mono face (§A5); every other public well stays silent, which is what A52 settled and what this
+   * prop is careful not to undo — it is opt-in, and its default is nothing.
+   */
+  readonly fallback?: React.ReactNode
   readonly className?: string
 }
 
@@ -86,6 +96,7 @@ export function BlockImage({
   priority = false,
   veil = false,
   overlay,
+  fallback,
   className,
   minBlockSize,
 }: BlockImageProps): React.ReactElement {
@@ -138,6 +149,7 @@ export function BlockImage({
        * Studio's own frames still pass a label because there the frame stands in for a named
        * asset rather than for a gap.
        */
+      fallback={fallback}
       veil={veil && deliverable !== null}
       overlay={overlay}
       className={className}
@@ -190,6 +202,8 @@ export type ResponsiveMediaProps = {
   readonly priority?: boolean
   readonly veil?: boolean
   readonly overlay?: React.ReactNode
+  /** See `BlockImageProps.fallback`. Forwarded to whichever half of the pair is emitted. */
+  readonly fallback?: React.ReactNode
   /**
    * A floor on the height of BOTH halves of the pair. See `AspectBoxProps.minBlockSize`.
    *
@@ -238,6 +252,7 @@ export function ResponsiveMedia({
   priority = false,
   veil = false,
   overlay,
+  fallback,
   minBlockSize,
 }: ResponsiveMediaProps): React.ReactElement {
   const shared = {
@@ -248,6 +263,7 @@ export function ResponsiveMedia({
     eager,
     veil,
     overlay,
+    fallback,
     minBlockSize,
   } as const
 
