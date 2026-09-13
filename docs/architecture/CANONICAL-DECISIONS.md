@@ -257,6 +257,13 @@ The Studio's own frames — `MediaLibrary`, the asset detail page — still pass
 unchanged. There the frame stands in for a *named asset* for a signed-in editor, and the label is
 that asset's kind rather than an apology to a visitor.
 
+**ONE TEST WAS INVERTED RATHER THAN DELETED.** `tests/unit/rls/phase08-render.test.tsx` asserted
+that an unresolved asset renders the seeded string. It now asserts that the seeded row still
+reaches the renderer AND that the string does not reach the page. Both halves matter: losing the
+row is a real regression, because `lib/cms/strings.ts` ships no fallback and Studio lists the key
+as expected; and the string reaching a visitor is the thing this amendment removes. Asserting only
+one half would let either failure through.
+
 `REQUIRED_SITE_STRINGS` keeps `MEDIA_FALLBACK_LABEL_KEY` and the seeded row stays in
 `global_content`. Removing a string an editor can see in Studio, to save a constant, would be a
 migration's worth of risk for no gain, and the key is what the Studio lists as an expected key.

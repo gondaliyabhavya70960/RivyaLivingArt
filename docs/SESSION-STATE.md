@@ -89,9 +89,59 @@ correct. Product galleries stay honest-empty.
 
 ### Verified this session
 
-`npm run check` exit 0 (44 gates). **3,092 unit tests across 207 files pass.** `tsc --noEmit`
-clean. Three assertions in `tests/unit/cms-sections.test.tsx` were updated from "shows the fallback
-label" to "keeps the frame and keeps it silent", because that is the contract now.
+`npm run check` exit 0 (44 gates). **The FULL suite — all three vitest projects — 245 files, 3,760
+tests, 0 failed, 0 skipped**, against a seeded local cluster with `RLS_TESTS_REQUIRED=1`.
+`tsc --noEmit` clean. Four assertions moved from "shows the fallback label" to "keeps the frame and
+keeps it silent": three in `tests/unit/cms-sections.test.tsx` and one in
+`tests/unit/rls/phase08-render.test.tsx`.
+
+### A FOURTH HARNESS TRAP, and it cost a red CI run — `npm run check` RUNS NO TESTS
+
+Add this to the three below, because it is the one that actually bit.
+
+**`npm run check` is 44 static gates and not a single test.** Typecheck, lint, format, the design
+and media and security gates — all of them — and `vitest` is not among them. A green `check` says
+nothing whatever about whether the suite passes.
+
+**And `npm run test:unit` is ONE OF THREE PROJECTS.** `vitest.config.ts` declares `unit`, `rls` and
+`integration`. `--project unit` is the offline one; `rls` and `integration` need a real cluster, so
+they are invisible to `test:unit` and CI runs them at the END of the job, after `db:reset` and the
+seed, with `RLS_TESTS_REQUIRED=1` so a skip is a failure.
+
+So `npm run check` + `npm run test:unit` can both be green while `tests/unit/rls/**` is red — which
+is exactly what happened here. `tests/unit/rls/phase08-render.test.tsx` asserted the very string
+this change removed, CI's `verify` job failed on it, and nothing runnable in this container had
+looked at it.
+
+**Run `npm run test` — no `--project` — with `DATABASE_URL` set, before claiming a suite is green.**
+
+**Standing up the cluster, which this container can do.** PostgreSQL 16 is installed. `initdb` under
+`/tmp` FAILS: the `postgres` user cannot traverse the scratchpad path and the error is a bare
+"Permission denied" that reads like a disk problem. Use a directory it owns:
+
+```
+PGDATA=/var/lib/postgresql/rivya
+mkdir -p "$PGDATA" && chown postgres:postgres "$PGDATA" && chmod 700 "$PGDATA"
+su postgres -c "/usr/lib/postgresql/16/bin/initdb -D $PGDATA -U postgres --auth=trust"
+su postgres -c "/usr/lib/postgresql/16/bin/pg_ctl -D $PGDATA -l /var/lib/postgresql/pg.log -o '-p 5432' -w start"
+psql "postgresql://postgres@127.0.0.1:5432/postgres" -c "alter user postgres with password '<password>';" -c "create database rivya;"
+export DATABASE_URL="postgresql://postgres:<password>@127.0.0.1:5432/rivya"
+npm run db:reset && npm run seed:content
+RLS_TESTS_REQUIRED=1 npm run test
+```
+
+**AND YOU MUST SEED, OR YOU WILL CHASE FIVE FALSE FAILURES.** On a migrated-but-unseeded database
+the `rls` project fails five files on row COUNTS — `expected 5 to be greater than or equal to 11`
+on merchandising slots and four like it. They are the empty database, not a regression. After
+`seed:content` all 33 rls files and 632 tests pass.
+
+**A PRE-EXISTING SEED COLLISION that is not yours and does not matter.** `seed:content` on a fresh
+`db:reset` reports `global:ERROR.media_unavailable.label  duplicate key value violates unique
+constraint "global_content_unique_key"` and stops the `global` module. Migration **0055**
+(`0055_phase08_global_content_error_group.sql`) already inserts that row with a NULL `seed_key`, so
+the runner's insert collides with the migration's. It predates this work, touches no file in this
+change, and the rest of the seed applies — the suite is green with it. Worth an amendment of its
+own; it was not made here.
 
 **A rebuild is still needed for the prerender.** `/` is statically prerendered and this was a
 data-only change, so production must redeploy before the new bindings appear. That trap is

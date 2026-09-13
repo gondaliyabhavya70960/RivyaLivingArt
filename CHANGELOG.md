@@ -41,8 +41,15 @@ and the empty state stays assertable. Studio frames still carry their label.
 `VERIFIED`/`PUBLISHED` (the RV006 media gate was never the blocker), and six of seven categories
 are already published — Furniture and Wall & Statement Art needed no action.
 
-Verified: `npm run check` exit 0 (44 gates), **3,092 unit tests across 207 files pass**,
-`tsc --noEmit` clean.
+Verified: `npm run check` exit 0 (44 gates), and the **full suite — all three vitest projects,
+245 files, 3,760 tests, 0 failed, 0 skipped** — against a seeded local cluster with
+`RLS_TESTS_REQUIRED=1`. `tsc --noEmit` clean. Four assertions moved from "shows the fallback
+label" to "keeps the frame and keeps it silent" (three in `cms-sections.test.tsx`, one in
+`rls/phase08-render.test.tsx`).
+
+Note for the next session: **`npm run check` runs no tests at all**, and `npm run test:unit` is one
+of three vitest projects. `rls` and `integration` need a cluster and run only under `npm run test`
+with `DATABASE_URL` set. `SESSION-STATE.md` documents the trap and how to stand the cluster up.
 
 ### Five design skills installed, and the three things an installer overwrote (2026-09-13)
 
