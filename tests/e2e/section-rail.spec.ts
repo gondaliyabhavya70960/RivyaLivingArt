@@ -102,7 +102,9 @@ test.describe('the page-section index', () => {
     expect(scrollWidth).toBeLessThanOrEqual(clientWidth + 1)
   })
 
-  test('gives every entry an accessible name, and the landmark one of its own', async ({ page }) => {
+  test('gives every entry an accessible name, and the landmark one of its own', async ({
+    page,
+  }) => {
     test.skip(!(await pageIsPublished(page)), `no published sections on ${ROUTE} in this database`)
 
     const width = page.viewportSize()?.width ?? 0
@@ -144,9 +146,11 @@ test.describe('the page-section index', () => {
      * and the anchors from `SectionShell`, which are two different components agreeing on a format
      * — exactly the kind of agreement that breaks without anything failing.
      */
-    const hrefs = await rail(page).locator('a').evaluateAll((nodes) =>
-      nodes.map((node) => (node as HTMLAnchorElement).getAttribute('href') ?? ''),
-    )
+    const hrefs = await rail(page)
+      .locator('a')
+      .evaluateAll((nodes) =>
+        nodes.map((node) => (node as HTMLAnchorElement).getAttribute('href') ?? ''),
+      )
     expect(hrefs.length).toBeGreaterThanOrEqual(2)
 
     for (const href of hrefs) {

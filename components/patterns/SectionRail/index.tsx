@@ -1,5 +1,6 @@
 import * as React from 'react'
 
+import type { PageReferences } from '@/lib/cms/references'
 import { siteString } from '@/lib/cms/strings'
 import type { SiteStrings } from '@/lib/cms/strings'
 import type { PageSection } from '@/lib/supabase/schemas'
@@ -58,26 +59,68 @@ import { cn } from '@/lib/ui/cn'
 export type SectionRailProps = {
   readonly sections: readonly PageSection[]
   readonly strings: SiteStrings
+  /**
+   * The page's resolved references, so the rail can tell a band that will draw something from one
+   * that will draw nothing. Optional: a page with no reference-backed block has none, and the rail
+   * is then decided by the eyebrow alone.
+   */
+  readonly references?: PageReferences
 }
 
-/** Exported for the test: the rule for what appears is the part that can be wrong. */
+/**
+ * Exported for the test: the rule for what appears is the part that can be wrong.
+ *
+ * A LABEL IS NOT ENOUGH — THE BAND MUST ALSO DRAW SOMETHING, and that second condition was missing
+ * until `tests/e2e/section-rail.spec.ts` caught it. Roughly twenty renderers decline at runtime,
+ * returning null rather than an empty frame. Most of those guards read
+ * `items.length === 0 && !hasSectionCopy(section)`, and `hasSectionCopy` is true whenever an eyebrow
+ * exists — so the rail's own rule satisfies them and they can be ignored here. What it does NOT
+ * satisfy is the family that hides itself when its REFERENCE resolves to nothing:
+ * `journal-strip`, `selected-works`, `portfolio-strip`, `secondary-objects`, `material-palette`,
+ * `project-gallery` and `featured-collections` all return null with an eyebrow set and no content.
+ * On the seeded homepage `journal-strip` does exactly that, and the rail linked to
+ * `#section-<id>` for a band that emitted no element — a dead link in a navigation device, which is
+ * worse than no navigation device.
+ *
+ * THE TEST IS UNIFORM RATHER THAN PER-BLOCK, deliberately. Every selector reports
+ * `result.reason` as `OK`, `EMPTY` or `NOT_YET_BUILT`, so "did this band's reference find anything"
+ * is one field and needs no table of block types to stay correct as renderers change. A table would
+ * be a second place to update and would rot the first time somebody added a guard.
+ *
+ * IT IS CONSERVATIVE, AND THAT IS THE RIGHT DIRECTION. A reference-backed band that resolves EMPTY
+ * but has copy — `category-grid`, say — renders a visible empty state and is now left out of the
+ * index. That is a missing entry rather than a dead link, and an empty state is not a destination
+ * worth sending somebody to. The residue runs the other way and is small: `empty-state`,
+ * `quote` and `commission-configurator` decline on payload rather than on a reference, so a band of
+ * one of those types with an eyebrow and no payload would still be listed. The browser spec is the
+ * backstop for that, and it is the thing that found this class in the first place.
+ */
 export function railEntries(
   sections: readonly PageSection[],
+  references?: PageReferences,
 ): readonly { readonly id: string; readonly label: string }[] {
   const entries: { id: string; label: string }[] = []
   for (const section of sections) {
     const eyebrow = section.eyebrow
     if (eyebrow === null || eyebrow.trim() === '') continue
+
+    const reference = references?.get(section.id)
+    if (reference !== undefined && reference.result.reason !== 'OK') continue
+
     entries.push({ id: section.id, label: eyebrow })
   }
   return entries
 }
 
-export function SectionRail({ sections, strings }: SectionRailProps): React.ReactElement | null {
+export function SectionRail({
+  sections,
+  strings,
+  references,
+}: SectionRailProps): React.ReactElement | null {
   const label = siteString(strings, 'UI_LABEL.section_rail.label')
   if (label === null) return null
 
-  const entries = railEntries(sections)
+  const entries = railEntries(sections, references)
   /*
    * TWO IS THE FLOOR, not one. An index of a single item tells a visitor nothing they cannot see,
    * and it would put a permanent empty column beside every short page on the site.

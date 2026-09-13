@@ -36,14 +36,22 @@ unused `.rv-reveal-fade` carried the same hazard and was deleted rather than kep
 column gave a `scrollWidth` of 1053 against a 1024 viewport on **every route**. The mono eyebrow
 added in A46 was the obvious suspect and was measurably not the cause.
 
+**The rail's own spec found a defect the moment it existed.** §7.15 claimed browser assertions that
+had never been written. Writing them failed immediately: `journal-strip` on the seeded homepage
+carries an eyebrow, is published and visible, and renders nothing — its renderer returns null when
+its cards resolve empty — so the rail emitted a link to a band that was never on the page. A label
+is no longer enough; a band must also have drawn something, tested through the `result.reason` field
+every selector already reports rather than through a table of block types that would rot.
+
 **Also corrected:** DESIGN_SYSTEM §2.4 still said "Three schemes" and described a Zod enum of
 `DEEP · INK · BONE` that does not exist — A46 made it five, and the parser is `schemeOf()` with a
 fallback, not validation.
 
-**Verified.** Four browser shards at eight widths: **1,979 passed, 0 failed**. The two specs that
-were red on the previous commit (`/large-format` axe, both at 390px) pass. A new unit assertion
-fails if any keyframe animates opacity again, and was checked against a deliberately reintroduced
-regression.
+**Verified.** Four browser shards at eight widths, plus 3,083 unit tests and 44/44 gates. The two
+specs that were red on the previous commit (`/large-format` axe, both at 390px) pass. Two new
+assertions were each checked against a deliberately reintroduced regression: the unit test fails if
+any keyframe animates opacity again, and the rail spec fails on a link to a band that is not on the
+page.
 
 ### Rivya UI Redesign, phase 2 continued — the four slots the pictures were waiting on, and the `/faq` `h1` (2026-09-13)
 

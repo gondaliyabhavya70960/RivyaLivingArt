@@ -220,7 +220,7 @@ export async function renderCmsPage(
        * only inside this function. It returns null on a page with fewer than two labelled bands,
        * so short routes get no empty column.
        */}
-      <SectionRail sections={resolved.sections} strings={chrome.strings} />
+      <SectionRail sections={resolved.sections} strings={chrome.strings} references={references} />
       <SectionList
         sections={resolved.sections}
         assets={assets}

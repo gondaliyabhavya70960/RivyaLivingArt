@@ -281,12 +281,25 @@ REDESIGN §A3 asks for "thin rules, small section numbers, restrained uppercase 
 page-section index where it helps navigation"; the reference's own markup names the element
 `data-slot="cure-line"` and numbers thirteen of its fifteen homepage sections.
 
-**What appears is CMS data, not a list in the component.** A band is in the rail if and only if it
-carries an `eyebrow` — already the short technical label above its heading, which is the exact role
-the rail needs and is editable where the section is editable. An editor lengthens the rail by
-writing an eyebrow and shortens it by clearing one. The rail's numbers count WHAT RENDERED, 1-based
-over the bands it lists, the same rule `ordinal` follows in `SectionList`: a page whose second band
-is withheld for owner verification reads 01, 02, 03, never 01, 03, 04.
+**What appears is CMS data, not a list in the component.** A band is in the rail if it carries an
+`eyebrow` — already the short technical label above its heading, which is the exact role the rail
+needs and is editable where the section is editable — **and** its reference, if it has one, resolved
+to something. An editor lengthens the rail by writing an eyebrow and shortens it by clearing one.
+The rail's numbers count WHAT RENDERED, 1-based over the bands it lists, the same rule `ordinal`
+follows in `SectionList`: a page whose second band is withheld reads 01, 02, 03, never 01, 03, 04.
+
+**The second condition exists because the first was not enough, and a browser found that.** Around
+twenty renderers decline at runtime, returning null rather than an empty frame. Most guard on
+`items.length === 0 && !hasSectionCopy(section)`, and `hasSectionCopy` is true whenever an eyebrow
+exists — so the rail's own rule already satisfies them. What it does not satisfy is the family that
+hides itself when its REFERENCE is empty: `journal-strip`, `selected-works`, `portfolio-strip`,
+`secondary-objects`, `material-palette`, `project-gallery`, `featured-collections`. On the seeded
+homepage `journal-strip` does exactly that, and the rail linked to a band that emitted no element —
+a dead link inside a navigation device. The test is `result.reason === 'OK'`, which every selector
+reports, rather than a table of block types that would need updating the first time a renderer
+gained a guard. It is deliberately conservative: a reference-backed band that resolves EMPTY but has
+copy renders a visible empty state and is now left out of the index, which is a missing entry rather
+than a dead link — and an empty state is not a destination worth sending anyone to.
 
 **Two entries is the floor.** An index of one tells a visitor nothing they cannot already see, and
 would put a permanent empty column beside every short page on the site.

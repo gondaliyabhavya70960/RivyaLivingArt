@@ -232,6 +232,21 @@ earlier version showed it at `lg` and BOUGHT the space through a container-paddi
 that double-inset the copy to 240px while the rail stayed at the edge. **The whole mechanism was
 reverted and `Container` is untouched.** Documented at DESIGN_SYSTEM §7.15.
 
+*The rail's selection rule needed a second condition, and writing its browser spec is what found
+that.* `tests/e2e/section-rail.spec.ts` was written because §7.15 claimed assertions that did not
+exist; it immediately failed on a real defect. Around twenty renderers decline at runtime, returning
+null rather than an empty frame. Most guard on `items.length === 0 && !hasSectionCopy(section)`, and
+`hasSectionCopy` is true whenever an eyebrow exists — so the rail's own rule satisfies them. The
+family that hides itself when its REFERENCE is empty does not: on the seeded homepage `journal-strip`
+carries the eyebrow "JOURNAL", is PUBLISHED and visible, and renders nothing, so **the rail emitted
+a link to `#section-<id>` for an element that was never on the page** — a dead link inside a
+navigation device. The rail now also requires `result.reason === 'OK'`, which every selector reports.
+**A uniform field rather than a table of block types**, so it cannot fall out of step with a renderer
+the way a hand-maintained list would. It is conservative in the safe direction: a reference-backed
+band that resolves EMPTY but has copy renders an empty state and is now left out, which is a missing
+entry rather than a dead link. `empty-state`, `quote` and `commission-configurator` decline on
+payload rather than on a reference and are the documented residue, with the browser spec as backstop.
+
 *The entrance is transform-only, and this is an accessibility decision rather than a stylistic one.*
 `rv-rise` faded `opacity` 0 → 1 alongside the rise. `animation-fill-mode: both` on a `view()`
 timeline holds a band at its `from` keyframe until it enters, so on a long page exactly one band is
