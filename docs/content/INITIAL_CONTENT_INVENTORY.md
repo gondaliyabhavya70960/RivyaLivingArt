@@ -15,7 +15,7 @@ SEED §54’s audit of what the content seed actually put in the database, read 
 database rather than from the seed modules. Its target is §54’s: **100% of intended launch
 copy mapped to a Studio editing control.**
 
-- **683** rows audited
+- **684** rows audited
 - **121** await owner verification and cannot be published until it is given
 - **0** are authored and deferred to a later phase’s tables
 - **0** carry a bound media asset
@@ -268,6 +268,7 @@ the phase that creates its table.
 | Global content | global:EMPTY_STATE.collection | EMPTY_STATE.collection | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | global:EMPTY_STATE.collection.no_results | EMPTY_STATE.collection.no_results | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | global:EMPTY_STATE.journal | EMPTY_STATE.journal | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
+| Global content | global:EMPTY_STATE.media_pending.label | EMPTY_STATE.media_pending.label | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | global:EMPTY_STATE.portfolio | EMPTY_STATE.portfolio | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | global:EMPTY_STATE.search.body | EMPTY_STATE.search.body | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
 | Global content | global:EMPTY_STATE.search.heading | EMPTY_STATE.search.heading | Yes | Yes | `/studio/content/pages/global` | No | — | — | PUBLISHED |
