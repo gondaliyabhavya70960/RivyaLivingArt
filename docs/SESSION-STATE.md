@@ -83,9 +83,13 @@ The merge-order constraint that blocked it is now **half satisfied**: PR #69 mer
 the registry. What `main` does NOT yet carry is rule 5d, which is the thing that makes binding
 possible at all — without it `seed:content` skips every published section and writes nothing.
 
-So the order is: **merge the A49 branch, let `main` deploy, then run `npm run seed:content` against
-production**, where the 250 assets already exist. Running it before that merge is harmless but
-pointless — it will report `skipped (owner edit)` and bind nothing.
+**BOTH CONSTRAINTS ARE NOW CLEARED.** PR #69 merged at 03:29 and PR #70 at 04:21 on 2026-09-13, so
+`main` carries both A47's four slots and A49's rule 5d.
+
+**The remaining step is the owner's, by their own decision (2026-09-13): they run
+`npm run seed:content` against production themselves.** No production credential exists in this
+session and none was requested. The full runbook — prerequisites, the command, what the output should
+say, the verification queries and how to undo it — is `MEDIA_GUIDE.md` §6.1.
 
 **RE-VERIFIED AGAINST THE HOSTED PROJECT ON 2026-09-13**, directly rather than by inference:
 `page_sections` 83 rows, `media_desktop_id` non-null on **0**, `media_mobile_id` non-null on **0**,
@@ -150,18 +154,20 @@ skip** and a Studio redesign cannot be browser-regression-tested here without Go
 preview with a fixture account. **Resolve that before starting, not after** — a redesign of 82
 routes with its regression suite skipped is not verifiable.
 
-**3. Phase 5 — the external component evaluation.** The brief names eleven sources and asks for a
-recorded evaluation. **One EXISTS and must not be described as absent**: `COMPONENT_REGISTRY.md` §5,
-audited 2026-09-07 and gate-enforced, with five sources MIT-verified and marked `NOT_ADOPTED` and
-six `REJECTED`. What it is not is what the brief asks for: it evaluates SOURCES, and the brief asks
-per COMPONENT. That per-component pass is the pending work. Marketing sites are blocked from this
-sandbox; `raw.githubusercontent.com` and `registry.npmjs.org` are reachable, which is enough to read
-a licence and a component's source.
+**3. Phase 5 — DONE (amendment A50).** The per-component review the brief asks for is
+`COMPONENT_REGISTRY.md` §5.1: the five named candidates, with licences re-verified from primary
+sources on 2026-09-13. **The owner was asked and chose to keep everything first-party**, so nothing
+is adopted and that is recorded as a decision rather than left as an absence.
 
-**OPEN QUESTION FOR THE OWNER, still unanswered.** Whether to ADOPT any external component at all,
-or to keep everything first-party and record the evaluation as the brief's deliverable. Nothing
-should be adopted until this is answered — every candidate so far has been `NOT_ADOPTED`, and
-reversing that is a dependency decision, not an implementation one.
+Worth carrying forward: **React Bits is `MIT + Commons Clause`, not MIT** — verified verbatim, and it
+fails §4's allowlist on its face. And **SmoothUI's Animated Tabs is a DEFERRAL, not a refusal**: it
+is MIT, Studio is the one place an island is cheap, and the only barrier is that Studio's regression
+suite does not run without an auth server. Reopen it when Phase 4 has one.
+
+The individual component SOURCE FILES were not read — the marketing hosts are unreachable here and
+GitHub's API is scoped to this session's repositories, so a third-party tree cannot be browsed. Every
+verdict rests on licence evidence and this repository's own architecture. Do not let a later session
+report otherwise.
 
 **4. Phase 6 — e2e, visual baselines, Lighthouse.** The e2e suite IS now run and green (1,979
 passed across four shards at eight widths). What remains: the 33 committed visual baselines need

@@ -215,6 +215,52 @@ values `scripts/design/check-registry.mjs` accepts — plus the licence evidence
 
 ---
 
+### 5.1 The five named candidates, reviewed per component (amendment A50)
+
+§5 above audits SOURCES. `03-UI-REDESIGN-BRIEF.md` §A4 asks for something narrower and asks for it
+explicitly: a **component-specific** review of five named pages, recording "the exact source page,
+source file or revision, license evidence, dependencies, target file, adaptation, mobile behavior,
+accessibility, measured bundle impact and adoption status". It also warns that a previous rejection
+of a source "is useful evidence, not proof that every new candidate from that source must fail".
+
+**Outcome: nothing adopted. The decision is the owner's, taken 2026-09-13**, and it is recorded here
+as a decision rather than inferred from the absence of an adoption.
+
+**What was verified today, and from where.** Licences were read from primary sources over
+`raw.githubusercontent.com` and `registry.npmjs.org`, both reachable from this session:
+
+| Source | Licence, re-verified 2026-09-13 | Evidence |
+|---|---|---|
+| daisyUI | `MIT` | `LICENSE` at `saadeghi/daisyui@master` ("Copyright (c) 2020 Pouya Saadeghi"); npm `daisyui@5.7.37` `"license": "MIT"`, **zero dependencies**, 2,786,295 bytes unpacked |
+| Magic UI | `MIT` | `LICENSE.md` at `magicuidesign/magicui@main` ("Copyright (c) Magic UI") |
+| SmoothUI | `MIT` | `LICENSE` at `educlopez/smoothui@main` ("Copyright (c) 2024 Eduardo Calvo") |
+| React Bits | **`MIT + Commons Clause License Condition v1.0`** | `LICENSE.md` at `DavidHDev/react-bits@main` ("Copyright (c) 2026 David Haz"). The restriction reads verbatim: *"You may use this Software, including for any commercial purpose, so long as you do not sell, sublicense, or redistribute the components themselves—whether alone, in a bundle, or as a ported version."* |
+
+**A LIMITATION STATED RATHER THAN PAPERED OVER.** The individual component source files were **not
+read**. `smoothui.dev` and `magicui.design` are unreachable from this session (`curl` returns no
+status), and GitHub's API is scoped to this session's own repositories, so third-party repository
+trees cannot be browsed to locate a file by path. Each verdict below therefore rests on the licence
+evidence above and on **this repository's own architecture**, never on an unread implementation. No
+claim is made about code nobody here has seen.
+
+| Candidate | Source page | Target in this repo | Verdict | Reason |
+|---|---|---|---|---|
+| **Magic UI — Blur Fade** | `https://magicui.design/docs/components/blur-fade` | section entrances, `app/styles/motion.css` | `NOT_ADOPTED` | The brief poses the deciding question itself: *"Whether the existing reveal system can produce the result without another runtime."* It can, and at a cost this cannot match. `motion.css` is a **scroll-driven CSS entrance costing zero islands**; Blur Fade is a Client Component driven by `motion`. A renderer may never be a Client Component (`check-client-boundary.mjs`), and `components/sections/registry.ts` imports every renderer — so one such import is an island on **all sixteen CMS routes**, against a budget of 5. **And the effect itself is one this repository has just removed:** amendment A48 found that animating `opacity` on a `view()` timeline makes contrast a function of scroll position, measured at 1.82:1 where the opaque band is 17.55:1, failing axe at SERIOUS. A blur-and-fade entrance is that hazard plus a `filter`. |
+| **React Bits — Scroll Reveal** | `https://reactbits.dev/text-animations/scroll-reveal` | material-story / manifesto bands | `REJECTED` | **Licence, before any technical question.** Commons Clause is an added condition and the result is not MIT; §4's allowlist accepts MIT, Apache-2.0, BSD-2-Clause, BSD-3-Clause and ISC only. The grant does permit use inside a product, so this is a **policy** rejection rather than a legal impossibility — recorded that way deliberately, because the two are different and the brief asked for accuracy. Were the licence clear, it would still fail on the island and contrast grounds above. |
+| **SmoothUI — Animated Tabs** | `https://smoothui.dev/docs/components/animated-tabs` | Studio editor / media tabs | `NOT_ADOPTED` | MIT, and Studio is the one place an island is cheap — it is behind auth, outside the public budget. The barrier is **verification, not licence**: `TESTING.md` §13 records that the local harness has no auth server, so **156 Studio specs skip** and no Studio interaction can be browser-tested here. Adopting an interactive third-party component into a surface whose regression suite does not run is not a defensible trade at any licence. Revisit when Phase 4 has an auth server; this row is a deferral, not a refusal. |
+| **daisyUI — Table** | `https://daisyui.com/components/table/` | `components/studio/DataTable.tsx` | `NOT_ADOPTED` | The brief's own condition is *"without importing a competing global theme"* — and that is precisely what the plugin is. daisyUI installs a second semantic layer of component classes and themed palettes carrying colour literals, against `DESIGN_SYSTEM.md` §1, which permits one vocabulary (`--rv-*`) and makes `tokens.css` the only file allowed a colour literal; `check-tokens.mjs` and `check-token-usage.mjs` fail the build on the rest. Adapting its markup structure by hand is **first-party work and must be reported as such** — the brief is explicit that a first-party approximation may not be recorded as an imported library component. |
+| **daisyUI — Drawer** | `https://daisyui.com/components/drawer/` | Studio drawer / sidebar | `NOT_ADOPTED` | Everything above, plus a behavioural regression. daisyUI's drawer is a CSS-only checkbox construction and supplies **none** of the APG contracts every §7 record specifies. This repository's drawer already has a focus trap, Escape handling, labelling and `aria-current`, asserted by `tests/e2e/navigation-a11y.spec.ts`. Replacing a tested focus model with a checkbox hack trades working accessibility for styling. |
+
+**Why the answer came out the same as the source-level audit, when it did not have to.** Four of the
+five clear the licence bar. None fails on taste. They fail on three architectural facts that are
+properties of THIS repository rather than of the candidates: a section renderer may not be a Client
+Component, so any React-driven entrance costs an island on sixteen routes; there is exactly one
+token vocabulary, so a themed CSS plugin cannot be imported without a second one; and Studio's
+regression suite does not currently run, so an interactive adoption there cannot be verified. The
+first two are settled design decisions. **The third is temporary, and SmoothUI's Animated Tabs is
+the one candidate worth reopening** once an auth server exists.
+
+
 ## 6. Registry index
 
 `State`: `PLANNED` (owned by a future phase, not yet written — **no file on disk is expected, and

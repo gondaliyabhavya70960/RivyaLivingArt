@@ -312,6 +312,100 @@ Ratio by surface:
 
 ---
 
+## 6.1 Binding the library on a live database — the production runbook (amendment A49)
+
+**Why this section exists.** For the whole of the redesign the site showed fallback wells while
+`media_assets` held 250 PUBLISHED, VERIFIED rows. The cause was never a missing asset: rule 5c in
+the seed runner stands down on any row a person published, section modules seed DRAFT, and every
+live environment has published them — so the runner skipped every visible section, media columns
+included. Amendment A49's rule 5d fixes that. This is how to actually run it.
+
+### Before you run anything
+
+| Check | Why |
+|---|---|
+| Your checkout is at `main` **at or after the A49 merge** | Rule 5d is what makes binding possible at all. An older checkout reports `skipped (owner edit)` and binds nothing — the run will look successful and change nothing. |
+| `content/media-slots.ts` declares the four A47 slots | `home.commission`, `home.three-d-resin`, `home.final-cta`, `large-format.hero`. A binding must name a registry key VERBATIM (migration 0050); the runner refuses an unknown one rather than inventing it. |
+| `DATABASE_URL` points at the production database | The runner talks to Postgres directly — it needs a transaction per module, which PostgREST cannot give it. |
+| You have a recent backup or PITR window | The operation is reversible by hand (below), but take the backup anyway. |
+
+### The command
+
+```
+npm run seed:content
+```
+
+That is the whole of it. **Do not pass `--force`** — force overwrites owner edits, which is exactly
+what rule 5d is designed to avoid needing.
+
+### What the output should say
+
+Look for this block, which rule 5d prints and nothing else does:
+
+```
+media bound on live rows  N column(s) across M section(s)
+  (rule 5d — the column was empty, so nothing was overwritten)
+    section:home.07.custom-commission  media_mobile_id, media_slot_key
+    ...
+```
+
+Read the rest of the summary too:
+
+- **`skipped (owner edit)`** — expected, and not a problem. Those rows keep their copy; rule 5d has
+  already filled their empty media columns before the guard ran.
+- **`media gaps`** — a binding naming an asset that is not in `media_assets` *on that database*. On
+  production this should be **0**; anything else means the Higgsfield migration has not fully run
+  there. Nothing is substituted and no placeholder is written.
+- **`inserted` / `updated`** — ordinary seeding, unrelated to media.
+
+**If `media bound on live rows` does not appear at all**, nothing was bound. The usual cause is a
+checkout older than A49.
+
+### Verifying it worked
+
+```sql
+select count(*)                                   as sections,
+       count(media_desktop_id)                    as desktop_bound,
+       count(media_mobile_id)                     as mobile_bound,
+       (select count(*) from media_usages)        as usages
+  from page_sections;
+```
+
+Before the fix this read `83 / 0 / 0 / 0`. Afterwards `desktop_bound` and `mobile_bound` should be
+non-zero and `usages` should be non-zero — `sync_media_usages` writes the reverse index from the
+slot key on each binding.
+
+Then load the site. **A data-only change does not appear until the pages re-render**: most CMS
+routes are statically prerendered, so either wait for ISR to revalidate or trigger a redeploy.
+A page still showing wells after the counts moved is almost always a stale prerender, not a failed
+binding.
+
+### Undoing it
+
+Rule 5d writes only `media_desktop_id`, `media_mobile_id` and `media_slot_key`, and only where they
+were NULL. To reverse a specific section:
+
+```sql
+update page_sections
+   set media_desktop_id = null, media_mobile_id = null
+ where seed_key = 'section:home.07.custom-commission';
+```
+
+`media_slot_key` may be left as it is — migration 0050 permits a key with no ids, and the key
+records which registry slot the band fills, which is an editorial fact rather than part of the
+binding.
+
+### What rule 5d will never do
+
+- **It will not replace an editor's selection.** It writes only where the column is NULL. A band
+  whose picture somebody chose in Studio keeps it, even when the seed module names a different
+  asset — the brief's rule, *"Do not replace an editor's existing selection simply because a seed
+  script contains another one."*
+- **It will not touch copy, status, hashes or versions.** A row that is otherwise a human's stays a
+  human's and still reports as skipped.
+- **It will not invent an asset.** A binding naming something absent from `media_assets` is reported
+  as a gap and left unbound.
+
 ## 7. Rendering
 
 | Component | Registry | Environment | Job |
