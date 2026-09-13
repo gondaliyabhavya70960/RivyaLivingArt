@@ -202,6 +202,57 @@ Brand and editorial copy may be written; anything asserting business capability 
 
 ## Amendments
 
+**2026-09-13 · A53 — the catalogue's empty well says what kind of object is missing, the mobile
+drawer's rows reach 44px, and the guard that should have measured them does not look at links.**
+
+*Two §A5 items from the redesign brief, and one finding that is worth more than either.*
+
+**THE PRODUCT CARD'S EMPTY WELL CARRIES ITS CATEGORY WORD.** §A5: "Empty card media: a sand well
+with the category word in mono — never *Image unavailable*." A52 made every public well silent,
+which is right for an editorial band — an unbound hero has nothing useful to say. A catalogue grid
+is the case that argument does not cover: a page of identical blank wells is unreadable, and the
+card already knows the one fact that makes each well legible without asserting anything.
+
+`MediaFrame` gains `fallback?: React.ReactNode` beside the existing `fallbackLabel` string, and
+`BlockImage`/`ResponsiveMedia` forward it. A NODE RATHER THAN A STRING because the difference this
+surface wants is typographic, not verbal — and encoding "set it in the mono face" inside
+`MediaFrame` would put a catalogue decision in a primitive. `fallbackLabel` still wins when both
+are given: a Studio frame naming an asset kind is being specific about that asset.
+
+`ProductCard` passes `Eyebrow`, which is the mono face with §A46's uppercase-in-CSS and the 0.14em
+tracking — reaching for `font-mono` here would be a second opinion about what a mono label is. The
+node is `aria-hidden`, and that is what makes it safe: the same category word is real text under
+the title, so announcing it twice would make every card in a grid stutter, and a stand-in for a
+photograph is exactly what assistive tech should skip. **The well's colour is not set here and must
+not be** — `MediaFrame` paints `--rv-surface-sunken`, whose §2.5 role is "wells, code, table
+header, empty media", and on the catalogue's mineral and sand grounds that role *is* the sand the
+brief asks for. A literal would fail `check-tokens.mjs` and would also be wrong on DEEP.
+
+**THE MOBILE DRAWER'S ROWS WERE ~36px AND ~28px.** §A5 asks for 44px rows; FEAT §48 asks for 44×44
+on every control regardless of who asked. `py-1` on an 18px line is 36px, and a `text-sm` category
+row is about 28px — on the one surface of the site that is touch-only.
+
+`min-h-11` with `flex items-center`, **not `rv-hit-44`**, and the first attempt used the overlay and
+was wrong. The overlay grows a hit box without moving the text, which suits a control with room
+around it; these rows stack, and the category list sets no gap at all, so a 44px overlay on a 28px
+row would reach 8px into each neighbour and a tap near the boundary would open the wrong page.
+**Overlapping targets are a worse defect than small ones.** `Tabs` already states the rule this
+follows: "the touch target is the row itself, so there is no overlay".
+
+**THE FINDING: THE TOUCH GUARD DOES NOT MEASURE LINKS.** `tests/e2e/design-system.spec.ts` says in
+its own docstring that "links styled as blocks or buttons are not exempt and are checked", and its
+selector is `main button:not([disabled]), main input:not([type="hidden"]), main select,
+main textarea`. No anchors. So a drawer built entirely from links was never measured, and neither
+is any other block link on the site. The component is fixed here; **the guard is not**, deliberately
+— widening that selector may surface violations across surfaces this session cannot measure, and
+the honest move is to name it rather than push a selector change whose blast radius is unknown.
+Recorded as a named follow-up in `SESSION-STATE.md`.
+
+The unit test that replaces it is weaker and says so: jsdom computes no layout, so it asserts the
+class that produces the height rather than the height. It fails the moment `py-1` returns, which is
+the regression that actually happened. The real measurement belongs in `tests/e2e/touch.spec.ts`,
+which already opens the drawer at 390px.
+
 **2026-09-13 · A52 — the library is bound on the hosted project, and the public well stops
 claiming an image failed to load.**
 

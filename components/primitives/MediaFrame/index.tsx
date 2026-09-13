@@ -86,6 +86,23 @@ export interface MediaFrameProps extends AspectBoxProps {
    */
   fallbackLabel?: string
   /**
+   * What the empty well draws instead of a plain label — a node rather than a string, because the
+   * one surface that wants something here wants it SET DIFFERENTLY rather than worded differently.
+   *
+   * The catalogue's product cards show the category word in the mono eyebrow face (§A5's
+   * "a sand well with the category word in mono"), which is a typographic decision the card owns
+   * and this frame should not encode. Passing a node keeps `MediaFrame` ignorant of it: the frame
+   * still decides WHEN the well is empty, the caller decides what that emptiness looks like.
+   *
+   * It is ignored whenever media resolves, so a caller may pass it unconditionally and never ask
+   * whether the asset arrived — which is the only way to pass it, since `deliverable` is decided
+   * below this component.
+   *
+   * `fallbackLabel` still wins when both are given: a Studio frame naming an asset kind is being
+   * specific about THAT asset, and a decorative node would bury it.
+   */
+  fallback?: React.ReactNode
+  /**
    * Paints `--rv-media-veil` over the media. Set it whenever text sits on the frame. It is
    * ignored in the fallback state: there is no photograph to protect the ink from, and the
    * gradient would only drag an editor label under AA.
@@ -96,7 +113,7 @@ export interface MediaFrameProps extends AspectBoxProps {
 }
 
 export const MediaFrame = React.forwardRef<HTMLElement, MediaFrameProps>(function MediaFrame(
-  { fallbackLabel, veil = false, overlay, className, children, ...rest },
+  { fallbackLabel, fallback, veil = false, overlay, className, children, ...rest },
   ref,
 ) {
   // toArray drops null, undefined and booleans, so the ordinary `{asset && <MediaImage/>}`
@@ -132,7 +149,9 @@ export const MediaFrame = React.forwardRef<HTMLElement, MediaFrameProps>(functio
            * accessibility tree as an empty paragraph. The public site omits the prop, so the
            * well is a well — `bg-surface-sunken` from AspectBox above and no children.
            */}
-          {fallbackLabel === undefined || fallbackLabel === '' ? null : (
+          {fallbackLabel === undefined || fallbackLabel === '' ? (
+            fallback
+          ) : (
             <p className="text-ink-secondary text-sm">{fallbackLabel}</p>
           )}
         </div>
