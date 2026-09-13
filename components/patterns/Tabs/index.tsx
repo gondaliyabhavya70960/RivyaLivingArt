@@ -89,6 +89,27 @@ export interface TabsProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'd
    * is expensive enough that following focus would mount work nobody asked for.
    */
   activation?: TabsActivation
+  /**
+   * How the selection is drawn beneath the strip.
+   *
+   * `static` (default) keeps the per-tab underline that transitions COLOUR — the §4.2 LIGHT
+   * branch this component has always shipped, and the only branch that is correct without
+   * JavaScript. **Every public route keeps it**, which is why it is the default rather than a
+   * migration: `/product/[slug]` renders this component too, and a behaviour change there is a
+   * change to the public site.
+   *
+   * `slide` draws ONE bar that travels to the selected tab. It is a `transform`, so it belongs
+   * to §4.2's FORM class at `--rv-duration-base` rather than to LIGHT at `--rv-duration-quick`
+   * — LIGHT permits colour, border, opacity and shadow and no transform at all, which is why
+   * the original component argued a travelling bar could not be built and shipped the colour
+   * branch instead. Amendment A51 places a selection indicator in FORM and this implements it.
+   *
+   * IT DEGRADES TO `static`, NOT TO NOTHING. The bar needs the selected tab's measured box, so
+   * until the measurement lands — the server render, and a browser with JavaScript off — the
+   * per-tab underline is what draws. The strip is therefore never without a selection shape,
+   * which WCAG 1.4.1 requires: selection is carried by a shape and not by colour alone.
+   */
+  indicator?: 'static' | 'slide'
 }
 
 export const Tabs = React.forwardRef<HTMLDivElement, TabsProps>(function Tabs(
@@ -99,6 +120,7 @@ export const Tabs = React.forwardRef<HTMLDivElement, TabsProps>(function Tabs(
     defaultValue,
     onValueChange,
     activation = 'automatic',
+    indicator = 'static',
     className,
     ...rest
   },
@@ -109,6 +131,17 @@ export const Tabs = React.forwardRef<HTMLDivElement, TabsProps>(function Tabs(
   // One node per tab, keyed by id rather than by index, so reordering `items` cannot leave
   // the arrow keys focusing the tab that used to be in that slot.
   const tabNodes = React.useRef(new Map<string, HTMLButtonElement>())
+  const listNode = React.useRef<HTMLDivElement | null>(null)
+
+  /**
+   * The selected tab's box, in the strip's own coordinates, or null when it is not known yet.
+   *
+   * NULL IS A REAL STATE AND IT IS THE ONE THAT SHIPS FIRST. On the server there is no layout to
+   * measure, so this is null through the whole server render and the strip draws the per-tab
+   * underline — which is also what a browser with JavaScript off keeps forever. The travelling
+   * bar is an enhancement layered on a strip that is already correct without it.
+   */
+  const [indicatorBox, setIndicatorBox] = React.useState<{ x: number; w: number } | null>(null)
 
   const tabId = (id: string) => `${baseId}-tab-${id}`
   const panelId = (id: string) => `${baseId}-panel-${id}`
@@ -122,6 +155,58 @@ export const Tabs = React.forwardRef<HTMLDivElement, TabsProps>(function Tabs(
   // first enabled tab rather than leaving the strip with nothing selected: a tab list where
   // no tab is selected has no tab in the tab order, and is unreachable by keyboard.
   const selectedId = enabled.some((item) => item.id === requested) ? requested : enabled[0]?.id
+
+  /**
+   * Measure the selected tab, and re-measure whenever its box can have moved.
+   *
+   * `useLayoutEffect` RATHER THAN `useEffect`, so the bar is placed in the same frame the
+   * selection changes and never renders one frame at the previous tab's position. It is chosen
+   * through `EFFECT` below because this is a Client Component and React still renders it on the
+   * server, where `useLayoutEffect` warns and does nothing useful.
+   *
+   * THE OBSERVER WATCHES BOTH THE TAB AND THE STRIP, and each for a different failure. The tab
+   * itself changes width when its webfont swaps in — measure once at mount and the bar is sized
+   * to the fallback face's metrics and stays there. The strip changes width on a viewport resize
+   * and on the container query that makes it scroll, which moves every tab inside it without
+   * changing any tab's own box.
+   *
+   * `offsetLeft` IS RELATIVE TO THE STRIP, which is `relative` and is also the element that
+   * scrolls. So the bar scrolls with the tabs it is under and needs no scroll listener: a
+   * position expressed in the scrolling content's coordinates is already correct at every
+   * scroll offset.
+   */
+  const EFFECT = typeof window === 'undefined' ? React.useEffect : React.useLayoutEffect
+  EFFECT(() => {
+    if (indicator !== 'slide') return
+    const node = selectedId === undefined ? undefined : tabNodes.current.get(selectedId)
+    if (node === undefined) {
+      setIndicatorBox(null)
+      return
+    }
+
+    const measure = () => setIndicatorBox({ x: node.offsetLeft, w: node.offsetWidth })
+    measure()
+
+    if (typeof ResizeObserver === 'undefined') return
+    const observer = new ResizeObserver(measure)
+    observer.observe(node)
+    const list = listNode.current
+    if (list !== null) observer.observe(list)
+    return () => observer.disconnect()
+  }, [EFFECT, indicator, selectedId, items])
+
+  /**
+   * Slide only once there is a measurement WITH A WIDTH to slide to.
+   *
+   * `> 0` RATHER THAN `!== null`, AND A TEST FOUND THE DIFFERENCE. A measurement of zero is not
+   * the absence of a measurement — it is what every box reports while the strip is inside a
+   * `display: none` ancestor, before a webfont resolves, or in any environment that runs the
+   * effect without laying anything out. Treating that as "measured" draws a bar scaled to
+   * `scaleX(0)`, which is invisible, AND turns the per-tab underline transparent, which leaves
+   * the strip with NO selection shape at all. Selection would then be carried by the ink step
+   * alone, and WCAG 1.4.1 does not accept colour as the only channel.
+   */
+  const sliding = indicator === 'slide' && indicatorBox !== null && indicatorBox.w > 0
 
   function select(id: string) {
     // A controlled strip never moves on its own; the owner of the selection decides.
@@ -172,8 +257,36 @@ export const Tabs = React.forwardRef<HTMLDivElement, TabsProps>(function Tabs(
         // (§11, RC-203 mobile behaviour). Arrow-key movement calls focus(), and focus()
         // scrolls its target into view, so the selected tab brings itself back on screen
         // without a scroll calculation of ours.
-        className="flex items-center gap-1 overflow-x-auto border-b border-line snap-x"
+        ref={listNode}
+        // `relative` so the travelling bar can be positioned in the strip's own coordinates,
+        // which are also the coordinates the strip scrolls in. Harmless when it never slides.
+        className="relative flex items-center gap-1 overflow-x-auto border-b border-line snap-x"
       >
+        {/*
+         * THE TRAVELLING BAR (§4.2 FORM, amendment A51). `w-px` with `scaleX` rather than a
+         * measured `width`: width is a layout property and animating it would lay the strip out
+         * every frame, which §4.2's third cross-cutting rule forbids outright. A 1px bar scaled
+         * horizontally is one compositor transform, and there is no text inside it to distort.
+         *
+         * `aria-hidden` because selection is already announced by `aria-selected` on the tab;
+         * a second announcement of the same fact is noise to a screen reader, and this element
+         * carries no information a sighted reader gets either.
+         *
+         * `motion-reduce:transition-none` is the reduced-motion branch §4.2 requires of FORM:
+         * the bar still moves to the right tab, it simply arrives there without travelling.
+         */}
+        {sliding ? (
+          <span
+            aria-hidden="true"
+            data-rv-tab-indicator=""
+            className={cn(
+              'pointer-events-none absolute bottom-0 left-0 h-0.5 w-px origin-left bg-ink-accent',
+              'transition-transform duration-(--rv-duration-base) ease-out',
+              'motion-reduce:transition-none',
+            )}
+            style={{ transform: `translateX(${indicatorBox.x}px) scaleX(${indicatorBox.w})` }}
+          />
+        ) : null}
         {items.map((item) => {
           const isSelected = item.id === selectedId
           return (
@@ -207,8 +320,11 @@ export const Tabs = React.forwardRef<HTMLDivElement, TabsProps>(function Tabs(
                 // secondary to primary, never by the accent colour alone (WCAG 1.4.1):
                 // the border is a shape, and a shape survives a reader who cannot
                 // separate the two inks.
+                // While the bar is drawing, the per-tab border stays transparent: two
+                // indicators under one strip reads as a rendering fault. The ink step from
+                // secondary to primary still marks the selection in both branches.
                 isSelected
-                  ? 'border-ink-accent text-ink'
+                  ? cn(sliding ? 'border-transparent' : 'border-ink-accent', 'text-ink')
                   : 'border-transparent text-ink-secondary hover:text-ink',
                 // Never opacity: 0.5 — that drags the contrast below the §2.6 exemption.
                 'disabled:cursor-not-allowed disabled:border-transparent disabled:text-ink-disabled',

@@ -6,6 +6,44 @@ Every phase adds an entry; see `docs/architecture/CANONICAL-DECISIONS.md` D9 for
 
 ## [Unreleased]
 
+### Tabs can slide their indicator, and the component that inspired it was not adopted (2026-09-13)
+
+Amendment A51. No dependency added. The default is unchanged, so no public route moves.
+
+**SmoothUI's Animated Tabs was reopened at the owner's request, its source read, and it stayed
+NOT_ADOPTED — for a reason architecture alone would not have found.** It is 165 lines with
+`role="tablist"`, `role="tab"`, roving `tabIndex`, Arrow/Home/End and `useReducedMotion`, and **zero
+`aria-controls` and zero `role="tabpanel"`**. It renders no panels. It is a tab *strip*; the APG
+tabs pattern is a strip **plus** the panels associated to it. RC-203 has both, so adopting it would
+have been a straight accessibility regression — one a licence check and a bundle check would each
+have passed.
+
+Finding the file took eleven 404s: the marketing host is unreachable, GitHub's tree API is scoped to
+this account's repositories, and `pnpm-workspace.yaml` was what revealed the monorepo layout.
+
+**The one thing it had that we did not is now ours, first-party.** `Tabs` gains
+`indicator="slide"` — one bar that travels, `translateX` + `scaleX` on a 1px element, measured by a
+`ResizeObserver` watching both the tab (webfont swaps change its width) and the strip (a resize
+moves every tab without changing any tab's box). No animation runtime; SmoothUI's package declares
+`motion`, which would have been this project's first.
+
+**Off by default, deliberately.** `Tabs` renders on `/product/[slug]` as well as in Studio, so a
+changed default would change the public site. Studio's data-quality page opts in.
+
+**§4.2 gains one example, and no rule is weakened.** A travelling bar is a `transform`, which LIGHT
+forbids — which is why the original component argued it could not be built. FORM already permits
+transform at `--rv-duration-base` and already describes a small object moving; the indicator is
+listed there now.
+
+**A defect the work found in itself.** The first version treated any measurement as sufficient. A box
+measures 0 inside a `display: none` ancestor or before a webfont resolves, so it drew an invisible
+bar at `scaleX(0)` *and* turned the per-tab underline transparent — selection carried by colour
+alone, which WCAG 1.4.1 refuses. The guard is `w > 0`, verified by removing it and watching the test
+fail.
+
+**Verified:** 44/44 gates, 3,092 unit tests (4 new), island budget unchanged at 5, `/product/[slug]`
+still 6/6.
+
 ### Rivya UI Redesign, phase 5 — the external components, reviewed one by one (2026-09-13)
 
 Amendment A50. **Nothing adopted, by the owner's decision** — recorded as a decision, not left as an
