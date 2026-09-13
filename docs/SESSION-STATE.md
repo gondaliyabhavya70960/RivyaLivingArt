@@ -14,7 +14,36 @@ owner_verification: NOT_REQUIRED
 
 ---
 
-## Most recent work — Studio UI/UX phases A and B, the slice the guide says to merge (2026-09-13)
+## Most recent work — Studio UI/UX phases A, B and C (2026-09-13)
+
+Amendments **A55** (Phase A), **A56** (Phase B) and **A57** (Phase C). A+B is the slice the guide
+says to merge and both are on main; **C is the Overview and is the work in flight**. **D, E and F are
+not started** — the guide's §9 is the map, and its §7 screen table says which screen belongs to which.
+
+**PHASE C, IN ONE LINE.** `/studio` now leads with `TodayList`: verification backlog, inquiries
+nobody has opened, page sections not yet live, sources awaiting a policy note. Each row is a link to
+the screen that clears it and is gated on the permission to clear it.
+
+**THE RULE THAT WILL BITE THE NEXT SESSION, AND IT IS THE SAME RULE IN THREE PLACES NOW.** A count
+whose query failed renders *unreadable*, never `0`. `MetricCount` is `number | null` for exactly
+this; `EmptyState` refuses a CTA on `reason="unreadable"` for the same reason; and `TodayList` says
+"everything is clear" only when EVERY row actually read its table. If you add a fifth queue, it needs
+all three behaviours, not just the count.
+
+**WHAT THE THREE NEW COUNTS MEAN, because each is a choice and none is obvious.** Unread inquiries is
+`NEW` alone — `countOpenInquiries` counts the whole open pipeline, which is a healthy number that
+should never reach zero. Unpublished sections EXCLUDES `ARCHIVED`: a retired section is not
+outstanding work. Sources awaiting policy is `UNREVIEWED` only — RESTRICTED and BLOCKED are decisions
+somebody already made.
+
+**A TEST HOOK YOU WILL TRIP OVER.** `tests/e2e/studio-system.spec.ts` asserts exactly one of
+`data-outstanding-verifications-total` / `-unreadable` inside `[data-outstanding-verifications]`. The
+figure now draws in the `TodayList` row; the attribute stayed on the detail block deliberately, so do
+not "fix" it by re-rendering the number there — that is the duplication A57 removed.
+
+---
+
+## Previous work — Studio UI/UX phases A and B, the slice the guide says to merge (2026-09-13)
 
 Amendments **A55** (Phase A) and **A56** (Phase B). The owner's Studio UI/UX implementation guide is
 explicit: *"Stop after A+B and merge."* That is done. **Phases C-F are not started**, and the guide's

@@ -426,12 +426,17 @@ docs/SESSION-STATE.md
 
 ## Studio UI/UX: phases A and B shipped, C-F not started
 
-The owner's Studio UI/UX implementation guide runs A-F and says to stop after A+B and merge.
-**A (amendment A55) and B (A56) are in.** The active nav leaf carries `aria-current` and a champagne
+The owner's Studio UI/UX implementation guide runs A-F. **A (amendment A55), B (A56) and C (A57)
+are in**; D, E and F are not started. The active nav leaf carries `aria-current` and a champagne
 rule; below `lg` the fifty-leaf rail is a `patterns/Drawer` dialog rather than a stack above the main
 landmark; search is a 44px button rather than a sentence naming two keys an Android phone does not
 have. Products, Journal and Sources share `ListPage`'s rhythm, `StudioAction`'s 44px control, and an
 `EmptyState` that offers one permission-gated next step and **refuses one entirely on a failed read**.
+
+**The Overview answers one question.** `TodayList` puts four queues above the registry grid —
+verification backlog, unread inquiries, unpublished sections, sources awaiting a policy note — each
+a link to the screen that clears it, each gated on the permission to clear it, and every count
+rendering *unreadable* rather than `0` when its query failed.
 
 **Two of B's five named screens are deliberately not converted.** `/studio/content/faqs` is a stub
 with no FAQ repository behind it, and `/studio/inquiries/all` is a bespoke inbox; the guide's own §7

@@ -9392,6 +9392,59 @@ export const STUDIO_STRINGS = {
    */
 
   /** The card's label. FEAT/Phase 46 name it, and the handover document uses the same words. */
+  /* --- The Overview's "today" list (Phase C) ------------------------------------------------- */
+
+  /**
+   * §8 gives `/studio` one job: "What needs a human today". The heading states it, so a reader who
+   * has never been told what this screen is for can work it out from the screen.
+   */
+  'studio.today.heading': {
+    value: 'What needs a human today',
+    contentKey: 'studio_help.today_heading',
+  },
+  'studio.today.listLabel': {
+    value: 'Work waiting for a person',
+    contentKey: 'studio_help.today_list_label',
+  },
+  /**
+   * A SOURCED ZERO, and it is a different word from "could not be read" on purpose. §8: "Zero is
+   * allowed; failed query is not." A row that read its table and found nothing has genuinely good
+   * news; a row whose query failed knows nothing at all, and the two must never share a rendering.
+   */
+  'studio.today.clear': {
+    value: 'Clear',
+    contentKey: 'studio_help.today_clear',
+  },
+  /** Shown once, under the rows, when every row a reader can see came back a sourced zero. */
+  'studio.today.allClear': {
+    value: 'Every list above was read and none of them is waiting on you.',
+    contentKey: 'studio_help.today_all_clear',
+  },
+  /**
+   * Rendered when a role can act on none of the four. Not an error and not a zero: this reader's
+   * work is simply elsewhere, and a bare empty box would read as a broken query.
+   */
+  'studio.today.noRows': {
+    value: 'None of the work tracked here is yours to do. Your surfaces are in the sidebar.',
+    contentKey: 'studio_help.today_no_rows',
+  },
+  'studio.today.rowVerifications': {
+    value: 'Rows awaiting your confirmation',
+    contentKey: 'studio_help.today_row_verifications',
+  },
+  'studio.today.rowInquiries': {
+    value: 'Inquiries nobody has opened',
+    contentKey: 'studio_help.today_row_inquiries',
+  },
+  'studio.today.rowSections': {
+    value: 'Page sections not yet live',
+    contentKey: 'studio_help.today_row_sections',
+  },
+  'studio.today.rowSources': {
+    value: 'Research sources awaiting a policy note',
+    contentKey: 'studio_help.today_row_sources',
+  },
+
   'studio.overview.verifications.heading': {
     value: 'Outstanding owner verifications',
     contentKey: 'studio_help.overview_verifications_heading',
