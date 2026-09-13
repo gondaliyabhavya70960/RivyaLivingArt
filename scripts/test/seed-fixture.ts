@@ -243,6 +243,49 @@ async function wipe(db: Client): Promise<void> {
    */
   await db.query('delete from page_sections where id::text like $1', [like])
   await db.query('delete from pages where id::text like $1', [like])
+
+  /*
+   * AND THE REVERSE INDEX, WHICH A FIXTURE SECTION IS NOT THE ONLY WAY INTO.
+   *
+   * `media_usages` is written by the `sync_media_usages` trigger and holds `media_id` with no
+   * cascade, so a fixture asset that ANY section points at refuses to go — and deleting the fixture
+   * sections above only clears the rows those sections made.
+   *
+   * A REAL SECTION CAN POINT AT A FIXTURE ASSET, which is how this was found. On a database seeded
+   * with the fixture and then content-seeded, `seed:content` rule 5d binds the best asset it can
+   * see, and on a machine where the Higgsfield migration has not run the only assets that exist ARE
+   * the twelve fixtures. The reset then failed on `media_usages_media_id_fkey` and took
+   * `seed-idempotency` and `publish-gates` down with it. CI never meets this — it resets, seeds
+   * content into fresh DRAFT rows before any asset exists, and publishes afterwards — but a
+   * developer running the two in the other order does, and a fixture that cannot remove itself is
+   * exactly what `--reset` exists to prevent.
+   */
+  await db.query('delete from media_usages where media_id::text like $1', [like])
+
+  /*
+   * AND ANY SECTION THAT IS NOT THE FIXTURE'S BUT POINTS AT ITS PICTURES.
+   *
+   * `page_sections.media_desktop_id` has no cascade either, so a REAL section holding a fixture
+   * asset blocks the delete just as firmly — and the reset may not delete that section, because it
+   * is not the fixture's to delete. Clearing the reference is the correct and only move: the
+   * binding exists solely because the fixture asset did, so removing it restores exactly the state
+   * before the fixture arrived, which is what `--reset` promises.
+   *
+   * `media_slot_key` is deliberately LEFT ALONE. Migration 0050's check reads
+   * `media_slot_key IS NOT NULL OR (both ids IS NULL)`, so a slot key with no ids is permitted —
+   * and the key records which registry slot the section fills, which is an editorial fact about the
+   * section rather than anything the fixture owns.
+   */
+  await db.query(
+    `update page_sections
+        set media_desktop_id = case when media_desktop_id::text like $1 then null
+                                    else media_desktop_id end,
+            media_mobile_id  = case when media_mobile_id::text like $1 then null
+                                    else media_mobile_id end
+      where media_desktop_id::text like $1 or media_mobile_id::text like $1`,
+    [like],
+  )
+
   await db.query('delete from media_assets where id::text like $1', [like])
 
   /*

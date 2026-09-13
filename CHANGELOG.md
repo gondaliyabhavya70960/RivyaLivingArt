@@ -6,6 +6,50 @@ Every phase adds an entry; see `docs/architecture/CANONICAL-DECISIONS.md` D9 for
 
 ## [Unreleased]
 
+### Rivya UI Redesign — why the site had no pictures, answered and fixed (2026-09-13)
+
+Amendment A49. **Supersedes the cause recorded in A46 and A47.** No migration, no route change.
+
+**The library was never missing; it was never connected.** Cloudinary holds every asset,
+`media_assets` holds 250 PUBLISHED and VERIFIED rows, the resolver resolves and the renderer
+renders — and `page_sections.media_desktop_id` was NULL on all 83 rows of the hosted project, with
+`media_usages` empty.
+
+**The cause is a guard, not a stale run — and the previously documented fix could not have worked.**
+A46 and A47 recorded that `seed:content` had last run before the Higgsfield migration and that the
+remedy was to re-run it. Rule 5c stands the runner down on a row a person published
+(`row.status === 'PUBLISHED' && seededStatus !== 'PUBLISHED'`). Section modules seed **DRAFT** and
+every environment that has shown the site has published them, so the guard skipped every live
+section whole — media columns included. The media rebind already existed and was correct, but sat
+*below* that guard, so it could only ever fire for rows nobody could see. Measured: `skipped (owner
+edit) 35`, `inserted 0`. On hosted it would skip all 60 published sections and bind only the 23
+drafts.
+
+**Rule 5d: an empty media column is an absence, not a decision.** The binding now runs ahead of the
+guard, restricted to columns that are NULL — which overwrites nothing, because nobody chooses to
+have no image. A column an editor has filled is left alone even when the module names another asset.
+No copy, status, hash or version is touched, and no second binding system was built.
+
+**The slot key has to travel with the ids, and the first version of the rule missed it.** Migration
+0050 requires a slot key whenever an id is set, and the key is a hashed field the guard has already
+declined to write — so ids alone would violate the check and, because the runner takes one
+transaction per module, roll the whole module back. 26 published sections carry a NULL slot key. An
+integration test caught this before it ran anywhere real.
+
+**The test fixture could not remove itself once bindings existed.** `--reset` now clears the reverse
+index and nulls any non-fixture section's reference to a fixture asset. CI never met this — it seeds
+content into fresh drafts before any asset exists — which is also why CI's database still has zero
+section bindings and no visual baseline moves.
+
+**Not applied to production, deliberately.** Hosted serves `main`, which lacks A47's four slots;
+binding there now would write reverse-index rows for slots the deployed registry does not declare.
+Merge first, then bind.
+
+**Proved end to end, not asserted.** A published section with NULL media and NULL slot key received
+`media_mobile_id` and `media_slot_key = 'home.commission'` together through the real runner, status
+unchanged; with a desktop asset present the homepage then served a real
+`res.cloudinary.com/.../w_768/...` image where it had served a fallback well.
+
 ### Rivya UI Redesign, phase 2 continued — a page-section index, an entrance that stopped breaking contrast, and a footer address that scrolled every page (2026-09-13)
 
 Amendment A48. No business rule, migration, route rename or logo change.

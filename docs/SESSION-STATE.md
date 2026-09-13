@@ -38,7 +38,69 @@ single, verifiable answer. Cloudinary holds all 252 assets and serves derived tr
 points at the library. It is not delivery, not status, not the cloud name. `seed:content` binds
 media, and it was last run BEFORE the Higgsfield migration landed, so every binding resolved to a
 gap and was skipped. Proved locally: re-running it after the migration bound 10 sections and wrote
-20 `media_usages` rows. **The production fix is to re-run the binding, not to change code.**
+20 `media_usages` rows.
+
+**THAT CONCLUSION WAS WRONG, AND THIS CORRECTS IT (2026-09-13).** "Re-run the binding" cannot work
+on any real environment, and the reason is in the seed runner's own idempotency guard. Rule 5c in
+`scripts/seed/seed-content.ts` reads:
+
+```
+promotedByAHuman = row.status === 'PUBLISHED' && seededStatus !== 'PUBLISHED'
+```
+
+Section modules seed their rows as **DRAFT**. Every environment that has ever shown the site has
+walked those rows to **PUBLISHED**. So the guard classifies every live section as a human's work and
+skips it whole — including its media columns. Measured by actually running it here:
+`skipped (owner edit) 35`, `inserted 0`, `updated 3`. It bound nothing that renders.
+
+On the hosted project that means: **60 PUBLISHED sections would be skipped and 23 DRAFT ones bound**,
+and a DRAFT section is not on the site. Re-running the seed against production would leave the
+visible pages exactly as empty as they are now.
+
+**FIXED — amendment A49, rule 5d.** The binding now runs AHEAD of the owner-edit guard, restricted to
+columns that are NULL. A NULL media column is an absence, not a decision — nobody opens Studio and
+chooses to have no image — so writing it overwrites nothing, while a column an editor HAS filled is
+left alone even when the module names a different asset. The slot key is written in the same
+statement, because migration 0050 requires one whenever an id is set and the key is a hashed field
+the guard has already declined to write; ids alone would violate the check and roll back the whole
+module. No second binding system was built, per the brief.
+
+**Proved end to end.** A published section with NULL media and NULL slot key received
+`media_mobile_id` and `media_slot_key = 'home.commission'` through the real runner, status unchanged.
+With a desktop asset present, the homepage then served a real
+`res.cloudinary.com/.../w_768/...` image where it had served a fallback well — so the render path was
+never broken, and the binding was the only missing piece.
+
+**A caution for whoever measures this next.** Early readings of "zero images on the homepage" were a
+STALE PRERENDER, not a defect: `/` is statically prerendered, `rm -rf .next/cache` does not touch
+`.next/server/app`, and Next reuses the existing HTML when no source file changed. Data-only changes
+need `rm -rf .next` and a full rebuild before the page reflects them.
+
+**THE REMAINING STEP IS THE OWNER'S.** Nothing was written to production, deliberately.
+
+The merge-order constraint that blocked it is now **half satisfied**: PR #69 merged at 03:29 on
+2026-09-13, so `main` carries A47's four new slots and `sync_media_usages` will find each slot key in
+the registry. What `main` does NOT yet carry is rule 5d, which is the thing that makes binding
+possible at all — without it `seed:content` skips every published section and writes nothing.
+
+So the order is: **merge the A49 branch, let `main` deploy, then run `npm run seed:content` against
+production**, where the 250 assets already exist. Running it before that merge is harmless but
+pointless — it will report `skipped (owner edit)` and bind nothing.
+
+**RE-VERIFIED AGAINST THE HOSTED PROJECT ON 2026-09-13**, directly rather than by inference:
+`page_sections` 83 rows, `media_desktop_id` non-null on **0**, `media_mobile_id` non-null on **0**,
+`media_usages` **0 rows**, `media_assets` **250 rows, all PUBLISHED**. The diagnosis holds unchanged.
+
+**DO NOT RUN THE BINDING UNTIL THIS WORK IS MERGED.** Production serves `main`, which does not yet
+carry A47's four new slots. `sync_media_usages` copies a binding's slot key into `media_usages`
+verbatim, so binding `home.final-cta` or `large-format.hero` against a deployment whose registry
+does not declare them writes reverse-index rows pointing at slots that do not exist — which is the
+exact failure A47 was written to prevent. Merge first, then bind.
+
+**The Vercel preview is behind Vercel Authentication and an agent cannot reach it.** Both the plain
+URL and the `_vercel_share` link answer `302` to `vercel.com/sso-api`. The brief's reviewable-preview
+deliverable therefore needs the OWNER to open it; it is not something this session can screenshot or
+assert against.
 
 **What shipped.** Amendment A46 in `CANONICAL-DECISIONS.md` is the full record. In brief: two new
 warm schemes (MINERAL, SAND) built on new primitives beside `--rv-color-bone` rather than on a
@@ -105,6 +167,40 @@ reversing that is a dependency decision, not an implementation one.
 passed across four shards at eight widths). What remains: the 33 committed visual baselines need
 regenerating in the pinned container image now that the composition has moved, Lighthouse has not
 been run, and the brief's preview-deployment evidence needs a machine with Cloudinary reachable.
+
+### Two harness traps that cost an hour, and how to spot them in a minute
+
+**A STALE SERVER SERVING A DELETED BUILD.** Nine browser specs failed —
+`homepage-motion`, `inquiry-flow`, `inquiry-conversion` — all of them islands that had not hydrated.
+The cause was a `next start` from earlier in the session still bound to :3000 while `.next` had been
+deleted and rebuilt underneath it, so every JS chunk answered **500** and no island mounted. The
+page rendered, the markup was right, and only the interactive assertions failed, which reads exactly
+like a real regression.
+
+It survived repeated kills because **the process is named `next-server`, not `next start`** — so
+`pgrep -f "next start"` never matched it. Worse, `pgrep -f "next start"` MATCHES THE SHELL running a
+command containing that string, so `kill $(pgrep -f "next start")` kills the agent's own shell
+(exit 1 or 144). Find the listener instead:
+
+```
+ps -eo pid,etimes,cmd | grep next-server | grep -v grep
+ss -lptn 'sport = :3000'
+```
+
+The one-minute check: load any page in a browser and look for `500` on `/_next/static/chunks/*.js`.
+
+**A POSTGREST SCHEMA CACHE OLDER THAN THE DATABASE.** After `npm run db:reset`, the long-running
+`scripts/db/local-rest.mjs` shim still held the pre-reset schema. **Reads kept working and writes
+failed**, so pages rendered fully and only the inquiry save broke — again indistinguishable from a
+product defect. CI never meets this because it starts PostgREST *after* seeding. Restart the shim
+after any reset, and note that it MINTS NEW KEYS: re-capture
+`NEXT_PUBLIC_SUPABASE_ANON_KEY` and `SUPABASE_SERVICE_ROLE_KEY` from `/tmp/local-rest.log` into the
+env file, then rebuild.
+
+**A PRERENDER OLDER THAN THE DATA.** `/` and most CMS routes are statically prerendered.
+`rm -rf .next/cache` does NOT touch `.next/server/app`, and Next reuses the existing HTML when no
+source file changed — so a data-only change is invisible until `rm -rf .next` and a full rebuild.
+This is what briefly looked like a broken media render path.
 
 ### Environment notes for the next session
 
