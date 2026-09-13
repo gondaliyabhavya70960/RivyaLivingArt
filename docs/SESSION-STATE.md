@@ -163,6 +163,40 @@ passed across four shards at eight widths). What remains: the 33 committed visua
 regenerating in the pinned container image now that the composition has moved, Lighthouse has not
 been run, and the brief's preview-deployment evidence needs a machine with Cloudinary reachable.
 
+### Two harness traps that cost an hour, and how to spot them in a minute
+
+**A STALE SERVER SERVING A DELETED BUILD.** Nine browser specs failed —
+`homepage-motion`, `inquiry-flow`, `inquiry-conversion` — all of them islands that had not hydrated.
+The cause was a `next start` from earlier in the session still bound to :3000 while `.next` had been
+deleted and rebuilt underneath it, so every JS chunk answered **500** and no island mounted. The
+page rendered, the markup was right, and only the interactive assertions failed, which reads exactly
+like a real regression.
+
+It survived repeated kills because **the process is named `next-server`, not `next start`** — so
+`pgrep -f "next start"` never matched it. Worse, `pgrep -f "next start"` MATCHES THE SHELL running a
+command containing that string, so `kill $(pgrep -f "next start")` kills the agent's own shell
+(exit 1 or 144). Find the listener instead:
+
+```
+ps -eo pid,etimes,cmd | grep next-server | grep -v grep
+ss -lptn 'sport = :3000'
+```
+
+The one-minute check: load any page in a browser and look for `500` on `/_next/static/chunks/*.js`.
+
+**A POSTGREST SCHEMA CACHE OLDER THAN THE DATABASE.** After `npm run db:reset`, the long-running
+`scripts/db/local-rest.mjs` shim still held the pre-reset schema. **Reads kept working and writes
+failed**, so pages rendered fully and only the inquiry save broke — again indistinguishable from a
+product defect. CI never meets this because it starts PostgREST *after* seeding. Restart the shim
+after any reset, and note that it MINTS NEW KEYS: re-capture
+`NEXT_PUBLIC_SUPABASE_ANON_KEY` and `SUPABASE_SERVICE_ROLE_KEY` from `/tmp/local-rest.log` into the
+env file, then rebuild.
+
+**A PRERENDER OLDER THAN THE DATA.** `/` and most CMS routes are statically prerendered.
+`rm -rf .next/cache` does NOT touch `.next/server/app`, and Next reuses the existing HTML when no
+source file changed — so a data-only change is invisible until `rm -rf .next` and a full rebuild.
+This is what briefly looked like a broken media render path.
+
 ### Environment notes for the next session
 
 The local harness runs and is the reason any of this could be measured: PostgreSQL 16.13 at
