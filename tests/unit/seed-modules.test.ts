@@ -124,11 +124,14 @@ describe('deferral', () => {
    * The count moved from 22 to 95 for one reason: Phase 19 turned each form template from a single
    * row carrying a `fields` array into a form, eleven steps and its own field rows. 3 forms + 33
    * steps + 40 fields = 76, plus the 19 journal records = 95.
+   *
+   * It moved again, from 95 to 144, when the owner's Studio pack took the journal from ten ideas to
+   * fifty-nine (2026-09-13). The forms half is unchanged at 76; the journal half is now 9 + 59 = 68.
    */
-  it('declares a table dependency on exactly the 95 records two phases deferred', () => {
-    expect(deferred).toHaveLength(95)
+  it('declares a table dependency on exactly the 144 records two phases deferred', () => {
+    expect(deferred).toHaveLength(144)
     expect(deferred.filter((r) => r.table === 'journal_categories')).toHaveLength(9)
-    expect(deferred.filter((r) => r.table === 'journal_articles')).toHaveLength(10)
+    expect(deferred.filter((r) => r.table === 'journal_articles')).toHaveLength(59)
     expect(deferred.filter((r) => r.table === 'customization_forms')).toHaveLength(3)
     // Eleven FEAT §15 steps on every template, including the ones a template has no questions for:
     // a step it does not use is seeded DISABLED rather than omitted, so an owner can switch it on.
@@ -298,9 +301,16 @@ describe('D10 — nothing fabricated', () => {
     }
   })
 
+  /**
+   * ALL FIFTY-FIVE, not just §23's original ten. The owner's Studio pack added forty-five more
+   * (2026-09-13) and the rule does not soften with volume: an FAQ answer is the site speaking for
+   * the business about what it can do, so every one is the owner's to confirm. `faqs` also carries
+   * `faqs_verified_before_publish`, so the database refuses a flagged answer at PUBLISHED — this
+   * asserts the flag is set in the first place.
+   */
   it('flags every FAQ answer', () => {
     const faqs = RECORDS.filter((r) => r.table === 'faqs')
-    expect(faqs).toHaveLength(10)
+    expect(faqs).toHaveLength(55)
     for (const faq of faqs) {
       expect(faq.fields.owner_verification, faq.seedKey).toBe('OWNER_VERIFICATION_REQUIRED')
     }

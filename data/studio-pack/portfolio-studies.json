@@ -1,0 +1,442 @@
+[
+  {
+    "#": "1",
+    "title": "Ocean field on a two-metre plane",
+    "type": "STUDIO_STUDY",
+    "hint": "furniture",
+    "summary": "How a deep-water tint reads at dining length under north light.",
+    "client": "— none —"
+  },
+  {
+    "#": "2",
+    "title": "Walnut wings with a smoke channel",
+    "type": "STUDIO_STUDY",
+    "hint": "furniture",
+    "summary": "Contrast without a novelty river.",
+    "client": "— none —"
+  },
+  {
+    "#": "3",
+    "title": "Oval pour behaviour at the apices",
+    "type": "STUDIO_STUDY",
+    "hint": "furniture",
+    "summary": "What happens to inclusions when the dam turns.",
+    "client": "— none —"
+  },
+  {
+    "#": "4",
+    "title": "Conference span and base rhythm",
+    "type": "STUDIO_STUDY",
+    "hint": "furniture",
+    "summary": "Legs or a single beam — deflection conversation.",
+    "client": "— none —"
+  },
+  {
+    "#": "5",
+    "title": "Console as a dark vertical in a bright hall",
+    "type": "STUDIO_STUDY",
+    "hint": "furniture",
+    "summary": "Midnight field against lime plaster.",
+    "client": "— none —"
+  },
+  {
+    "#": "6",
+    "title": "Low coffee plane and visible base",
+    "type": "STUDIO_STUDY",
+    "hint": "furniture",
+    "summary": "The underside is part of the object.",
+    "client": "— none —"
+  },
+  {
+    "#": "7",
+    "title": "Cut edge versus live edge on the same species",
+    "type": "STUDIO_STUDY",
+    "hint": "materials",
+    "summary": "Two edges, one timber parcel.",
+    "client": "— none —"
+  },
+  {
+    "#": "8",
+    "title": "Matte versus gloss on sapphire resin",
+    "type": "STUDIO_STUDY",
+    "hint": "materials",
+    "summary": "Same pour, two finishes.",
+    "client": "— none —"
+  },
+  {
+    "#": "9",
+    "title": "Champagne veil over pale oak",
+    "type": "STUDIO_STUDY",
+    "hint": "materials",
+    "summary": "Gold that does not become décor.",
+    "client": "— none —"
+  },
+  {
+    "#": "10",
+    "title": "Geode banding without glitter",
+    "type": "STUDIO_STUDY",
+    "hint": "materials",
+    "summary": "Mineral logic.",
+    "client": "— none —"
+  },
+  {
+    "#": "11",
+    "title": "Clear resin over highly figured walnut",
+    "type": "STUDIO_STUDY",
+    "hint": "materials",
+    "summary": "When to stop tinting.",
+    "client": "— none —"
+  },
+  {
+    "#": "12",
+    "title": "Monsoon green against Indian teak",
+    "type": "STUDIO_STUDY",
+    "hint": "materials",
+    "summary": "Local timber, storm colour.",
+    "client": "— none —"
+  },
+  {
+    "#": "13",
+    "title": "Lattice coupon in tinted resin",
+    "type": "STUDIO_STUDY",
+    "hint": "3d-resin",
+    "summary": "Printed structure as bone, not texture.",
+    "client": "— none —"
+  },
+  {
+    "#": "14",
+    "title": "Rib base under a timber top",
+    "type": "STUDIO_STUDY",
+    "hint": "3d-resin",
+    "summary": "Can the print carry dining load? Unproven until tested.",
+    "client": "— none —"
+  },
+  {
+    "#": "15",
+    "title": "Gyroid side-table mass",
+    "type": "STUDIO_STUDY",
+    "hint": "3d-resin",
+    "summary": "Weight versus visual mass.",
+    "client": "— none —"
+  },
+  {
+    "#": "16",
+    "title": "Wall panel at 3 metres",
+    "type": "STUDIO_STUDY",
+    "hint": "wall-statement-art",
+    "summary": "Jointing, hang load, crate size.",
+    "client": "— none —"
+  },
+  {
+    "#": "17",
+    "title": "Stair-void panel and two-storey light",
+    "type": "STUDIO_STUDY",
+    "hint": "wall-statement-art",
+    "summary": "Colour shift from floor to floor.",
+    "client": "— none —"
+  },
+  {
+    "#": "18",
+    "title": "Triptych packing",
+    "type": "STUDIO_STUDY",
+    "hint": "wall-statement-art",
+    "summary": "Three crates or one.",
+    "client": "— none —"
+  },
+  {
+    "#": "19",
+    "title": "Grazing light on a relief panel",
+    "type": "STUDIO_STUDY",
+    "hint": "wall-statement-art",
+    "summary": "Night viewing.",
+    "client": "— none —"
+  },
+  {
+    "#": "20",
+    "title": "Dried botanical press in a thin plane",
+    "type": "STUDIO_STUDY",
+    "hint": "preservation",
+    "summary": "Moisture first.",
+    "client": "— none —"
+  },
+  {
+    "#": "21",
+    "title": "Bouquet in a block — bubble discipline",
+    "type": "STUDIO_STUDY",
+    "hint": "preservation",
+    "summary": "No permanence language.",
+    "client": "— none —"
+  },
+  {
+    "#": "22",
+    "title": "Letter and fabric inclusion",
+    "type": "STUDIO_STUDY",
+    "hint": "preservation",
+    "summary": "Ink bleed tests.",
+    "client": "— none —"
+  },
+  {
+    "#": "23",
+    "title": "Small gift object still in house colours",
+    "type": "STUDIO_STUDY",
+    "hint": "gifts",
+    "summary": "How small can Rivya go without becoming a souvenir.",
+    "client": "— none —"
+  },
+  {
+    "#": "24",
+    "title": "Tray as a material ambassador",
+    "type": "STUDIO_STUDY",
+    "hint": "decor",
+    "summary": "A portable sample of a large idea.",
+    "client": "— none —"
+  },
+  {
+    "#": "25",
+    "title": "Bookends as midnight offcuts",
+    "type": "STUDIO_STUDY",
+    "hint": "decor",
+    "summary": "Using the pour's edge.",
+    "client": "— none —"
+  },
+  {
+    "#": "26",
+    "title": "Reception desk front as wall",
+    "type": "STUDIO_STUDY",
+    "hint": "custom",
+    "summary": "The vertical plane people touch.",
+    "client": "— none —"
+  },
+  {
+    "#": "27",
+    "title": "Island top for a kitchen without owning the cabinetry",
+    "type": "STUDIO_STUDY",
+    "hint": "custom",
+    "summary": "Interface with another maker.",
+    "client": "— none —"
+  },
+  {
+    "#": "28",
+    "title": "Pairing a table to existing Italian stone",
+    "type": "STUDIO_STUDY",
+    "hint": "custom",
+    "summary": "Sample, not a photograph.",
+    "client": "— none —"
+  },
+  {
+    "#": "29",
+    "title": "Silent metal base in a loud room",
+    "type": "STUDIO_STUDY",
+    "hint": "materials",
+    "summary": "When the base should disappear.",
+    "client": "— none —"
+  },
+  {
+    "#": "30",
+    "title": "Leveling a four-metre table on an old floor",
+    "type": "STUDIO_STUDY",
+    "hint": "studio-process",
+    "summary": "Feet before finish.",
+    "client": "— none —"
+  },
+  {
+    "#": "31",
+    "title": "Crate design for a monsoon road journey",
+    "type": "STUDIO_STUDY",
+    "hint": "studio-process",
+    "summary": "Packaging as part of making.",
+    "client": "— none —"
+  },
+  {
+    "#": "32",
+    "title": "Photographing depth without fake caustics",
+    "type": "STUDIO_STUDY",
+    "hint": "studio-process",
+    "summary": "House recipe versus delivered photo.",
+    "client": "— none —"
+  },
+  {
+    "#": "33",
+    "title": "WhatsApp briefing with a tape in the frame",
+    "type": "STUDIO_STUDY",
+    "hint": "custom",
+    "summary": "The first image that helps.",
+    "client": "— none —"
+  },
+  {
+    "#": "34",
+    "title": "Two-room language: table + console",
+    "type": "STUDIO_STUDY",
+    "hint": "custom",
+    "summary": "A house, not a SKU.",
+    "client": "— none —"
+  },
+  {
+    "#": "35",
+    "title": "Hospitality edge radius",
+    "type": "STUDIO_STUDY",
+    "hint": "custom",
+    "summary": "Hands and hips.",
+    "client": "— none —"
+  },
+  {
+    "#": "36",
+    "title": "Cable path in a partners desk",
+    "type": "STUDIO_STUDY",
+    "hint": "furniture",
+    "summary": "Function inside the art object.",
+    "client": "— none —"
+  },
+  {
+    "#": "37",
+    "title": "Soft satin in a dark dining room",
+    "type": "STUDIO_STUDY",
+    "hint": "materials",
+    "summary": "Finish as lighting design.",
+    "client": "— none —"
+  },
+  {
+    "#": "38",
+    "title": "Obsidian field and warm timber floor",
+    "type": "STUDIO_STUDY",
+    "hint": "interior-art",
+    "summary": "Temperature contrast.",
+    "client": "— none —"
+  },
+  {
+    "#": "39",
+    "title": "Aurora shift in a corridor with no sidelight",
+    "type": "STUDIO_STUDY",
+    "hint": "interior-art",
+    "summary": "Will the shift read?",
+    "client": "— none —"
+  },
+  {
+    "#": "40",
+    "title": "Forest canopy colour in a small apartment",
+    "type": "STUDIO_STUDY",
+    "hint": "interior-art",
+    "summary": "Scale of colour versus scale of room.",
+    "client": "— none —"
+  },
+  {
+    "#": "41",
+    "title": "Bespoke ellipse from a measured niche",
+    "type": "STUDIO_STUDY",
+    "hint": "custom",
+    "summary": "The room draws the table.",
+    "client": "— none —"
+  },
+  {
+    "#": "42",
+    "title": "Printed bracket pair for a stone shelf",
+    "type": "STUDIO_STUDY",
+    "hint": "3d-resin",
+    "summary": "Hardware as design.",
+    "client": "— none —"
+  },
+  {
+    "#": "43",
+    "title": "Smoke edge on a clear centre",
+    "type": "STUDIO_STUDY",
+    "hint": "materials",
+    "summary": "Vignette without a frame.",
+    "client": "— none —"
+  },
+  {
+    "#": "44",
+    "title": "Reclaimed teak voids filled as drawing",
+    "type": "STUDIO_STUDY",
+    "hint": "materials",
+    "summary": "Repair that stays visible.",
+    "client": "— none —"
+  },
+  {
+    "#": "45",
+    "title": "Champagne line as inlay, not flood",
+    "type": "STUDIO_STUDY",
+    "hint": "materials",
+    "summary": "Restraint.",
+    "client": "— none —"
+  },
+  {
+    "#": "46",
+    "title": "Night mural for a lift lobby",
+    "type": "STUDIO_STUDY",
+    "hint": "wall-statement-art",
+    "summary": "Public circulation, private object.",
+    "client": "— none —"
+  },
+  {
+    "#": "47",
+    "title": "Sample chip library of twelve tints",
+    "type": "STUDIO_STUDY",
+    "hint": "studio-process",
+    "summary": "The box a designer borrows.",
+    "client": "— none —"
+  },
+  {
+    "#": "48",
+    "title": "How a pour fails — bubble wall",
+    "type": "STUDIO_STUDY",
+    "hint": "studio-process",
+    "summary": "Teach the brief what not to request.",
+    "client": "— none —"
+  },
+  {
+    "#": "49",
+    "title": "How a pour fails — dam leak",
+    "type": "STUDIO_STUDY",
+    "hint": "studio-process",
+    "summary": "Why edges are decided early.",
+    "client": "— none —"
+  },
+  {
+    "#": "50",
+    "title": "Seating object that is not yet a chair",
+    "type": "STUDIO_STUDY",
+    "hint": "collectible-design",
+    "summary": "Prototype honesty.",
+    "client": "— none —"
+  },
+  {
+    "#": "51",
+    "title": "Edition of one versus made to order",
+    "type": "STUDIO_STUDY",
+    "hint": "collectible-design",
+    "summary": "Language test.",
+    "client": "— none —"
+  },
+  {
+    "#": "52",
+    "title": "Gallery caption draft for a dining table",
+    "type": "STUDIO_STUDY",
+    "hint": "collectible-design",
+    "summary": "Words that do not invent a collection history.",
+    "client": "— none —"
+  },
+  {
+    "#": "53",
+    "title": "Indian making, international crate",
+    "type": "STUDIO_STUDY",
+    "hint": "custom",
+    "summary": "Export as a design constraint.",
+    "client": "— none —"
+  },
+  {
+    "#": "54",
+    "title": "Ahmedabad north-light reading of ocean tint",
+    "type": "STUDIO_STUDY",
+    "hint": "studio-process",
+    "summary": "Local light, house colour.",
+    "client": "— none —"
+  },
+  {
+    "#": "55",
+    "title": "Surat workshop humidity and cure",
+    "type": "STUDIO_STUDY",
+    "hint": "studio-process",
+    "summary": "Climate is a material.",
+    "client": "— none —"
+  }
+]

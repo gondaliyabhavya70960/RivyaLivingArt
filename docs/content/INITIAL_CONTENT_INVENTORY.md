@@ -15,8 +15,8 @@ SEED §54’s audit of what the content seed actually put in the database, read 
 database rather than from the seed modules. Its target is §54’s: **100% of intended launch
 copy mapped to a Studio editing control.**
 
-- **589** rows audited
-- **70** await owner verification and cannot be published until it is given
+- **683** rows audited
+- **121** await owner verification and cannot be published until it is given
 - **0** are authored and deferred to a later phase’s tables
 - **0** carry a bound media asset
 
@@ -494,6 +494,51 @@ the phase that creates its table.
 | FAQ | faq:08 | Can you work from my room or interior references? | Yes | Yes | `/studio/content/faqs` | Yes | — | — | DRAFT |
 | FAQ | faq:09 | Where is pricing shown? | Yes | Yes | `/studio/content/faqs` | Yes | — | — | DRAFT |
 | FAQ | faq:10 | How do custom commissions begin? | Yes | Yes | `/studio/content/faqs` | Yes | — | — | DRAFT |
+| FAQ | faq:11 | Where is the studio based? | Yes | Yes | `/studio/content/faqs` | Yes | — | — | DRAFT |
+| FAQ | faq:12 | Do you ship outside India? | Yes | Yes | `/studio/content/faqs` | Yes | — | — | DRAFT |
+| FAQ | faq:13 | What is a typical lead time? | Yes | Yes | `/studio/content/faqs` | Yes | — | — | DRAFT |
+| FAQ | faq:14 | Can I visit to see samples? | Yes | Yes | `/studio/content/faqs` | Yes | — | — | DRAFT |
+| FAQ | faq:15 | Do you work with interior designers? | Yes | Yes | `/studio/content/faqs` | Yes | — | — | DRAFT |
+| FAQ | faq:16 | Do you work with architects? | Yes | Yes | `/studio/content/faqs` | Yes | — | — | DRAFT |
+| FAQ | faq:17 | Can you match an existing stone or fabric? | Yes | Yes | `/studio/content/faqs` | Yes | — | — | DRAFT |
+| FAQ | faq:18 | Do you make outdoor furniture? | Yes | Yes | `/studio/content/faqs` | Yes | — | — | DRAFT |
+| FAQ | faq:19 | Is the surface heat resistant? | Yes | Yes | `/studio/content/faqs` | Yes | — | — | DRAFT |
+| FAQ | faq:20 | Is the surface food safe? | Yes | Yes | `/studio/content/faqs` | Yes | — | — | DRAFT |
+| FAQ | faq:21 | How do I clean a resin table? | Yes | Yes | `/studio/content/faqs` | Yes | — | — | DRAFT |
+| FAQ | faq:22 | Will the resin yellow? | Yes | Yes | `/studio/content/faqs` | Yes | — | — | DRAFT |
+| FAQ | faq:23 | Can you embed flowers or personal objects? | Yes | Yes | `/studio/content/faqs` | Yes | — | — | DRAFT |
+| FAQ | faq:24 | Can you reproduce a river-table image I saw online? | Yes | Yes | `/studio/content/faqs` | Yes | — | — | DRAFT |
+| FAQ | faq:25 | Do you use live-edge slabs? | Yes | Yes | `/studio/content/faqs` | Yes | — | — | DRAFT |
+| FAQ | faq:26 | Which woods do you work with? | Yes | Yes | `/studio/content/faqs` | Yes | — | — | DRAFT |
+| FAQ | faq:27 | Can the base be customized? | Yes | Yes | `/studio/content/faqs` | Yes | — | — | DRAFT |
+| FAQ | faq:28 | Do you make chairs and sofas? | Yes | Yes | `/studio/content/faqs` | Yes | — | — | DRAFT |
+| FAQ | faq:29 | Do you make beds or wardrobes? | Yes | Yes | `/studio/content/faqs` | Yes | — | — | DRAFT |
+| FAQ | faq:30 | Can you make a reception desk? | Yes | Yes | `/studio/content/faqs` | Yes | — | — | DRAFT |
+| FAQ | faq:31 | Can you make a conference table? | Yes | Yes | `/studio/content/faqs` | Yes | — | — | DRAFT |
+| FAQ | faq:32 | What is large-format at Rivya? | Yes | Yes | `/studio/content/faqs` | Yes | — | — | DRAFT |
+| FAQ | faq:33 | What is 3D resin? | Yes | Yes | `/studio/content/faqs` | Yes | — | — | DRAFT |
+| FAQ | faq:34 | Do you 3D-print entire tables? | Yes | Yes | `/studio/content/faqs` | Yes | — | — | DRAFT |
+| FAQ | faq:35 | Can I buy from stock? | Yes | Yes | `/studio/content/faqs` | Yes | — | — | DRAFT |
+| FAQ | faq:36 | Can I reserve a slab? | Yes | Yes | `/studio/content/faqs` | Yes | — | — | DRAFT |
+| FAQ | faq:37 | Do you offer installation? | Yes | Yes | `/studio/content/faqs` | Yes | — | — | DRAFT |
+| FAQ | faq:38 | Who handles damage in transit? | Yes | Yes | `/studio/content/faqs` | Yes | — | — | DRAFT |
+| FAQ | faq:39 | Can I see work in progress? | Yes | Yes | `/studio/content/faqs` | Yes | — | — | DRAFT |
+| FAQ | faq:40 | Do you take institutional or hotel projects? | Yes | Yes | `/studio/content/faqs` | Yes | — | — | DRAFT |
+| FAQ | faq:41 | Can two rooms share a material language? | Yes | Yes | `/studio/content/faqs` | Yes | — | — | DRAFT |
+| FAQ | faq:42 | Do you sell décor and gifts? | Yes | Yes | `/studio/content/faqs` | Yes | — | — | DRAFT |
+| FAQ | faq:43 | Can a gift be personalised? | Yes | Yes | `/studio/content/faqs` | Yes | — | — | DRAFT |
+| FAQ | faq:44 | What if I only have a Pinterest board? | Yes | Yes | `/studio/content/faqs` | Yes | — | — | DRAFT |
+| FAQ | faq:45 | Do you sign pieces? | Yes | Yes | `/studio/content/faqs` | Yes | — | — | DRAFT |
+| FAQ | faq:46 | Are pieces numbered editions? | Yes | Yes | `/studio/content/faqs` | Yes | — | — | DRAFT |
+| FAQ | faq:47 | Can I commission a wall mural in resin? | Yes | Yes | `/studio/content/faqs` | Yes | — | — | DRAFT |
+| FAQ | faq:48 | Do you restore damaged resin furniture? | Yes | Yes | `/studio/content/faqs` | Yes | — | — | DRAFT |
+| FAQ | faq:49 | What information do you store from an enquiry? | Yes | Yes | `/studio/content/faqs` | Yes | — | — | DRAFT |
+| FAQ | faq:50 | How fast do you reply? | Yes | Yes | `/studio/content/faqs` | Yes | — | — | DRAFT |
+| FAQ | faq:51 | Can I change the brief after work starts? | Yes | Yes | `/studio/content/faqs` | Yes | — | — | DRAFT |
+| FAQ | faq:52 | Do you offer samples of colour? | Yes | Yes | `/studio/content/faqs` | Yes | — | — | DRAFT |
+| FAQ | faq:53 | Is teak or sheesham available? | Yes | Yes | `/studio/content/faqs` | Yes | — | — | DRAFT |
+| FAQ | faq:54 | Can you work in Ahmedabad or Surat? | Yes | Yes | `/studio/content/faqs` | Yes | — | — | DRAFT |
+| FAQ | faq:55 | Why is some copy still in draft on the site? | Yes | Yes | `/studio/content/faqs` | Yes | — | — | DRAFT |
 | SEO | seo:global | GLOBAL | Yes | Yes | `/studio/content/seo` | No | — | PUBLISHED | PUBLISHED |
 | SEO | seo:path.about | PATH /about | Yes | Yes | `/studio/content/seo` | No | — | DRAFT | DRAFT |
 | SEO | seo:path.collection | PATH /collection | Yes | Yes | `/studio/content/seo` | No | — | DRAFT | DRAFT |
@@ -615,16 +660,65 @@ the phase that creates its table.
 | Journal | journal-article:08 | Preserving Flowers in Resin: What a Custom Brief Should Include | Yes | Yes | `/studio/content/journal` | Yes | — | — | DRAFT |
 | Journal | journal-article:09 | How Material Choice Changes the Character of a Space | Yes | Yes | `/studio/content/journal` | No | — | — | DRAFT |
 | Journal | journal-article:10 | Why Bespoke Furniture Starts With Context | Yes | Yes | `/studio/content/journal` | No | — | — | DRAFT |
+| Journal | journal-article:11 | Dining Tables at Architectural Scale | Yes | Yes | `/studio/content/journal` | No | — | — | DRAFT |
+| Journal | journal-article:12 | Coffee Tables as Sculptural Planes | Yes | Yes | `/studio/content/journal` | No | — | — | DRAFT |
+| Journal | journal-article:13 | Consoles for Thresholds and Halls | Yes | Yes | `/studio/content/journal` | No | — | — | DRAFT |
+| Journal | journal-article:14 | Conference Tables that Hold a Room | Yes | Yes | `/studio/content/journal` | No | — | — | DRAFT |
+| Journal | journal-article:15 | Oval versus Rectangular Plans | Yes | Yes | `/studio/content/journal` | No | — | — | DRAFT |
+| Journal | journal-article:16 | Live Edge and Cut Edge | Yes | Yes | `/studio/content/journal` | No | — | — | DRAFT |
+| Journal | journal-article:17 | Reading Walnut Against Deep Blue Resin | Yes | Yes | `/studio/content/journal` | No | — | — | DRAFT |
+| Journal | journal-article:18 | Clear Resin and Figured Grain | Yes | Yes | `/studio/content/journal` | No | — | — | DRAFT |
+| Journal | journal-article:19 | Black Resin as Architecture, Not Mood | Yes | Yes | `/studio/content/journal` | No | — | — | DRAFT |
+| Journal | journal-article:20 | Mineral Colour: Geode Thinking in Furniture | Yes | Yes | `/studio/content/journal` | No | — | — | DRAFT |
+| Journal | journal-article:21 | What 'UV Stable' Actually Means in a Brief | Yes | Yes | `/studio/content/journal` | Yes | — | — | DRAFT |
+| Journal | journal-article:22 | Heat, Trivets and Dining Use | Yes | Yes | `/studio/content/journal` | Yes | — | — | DRAFT |
+| Journal | journal-article:23 | Cleaning a Resin Surface | Yes | Yes | `/studio/content/journal` | No | — | — | DRAFT |
+| Journal | journal-article:24 | Moving a Large-Format Table | Yes | Yes | `/studio/content/journal` | No | — | — | DRAFT |
+| Journal | journal-article:25 | Finishing: Matte, Satin, Gloss | Yes | Yes | `/studio/content/journal` | No | — | — | DRAFT |
+| Journal | journal-article:26 | From Liquid to Object: A Visitor's Map | Yes | Yes | `/studio/content/journal` | No | — | — | DRAFT |
+| Journal | journal-article:27 | Why Slow Curing Matters | Yes | Yes | `/studio/content/journal` | No | — | — | DRAFT |
+| Journal | journal-article:28 | Moulds, Dams and the Edge | Yes | Yes | `/studio/content/journal` | No | — | — | DRAFT |
+| Journal | journal-article:29 | Sanding Through Grits Without Losing Flatness | Yes | Yes | `/studio/content/journal` | No | — | — | DRAFT |
+| Journal | journal-article:30 | Photographing Resin Without Inventing the Object | Yes | Yes | `/studio/content/journal` | No | — | — | DRAFT |
+| Journal | journal-article:31 | When 3D Printing Enters a Furniture Brief | Yes | Yes | `/studio/content/journal` | Yes | — | — | DRAFT |
+| Journal | journal-article:32 | Printed Bases and Cast Tops | Yes | Yes | `/studio/content/journal` | Yes | — | — | DRAFT |
+| Journal | journal-article:33 | Lattice, Gyroid and Rib: Three Structures | Yes | Yes | `/studio/content/journal` | No | — | — | DRAFT |
+| Journal | journal-article:34 | Collectible Design versus Made-to-Order Furniture | Yes | Yes | `/studio/content/journal` | No | — | — | DRAFT |
+| Journal | journal-article:35 | How Galleries Talk About Functional Sculpture | Yes | Yes | `/studio/content/journal` | No | — | — | DRAFT |
+| Journal | journal-article:36 | Seating as Object: What Must Be Proven | Yes | Yes | `/studio/content/journal` | No | — | — | DRAFT |
+| Journal | journal-article:37 | One-of-One without Theatre | Yes | Yes | `/studio/content/journal` | Yes | — | — | DRAFT |
+| Journal | journal-article:38 | Working with Interior Designers | Yes | Yes | `/studio/content/journal` | No | — | — | DRAFT |
+| Journal | journal-article:39 | Working with Architects on Built-In Pieces | Yes | Yes | `/studio/content/journal` | No | — | — | DRAFT |
+| Journal | journal-article:40 | Hospitality Briefs: Durability before Drama | Yes | Yes | `/studio/content/journal` | No | — | — | DRAFT |
+| Journal | journal-article:41 | A First Conversation on WhatsApp | Yes | Yes | `/studio/content/journal` | No | — | — | DRAFT |
+| Journal | journal-article:42 | How to Photograph Your Room for a Brief | Yes | Yes | `/studio/content/journal` | No | — | — | DRAFT |
+| Journal | journal-article:43 | Colour Matching to Stone, Fabric and Paint | Yes | Yes | `/studio/content/journal` | No | — | — | DRAFT |
+| Journal | journal-article:44 | Metal Bases: Quiet Geometry | Yes | Yes | `/studio/content/journal` | No | — | — | DRAFT |
+| Journal | journal-article:45 | Stone and Resin: A Difficult Friendship | Yes | Yes | `/studio/content/journal` | No | — | — | DRAFT |
+| Journal | journal-article:46 | Statement Walls in Stair Voids | Yes | Yes | `/studio/content/journal` | No | — | — | DRAFT |
+| Journal | journal-article:47 | Triptychs and Modular Panels | Yes | Yes | `/studio/content/journal` | No | — | — | DRAFT |
+| Journal | journal-article:48 | Light Through Resin | Yes | Yes | `/studio/content/journal` | No | — | — | DRAFT |
+| Journal | journal-article:49 | What a Preservation Brief Must Never Promise | Yes | Yes | `/studio/content/journal` | Yes | — | — | DRAFT |
+| Journal | journal-article:50 | Dried versus Fresh Botanical Matter | Yes | Yes | `/studio/content/journal` | No | — | — | DRAFT |
+| Journal | journal-article:51 | Personal Objects in a Public Room | Yes | Yes | `/studio/content/journal` | No | — | — | DRAFT |
+| Journal | journal-article:52 | Gifts that Still Feel like Rivya | Yes | Yes | `/studio/content/journal` | No | — | — | DRAFT |
+| Journal | journal-article:53 | How to Read a Starting Price | Yes | Yes | `/studio/content/journal` | No | — | — | DRAFT |
+| Journal | journal-article:54 | Why the Website Does Not Take Payment | Yes | Yes | `/studio/content/journal` | No | — | — | DRAFT |
+| Journal | journal-article:55 | A Material Library Visit, When There Is One | Yes | Yes | `/studio/content/journal` | No | — | — | DRAFT |
+| Journal | journal-article:56 | Export, Crating and Indian Making | Yes | Yes | `/studio/content/journal` | No | — | — | DRAFT |
+| Journal | journal-article:57 | The Ocean Collection as a Thinking Tool | Yes | Yes | `/studio/content/journal` | No | — | — | DRAFT |
+| Journal | journal-article:58 | Midnight as a Restraint, Not a Theme | Yes | Yes | `/studio/content/journal` | No | — | — | DRAFT |
+| Journal | journal-article:59 | Bespoke Is a Process, Not a SKU | Yes | Yes | `/studio/content/journal` | No | — | — | DRAFT |
 
 ## SEO coverage
 
 > GENERATED by the same run as the inventory above (`scripts/seo/build-seo-coverage.ts`).
 > Counts of rows in a named state; no figure here is a ranking, a volume or a claim.
 
-- **39** addresses resolved (19 pages, 20 entities)
-- **27** resolve a title or description from page content (DERIVED): `/collection/3d-resin`, `/collection/collectible-design`, `/collection/decor`, `/collection/furniture`, `/collection/gifts`, `/collection/preservation`, `/collection/wall-statement-art`, `/collections/aurora`, `/collections/bespoke`, `/collections/botanical`, `/collections/clear`, `/collections/earth`, `/collections/forest`, `/collections/geode`, `/collections/midnight`, `/collections/monsoon`, `/collections/ocean`, `/journal/a-guide-to-resin-colour-transparency-and-visual-depth`, `/journal/choosing-the-right-size-for-a-statement-dining-table`, `/journal/from-digital-form-to-physical-object`, `/journal/how-material-choice-changes-the-character-of-a-space`, `/journal/large-wall-art-thinking-beyond-decoration`, `/journal/preserving-flowers-in-resin-what-a-custom-brief-should-include`, `/journal/resin-and-wood-designing-around-contrast`, `/journal/what-makes-a-resin-table-more-than-a-surface`, `/journal/what-to-prepare-before-requesting-a-custom-furniture-commission`, `/journal/why-bespoke-furniture-starts-with-context`
-- **30** have no description of their own: `/collection/3d-resin`, `/collection/collectible-design`, `/collection/decor`, `/collection/furniture`, `/collection/gifts`, `/collection/preservation`, `/collection/wall-statement-art`, `/faq`, `/privacy`, `/terms`, `/collections/aurora`, `/collections/bespoke`, `/collections/botanical`, `/collections/clear`, `/collections/earth`, `/collections/forest`, `/collections/geode`, `/collections/midnight`, `/collections/monsoon`, `/collections/ocean`, `/journal/a-guide-to-resin-colour-transparency-and-visual-depth`, `/journal/choosing-the-right-size-for-a-statement-dining-table`, `/journal/from-digital-form-to-physical-object`, `/journal/how-material-choice-changes-the-character-of-a-space`, `/journal/large-wall-art-thinking-beyond-decoration`, `/journal/preserving-flowers-in-resin-what-a-custom-brief-should-include`, `/journal/resin-and-wood-designing-around-contrast`, `/journal/what-makes-a-resin-table-more-than-a-surface`, `/journal/what-to-prepare-before-requesting-a-custom-furniture-commission`, `/journal/why-bespoke-furniture-starts-with-context`
-- **39** have no social image: `/`, `/about`, `/collection`, `/collection/3d-resin`, `/collection/collectible-design`, `/collection/decor`, `/collection/furniture`, `/collection/gifts`, `/collection/preservation`, `/collection/wall-statement-art`, `/contact`, `/custom-commissions`, `/faq`, `/journal`, `/large-format`, `/portfolio`, `/privacy`, `/process`, `/terms`, `/collections/aurora`, `/collections/bespoke`, `/collections/botanical`, `/collections/clear`, `/collections/earth`, `/collections/forest`, `/collections/geode`, `/collections/midnight`, `/collections/monsoon`, `/collections/ocean`, `/journal/a-guide-to-resin-colour-transparency-and-visual-depth`, `/journal/choosing-the-right-size-for-a-statement-dining-table`, `/journal/from-digital-form-to-physical-object`, `/journal/how-material-choice-changes-the-character-of-a-space`, `/journal/large-wall-art-thinking-beyond-decoration`, `/journal/preserving-flowers-in-resin-what-a-custom-brief-should-include`, `/journal/resin-and-wood-designing-around-contrast`, `/journal/what-makes-a-resin-table-more-than-a-surface`, `/journal/what-to-prepare-before-requesting-a-custom-furniture-commission`, `/journal/why-bespoke-furniture-starts-with-context`
+- **88** addresses resolved (19 pages, 69 entities)
+- **76** resolve a title or description from page content (DERIVED): `/collection/3d-resin`, `/collection/collectible-design`, `/collection/decor`, `/collection/furniture`, `/collection/gifts`, `/collection/preservation`, `/collection/wall-statement-art`, `/collections/aurora`, `/collections/bespoke`, `/collections/botanical`, `/collections/clear`, `/collections/earth`, `/collections/forest`, `/collections/geode`, `/collections/midnight`, `/collections/monsoon`, `/collections/ocean`, `/journal/a-first-conversation-on-whatsapp`, `/journal/a-guide-to-resin-colour-transparency-and-visual-depth`, `/journal/a-material-library-visit-when-there-is-one`, `/journal/bespoke-is-a-process-not-a-sku`, `/journal/black-resin-as-architecture-not-mood`, `/journal/choosing-the-right-size-for-a-statement-dining-table`, `/journal/cleaning-a-resin-surface`, `/journal/clear-resin-and-figured-grain`, `/journal/coffee-tables-as-sculptural-planes`, `/journal/collectible-design-versus-made-to-order-furniture`, `/journal/colour-matching-to-stone-fabric-and-paint`, `/journal/conference-tables-that-hold-a-room`, `/journal/consoles-for-thresholds-and-halls`, `/journal/dining-tables-at-architectural-scale`, `/journal/dried-versus-fresh-botanical-matter`, `/journal/export-crating-and-indian-making`, `/journal/finishing-matte-satin-gloss`, `/journal/from-digital-form-to-physical-object`, `/journal/from-liquid-to-object-a-visitor-s-map`, `/journal/gifts-that-still-feel-like-rivya`, `/journal/heat-trivets-and-dining-use`, `/journal/hospitality-briefs-durability-before-drama`, `/journal/how-galleries-talk-about-functional-sculpture`, `/journal/how-material-choice-changes-the-character-of-a-space`, `/journal/how-to-photograph-your-room-for-a-brief`, `/journal/how-to-read-a-starting-price`, `/journal/large-wall-art-thinking-beyond-decoration`, `/journal/lattice-gyroid-and-rib-three-structures`, `/journal/light-through-resin`, `/journal/live-edge-and-cut-edge`, `/journal/metal-bases-quiet-geometry`, `/journal/midnight-as-a-restraint-not-a-theme`, `/journal/mineral-colour-geode-thinking-in-furniture`, `/journal/moulds-dams-and-the-edge`, `/journal/moving-a-large-format-table`, `/journal/one-of-one-without-theatre`, `/journal/oval-versus-rectangular-plans`, `/journal/personal-objects-in-a-public-room`, `/journal/photographing-resin-without-inventing-the-object`, `/journal/preserving-flowers-in-resin-what-a-custom-brief-should-include`, `/journal/printed-bases-and-cast-tops`, `/journal/reading-walnut-against-deep-blue-resin`, `/journal/resin-and-wood-designing-around-contrast`, `/journal/sanding-through-grits-without-losing-flatness`, `/journal/seating-as-object-what-must-be-proven`, `/journal/statement-walls-in-stair-voids`, `/journal/stone-and-resin-a-difficult-friendship`, `/journal/the-ocean-collection-as-a-thinking-tool`, `/journal/triptychs-and-modular-panels`, `/journal/what-a-preservation-brief-must-never-promise`, `/journal/what-makes-a-resin-table-more-than-a-surface`, `/journal/what-to-prepare-before-requesting-a-custom-furniture-commission`, `/journal/what-uv-stable-actually-means-in-a-brief`, `/journal/when-3d-printing-enters-a-furniture-brief`, `/journal/why-bespoke-furniture-starts-with-context`, `/journal/why-slow-curing-matters`, `/journal/why-the-website-does-not-take-payment`, `/journal/working-with-architects-on-built-in-pieces`, `/journal/working-with-interior-designers`
+- **79** have no description of their own: `/collection/3d-resin`, `/collection/collectible-design`, `/collection/decor`, `/collection/furniture`, `/collection/gifts`, `/collection/preservation`, `/collection/wall-statement-art`, `/faq`, `/privacy`, `/terms`, `/collections/aurora`, `/collections/bespoke`, `/collections/botanical`, `/collections/clear`, `/collections/earth`, `/collections/forest`, `/collections/geode`, `/collections/midnight`, `/collections/monsoon`, `/collections/ocean`, `/journal/a-first-conversation-on-whatsapp`, `/journal/a-guide-to-resin-colour-transparency-and-visual-depth`, `/journal/a-material-library-visit-when-there-is-one`, `/journal/bespoke-is-a-process-not-a-sku`, `/journal/black-resin-as-architecture-not-mood`, `/journal/choosing-the-right-size-for-a-statement-dining-table`, `/journal/cleaning-a-resin-surface`, `/journal/clear-resin-and-figured-grain`, `/journal/coffee-tables-as-sculptural-planes`, `/journal/collectible-design-versus-made-to-order-furniture`, `/journal/colour-matching-to-stone-fabric-and-paint`, `/journal/conference-tables-that-hold-a-room`, `/journal/consoles-for-thresholds-and-halls`, `/journal/dining-tables-at-architectural-scale`, `/journal/dried-versus-fresh-botanical-matter`, `/journal/export-crating-and-indian-making`, `/journal/finishing-matte-satin-gloss`, `/journal/from-digital-form-to-physical-object`, `/journal/from-liquid-to-object-a-visitor-s-map`, `/journal/gifts-that-still-feel-like-rivya`, `/journal/heat-trivets-and-dining-use`, `/journal/hospitality-briefs-durability-before-drama`, `/journal/how-galleries-talk-about-functional-sculpture`, `/journal/how-material-choice-changes-the-character-of-a-space`, `/journal/how-to-photograph-your-room-for-a-brief`, `/journal/how-to-read-a-starting-price`, `/journal/large-wall-art-thinking-beyond-decoration`, `/journal/lattice-gyroid-and-rib-three-structures`, `/journal/light-through-resin`, `/journal/live-edge-and-cut-edge`, `/journal/metal-bases-quiet-geometry`, `/journal/midnight-as-a-restraint-not-a-theme`, `/journal/mineral-colour-geode-thinking-in-furniture`, `/journal/moulds-dams-and-the-edge`, `/journal/moving-a-large-format-table`, `/journal/one-of-one-without-theatre`, `/journal/oval-versus-rectangular-plans`, `/journal/personal-objects-in-a-public-room`, `/journal/photographing-resin-without-inventing-the-object`, `/journal/preserving-flowers-in-resin-what-a-custom-brief-should-include`, `/journal/printed-bases-and-cast-tops`, `/journal/reading-walnut-against-deep-blue-resin`, `/journal/resin-and-wood-designing-around-contrast`, `/journal/sanding-through-grits-without-losing-flatness`, `/journal/seating-as-object-what-must-be-proven`, `/journal/statement-walls-in-stair-voids`, `/journal/stone-and-resin-a-difficult-friendship`, `/journal/the-ocean-collection-as-a-thinking-tool`, `/journal/triptychs-and-modular-panels`, `/journal/what-a-preservation-brief-must-never-promise`, `/journal/what-makes-a-resin-table-more-than-a-surface`, `/journal/what-to-prepare-before-requesting-a-custom-furniture-commission`, `/journal/what-uv-stable-actually-means-in-a-brief`, `/journal/when-3d-printing-enters-a-furniture-brief`, `/journal/why-bespoke-furniture-starts-with-context`, `/journal/why-slow-curing-matters`, `/journal/why-the-website-does-not-take-payment`, `/journal/working-with-architects-on-built-in-pieces`, `/journal/working-with-interior-designers`
+- **88** have no social image: `/`, `/about`, `/collection`, `/collection/3d-resin`, `/collection/collectible-design`, `/collection/decor`, `/collection/furniture`, `/collection/gifts`, `/collection/preservation`, `/collection/wall-statement-art`, `/contact`, `/custom-commissions`, `/faq`, `/journal`, `/large-format`, `/portfolio`, `/privacy`, `/process`, `/terms`, `/collections/aurora`, `/collections/bespoke`, `/collections/botanical`, `/collections/clear`, `/collections/earth`, `/collections/forest`, `/collections/geode`, `/collections/midnight`, `/collections/monsoon`, `/collections/ocean`, `/journal/a-first-conversation-on-whatsapp`, `/journal/a-guide-to-resin-colour-transparency-and-visual-depth`, `/journal/a-material-library-visit-when-there-is-one`, `/journal/bespoke-is-a-process-not-a-sku`, `/journal/black-resin-as-architecture-not-mood`, `/journal/choosing-the-right-size-for-a-statement-dining-table`, `/journal/cleaning-a-resin-surface`, `/journal/clear-resin-and-figured-grain`, `/journal/coffee-tables-as-sculptural-planes`, `/journal/collectible-design-versus-made-to-order-furniture`, `/journal/colour-matching-to-stone-fabric-and-paint`, `/journal/conference-tables-that-hold-a-room`, `/journal/consoles-for-thresholds-and-halls`, `/journal/dining-tables-at-architectural-scale`, `/journal/dried-versus-fresh-botanical-matter`, `/journal/export-crating-and-indian-making`, `/journal/finishing-matte-satin-gloss`, `/journal/from-digital-form-to-physical-object`, `/journal/from-liquid-to-object-a-visitor-s-map`, `/journal/gifts-that-still-feel-like-rivya`, `/journal/heat-trivets-and-dining-use`, `/journal/hospitality-briefs-durability-before-drama`, `/journal/how-galleries-talk-about-functional-sculpture`, `/journal/how-material-choice-changes-the-character-of-a-space`, `/journal/how-to-photograph-your-room-for-a-brief`, `/journal/how-to-read-a-starting-price`, `/journal/large-wall-art-thinking-beyond-decoration`, `/journal/lattice-gyroid-and-rib-three-structures`, `/journal/light-through-resin`, `/journal/live-edge-and-cut-edge`, `/journal/metal-bases-quiet-geometry`, `/journal/midnight-as-a-restraint-not-a-theme`, `/journal/mineral-colour-geode-thinking-in-furniture`, `/journal/moulds-dams-and-the-edge`, `/journal/moving-a-large-format-table`, `/journal/one-of-one-without-theatre`, `/journal/oval-versus-rectangular-plans`, `/journal/personal-objects-in-a-public-room`, `/journal/photographing-resin-without-inventing-the-object`, `/journal/preserving-flowers-in-resin-what-a-custom-brief-should-include`, `/journal/printed-bases-and-cast-tops`, `/journal/reading-walnut-against-deep-blue-resin`, `/journal/resin-and-wood-designing-around-contrast`, `/journal/sanding-through-grits-without-losing-flatness`, `/journal/seating-as-object-what-must-be-proven`, `/journal/statement-walls-in-stair-voids`, `/journal/stone-and-resin-a-difficult-friendship`, `/journal/the-ocean-collection-as-a-thinking-tool`, `/journal/triptychs-and-modular-panels`, `/journal/what-a-preservation-brief-must-never-promise`, `/journal/what-makes-a-resin-table-more-than-a-surface`, `/journal/what-to-prepare-before-requesting-a-custom-furniture-commission`, `/journal/what-uv-stable-actually-means-in-a-brief`, `/journal/when-3d-printing-enters-a-furniture-brief`, `/journal/why-bespoke-furniture-starts-with-context`, `/journal/why-slow-curing-matters`, `/journal/why-the-website-does-not-take-payment`, `/journal/working-with-architects-on-built-in-pieces`, `/journal/working-with-interior-designers`
 - **0** titles are shared by more than one address
 - **0** entities are `noindex`: —
 - **17** of 17 keyword themes are still UNRESEARCHED — SEED §42: the strategy must be refined through research before claiming ranking opportunity
@@ -642,7 +736,7 @@ the summary shows. Nothing here is a claim this repository makes about Rivya; it
 copy, a seeded detail or a media binding awaiting the owner’s confirmation, and D10 says the
 owner is the only person who can give it.
 
-- **41** rows outstanding across **15** surfaces
+- **92** rows outstanding across **15** surfaces
 - Counted in ROWS, which is what the `/studio` card counts. The field-level figure earlier in
   this document is larger because it counts every heading, body and CTA label separately,
   while the flag itself lives on the row.
@@ -651,7 +745,7 @@ owner is the only person who can give it.
   `npm run content:check-inventory` enforces, so this is the committed figure. A database
   carrying the Phase 42 test fixture, or real content, will legitimately report a different
   one; `/studio` always shows what the live database holds.
-- **41** are still unpublished, which is the gate doing its job.
+- **92** are still unpublished, which is the gate doing its job.
 
 ### Outstanding by surface
 
@@ -667,10 +761,10 @@ owner is the only person who can give it.
 | Page /large-format | 1 | `/studio/content/pages/large-format` | `page_sections_verified_before_publish` refuses `status = 'PUBLISHED'` |
 | Page /process | 7 | `/studio/content/pages/process` | `page_sections_verified_before_publish` refuses `status = 'PUBLISHED'` |
 | Site-wide content | 3 | `/studio/content/pages/global` | `global_content_verified_before_publish` refuses `status = 'PUBLISHED'` |
-| FAQ answers | 10 | `/studio/content/faqs` | `faqs_verified_before_publish` refuses `status = 'PUBLISHED'` |
+| FAQ answers | 55 | `/studio/content/faqs` | `faqs_verified_before_publish` refuses `status = 'PUBLISHED'` |
 | Categories | 1 | `/studio/catalog/categories` | `categories_verified_before_publish` refuses `status = 'PUBLISHED'` |
 | Commission forms | 2 | `/studio/catalog/customization-forms` | `customization_forms_verified_before_publish` refuses `status = 'PUBLISHED'` |
-| Journal articles | 3 | `/studio/content/journal` | `journal_articles_verified_before_publish` refuses `status = 'PUBLISHED'` |
+| Journal articles | 9 | `/studio/content/journal` | `journal_articles_verified_before_publish` refuses `status = 'PUBLISHED'` |
 | SEO keyword themes | 2 | `/studio/content/seo?tab=keywords` | `seo_keyword_themes_verified_before_publish` refuses `status = 'PUBLISHED'` |
 
 ### Every outstanding row
@@ -710,11 +804,62 @@ owner is the only person who can give it.
 | FAQ answers | Can you work from my room or interior references? | EDITORIAL_COPY | Confirm that this answer is true of Rivya. | `/studio/content/faqs` |
 | FAQ answers | Where is pricing shown? | EDITORIAL_COPY | Confirm that this answer is true of Rivya. | `/studio/content/faqs` |
 | FAQ answers | How do custom commissions begin? | EDITORIAL_COPY | Confirm that this answer is true of Rivya. | `/studio/content/faqs` |
+| FAQ answers | Where is the studio based? | EDITORIAL_COPY | Confirm that this answer is true of Rivya. | `/studio/content/faqs` |
+| FAQ answers | Do you ship outside India? | EDITORIAL_COPY | Confirm that this answer is true of Rivya. | `/studio/content/faqs` |
+| FAQ answers | What is a typical lead time? | EDITORIAL_COPY | Confirm that this answer is true of Rivya. | `/studio/content/faqs` |
+| FAQ answers | Can I visit to see samples? | EDITORIAL_COPY | Confirm that this answer is true of Rivya. | `/studio/content/faqs` |
+| FAQ answers | Do you work with interior designers? | EDITORIAL_COPY | Confirm that this answer is true of Rivya. | `/studio/content/faqs` |
+| FAQ answers | Do you work with architects? | EDITORIAL_COPY | Confirm that this answer is true of Rivya. | `/studio/content/faqs` |
+| FAQ answers | Can you match an existing stone or fabric? | EDITORIAL_COPY | Confirm that this answer is true of Rivya. | `/studio/content/faqs` |
+| FAQ answers | Do you make outdoor furniture? | EDITORIAL_COPY | Confirm that this answer is true of Rivya. | `/studio/content/faqs` |
+| FAQ answers | Is the surface heat resistant? | EDITORIAL_COPY | Confirm that this answer is true of Rivya. | `/studio/content/faqs` |
+| FAQ answers | Is the surface food safe? | EDITORIAL_COPY | Confirm that this answer is true of Rivya. | `/studio/content/faqs` |
+| FAQ answers | How do I clean a resin table? | EDITORIAL_COPY | Confirm that this answer is true of Rivya. | `/studio/content/faqs` |
+| FAQ answers | Will the resin yellow? | EDITORIAL_COPY | Confirm that this answer is true of Rivya. | `/studio/content/faqs` |
+| FAQ answers | Can you embed flowers or personal objects? | EDITORIAL_COPY | Confirm that this answer is true of Rivya. | `/studio/content/faqs` |
+| FAQ answers | Can you reproduce a river-table image I saw online? | EDITORIAL_COPY | Confirm that this answer is true of Rivya. | `/studio/content/faqs` |
+| FAQ answers | Do you use live-edge slabs? | EDITORIAL_COPY | Confirm that this answer is true of Rivya. | `/studio/content/faqs` |
+| FAQ answers | Which woods do you work with? | EDITORIAL_COPY | Confirm that this answer is true of Rivya. | `/studio/content/faqs` |
+| FAQ answers | Can the base be customized? | EDITORIAL_COPY | Confirm that this answer is true of Rivya. | `/studio/content/faqs` |
+| FAQ answers | Do you make chairs and sofas? | EDITORIAL_COPY | Confirm that this answer is true of Rivya. | `/studio/content/faqs` |
+| FAQ answers | Do you make beds or wardrobes? | EDITORIAL_COPY | Confirm that this answer is true of Rivya. | `/studio/content/faqs` |
+| FAQ answers | Can you make a reception desk? | EDITORIAL_COPY | Confirm that this answer is true of Rivya. | `/studio/content/faqs` |
+| FAQ answers | Can you make a conference table? | EDITORIAL_COPY | Confirm that this answer is true of Rivya. | `/studio/content/faqs` |
+| FAQ answers | What is large-format at Rivya? | EDITORIAL_COPY | Confirm that this answer is true of Rivya. | `/studio/content/faqs` |
+| FAQ answers | What is 3D resin? | EDITORIAL_COPY | Confirm that this answer is true of Rivya. | `/studio/content/faqs` |
+| FAQ answers | Do you 3D-print entire tables? | EDITORIAL_COPY | Confirm that this answer is true of Rivya. | `/studio/content/faqs` |
+| FAQ answers | Can I buy from stock? | EDITORIAL_COPY | Confirm that this answer is true of Rivya. | `/studio/content/faqs` |
+| FAQ answers | Can I reserve a slab? | EDITORIAL_COPY | Confirm that this answer is true of Rivya. | `/studio/content/faqs` |
+| FAQ answers | Do you offer installation? | EDITORIAL_COPY | Confirm that this answer is true of Rivya. | `/studio/content/faqs` |
+| FAQ answers | Who handles damage in transit? | EDITORIAL_COPY | Confirm that this answer is true of Rivya. | `/studio/content/faqs` |
+| FAQ answers | Can I see work in progress? | EDITORIAL_COPY | Confirm that this answer is true of Rivya. | `/studio/content/faqs` |
+| FAQ answers | Do you take institutional or hotel projects? | EDITORIAL_COPY | Confirm that this answer is true of Rivya. | `/studio/content/faqs` |
+| FAQ answers | Can two rooms share a material language? | EDITORIAL_COPY | Confirm that this answer is true of Rivya. | `/studio/content/faqs` |
+| FAQ answers | Do you sell décor and gifts? | EDITORIAL_COPY | Confirm that this answer is true of Rivya. | `/studio/content/faqs` |
+| FAQ answers | Can a gift be personalised? | EDITORIAL_COPY | Confirm that this answer is true of Rivya. | `/studio/content/faqs` |
+| FAQ answers | What if I only have a Pinterest board? | EDITORIAL_COPY | Confirm that this answer is true of Rivya. | `/studio/content/faqs` |
+| FAQ answers | Do you sign pieces? | EDITORIAL_COPY | Confirm that this answer is true of Rivya. | `/studio/content/faqs` |
+| FAQ answers | Are pieces numbered editions? | EDITORIAL_COPY | Confirm that this answer is true of Rivya. | `/studio/content/faqs` |
+| FAQ answers | Can I commission a wall mural in resin? | EDITORIAL_COPY | Confirm that this answer is true of Rivya. | `/studio/content/faqs` |
+| FAQ answers | Do you restore damaged resin furniture? | EDITORIAL_COPY | Confirm that this answer is true of Rivya. | `/studio/content/faqs` |
+| FAQ answers | What information do you store from an enquiry? | EDITORIAL_COPY | Confirm that this answer is true of Rivya. | `/studio/content/faqs` |
+| FAQ answers | How fast do you reply? | EDITORIAL_COPY | Confirm that this answer is true of Rivya. | `/studio/content/faqs` |
+| FAQ answers | Can I change the brief after work starts? | EDITORIAL_COPY | Confirm that this answer is true of Rivya. | `/studio/content/faqs` |
+| FAQ answers | Do you offer samples of colour? | EDITORIAL_COPY | Confirm that this answer is true of Rivya. | `/studio/content/faqs` |
+| FAQ answers | Is teak or sheesham available? | EDITORIAL_COPY | Confirm that this answer is true of Rivya. | `/studio/content/faqs` |
+| FAQ answers | Can you work in Ahmedabad or Surat? | EDITORIAL_COPY | Confirm that this answer is true of Rivya. | `/studio/content/faqs` |
+| FAQ answers | Why is some copy still in draft on the site? | EDITORIAL_COPY | Confirm that this answer is true of Rivya. | `/studio/content/faqs` |
 | Categories | 3D Resin | — | Confirm that Rivya can make what this category describes. | `/studio/catalog/categories` |
 | Commission forms | Preservation Commission | EDITORIAL_COPY | Confirm that this form asks for what Rivya needs in order to answer a commission enquiry. | `/studio/catalog/customization-forms` |
 | Commission forms | 3D + Resin Commission | EDITORIAL_COPY | Confirm that this form asks for what Rivya needs in order to answer a commission enquiry. | `/studio/catalog/customization-forms` |
 | Journal articles | Choosing the Right Size for a Statement Dining Table | EDITORIAL_COPY | Confirm that what this article says about Rivya’s work and materials is true. | `/studio/content/journal` |
 | Journal articles | From Digital Form to Physical Object | EDITORIAL_COPY | Confirm that what this article says about Rivya’s work and materials is true. | `/studio/content/journal` |
+| Journal articles | Heat, Trivets and Dining Use | EDITORIAL_COPY | Confirm that what this article says about Rivya’s work and materials is true. | `/studio/content/journal` |
+| Journal articles | One-of-One without Theatre | EDITORIAL_COPY | Confirm that what this article says about Rivya’s work and materials is true. | `/studio/content/journal` |
 | Journal articles | Preserving Flowers in Resin: What a Custom Brief Should Include | EDITORIAL_COPY | Confirm that what this article says about Rivya’s work and materials is true. | `/studio/content/journal` |
+| Journal articles | Printed Bases and Cast Tops | EDITORIAL_COPY | Confirm that what this article says about Rivya’s work and materials is true. | `/studio/content/journal` |
+| Journal articles | What a Preservation Brief Must Never Promise | EDITORIAL_COPY | Confirm that what this article says about Rivya’s work and materials is true. | `/studio/content/journal` |
+| Journal articles | What 'UV Stable' Actually Means in a Brief | EDITORIAL_COPY | Confirm that what this article says about Rivya’s work and materials is true. | `/studio/content/journal` |
+| Journal articles | When 3D Printing Enters a Furniture Brief | EDITORIAL_COPY | Confirm that what this article says about Rivya’s work and materials is true. | `/studio/content/journal` |
 | SEO keyword themes | custom furniture India | SEO_COPY | Confirm that Rivya serves the place and the service this phrase implies. | `/studio/content/seo?tab=keywords` |
 | SEO keyword themes | resin furniture India | SEO_COPY | Confirm that Rivya serves the place and the service this phrase implies. | `/studio/content/seo?tab=keywords` |

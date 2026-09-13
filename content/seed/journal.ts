@@ -76,6 +76,224 @@ const ARTICLES: readonly { title: string; angle?: string; verify?: boolean; caut
   },
   { title: 'How Material Choice Changes the Character of a Space' },
   { title: 'Why Bespoke Furniture Starts With Context' },
+  /* ------------------------------------------------------------------------------------------
+   * THE OWNER'S STUDIO PACK — forty-nine more ideas, 2026-09-13.
+   *
+   * TITLE AND ANGLE ONLY, which is the whole discipline of this module. No body is written here
+   * and `excerpt` stays null: a summary the studio has not written is a summary nobody wrote, and
+   * a card rendering one would be publishing an editorial brief as marketing copy.
+   *
+   * SIX CARRY `verify` and each earns it by naming a capability or a promise — UV behaviour, heat
+   * and daily use, 3D printing entering a furniture brief, printed bases under cast tops,
+   * one-of-one, and what a preservation brief must never promise. The rest are compositional or
+   * educational and assert nothing about what Rivya has made.
+   *
+   * NONE OF THEM BINDS A COVER. `ARTICLE_COVERS` holds ten pairs and nothing was invented to
+   * extend it — an article with no entry gets no `media` key at all, which is what the manifest
+   * rule requires and what the runner enforces: it throws on an id the manifest does not carry.
+   * ------------------------------------------------------------------------------------------ */
+  {
+    title: 'Dining Tables at Architectural Scale',
+    angle: 'When the table starts to organise the room.',
+  },
+  {
+    title: 'Coffee Tables as Sculptural Planes',
+    angle: 'Lower height makes base and edge the subject.',
+  },
+  {
+    title: 'Consoles for Thresholds and Halls',
+    angle: 'Narrow pieces as visual interventions.',
+  },
+  {
+    title: 'Conference Tables that Hold a Room',
+    angle: 'Length, cable discipline and quiet presence.',
+  },
+  {
+    title: 'Oval versus Rectangular Plans',
+    angle: 'How plan shape changes pour and seating.',
+  },
+  {
+    title: 'Live Edge and Cut Edge',
+    angle: 'Two attitudes to the timber boundary.',
+  },
+  {
+    title: 'Reading Walnut Against Deep Blue Resin',
+    angle: 'A pairing that is easy to overdo.',
+  },
+  {
+    title: 'Clear Resin and Figured Grain',
+    angle: 'When the wood should remain the picture.',
+  },
+  {
+    title: 'Black Resin as Architecture, Not Mood',
+    angle: 'Dark fields that do not flatten.',
+  },
+  {
+    title: 'Mineral Colour: Geode Thinking in Furniture',
+    angle: 'Banding, fracture and inclusion as design tools.',
+  },
+  {
+    title: "What 'UV Stable' Actually Means in a Brief",
+    angle: 'Education only; no warranty language.',
+    verify: true,
+  },
+  {
+    title: 'Heat, Trivets and Dining Use',
+    angle: 'How to talk about daily use without over-claiming.',
+    verify: true,
+  },
+  {
+    title: 'Cleaning a Resin Surface',
+    angle: 'Soft cloth, no abrasives; owner must confirm products.',
+  },
+  {
+    title: 'Moving a Large-Format Table',
+    angle: 'Weight, crate, and site access as part of the brief.',
+  },
+  {
+    title: 'Finishing: Matte, Satin, Gloss',
+    angle: 'How finish changes colour and fingerprint behaviour.',
+  },
+  {
+    title: "From Liquid to Object: A Visitor's Map",
+    angle: 'The public process page, expanded.',
+  },
+  {
+    title: 'Why Slow Curing Matters',
+    angle: 'Time as a material, not a delay excuse.',
+  },
+  {
+    title: 'Moulds, Dams and the Edge',
+    angle: 'How the edge is decided before the pour.',
+  },
+  {
+    title: 'Sanding Through Grits Without Losing Flatness',
+    angle: 'Craft note; no branded grit claims unless sourced.',
+  },
+  {
+    title: 'Photographing Resin Without Inventing the Object',
+    angle: 'Concept media versus delivered photography.',
+  },
+  {
+    title: 'When 3D Printing Enters a Furniture Brief',
+    angle: 'Bases, lattices, fittings — verification required.',
+    verify: true,
+  },
+  {
+    title: 'Printed Bases and Cast Tops',
+    angle: 'A hybrid that must be engineered, not styled.',
+    verify: true,
+  },
+  {
+    title: 'Lattice, Gyroid and Rib: Three Structures',
+    angle: 'Vocabulary for a conversation with a designer.',
+  },
+  {
+    title: 'Collectible Design versus Made-to-Order Furniture',
+    angle: 'Edition, unique, and commission — three different promises.',
+  },
+  {
+    title: 'How Galleries Talk About Functional Sculpture',
+    angle: 'Language borrowed carefully from FUMI and CWG.',
+  },
+  {
+    title: 'Seating as Object: What Must Be Proven',
+    angle: 'Sit, structure, finish — before a chair is a product.',
+  },
+  {
+    title: 'One-of-One without Theatre',
+    angle: 'Uniqueness as a consequence of making, not a slogan.',
+    verify: true,
+  },
+  {
+    title: 'Working with Interior Designers',
+    angle: 'What a designer should send on day one.',
+  },
+  {
+    title: 'Working with Architects on Built-In Pieces',
+    angle: 'Site measure, services, and who owns the drawing.',
+  },
+  {
+    title: 'Hospitality Briefs: Durability before Drama',
+    angle: 'Restaurants and hotels change the brief.',
+  },
+  {
+    title: 'A First Conversation on WhatsApp',
+    angle: 'What Rivya asks, and why the enquiry is saved first.',
+  },
+  {
+    title: 'How to Photograph Your Room for a Brief',
+    angle: 'Corners, ceiling, floor, and a tape in frame.',
+  },
+  {
+    title: 'Colour Matching to Stone, Fabric and Paint',
+    angle: 'Bring samples; screens lie.',
+  },
+  {
+    title: 'Metal Bases: Quiet Geometry',
+    angle: 'Blackened steel, bronze tone, and when the base should vanish.',
+  },
+  {
+    title: 'Stone and Resin: A Difficult Friendship',
+    angle: 'Weight, seal and edge.',
+  },
+  {
+    title: 'Statement Walls in Stair Voids',
+    angle: 'Height, light from two floors, and maintenance access.',
+  },
+  {
+    title: 'Triptychs and Modular Panels',
+    angle: 'Shipping and hanging as part of the design.',
+  },
+  {
+    title: 'Light Through Resin',
+    angle: 'Backlight, grazing light, and rooms without either.',
+  },
+  {
+    title: 'What a Preservation Brief Must Never Promise',
+    angle: 'No forever, no museum standard unless sourced.',
+    verify: true,
+  },
+  {
+    title: 'Dried versus Fresh Botanical Matter',
+    angle: 'Moisture is the brief.',
+  },
+  {
+    title: 'Personal Objects in a Public Room',
+    angle: 'When a keepsake should stay small.',
+  },
+  {
+    title: 'Gifts that Still Feel like Rivya',
+    angle: 'Secondary objects without sliding into a gift shop.',
+  },
+  {
+    title: 'How to Read a Starting Price',
+    angle: 'Fixed, starting, and RFQ — three different states.',
+  },
+  {
+    title: 'Why the Website Does Not Take Payment',
+    angle: 'Restate the business rule without apology.',
+  },
+  {
+    title: 'A Material Library Visit, When There Is One',
+    angle: 'Do not invent a showroom; describe what a visit would need.',
+  },
+  {
+    title: 'Export, Crating and Indian Making',
+    angle: 'Logistics as design; no invented Incoterms.',
+  },
+  {
+    title: 'The Ocean Collection as a Thinking Tool',
+    angle: 'Collection names are concepts until pieces exist.',
+  },
+  {
+    title: 'Midnight as a Restraint, Not a Theme',
+    angle: 'Dark work that still has depth.',
+  },
+  {
+    title: 'Bespoke Is a Process, Not a SKU',
+    angle: 'The tenth collection is a door, not a product.',
+  },
 ]
 
 /** `What Makes a Resin Table More Than a Surface?` → `what-makes-a-resin-table-more-than-a-surface` */
@@ -138,6 +356,55 @@ const ARTICLE_CATEGORY: readonly number[] = [
   7, // 08 Preserving Flowers in Resin → Preservation
   6, // 09 How Material Choice Changes the Character of a Space → Interior Art
   5, // 10 Why Bespoke Furniture Starts With Context → Custom Projects
+  0, // 11 Dining Tables at Architectural Scale → Resin Furniture
+  0, // 12 Coffee Tables as Sculptural Planes → Resin Furniture
+  0, // 13 Consoles for Thresholds and Halls → Resin Furniture
+  0, // 14 Conference Tables that Hold a Room → Resin Furniture
+  0, // 15 Oval versus Rectangular Plans → Resin Furniture
+  2, // 16 Live Edge and Cut Edge → Materials
+  2, // 17 Reading Walnut Against Deep Blue Resin → Materials
+  2, // 18 Clear Resin and Figured Grain → Materials
+  2, // 19 Black Resin as Architecture, Not Mood → Materials
+  2, // 20 Mineral Colour: Geode Thinking in Furniture → Materials
+  8, // 21 What 'UV Stable' Actually Means in a Brief → Care & Education
+  8, // 22 Heat, Trivets and Dining Use → Care & Education
+  8, // 23 Cleaning a Resin Surface → Care & Education
+  8, // 24 Moving a Large-Format Table → Care & Education
+  4, // 25 Finishing: Matte, Satin, Gloss → Studio Process
+  4, // 26 From Liquid to Object: A Visitor's Map → Studio Process
+  4, // 27 Why Slow Curing Matters → Studio Process
+  4, // 28 Moulds, Dams and the Edge → Studio Process
+  4, // 29 Sanding Through Grits Without Losing Flatness → Studio Process
+  4, // 30 Photographing Resin Without Inventing the Object → Studio Process
+  3, // 31 When 3D Printing Enters a Furniture Brief → 3D Printing
+  3, // 32 Printed Bases and Cast Tops → 3D Printing
+  3, // 33 Lattice, Gyroid and Rib: Three Structures → 3D Printing
+  1, // 34 Collectible Design versus Made-to-Order Furniture → Collectible Design
+  1, // 35 How Galleries Talk About Functional Sculpture → Collectible Design
+  1, // 36 Seating as Object: What Must Be Proven → Collectible Design
+  1, // 37 One-of-One without Theatre → Collectible Design
+  5, // 38 Working with Interior Designers → Custom Projects
+  5, // 39 Working with Architects on Built-In Pieces → Custom Projects
+  5, // 40 Hospitality Briefs: Durability before Drama → Custom Projects
+  5, // 41 A First Conversation on WhatsApp → Custom Projects
+  5, // 42 How to Photograph Your Room for a Brief → Custom Projects
+  2, // 43 Colour Matching to Stone, Fabric and Paint → Materials
+  2, // 44 Metal Bases: Quiet Geometry → Materials
+  2, // 45 Stone and Resin: A Difficult Friendship → Materials
+  6, // 46 Statement Walls in Stair Voids → Interior Art
+  6, // 47 Triptychs and Modular Panels → Interior Art
+  6, // 48 Light Through Resin → Interior Art
+  7, // 49 What a Preservation Brief Must Never Promise → Preservation
+  7, // 50 Dried versus Fresh Botanical Matter → Preservation
+  7, // 51 Personal Objects in a Public Room → Preservation
+  8, // 52 Gifts that Still Feel like Rivya → Care & Education
+  8, // 53 How to Read a Starting Price → Care & Education
+  8, // 54 Why the Website Does Not Take Payment → Care & Education
+  4, // 55 A Material Library Visit, When There Is One → Studio Process
+  5, // 56 Export, Crating and Indian Making → Custom Projects
+  1, // 57 The Ocean Collection as a Thinking Tool → Collectible Design
+  1, // 58 Midnight as a Restraint, Not a Theme → Collectible Design
+  5, // 59 Bespoke Is a Process, Not a SKU → Custom Projects
 ]
 
 /**
@@ -208,17 +475,32 @@ const articleRecord = (a: (typeof ARTICLES)[number], i: number): SeedRecord => {
         seedKey: `journal-category:${slugify(categoryName)}`,
       },
     },
-    media: {
-      cover_media_id: cover?.desktop ?? '',
-      ...(cover?.mobile === undefined ? {} : { cover_mobile_media_id: cover.mobile }),
-    },
+    /*
+     * NO `media` KEY AT ALL WHEN THERE IS NO COVER — Phase 46, and it is a correctness fix rather
+     * than a tidy-up.
+     *
+     * This read `cover_media_id: cover?.desktop ?? ''`, which was harmless while `ARTICLE_COVERS`
+     * had an entry for every article. The Studio pack took the list from ten to fifty-nine and
+     * `ARTICLE_COVERS` stayed at ten, so forty-nine records would have bound the EMPTY STRING —
+     * and `resolveReferences` throws on an id the manifest does not carry, by design, to catch a
+     * typo. An empty id is not a typo, it is an absence, and an absence is spelled by omitting the
+     * key. Nothing was invented to extend the cover list: a gap is a gap.
+     */
+    ...(cover === undefined
+      ? {}
+      : {
+          media: {
+            cover_media_id: cover.desktop,
+            ...(cover.mobile === undefined ? {} : { cover_mobile_media_id: cover.mobile }),
+          },
+        }),
   }
 }
 
 export const journalSeed: SeedModule = {
   name: 'journal',
   description:
-    'The /journal landing (§18) and its empty state (§29), plus 9 categories (§19) and 10 article drafts (§20) deferred to Phase 18.',
+    "The /journal landing (§18) and its empty state (§29), plus 9 categories (§19) and 59 article drafts — §20's original ten and the owner's Studio pack — deferred to Phase 18, every one DRAFT with a title and an angle and no body.",
   records: [
     section({
       page: PAGE,

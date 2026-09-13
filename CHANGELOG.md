@@ -6,6 +6,40 @@ Every phase adds an entry; see `docs/architecture/CANONICAL-DECISIONS.md` D9 for
 
 ## [Unreleased]
 
+### The owner's Studio content pack, as drafts (2026-09-13)
+
+Amendment **A54**. 528 items across nine surfaces, supplied as a workbook. Two surfaces became seed
+modules; seven became read-only JSON. **Nothing became inventory.**
+
+- `content/seed/faq.ts` — **10 → 55**, every one `DRAFT` and `OWNER_VERIFICATION_REQUIRED`
+- `content/seed/journal.ts` — **10 → 59 articles** against the nine categories §19 already fixed,
+  every one `DRAFT`, title and `angle_note` only, **no body and no excerpt**
+- `data/studio-pack/` — comparators (60, all disabled, image mode NONE), product concepts (76, all
+  RFQ), materials (52), portfolio studies (55, all `STUDIO_STUDY`, no client named), commission
+  briefs (55), SEO themes (55), collections (61), plus a README saying what they are not
+
+Measured on a real cluster after `seed:content`: `products` **0**, `research_sources` **0**,
+`portfolio_projects` **0**, `testimonials` **0**, `collections` **10** (the canonical set, not 61),
+published FAQs **0**, published articles **0**, article excerpts **0**.
+
+**Four things the pack invited and did not get.** Its rewording of the original ten FAQs and ten
+journal titles (SEED §23 and §20 restate fixed business rules; a paraphrase erodes them, and where
+its verification flag was looser the repo's stricter one won). Three operator instructions that
+ended an `answer` field — split into a `caution` the database never sees. Any invented journal
+cover. And `products`, which `SeedableTable` cannot express at all.
+
+**One real bug fixed on the way.** `articleRecord` read `cover_media_id: cover?.desktop ?? ''`,
+harmless at ten articles and an empty-string binding on forty-nine. The seed runner throws on an id
+the Higgsfield manifest does not carry — correctly, to catch typos — so articles without a cover now
+carry no `media` key at all.
+
+All nine files were scanned for lead times, UV or yellowing warranties, food-safe claims, edition
+sizes, certifications, durability promises and delivered commissions. Every match is a refusal of
+the claim, not an assertion of it.
+
+Verified: `npm run check` exit 0 (44 gates); full suite, all three vitest projects, **247 files,
+3,766 tests, 0 failed, 0 skipped**; `seed:content` applied 619 records with 0 failures.
+
 ### The catalogue's empty wells name their category, and the drawer's rows reach 44px (2026-09-13)
 
 Amendment **A53**. Two §A5 items from the redesign brief, plus the finding behind the second.

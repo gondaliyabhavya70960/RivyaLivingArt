@@ -1,0 +1,332 @@
+[
+  {
+    "#": "1",
+    "question": "Do you make custom-size furniture?",
+    "answer": "Custom sizing can be discussed for eligible projects. Share approximate dimensions, space details and intended use through the commission form or WhatsApp.",
+    "verification": "OWNER_VERIFICATION_REQUIRED"
+  },
+  {
+    "#": "2",
+    "question": "Can I choose the resin colour?",
+    "answer": "Colour customization may be available depending on the product or commission. Options appear on product pages where applicable, or can be discussed for a custom project.",
+    "verification": "OWNER_VERIFICATION_REQUIRED"
+  },
+  {
+    "#": "3",
+    "question": "Can I send reference images?",
+    "answer": "Yes. Reference images can be uploaded with an enquiry to help communicate form, colour, material direction or space.",
+    "verification": "OWNER_VERIFICATION_REQUIRED"
+  },
+  {
+    "#": "4",
+    "question": "How do I place an order?",
+    "answer": "Select a product or start a custom enquiry, enter your requirements and choose Place Order. The enquiry is recorded first; you are then redirected to WhatsApp.",
+    "verification": "OWNER_VERIFICATION_REQUIRED"
+  },
+  {
+    "#": "5",
+    "question": "Can I pay directly on the website?",
+    "answer": "No. Rivya does not process online payments through the website. Pricing, payment and delivery are finalized on WhatsApp.",
+    "verification": "OWNER_VERIFICATION_REQUIRED"
+  },
+  {
+    "#": "6",
+    "question": "Do I need an account to place an enquiry?",
+    "answer": "No. There are no customer accounts. You can browse, customize and submit an enquiry without creating an account.",
+    "verification": "OWNER_VERIFICATION_REQUIRED"
+  },
+  {
+    "#": "7",
+    "question": "Do you create one-of-one pieces?",
+    "answer": "One-of-one and bespoke directions may be available depending on the project. Contact Rivya with the idea.",
+    "verification": "OWNER_VERIFICATION_REQUIRED"
+  },
+  {
+    "#": "8",
+    "question": "Can you work from my room or interior references?",
+    "answer": "Yes. Space photographs, measurements and reference imagery help set visual and dimensional direction.",
+    "verification": "OWNER_VERIFICATION_REQUIRED"
+  },
+  {
+    "#": "9",
+    "question": "Where is pricing shown?",
+    "answer": "Products may show a fixed price, a starting price or a request-for-quote state. Bespoke projects are discussed individually.",
+    "verification": "OWNER_VERIFICATION_REQUIRED"
+  },
+  {
+    "#": "10",
+    "question": "How do custom commissions begin?",
+    "answer": "Share the type of object, approximate dimensions, intended use, location and any visual references. Rivya continues on WhatsApp.",
+    "verification": "OWNER_VERIFICATION_REQUIRED"
+  },
+  {
+    "#": "11",
+    "question": "Where is the studio based?",
+    "answer": "Rivya works from India. Exact visit arrangements are confirmed directly; do not publish a walk-in address until the owner sets one in Site Settings.",
+    "verification": "OWNER_VERIFICATION_REQUIRED"
+  },
+  {
+    "#": "12",
+    "question": "Do you ship outside India?",
+    "answer": "Export can be discussed per project. Crating, routes and Incoterms are agreed on WhatsApp — not as a site-wide promise.",
+    "verification": "OWNER_VERIFICATION_REQUIRED"
+  },
+  {
+    "#": "13",
+    "question": "What is a typical lead time?",
+    "answer": "Lead time depends on scale, cure, finish and site access. Rivya will give a range only after the brief is clear.",
+    "verification": "OWNER_VERIFICATION_REQUIRED"
+  },
+  {
+    "#": "14",
+    "question": "Can I visit to see samples?",
+    "answer": "Material samples and studio visits can be arranged when available. Ask on WhatsApp rather than assuming a public showroom.",
+    "verification": "OWNER_VERIFICATION_REQUIRED"
+  },
+  {
+    "#": "15",
+    "question": "Do you work with interior designers?",
+    "answer": "Yes. Designers can share drawings, finishes and room photographs. The enquiry is still recorded against the project, not a designer login.",
+    "verification": "OWNER_VERIFICATION_REQUIRED"
+  },
+  {
+    "#": "16",
+    "question": "Do you work with architects?",
+    "answer": "Yes. Built-in and large-format pieces need a site measure and a clear owner of the drawing set.",
+    "verification": "OWNER_VERIFICATION_REQUIRED"
+  },
+  {
+    "#": "17",
+    "question": "Can you match an existing stone or fabric?",
+    "answer": "Bring or send physical samples. Screens are not a colour contract.",
+    "verification": "OWNER_VERIFICATION_REQUIRED"
+  },
+  {
+    "#": "18",
+    "question": "Do you make outdoor furniture?",
+    "answer": "Most work is conceived for interiors. Covered outdoor use is a separate conversation about UV and climate.",
+    "verification": "OWNER_VERIFICATION_REQUIRED"
+  },
+  {
+    "#": "19",
+    "question": "Is the surface heat resistant?",
+    "answer": "Dining use is expected with ordinary care. Hot cookware should not sit directly on resin. Confirm any hospitality specification in writing.",
+    "verification": "OWNER_VERIFICATION_REQUIRED"
+  },
+  {
+    "#": "20",
+    "question": "Is the surface food safe?",
+    "answer": "Do not assume food contact. Serving pieces need a separate review before any claim.",
+    "verification": "OWNER_VERIFICATION_REQUIRED"
+  },
+  {
+    "#": "21",
+    "question": "How do I clean a resin table?",
+    "answer": "Dust with a soft cloth. Avoid abrasives and harsh solvents. The owner should confirm any named cleaner before it is published.",
+    "verification": "OWNER_VERIFICATION_REQUIRED"
+  },
+  {
+    "#": "22",
+    "question": "Will the resin yellow?",
+    "answer": "UV behaviour depends on resin system, tint and light. Ask for the current system rather than reading a generic promise on the site.",
+    "verification": "OWNER_VERIFICATION_REQUIRED"
+  },
+  {
+    "#": "23",
+    "question": "Can you embed flowers or personal objects?",
+    "answer": "Preservation work is possible as a brief. Moisture, size and clarity limits are discussed per object. No permanence claim.",
+    "verification": "OWNER_VERIFICATION_REQUIRED"
+  },
+  {
+    "#": "24",
+    "question": "Can you reproduce a river-table image I saw online?",
+    "answer": "References help direction. Rivya does not copy another maker's piece. The pour and the timber will not match a photograph.",
+    "verification": "OWNER_VERIFICATION_REQUIRED"
+  },
+  {
+    "#": "25",
+    "question": "Do you use live-edge slabs?",
+    "answer": "Live edge and cut edge are both possible. Availability of a particular slab is never guaranteed from a website picture.",
+    "verification": "OWNER_VERIFICATION_REQUIRED"
+  },
+  {
+    "#": "26",
+    "question": "Which woods do you work with?",
+    "answer": "Hardwoods such as walnut, oak, teak and local species can be discussed. Species is confirmed per project against what can actually be sourced.",
+    "verification": "OWNER_VERIFICATION_REQUIRED"
+  },
+  {
+    "#": "27",
+    "question": "Can the base be customized?",
+    "answer": "Yes. Metal and timber bases are part of the brief. Structure must suit the span and the floor.",
+    "verification": "OWNER_VERIFICATION_REQUIRED"
+  },
+  {
+    "#": "28",
+    "question": "Do you make chairs and sofas?",
+    "answer": "Seating is treated as sculptural furniture. Comfort and structure are proven before a seat is offered as a product.",
+    "verification": "OWNER_VERIFICATION_REQUIRED"
+  },
+  {
+    "#": "29",
+    "question": "Do you make beds or wardrobes?",
+    "answer": "Those typologies are not the centre of the collection. Ask if a related plane or panel is what you need.",
+    "verification": "OWNER_VERIFICATION_REQUIRED"
+  },
+  {
+    "#": "30",
+    "question": "Can you make a reception desk?",
+    "answer": "Large-format reception pieces can be discussed from drawings and site photos.",
+    "verification": "OWNER_VERIFICATION_REQUIRED"
+  },
+  {
+    "#": "31",
+    "question": "Can you make a conference table?",
+    "answer": "Yes, at dining-to-boardroom scale. Cable routes and seating count belong in the first note.",
+    "verification": "OWNER_VERIFICATION_REQUIRED"
+  },
+  {
+    "#": "32",
+    "question": "What is large-format at Rivya?",
+    "answer": "Pieces whose scale is part of the design — dining, conference, consoles and wall planes that organise a room.",
+    "verification": "OWNER_VERIFICATION_REQUIRED"
+  },
+  {
+    "#": "33",
+    "question": "What is 3D resin?",
+    "answer": "A direction that combines digital form with resin. Any specific process is confirmed by the owner before it is offered.",
+    "verification": "OWNER_VERIFICATION_REQUIRED"
+  },
+  {
+    "#": "34",
+    "question": "Do you 3D-print entire tables?",
+    "answer": "Printed parts may support a piece. A printed dining slab is not a default offering.",
+    "verification": "OWNER_VERIFICATION_REQUIRED"
+  },
+  {
+    "#": "35",
+    "question": "Can I buy from stock?",
+    "answer": "Most work is made to order. Anything listed as available is marked as such on the product page.",
+    "verification": "OWNER_VERIFICATION_REQUIRED"
+  },
+  {
+    "#": "36",
+    "question": "Can I reserve a slab?",
+    "answer": "Slab holds, if offered, are agreed directly and expire. The site does not run a reservation cart.",
+    "verification": "OWNER_VERIFICATION_REQUIRED"
+  },
+  {
+    "#": "37",
+    "question": "Do you offer installation?",
+    "answer": "Installation and placement can be arranged by project and city. It is not an automatic line item.",
+    "verification": "OWNER_VERIFICATION_REQUIRED"
+  },
+  {
+    "#": "38",
+    "question": "Who handles damage in transit?",
+    "answer": "Crating and carrier terms are written into the project confirmation. Do not publish a blanket insurance claim.",
+    "verification": "OWNER_VERIFICATION_REQUIRED"
+  },
+  {
+    "#": "39",
+    "question": "Can I see work in progress?",
+    "answer": "Progress photographs can be shared for a commission when agreed. They are not a public production feed.",
+    "verification": "OWNER_VERIFICATION_REQUIRED"
+  },
+  {
+    "#": "40",
+    "question": "Do you take institutional or hotel projects?",
+    "answer": "Hospitality and workplace projects are possible when durability and programme are clear from the start.",
+    "verification": "OWNER_VERIFICATION_REQUIRED"
+  },
+  {
+    "#": "41",
+    "question": "Can two rooms share a material language?",
+    "answer": "Yes. A house or office can be briefed as a set: table, console, panel.",
+    "verification": "OWNER_VERIFICATION_REQUIRED"
+  },
+  {
+    "#": "42",
+    "question": "Do you sell décor and gifts?",
+    "answer": "Smaller objects exist as a secondary line. They are not the centre of the brand.",
+    "verification": "OWNER_VERIFICATION_REQUIRED"
+  },
+  {
+    "#": "43",
+    "question": "Can a gift be personalised?",
+    "answer": "Monograms, dates and small inclusions can be discussed. Keep the object honest about size.",
+    "verification": "OWNER_VERIFICATION_REQUIRED"
+  },
+  {
+    "#": "44",
+    "question": "What if I only have a Pinterest board?",
+    "answer": "Send it. Also send the room. A board without dimensions is only a mood.",
+    "verification": "OWNER_VERIFICATION_REQUIRED"
+  },
+  {
+    "#": "45",
+    "question": "Do you sign pieces?",
+    "answer": "Signing and certificates, if offered, are decided per work. Do not publish a signature policy until the owner writes one.",
+    "verification": "OWNER_VERIFICATION_REQUIRED"
+  },
+  {
+    "#": "46",
+    "question": "Are pieces numbered editions?",
+    "answer": "Only if the owner declares an edition. Unique and made-to-order are the default language.",
+    "verification": "OWNER_VERIFICATION_REQUIRED"
+  },
+  {
+    "#": "47",
+    "question": "Can I commission a wall mural in resin?",
+    "answer": "Large wall planes are part of statement art. Access, hanging and weight come first.",
+    "verification": "OWNER_VERIFICATION_REQUIRED"
+  },
+  {
+    "#": "48",
+    "question": "Do you restore damaged resin furniture?",
+    "answer": "Repair is a different service from making. Ask with photographs; it may be declined.",
+    "verification": "OWNER_VERIFICATION_REQUIRED"
+  },
+  {
+    "#": "49",
+    "question": "What information do you store from an enquiry?",
+    "answer": "Name, contact, project notes and any files you upload — enough to continue on WhatsApp. There is no customer account.",
+    "verification": "OWNER_VERIFICATION_REQUIRED"
+  },
+  {
+    "#": "50",
+    "question": "How fast do you reply?",
+    "answer": "Rivya aims to continue the conversation promptly on WhatsApp. Do not publish a guaranteed response time unless the owner sets one.",
+    "verification": "OWNER_VERIFICATION_REQUIRED"
+  },
+  {
+    "#": "51",
+    "question": "Can I change the brief after work starts?",
+    "answer": "Changes are possible until materials are committed. After pour and print, changes become a new conversation.",
+    "verification": "OWNER_VERIFICATION_REQUIRED"
+  },
+  {
+    "#": "52",
+    "question": "Do you offer samples of colour?",
+    "answer": "Small colour and finish samples can be discussed. A sample is not the final pour.",
+    "verification": "OWNER_VERIFICATION_REQUIRED"
+  },
+  {
+    "#": "53",
+    "question": "Is teak or sheesham available?",
+    "answer": "Indian hardwoods can be part of a brief when the project wants them. Confirm species against current supply.",
+    "verification": "OWNER_VERIFICATION_REQUIRED"
+  },
+  {
+    "#": "54",
+    "question": "Can you work in Ahmedabad or Surat?",
+    "answer": "Site work in Gujarat and across India is discussed per project. Travel is not assumed.",
+    "verification": "OWNER_VERIFICATION_REQUIRED"
+  },
+  {
+    "#": "55",
+    "question": "Why is some copy still in draft on the site?",
+    "answer": "Rivya publishes only what the owner has verified. Empty or quiet pages are preferred to invented work.",
+    "verification": "OWNER_VERIFICATION_REQUIRED"
+  }
+]
