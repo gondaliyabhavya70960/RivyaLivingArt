@@ -12,6 +12,7 @@ import { CardLayout, cardLayoutOf } from './CardLayout'
 import { hasSectionCopy, SectionCopy, cardHeadingLevel } from './SectionCopy'
 import { BlockImage } from '@/components/patterns/MediaSlot'
 import { SectionShell } from './SectionShell'
+import { resolveInternalTarget } from '@/lib/site/resolve-target'
 import type { SectionRenderProps } from './types'
 
 /**
@@ -56,6 +57,7 @@ export function CategoryGridSection({
   media,
   strings,
   cloudName,
+  livePaths,
 }: SectionRenderProps): React.ReactElement | null {
   const payload = parseBlockPayload(categoryGridBlock, section.payload)
   const cards = visibleEntries(payload.cards).filter((card) => card.title.trim() !== '')
@@ -109,7 +111,21 @@ export function CategoryGridSection({
     // moves. A test addresses `[data-entry-key="..."]` and stays correct after a reorder.
     const entryKey = card.key ?? card.title
 
-    return card.href.trim() === '' ? (
+    /**
+     * THE TEST IS WHETHER THE DESTINATION RENDERS, NOT WHETHER SOMEBODY TYPED ONE.
+     *
+     * This used to ask only whether `href` was non-empty, which is a different question and the
+     * wrong one: three category pages are DRAFT behind the owner's verification gate, so
+     * `/collection/collectible-design`, `/collection/3d-resin` and `/collection/preservation` were
+     * live anchors to 404s — on the homepage and on `/collection`.
+     *
+     * `resolveInternalTarget` returns null for a path that does not render, and the text branch
+     * below keeps the editor's card exactly as written, minus the link. `CategoryListSection` has
+     * always done this; the comment here claimed the same rule and tested something else.
+     */
+    const target = resolveInternalTarget(card.href, livePaths)
+
+    return target === null ? (
       <div key={`${card.title}-${index}`} data-entry-key={entryKey}>
         {body}
       </div>
@@ -117,7 +133,7 @@ export function CategoryGridSection({
       <a
         key={`${card.title}-${index}`}
         data-entry-key={entryKey}
-        href={card.href}
+        href={target}
         className="group block focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-(--rv-ink-accent)"
       >
         {body}

@@ -8,6 +8,8 @@ import { ProductInquiryRail } from '@/components/patterns/ProductInquiryRail'
 import { ProductMaterialStory } from '@/components/patterns/ProductMaterialStory'
 import { ProductSpecifications } from '@/components/patterns/ProductSpecifications'
 import { RelatedContent, SAME_CATEGORY_LIMIT } from '@/components/patterns/RelatedContent'
+import { Badge } from '@/components/primitives/Badge'
+import { Cluster } from '@/components/primitives/Cluster'
 import { Container } from '@/components/primitives/Container'
 import { Heading } from '@/components/primitives/Heading'
 import { Stack } from '@/components/primitives/Stack'
@@ -298,9 +300,24 @@ export default async function Page({ params }: Props): Promise<React.ReactElemen
             </Text>
           )}
           {badges.length === 0 ? null : (
-            <Text as="p" size="sm" tone="secondary" data-product-badges="">
-              {badges.join(' · ')}
-            </Text>
+            /*
+             * ONE NODE PER BADGE, NOT `badges.join(...)`. `productBadges` returns objects, so a
+             * join stringified each one to "[object Object]" — which is what all 35 product pages
+             * served. TypeScript accepts `.join()` on any array and every static gate is happy, so
+             * nothing caught it; the e2e assertion below is what does now.
+             *
+             * The shape is `ProductCard`'s, for the reason recorded there: the label is seeded copy
+             * and the edition size is data, and joining them here would make the word unchangeable
+             * without a deploy.
+             */
+            <Cluster gap={2} data-product-badges="">
+              {badges.map((badge) => (
+                <Badge key={badge.key} tone="neutral" data-product-badge={badge.kind}>
+                  {badge.label}
+                  {badge.detail === null ? null : <span data-badge-detail=""> {badge.detail}</span>}
+                </Badge>
+              ))}
+            </Cluster>
           )}
           {product.description === null || product.description.trim() === '' ? null : (
             <Text>{product.description}</Text>

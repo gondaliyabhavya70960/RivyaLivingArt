@@ -12,6 +12,7 @@ import { CardLayout, cardLayoutOf } from './CardLayout'
 
 import { SectionCopy, cardHeadingLevel } from './SectionCopy'
 import { SectionShell } from './SectionShell'
+import { resolveInternalTarget } from '@/lib/site/resolve-target'
 import type { SectionRenderProps } from './types'
 
 /**
@@ -42,6 +43,7 @@ export function SecondaryObjectsSection({
   media,
   strings,
   cloudName,
+  livePaths,
 }: SectionRenderProps): React.ReactElement | null {
   const payload = parseBlockPayload(secondaryObjectsBlock, section.payload)
   const cards = visibleEntries(payload.cards).filter((card) => card.title.trim() !== '')
@@ -88,7 +90,13 @@ export function SecondaryObjectsSection({
             // The whole card is the link when there is a destination, and nothing is a link when
             // there is not — the same rule as the category grid, and for the same reason: a
             // "read more" affordance under an unlinked card is a control that does nothing.
-            return card.href.trim() === '' ? (
+            // The same rule as the category grid, and now the same test: whether the
+            // destination actually renders, not whether somebody typed one. Latent here rather
+            // than live — no card in this block points at a dead path today — but the defect was
+            // identical and so is the fix.
+            const target = resolveInternalTarget(card.href, livePaths)
+
+            return target === null ? (
               <div key={card.key} data-entry-key={card.key}>
                 {body}
               </div>
@@ -96,7 +104,7 @@ export function SecondaryObjectsSection({
               <a
                 key={card.key}
                 data-entry-key={card.key}
-                href={card.href}
+                href={target}
                 className="group block focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-(--rv-ink-accent)"
               >
                 {body}
