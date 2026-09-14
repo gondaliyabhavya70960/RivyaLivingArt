@@ -85,6 +85,7 @@ export function RelatedContent({
               asset={
                 product.hero_media_id === null ? null : (assets.get(product.hero_media_id) ?? null)
               }
+              categoryName={categoryName}
               strings={strings}
               cloudName={cloudName}
             />
