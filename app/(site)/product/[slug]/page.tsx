@@ -324,7 +324,12 @@ export default async function Page({ params }: Props): Promise<React.ReactElemen
           )}
         </Stack>
 
-        <ProductGallery assets={galleryAssets} strings={chrome.strings} cloudName={cloudName} />
+        <ProductGallery
+          assets={galleryAssets}
+          strings={chrome.strings}
+          cloudName={cloudName}
+          emptyTitle={product.title}
+        />
 
         {model === null ? null : (
           <LazyModelViewerMount
