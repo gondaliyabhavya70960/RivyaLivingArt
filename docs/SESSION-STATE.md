@@ -14,6 +14,63 @@ owner_verification: NOT_REQUIRED
 
 ---
 
+## Most recent work — public redesign P2, audited (2026-09-14)
+
+Amendments **A63** and **A64**. **P2's own bands were not shipped, because every one of them is
+behind the owner's verification flag.** Auditing that flag is what turned up two defects worth more
+than the bands would have been.
+
+**THE GUIDE WAS STALE ABOUT P2, AS IT HAS BEEN TWICE BEFORE.** §6.8 asks to "drop grit 400-3000 and
+24-72 hour layers"; `git log -S` returns zero commits for either string on any ref, and neither
+appears in any database row. §6.6 warns against printing 7-21 day delivery; every repository match
+is a false positive (SVG path data, a Cloudinary `-21x9` crop key, a semver range). **There was
+nothing to remove.** §6.8 asks for four chapters and the seed defines seven — the renderer derives
+the ordinal from the chapters that actually rendered, so verifying any four yields exactly 01-04
+with no code change and no row deleted.
+
+**63 OF 250 ALT-TEXT VALUES WERE THE PROMPT, AND THE GATE CALLED THEM CLEAN.** See A63. The one
+bound to the live `/large-format` mobile hero contained no description of the picture at all. All
+250 assets are `is_concept`, so the "editorial photograph" framing on fourteen of them is the §10
+claim rather than a stylistic tic, and it was live on two pages.
+
+**AN EDITOR COULD CLEAR THE OWNER'S FLAG AND PUBLISH ALONE.** See A64. This is the mechanism
+everything below depends on, which is why it was fixed first.
+
+**THE SITE-WIDE GATED COUNT IS 20 ACROSS 9 PAGES, NOT 9.** This file said nine while enumerating
+twenty directly beneath it. Ten are media-bound.
+
+### The next exact action
+
+**Run `npm run media:rewrite-alt-text --apply` against the hosted project.** The 250 committed
+values are clean for the first time; `media_assets.alt_text` still serves the imported drafts, so
+the live pages still say "Ultra-wide architectural editorial photograph". Nothing in the repository
+can change that — it is a write to production. Each value then sits in the Studio's alt-text queue
+at `OWNER_VERIFICATION_REQUIRED` until an editor approves it, bound assets first.
+
+### Still the owner's, and P2 cannot proceed without them
+
+1. **The seven `/process` chapters** (`process.02.brief` … `process.08.final-review`), all DRAFT,
+   all `OWNER_VERIFICATION_REQUIRED`, copy byte-identical to SEED §16 and carrying no forbidden
+   claim. `/process` is a hero and nothing else until these clear. They were given individual flags
+   deliberately, so they are seven independent yes/no questions, not one. Note that all twelve bound
+   chapter assets are `is_concept` — publishing them is also a §10 judgement.
+2. **`large-format.04.customization`** ("Scale changes the conversation."), DRAFT and gated. §6.6's
+   plan-first band.
+3. **The sixth category entry on `/large-format`** — "architectural and statement pieces", suppressed
+   per-entry by its own flag, which is why three of six cards render. §6.6's fourth kind. *Has Rivya
+   produced architectural or large wall compositions?* The same question applies to
+   `conference-and-commercial-tables` and `sculptural-seating`.
+4. **`npm run seed:content` against production** — still blocking three shipped pieces of work.
+5. **Where the contact of record lives** (`NEXT_PUBLIC_WHATSAPP_NUMBER` or the database) — blocks
+   `/studio/system/settings`.
+
+Clearing a flag is two steps, not one: the owner sets it in Studio (`content.verify` is owner and
+admin — the live project has one ACTIVE owner and no admins), and then three `cms_publish_section`
+calls walk DRAFT → REVIEW → APPROVED → PUBLISHED. There is no DRAFT → PUBLISHED edge for any actor.
+The second step is not owner-only.
+
+---
+
 ## Most recent work — the completion pass over the Studio guide (2026-09-13)
 
 Amendment **A60**, on top of A55-A59. All six phases are on main; this is the audit that followed,
@@ -312,11 +369,20 @@ gate — `process.01.hero`, `commissions.01.hero`, `commissions.06.cta` — and 
 `cms_publish_section` along the legal edge (DRAFT → REVIEW → APPROVED → PUBLISHED). Both routes now
 render.
 
-**WHAT IS STILL DRAFT IS THE OWNER'S, AND THE SCHEMA SAYS SO.** Nine DRAFT sections carry
-`OWNER_VERIFICATION_REQUIRED`; `cms_publish_section` refuses them with **RV002** and the check
-constraint refuses underneath it. That gate was deliberately not touched — clearing it is the owner
-asserting a business claim, which is D10's entire mechanism rather than an obstacle to it. Seven of
-those nine are already bound to pictures and will show them the moment the owner clears the flag:
+**WHAT IS STILL DRAFT IS THE OWNER'S, AND THE SCHEMA SAYS SO.** **Twenty** DRAFT sections across
+**nine** pages carry `OWNER_VERIFICATION_REQUIRED`; `cms_publish_section` refuses them with
+**RV002** and the check constraint refuses underneath it. That gate was deliberately not touched —
+clearing it is the owner asserting a business claim, which is D10's entire mechanism rather than an
+obstacle to it. **Ten** of the twenty are already bound to pictures and will show them the moment
+the owner clears the flag:
+
+> The figure said "nine" until it was measured against the live database, while the list below it
+> already enumerated twenty. Nine was right in the narrower scope CANONICAL A52 and the CHANGELOG
+> use — nine of the twenty-one sections THAT BINDING RUN touched — and wrong as the site-wide
+> figure this sentence reads as. Counted with
+> `status = 'DRAFT' and owner_verification = 'OWNER_VERIFICATION_REQUIRED'`:
+> `/process` 7, `/custom-commissions` 4, `/` 2, `/about` 2, `/collection/3d-resin` 1,
+> `/collection/collectible-design` 1, `/collection/preservation` 1, `/contact` 1, `/large-format` 1.
 
 - `/process` — `process.02.brief` … `process.07.finishing` (6 bands, all bound) + `process.08.final-review`
 - `/` — `home.02.manifesto`, `home.08.three-d-resin` (both bound)

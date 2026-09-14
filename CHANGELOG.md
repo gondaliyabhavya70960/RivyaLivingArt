@@ -6,6 +6,30 @@ Every phase adds an entry; see `docs/architecture/CANONICAL-DECISIONS.md` D9 for
 
 ## [Unreleased]
 
+### Public redesign P2 (audit) — alt text that describes the picture, and the gate that was not guarding (2026-09-14)
+
+Amendments **A63** and **A64**. P2's own bands are reported rather than shipped — every one of them
+is behind the owner's verification flag. Auditing that flag is what turned both of these up.
+
+- **63 of 250 alt-text values were prompt, not description**, and `media:check-alt-text` called them
+  clean. `PROMPT_VOCABULARY` looks for the language of a camera; a brief's language is not a
+  camera's. The value bound to the live `/large-format` mobile hero read *"…the upper third of the
+  frame calm and near-empty as headline safe area. Quiet luxury, materials never plastic, realistic
+  proportions., no neon, no heavy gold."*
+- **No asset on this site is a photograph.** All 250 are `is_concept` and `is_ai_generated`, so
+  "Editorial photograph:" is the §10 claim, not a tic. It was live on two pages.
+- **Three findings join the four** — `PROMPT_DIRECTION`, `CLAIMS_CAPTURE`, `MALFORMED` — each tested
+  against the exact string that shipped and a near-miss it must not flag. `CLAIMS_CAPTURE` matches
+  phrases, never the bare word, so "beside reference photos" survives.
+- **An editor could clear the owner's verification flag and publish alone.** `updateSectionAction`
+  takes `content.write` (which includes the editor) and wrote `owner_verification` straight through.
+  The trigger only refuses `VERIFIED`; the publish gate accepts `NOT_REQUIRED` just as readily. Now
+  only `setSectionVerificationAction` moves it, under `content.verify`, offering two states.
+- **The site-wide gated count is 20 across 9 pages, not 9.** `docs/SESSION-STATE.md` said nine while
+  enumerating twenty beneath it. Nine was right in A52's narrower scope — nine of the twenty-one
+  sections that binding run touched — and wrong as the site-wide figure.
+- Nothing here reaches the live database. `media_assets.alt_text` still serves the imported drafts.
+
 ### Public redesign P1 (partial) — the masthead's commission CTA (2026-09-13)
 
 Amendment **A62**. The public showroom guide's §5.1 header action. **Part of P1 only** — the §6.1

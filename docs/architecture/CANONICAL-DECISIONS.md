@@ -202,6 +202,79 @@ Brand and editorial copy may be written; anything asserting business capability 
 
 ## Amendments
 
+**2026-09-14 · A64 — the owner's verification flag is not an editor's to clear, and the gate that
+was meant to hold it was holding nothing.**
+
+*Found while auditing public redesign P2, which is blocked behind this flag on twenty sections.*
+
+**`content.verify` IS OWNER AND ADMIN, AND IT GUARDED ONE ENUM VALUE OUT OF THREE.** The permission
+map says this key holds what `content.publish` deliberately does not — "an unverified business claim
+reaching the public". `enforce_verification_authority` raises only when the NEW value is `VERIFIED`.
+It says nothing about a move OUT of `OWNER_VERIFICATION_REQUIRED`, and
+`page_sections_verified_before_publish` reads `owner_verification <> 'OWNER_VERIFICATION_REQUIRED'`
+— satisfied by `NOT_REQUIRED` exactly as well as by `VERIFIED`.
+
+**SO THE DOWNGRADE WAS THE BYPASS, AND A FORM SELECT OFFERED IT.** `updateSectionAction` takes
+`content.write` — owner, admin AND editor — and wrote the column straight through from a picker
+listing all three states. An editor holding `content.write` and `content.publish`, both of which
+include the editor role, could move a section out of the owner's gate and publish the claim with no
+owner involved. That is D10's entire mechanism walked around without touching the database.
+
+**THE FIX IS THE JOURNAL EDITOR'S, WHICH ALREADY HAD IT RIGHT.** `setArticleVerificationAction` has
+always been a separate action under `content.verify` accepting two states. Sections now match:
+`updateSectionAction` does not write the column, `setSectionVerificationAction` takes
+`content.verify` and accepts `VERIFIED` or `OWNER_VERIFICATION_REQUIRED` only, and the form's select
+is display-only. `NOT_REQUIRED` stays in the option LIST because the field must still show whichever
+state a section holds and 63 published rows legitimately hold it — removing it would have broken
+their display, which is what a narrower reading of this defect would have done.
+
+**THE DATABASE IS LEFT ALONE, DELIBERATELY.** A trigger refusing every downgrade would also refuse
+the legitimate one, where a section is rewritten until it asserts nothing and no longer needs
+confirming. That judgement is a person's and the permission for it is `content.verify`. The RLS
+suite now PINS the permissive database behaviour so nobody mistakes it for the defence; the defence
+is the Server Action, pinned separately by a test that fails if the column is ever added back.
+
+**WHAT IS NOT CLOSED.** `page_sections.owner_verification` defaults to `NOT_REQUIRED`, so a section
+created and written from scratch starts ungated — classification stays the author's judgement, as
+`content/seed/section.ts` treats it. Making the default `OWNER_VERIFICATION_REQUIRED` would put
+every new divider behind the owner and is not proposed here.
+
+**2026-09-14 · A63 — alt text describes the picture, not the prompt; and no asset here is a
+photograph.**
+
+*Phase 43 recorded all 250 drafts as rewritten. 63 of them were not, and the gate said they were.*
+
+**ALL 250 CATALOGUED ASSETS ARE `is_concept` AND `is_ai_generated`.** There is no photograph of a
+delivered Rivya piece among them. So an alternative reading "Ultra-wide architectural editorial
+photograph:" is not a stylistic tic — it is exactly the claim CLAUDE.md's media rule and the public
+brief both forbid, concept media presented as a record of something made and delivered. Two were
+live: the `/large-format` hero and the homepage.
+
+**`media:check-alt-text` REPORTED "250 OF 250 REWRITTEN AND CLEAN" OVER 63 THAT WERE NOT.**
+`PROMPT_VOCABULARY` looks for the language of a CAMERA — lenses, keys, softboxes. A brief's language
+is not a camera's, so none of this was caught. `LARGEFORMAT-DINING-001`, bound to the live
+`/large-format` mobile hero, read in full: *"Soft morning side-light, the upper third of the frame
+calm and near-empty as headline safe area. Quiet luxury, materials never plastic, realistic
+proportions., no neon, no heavy gold."* That describes the picture not at all. It is the brief, with
+the negative prompt still attached and a comma welded to a full stop.
+
+**THREE FINDINGS JOIN THE FOUR.** `PROMPT_DIRECTION` — safe areas, continuity notes, negative
+prompts, variant labels, camera moves. `CLAIMS_CAPTURE` — the text calling itself a photograph, by
+phrase and never by the bare word, so "beside reference photos" (objects in the scene) stays.
+`MALFORMED` — what a hand-edit leaves: `"upper third calm.."`, `"Vertical :"`, `"proportions.,"`,
+excluding the ellipsis because that is `TRUNCATED`'s finding. The rules stay a pure function shared
+by the Studio panel, the CI gate and the suite; each is tested against the exact string that shipped
+AND against a near-miss it must not flag.
+
+**REWRITING THE 63 WAS NOT OPTIONAL ONCE THE RULES TIGHTENED.** `media:rewrite-alt-text` refuses
+all-or-nothing — "none was written" — so a stricter gate without the rewrites would have blocked the
+push of all 250 rather than of 63.
+
+**NOTHING HERE REACHED THE LIVE DATABASE.** `media_assets.alt_text` still carries the imported
+drafts; the live pages still serve them. `npm run media:rewrite-alt-text --apply` is what moves
+these across, and every value stays `OWNER_VERIFICATION_REQUIRED` until an editor approves it in the
+Studio's alt-text queue. That remains the owner's to run.
+
 **2026-09-13 · A62 — public redesign P1, in part: the masthead gets its one call to action, and the
 arithmetic decides where it appears.**
 
