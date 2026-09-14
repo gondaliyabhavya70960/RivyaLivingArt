@@ -131,4 +131,11 @@
   --ease-in-expo: var(--rv-ease-in);
   --ease-flow: var(--rv-ease-flow);
   --ease-settle: var(--rv-ease-settle);
+
+  /*
+   * Z-INDEX (§5.6). Bridged so sticky chrome can say `z-header` rather than a Tailwind scale
+   * step that happens to be near enough. The token is 100; `z-30` is 30 — and that gap is why
+   * the masthead could sit under a raised surface that was never meant to cover it.
+   */
+  --z-header: var(--rv-z-header);
 }
