@@ -963,7 +963,7 @@ is part of what the card is, and a section free to lay these out itself is free 
 | Link | `components/patterns/SearchCombobox/index.tsx` |
 | Licence | N/A — first-party |
 | Dependencies | none |
-| Page | `/search`, site header |
+| Page | `/search` (A66 — it was also the site header until §8.1's trigger replaced the inline field) |
 | Purpose | navigation |
 | Adaptation | Grouped suggestions by entity type (SEED §19); matched substring in `--rv-ink-accent` at weight 500 so the cue is not colour alone |
 | Mobile behaviour | Opens as a full-screen sheet with the keyboard raised; results scroll under a fixed input; 44px result rows |

@@ -100,9 +100,15 @@ figure.
 
 **The island budgets are set at the measured count, deliberately.** The phase document's island
 numbers (3 for `/`, 2 for `/about`, 1 for `/faq`) were written before Phase 10 gave the site a shell
-and Phase 23 put search in it. Every public route now inherits five islands it did not choose —
-`SiteErrorCopy`, `MegaMenu`, `MobileNav`, `SearchCombobox`, `VitalsReporter` — and a budget that was
-red from the day it was written would be a budget nobody looked at.
+and Phase 23 put search in it. Every public route now inherits four islands it did not choose —
+`SiteErrorCopy`, `MegaMenu`, `MobileNav`, `VitalsReporter` — and a budget that was red from the day
+it was written would be a budget nobody looked at.
+
+**It was five until A66.** `SearchCombobox` was the fifth, inherited by every public route because
+Phase 23 put the search box in the shell. §8.1's compact trigger replaced it in the masthead with a
+link, which hydrates nothing; the combobox itself moved to `/search`, a dynamic route a visitor
+reaches deliberately. So this is a cost removed rather than relocated, and
+`check-island-budget.mjs` came down from 5 to 4 in the same commit.
 
 | Route | LCP target | JS target | JS measured | Islands | LCP image |
 |---|---|---|---|---|---|

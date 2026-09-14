@@ -83,22 +83,20 @@ const ALLOWED = new Map([
     'components/patterns/SiteErrorCopy/index.tsx',
     "carries the error boundary's seeded copy across a boundary Next requires",
   ],
-  /**
-   * THE SIXTH, ADDED BY PHASE 23, AND THE BUDGET BELOW WAS RAISED IN THE SAME EDIT.
+  /*
+   * WHERE `SearchCombobox` USED TO BE LISTED, AND WHY IT IS NOT ANY MORE.
    *
-   * FEAT §18 asks for search from anywhere on the site, so the box lives in the shell and is
-   * therefore on the homepage's graph like the mega menu and the drawer. It cannot be a Server
-   * Component: the whole of what it adds over the plain form beneath it — suggestions as you type,
-   * arrow-key navigation, `aria-activedescendant` — is state that changes between keystrokes.
+   * Phase 23 put the search box in the shell so FEAT §18's "search from anywhere" would be true,
+   * and raised this budget from five to six to pay for it. The box never fitted the masthead: a
+   * `flex-1` field between a wordmark and a nine-item nav was allotted 26px at 1280 and 99px at
+   * 1440, against a placeholder 44 characters long. DESIGN_SYSTEM §8.1 had asked for a compact
+   * TRIGGER from the start, and the trigger is a link — no state, no hydration, no island.
    *
-   * What it does NOT buy is the search itself. Without JavaScript the input is a
-   * `<form method="get" action="/search">` and submits to the full results page, so a failed
-   * bundle costs suggestions and nothing else.
+   * The combobox itself is not deleted. It moved to `app/(site)/search/page.tsx`, which this gate
+   * does not walk, because this gate measures what the HOMEPAGE hydrates and `/search` is a
+   * dynamic route a visitor reaches deliberately. So the cost was removed from the shell rather
+   * than relocated within it, and the budget below comes down by one to say so.
    */
-  [
-    'components/patterns/SearchCombobox/index.tsx',
-    'the header search box: suggestions, arrow-key navigation and the ARIA combobox state',
-  ],
   /**
    * THE SEVENTH, ADDED BY PHASE 40, AND THE ONLY ONE HERE THAT IS NOT INTERACTION.
    *
@@ -133,7 +131,10 @@ const ALLOWED = new Map([
  * sentence saying why it cannot be a Server Component.
  *
  * LOWERED FROM SEVEN TO FIVE BY THE EDITORIAL REDESIGN, and this is the first time the number has
- * come down. `HeroMotion` and `MaterialSequence` were never chosen by the homepage: they were
+ * come down. LOWERED AGAIN FROM FIVE TO FOUR when §8.1's search trigger replaced the masthead's
+ * combobox with a link — see the note where that entry used to sit.
+ *
+ * THE EDITORIAL REDESIGN'S REASONING, WHICH STILL HOLDS: `HeroMotion` and `MaterialSequence` were never chosen by the homepage: they were
  * charged to it — and to all sixteen CMS routes, `/privacy` and `/terms` among them — because
  * `components/sections/registry.ts` imports every renderer and two renderers imported them
  * statically. Both now load through `next/dynamic`, the way `ProcessStepsSection` has always
@@ -144,7 +145,7 @@ const ALLOWED = new Map([
  * island that wants one of them still has to be named above with a sentence saying why it cannot
  * be a Server Component.
  */
-const BUDGET = 5
+const BUDGET = 4
 
 const EXTENSIONS = ['.tsx', '.ts', '.mjs', '.js', '.jsx']
 

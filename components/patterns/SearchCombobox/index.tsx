@@ -10,7 +10,13 @@ import { cn } from '@/lib/ui/cn'
 import { Listbox, type SuggestionOption } from './Listbox'
 
 /**
- * The header search box: an ARIA 1.2 combobox that degrades to a plain GET form.
+ * The search field on `/search`: an ARIA 1.2 combobox that degrades to a plain GET form.
+ *
+ * IT WAS THE MASTHEAD'S BOX UNTIL §8.1's TRIGGER REPLACED IT THERE. Phase 23 put it in the shell so
+ * search would be reachable from anywhere; the masthead had no room for a field, and a `flex-1`
+ * item between a wordmark and a nine-item nav was allotted 26px at 1280. The reachability promise
+ * is kept by a link that costs no JavaScript — see `SiteHeader`'s `SearchTrigger` — and everything
+ * this component adds over a plain form is kept on the page where a query is actually typed.
  *
  * IT IS A `<form method="get" action="/search">` FIRST AND A COMBOBOX SECOND, and the order is the
  * design. With JavaScript disabled, blocked, or still downloading, the input submits to `/search`
@@ -246,7 +252,16 @@ export function SearchCombobox({
   }
 
   return (
-    <div className={cn('relative', className)}>
+    <div
+      /*
+       * AN ASSERTION HOOK, FOR THE REASON `MegaMenu` CARRIES ONE. The specs used to scope to
+       * `header ...` because this control lived in the masthead and nothing else there was a
+       * combobox. It lives on `/search` now, beside a results region and a filter link or two, so
+       * "the first combobox on the page" is no longer a description of anything in particular.
+       */
+      data-site-search=""
+      className={cn('relative', className)}
+    >
       <form method="get" action="/search" role="search" className="flex items-center gap-2">
         {label === null ? null : (
           <label htmlFor={inputId} className="sr-only">

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import type * as React from 'react'
 
+import { SearchCombobox } from '@/components/patterns/SearchCombobox'
 import { SearchResultCard } from '@/components/patterns/SearchResultCard'
 import { Container } from '@/components/primitives/Container'
 import { Heading } from '@/components/primitives/Heading'
@@ -76,6 +77,21 @@ export default async function SearchPage({
   const similarHeading = siteString(strings, 'UI_LABEL.search.similar.heading')
   const similarBody = siteString(strings, 'UI_LABEL.search.similar.body')
   const seeMore = siteString(strings, 'ACTION_LABEL.search.see_more_in_group')
+  /*
+   * The four rows the combobox dresses itself with, which the masthead used to read. Each one
+   * missing means that part of the control is not rendered rather than falling back to a literal
+   * — `SearchCombobox` takes them all as `string | null` for exactly that reason.
+   */
+  const suggestionsLabel = siteString(strings, 'UI_LABEL.search.suggestions.label')
+  const suggestionsHint = siteString(strings, 'UI_LABEL.search.suggestions.hint')
+  const seeAll = siteString(strings, 'ACTION_LABEL.search.see_all')
+  /*
+   * The plural `{{count}}` sentence the combobox's live region announces when suggestions arrive.
+   * Deliberately NOT the three-way `countKey` the results heading below picks between: that one
+   * describes the page a visitor has already loaded, this one describes a list that is still only
+   * a suggestion. The masthead read this same row before the field moved here.
+   */
+  const suggestionCountTemplate = siteString(strings, 'UI_LABEL.search.count')
 
   const client = await createClient()
 
@@ -197,31 +213,36 @@ export default async function SearchPage({
           </a>
         )}
 
-        <form method="get" action={PATH} role="search" className="flex items-end gap-3">
-          <div className="flex-1">
-            {label === null ? null : (
-              <label htmlFor="site-search" className="sr-only">
-                {label}
-              </label>
-            )}
-            <input
-              id="site-search"
-              type="search"
-              name="q"
-              defaultValue={query.q}
-              className="w-full border border-line bg-surface px-3 py-2 text-sm text-ink placeholder:text-ink-secondary"
-              {...(placeholder === null ? {} : { placeholder })}
-            />
-          </div>
-          {submit === null ? null : (
-            <button
-              type="submit"
-              className="border border-line px-4 py-2 text-sm uppercase tracking-technical text-ink"
-            >
-              {submit}
-            </button>
-          )}
-        </form>
+        {/*
+         * THE COMBOBOX LIVES HERE NOW, AND IT IS THE SAME COMPONENT THE MASTHEAD USED TO CARRY.
+         *
+         * Phase 23 put it in the shell so search would be available from anywhere, and the cost
+         * was a field squeezed between a wordmark and a nine-item nav: 26px wide at 1280, against
+         * a placeholder 44 characters long. §8.1's compact trigger replaced it there, and the
+         * enhancement it wrapped — suggestions, arrow-key navigation, the ARIA 1.2 pattern — is
+         * not worth losing, so it moved to the one page where the field is full width and typing
+         * a query is the task rather than a garnish.
+         *
+         * NOTHING ABOUT THE NO-JAVASCRIPT PATH CHANGES. `SearchCombobox` IS a
+         * `<form method="get" action="/search">` before it is anything else, so this is still the
+         * GET form Phase 10 shipped: a search is a URL a visitor can bookmark, share and reload,
+         * and a failed bundle costs suggestions and nothing else.
+         *
+         * IT IS AN ISLAND, AND ON THIS ROUTE THAT IS PAID HONESTLY. `/search` is dynamic — its
+         * query is its state — and the homepage's budget in `check-island-budget.mjs` walks the
+         * shell, not this page, so moving the component OFF the shell lowered that budget from
+         * five to four rather than merely relocating the cost.
+         */}
+        <SearchCombobox
+          initialQuery={query.q}
+          label={label}
+          placeholder={placeholder}
+          submitLabel={submit}
+          listLabel={suggestionsLabel}
+          hint={suggestionsHint}
+          seeAllLabel={seeAll}
+          countTemplate={suggestionCountTemplate}
+        />
 
         {/* `tabIndex={-1}` so the skip link moves focus and not only the viewport. */}
         <div id="search-results" tabIndex={-1} aria-live="polite" className="mt-10">

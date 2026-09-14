@@ -1397,20 +1397,54 @@ CSS only — no scroll listener, no client component, no layout thrash.
 Nav labels, order, hrefs and visibility come from `navigation_items` (SEED §8). The header renders
 whatever is published; it hard-codes no label.
 
-**The search is an inline field from `xl` up, and nothing between `lg` and `xl` — a divergence from
-the "search trigger" above, recorded rather than left silent (Phase 42).** Phase 23 shipped
-`SearchCombobox`, a labelled input with a submit button, where this table says *trigger*. It was
-visible from `lg`, and at 1024 it does not fit: the content box is 930px, the nine published
-top-level items will not compress below 783 once the gap is tightened, and the field will not
-compress below 118 because its submit button is `shrink-0`. Every `(site)` route scrolled sideways
-at that width until the field was moved to `xl`. §8.2 pins the nav and its mega menu at ≥1024, so the
-field was the only one of the three that could move.
+**The search is the trigger this table always specified — A66, and the numbers that forced it.**
+Phase 23 shipped `SearchCombobox`, a labelled input with a submit button, where this table says
+*trigger*, and Phase 42 moved it from `lg` to `xl` after every `(site)` route scrolled sideways at
+1024. Moving it did not make it fit; it only moved where it did not fit. Measured on the live
+masthead:
 
-What closes the gap is the control this table originally specified: a compact trigger, one control
-wide, that opens the field rather than being it. That is a Phase 45 change. Until it exists, a
-visitor between 1024 and 1279 reaches `/search` by URL or from a page that links it, and
-`tests/e2e/search-combobox-a11y.spec.ts` asserts the field only at and above 1280 — which is the
-threshold it had always used, while its comment said `lg`.
+| Width | Content box | Wordmark | Nav (9 items) | Field was allotted |
+|---|---|---|---|---|
+| 1280 | 1165 | 104 | 968 | **26px** |
+| 1440 | 1312 | 104 | 968 | **99px** |
+| 1920 | 1312 | 104 | 968 | **99px** |
+
+The seeded placeholder is 44 characters. A visitor at 1440 saw "Search fu" in a box too narrow to
+type a word into, and no gate reported anything, because the field was the row's only flexible item
+and absorbed the whole deficit instead of overflowing it. **A `flex-1` control between two
+inflexible ones does not report that it has no room; it just stops being usable.**
+
+So the masthead now carries a 44px link to `/search` wearing a magnifier — no field, no state, no
+hydration — and `SearchCombobox` moved to `/search`, where it is full width and where typing a
+query is the task. It is still `xl` and up: the trigger plus its gap needs 68px, and at 1024 the row
+has 802px for a nav that wants 968 and is already wrapping without it. Below `lg` the drawer carries
+`/search` as a menu item. `tests/e2e/search-combobox-a11y.spec.ts` now runs at every width, scoped
+to `[data-site-search]`, because the control it asserts is no longer hidden anywhere.
+
+**NINE TOP-LEVEL ITEMS IS MORE THAN THIS MASTHEAD CAN CARRY, AND THAT IS NOW THE BINDING
+CONSTRAINT.** Forced onto one line the published nav measures 968px at `gap-6`, 936 at `gap-5`, 904
+at `gap-4` and 872 at `gap-3`. Two consequences follow, and neither is a spacing bug:
+
+* **Below roughly 1100 the nav wraps to two lines and the wordmark is squeezed from 104px to 97.**
+  At 1024 the row has 802px for the nav and nine items want 872 even at `gap-3` — and 840 at
+  `gap-2`, so no gap closes it. This is live today and predates A66.
+* **The §5.1 commission pill cannot be added at all.** It measures 197px, not the 155 recorded in
+  earlier arithmetic. `wide` is 90rem and `2xl` is 90rem, so the widest content box the container
+  ever allows is 1312 and 1920 is no roomier than 1440. The row wants 104 + 968 + 44 + 197 and three
+  24px gaps: **1385 into 1312**. The pill is `shrink-0` and the nav is not, so the nav absorbs the
+  73px by wrapping — which is why `homepage.spec.ts`'s overflow assertion stays green while the
+  masthead grows a second line of menu.
+
+**Freeing the field's 148px was necessary and is not sufficient.** The remaining 73px cannot be
+shaved out of gaps without pinning the layout to labels an editor may change tomorrow —
+`navigation_items` is data. What closes it is a shorter top-level menu: at six items the pill has
+about 167px of room at every width from 1280 up. **That is an editorial decision and it is the
+owner's**, which is why the pill is left rendered at `2xl` and its row left unseeded rather than
+either being quietly deleted or shipped into a masthead that wraps around it.
+
+`xl` DROPS THE NAV GAP FROM 24px TO 20px, which is the one number A66 did move. At 1280 the row
+leaves 969px for a nav that wants 968 at `gap-6` — one pixel, which is not headroom when a single
+editor renaming "About" spends it. 20px leaves 33. `2xl` restores the 24px §5 draws.
 
 **A DESTINATION THAT IS NOT LIVE IS OMITTED FROM THE CHROME, AND RENDERS AS TEXT IN A PAGE BODY.**
 The two rules differ, and the difference is what the label is for. A card or a call to action has
