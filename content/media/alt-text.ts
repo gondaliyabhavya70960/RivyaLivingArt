@@ -28,7 +28,7 @@ export const ALT_TEXT: Readonly<Record<string, string>> = {
   'PRESERVATION-VARMALA-001':
     'A fresh marigold-and-rose wedding varmala coiled on a seasoned dark teak workbench, still bright, blotting paper and a pair of trimming scissors laid beside it, the garland whole and untouched.',
   'PRESERVATION-VARMALA-002':
-    'One garland photographed twice on the same dark teak ground: on the left the fresh marigold and rose varmala coiled loose, on the right the same flowers preserved and sealed inside a clear resin block.',
+    'One garland shown twice on the same dark teak ground: on the left the fresh marigold and rose varmala coiled loose, on the right the same flowers preserved and sealed inside a clear resin block.',
   'GIFTS-001':
     'An open square gift box lined with dark charcoal cloth holding three small resin keepsakes — a coaster, a domed paperweight and a pendant — the lid resting behind it, a length of champagne ribbon loose alongside.',
   'PRESERVATION-KEEPSAKE-001':
@@ -52,7 +52,7 @@ export const ALT_TEXT: Readonly<Record<string, string>> = {
   'PROCESS-FINISH-001':
     'A cured resin tabletop mid wet-sand, a sanding block resting at an angle on its surface.',
   'PROCESS-POUR-001':
-    'Deep sapphire resin pouring in one unbroken ribbon into a shallow round mould against a matte obsidian background, keeping the same subject.',
+    'Deep sapphire resin pouring in one unbroken ribbon into a shallow round mould, set against a matte obsidian background.',
   'PROCESS-FINISH-002':
     'A foam polishing pad mid-pass across a large resin surface, a mirror-bright arc of finished gloss trailing behind it against the still-matte resin ahead of it, the reflected light stretched along the polished band.',
   'WALL-ART-002':
@@ -60,31 +60,31 @@ export const ALT_TEXT: Readonly<Record<string, string>> = {
   'WALL-ART-003':
     'A spare study — a plain desk, one chair, a bare bookshelf, neutral walls — with one large abstract resin wall panel as the single point of colour in an otherwise neutral, unstyled room.',
   'MATERIAL-MACRO-002':
-    'A close-up of the texture of poured resin, keeping the same subject, palette and light as the horizontal master so the crop reads as the same photograph, not a new scene.',
+    'A close-up of poured resin, the surface catching light in slow bands of deep blue.',
   'PROCESS-POUR-002':
-    'A single frame of sapphire resin mid-pour into a shallow mould against a matte black background, keeping the same subject, palette and light as the horizontal master so the crop reads as the same photograph.',
+    'A single frame of sapphire resin mid-pour into a shallow mould, matte black behind it.',
   'PROCESS-CURE-002':
-    'A dark studio interior with a work bench of curing large-format moulds under one warm lamp, keeping the same subject, palette and light as the horizontal master so the crop reads as the same photograph, not a new scene.',
+    'A dark studio interior with a work bench of curing large-format moulds standing under one warm lamp.',
   'MATERIAL-MACRO-003':
-    'A close-up of the texture of poured resin, keeping the same subject, palette and light as the horizontal master so the crop reads as the same photograph, not a new scene.',
+    'A close-up of poured resin texture, deep blue depth beneath a glassy, softly lit surface.',
   'DECOR-003':
-    'A long shared workshop table set with pour cups and moulds under warm pendant light, keeping the same subject, palette and light as the horizontal master so the crop reads as the same photograph, not a new scene.',
+    'A long shared workshop table set with pour cups and moulds under warm pendant light.',
   'MATERIAL-MACRO-004':
-    'A wide macro texture band of poured resin, keeping the same subject, palette and light as the horizontal master so the crop reads as the same photograph, not a new scene.',
+    'A wide macro band of poured resin texture, deep blue depth running the full width of the frame.',
   'DECOR-004':
-    'A long shared workshop table set with pour cups and moulds under warm pendant light, keeping the same subject, palette and light as the horizontal master so the crop reads as the same photograph, not a new scene.',
+    'A long shared workshop table laid with pour cups and moulds, warm pendant light falling along its length.',
   'MATERIAL-MACRO-005':
-    'A wide macro texture band of poured resin, keeping the same subject, palette and light as the horizontal master so the crop reads as the same photograph, not a new scene.',
+    'A wide macro band of poured resin, its blue depth and fine mineral veiling filling the frame.',
   'PROCESS-CURE-003':
-    'A dark studio interior with a work bench of curing large-format moulds under one warm lamp, keeping the same subject, palette and light as the horizontal master so the crop reads as the same photograph, not a new scene.',
+    'A dark studio interior, a work bench of curing large-format moulds standing under one warm lamp.',
   'PROCESS-POUR-003':
-    'A single frame of sapphire resin mid-pour into a shallow mould against a matte black background, keeping the same subject, palette and light as the horizontal master so the crop reads as the same photograph.',
+    'A single frame of sapphire resin mid-pour into a shallow mould against a matte black ground.',
   'PROCESS-FINISH-003':
     'A cured resin tabletop mid wet-sand, a sanding block resting at an angle on its surface.',
   'EDITORIAL-001':
     'A finished resin tabletop tilted up at an angle so every ripple in the gloss would show, the surface reading perfectly flat and even, the edge of a hand just entering the bottom of frame to hold the angle, no face.',
   'PROCESS-POUR-004':
-    'Deep sapphire resin pouring in one unbroken ribbon into a shallow round mould against a matte obsidian background, keeping the same subject.',
+    'Deep sapphire resin pouring in one unbroken ribbon into a shallow round mould, matte obsidian behind it.',
   'EDITORIAL-002':
     'A finished resin tabletop tilted up at an angle so every ripple in the gloss would show, the surface reading perfectly flat and even, the edge of a hand just entering the bottom of frame to hold the angle, no face.',
   'PROCESS-FINISH-004':
@@ -152,53 +152,52 @@ export const ALT_TEXT: Readonly<Record<string, string>> = {
   'MATERIAL-MACRO-008':
     'Macro top-down view of liquid deep sapphire blue epoxy resin flowing across raw dark teakwood, swirling with genuine gold leaf veins, crystalline water-like refraction.',
   'PROCESS-TIMBER-003':
-    "Lens, framing, background wall, trestles and the slab's silhouette and position IDENTICAL — this must read as the same object photographed a second time in the same spot.",
+    'A large timber slab resting on two blackened steel trestles in a dark atelier, a board-formed concrete wall behind it.',
   'PROCESS-TIMBER-004':
     'A single large timber slab supported on two blackened steel trestles in a dark artisan atelier, board-formed concrete wall behind, one soft directional window light from the left.',
   'EDITORIAL-003':
-    'Ultra-wide editorial photograph composed as a social share card: a single flagship live-edge black walnut dining table with a translucent deep ocean blue epoxy resin river, three-quarter view.',
+    'A single live-edge black walnut dining table seen at three-quarter view, a translucent deep ocean blue resin river running its length.',
   'PROCESS-TIMBER-005':
     'A single large timber slab supported on two blackened steel trestles in a dark artisan atelier, board-formed concrete wall behind, one soft directional window light from the left.',
   'EDITORIAL-004':
-    'Editorial photograph: tall studio window light falling across several resin pieces resting on trestles while they cure, plastic sheeting folded neatly aside, dark timber and mineral surfaces, quiet morning stillness.',
+    'Tall studio window light falling across several resin pieces resting on trestles while they cure, plastic sheeting folded neatly aside, dark timber and mineral surfaces in quiet morning stillness.',
   'PRESERVATION-VARMALA-004':
     'Atmospheric macro, portrait: marigold and rose petals suspended mid-drift in perfectly clear resin, soft warm side-light through the glassy block, edges falling to soft darkness.',
   'PROCESS-PIGMENT-003':
-    'Portrait abstract for social: deep ocean blue resin folds with fine white pigment lace, glassy depth, calm dark lower third suitable for quiet text overlay. Quiet luxury, never plastic. No objects, no neon.',
+    'Deep ocean blue resin folding in on itself with fine white pigment lace through it, glassy depth falling away to a calm dark lower third.',
   'LARGEFORMAT-DINING-001':
-    'Soft morning side-light, the upper third of the frame calm and near-empty as headline safe area. Quiet luxury, materials never plastic, realistic proportions., no neon, no heavy gold.',
-  'EDITORIAL-005':
-    'Editorial photograph: a bespoke consultation table from above at a shallow angle.',
+    'A large live-edge resin dining table with a deep ocean blue river through walnut, standing in a tall, serene interior under soft morning side-light.',
+  'EDITORIAL-005': 'A bespoke consultation table seen from above at a shallow angle.',
   'PRESERVATION-KEEPSAKE-002':
     'Square atmospheric still life: a small clear resin keepsake block holding preserved petals, resting on dark mineral stone beside one stem, single soft directional light, deep quiet shadow.',
   'MATERIAL-MACRO-009':
-    'Ultra-wide abstract macro: deep ocean blue resin in slow frozen flow, white mineral veils suspended mid-bloom, faint champagne warmth at one edge, glass-deep gloss.',
+    'Deep ocean blue resin held in slow frozen flow, white mineral veils suspended mid-bloom, a faint champagne warmth at one edge under a glass-deep gloss.',
   'PROCESS-PIGMENT-004':
-    'Abstract macro photograph: a thin champagne-warm veil of pigment folded into obsidian-dark resin, one soft directional light finding the fold, everything else falling to near-black.',
+    'A thin champagne-warm veil of pigment folded into obsidian-dark resin, one soft directional light finding the fold and everything else falling to near-black.',
   'INTERIOR-LIFESTYLE-002':
-    'Editorial interior photograph, Japandi style: a resin and oak dining table with a clear smoky epoxy seam, low warm light, paper lantern, tatami-toned textures, deep calm shadows and large negative space. Quiet luxury.',
+    'A resin and oak dining table with a clear smoky epoxy seam in a Japandi interior, low warm light, a paper lantern, tatami-toned textures and deep calm shadows.',
   'EDITORIAL-006':
-    'Still life, square editorial photograph: pigment jars in deep ocean blues, a brass mixing tool, resin cups and a strip of walnut arranged sparsely on a dark mineral bench, one soft directional light, precise shadows.',
+    'Pigment jars in deep ocean blues, a brass mixing tool, resin cups and a strip of walnut arranged sparsely on a dark mineral bench, one soft directional light casting precise shadows.',
   'LARGEFORMAT-CONSOLE-003':
-    'Modern tropical entryway, editorial photograph: a long resin console table with teak grain flowing into clear epoxy against a lime-plaster wall, monstera shadow play from side light, breeze-lit calm.',
+    'A long resin console table with teak grain flowing into clear epoxy against a lime-plaster wall in a modern tropical entryway, monstera shadows playing across it from side light.',
   'WALL-ART-016':
-    'Gallery wall, editorial portrait: a very large abstract resin wall artwork in deep ocean blues with fine champagne mineral veining, a low oak bench beneath, huge negative space. Quiet luxury.',
+    'A very large abstract resin wall artwork in deep ocean blues with fine champagne mineral veining on a gallery wall, a low oak bench beneath it and a great deal of bare wall around it.',
   'INTERIOR-LIFESTYLE-003':
     'Softened brutalist interior, editorial portrait: a sculptural resin chair with a translucent smoky seat and dark timber frame against board-formed concrete, one warm directional light, strong architectural shadow.',
   'INTERIOR-LIFESTYLE-004':
-    'Modern Mediterranean room, editorial photograph: a low resin and olive-wood bench beneath an arched window, whitewashed textured walls, warm late light raking across the polished resin seat.',
+    'A low resin and olive-wood bench beneath an arched window in a modern Mediterranean room, whitewashed textured walls, warm late light raking across the polished resin seat.',
   'LARGEFORMAT-COFFEE-001':
-    'Warm minimalist living room, editorial photograph: a round resin coffee table with deep ocean blue surface and walnut base on a wool rug, linen sofa in mineral tones, one shaft of afternoon light.',
+    'A round resin coffee table with a deep ocean blue surface and walnut base on a wool rug in a warm minimalist living room, a linen sofa in mineral tones behind it and one shaft of afternoon light across the floor.',
   'LARGEFORMAT-DINING-002':
-    'Ultra-wide architectural editorial photograph: a large live-edge resin dining table with a deep ocean blue epoxy river through natural walnut, centered in an organic-modern interior with rammed-earth walls.',
+    'A large live-edge resin dining table with a deep ocean blue epoxy river through natural walnut, centred in an organic-modern interior with rammed-earth walls.',
   'LARGEFORMAT-MONUMENTAL-001':
-    "Ultra-wide architectural lobby, editorial photograph: a monumental freestanding resin and timber sculptural piece as the space's single statement, polished stone floor reflecting it faintly, tall diffuse daylight.",
+    "A monumental freestanding resin and timber sculptural piece standing alone as a lobby's single statement, a polished stone floor reflecting it faintly under tall diffuse daylight.",
   'PROCESS-FINISH-005':
-    "Close editorial photograph: a craftsman's hands only, no face, sanding the live edge of a walnut and resin tabletop, fine dust on skin, soft warm directional light from the side.",
+    "A craftsman's hands only, no face, sanding the live edge of a walnut and resin tabletop, fine dust on the skin and soft warm light from the side.",
   'PROCESS-STUDIO-004':
-    'Dark premium artisan atelier, wide editorial photograph: a long timber workbench holding a half-finished resin tabletop, clamps and hand tools arranged quietly, dark timber walls and mineral surfaces.',
+    'A long timber workbench holding a half-finished resin tabletop in a dark artisan atelier, clamps and hand tools arranged quietly along it, dark timber walls and mineral surfaces beyond.',
   'GALLERY-SCENE-001':
-    'Gallery-like interior, editorial portrait orientation: a small sculptural resin side table with layered blue and clear casting beside a concrete plinth, single artwork on a distant wall, vast negative space. Quiet luxury.',
+    'A small sculptural resin side table with layered blue and clear casting beside a concrete plinth in a gallery-like interior, a single artwork on a distant wall and vast empty space around it.',
   'PROCESS-MOULD-005':
     'Hands in black nitrile gloves arranging marigold and rose petals inside an empty silicone mould on a dark work surface, intimate, cropped at the wrists in frame.',
   'THREE-D-RESIN-001':
@@ -300,15 +299,15 @@ export const ALT_TEXT: Readonly<Record<string, string>> = {
   'PROCESS-STUDIO-009':
     'Artisan craft process still, gloved hands tilting a wooden mold with freshly poured translucent deep-blue resin, gold flakes swirling in the liquid, workshop softly lit, deep midnight-blue tones.',
   'DECOR-009':
-    'Macro product photography, oval gold-leaf geode resin serving tray with polished agate-style rings, deep midnight-blue background, sapphire and royal blue translucent resin bands, suspended gold flakes.',
+    'An oval gold-leaf geode resin serving tray with polished agate-style rings, sapphire and royal blue translucent bands and suspended gold flakes, against a deep midnight-blue ground.',
   'PRESERVATION-VARMALA-009':
-    'Macro product photography, clear resin keepsake block preserving red and marigold wedding garland flowers, deep midnight-blue background, embedded rose petals and marigold blossoms suspended in crystal-clear resin.',
+    'A clear resin keepsake block preserving red and marigold wedding garland flowers, rose petals and marigold blossoms suspended in the crystal-clear resin, against a deep midnight-blue ground.',
   'MATERIAL-MACRO-024':
     'Extreme macro cinematography still, liquid epoxy resin mid-pour swirling deep sapphire and royal blue pigment, suspended gold-leaf flakes catching light, deep midnight-blue background, backlit translucency.',
   'DECOR-010':
-    'Macro product photography, teardrop resin pendant necklace with deep blue translucent resin and suspended gold-leaf flakes, tiny pressed white flowers inside, deep midnight-blue background, backlit translucency.',
+    'A teardrop resin pendant necklace in deep blue translucent resin with suspended gold-leaf flakes and tiny pressed white flowers inside, lit from behind against a deep midnight-blue ground.',
   'MATERIAL-MACRO-025':
-    'Macro product photography, set of round ocean-wave resin coasters, deep midnight-blue background, translucent teal and white resin waves with fine gold-leaf veins, backlit translucency, caustic light refraction.',
+    'A set of round ocean-wave resin coasters in translucent teal and white with fine gold-leaf veins, lit from behind so the light refracts through them, against a deep midnight-blue ground.',
   'PROCESS-STUDIO-010':
     'Bright porcelain-toned artisan studio table by a large window, soft ivory daylight, handmade resin coasters with ocean-wave edges and small brass tools arranged neatly on pale linen, airy negative space.',
   'THREE-D-RESIN-005':
@@ -320,17 +319,17 @@ export const ALT_TEXT: Readonly<Record<string, string>> = {
   'PROCESS-STUDIO-011':
     'Macro of a small artisan torch flame passing over a freshly poured resin surface, tiny bubbles rising and popping, wet glossy deep-blue surface with gold shimmer, dark atelier background.',
   'WALL-ART-017':
-    'Dark contemporary gallery wall with three framed ocean-resin art panels in deep blues with fine gold leaf detail, museum picture lights, stone floor reflection, luxury art-gallery editorial photograph.',
+    'A dark contemporary gallery wall hung with three framed ocean-resin art panels in deep blues with fine gold leaf detail, picture lights above them and a stone floor reflecting the wall faintly.',
   'PROCESS-PIGMENT-005':
     'Still life of resin art supplies: glass jars of shimmering mica pigment powders in blues and golds, amber bottles, a brass stirring stick, arranged on dark slate against a deep midnight-blue background.',
   'PROCESS-MOULD-011':
-    "Close-up of an artisan's hands placing dried red rose and marigold wedding-garland petals into a circular silicone mold, dark workshop with a single warm spotlight, deep blue shadows, craft documentary luxury photography.",
+    "Close-up of an artisan's hands placing dried red rose and marigold wedding-garland petals into a circular silicone mould, a single warm spotlight in a dark workshop and deep blue shadows around it.",
   'DECOR-011':
     'A handcrafted deep-blue resin serving tray with gold flake edges resting on a dark marble console beside an unlit candle and a small stack of linen napkins, moody evening interior.',
   'MATERIAL-MACRO-027':
     'Extreme macro of liquid epoxy resin mid-pour, deep sapphire blue translucent liquid surface with thin veins of antique gold pigment swirling through it, glossy reflections and refraction, dark midnight-blue environment.',
   'MATERIAL-MACRO-028':
-    'Extreme macro photograph of a polished resin art surface: deep translucent layers of sapphire and midnight blue with thin shimmering veins of gold leaf running through, glossy wet-look reflections.',
+    'Extreme macro of a polished resin art surface: deep translucent layers of sapphire and midnight blue with thin shimmering veins of gold leaf running through, glossy wet-look reflections.',
   'PROCESS-PIGMENT-006':
     'Vertical still life on a dark stone table: small glass jars of sapphire blue resin pigment, a brush, scattered flakes of gold leaf, one warm spotlight from the side, deep black background, luxurious minimal composition.',
   'GALLERY-SCENE-003':
@@ -340,11 +339,11 @@ export const ALT_TEXT: Readonly<Record<string, string>> = {
   'PROCESS-STUDIO-012':
     'Artisan resin studio at night: wooden workbench with silicone molds, jars of blue pigment, gold leaf sheets, a warm desk lamp glowing against cool blue window light, still life, deep shadows.',
   'PROCESS-FINISH-006':
-    'Close-up of hands in dark cotton sleeves polishing a small round resin artwork with a soft cloth, glossy blue-gold surface catching warm lamp light, dark workshop background, craft photography.',
+    'Close-up of hands in dark cotton sleeves polishing a small round resin artwork with a soft cloth, the glossy blue-and-gold surface catching warm lamp light against a dark workshop background.',
   'MATERIAL-MACRO-029':
-    'A luxurious oval vanity mirror framed in ocean-blue resin with gold leaf inclusions, standing on a dark dresser with soft reflected glow. luxury product photography, handcrafted resin art.',
+    'An oval vanity mirror framed in ocean-blue resin with gold leaf inclusions, standing on a dark dresser with a soft reflected glow around it.',
   'DECOR-012':
-    'An elegant resin tablescape set — round serving tray, matching coasters and napkin rings in deep ocean blue resin with gold flake edges, styled on a dark linen table. luxury product photography, handcrafted resin art.',
+    'An elegant resin tablescape set — round serving tray, matching coasters and napkin rings in deep ocean blue resin with gold flake edges — styled on a dark linen table.',
   'MATERIAL-MACRO-030':
     'Deep ocean-blue resin tones, with metallic gold accents, soft studio light.',
   'PROCESS-FINISH-007':
@@ -434,7 +433,7 @@ export const ALT_TEXT: Readonly<Record<string, string>> = {
   'DECOR-016':
     'A curated flat-lay of varied resin gifts — bookmark, coaster, pendant, deep ocean-blue resin tones, with metallic gold accents, soft studio light.',
   'WALL-ART-020':
-    'Playful premium kids-room resin decor — a cloud-and-stars name plaque and small night-light in soft azure blue resin with gentle gold accents, on a shelf. luxury product photography, handcrafted resin art.',
+    'A kids-room resin cloud-and-stars name plaque and a small night-light in soft azure blue resin with gentle gold accents, arranged on a shelf.',
   'DECOR-017': 'Deep ocean-blue resin tones, with metallic gold accents, soft studio light.',
   'PRESERVATION-KEEPSAKE-003':
     'A wedding invitation card and dried rose petals suspended in a clear resin block keepsake, deep ocean-blue resin tones, with metallic gold accents, soft studio light.',
@@ -445,57 +444,61 @@ export const ALT_TEXT: Readonly<Record<string, string>> = {
   'THREE-D-RESIN-012':
     'A detailed 3D-printed architectural scale model of a modern building displayed on an executive desk, deep ocean-blue resin tones, with metallic gold accents, soft studio light.',
   'MATERIAL-MACRO-032':
-    'A pair of sculptural handcrafted resin vases, ocean-blue translucent gradient with gold veining, one holding dried pampas stems, on a dark stone plinth. luxury product photography, handcrafted resin art.',
+    'A pair of sculptural handcrafted resin vases in an ocean-blue translucent gradient with gold veining, one holding dried pampas stems, on a dark stone plinth.',
   'PROCESS-STUDIO-015':
-    'A resin-art workshop scene — gloved artisan hands pouring glossy ocean-blue resin from a cup onto a mould, pigment jars and gold flake dishes on the workbench. luxury product photography, handcrafted resin art.',
+    'A resin-art workshop scene: gloved artisan hands pouring glossy ocean-blue resin from a cup onto a mould, pigment jars and gold flake dishes on the workbench.',
   'MATERIAL-MACRO-033':
-    'A luxurious oval vanity mirror framed in ocean-blue resin with gold leaf inclusions, standing on a dark dresser with soft reflected glow. luxury product photography, handcrafted resin art.',
+    'An oval vanity mirror framed in ocean-blue resin with gold leaf inclusions, standing on a dark dresser, soft light reflecting from the glass.',
   'THREE-D-RESIN-013':
     'An assortment of intricate 3D-printed gift objects — geometric lamp, custom figurine, deep ocean-blue resin tones, with metallic gold accents, soft studio light.',
   'LARGEFORMAT-DINING-004':
-    'Vertical : a large live-edge resin dining table with a deep ocean blue epoxy river through natural walnut in a tall serene architectural interior, upper third calm..',
-  'MATERIAL-MACRO-034': 'Gold leaf settling on sapphire resin (720p variant 2).',
+    'A large live-edge resin dining table with a deep ocean blue epoxy river through natural walnut, standing in a tall, serene architectural interior.',
+  'MATERIAL-MACRO-034':
+    'Gold leaf settling onto sapphire resin, the fine leaf breaking into drifting flecks where it meets the wet surface.',
   'DECOR-018':
-    'Extreme macro: a bar of soft warm light sweeping across a deeply polished resin surface revealing mirror-gloss depth, pigment layers and wood grain below..',
+    'Extreme macro: a bar of soft warm light sweeping across a deeply polished resin surface, revealing mirror-gloss depth, pigment layers and wood grain below.',
   'PROCESS-TIMBER-006':
-    'Extreme macro tracking along a live edge where teak grain meets clear resin, light shifting so resin flashes transparent to deep reflective..',
+    'Extreme macro along a live edge where teak grain meets clear resin, the light shifting so the resin turns from transparent to deep and reflective.',
   'PROCESS-POUR-009':
     'Extreme slow-motion macro of deep sapphire resin pouring in one unbroken ribbon into a shallow round mould, single soft key from upper left, seamless 5s loop.',
   'PROCESS-STUDIO-016':
-    "Dark premium artisan atelier: craftsman's hands only, no face, sanding the live edge of a resin and walnut tabletop, dust motes in one warm shaft of light..",
+    "A craftsman's hands only, no face, sanding the live edge of a resin and walnut tabletop in a dark atelier, dust motes hanging in one warm shaft of light.",
   'PROCESS-POUR-010':
     'Extreme macro slow-motion: liquid epoxy in deep sapphire pouring onto black glass, fine metallic gold pigment swirling in delicate veins, pitch-black studio, single soft key.',
   'PROCESS-POUR-011':
     'Extreme slow-motion macro of sapphire resin pouring in one unbroken ribbon into a wide shallow mould, matte black background.',
   'PROCESS-TIMBER-007':
-    'Material story in one slow move: raw walnut grain, clear resin advancing across the timber edge and settling glassy, light sweeping once across the cured polished surface..',
+    'Raw walnut grain with clear resin advancing across the timber edge and settling glassy, light sweeping once across the cured polished surface.',
   'EDITORIAL-017':
-    'Vertical abstract background: ink-dark and deep ocean blue resin drifting in very slow folds, faint champagne light, top third calm as text safe area..',
-  'EDITORIAL-018': 'Sapphire resin pour, high angle (720p variant 2).',
+    'Ink-dark and deep ocean blue resin drifting in very slow folds with a faint champagne light through it.',
+  'EDITORIAL-018': 'Sapphire resin pouring into a mould, seen from a high angle.',
   'MATERIAL-MACRO-035':
     'Extreme macro of a curing resin surface resembling ocean waves from above: layered translucent sapphire and midnight blue with thin veins of shimmering gold leaf, light sweeping across.',
-  'PROCESS-STUDIO-017': 'Workshop bench dolly (720p variant 2).',
-  'PROCESS-STUDIO-018': 'Workshop bench dolly (720p variant).',
+  'PROCESS-STUDIO-017':
+    'A long workshop bench set with pour cups, pigment jars and curing moulds under warm pendant light.',
+  'PROCESS-STUDIO-018':
+    'A long workshop bench laid with pour cups, pigment jars and curing moulds, warm pendant light above it.',
   'PROCESS-MOULD-012':
     'Artisan hands in a dark workshop at night pouring glossy blue resin from a steel cup into a round silicone mould, warm desk lamp only light.',
   'PROCESS-PIGMENT-012':
-    'Extreme macro: mineral pigment dispersing through wet clear resin during a pour, slow blooming clouds of deep blue and white, one soft directional light, dark neutral background..',
+    'Extreme macro: mineral pigment dispersing through wet clear resin during a pour, slow blooming clouds of deep blue and white under one soft directional light against a dark neutral ground.',
   'PROCESS-PIGMENT-013':
-    'Vertical macro for mobile: deep ocean blue resin flowing with white pigment veils blooming upward, upper third calm and dark as headline safe area..',
+    'Deep ocean blue resin flowing with white pigment veils blooming upward through it, the upper part of the frame calm and dark.',
   'PROCESS-STUDIO-019':
-    'Slow smooth dolly along a long workshop bench set with pour cups, pigment jars and curing moulds under warm pendant light.',
+    'Pour cups, pigment jars and curing moulds set out along a long workshop bench under warm pendant light.',
   'MATERIAL-MACRO-036':
-    'Abstract slow background: deep ocean blue and ink-dark resin drifting in slow laminar folds, faint champagne-warm light, huge negative space., very slow.',
+    'Deep ocean blue and ink-dark resin drifting in slow laminar folds, a faint champagne-warm light through it and a great deal of empty space around it.',
   'MATERIAL-MACRO-037':
     'Extreme slow-motion macro of champagne-gold leaf settling onto a wet sapphire resin surface, a single sheet drifting down and adhering as fine cracks of gold spread across the pool, matte black background.',
   'MATERIAL-MACRO-038':
     'Extreme macro of deep ocean blue resin flowing and folding like a sea seen from above, white pigment veils blooming.',
-  'MATERIAL-MACRO-039': 'Gold leaf settling on sapphire resin (720p variant).',
-  'EDITORIAL-019': 'Sapphire resin pour, high angle (720p variant).',
+  'MATERIAL-MACRO-039':
+    'Gold leaf settling onto sapphire resin, fine flecks drifting down and catching on the wet surface.',
+  'EDITORIAL-019': 'Sapphire resin pouring into a mould, seen from directly above.',
   'GALLERY-SCENE-005':
     'A polished rectangular resin art block standing in a dark gallery, very slow push-in, caustic light refracting through translucent blue resin onto the wall behind, gold flecks suspended inside.',
   'PROCESS-POUR-012':
     'Extreme slow-motion macro of deep sapphire epoxy pouring in one unbroken continuous ribbon into a shallow round mould on matte black, seamless 10s loop.',
   'LARGEFORMAT-DINING-005':
-    'Slow dolly toward a large live-edge resin dining table, deep ocean blue epoxy river meeting natural walnut, serene architectural interior with tall windows and soft morning light..',
+    'A large live-edge resin dining table, a deep ocean blue epoxy river meeting natural walnut, in a serene architectural interior with tall windows and soft morning light.',
 }

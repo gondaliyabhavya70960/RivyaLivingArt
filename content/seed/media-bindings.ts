@@ -131,6 +131,29 @@ export type MediaBinding = {
  *     filling it would assert a delivered project, which is D10's first sentence.
  */
 export const MEDIA_BINDINGS: Readonly<Record<string, MediaBinding>> = {
+  /*
+   * THE HOMEPAGE HERO, WHICH THIS FILE SPENT THREE PARAGRAPHS EXPLAINING WHY IT WOULD NOT BIND.
+   * That reasoning was right for the plan it was written against — a hero VIDEO with its own
+   * opening frame as the poster — and the public redesign guide replaces that plan: §6.1 briefs a
+   * full-bleed still of a dining or conference plane, §8 says reuse the manifest before generating,
+   * and §2 says the first viewport must imply table scale. `content/media-slots.ts` carries the
+   * matching registry amendment and the argument for it.
+   *
+   * DESKTOP IS THE SAME PLANE `/large-format` OPENS WITH, AND THE GUIDE POINTS BOTH AT FIG. 1, so
+   * that is the brief rather than an accident. MOBILE IS DELIBERATELY A DIFFERENT FRAME —
+   * `-004` rather than `/large-format`'s `-001` — because the owner works from an Android phone,
+   * and two of the site's most important pages opening on an identical picture is a thing you only
+   * notice on the device where you cannot see them side by side.
+   *
+   * BOTH ARE `is_concept`. Neither is a photograph of a delivered Rivya table, and the concept
+   * labelling that governs every other well governs these.
+   */
+  'home.01.hero': {
+    slotKey: 'home.hero.poster',
+    desktop: 'LARGEFORMAT-DINING-002',
+    mobile: 'LARGEFORMAT-DINING-004',
+  },
+
   // 4:5 / 4:5 — native at both. The introduction band beneath the homepage hero.
   'home.02.manifesto': {
     slotKey: 'home.intro',

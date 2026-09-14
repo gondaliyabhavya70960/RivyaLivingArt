@@ -202,6 +202,220 @@ Brand and editorial copy may be written; anything asserting business capability 
 
 ## Amendments
 
+**2026-09-14 · A64 — the owner's verification flag is not an editor's to clear, and the gate that
+was meant to hold it was holding nothing.**
+
+*Found while auditing public redesign P2, which is blocked behind this flag on twenty sections.*
+
+**`content.verify` IS OWNER AND ADMIN, AND IT GUARDED ONE ENUM VALUE OUT OF THREE.** The permission
+map says this key holds what `content.publish` deliberately does not — "an unverified business claim
+reaching the public". `enforce_verification_authority` raises only when the NEW value is `VERIFIED`.
+It says nothing about a move OUT of `OWNER_VERIFICATION_REQUIRED`, and
+`page_sections_verified_before_publish` reads `owner_verification <> 'OWNER_VERIFICATION_REQUIRED'`
+— satisfied by `NOT_REQUIRED` exactly as well as by `VERIFIED`.
+
+**SO THE DOWNGRADE WAS THE BYPASS, AND A FORM SELECT OFFERED IT.** `updateSectionAction` takes
+`content.write` — owner, admin AND editor — and wrote the column straight through from a picker
+listing all three states. An editor holding `content.write` and `content.publish`, both of which
+include the editor role, could move a section out of the owner's gate and publish the claim with no
+owner involved. That is D10's entire mechanism walked around without touching the database.
+
+**THE FIX IS THE JOURNAL EDITOR'S, WHICH ALREADY HAD IT RIGHT.** `setArticleVerificationAction` has
+always been a separate action under `content.verify` accepting two states. Sections now match:
+`updateSectionAction` does not write the column, `setSectionVerificationAction` takes
+`content.verify` and accepts `VERIFIED` or `OWNER_VERIFICATION_REQUIRED` only, and the form's select
+is display-only. `NOT_REQUIRED` stays in the option LIST because the field must still show whichever
+state a section holds and 63 published rows legitimately hold it — removing it would have broken
+their display, which is what a narrower reading of this defect would have done.
+
+**THE DATABASE IS LEFT ALONE, DELIBERATELY.** A trigger refusing every downgrade would also refuse
+the legitimate one, where a section is rewritten until it asserts nothing and no longer needs
+confirming. That judgement is a person's and the permission for it is `content.verify`. The RLS
+suite now PINS the permissive database behaviour so nobody mistakes it for the defence; the defence
+is the Server Action, pinned separately by a test that fails if the column is ever added back.
+
+**WHAT IS NOT CLOSED.** `page_sections.owner_verification` defaults to `NOT_REQUIRED`, so a section
+created and written from scratch starts ungated — classification stays the author's judgement, as
+`content/seed/section.ts` treats it. Making the default `OWNER_VERIFICATION_REQUIRED` would put
+every new divider behind the owner and is not proposed here.
+
+**2026-09-14 · A63 — alt text describes the picture, not the prompt; and no asset here is a
+photograph.**
+
+*Phase 43 recorded all 250 drafts as rewritten. 63 of them were not, and the gate said they were.*
+
+**ALL 250 CATALOGUED ASSETS ARE `is_concept` AND `is_ai_generated`.** There is no photograph of a
+delivered Rivya piece among them. So an alternative reading "Ultra-wide architectural editorial
+photograph:" is not a stylistic tic — it is exactly the claim CLAUDE.md's media rule and the public
+brief both forbid, concept media presented as a record of something made and delivered. Two were
+live: the `/large-format` hero and the homepage.
+
+**`media:check-alt-text` REPORTED "250 OF 250 REWRITTEN AND CLEAN" OVER 63 THAT WERE NOT.**
+`PROMPT_VOCABULARY` looks for the language of a CAMERA — lenses, keys, softboxes. A brief's language
+is not a camera's, so none of this was caught. `LARGEFORMAT-DINING-001`, bound to the live
+`/large-format` mobile hero, read in full: *"Soft morning side-light, the upper third of the frame
+calm and near-empty as headline safe area. Quiet luxury, materials never plastic, realistic
+proportions., no neon, no heavy gold."* That describes the picture not at all. It is the brief, with
+the negative prompt still attached and a comma welded to a full stop.
+
+**THREE FINDINGS JOIN THE FOUR.** `PROMPT_DIRECTION` — safe areas, continuity notes, negative
+prompts, variant labels, camera moves. `CLAIMS_CAPTURE` — the text calling itself a photograph, by
+phrase and never by the bare word, so "beside reference photos" (objects in the scene) stays.
+`MALFORMED` — what a hand-edit leaves: `"upper third calm.."`, `"Vertical :"`, `"proportions.,"`,
+excluding the ellipsis because that is `TRUNCATED`'s finding. The rules stay a pure function shared
+by the Studio panel, the CI gate and the suite; each is tested against the exact string that shipped
+AND against a near-miss it must not flag.
+
+**REWRITING THE 63 WAS NOT OPTIONAL ONCE THE RULES TIGHTENED.** `media:rewrite-alt-text` refuses
+all-or-nothing — "none was written" — so a stricter gate without the rewrites would have blocked the
+push of all 250 rather than of 63.
+
+**NOTHING HERE REACHED THE LIVE DATABASE.** `media_assets.alt_text` still carries the imported
+drafts; the live pages still serve them. `npm run media:rewrite-alt-text --apply` is what moves
+these across, and every value stays `OWNER_VERIFICATION_REQUIRED` until an editor approves it in the
+Studio's alt-text queue. That remains the owner's to run.
+
+**2026-09-13 · A62 — public redesign P1, in part: the masthead gets its one call to action, and the
+arithmetic decides where it appears.**
+
+*The public showroom guide §5.1. P1's other half — §6.1's band order — is measured and reported at
+the end rather than shipped, because it is CMS data rather than code.*
+
+**THE MASTHEAD HAD NO CALL TO ACTION AT ALL.** Brand, nav, search, drawer trigger. §5.1: "Primary
+header CTA on desktop: Commission a piece → /custom-commissions. **Not wa.me.**"
+
+**THE LABEL IS COPY AND THE DESTINATION IS NOT, WHICH IS THE WHOLE DESIGN OF THE THING.** Every
+other string in this header comes from `global_content` and so does this one. The href does not:
+§5.1 forbids a WhatsApp link in the masthead, and an href stored beside the label is an href
+somebody can change to one. D2 allows precisely that choice for the announcement bar — a strip a
+visitor can ignore is not the primary action, and an enquiry must still be persisted before any chat
+opens. The owner rewords the button; they cannot repoint it from the CMS.
+
+**`2xl`, AND THE NUMBER CAME FROM MEASUREMENT RATHER THAN TASTE.** Phase 42 recorded this row
+overflowing by 77px at 1024 and its arithmetic still governs: the nine-item nav will not compress
+below 834 at `xl`'s `gap-6`, the wordmark needs 124, the search control will not go under 118, the
+container's three gaps are 72, and this button is about 155. That is **1303px of content in an `xl`
+box of roughly 1200** — a 100px overflow, the same sideways scroll `homepage.spec.ts` exists to
+catch. At `2xl` the box is about 1440 and it fits.
+
+**A CTA THAT APPEARS ONLY ABOVE 1536 IS A COMPROMISE AND IS NAMED AS ONE.** §5.1's other header
+instruction is what would fix it — "Search icon only — the full Search page stays /search" — and
+`DESIGN_SYSTEM` §8.1 independently asks for the same compact trigger, with `SiteHeader`'s own note
+already filing it as a later change. Replacing the inline field frees about 118px and brings the
+button to `xl`, arguably to `lg`. **It is not bundled in here**: the combobox is a hydration island
+that `check-island-budget.mjs` and `check-search-scope.mjs` both name, and removing a working
+feature to make room for a new one is a decision for the owner rather than a side effect of adding
+a button. Between 1024 and 1535 the commission route stays reachable through the nav, and below
+`lg` through the drawer — what is missing there is the emphasis, not the destination.
+
+**A COUNT GUARD MOVED AND WAS KEPT MEANINGFUL.** `seed-modules.test.ts` pins §7's thirteen `CTA`
+rows. The new row makes fourteen, and simply changing 13 to 14 would make the specification's own
+number stop meaning anything — the file already refuses that move once, counting "Return Home"
+separately "so the specification's own number stays legible". So the test now asserts thirteen
+excluding this key AND fourteen in total: both numbers stay true and a fifteenth row still fails.
+
+**WHAT §6.1 ASKS FOR THAT IS NOT HERE, MEASURED ON THE LIVE DATABASE RATHER THAN GUESSED.** The band
+order is CMS data. Home's published sequence is hero, category-grid, selected-works, material-story,
+material-palette, commission-cta, portfolio-strip, process-steps, secondary-objects, journal-strip,
+final-cta — with the **manifesto band DRAFT** and therefore invisible, **no large-format doorway
+band and no maker band in existence at all**, and process at position 10 where §6.1 wants it fifth.
+Reordering published sections and creating two new ones is content work with its own seed keys and
+its own publish gates; doing it silently inside a header commit would be the opposite of what the
+seed contract is for.
+
+**NO BROWSER RUN, AND THE WIDTHS ABOVE ARE ARITHMETIC RATHER THAN MEASUREMENT.** They are the
+masthead's own recorded figures from Phase 42 applied to a new element, not fresh pixels: this
+environment's proxy closes browser tunnels, and standing the app up locally needs a Supabase
+harness. `homepage.spec.ts`'s overflow assertion runs in CI at the QA widths and is the real check.
+
+**2026-09-13 · A61 — public redesign P0: the empty well says what is true, and the homepage hero
+stops being a black box.**
+
+*The public showroom redesign guide, phase P0 ("Media honesty"). A different train from the Studio
+work of A55-A60 and deliberately not mixed with it.*
+
+**WHAT THE LIVE SITE ACTUALLY SHOWED, MEASURED RATHER THAN ASSUMED.** Fetched 2026-09-13:
+`"Image unavailable"` appears **zero** times on `/`, `/large-format`, `/collection` and `/process` —
+A52 removed it and that half of P0 was already done. What the homepage did show was worse in a
+quieter way: the hero well rendered `<div data-media-fallback></div>` with **nothing inside it**, a
+black box above the fold, and 28 empty wells down the page.
+
+**"EMPTY IS DESIGNED" — §3, AND THE THIRD ANSWER IS THE RIGHT ONE.** The well has had two wrong
+states. It used to render the media FAILURE string, five times down the homepage, telling a visitor
+something was broken when nothing was; A52 correctly deleted that and left silence. Silence is
+honest and says nothing. `EmptyPlate` is §5.4's bone plate — a hairline rule, "Photograph in
+preparation", and the object's name where the surface has one.
+
+**IT IS NOT THE FAILURE COPY AND THE DISTINCTION IS LOAD-BEARING.** `ERROR.media_unavailable.*`
+means an image that EXISTS could not be shown. `EMPTY_STATE.media_pending.label` means no photograph has been
+taken, which on this site is the ordinary state of almost everything: the catalogue is concept media
+and objects nobody has built. Two different sentences for two different facts.
+
+**IT PROMISES NO DATE.** "In preparation" is true the moment an object is briefed. "Coming soon" is
+a delivery claim and SEED §55 forbids one.
+
+**THE COPY IS A `global_content` ROW, AND WHEN IT IS MISSING THE PLATE RENDERS NOTHING.** Not the
+key, not an English literal compiled into the bundle — `cms:check-copy` would fail the literal and
+would be right to. The degradation path is the quiet well A52 settled on, which is why every
+existing test kept passing when the plate landed and why a new test pins it.
+
+**THE HOMEPAGE HERO: A DOCUMENTED REFUSAL, REVERSED ON ITS OWN TERMS.**
+`content/seed/media-bindings.ts` spent three paragraphs explaining why it would not bind this slot,
+and the argument was good: `home.hero.poster` is the frame before a video plays and "under reduced
+motion it is the whole experience", so "it cannot be an unrelated still: it must be the video's own
+opening" — a gap for as long as the video is. **That reasoning depends entirely on there being a
+video.** The redesign guide §6.1 specifies the hero as a full-bleed STILL of a dining or conference
+plane; the composition it is drawn from has no video either. With none briefed, "the video's opening
+frame" constrains a thing nobody is making.
+
+**THE HALF OF THE OLD ARGUMENT THAT STILL STANDS.** Its real warning was against "reaching for a
+material macro because the most important frame on the site is empty". A macro texture is not a
+room, and `fillableBy` now names only families that can show a room-scale object — the same two
+`large-format.hero` declares for the identical job one route over, at the identical 21:9 / 9:16.
+`home.hero.video` stays a true gap: no video exists and none is briefed.
+
+**FOUR TESTS ENCODED THE OLD POLICY AND WERE UPDATED TO ASSERT THE NEW ONE, NOT DELETED.** Three
+were policy statements ("leave the homepage hero unbound", "finds the two home hero slots as gaps",
+"proposes generation for the two home hero slots"). The fourth — "cannot fill a gap by binding to
+it" — is a GENERAL invariant that merely needed *a* zero-candidate slot as its example, and its own
+comment said it had picked the poster because it was "one of the only two left"; it now uses
+`home.hero.video`, which still is. The rewritten binding test also asserts what the hero is bound
+TO — `LARGEFORMAT-*` on both halves — which is the guard the old refusal was really protecting.
+
+**A COVERABLE SLOT MUST NEVER EARN A GENERATION BRIEF.** `briefableGaps` went from two keys to one.
+Leaving the poster there would ask somebody to draw a picture the library already holds, which is
+the exact waste that engine exists to prevent.
+
+**DESKTOP AND MOBILE ARE DELIBERATELY NOT THE SAME PAIR `/large-format` USES.** Desktop is the same
+dining plane and the guide points both pages at Fig. 1, so that is the brief rather than an
+accident. Mobile is `-004` rather than `-001` because the owner works from an Android phone, and two
+of the site's most important pages opening on an identical frame is something you only notice on the
+device where you cannot put them side by side. Both assets are `is_concept`; neither is a photograph
+of a delivered Rivya table.
+
+**WHAT IS BOUND IN THE DATABASE AND NOT YET VISIBLE.** The row is written and verified
+(`media_slot_key = 'home.hero.poster'`, both columns set). `/` is a static prerender —
+`x-vercel-cache: HIT`, `x-nextjs-prerender: 1` — so the published page keeps serving the empty hero
+until the next deployment. The plate's copy is likewise a seed row that production does not carry
+until `npm run seed:content` runs there, which stays owner-gated; until then the well is quiet rather
+than wrong.
+
+**THE SEED ROW'S GROUP WAS WRONG AND CI CAUGHT IT, WHICH IS THE HONEST ORDER OF EVENTS.** The first
+push filed the copy under an invented `MEDIA` group; `global_content_group_allowed` is a CLOSED list
+and refused it, the seed failed, and all four browser shards went red. **Local unit tests, the 44
+gates, `rls` and `integration` all passed** — because none of them re-seeds a database, and the
+constraint only speaks when a row is written. The copy now lives in `EMPTY_STATE`, beside
+`EMPTY_STATE.search.*`, which is where it belonged on the merits: this IS an empty state, and 0055's
+note already warned that "a free-text group would let a typo create a group of one that no surface
+ever reads" — a `MEDIA` group of exactly one row was that. **The lesson worth keeping: adding a seed
+row is a database change, and the local suites that pass without one prove nothing about it.**
+
+**NO BROWSER RUN, AND THIS TIME THE REASON IS DIFFERENT.** The environment has Chromium, but the
+agent proxy closes browser tunnels mid-exchange (`ws_closed_mid_exchange`), so the live site could
+not be driven. Everything above about what the site shows was measured from the served HTML with
+`curl`, which is evidence rather than inference — and is stated as HTML analysis, not as "I opened
+it at 390px".
+
 **2026-09-13 · A60 — the completion pass: §7.2's count, §3.3's second branch, and two primary
 actions §8 names.**
 

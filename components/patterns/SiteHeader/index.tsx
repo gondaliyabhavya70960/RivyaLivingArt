@@ -119,6 +119,12 @@ export function SiteHeader({ chrome, cloudName }: SiteHeaderProps): React.ReactE
   const searchSeeAll = siteString(strings, 'ACTION_LABEL.search.see_all')
   const searchCount = siteString(strings, 'UI_LABEL.search.count')
 
+  /*
+   * §5.1's masthead CTA. Missing row means no button, like every other string in this header —
+   * an unlabelled primary action is worse than none.
+   */
+  const commissionLabel = siteString(strings, 'CTA.header_commission.label')
+
   const bySlug = new Map(categories.map((category) => [category.slug, category]))
 
   return (
@@ -259,6 +265,49 @@ export function SiteHeader({ chrome, cloudName }: SiteHeaderProps): React.ReactE
           seeAllLabel={searchSeeAll}
           countTemplate={searchCount}
         />
+
+        {/*
+         * THE ONE PRIMARY ACTION IN THE MASTHEAD — public redesign guide §5.1, "Commission a piece
+         * → /custom-commissions. Not wa.me."
+         *
+         * THE DESTINATION IS A LITERAL AND THE LABEL IS NOT, WHICH IS DELIBERATE. `/custom-
+         * commissions` is a route this component owns, not copy: §5.1 forbids a WhatsApp link in
+         * the masthead, and an href read from `global_content` is an href somebody can change to
+         * one. The words are the owner's; the destination is the architecture's.
+         *
+         * `2xl` AND ABOVE, WHICH IS HIGHER THAN "DESKTOP" AND IS THE ARITHMETIC'S ANSWER RATHER
+         * THAN A PREFERENCE. Phase 42 measured this row when it overflowed by 77px at 1024, and
+         * those numbers still govern: the nine-item nav will not compress below 834 at `xl`'s
+         * `gap-6`, the wordmark needs 124, the search control will not go under 118, and the
+         * container's three gaps are 72. This button is about 155. That is 1303px of content in
+         * an `xl` box of roughly 1200 — a 100px overflow, which is the same sideways scroll
+         * `homepage.spec.ts` was written to catch. At `2xl` the box is about 1440 and it fits.
+         *
+         * SO THE MASTHEAD CANNOT CARRY THIS AT 1280 UNTIL SOMETHING ELSE GIVES, and §5.1 names
+         * what: "Search icon only — the full Search page stays /search." DESIGN_SYSTEM §8.1 asks
+         * for the same compact trigger and the note above already files it as a later change.
+         * Replacing the inline field would free ~118px and bring this button down to `xl`, and
+         * arguably to `lg`. That is a real change to a real feature — the combobox is an island
+         * two gates name — so it is not smuggled in here.
+         *
+         * UNTIL THEN THE COMMISSION ROUTE IS NOT UNREACHABLE: the nav carries it at every width
+         * from `lg` up, and below `lg` the drawer does. What is missing between 1024 and 1535 is
+         * the emphasis, not the destination.
+         */}
+        {commissionLabel === null ? null : (
+          <NavLink
+            href="/custom-commissions"
+            data-header-commission=""
+            className={cn(
+              'border-line-strong hidden shrink-0 rounded-full border px-5 2xl:inline-flex',
+              'min-h-11 items-center text-sm uppercase tracking-technical text-ink',
+              'transition-colors duration-(--rv-duration-fast) ease-standard',
+              'hover:border-(--rv-ink-accent) motion-reduce:transition-none',
+            )}
+          >
+            {commissionLabel}
+          </NavLink>
+        )}
 
         {/* Below `lg` the whole menu is the drawer. Both labels are required by MobileNav's
             signature, so a missing string means no trigger rather than an unnamed icon button. */}

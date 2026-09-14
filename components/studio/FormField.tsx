@@ -132,7 +132,8 @@ export function SelectField({
   required,
   requiredLabel,
   options,
-}: Common & { options: readonly { value: string; label: string }[] }) {
+  disabled,
+}: Common & { options: readonly { value: string; label: string }[]; disabled?: boolean }) {
   const error = errorFor(issues, name)
   return (
     <Field
@@ -146,6 +147,7 @@ export function SelectField({
         id={name}
         name={name}
         defaultValue={defaultValue}
+        disabled={disabled}
         aria-invalid={error !== undefined ? true : undefined}
       >
         {options.map((option) => (

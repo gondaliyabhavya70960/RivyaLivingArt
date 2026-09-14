@@ -43,6 +43,71 @@ describe('the quality rules', () => {
     expect(altTextWarnings('A resin table in a room.')).not.toContain('REDUNDANT_PREFIX')
   })
 
+  it('catches an instruction to the generator rather than a description', () => {
+    /*
+     * THE 45 THAT SHIPPED. `PROMPT_VOCABULARY` looks for the language of a camera, and a brief's
+     * language is not a camera's — so a safe area, a continuity note and a negative prompt all
+     * passed the gate and one of them reached the live `/large-format` mobile hero.
+     */
+    expect(
+      altTextWarnings('Soft morning side-light, the upper third calm as headline safe area.'),
+    ).toContain('PROMPT_DIRECTION')
+    expect(
+      altTextWarnings(
+        'A bench of curing moulds, keeping the same subject as the horizontal master.',
+      ),
+    ).toContain('PROMPT_DIRECTION')
+    expect(altTextWarnings('Workshop bench dolly (720p variant 2).')).toContain('PROMPT_DIRECTION')
+
+    // A description that happens to mention the lower third is about the picture, not the type.
+    expect(
+      altTextWarnings('Deep ocean blue resin folds with a calm dark lower third.'),
+    ).not.toContain('PROMPT_DIRECTION')
+  })
+
+  it('catches an alternative that calls a concept render a photograph', () => {
+    /*
+     * ALL 250 CATALOGUED ASSETS ARE `is_concept`. There is no photograph of a delivered Rivya piece
+     * among them, so "Editorial photograph:" is not a stylistic tic — it is the claim the media rule
+     * forbids, and it was live on two pages.
+     */
+    expect(altTextWarnings('Editorial photograph: a console table against plaster.')).toContain(
+      'CLAIMS_CAPTURE',
+    )
+    expect(altTextWarnings('A vanity mirror on a dresser. luxury product photography.')).toContain(
+      'CLAIMS_CAPTURE',
+    )
+    expect(altTextWarnings('One garland photographed twice on dark teak.')).toContain(
+      'CLAIMS_CAPTURE',
+    )
+
+    /*
+     * PHRASES, NOT THE BARE WORD. Reference photos lying on a bench are objects in the scene. A rule
+     * that punished the word would push whoever hit it into describing the scene less accurately.
+     */
+    expect(
+      altTextWarnings(
+        'A custom figurine on a turntable beside reference photos, soft studio light.',
+      ),
+    ).not.toContain('CLAIMS_CAPTURE')
+  })
+
+  it('catches punctuation a hand-edit broke', () => {
+    // Dropping a trailing clause leaves ".."; dropping a leading one leaves "Vertical :".
+    expect(altTextWarnings('A dining table in a tall interior, upper third calm..')).toContain(
+      'MALFORMED',
+    )
+    expect(altTextWarnings('Vertical : a dining table in a tall serene interior.')).toContain(
+      'MALFORMED',
+    )
+    expect(altTextWarnings('Quiet luxury, realistic proportions., no neon.')).toContain('MALFORMED')
+
+    // An ellipsis is TRUNCATED's finding. Reporting one defect under two names helps nobody.
+    expect(altTextWarnings('A studio tool wall above a working bench...')).not.toContain(
+      'MALFORMED',
+    )
+  })
+
   it('catches a label pretending to be a description', () => {
     expect(altTextWarnings('Teak console')).toContain('TOO_SHORT')
   })

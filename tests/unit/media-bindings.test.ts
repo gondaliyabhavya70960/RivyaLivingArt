@@ -57,17 +57,30 @@ describe('the media bindings', () => {
     }
   })
 
-  it('leave the homepage hero unbound', () => {
+  it('leave the homepage hero VIDEO unbound, and bind the still to a room', () => {
     /*
-     * THE ONE BINDING THAT WOULD BE A FABRICATION. `home.hero.video` and `home.hero.poster` are the
-     * coverage table's two GENERATE_NEW slots — no manifest family can fill either, and
-     * `fillableBy` is empty for both. Reaching for a material macro because the most important
-     * frame on the site is empty is the "closest available" substitution `media-bindings.ts`
-     * forbids in its own header, and it is the quiet end of D10.
+     * THIS TEST USED TO REFUSE BOTH HALVES, AND HALF OF THAT REFUSAL WAS RIGHT FOR A PLAN THAT NO
+     * LONGER HOLDS. The old reasoning: both home hero slots are GENERATE_NEW, no family can fill
+     * either, and "reaching for a material macro because the most important frame on the site is
+     * empty" is the substitution `media-bindings.ts` forbids in its own header.
+     *
+     * THE MACRO HALF OF THAT ARGUMENT STILL STANDS AND IS WHAT THE SECOND ASSERTION KEEPS. What
+     * changed is the brief: the public redesign guide §6.1 specifies the homepage hero as a
+     * full-bleed STILL of a dining or conference plane, so the poster is no longer "the video's
+     * opening frame" waiting on a video, and §8 says reuse the manifest before generating. A
+     * room-scale dining plane is not a macro texture standing in for a room — it is the subject.
+     *
+     * `home.hero.video` STAYS UNBOUND. No video exists, none is briefed, and nothing in the
+     * manifest is one.
      */
     const bound = new Set(bindings.map(([, binding]) => binding.slotKey))
     expect(bound).not.toContain('home.hero.video')
-    expect(bound).not.toContain('home.hero.poster')
+    expect(bound).toContain('home.hero.poster')
+
+    // And what it is bound to is a room, not a swatch: the guard the old test was really for.
+    const hero = bindings.find(([, binding]) => binding.slotKey === 'home.hero.poster')?.[1]
+    expect(hero?.desktop).toMatch(/^LARGEFORMAT-/u)
+    expect(hero?.mobile).toMatch(/^LARGEFORMAT-/u)
   })
 
   it('leave every EMPTY_STATE slot unbound', () => {

@@ -91,20 +91,37 @@ export const MEDIA_SLOTS: readonly MediaSlot[] = [
     resolution: 'GENERATE',
   },
   {
-    // A poster is the frame a visitor sees before the video plays, and under reduced motion it is
-    // the whole experience. It cannot be an unrelated still: it must be the video's own opening.
-    // So it is a gap for as long as the video is, and filling it independently would be wrong.
-    // 21:9 desktop (G2) and 9:16 mobile (G6), as the plan briefs them. The poster is the LCP
-    // element and its desktop crop is wider than the video's own frame, which is a deliberate
-    // decision recorded in G2, not a mismatch.
+    /*
+     * 21:9 desktop (G2) and 9:16 mobile (G6), as the master plan briefs them. This is the LCP
+     * element and its desktop crop is wider than the video's own frame — a deliberate decision
+     * recorded in G2, not a mismatch.
+     *
+     * IT WAS `fillableBy: []` AND THE REASON WAS GOOD WHILE IT HELD: "a poster is the frame a
+     * visitor sees before the video plays, and under reduced motion it is the whole experience. It
+     * cannot be an unrelated still: it must be the video's own opening." That argument depends
+     * entirely on there being a video, and the public redesign guide removes it — §6.1 specifies
+     * the homepage hero as a full-bleed STILL of a dining or conference plane, and the reference
+     * composition it is drawn from has no video either. With no video briefed, "the video's opening
+     * frame" is a constraint on a thing that is not being made.
+     *
+     * SO IT IS NOW FILLABLE, AND BY THE SAME FAMILIES AS `large-format.hero` — which declares the
+     * identical 21:9 / 9:16 pair for the identical job one route over. The guide's §8 says reuse
+     * the manifest before generating, and §2 says the first viewport must imply table scale.
+     *
+     * WHAT THIS DOES NOT LICENCE. The old note's real warning was against "reaching for a material
+     * macro because the most important frame on the site is empty", and that still stands: a macro
+     * texture is not a room. Only families that can show a room-scale object are listed here.
+     * `home.hero.video` above stays a true gap — no video exists, and none is briefed.
+     */
     key: 'home.hero.poster',
     page: '/',
-    label: 'Home hero poster',
+    label: 'Home hero still',
     kind: 'IMAGE',
     desktopRatio: '21:9',
     mobileRatio: '9:16',
-    fillableBy: [],
+    fillableBy: ['largeformat-dining', 'interior-lifestyle'],
     minAssets: 2,
+    delivery: 'HERO',
     resolution: 'GENERATE',
   },
   {

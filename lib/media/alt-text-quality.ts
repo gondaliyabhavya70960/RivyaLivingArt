@@ -17,7 +17,14 @@
  * text looks like is the only way the rewrite in Phase 43 can be checked at all.
  */
 
-export type AltTextWarning = 'TRUNCATED' | 'PROMPT_VOCABULARY' | 'REDUNDANT_PREFIX' | 'TOO_SHORT'
+export type AltTextWarning =
+  | 'TRUNCATED'
+  | 'PROMPT_VOCABULARY'
+  | 'REDUNDANT_PREFIX'
+  | 'TOO_SHORT'
+  | 'PROMPT_DIRECTION'
+  | 'CLAIMS_CAPTURE'
+  | 'MALFORMED'
 
 /**
  * Words that belong to the making of a picture rather than to the picture.
@@ -60,6 +67,75 @@ const PROMPT_VOCABULARY = [
   'iso ',
 ]
 
+/**
+ * Instructions to the GENERATOR that survived the rewrite — Phase 44.
+ *
+ * `PROMPT_VOCABULARY` above catches the language of a camera. This catches the language of a BRIEF:
+ * the safe area a headline was going to sit in, the continuity note telling the generator to keep
+ * the previous frame's palette, the negative prompt, the house style tag, the variant label. None
+ * of it is a camera word, so none of it was caught — and 45 values shipped saying things like
+ * "the upper third of the frame calm and near-empty as headline safe area. Quiet luxury, materials
+ * never plastic, realistic proportions., no neon, no heavy gold", which describes the picture not
+ * at all. That value was bound to the live `/large-format` mobile hero.
+ *
+ * THE TEST IS THE SAME AS ABOVE: would a person who cannot see the image be helped by this phrase.
+ * "Calm dark lower third" is a description of the picture. "Calm dark lower third suitable for
+ * quiet text overlay" is a note to whoever was going to set type on it.
+ */
+const PROMPT_DIRECTIONS = [
+  'safe area',
+  'text overlay',
+  'quiet luxury',
+  'never plastic',
+  'materials never',
+  'realistic proportions',
+  'no neon',
+  'no heavy gold',
+  'no people, no text',
+  'horizontal master',
+  'not a new scene',
+  'keeping the same subject',
+  'keeping the same palette',
+  'reads as the same',
+  'must read as the same',
+  'reframed to',
+  'reframed for',
+  'loopable',
+  'variant)',
+  'variant 2',
+  '720p',
+  '1080p',
+  'composed as a social',
+  'for social:',
+  'for a mobile hero',
+  'handcrafted resin art.',
+]
+
+/**
+ * A CLAIM THAT THE PICTURE IS A PHOTOGRAPH, which on this project is never true.
+ *
+ * All 250 catalogued assets are `is_concept` and `is_ai_generated` — there is not one photograph of
+ * a delivered Rivya piece among them. So an alternative that opens "Editorial photograph:" or ends
+ * "luxury product photography" is not merely prompt residue, it is the exact claim CLAUDE.md's
+ * media rule and the public brief both forbid: concept media presented as a record of something
+ * that was made and delivered. Two of these were live — the `/large-format` hero and the homepage.
+ *
+ * PHRASES, NOT THE BARE WORD. "A figurine on a turntable beside reference photos" describes objects
+ * sitting in the scene and is correct; the rule must not punish it. What is caught is the text
+ * describing its own medium.
+ */
+const CAPTURE_CLAIMS = [
+  'photograph:',
+  'photograph,',
+  'photograph.',
+  'photograph of',
+  'photographed',
+  'photographic',
+  'photography',
+  'editorial photograph',
+  'macro photograph',
+]
+
 /** An alt text that begins by saying it is an image wastes the words a screen reader announces. */
 const REDUNDANT_PREFIX =
   /^\s*(?:an?\s+)?(?:image|picture|photo|photograph|graphic|icon)\s+(?:of|showing|depicting)\b/i
@@ -82,6 +158,22 @@ export function altTextWarnings(value: string): AltTextWarning[] {
   const lower = text.toLowerCase()
   if (PROMPT_VOCABULARY.some((phrase) => lower.includes(phrase))) {
     warnings.push('PROMPT_VOCABULARY')
+  }
+
+  if (PROMPT_DIRECTIONS.some((phrase) => lower.includes(phrase))) {
+    warnings.push('PROMPT_DIRECTION')
+  }
+
+  if (CAPTURE_CLAIMS.some((phrase) => lower.includes(phrase))) warnings.push('CLAIMS_CAPTURE')
+
+  /*
+   * PUNCTUATION THE REWRITE BROKE. Dropping a trailing clause by hand leaves "upper third calm..",
+   * and dropping a leading one leaves "Vertical : a large live-edge table". Neither trips any rule
+   * about vocabulary, and both are read aloud. `...` is deliberately excluded — an ellipsis is
+   * TRUNCATED's finding, and reporting one defect twice helps nobody.
+   */
+  if (/[^.]\.\.(?!\.)/.test(text) || /\s:/.test(text) || /\.\s*,|,\s*\./.test(text)) {
+    warnings.push('MALFORMED')
   }
 
   if (REDUNDANT_PREFIX.test(text)) warnings.push('REDUNDANT_PREFIX')

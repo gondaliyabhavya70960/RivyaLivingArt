@@ -137,6 +137,27 @@ export const globalSeed: SeedModule = {
       status: 'DRAFT',
     }),
 
+    /*
+     * THE MASTHEAD'S ONE CALL TO ACTION — public redesign guide §5.1: "Primary header CTA on
+     * desktop: Commission a piece → /custom-commissions. **Not wa.me.**"
+     *
+     * ONLY THE LABEL IS COPY. The destination is fixed in `SiteHeader` rather than stored beside
+     * this row, and that asymmetry is the point: an editable href is an editable href, and the one
+     * thing §5.1 forbids for this control is pointing it at WhatsApp. D2 and the announcement bar
+     * allow that choice deliberately elsewhere — a bar a visitor can ignore is not the masthead's
+     * primary action, and an enquiry must be persisted before any chat opens. The owner can reword
+     * the button; they cannot turn it into a WhatsApp deep link from the CMS.
+     *
+     * NOT `OWNER_VERIFICATION_REQUIRED`: it offers to start a conversation, which is the whole
+     * business model, and asserts nothing about lead times, materials or delivered work.
+     */
+    globalRow('CTA', 'header_commission.label', 'Commission a piece', {
+      label: 'Masthead commission button',
+      description:
+        'Public redesign guide §5.1. The masthead primary action. Its destination is fixed to /custom-commissions in code — the guide forbids a WhatsApp link here.',
+      fact: 'EDITORIAL_COPY',
+    }),
+
     // --- §26 search -----------------------------------------------------------------------------
     globalRow('FORM_COPY', 'search.placeholder', 'Search furniture, art, materials and stories', {
       label: 'Search placeholder',
@@ -193,6 +214,33 @@ export const globalSeed: SeedModule = {
       label: 'Media failure — heading',
       description:
         'SEED §47. The shorter inline label MediaFrame renders is ERROR.media_unavailable.label, seeded in Phase 08.',
+      fact: 'EDITORIAL_COPY',
+    }),
+
+    /*
+     * THE DESIGNED EMPTY, WHICH IS NOT THE SAME THING AS A FAILURE — public redesign guide §5.4.
+     *
+     * `ERROR.media_unavailable.*` above says an image that EXISTS could not be shown. This says no
+     * photograph has been taken yet, which on this site is the ordinary state of almost everything:
+     * the catalogue is concept media and unbuilt objects, and a well with nothing in it is telling
+     * the truth rather than reporting a fault. Rendering the failure copy there — which the site
+     * used to do, five times down the homepage — told a visitor something was broken when nothing
+     * was.
+     *
+     * It promises no date. "In preparation" is true the moment an object is briefed; "coming soon"
+     * would be a delivery claim, and SEED §55 forbids exactly that.
+     *
+     * `EMPTY_STATE` RATHER THAN A GROUP OF ITS OWN, AND THE CONSTRAINT WAS RIGHT TO INSIST.
+     * `global_content_group_allowed` is a closed list, and 0055's note says why: "a free-text group
+     * would let a typo create a group of one that no surface ever reads". A `MEDIA` group was
+     * exactly that — one row, invented for one component. This IS an empty state, which is what §3
+     * means by "empty is designed", and filing it here puts it beside `EMPTY_STATE.search.*` where
+     * an owner looking for the site's empty copy will actually find it.
+     */
+    globalRow('EMPTY_STATE', 'media_pending.label', 'Photograph in preparation', {
+      label: 'Empty media well — label',
+      description:
+        'Public redesign guide §5.4. Shown in a media well that has no asset bound yet. Distinct from ERROR.media_unavailable.*, which is a failure to display an image that exists.',
       fact: 'EDITORIAL_COPY',
     }),
 

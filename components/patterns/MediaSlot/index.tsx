@@ -2,6 +2,7 @@ import * as React from 'react'
 
 import { MediaFrame } from '@/components/primitives/MediaFrame'
 import { MediaImage } from '@/components/patterns/MediaImage'
+import { EmptyPlate } from '@/components/patterns/MediaSlot/EmptyPlate'
 import type { AspectRatio } from '@/components/primitives/AspectBox'
 import { cropFor, cropSegment } from '@/lib/media/crop'
 import { altTextOf, mediaRefOf } from '@/lib/cms/media'
@@ -69,11 +70,18 @@ export type BlockImageProps = {
    * it unconditionally rather than asking whether the asset arrived — `deliverable` is decided in
    * here, not out there.
    *
-   * ONLY THE CATALOGUE PASSES ONE. A product card's empty well carries its category word in the
-   * mono face (§A5); every other public well stays silent, which is what A52 settled and what this
-   * prop is careful not to undo — it is opt-in, and its default is nothing.
+   * PASSING ONE OVERRIDES THE DESIGNED EMPTY. A product card's empty well carries its category word
+   * in the mono face (§A5) and keeps doing so; everything else now gets `EmptyPlate` — the bone
+   * plate the public redesign guide §5.4 asks for. A52 settled that the well must not cry FAILURE,
+   * and that still holds: the plate says no photograph has been taken, which is a different
+   * sentence and a true one.
    */
   readonly fallback?: React.ReactNode
+  /**
+   * The object's own name, for the designed empty. Omitted on a hero, which names nothing, and
+   * never filled with a slug or a placeholder — see `EmptyPlate`.
+   */
+  readonly emptyTitle?: string | null
   readonly className?: string
 }
 
@@ -91,12 +99,14 @@ export function BlockImage({
   preset,
   sizes,
   altOverride = null,
+  strings,
   cloudName,
   eager = false,
   priority = false,
   veil = false,
   overlay,
   fallback,
+  emptyTitle,
   className,
   minBlockSize,
 }: BlockImageProps): React.ReactElement {
@@ -149,7 +159,13 @@ export function BlockImage({
        * Studio's own frames still pass a label because there the frame stands in for a named
        * asset rather than for a gap.
        */
-      fallback={fallback}
+      /*
+       * THE DEFAULT IS NO LONGER NOTHING. A52 emptied this well because the string in it claimed a
+       * failure that had not happened; the guide's §5.4 asks for the well to say what IS true —
+       * that no photograph has been taken yet. A caller passing its own node still wins, which is
+       * how the catalogue keeps its category word.
+       */
+      fallback={fallback ?? <EmptyPlate strings={strings} title={emptyTitle} />}
       veil={veil && deliverable !== null}
       overlay={overlay}
       className={className}

@@ -226,7 +226,7 @@ describe('briefableGaps', () => {
 describe('against the real manifest, unbound', () => {
   const report = computeGaps({ assets: MANIFEST.assets, bindings: [] })
 
-  it('finds the two home hero slots as gaps, which is what Phase 43 left', () => {
+  it('finds the home hero video as a gap, which is what is genuinely uncoverable', () => {
     /*
      * THIS LIST SHRANK IN PHASE 43, AND THE SHRINKING IS THE POINT. It used to name seven pages,
      * which was Phase 07's projection: `/`, `/collection`, `/collection/furniture`,
@@ -235,8 +235,10 @@ describe('against the real manifest, unbound', () => {
      * written analysis named the family that fits, and `/faq` was declared GENERATE where the same
      * analysis said "typographic by design". Phase 43 resolved all eight.
      *
-     * What is genuinely uncoverable is the home hero: zero videos in the manifest carry
-     * `page = home`, and the seven at 1920×1080 are process, macro or gallery subjects.
+     * What is genuinely uncoverable is the home hero VIDEO: zero videos in the manifest carry
+     * `page = home`, and the seven at 1920×1080 are process, macro or gallery subjects. Its poster
+     * left this list when the public redesign guide rebriefed the hero as a still — see
+     * `content/media-slots.ts`. `/` is still a gap page because the video is still a gap.
      */
     const gapPages = new Set(report.gaps.map((s) => s.slot.page))
     expect(gapPages).toContain('/')
@@ -260,11 +262,11 @@ describe('against the real manifest, unbound', () => {
     ]) {
       expect(briefablePages).not.toContain(page)
     }
-    // The home hero is the one page that still earns briefs, and it earns exactly two.
-    expect(briefableGaps(report).map((s) => s.slot.key)).toEqual([
-      'home.hero.video',
-      'home.hero.poster',
-    ])
+    // The home hero is the one page that still earns a brief, and it now earns exactly ONE. The
+    // poster left this list when the public redesign guide rebriefed the hero as a still and the
+    // registry gave it the large-format dining family: a coverable slot must never earn a brief,
+    // or the next coverage report asks somebody to draw a picture the library already holds.
+    expect(briefableGaps(report).map((s) => s.slot.key)).toEqual(['home.hero.video'])
   })
 
   it('does not call a well-covered surface a gap', () => {
@@ -312,18 +314,21 @@ describe('bindings from a later phase', () => {
     // is not suitable. FILLED is the honest answer — a person overrode the registry — but the
     // library is still short, so `fillableBy` is what must change, not the count.
     //
-    // `home.hero.poster` rather than `contact.hero`: Phase 43 gave contact the `material-macro`
-    // family, so it is no longer a slot with zero candidates. The home hero poster is, and is one
-    // of the only two left.
+    // THE EXAMPLE SLOT MOVED AND THE INVARIANT DID NOT. This wants any slot with zero candidates;
+    // it used to use `home.hero.poster`, and the comment said why — "Phase 43 gave contact the
+    // `material-macro` family, so it is no longer a slot with zero candidates. The home hero poster
+    // is, and is one of the only two left." The public redesign guide gave the poster the
+    // large-format dining family, so it is no longer one either. `home.hero.video` is: no video in
+    // the manifest carries `page = home`, and none is briefed.
     // Two bindings, because the slot's `minAssets` is 2: D6 makes desktop and mobile separate, so
     // one bound asset is half an answer and the engine says so.
     const report = computeGaps({
       assets: MANIFEST.assets,
-      bindings: [{ slot_key: 'home.hero.poster' }, { slot_key: 'home.hero.poster' }],
+      bindings: [{ slot_key: 'home.hero.video' }, { slot_key: 'home.hero.video' }],
     })
     const status = report.pages
       .flatMap((p) => p.slots)
-      .find((s) => s.slot.key === 'home.hero.poster')!
+      .find((s) => s.slot.key === 'home.hero.video')!
     expect(status.state).toBe('FILLED')
     expect(status.candidateCount).toBe(0)
   })
