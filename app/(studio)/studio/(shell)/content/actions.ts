@@ -10,11 +10,7 @@ import { restoreRevision as restoreRevisionService } from '@/lib/cms/revisions'
 import { writeAudit } from '@/lib/auth/audit'
 import { AuthenticationError, AuthorizationError, requirePermission } from '@/lib/auth/require'
 import { createAdminClient } from '@/lib/supabase/admin'
-import {
-  contentStatusSchema,
-  factClassificationSchema,
-  ownerVerificationSchema,
-} from '@/lib/supabase/schemas'
+import { contentStatusSchema, factClassificationSchema } from '@/lib/supabase/schemas'
 import {
   deleteSection,
   getSection,
@@ -167,7 +163,17 @@ const updateSchema = z.object({
   // The schemas of record, not a re-listing. Hand-copying these is how a form comes to offer a
   // classification the enum does not have — which is what the first draft of this file did.
   factClassification: factClassificationSchema,
-  ownerVerification: ownerVerificationSchema,
+  /*
+   * `ownerVerification` IS ABSENT DELIBERATELY. It used to sit here and be written straight
+   * through under `content.write`, which is owner, admin AND editor. `content.verify` — owner and
+   * admin — is the permission the map says holds "an unverified business claim reaching the
+   * public", and it was guarding nothing: the trigger only refuses VERIFIED, while the publish
+   * gate `page_sections_verified_before_publish` is satisfied by NOT_REQUIRED just as well. So an
+   * editor could clear the owner's flag and publish the claim without the owner. Zod strips the
+   * key, so a form still posting it changes nothing.
+   *
+   * `setSectionVerificationAction` below is the only way this column moves now.
+   */
   payload: z.unknown(),
 })
 
@@ -230,7 +236,6 @@ export async function updateSectionAction(input: unknown): Promise<ActionResult>
       publish_at: v.publishAt,
       unpublish_at: v.unpublishAt,
       fact_classification: v.factClassification,
-      owner_verification: v.ownerVerification,
       payload: payload.data as never,
       updated_by: session.userId,
     })
@@ -243,6 +248,59 @@ export async function updateSectionAction(input: unknown): Promise<ActionResult>
       entityType: 'page_sections',
       entityId: v.sectionId,
       summary: existing.block_type,
+    })
+
+    await revalidateForPage(v.pageId)
+    return { ok: true }
+  } catch (error) {
+    return { ok: false, error: refusalMessage(error) }
+  }
+}
+
+const verificationSchema = z.object({
+  sectionId: z.uuid(),
+  pageId: z.uuid(),
+  /*
+   * TWO STATES, NOT THREE. NOT_REQUIRED says "this copy asserts nothing that needs confirming",
+   * which is a judgement made when the section is written, not a place to park a claim somebody
+   * does not want to confirm. Offering it here would rebuild the bypass this action exists to
+   * close, one enum value further along.
+   */
+  ownerVerification: z.enum(['VERIFIED', 'OWNER_VERIFICATION_REQUIRED']),
+})
+
+/**
+ * The owner's confirmation, matching `setArticleVerificationAction` in the journal editor.
+ *
+ * `content.verify` IS THE NARROW ONE — owner and admin, never editor. Clearing this flag is the
+ * owner asserting a business claim is true, which is the whole of D10; it is not a step in the
+ * publishing workflow that whoever is publishing may take for themselves.
+ */
+export async function setSectionVerificationAction(input: unknown): Promise<ActionResult> {
+  try {
+    const session = await requirePermission('content.verify')
+
+    const parsed = verificationSchema.safeParse(input)
+    if (!parsed.success) return { ok: false, error: 'That is not a verification state.' }
+    const v = parsed.data
+
+    const client = await createClient()
+    const existing = await getSection(client, v.sectionId)
+    if (existing === null) return { ok: false, error: 'That section no longer exists.' }
+
+    await updateSection(client, v.sectionId, {
+      owner_verification: v.ownerVerification,
+      updated_by: session.userId,
+    })
+
+    await writeAudit({
+      action: 'content.section.verify',
+      result: 'SUCCESS',
+      actorUserId: session.userId,
+      actorRole: session.role,
+      entityType: 'page_sections',
+      entityId: v.sectionId,
+      summary: `Verification set to ${v.ownerVerification}`,
     })
 
     await revalidateForPage(v.pageId)

@@ -247,6 +247,31 @@ describeDb('the status-transition trigger', () => {
       expect(code).toBeNull()
     })
 
+    it('does NOT stop an editor clearing the flag to NOT_REQUIRED', async () => {
+      /*
+       * THE DATABASE ALLOWS THIS, AND THAT IS WHY THE SERVER ACTION MUST NOT.
+       *
+       * `enforce_verification_authority` raises only when the NEW value is VERIFIED. The publish
+       * gate `pages_verified_before_publish` is satisfied by NOT_REQUIRED exactly as well as by
+       * VERIFIED. So the downgrade — not the upgrade — is the bypass: an editor holding
+       * `content.write` and `content.publish` could clear the owner's flag and publish the claim
+       * with no owner involved, which is the whole of D10 walked around.
+       *
+       * It is PINNED here rather than fixed here. A trigger refusing every downgrade would also
+       * refuse the legitimate one, where a section is rewritten until it asserts nothing and no
+       * longer needs confirming. The judgement is a person's; the permission for it is
+       * `content.verify`. So the refusal lives in `setSectionVerificationAction`, which takes that
+       * permission and offers VERIFIED and OWNER_VERIFICATION_REQUIRED only —
+       * `updateSectionAction` no longer writes this column at all.
+       */
+      const code = await codeOf(() =>
+        asUser(FIXTURE_USERS.editor, (sql) =>
+          sql.rows(`update pages set owner_verification = 'NOT_REQUIRED' where id = $1`, [PAGE]),
+        ),
+      )
+      expect(code).toBeNull()
+    })
+
     it('lets an editor edit a row that is ALREADY verified', async () => {
       // The guard is on the transition INTO VERIFIED, not on touching a verified row. Otherwise an
       // owner would have to make every subsequent typo fix themselves.

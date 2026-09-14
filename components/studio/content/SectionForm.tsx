@@ -342,12 +342,24 @@ export function SectionForm({
             defaultValue={values.factClassification}
             options={FACT_CLASSIFICATIONS}
           />
+          {/*
+           * SHOWN, NEVER SET HERE. `content.write` is owner, admin AND editor; `content.verify` is
+           * owner and admin. While this control posted a value that `updateSectionAction` wrote
+           * straight through, an editor could move a section from OWNER_VERIFICATION_REQUIRED to
+           * NOT_REQUIRED and publish it alone — the database's publish gate is satisfied by EITHER
+           * of the two non-required states, and the trigger that guards this column only fires on
+           * VERIFIED. That is the whole of D10 bypassed by a select.
+           *
+           * All three options stay listed because the field still has to DISPLAY whichever state a
+           * section holds, and most published sections legitimately hold NOT_REQUIRED.
+           */}
           <SelectField
             name="owner_verification"
             label={t('studio.content.section.verificationLabel')}
             help={t('studio.content.section.verificationHelp')}
             defaultValue={values.ownerVerification}
             options={VERIFICATIONS}
+            disabled
           />
         </Stack>
 
