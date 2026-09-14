@@ -26,6 +26,31 @@ updates:
       # minor/patch; this makes the intent explicit rather than implied.
       - dependency-name: '*'
         update-types: ['version-update:semver-major']
+
+      # REACT IS HELD AT 19.2.x, AND THIS IS NOT A PREFERENCE — it is a peer range.
+      #
+      # `@react-three/fiber@9.7.0` declares `peer react ">=19 <19.3"`, and 9.7.0 is the LATEST
+      # release: there is no version of fiber that accepts 19.3 yet. When the routine group bumped
+      # react to 19.3.0 it did not break a test, it broke `npm ci` itself with ERESOLVE — so every
+      # job on main died in forty seconds, before a single file compiled. (Security passed, because
+      # gitleaks installs nothing. That is the tell.)
+      #
+      # Forcing it with --legacy-peer-deps or an override would install a combination the 3D
+      # renderer's own author says is unsupported, and the failure would move from CI into the
+      # model viewer at runtime, where nothing is watching.
+      #
+      # REMOVE THIS BLOCK when `npm view @react-three/fiber peerDependencies` shows a react range
+      # that includes 19.3 — then bump react and fiber together, in one pull request.
+      - dependency-name: 'react'
+        update-types: ['version-update:semver-minor']
+      - dependency-name: 'react-dom'
+        update-types: ['version-update:semver-minor']
+      # The types follow the runtime they describe; they are pinned exactly in package.json for the
+      # same reason, since a caret range resolves straight back to 19.3.
+      - dependency-name: '@types/react'
+        update-types: ['version-update:semver-minor']
+      - dependency-name: '@types/react-dom'
+        update-types: ['version-update:semver-minor']
     commit-message:
       prefix: 'chore(deps)'
 
