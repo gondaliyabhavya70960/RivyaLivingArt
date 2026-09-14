@@ -142,6 +142,31 @@ export function imageUrl(
 }
 
 /**
+ * A tiny blurred plate for CSS `background-image` under the real `<img>` (LQIP).
+ *
+ * Computed on the server in the `BlockImage` / `MediaSlot` path and painted by `MediaFrame`.
+ * It is NOT a client island, NOT `next/image`, and NOT an opacity fade on LCP — the full image
+ * still loads normally; the plate only keeps the well from reading as a hole while it does.
+ *
+ * Fixed derivation (`w_32`, `q_1`, `e_blur:1000`), deliberately off the responsive ladder: one
+ * extra Cloudinary derivative per asset, not one per viewport. Skip the call when there is no
+ * asset — an empty plate must not invent a photograph.
+ */
+export function lqipUrl(
+  cloudName: string,
+  ref: MediaRef,
+  cropSegment?: string | null,
+): string {
+  // Sorted parameter order, same contract as `transformationSegment`, so cache keys stay stable.
+  const preset = 'c_fill,e_blur:1000,f_auto,g_auto,q_1,w_32'
+  const segment =
+    cropSegment === undefined || cropSegment === null || cropSegment === ''
+      ? preset
+      : `${cropSegment}/${preset}`
+  return buildUrl(cloudName, ref, segment)
+}
+
+/**
  * A video delivery URL.
  *
  * `f_auto:video,q_auto,vc_auto` is the phase document's video policy: negotiate the container,
