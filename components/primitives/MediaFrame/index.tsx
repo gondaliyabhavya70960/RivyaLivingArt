@@ -110,18 +110,42 @@ export interface MediaFrameProps extends AspectBoxProps {
   veil?: boolean
   /** Content that sits above the veil — a caption, an eyebrow, a play control. */
   overlay?: React.ReactNode
+  /**
+   * Tiny Cloudinary LQIP URL painted as a CSS background UNDER the media.
+   *
+   * `BlockImage` computes it on the server; this frame never builds a URL. Omitted for empty
+   * wells and when the caller has no deliverable asset — a plate must not invent a photograph.
+   * No opacity fade: the real `<img>` loads on top of the plate without animating LCP contrast.
+   */
+  placeholderUrl?: string
 }
 
 export const MediaFrame = React.forwardRef<HTMLElement, MediaFrameProps>(function MediaFrame(
-  { fallbackLabel, fallback, veil = false, overlay, className, children, ...rest },
+  { fallbackLabel, fallback, veil = false, overlay, placeholderUrl, className, style, children, ...rest },
   ref,
 ) {
   // toArray drops null, undefined and booleans, so the ordinary `{asset && <MediaImage/>}`
   // and `{null}` shapes a resolver produces all read as "no media" rather than as a child.
   const hasMedia = React.Children.toArray(children).length > 0
 
+  // LQIP plate under the img — only when media is present. Empty wells keep the sunken well alone.
+  const plateStyle =
+    hasMedia && placeholderUrl !== undefined && placeholderUrl !== ''
+      ? {
+          backgroundImage: `url(${placeholderUrl})`,
+          backgroundSize: 'cover' as const,
+          backgroundPosition: 'center' as const,
+          ...style,
+        }
+      : style
+
   return (
-    <AspectBox ref={ref} className={cn('bg-surface-sunken rounded-none', className)} {...rest}>
+    <AspectBox
+      ref={ref}
+      className={cn('bg-surface-sunken rounded-none', className)}
+      style={plateStyle}
+      {...rest}
+    >
       {hasMedia ? (
         children
       ) : (

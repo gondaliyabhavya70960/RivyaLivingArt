@@ -5,10 +5,10 @@ import { MediaImage } from '@/components/patterns/MediaImage'
 import { EmptyPlate } from '@/components/patterns/MediaSlot/EmptyPlate'
 import type { AspectRatio } from '@/components/primitives/AspectBox'
 import { cropFor, cropSegment } from '@/lib/media/crop'
-import { altTextOf, mediaRefOf } from '@/lib/cms/media'
+import { altTextOf, mediaRefOf, type BoundMediaAsset } from '@/lib/cms/media'
 import { type SiteStrings } from '@/lib/cms/strings'
 import type { PresetName } from '@/lib/media/transform'
-import type { BoundMediaAsset } from '@/lib/cms/media'
+import { lqipUrl } from '@/lib/media/url'
 
 /**
  * MediaSlot — the two ways any surface shows a CMS-bound asset: one picture, or a desktop/mobile
@@ -140,6 +140,13 @@ export function BlockImage({
     return crop === undefined ? null : cropSegment(crop)
   }
 
+  /*
+   * SERVER-SIDE LQIP — a tiny blurred plate under the img, never a client island.
+   * Skipped when nothing is deliverable so EmptyPlate wells stay empty.
+   */
+  const placeholderUrl =
+    deliverable === null ? undefined : lqipUrl(cloudName, mediaRefOf(deliverable), cropAt(ratio))
+
   return (
     <MediaFrame
       ratio={ratio}
@@ -170,6 +177,7 @@ export function BlockImage({
       overlay={overlay}
       className={className}
       minBlockSize={minBlockSize}
+      placeholderUrl={placeholderUrl}
     >
       {deliverable === null ? null : (
         <MediaImage
@@ -220,6 +228,8 @@ export type ResponsiveMediaProps = {
   readonly overlay?: React.ReactNode
   /** See `BlockImageProps.fallback`. Forwarded to whichever half of the pair is emitted. */
   readonly fallback?: React.ReactNode
+  /** See `BlockImageProps.emptyTitle`. Forwarded with the empty plate. */
+  readonly emptyTitle?: string | null
   /**
    * A floor on the height of BOTH halves of the pair. See `AspectBoxProps.minBlockSize`.
    *
@@ -269,6 +279,7 @@ export function ResponsiveMedia({
   veil = false,
   overlay,
   fallback,
+  emptyTitle,
   minBlockSize,
 }: ResponsiveMediaProps): React.ReactElement {
   const shared = {
@@ -280,6 +291,7 @@ export function ResponsiveMedia({
     veil,
     overlay,
     fallback,
+    emptyTitle,
     minBlockSize,
   } as const
 

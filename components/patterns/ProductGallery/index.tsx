@@ -24,9 +24,10 @@ import type { MediaAsset } from '@/lib/supabase/schemas'
  * saying one is coming is a promise about a feature that does not exist. The absence is deliberate:
  * not a teaser, not a disabled control, nothing at all.
  *
- * NO IMAGES MEANS NO GALLERY. A product whose media the owner has not attached renders no section
- * here rather than an empty frame — the page is complete without it, which is the sparse-product
- * case `product-minimal.spec.ts` exists to prove.
+ * ZERO ASSETS STILL RESERVES THE FRAME. A product whose media the owner has not attached used to
+ * omit the section entirely, leaving a hole beside the inquiry rail. The designed empty
+ * (`EmptyPlate` via `BlockImage`) keeps the layout honest without inventing a photograph or
+ * binding concept media to `product_media`.
  */
 
 export interface ProductGalleryProps {
@@ -35,16 +36,38 @@ export interface ProductGalleryProps {
   readonly strings: SiteStrings
   /** Empty string when the environment has no cloud name; the frames then carry the fallback. */
   readonly cloudName: string
+  /** Object name for the empty plate when there are no assets. Never a slug. */
+  readonly emptyTitle?: string | null
 }
 
 export function ProductGallery({
   assets,
   strings,
   cloudName,
-}: ProductGalleryProps): React.ReactElement | null {
-  if (assets.length === 0) return null
-
+  emptyTitle = null,
+}: ProductGalleryProps): React.ReactElement {
   const regionName = siteString(strings, 'UI_LABEL.product.gallery.heading')
+
+  if (assets.length === 0) {
+    return (
+      <section
+        data-product-gallery=""
+        data-product-gallery-empty=""
+        {...(regionName === null ? {} : { 'aria-label': regionName })}
+      >
+        {regionName === null ? null : <VisuallyHidden>{regionName}</VisuallyHidden>}
+        <BlockImage
+          asset={null}
+          ratio="4:5"
+          preset="hero"
+          sizes="(min-width: 1024px) 60vw, 100vw"
+          strings={strings}
+          cloudName={cloudName}
+          emptyTitle={emptyTitle}
+        />
+      </section>
+    )
+  }
 
   return (
     <section data-product-gallery="" {...(regionName === null ? {} : { 'aria-label': regionName })}>
@@ -66,6 +89,7 @@ export function ProductGallery({
                 eager={position === 0}
                 // Phase 40: the first frame is this route's LCP element.
                 priority={position === 0}
+                emptyTitle={emptyTitle}
               />
             </li>
           ))}

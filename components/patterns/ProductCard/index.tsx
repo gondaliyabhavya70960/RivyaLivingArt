@@ -124,6 +124,7 @@ export function ProductCard({
           sizes={sizes}
           strings={strings}
           cloudName={cloudName}
+          emptyTitle={product.title}
           /*
            * THE DURATION TOKEN DID NOT EXIST — Phase 45, found by the §50 motion inventory.
            *

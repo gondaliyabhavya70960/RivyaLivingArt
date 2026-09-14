@@ -7,7 +7,7 @@ import {
   posterUrlFor,
 } from '@/lib/media/poster'
 import { PRESET_MAP, resolveSpec } from '@/lib/media/transform'
-import { imageUrl, posterUrl, videoUrl } from '@/lib/media/url'
+import { imageUrl, lqipUrl, posterUrl, videoUrl } from '@/lib/media/url'
 
 const CLOUD = 'rivya-test'
 
@@ -26,8 +26,6 @@ describe('imageUrl', () => {
   })
 
   it('emits the transformation parameters in a stable order regardless of spec key order', () => {
-    // The whole point. `c_fill,w_480` and `w_480,c_fill` are one transformation and two cache
-    // entries, so the order must not depend on how the caller happened to write the object.
     const a = imageUrl(
       CLOUD,
       { publicId: 'x', resourceType: 'image' },
@@ -55,10 +53,6 @@ describe('imageUrl', () => {
   })
 
   it('never emits a dpr parameter, because the srcset ladder already answers DPR', () => {
-    // CLOUDINARY.md §5.3: "One mechanism, not two." For an image the two would MULTIPLY — a 480px
-    // box with sizes="480px" already makes a 2x screen pick the 1024 rung, and a dpr_2 on top of
-    // that delivers 2048px for a 480px box. `TransformSpec` therefore has no `dpr` field at all,
-    // so this is enforced by the type; the assertion is here for the URL shape.
     const url = imageUrl(CLOUD, { publicId: 'x', resourceType: 'image' }, { width: 480 })
     expect(url).not.toContain('dpr_')
   })
@@ -67,7 +61,6 @@ describe('imageUrl', () => {
     expect(
       imageUrl(CLOUD, { publicId: 'x', resourceType: 'image' }, { width: 1600, ratio: '21:9' }),
     ).toContain('h_686')
-    // The `og` case: 1200 x 630 is fixed externally, so a ratio must not override it.
     expect(
       imageUrl(
         CLOUD,
@@ -83,15 +76,11 @@ describe('imageUrl', () => {
   })
 
   it('keeps folder slashes as folders but escapes everything else', () => {
-    // encodeURIComponent on the whole id would escape the slashes and 404 every foldered asset.
     const url = imageUrl(CLOUD, { publicId: 'rivya/process/a b?c', resourceType: 'image' })
     expect(url).toContain('/rivya/process/a%20b%3Fc')
   })
 
   it('renders every preset without an empty path segment', () => {
-    // An absent transformation or version must be dropped, not joined as ''. A `//` in the path
-    // is a different URL to Cloudinary and 404s, and it is the exact failure a `.filter()` on the
-    // segment list exists to prevent — so it is worth asserting rather than assuming.
     for (const name of Object.keys(PRESET_MAP) as (keyof typeof PRESET_MAP)[]) {
       const url = imageUrl(CLOUD, { publicId: 'x', resourceType: 'image' }, resolveSpec(name))
       expect(url, name).toMatch(/^https:\/\/res\.cloudinary\.com\/rivya-test\/image\/upload\/.+/)
@@ -115,15 +104,11 @@ describe('videoUrl', () => {
   })
 
   it('strips the audio track when muted', () => {
-    // Muted autoplay is the only inline video the site plays, so an audio track nobody can hear
-    // is bytes on a mobile connection.
     const url = videoUrl(CLOUD, { publicId: 'x', resourceType: 'video' }, { muted: true })
     expect(url).toContain('ac_none')
   })
 
   it('is the ONLY path that takes a dpr, because a video has no srcset', () => {
-    // The ladder cannot answer DPR for a video, so this is the only mechanism available — which
-    // is exactly why it belongs on VideoTransformSpec and not on TransformSpec.
     const url = videoUrl(CLOUD, { publicId: 'x', resourceType: 'video' }, { width: 1280, dpr: 2 })
     expect(url).toContain('dpr_2')
   })
@@ -146,29 +131,19 @@ describe('videoUrl', () => {
   })
 
   it('puts g_auto in its OWN component, because Cloudinary rejects it inline on video', () => {
-    // Not a style choice. The live API answers HTTP 400 to the inline form:
-    //   "g_auto must be in a transformation component by itself"
-    // Every preset carries gravity: 'auto', so before this every video URL in the product would
-    // have 400ed in production — and every unit test passed, because they compared strings
-    // instead of sending them anywhere.
     const url = videoUrl(CLOUD, { publicId: 'x', resourceType: 'video' }, resolveSpec('hero'))
     const path = url.split('/upload/')[1] ?? ''
     expect(path.startsWith('c_fill,f_auto:video,q_auto,vc_auto,w_1600/g_auto/')).toBe(true)
-    // The chain verified against the live API, verbatim.
     expect(url).toContain('/c_fill,f_auto:video,q_auto,vc_auto,w_1600/g_auto/')
   })
 
   it('keeps g_auto INLINE on an image, where it is accepted', () => {
-    // Applied only where required: moving it on the image path would change every image URL in
-    // the product and invalidate every derivative already generated for it.
     expect(
       imageUrl(CLOUD, { publicId: 'x', resourceType: 'image' }, resolveSpec('hero')),
     ).toContain('/c_fill,f_auto,g_auto,q_auto:good,w_1600/')
   })
 
   it('does not emit an image preset format or quality alongside the video policy', () => {
-    // Passing a preset through would otherwise produce both `f_auto` and `f_auto:video`, and both
-    // `q_auto` and `q_auto:good` — a transformation Cloudinary rejects.
     const url = videoUrl(
       CLOUD,
       { publicId: 'x', resourceType: 'video' },
@@ -183,17 +158,12 @@ describe('videoUrl', () => {
 describe('posterUrl', () => {
   it('pulls the first frame out of the video namespace, as an image', () => {
     const url = posterUrl(CLOUD, { publicId: 'rivya/process/pour', resourceType: 'video' })
-    // so_0 is the frame; the .jpg extension is what makes Cloudinary transcode at all.
     expect(url).toContain('so_0')
     expect(url).toMatch(/\.jpg$/)
-    // The resource type stays `video`: asking under image/upload is a 404, because Cloudinary's
-    // resource types are separate namespaces rather than a hint.
     expect(url).toContain('/video/upload/')
   })
 
   it('splits g_auto out too — a poster comes OUT of the video namespace', () => {
-    // The second half of the same bug and the easier half to miss: "it is an image" is true of the
-    // output and false of the namespace it is delivered from, and the restriction is per namespace.
     const url = posterUrl(CLOUD, { publicId: 'x', resourceType: 'video' }, resolveSpec('thumb'))
     expect(url).toContain('/c_fill,q_auto:eco,so_0,w_160/g_auto/')
   })
@@ -212,8 +182,6 @@ describe('posterFor', () => {
   })
 
   it('treats an empty string as no poster, not as a poster named ""', () => {
-    // A cleared form field arrives as '' rather than null often enough to matter, and an empty
-    // public_id would build a URL that 404s while looking like a deliberate choice.
     expect(posterFor({ publicId: 'v', posterPublicId: '' }).origin).toBe('derived')
   })
 
@@ -224,8 +192,6 @@ describe('posterFor', () => {
   })
 
   it('dispatches to the right URL builder for each origin', () => {
-    // The dispatch is the reason posterUrlFor exists: an explicit poster is an image resource and
-    // a derived one is a frame from a video resource, served out of two different namespaces.
     expect(posterUrlFor(CLOUD, { publicId: 'v', posterPublicId: 'still' })).toContain(
       '/image/upload/',
     )
@@ -252,13 +218,31 @@ describe('mayAutoplayInline', () => {
   })
 
   it('refuses an UNKNOWN duration rather than assuming it is short', () => {
-    // duration_s is null until probe() has run, which is most likely on a just-uploaded asset —
-    // exactly when nobody has checked how long it is.
     expect(mayAutoplayInline({ durationSeconds: null, prefersReducedMotion: false })).toBe(false)
   })
 
   it('refuses a zero or negative duration instead of treating it as short', () => {
     expect(mayAutoplayInline({ durationSeconds: 0, prefersReducedMotion: false })).toBe(false)
     expect(mayAutoplayInline({ durationSeconds: -3, prefersReducedMotion: false })).toBe(false)
+  })
+})
+
+describe('lqipUrl', () => {
+  it('emits a fixed tiny blurred plate off the responsive ladder', () => {
+    const url = lqipUrl(CLOUD, { publicId: 'rivya/material/oak', resourceType: 'image' })
+    expect(url).toContain('/c_fill,e_blur:1000,f_auto,g_auto,q_1,w_32/')
+    expect(url).toContain('/image/upload/')
+  })
+
+  it('places an editor crop BEFORE the LQIP preset, matching imageUrl ordering', () => {
+    const url = lqipUrl(
+      CLOUD,
+      { publicId: 'x', resourceType: 'image' },
+      'c_crop,h_100,w_80,x_10,y_20',
+    )
+    const path = url.split('/upload/')[1] ?? ''
+    expect(path.startsWith('c_crop,h_100,w_80,x_10,y_20/c_fill,e_blur:1000,f_auto,g_auto,q_1,w_32/')).toBe(
+      true,
+    )
   })
 })

@@ -3,11 +3,6 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MediaFrame } from './index'
 
-/**
- * Seeded copy, passed in as a prop the way `global_content` will pass it (SEED §1, §47).
- * The media is a stand-in: §10.1 reserves the right to emit an <img> to Phase 06's
- * MediaImage, and MediaFrame is agnostic about what it holds.
- */
 const FALLBACK = 'Image temporarily unavailable'
 
 describe('MediaFrame', () => {
@@ -55,11 +50,7 @@ describe('MediaFrame', () => {
         <div data-testid="media" />
       </MediaFrame>,
     )
-    // The frame exposes exactly the overlay copy — the veil adds no text, no role and no
-    // second image to read past.
-    expect(screen.getByRole('figure', { name: 'Page hero' })).toHaveTextContent(
-      /^Cast in one pour$/,
-    )
+    expect(screen.getByRole('figure', { name: 'Page hero' })).toHaveTextContent(/^Cast in one pour$/)
     expect(screen.queryByRole('img')).not.toBeInTheDocument()
   })
 
@@ -93,5 +84,29 @@ describe('MediaFrame', () => {
       'data-slot',
       'collection-hero',
     )
+  })
+
+  it('paints a LQIP background only when media is present', () => {
+    const { container } = render(
+      <MediaFrame
+        ratio="4:5"
+        placeholderUrl="https://res.cloudinary.com/x/image/upload/c_fill,w_32/y"
+      >
+        <div role="img" aria-label="Piece" />
+      </MediaFrame>,
+    )
+    const box = container.firstElementChild as HTMLElement
+    expect(box.style.backgroundImage).toContain('res.cloudinary.com')
+  })
+
+  it('does not invent a LQIP plate on an empty well', () => {
+    const { container } = render(
+      <MediaFrame
+        ratio="4:5"
+        placeholderUrl="https://res.cloudinary.com/x/image/upload/c_fill,w_32/y"
+      />,
+    )
+    const box = container.firstElementChild as HTMLElement
+    expect(box.style.backgroundImage).toBe('')
   })
 })
