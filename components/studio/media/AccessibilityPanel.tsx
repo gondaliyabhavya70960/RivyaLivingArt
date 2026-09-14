@@ -34,11 +34,20 @@ import { altTextWarnings } from '@/lib/media/alt-text-quality'
  * than approximated here with a colour the overlay may not use.
  */
 
+/*
+ * THE THREE PHASE 44 FINDINGS REUSE `promptWarning` RATHER THAN ADDING COPY. Its sentence —
+ * "rewrite it as a sentence about what the picture shows" — is the right instruction for all of
+ * them, and a new string here would need a `studio_help` row seeded before anybody could read it.
+ * The panel de-duplicates by string, so a value failing two of these still shows one line.
+ */
 const WARNING_STRING: Record<string, string> = {
   TRUNCATED: 'studio.media.a11y.truncatedWarning',
   PROMPT_VOCABULARY: 'studio.media.a11y.promptWarning',
   REDUNDANT_PREFIX: 'studio.media.a11y.promptWarning',
   TOO_SHORT: 'studio.media.a11y.promptWarning',
+  PROMPT_DIRECTION: 'studio.media.a11y.promptWarning',
+  CLAIMS_CAPTURE: 'studio.media.a11y.promptWarning',
+  MALFORMED: 'studio.media.a11y.promptWarning',
 }
 
 export interface AccessibilityPanelProps {
