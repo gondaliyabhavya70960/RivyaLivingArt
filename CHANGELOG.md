@@ -6,6 +6,37 @@ Every phase adds an entry; see `docs/architecture/CANONICAL-DECISIONS.md` D9 for
 
 ## [Unreleased]
 
+### The masthead search is a trigger, not a crushed field (2026-09-14)
+
+Amendment **A66**. Raised by the owner looking at the live masthead. Every number below was measured
+on rivyalivingart.com rather than reasoned about, which turned out to matter: every earlier figure
+recorded for this row was an estimate and all of them were wrong.
+
+**Fixed — the search box was 26px wide at 1280 and 99px at 1440**, against a seeded placeholder 44
+characters long. `SearchCombobox` was a `flex-1` item between a wordmark and a nine-item nav, so it
+absorbed the row's whole deficit instead of overflowing it — which is why the overflow assertion in
+`homepage.spec.ts` stayed green for three phases while the control was unusable. The masthead now
+carries a 44px link to `/search` wearing a magnifier: the trigger DESIGN_SYSTEM §8.1 and guide §5.1
+both specified from the start. No field, no state, no hydration.
+
+**`SearchCombobox` moved to `/search`** rather than being deleted, so suggestions, arrow-key
+navigation and the ARIA 1.2 pattern survive on the page where typing a query is the task. Its no-JS
+path is unchanged: it is a `<form method="get" action="/search">` before it is anything else.
+
+**The homepage island budget came down from five to four** — the first time a feature has paid one
+back. A link hydrates nothing, and `check-island-budget.mjs` walks the shell, not `/search`.
+
+**The nav gap at `xl` went from 24px to 20px.** At 1280 the row left 969px for a nav that wants 968:
+one pixel, which a single editor renaming a menu item spends.
+
+**Found and left to the owner: nine top-level items is more than this masthead can carry.** Forced
+onto one line the published nav measures 968px at `gap-6`. Below roughly 1100 it already wraps to
+two lines and squeezes the wordmark from 104px to 97 — live today, and no gap closes it. And the
+§5.1 commission pill (197px, not the 155 recorded) cannot be added at any width: the widest content
+box the container allows is 1312, and the row wants 1385. The pill is `shrink-0` and the nav is not,
+so the nav absorbs the deficit by wrapping while every overflow gate stays green. At six top-level
+items the pill has about 167px of room and the 1024 wrap resolves with it — but what is in the menu
+is `navigation_items` data and an editorial decision, so no row was touched.
 ### Fix: main could not install its own dependencies (2026-09-14)
 
 The routine Dependabot group bumped react 19.2.8 → 19.3.0.

@@ -202,6 +202,62 @@ Brand and editorial copy may be written; anything asserting business capability 
 
 ## Amendments
 
+**2026-09-14 · A66 — the masthead search is a trigger, not a field; and nine top-level items is
+the constraint the masthead is actually under.**
+
+*Raised by the owner looking at the live masthead and saying it looked wrong. It was. Everything
+below was measured on the live site rather than reasoned about, which matters because every earlier
+number in this file about this row was an estimate and every one of them was wrong.*
+
+**THE SEARCH FIELD WAS 26 PIXELS WIDE AT 1280 AND 99 AT 1440.** The seeded placeholder is 44
+characters. `SearchCombobox` sat in the masthead as a `flex-1` item between a wordmark and a
+nine-item nav, so it was allotted whatever those two left — and a flexible item between two
+inflexible ones absorbs the entire deficit rather than overflowing it. That is why no gate saw
+anything: `homepage.spec.ts` asserts no sideways scroll and there was none. The control was simply
+crushed. It had been live in that state since Phase 23 and through Phase 42's attempt to fix it,
+which moved the field from `lg` to `xl` and so changed only *where* it did not fit.
+
+**THE FIX IS THE CONTROL DESIGN_SYSTEM §8.1 AND GUIDE §5.1 BOTH ASKED FOR FROM THE START.** A 44px
+link to `/search` wearing a magnifier: no field, no state, no hydration. `SearchCombobox` is not
+deleted — it moved to `app/(site)/search/page.tsx`, where the field is full width and typing a query
+is the task rather than a garnish, and where `check-search-scope.mjs` already walked it.
+
+**THIS LOWERS THE HOMEPAGE ISLAND BUDGET FROM FIVE TO FOUR**, which is the first time a feature has
+paid a budget back. Phase 23 raised it from five to six for this component; the editorial redesign
+brought it to five; A66 brings it to four. The cost is removed rather than relocated —
+`check-island-budget.mjs` walks the shell, and `/search` is a dynamic route a visitor reaches
+deliberately.
+
+**WHAT THE MEASUREMENT ALSO SETTLED, AND IT IS THE MORE IMPORTANT HALF.** Forced onto one line the
+nine published top-level items measure **968px** at `gap-6` — not the 834 this file and `SiteHeader`
+have both asserted — and the §5.1 commission pill measures **197px**, not 155. `wide` is 90rem and
+`2xl` is 90rem, so the widest content box the container ever allows is **1312**, and 1920 is no
+roomier than 1440. Two things follow:
+
+1. **Below roughly 1100 the nav already wraps to two lines and the wordmark is squeezed from 104px
+   to 97.** Nine items want 872 at `gap-3` and 840 at `gap-2` against 802px of room at 1024, so no
+   gap closes it. This is live today and predates this amendment.
+2. **The commission pill cannot be added at any width.** The row wants 104 + 968 + 44 + 197 and
+   three 24px gaps — 1385 into 1312. The pill is `shrink-0` and the nav is not, so the nav absorbs
+   the 73px by wrapping, and the overflow assertion stays green while the masthead grows a second
+   line of menu. A62 gated this button at `2xl` on the belief that `2xl` was roomier. It is not.
+
+**SO A62'S CLAIM THAT REPLACING THE FIELD "BRINGS THE BUTTON TO `xl`" IS WITHDRAWN.** Freeing the
+field's 148px was necessary and is not sufficient. The remaining 73px cannot be shaved out of gaps
+without pinning the layout to labels an editor may change tomorrow — `navigation_items` is data, and
+a masthead that fits only today's nine labels is not a masthead that fits.
+
+**WHAT CLOSES IT IS A SHORTER TOP-LEVEL MENU, AND THAT IS THE OWNER'S TO DECIDE.** At six top-level
+items the pill has roughly 167px of room at every width from 1280 up and the 1024 wrap resolves with
+it. Which items leave the masthead — and whether they go to the drawer, the footer, or under
+Collection — is editorial, so nothing here touches a `navigation_items` row. The pill stays rendered
+at `2xl` with its `CTA` row unseeded, which is the state production is already in; it is recorded
+here rather than quietly deleted or shipped into a masthead that wraps around it.
+
+**THE ONE NUMBER THIS AMENDMENT DID MOVE** is the nav's own gap at `xl`: 24px to 20px. At 1280 the
+row leaves 969px for a nav that wants 968 — one pixel, which a single rename spends. 20px leaves 33.
+`2xl` keeps the 24px §5 draws.
+
 **2026-09-14 · A65 — public redesign P3: three defects a visitor could see, and the guide's
 collection list is not this project's.**
 
@@ -350,6 +406,11 @@ below 834 at `xl`'s `gap-6`, the wordmark needs 124, the search control will not
 container's three gaps are 72, and this button is about 155. That is **1303px of content in an `xl`
 box of roughly 1200** — a 100px overflow, the same sideways scroll `homepage.spec.ts` exists to
 catch. At `2xl` the box is about 1440 and it fits.
+
+**[SUPERSEDED BY A66 — every number in the two paragraphs below is an estimate and all of them are
+wrong. Measured: the nav is 968 at `gap-6`, this button is 197, the widest content box is 1312 at
+both `2xl` and 3xl, and replacing the inline field does NOT bring the button to `xl`. Kept as
+written because the reasoning is sound and only the inputs were guessed.]**
 
 **A CTA THAT APPEARS ONLY ABOVE 1536 IS A COMPROMISE AND IS NAMED AS ONE.** §5.1's other header
 instruction is what would fix it — "Search icon only — the full Search page stays /search" — and

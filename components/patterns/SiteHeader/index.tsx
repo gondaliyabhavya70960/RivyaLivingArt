@@ -3,7 +3,6 @@ import * as React from 'react'
 import { MegaMenu } from '@/components/patterns/MegaMenu'
 import { NavLink } from '@/components/patterns/NavLink'
 import { MobileNav } from '@/components/patterns/MobileNav'
-import { SearchCombobox } from '@/components/patterns/SearchCombobox'
 import { BlockImage } from '@/components/patterns/MediaSlot'
 import { Container } from '@/components/primitives/Container'
 import { siteString } from '@/lib/cms/strings'
@@ -94,6 +93,63 @@ function CategoryCard({
   )
 }
 
+/**
+ * The masthead's search control: a link to `/search` wearing a magnifier.
+ *
+ * IT IS A TRIGGER, WHICH IS WHAT §8.1 ASKED FOR ALL ALONG. Phase 23 shipped an inline field where
+ * that table says *trigger*, and the field never fitted: the masthead's content box is 1312px at
+ * its widest, the wordmark takes 104 and nine top-level items take 968, so the field — a `flex-1`
+ * item between them — was allotted whatever was left. **26px at 1280 and 99px at 1440**, measured
+ * on the live site, against a seeded placeholder 44 characters long. A visitor saw "Search fu" in a
+ * box too narrow to type a word into. That is the defect this replaces, and it was never a styling
+ * slip: a flexible item beside two inflexible ones absorbs the whole deficit, so the row reported
+ * no overflow while the control it contained was crushed to nothing.
+ *
+ * NOT AN ISLAND, AND THAT IS THE POINT. A link needs no hydration, no `aria-expanded`, no debounce
+ * and no abort controller. The combobox those things exist for is not deleted — it moved to
+ * `/search`, where the field is full width and suggestions are the task rather than a garnish, and
+ * where `check-search-scope.mjs` already walked it. The homepage's island budget drops from five
+ * to four in the same edit.
+ *
+ * NO COPY. `UI_LABEL.search.label` is the accessible name; the glyph is `aria-hidden`, so the label
+ * is the control's whole announced name. A missing row renders no trigger rather than an icon
+ * nobody can name — the rule every other string in this header follows.
+ *
+ * `xl` AND UP, WHICH IS UNCHANGED AND IS STILL THE ARITHMETIC'S ANSWER. 44px plus its 24px gap
+ * needs 68; at 1024 the row has 802px for a nav that wants 968 and is already wrapping without it.
+ * Below `lg` the drawer carries `/search` as a menu item. See DESIGN_SYSTEM §8.1.
+ */
+function SearchTrigger({ label }: { readonly label: string }): React.ReactElement {
+  return (
+    <NavLink
+      href="/search"
+      data-header-search=""
+      aria-label={label}
+      className={cn(
+        'hidden size-11 shrink-0 items-center justify-center rounded-full xl:inline-flex',
+        'text-ink-secondary transition-colors duration-(--rv-duration-fast) ease-standard',
+        'hover:text-ink focus-visible:text-ink motion-reduce:transition-none',
+      )}
+    >
+      {/* The §7.2 icon contract: inline SVG, `currentColor`, stroke 1.5, a 20px box, aria-hidden
+          so it cannot compete with the label above. No icon font, no sprite, no request. */}
+      <svg
+        viewBox="0 0 20 20"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        aria-hidden="true"
+        focusable="false"
+        className="size-5"
+      >
+        <circle cx="9" cy="9" r="5.25" />
+        <path d="m12.9 12.9 3.6 3.6" />
+      </svg>
+    </NavLink>
+  )
+}
+
 export type SiteHeaderProps = {
   readonly chrome: SiteChrome
   readonly cloudName: string
@@ -109,15 +165,11 @@ export function SiteHeader({ chrome, cloudName }: SiteHeaderProps): React.ReactE
   const openLabel = siteString(strings, 'ACTION_LABEL.open_menu')
   const closeLabel = siteString(strings, 'ACTION_LABEL.close_menu')
 
-  // Phase 23. Seven rows, and any of them missing means that part of the control is not rendered
-  // rather than falling back to a literal — the rule the whole header already follows.
+  // ONE ROW, WHERE PHASE 23 READ SEVEN. The masthead no longer renders the field, so the six rows
+  // that dressed it — placeholder, submit, suggestion list name, hint, "see all", count — are read
+  // by `/search`, which is where the field now lives. This is the trigger's accessible name, and a
+  // missing row means no trigger rather than an unnamed icon, like every other string here.
   const searchLabel = siteString(strings, 'UI_LABEL.search.label')
-  const searchPlaceholder = siteString(strings, 'FORM_COPY.search.placeholder')
-  const searchSubmit = siteString(strings, 'ACTION_LABEL.search.submit')
-  const searchListLabel = siteString(strings, 'UI_LABEL.search.suggestions.label')
-  const searchHint = siteString(strings, 'UI_LABEL.search.suggestions.hint')
-  const searchSeeAll = siteString(strings, 'ACTION_LABEL.search.see_all')
-  const searchCount = siteString(strings, 'UI_LABEL.search.count')
 
   /*
    * §5.1's masthead CTA. Missing row means no button, like every other string in this header —
@@ -162,15 +214,28 @@ export function SiteHeader({ chrome, cloudName }: SiteHeaderProps): React.ReactE
           className="hidden lg:block"
         >
           {/*
-           * A TIGHTER GAP BETWEEN `lg` AND `xl` — Phase 42, found by the overflow assertion.
+           * THREE GAPS, AND ALL THREE NUMBERS WERE MEASURED RATHER THAN CHOSEN.
            *
-           * Nine top-level items at `gap-6` measure 834px once they have wrapped as far as they
-           * will, and the masthead's content box at 1024 is 930px. The wordmark took what was left
-           * — 54px, three lines — and the page scrolled sideways. 12px between items at `lg` gives
-           * the wordmark 168px, which is more than the 124 it needs, so it stays on one line and
-           * the row fits. `xl` restores the 24px the design system draws.
+           * Phase 42 tightened `lg` to 12px against an estimate of 834px for nine items at
+           * `gap-6`. The real figure is 968, and the estimate is why the sums below it never
+           * balanced. Measured on the live masthead with the items forced onto one line, the nine
+           * published top-level items want:
+           *
+           *     gap-6 (24px) 968   gap-5 (20px) 936   gap-4 (16px) 904   gap-3 (12px) 872
+           *
+           * `xl` DROPS FROM 24px TO 20px BECAUSE 24 LEFT ONE PIXEL. At 1280 the content box is
+           * 1165; the wordmark takes 104, the two row gaps 48 and the search trigger 44, which
+           * leaves 969 for a nav that wants 968 at `gap-6`. One pixel is not headroom — these
+           * labels are `navigation_items` rows, so a single editor renaming "About" wraps the
+           * masthead. 20px leaves 33, which survives an edit. `2xl` restores the 24px §5 draws.
+           *
+           * WHAT NO GAP FIXES IS `lg`. At 1024 the row has 802px for the nav, and nine items want
+           * 872 even at 12px and 840 at 8px — so the nav wraps to two lines and the wordmark is
+           * squeezed from 104 to 97 at every width below roughly 1100. That is not a spacing bug
+           * and it is not fixed here: nine top-level items is more than this masthead can carry,
+           * and what is in the menu is the owner's, not this component's. See DESIGN_SYSTEM §8.1.
            */}
-          <ul className="flex list-none items-center gap-3 xl:gap-6">
+          <ul className="flex list-none items-center gap-3 xl:gap-5 2xl:gap-6">
             {header.map((item) =>
               item.children.length === 0 ? (
                 <li key={item.id}>
@@ -225,46 +290,8 @@ export function SiteHeader({ chrome, cloudName }: SiteHeaderProps): React.ReactE
           </ul>
         </nav>
 
-        {/*
-         * PHASE 23'S SEARCH BOX, ON EVERY `(site)` ROUTE.
-         *
-         * A SIXTH HYDRATION ISLAND, WHICH IS A REAL COST AND IS PAID DELIBERATELY. It is in the
-         * shell rather than on `/search` alone because FEAT §18 asks for search from anywhere, and
-         * a control that appears only on the page you reach by searching is not that. The budget
-         * in `scripts/site/check-island-budget.mjs` was raised from five to six in the same commit,
-         * with this component named — a gate whose number moves silently is not a gate.
-         *
-         * IT IS A FORM BEFORE IT IS AN ISLAND. With no JavaScript the input submits to `/search`
-         * and the visitor gets the whole results page, so the island buys suggestions and nothing
-         * load-bearing.
-         *
-         * HIDDEN BELOW `xl`, where the masthead has no room. Below `lg` the drawer is the whole
-         * menu and the search field lives inside its markup; MobileNav renders the menu and
-         * `/search` is a menu item there.
-         *
-         * IT USED TO SAY `lg`, AND EVERY PAGE SCROLLED SIDEWAYS AT 1024 — Phase 42. The arithmetic
-         * is not close: at 1024 the content box is 930px, the nine-item nav will not compress below
-         * 834, and this control will not compress below 118 (its submit button is `shrink-0` at 84).
-         * Brand, nav and field together need 1054 at their smallest, so the row overflowed by 77px
-         * on every `(site)` route — `homepage.spec.ts`'s overflow assertion caught it the first time
-         * this suite ran at w1024. No amount of shrinking fixes 124px of deficit; one of the three
-         * has to go, and §8.2 of the design system pins the nav and its mega menu at ≥1024.
-         *
-         * So between 1024 and 1279 the masthead carries no search control. `search-combobox-a11y`
-         * already skipped below 1280 — its threshold was right and its comment said `lg` — and
-         * DESIGN_SYSTEM §8.1 asks for a "search TRIGGER" rather than an inline field, which is the
-         * compact control that would close the gap. That is a design change and it is Phase 45's.
-         */}
-        <SearchCombobox
-          className="hidden max-w-xs flex-1 xl:block"
-          label={searchLabel}
-          placeholder={searchPlaceholder}
-          submitLabel={searchSubmit}
-          listLabel={searchListLabel}
-          hint={searchHint}
-          seeAllLabel={searchSeeAll}
-          countTemplate={searchCount}
-        />
+        {/* §8.1's search trigger. See `SearchTrigger` above for why it is no longer a field. */}
+        {searchLabel === null ? null : <SearchTrigger label={searchLabel} />}
 
         {/*
          * THE ONE PRIMARY ACTION IN THE MASTHEAD — public redesign guide §5.1, "Commission a piece
@@ -275,24 +302,25 @@ export function SiteHeader({ chrome, cloudName }: SiteHeaderProps): React.ReactE
          * the masthead, and an href read from `global_content` is an href somebody can change to
          * one. The words are the owner's; the destination is the architecture's.
          *
-         * `2xl` AND ABOVE, WHICH IS HIGHER THAN "DESKTOP" AND IS THE ARITHMETIC'S ANSWER RATHER
-         * THAN A PREFERENCE. Phase 42 measured this row when it overflowed by 77px at 1024, and
-         * those numbers still govern: the nine-item nav will not compress below 834 at `xl`'s
-         * `gap-6`, the wordmark needs 124, the search control will not go under 118, and the
-         * container's three gaps are 72. This button is about 155. That is 1303px of content in
-         * an `xl` box of roughly 1200 — a 100px overflow, which is the same sideways scroll
-         * `homepage.spec.ts` was written to catch. At `2xl` the box is about 1440 and it fits.
+         * `2xl`, AND IT DOES NOT FIT THERE EITHER. Every earlier number here was an estimate and
+         * every one of them was wrong. Measured: this button is **197px**, not the 155 recorded,
+         * and the nav is 968 at `gap-6`, not 834. The widest content box this container allows is
+         * 1312 — `wide` is 90rem and `2xl` is 90rem, so 1920 is no roomier than 1440. The row then
+         * wants 104 + 968 + 44 + 197 and three 24px gaps: **1385 into 1312**.
          *
-         * SO THE MASTHEAD CANNOT CARRY THIS AT 1280 UNTIL SOMETHING ELSE GIVES, and §5.1 names
-         * what: "Search icon only — the full Search page stays /search." DESIGN_SYSTEM §8.1 asks
-         * for the same compact trigger and the note above already files it as a later change.
-         * Replacing the inline field would free ~118px and bring this button down to `xl`, and
-         * arguably to `lg`. That is a real change to a real feature — the combobox is an island
-         * two gates name — so it is not smuggled in here.
+         * WHAT HAPPENS IS NOT A SIDEWAYS SCROLL, WHICH IS WHY NO GATE CAUGHT IT. The button is
+         * `shrink-0` and the nav is not, so the nav absorbs the 73px: its items wrap and the
+         * masthead grows a second line of menu. `homepage.spec.ts` asserts overflow and sees none.
+         * The same mechanism hid the crushed search field for three phases — see `SearchTrigger`.
          *
-         * UNTIL THEN THE COMMISSION ROUTE IS NOT UNREACHABLE: the nav carries it at every width
-         * from `lg` up, and below `lg` the drawer does. What is missing between 1024 and 1535 is
-         * the emphasis, not the destination.
+         * SO THE PILL IS RENDERED HERE AND IS CURRENTLY UNREACHABLE, because its `CTA` row has not
+         * been seeded to production; the live masthead shows no button at any width. Freeing the
+         * field's 148px was necessary and is not sufficient, and the remaining 73 cannot be shaved
+         * out of gaps without pinning the layout to labels an editor may change tomorrow. What
+         * closes it is a shorter top-level menu: nine items is the constraint, and six would leave
+         * this button 167px of room at every width from 1280 up. That is an editorial decision
+         * about `navigation_items`, so it is recorded in DESIGN_SYSTEM §8.1 and left to the owner
+         * rather than taken here.
          */}
         {commissionLabel === null ? null : (
           <NavLink

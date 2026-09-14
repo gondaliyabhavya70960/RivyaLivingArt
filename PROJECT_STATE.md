@@ -29,8 +29,9 @@ entity across eight types, maintained by eleven triggers rather than by a job, a
 `research_search_documents` sits beside it — created empty, no `anon` policy — so the boundary
 between the first-party catalogue and the research corpus that Phase 25 begins is visible in the
 schema before that subsystem exists. `/search` returns grouped, ranked, paginated results and the
-seeded SEED §26 empty state; the header carries an ARIA 1.2 combobox that submits a plain GET form
-without JavaScript; the Studio palette reaches products, categories, collections, materials,
+seeded SEED §26 empty state, and carries the ARIA 1.2 combobox that submits a plain GET form without
+JavaScript; the masthead carries a 44px link to it rather than a field, because the field it carried
+until A66 was allotted 26px at 1280 and was never usable; the Studio palette reaches products, categories, collections, materials,
 projects, articles, media and enquiries, each behind its own permission. An enquiry's document
 carries a reference code, a kind, a product title and a status, and a test proves it carries no name,
 phone number, email address, city or message.

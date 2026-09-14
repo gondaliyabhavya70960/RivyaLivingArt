@@ -7,11 +7,14 @@ description: Use before adding 'use client', a React hook, an event handler, or 
 
 ## The numbers
 
-**5 islands** in the initial bundle across the homepage's layouts and page, enforced by
+**4 islands** in the initial bundle across the homepage's layouts and page, enforced by
 `scripts/site/check-island-budget.mjs`. Per-route budgets are enforced too — 104 routes, the
 heaviest being `/product/[slug]` at 6/6.
 
-The current five: `SiteErrorCopy`, `MegaMenu`, `MobileNav`, `SearchCombobox`, `VitalsReporter`.
+The current four: `SiteErrorCopy`, `MegaMenu`, `MobileNav`, `VitalsReporter`.
+
+It was five until A66. `SearchCombobox` left the shell when §8.1's masthead trigger replaced the
+inline field with a link; the combobox now renders on `/search`, which this gate does not walk.
 Eight more load on demand and do not count: `ContentCarousel`, `Configurator`, `InquiryForm`,
 `HeroMotion`, `MaterialSequence`, `ChapterMedia`, `MediaVideo`, `ModelViewerMount`.
 

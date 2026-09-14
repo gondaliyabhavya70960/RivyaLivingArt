@@ -2,7 +2,7 @@ import AxeBuilder from '@axe-core/playwright'
 import { expect, test } from '@playwright/test'
 
 /**
- * The header search box, by keyboard only.
+ * The `/search` combobox, by keyboard only.
  *
  * ARIA 1.2's COMBOBOX PATTERN IS EASY TO CLAIM AND HARD TO IMPLEMENT, and the usual failure is
  * moving DOM focus into the listbox: arrow keys then re-announce the whole list on every press and
@@ -13,23 +13,23 @@ import { expect, test } from '@playwright/test'
  * reach `/search` — the combobox is an enhancement over a `<form method="get">`, and if the bundle
  * fails the visitor must still be able to search.
  *
- * IT RUNS AT THE DESKTOP WIDTHS ONLY. Below `xl` the box is hidden — below `lg` because the drawer
- * is the whole menu, and between `lg` and `xl` because the masthead has no room for it beside a
- * nine-item nav (SiteHeader says so at the call site, with the arithmetic). Asserting it at 360px
- * would be asserting the absence of something deliberately absent.
+ * IT NOW RUNS AT EVERY WIDTH, AND THE SKIP THAT USED TO STAND HERE IS GONE. While this control was
+ * the masthead's it was hidden below `xl` — below `lg` the drawer is the whole menu, and between
+ * `lg` and `xl` the masthead had no room beside a nine-item nav — so a run at 360 would have been
+ * asserting the absence of something deliberately absent. On `/search` the field is the page's own
+ * full-width control at 360 as much as at 1920, so there is nothing left to skip.
  *
- * The 1280 below was always right; the comment beside it used to say `lg`, and the component said
- * `lg` too, which is how every page came to scroll sideways at 1024 until Phase 42.
+ * THE SCOPE IS `[data-site-search]` RATHER THAN `header`. Every locator below used to be prefixed
+ * `header ` because the masthead held exactly one combobox. This page holds a results region too,
+ * so the component carries its own hook — the same reason `MegaMenu` carries `data-megamenu`.
  */
 
-const DESKTOP = 1280
-
-test.describe('the header search combobox', () => {
-  test.skip(({ viewport }) => (viewport?.width ?? 0) < DESKTOP, 'hidden below xl by design')
+test.describe('the /search combobox', () => {
+  const FIELD = '[data-site-search]'
 
   test('is a combobox before anything is typed', async ({ page }) => {
     await page.goto('/search')
-    const input = page.locator('header input[role="combobox"]')
+    const input = page.locator(`${FIELD} input[role="combobox"]`)
     await expect(input).toHaveCount(1)
     await expect(input).toHaveAttribute('aria-expanded', 'false')
     await expect(input).toHaveAttribute('aria-controls', /.+/)
@@ -39,11 +39,11 @@ test.describe('the header search combobox', () => {
     page,
   }) => {
     await page.goto('/search')
-    const input = page.locator('header input[role="combobox"]')
+    const input = page.locator(`${FIELD} input[role="combobox"]`)
     await input.click()
     await input.type('re', { delay: 40 })
 
-    const listbox = page.locator('header [role="listbox"]')
+    const listbox = page.locator(`${FIELD} [role="listbox"]`)
     /*
      * WAIT FOR A REAL SUGGESTION, NOT FOR THE LIST.
      *
@@ -53,7 +53,7 @@ test.describe('the header search combobox', () => {
      * waited on it raced the fetch: the first ArrowDown landed on "see all" and the second wrapped
      * back to it, which is how this assertion first failed against a working control.
      */
-    const options = page.locator('header [role="option"]')
+    const options = page.locator(`${FIELD} [role="option"]`)
     // At least two: one real suggestion plus the "see all" row. One alone means the request has
     // not landed (or matched nothing), and arrowing then measures the race rather than the control.
     const opened = await expect
@@ -83,11 +83,11 @@ test.describe('the header search combobox', () => {
 
   test('Escape closes the list and returns focus to the field', async ({ page }) => {
     await page.goto('/search')
-    const input = page.locator('header input[role="combobox"]')
+    const input = page.locator(`${FIELD} input[role="combobox"]`)
     await input.click()
     await input.type('re', { delay: 40 })
 
-    const listbox = page.locator('header [role="listbox"]')
+    const listbox = page.locator(`${FIELD} [role="listbox"]`)
     const opened = await listbox
       .waitFor({ state: 'visible', timeout: 5000 })
       .then(() => true)
@@ -102,11 +102,11 @@ test.describe('the header search combobox', () => {
 
   test('reports no critical or serious axe violations', async ({ page }) => {
     await page.goto('/search')
-    await page.locator('header input[role="combobox"]').click()
-    await page.locator('header input[role="combobox"]').type('re', { delay: 40 })
+    await page.locator(`${FIELD} input[role="combobox"]`).click()
+    await page.locator(`${FIELD} input[role="combobox"]`).type('re', { delay: 40 })
     await page.waitForTimeout(500)
 
-    const results = await new AxeBuilder({ page }).include('header').analyze()
+    const results = await new AxeBuilder({ page }).include(FIELD).analyze()
     const serious = results.violations.filter((violation) =>
       ['critical', 'serious'].includes(violation.impact ?? ''),
     )
@@ -118,7 +118,7 @@ test.describe('the header search combobox', () => {
     const page = await context.newPage()
     await page.goto('/search')
 
-    const input = page.locator('header input[name="q"]')
+    const input = page.locator(`${FIELD} input[name="q"]`)
     await input.fill('resin')
     await input.press('Enter')
 

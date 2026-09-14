@@ -14,6 +14,43 @@ owner_verification: NOT_REQUIRED
 
 ---
 
+## Most recent work — the masthead search trigger, A66 (2026-09-14)
+
+Amendment **A66**, raised by the owner looking at the live masthead and saying it looked wrong.
+Measured on rivyalivingart.com at eight widths rather than inferred.
+
+**THE SEARCH BOX WAS 26 PIXELS WIDE AT 1280 AND 99 AT 1440**, against a 44-character placeholder. It
+was a `flex-1` item between a wordmark and a nine-item nav and absorbed the row's whole deficit, so
+no overflow gate ever fired. It is now the compact trigger §8.1 and §5.1 both specified: a 44px link
+to `/search`. `SearchCombobox` moved to `/search` rather than being deleted. The homepage island
+budget came down from five to four, and `check-island-budget.mjs` with it.
+
+**EVERY NUMBER THIS REPOSITORY HELD ABOUT THE MASTHEAD ROW WAS AN ESTIMATE AND ALL OF THEM WERE
+WRONG.** The nav is 968px at `gap-6`, not 834. The commission pill is 197px, not 155. The widest
+content box is 1312 at `2xl` AND at 1920, because `wide` and `2xl` are both 90rem. A62's claim that
+freeing the field would bring the pill to `xl` is withdrawn.
+
+### The next exact action
+
+Unchanged, and still the one thing standing between committed work and the live pages:
+**run `npm run media:rewrite-alt-text --apply` against the hosted project.**
+
+### New, and the owner's: nine top-level nav items is the masthead's binding constraint
+
+Not a spacing bug, and nothing in the repository can fix it — `navigation_items` is data.
+
+1. **Below roughly 1100 the nav wraps to two lines and the wordmark is squeezed from 104px to 97.**
+   At 1024 the row has 802px for a nav that wants 872 at `gap-3` and 840 at `gap-2`. Live today.
+2. **The §5.1 commission pill cannot be added at any width.** 104 + 968 + 44 + 197 and three 24px
+   gaps is 1385 into 1312. It is `shrink-0` and the nav is not, so the nav wraps and the overflow
+   gates stay green. It stays rendered at `2xl` with its `CTA` row unseeded — production's current
+   state — rather than being deleted or shipped into a masthead that wraps around it.
+3. **At six top-level items both resolve**, with roughly 167px spare for the pill from 1280 up.
+   Which three leave the masthead, and whether they go to the drawer, the footer or under
+   Collection, is editorial. No `navigation_items` row was touched.
+
+---
+
 ## Most recent work — public redesign P3, catalogue and product (2026-09-14)
 
 Amendment **A65**. P0–P2 are merged (#86, main `0a8b39c`). This is P3.

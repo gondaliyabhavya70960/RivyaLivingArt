@@ -127,19 +127,41 @@ test.describe('forms', () => {
     })
   })
 
-  test('the search field is a labelled combobox', async ({ page }) => {
-    // Search is the other control every page carries, and a bare input in a header is the classic
-    // unnamed control.
+  test('both search controls carry an accessible name', async ({ page }) => {
+    /*
+     * TWO CONTROLS NOW, AND THE FIRST IS THE ONE AT RISK. §8.1's masthead trigger is an icon-only
+     * link — no text content at all — so `aria-label` is its entire accessible name and losing the
+     * seeded row would leave a control a screen reader can only call "link". The field on
+     * `/search` is the combobox this file has always checked. Both are asserted because they are
+     * named from different rows and either can go missing on its own.
+     */
     test.skip(!(await reachable(page, '/')), 'the home page is not published in this database')
 
+    const accessibleName = (locator: ReturnType<typeof page.locator>) =>
+      locator.evaluate(
+        (node) =>
+          node.getAttribute('aria-label') ??
+          (node as HTMLInputElement).labels?.[0]?.textContent?.trim() ??
+          node.textContent?.trim() ??
+          '',
+      )
+
+    // The masthead trigger. It is `display: none` below `xl`, so this reads the DOM rather than
+    // asserting visibility — the name has to be right at every width, not only where it shows.
+    const trigger = page.locator('header [data-header-search]').first()
+    if ((await trigger.count()) > 0) {
+      expect(
+        (await accessibleName(trigger)).trim(),
+        'the masthead search trigger has no accessible name',
+      ).not.toBe('')
+    }
+
+    test.skip(!(await reachable(page, '/search')), '/search is not reachable in this database')
     const search = page.getByRole('searchbox').or(page.getByRole('combobox')).first()
-    test.skip((await search.count()) === 0, 'no search control in the header')
-    const name = await search.evaluate(
-      (node) =>
-        node.getAttribute('aria-label') ??
-        (node as HTMLInputElement).labels?.[0]?.textContent?.trim() ??
-        '',
-    )
-    expect(name.trim(), 'the search control has no accessible name').not.toBe('')
+    test.skip((await search.count()) === 0, 'no search field on /search')
+    expect(
+      (await accessibleName(search)).trim(),
+      'the search field has no accessible name',
+    ).not.toBe('')
   })
 })
