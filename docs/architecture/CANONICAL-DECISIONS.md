@@ -202,6 +202,59 @@ Brand and editorial copy may be written; anything asserting business capability 
 
 ## Amendments
 
+**2026-09-14 · A65 — public redesign P3: three defects a visitor could see, and the guide's
+collection list is not this project's.**
+
+*The catalogue and product surfaces, audited against §6.2–§6.5. Most of what P3 asks for already
+exists; what it turned up instead was three live defects and one instruction that must not be
+followed.*
+
+**EVERY PRODUCT PAGE PRINTED "[object Object] · [object Object]".** `productBadges` returns objects
+and `app/(site)/product/[slug]/page.tsx` did `badges.join(' · ')`. All 35 live product pages served
+that where "Made to Order · Customizable" belonged. **No static gate could have caught it** —
+`.join()` is valid on an array of anything, so TypeScript was satisfied and all 44 gates passed.
+`ProductCard` had the right shape all along; the page now shares it. The guard is an e2e assertion,
+because only rendering the page reveals the defect.
+
+**THREE CATEGORY PAGES WERE LIVE ANCHORS TO 404s.** `CategoryGridSection` asked whether `card.href`
+was non-empty, which is a different question from whether the destination renders — while its own
+comment claimed the right rule. `SectionRenderProps.livePaths` exists for exactly this and its
+comment says so: *"a path that answers 404 looks exactly like one that does not"*. The renderer
+never destructured it. Measured by fetching ten live pages and checking all 55 unique internal
+links: exactly `/collection/collectible-design`, `/collection/3d-resin` and
+`/collection/preservation` were dead, three anchors on `/collection` and two of them on the
+homepage. `SecondaryObjectsSection` carried the identical defect, latent. **`ReferenceCards` was
+left alone**: same raw-anchor shape, but it produced none of the dead links, takes no section by
+design, and has five callers.
+
+**A REJECTED SERVER ACTION FROZE THE ENQUIRY FORM FOREVER.** The refusal path — the action
+returning `{ ok: false }` — was always handled. A REJECTION was not: `onSubmit` set
+`status: 'sending'` and awaited with no try/catch anywhere in the directory, so the form stayed at
+`sending`, where submit is disabled and reads "Sending…". No error, no retry, nothing saved. The
+`Configurator` froze the same way for somebody who had answered eleven steps. This is the second
+half of "a failed save keeps the form": the form was kept, and made useless.
+
+**THE GUIDE'S TEN COLLECTION NAMES ARE NOT THIS PROJECT'S, AND MUST NOT BE ACTED ON.** §6.4 lists
+"Ocean, Earth, Midnight, Ember, Stone, Flora, Memory, Light, Graphite, Custom". The specification of
+record — `docs/requirements/01-ADVANCED-FEATURE-EXPANSION.md:151`, **read-only history** — fixes
+them as *Ocean · Earth · **Aurora** · Midnight · **Monsoon · Geode · Forest · Clear · Botanical ·
+Bespoke***, and the seed and all ten database rows match it exactly. Seven of the guide's names
+exist nowhere in this project. Following §6.4 would insert seven invented collections and destroy a
+set a read-only specification fixes. **The guide is wrong here; correct the guide.** Its companion
+instruction — a "120–160 word statement" per collection — is equally unfollowable: no such text
+exists, and writing it would mean describing work that has not been made, which
+`content/seed/collection-concepts.ts` already refuses in writing.
+
+**WHAT WAS NOT DONE, AND WHY.** §6.5's WhatsApp template does not carry the product URL: adding the
+token means editing a list both `lib/whatsapp/templates.ts` and `content/seed/global.ts` declare to
+be SEED §36 verbatim, so it needs its own amendment and a live `global_content` edit, and is
+reported rather than slipped in here. The mobile filter sheet is unbuilt because both listing routes
+sit at **5 islands against a budget of 5** — a Drawer or `Disclosure` is a Client Component and
+fails `perf:count-islands`, so it must be a CSS-only `<details>`, which is its own change. And
+§6.5's "Gallery first" has nothing to render: no product has a hero, a gallery or a card image,
+because all 250 assets are `is_concept` and three live triggers refuse concept media on a product.
+That is the owner's to resolve, not a bug to fix.
+
 **2026-09-14 · A64 — the owner's verification flag is not an editor's to clear, and the gate that
 was meant to hold it was holding nothing.**
 

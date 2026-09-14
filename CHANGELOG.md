@@ -6,6 +6,28 @@ Every phase adds an entry; see `docs/architecture/CANONICAL-DECISIONS.md` D9 for
 
 ## [Unreleased]
 
+### Public redesign P3 — three defects a visitor could see (2026-09-14)
+
+Amendment **A65**. Audited §6.2–§6.5 and found that most of what P3 asks for already exists. What it
+turned up instead was three live defects, each confirmed by fetching rivyalivingart.com.
+
+- **Every product page printed `[object Object] · [object Object]`.** `productBadges` returns
+  objects and the page did `badges.join(' · ')`. No static gate could catch it — `.join()` is valid
+  on an array of anything — so all 44 gates passed over it. `ProductCard` had it right; the page
+  now shares that shape.
+- **Three category pages were live anchors to 404s.** `CategoryGridSection` tested whether an href
+  was non-empty, not whether it resolved, while its own comment claimed the right rule.
+  `livePaths` already existed on the props for exactly this. Measured: 55 unique internal links
+  across ten live pages, exactly three dead.
+- **A rejected Server Action froze the enquiry form at "Sending…" forever** — disabled, no error,
+  no retry, nothing saved. The `Configurator` froze the same way after eleven answered steps. The
+  refusal path was always handled; the rejection path had no try/catch anywhere in either
+  directory.
+- **§6.4's ten collection names are not this project's.** Seven of them exist nowhere; the
+  read-only specification fixes the set as Ocean · Earth · Aurora · Midnight · Monsoon · Geode ·
+  Forest · Clear · Botanical · Bespoke, which the seed and all ten rows match. Recorded as a
+  correction to the guide, not acted on.
+
 ### Public redesign P2 (audit) — alt text that describes the picture, and the gate that was not guarding (2026-09-14)
 
 Amendments **A63** and **A64**. P2's own bands are reported rather than shipped — every one of them
