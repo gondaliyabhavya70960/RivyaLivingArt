@@ -79,73 +79,60 @@ export function CategoryGridSection({
    */
   const layout = cardLayoutOf(section, 'grid')
 
-  const rendered = cards.map((card, index) => {
-    const asset = card.media_index === null ? null : (assets[card.media_index] ?? null)
-    const body = (
-      <Stack gap={3}>
-        <BlockImage
-          asset={asset}
-          ratio="4:5"
-          preset="card"
-          sizes={CARD_SIZES[columns]}
-          strings={strings}
-          cloudName={cloudName}
-        />
-        <Heading level={cardHeadingLevel(section)} size="display-xs">
-          {card.title}
-        </Heading>
-        {card.description.trim() === '' ? null : (
-          <Text size="base" tone="secondary">
-            {card.description}
-          </Text>
-        )}
-      </Stack>
-    )
+  /*
+   * SKIP A CARD WITH NO LIVE DESTINATION. A non-link tile on a category grid is a dead door
+   * wearing the clothes of a link: it looks tappable, announces as text, and teaches visitors
+   * that half the grid goes nowhere. `CategoryListSection` still keeps the words without the
+   * href — those cards are editorial groupings, not wayfinding — but this grid's job is to
+   * take someone somewhere, so an unresolved path is omitted rather than demoted.
+   *
+   * `resolveInternalTarget` is the same gate as before: typed hrefs that 404 (DRAFT category
+   * pages) are treated as missing, not as destinations.
+   */
+  const rendered = cards.flatMap((card, index) => {
+    const target = resolveInternalTarget(card.href, livePaths)
+    if (target === null) return []
 
-    /**
-     * The whole card is the link when there is a destination, and nothing is a link when
-     * there is not. A "read more" affordance under an unlinked card would be a control
-     * that does nothing — and the label for it would have to be invented here, in JSX.
-     */
+    const asset = card.media_index === null ? null : (assets[card.media_index] ?? null)
     // The card's own name when it has one, its title otherwise — never the index, which
     // moves. A test addresses `[data-entry-key="..."]` and stays correct after a reorder.
     const entryKey = card.key ?? card.title
 
-    /**
-     * THE TEST IS WHETHER THE DESTINATION RENDERS, NOT WHETHER SOMEBODY TYPED ONE.
-     *
-     * This used to ask only whether `href` was non-empty, which is a different question and the
-     * wrong one: three category pages are DRAFT behind the owner's verification gate, so
-     * `/collection/collectible-design`, `/collection/3d-resin` and `/collection/preservation` were
-     * live anchors to 404s — on the homepage and on `/collection`.
-     *
-     * `resolveInternalTarget` returns null for a path that does not render, and the text branch
-     * below keeps the editor's card exactly as written, minus the link. `CategoryListSection` has
-     * always done this; the comment here claimed the same rule and tested something else.
-     */
-    const target = resolveInternalTarget(card.href, livePaths)
-
-    return target === null ? (
-      <div key={`${card.title}-${index}`} data-entry-key={entryKey}>
-        {body}
-      </div>
-    ) : (
+    return [
       <a
         key={`${card.title}-${index}`}
         data-entry-key={entryKey}
         href={target}
         className="group block focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-(--rv-ink-accent)"
       >
-        {body}
-      </a>
-    )
+        <Stack gap={3}>
+          <BlockImage
+            asset={asset}
+            ratio="4:5"
+            preset="card"
+            sizes={CARD_SIZES[columns]}
+            strings={strings}
+            cloudName={cloudName}
+            emptyTitle={card.title}
+          />
+          <Heading level={cardHeadingLevel(section)} size="display-xs">
+            {card.title}
+          </Heading>
+          {card.description.trim() === '' ? null : (
+            <Text size="base" tone="secondary">
+              {card.description}
+            </Text>
+          )}
+        </Stack>
+      </a>,
+    ]
   })
 
   return (
     <SectionShell section={section}>
       <Stack gap={10}>
         <SectionCopy section={section} />
-        {cards.length === 0 ? null : (
+        {rendered.length === 0 ? null : (
           <CardLayout
             layout={layout}
             gridClassName={COLUMN_CLASS[columns]}

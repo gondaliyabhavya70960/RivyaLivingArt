@@ -187,7 +187,7 @@ export function SiteHeader({ chrome, cloudName }: SiteHeaderProps): React.ReactE
       // component to start asking.
       data-rv-site-header=""
       className={cn(
-        'sticky top-0 z-30 border-b border-line',
+        'sticky top-0 z-header border-b border-line',
         // `supports-` so a browser without backdrop-filter gets an opaque ground rather than
         // unreadable text over a photograph. Both are overridden by the overlay rule on a page
         // that opens dark; on every other page this stays exactly as it was.

@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="Rivya Living Art">
+  <!-- Favicon mark: obsidian ground, champagne frame + inset. Colours match tokens.css primitives. -->
+  <rect width="32" height="32" fill="#080a0e"/>
+  <rect x="6.5" y="6.5" width="19" height="19" fill="none" stroke="#b89b63" stroke-width="1.5"/>
+  <rect x="11" y="11" width="10" height="10" fill="#b89b63"/>
+</svg>
