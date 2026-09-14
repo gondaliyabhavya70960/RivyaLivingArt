@@ -37,6 +37,23 @@ box the container allows is 1312, and the row wants 1385. The pill is `shrink-0`
 so the nav absorbs the deficit by wrapping while every overflow gate stays green. At six top-level
 items the pill has about 167px of room and the 1024 wrap resolves with it — but what is in the menu
 is `navigation_items` data and an editorial decision, so no row was touched.
+### Fix: main could not install its own dependencies (2026-09-14)
+
+The routine Dependabot group bumped react 19.2.8 → 19.3.0.
+`@react-three/fiber@9.7.0` declares `peer react ">=19 <19.3"`, and 9.7.0 is the **latest** release —
+no version of fiber accepts 19.3 yet. So `npm ci` failed with ERESOLVE and every job on main died in
+forty seconds, before a single file compiled. Security passed because gitleaks installs nothing;
+that was the tell that this was an install failure rather than a test failure.
+
+- **react / react-dom held at 19.2.8**, with `@types/react` and `@types/react-dom` pinned exactly to
+  the matching 19.2 line — a caret range resolves straight back to 19.3.
+- **zod 4.6.2 and @types/node 26.5.1 are kept.** Those halves of the bump are unrelated and fine.
+- **A dependabot `ignore` block** stops the same bump re-landing next Monday, and names the exact
+  condition for removing it: when fiber's peer range includes 19.3, bump react and fiber together.
+- **Not forced.** `--legacy-peer-deps` or an override would install a combination the 3D renderer's
+  author says is unsupported and move the failure from CI into the model viewer at runtime.
+
+`npm ci` exit 0; `npm run check` exit 0; 3,162 unit tests pass.
 
 ### Public redesign P3 — three defects a visitor could see (2026-09-14)
 
