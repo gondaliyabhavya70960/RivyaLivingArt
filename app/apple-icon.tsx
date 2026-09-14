@@ -12,39 +12,37 @@ export const contentType = 'image/png'
 
 export default function AppleIcon(): ImageResponse {
   return new ImageResponse(
-    (
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        // --rv-color-obsidian
+        backgroundColor: 'hsl(220 27% 5%)',
+      }}
+    >
       <div
         style={{
-          width: '100%',
-          height: '100%',
+          width: 108,
+          height: 108,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          // --rv-color-obsidian
-          backgroundColor: 'hsl(220 27% 5%)',
+          // --rv-color-champagne
+          border: '3px solid hsl(40 39% 55%)',
         }}
       >
         <div
           style={{
-            width: 108,
-            height: 108,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            // --rv-color-champagne
-            border: '3px solid hsl(40 39% 55%)',
+            width: 48,
+            height: 48,
+            backgroundColor: 'hsl(40 39% 55%)',
           }}
-        >
-          <div
-            style={{
-              width: 48,
-              height: 48,
-              backgroundColor: 'hsl(40 39% 55%)',
-            }}
-          />
-        </div>
+        />
       </div>
-    ),
+    </div>,
     { ...size },
   )
 }

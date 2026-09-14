@@ -136,6 +136,10 @@
    * Z-INDEX (§5.6). Bridged so sticky chrome can say `z-header` rather than a Tailwind scale
    * step that happens to be near enough. The token is 100; `z-30` is 30 — and that gap is why
    * the masthead could sit under a raised surface that was never meant to cover it.
+   *
+   * THE THEME KEY IS `--z-index-*`, NOT `--z-*`. Tailwind v4 maps the `z-index` namespace to
+   * `z-*` utilities; `--z-header` alone declares a custom property and generates no rule, which
+   * is exactly the silent failure `design:check-utilities` exists to catch.
    */
-  --z-header: var(--rv-z-header);
+  --z-index-header: var(--rv-z-header);
 }
