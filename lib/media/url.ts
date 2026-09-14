@@ -152,11 +152,7 @@ export function imageUrl(
  * extra Cloudinary derivative per asset, not one per viewport. Skip the call when there is no
  * asset — an empty plate must not invent a photograph.
  */
-export function lqipUrl(
-  cloudName: string,
-  ref: MediaRef,
-  cropSegment?: string | null,
-): string {
+export function lqipUrl(cloudName: string, ref: MediaRef, cropSegment?: string | null): string {
   // Sorted parameter order, same contract as `transformationSegment`, so cache keys stay stable.
   const preset = 'c_fill,e_blur:1000,f_auto,g_auto,q_1,w_32'
   const segment =
