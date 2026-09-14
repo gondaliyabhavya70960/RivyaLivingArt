@@ -241,8 +241,8 @@ describe('lqipUrl', () => {
       'c_crop,h_100,w_80,x_10,y_20',
     )
     const path = url.split('/upload/')[1] ?? ''
-    expect(path.startsWith('c_crop,h_100,w_80,x_10,y_20/c_fill,e_blur:1000,f_auto,g_auto,q_1,w_32/')).toBe(
-      true,
-    )
+    expect(
+      path.startsWith('c_crop,h_100,w_80,x_10,y_20/c_fill,e_blur:1000,f_auto,g_auto,q_1,w_32/'),
+    ).toBe(true)
   })
 })

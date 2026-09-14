@@ -121,7 +121,17 @@ export interface MediaFrameProps extends AspectBoxProps {
 }
 
 export const MediaFrame = React.forwardRef<HTMLElement, MediaFrameProps>(function MediaFrame(
-  { fallbackLabel, fallback, veil = false, overlay, placeholderUrl, className, style, children, ...rest },
+  {
+    fallbackLabel,
+    fallback,
+    veil = false,
+    overlay,
+    placeholderUrl,
+    className,
+    style,
+    children,
+    ...rest
+  },
   ref,
 ) {
   // toArray drops null, undefined and booleans, so the ordinary `{asset && <MediaImage/>}`
