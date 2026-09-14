@@ -50,7 +50,9 @@ describe('MediaFrame', () => {
         <div data-testid="media" />
       </MediaFrame>,
     )
-    expect(screen.getByRole('figure', { name: 'Page hero' })).toHaveTextContent(/^Cast in one pour$/)
+    expect(screen.getByRole('figure', { name: 'Page hero' })).toHaveTextContent(
+      /^Cast in one pour$/,
+    )
     expect(screen.queryByRole('img')).not.toBeInTheDocument()
   })
 
