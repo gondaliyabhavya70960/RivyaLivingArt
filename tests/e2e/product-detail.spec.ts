@@ -35,6 +35,29 @@ test.describe('the product page', () => {
     await expect(page.locator('h1')).toHaveCount(1)
   })
 
+  test('renders each badge as a word, never as a stringified object', async ({ page }) => {
+    /*
+     * THIS SHIPPED TO ALL 35 LIVE PRODUCT PAGES. `productBadges` returns objects and the page did
+     * `badges.join(' · ')`, so every visitor read "[object Object] · [object Object]" where
+     * "Made to Order · Customizable" belonged.
+     *
+     * NOTHING STATIC COULD HAVE CAUGHT IT: `.join()` is valid on an array of anything, so
+     * TypeScript was satisfied and all 44 gates passed. Only rendering the page reveals it, which
+     * is why the guard lives here rather than in a unit test.
+     */
+    const path = await firstProductPath(page)
+    test.skip(path === null, 'no published products in this database')
+
+    await page.goto(path as string)
+    const badges = page.locator('[data-product-badges]')
+    if ((await badges.count()) === 0) return
+
+    await expect(badges).not.toContainText('object Object')
+    // Each badge is its own element, which is what makes the label a seeded word rather than part
+    // of an interpolated string.
+    expect(await page.locator('[data-product-badge]').count()).toBeGreaterThan(0)
+  })
+
   test('404s for a slug that is not a published product', async ({ page }) => {
     // Both cases answer the same way on purpose: telling an unpublished slug apart from an unknown
     // one would leak that a draft product exists and what it is called.

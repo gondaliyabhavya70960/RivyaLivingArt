@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { InquiryForm } from '@/components/patterns/InquiryForm'
@@ -235,5 +235,69 @@ describe('the sticky conversion row', () => {
     const rule = css.slice(css.indexOf('.rv-sticky-actions'))
     expect(rule).toContain('var(--rv-surface-raised)')
     expect(rule).toContain('var(--rv-line-subtle)')
+  })
+})
+
+describe('a Server Action that rejects rather than returning', () => {
+  /**
+   * THE OTHER HALF OF "A FAILED SAVE KEEPS THE FORM".
+   *
+   * The refusal path — the action RETURNING `{ ok: false }` — was always handled, and
+   * `tests/unit/inquiry-persistence.test.ts` pins that the failure branch carries no
+   * `whatsappUrl` to follow. What was not handled is the action REJECTING: a dropped connection,
+   * or a throw outside the action's own guarded region (`submit-inquiry.ts` guards `createInquiry`
+   * but not `headers()`, the rate-limit consume, or the chrome read).
+   *
+   * `onSubmit` sets `sending` and then awaited the action with no try/catch anywhere in the
+   * directory. A rejection skipped every `setState` below it, so the form stayed at `sending` —
+   * submit disabled, label "Sending", no error, nothing saved, and no way to try again.
+   */
+  /**
+   * Submitted with `fireEvent.submit`, which bypasses native required-field validation — and
+   * `onSubmit` does no client-side gating of its own, so the action is reached regardless. The
+   * fields are left empty deliberately: what is under test is the transport, not the payload.
+   */
+  async function submitRejecting(): Promise<void> {
+    render(
+      <InquiryForm
+        kind="GENERAL"
+        copy={COPY}
+        enquiryTypes={[]}
+        action={() => Promise.reject(new Error('connection lost'))}
+      />,
+    )
+
+    // `data-inquiry-form` is on the <form> itself, not on a wrapper around it.
+    fireEvent.submit(document.querySelector('form[data-inquiry-form]') as HTMLFormElement)
+  }
+
+  it('tells the visitor the enquiry was not saved', async () => {
+    await submitRejecting()
+    // errorSave, not errorGeneric: no field is at fault, and the sentence tells them to retry
+    // BEFORE continuing to WhatsApp — which is the rule an unconfirmed save must not break.
+    await waitFor(() => {
+      expect(screen.getByText(COPY.errorSave)).toBeTruthy()
+    })
+  })
+
+  it('re-enables the control so the visitor can try again', async () => {
+    await submitRejecting()
+    await waitFor(() => {
+      const button = screen.getByRole('button', { name: COPY.submit })
+      expect(button.hasAttribute('disabled')).toBe(false)
+    })
+  })
+
+  /*
+   * THIS ONE PASSES WITH OR WITHOUT THE FIX, and is kept deliberately. A form frozen at `sending`
+   * showed no handoff either, so it does not discriminate between the two states and is not the
+   * regression guard — the two tests above are, and both go red when the catch is removed. What it
+   * guards is forward: an optimistic handoff added later, on a path where no row exists.
+   */
+  it('offers no WhatsApp handoff, because nothing was persisted', async () => {
+    await submitRejecting()
+    await waitFor(() => {
+      expect(screen.queryByText(COPY.continueToWhatsApp)).toBeNull()
+    })
   })
 })

@@ -127,7 +127,19 @@ const STRINGS = siteStrings([
  * the markup, not about publication state, so their targets are declared live — and the link rule
  * has its own tests in `tests/unit/resolve-target.test.ts`.
  */
-const LIVE_PATHS = new Set(['/contact', '/process', '/about', '/custom-commissions'])
+const LIVE_PATHS = new Set([
+  '/contact',
+  '/process',
+  '/about',
+  '/custom-commissions',
+  // The category-grid fixture's own destinations. Declared live for the reason above: from the
+  // moment `CategoryGridSection` started consulting `livePaths`, a fixture path left out of this
+  // set renders as text, and these tests would then be asserting the link rule rather than the
+  // markup they were written for. The link rule's own cases live in `tests/unit/resolve-target.test.ts`
+  // and `tests/unit/dead-link-guard.test.tsx`.
+  '/wall-art',
+  '/tables',
+])
 
 function renderSections(
   sections: readonly PageSection[],
@@ -373,6 +385,13 @@ describe('category grid', () => {
     ])
   })
 
+  /*
+   * A card with no href is not a link. The OTHER reason a card is not a link — a destination that
+   * is not live — is `CategoryGridSection`'s newer rule and is covered in
+   * `tests/unit/dead-link-guard.test.tsx`, which renders both affected blocks against a live set
+   * that deliberately omits two of the three paths. Repeating it here would need a second harness
+   * with different `livePaths` and would assert nothing this file owns.
+   */
   it('links only the cards with a destination', () => {
     renderSections(
       [section({ block_type: 'category-grid', payload: cards })],

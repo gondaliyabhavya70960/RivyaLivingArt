@@ -291,17 +291,31 @@ export function Configurator({
       return parsed.success ? parsed.data : []
     })
 
-    const result = await submit.action({
-      kind: 'COMMISSION',
-      formId: definition.formId,
-      answers,
-      name: byType('CONTACT_NAME'),
-      phone: byType('CONTACT_PHONE'),
-      email: byType('CONTACT_EMAIL'),
-      city: byType('CITY'),
-      references,
-      elapsedMs: 60_000,
-    })
+    /*
+     * THE SAME REJECTION GUARD AS `InquiryForm`, and it matters more here. `setSending(true)` runs
+     * above and `setSending(false)` is below; a Server Action that rejects skipped it, disabling
+     * Send permanently — for a visitor who has just answered eleven steps. The draft is untouched
+     * either way, which is the point of the note above, but a preserved brief nobody can submit is
+     * not much better than a lost one.
+     */
+    let result: Awaited<ReturnType<typeof submit.action>>
+    try {
+      result = await submit.action({
+        kind: 'COMMISSION',
+        formId: definition.formId,
+        answers,
+        name: byType('CONTACT_NAME'),
+        phone: byType('CONTACT_PHONE'),
+        email: byType('CONTACT_EMAIL'),
+        city: byType('CITY'),
+        references,
+        elapsedMs: 60_000,
+      })
+    } catch {
+      setSending(false)
+      setSummary(submit.copy.errorSave)
+      return
+    }
 
     setSending(false)
     if (!result.ok) {

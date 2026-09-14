@@ -175,7 +175,27 @@ export function InquiryForm({ kind, copy, enquiryTypes, action }: InquiryFormPro
             ? { kind: effectiveKind, enquiryType: text('enquiry_type'), ...base }
             : { kind: effectiveKind, ...base }
 
-    const result = await action(payload)
+    /*
+     * A REJECTED ACTION IS A FAILED SAVE, AND MUST LOOK LIKE ONE.
+     *
+     * `setState({ status: 'sending' })` runs above; without this catch, a Server Action that
+     * REJECTS rather than returning — a dropped connection, or a throw outside the action's own
+     * guarded region — skipped every `setState` below and left the form at `sending` for good. The
+     * submit button is disabled in that state and reads "Sending…", so the visitor saw no error,
+     * could not retry, and nothing had been saved.
+     *
+     * `errorSave` rather than `errorGeneric`: no field is at fault, and its sentence — "Your
+     * enquiry could not be saved. Please try again before continuing to WhatsApp." — is the honest
+     * one here. The response never arrived, so the save is unconfirmed, and an unconfirmed save is
+     * exactly what must not be followed by a handoff.
+     */
+    let result: Awaited<ReturnType<typeof action>>
+    try {
+      result = await action(payload)
+    } catch {
+      setState({ status: 'error', message: copy.errorSave, fields: [] })
+      return
+    }
 
     // THE NARROWING IS THE GUARANTEE. There is no URL to read on the failure branch.
     if (result.ok) {

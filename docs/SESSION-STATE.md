@@ -14,6 +14,62 @@ owner_verification: NOT_REQUIRED
 
 ---
 
+## Most recent work — public redesign P3, catalogue and product (2026-09-14)
+
+Amendment **A65**. P0–P2 are merged (#86, main `0a8b39c`). This is P3.
+
+**MOST OF §6.2–§6.5 ALREADY EXISTS.** Category order is fixed and live in all four places that
+declare it. Filters already stay in the URL — `FilterRail` is a bare `<form method="get">` with no
+client state. `CatalogListing` and `LazyModelViewerMount` both exist under those exact names; do not
+create new components under them. "No sale stickers" is structurally enforced by a closed
+five-key badge map. No invented price, dimension, lead time or edition size appears anywhere,
+including the JSON-LD.
+
+**WHAT THE AUDIT FOUND INSTEAD WERE THREE LIVE DEFECTS**, all now fixed and all confirmed by
+fetching the live site rather than inferred: `[object Object] · [object Object]` on all 35 product
+pages; three category pages linked as live anchors to 404s; and an enquiry form that froze at
+"Sending…" forever when the Server Action rejected rather than returned.
+
+**THE GUIDE'S §6.4 COLLECTION LIST IS WRONG AND MUST NOT BE FOLLOWED.** See A65. Seven of its ten
+names exist nowhere in this project; the read-only specification fixes the set and the seed matches
+it.
+
+### The next exact action
+
+Unchanged from P2, and still the one thing standing between committed work and the live pages:
+**run `npm run media:rewrite-alt-text --apply` against the hosted project.**
+
+### Still the owner's — P3 additions
+
+1. **`/collection/collectible-design` and `/collection/preservation` 404 while holding four
+   published products each.** Their single hero section is DRAFT + `OWNER_VERIFICATION_REQUIRED`;
+   the check constraint physically refuses to publish them, so no pull request can open these pages.
+   The flagged claims are one word each — Collectible Design says "Limited", Preservation says
+   "lasting". **`/collection/3d-resin` stays shut**: §10 pins it to the gate.
+2. **No product has a hero, a gallery or a card image.** All 250 assets are `is_concept` and three
+   live triggers refuse concept media on a product. §6.5's "Gallery first" has nothing to render
+   until there is real photography, or an explicit amendment permitting labelled concept renders on
+   product media.
+3. **Every `/collections/[slug]` is a 404** — all ten collections are `DRAFT_COLLECTION_CONCEPT`,
+   and the confirmation is owner-only by trigger. Nothing in the repository may perform it.
+4. **`/contact` and the footer render no WhatsApp link, no tel:, no email** — the `contact-details`
+   section is DRAFT + gated. Do not work around it in code.
+5. **`EMPTY_STATE.media_pending.label` is seeded but not applied to production**, so P0's designed
+   empty plate renders nowhere on the public site.
+
+### Reported, not shipped
+
+- **§6.5's WhatsApp template does not carry the product URL.** Adding the token edits a list two
+  files declare to be SEED §36 verbatim, so it needs its own amendment plus a live `global_content`
+  edit.
+- **The mobile filter sheet is unbuilt.** Both listing routes are at **5 islands against a budget
+  of 5**; a Drawer or `Disclosure` is a Client Component and fails `perf:count-islands`. It has to
+  be a CSS-only `<details>`.
+- **Two of four filter facets can never narrow** — `price` and `availability` each match all 35
+  products.
+
+---
+
 ## Most recent work — public redesign P2, audited (2026-09-14)
 
 Amendments **A63** and **A64**. **P2's own bands were not shipped, because every one of them is
